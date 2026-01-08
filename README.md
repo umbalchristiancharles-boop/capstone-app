@@ -1,2 +1,2 @@
-# TDS_CAPSTONE
+# capstone-app
 Capstone-Project
