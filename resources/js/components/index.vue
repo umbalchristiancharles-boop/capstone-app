@@ -1,38 +1,17 @@
 <template>
   <main class="page">
-    <section class="hero">
-      <!-- Right block (card) -->
-      <div class="hero-right">
-        <div class="card">
-          <div class="card-header">
-            <div class="brand">
-              <span class="brand-title">MR. PARK'S</span>
-              <span class="brand-sub">Bread &amp; Cake Admin</span>
-            </div>
-            <span class="tag-pill">Live Orders</span>
-          </div>
-
-          <div class="cake-preview">
-            <div class="cake-circle" aria-hidden="true"></div>
-            <div class="cake-text">
-              <h3>Heart Party Cake</h3>
-              <p>Update stocks, promos, and seasonal flavors from this panel.</p>
-            </div>
-          </div>
-
-          <div class="mini-stats">
-            <span>Today’s orders<strong>42</strong></span>
-            <span>Ready to ship<strong>18</strong></span>
-            <span>Low stocks<strong>5</strong></span>
-          </div>
-
-          <p class="admin-label">
-            <span>Admin Only</span>
-          </p>
+    <!-- CHIKIN TAYO LOADING OVERLAY PAG CLICK NG LOGIN -->
+    <transition name="fade">
+      <div v-if="showLoginLoader" class="mr-loader-overlay">
+        <div class="mr-loader-box">
+          <img :src="mrLoaderImg" alt="Loading" class="mr-loader-img" />
+          <p>Loading admin login...</p>
         </div>
       </div>
+    </transition>
 
-      <!-- Left content -->
+    <section class="hero">
+      <!-- LEFT content -->
       <div class="hero-left">
         <div class="badge">
           <span class="badge-dot"></span>
@@ -50,13 +29,16 @@
         </p>
 
         <p class="admin-tagline">
-          For <strong>authorized staff</strong> access only. Customers use a
-          separate site.
+          For <strong>authorized staff</strong> access only.
         </p>
 
         <div class="cta-row">
           <!-- ADMIN LOGIN ONLY -->
-          <RouterLink to="/admin-login" class="btn-login">
+          <RouterLink
+            to=""
+            class="btn-login"
+            @click.prevent="goToAdminLogin"
+          >
             <span class="icon">🔑</span>
             <span>Login to Admin Panel</span>
           </RouterLink>
@@ -66,19 +48,35 @@
           </span>
         </div>
       </div>
-    </section>
 
-    <div class="village-line">
-      <span class="house">🏠</span>
-      <span>Freshly baked logs · Sweet reports · Warm order tracking</span>
-      <span class="house">🏡</span>
-    </div>
+      <!-- RIGHT side: big logo only -->
+      <div class="hero-right">
+        <div class="logo-wrapper">
+          <img :src="chikintayoImg" alt="Chikintayo" />
+        </div>
+      </div>
+    </section>
   </main>
 </template>
 
 <script setup>
-// static landing page; logic can be added here if needed later
+import { ref } from 'vue'
+import { useRouter, RouterLink } from 'vue-router'
+
+const router = useRouter()
+const showLoginLoader = ref(false)
+
+const chikintayoImg = new URL('../assets/chikintayo.jpg', import.meta.url).href
+const mrLoaderImg   = new URL('../assets/chikinlogo.png', import.meta.url).href
+
+function goToAdminLogin() {
+  if (showLoginLoader.value) return
+  showLoginLoader.value = true
+
+  setTimeout(() => {
+    router.push('/admin-login')
+  }, 1000)
+}
 </script>
 
-<!-- Option A: use src attribute so Vue CLI / Vite bundles the CSS with this component -->
-<style src="./index.css"></style>
+<style src="../css/index.css"></style>
