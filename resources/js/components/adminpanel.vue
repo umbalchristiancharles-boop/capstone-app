@@ -17,7 +17,9 @@
                     <div v-else class="avatar-placeholder">
                     <span class="avatar-initials">CT</span>
                     </div>
-                  
+                    <div class="avatar-overlay">
+                        <span class="avatar-change-text">Change Photo</span>
+                    </div>
                 </label>
 
                 <div class="admin-header-text admin-header-text--center">

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jan 09, 2026 at 09:38 AM
+-- Generation Time: Jan 10, 2026 at 03:10 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -237,7 +237,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('sPqKiyJlQkatsPBiRUuwSyyPP15qxWrRkuXTFoQW', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoicm9EQXVWcnZLczNOSmp4YXBNdHpUNWZvVU5LVXUyUkZTRDNUTzFTbSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1767928014);
+('h235t6ajBFPDw7bsIdWxoXQdRFXaSUqnS0whBxfi', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiSk5WMWozOTNSN1gyQUJ0MGlzZHdqQ3pXWDJuenlFdG9aSVJySGJVYiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTtzOjk6Il9wcmV2aW91cyI7YToyOntzOjM6InVybCI7czozOToiaHR0cDovL2xvY2FsaG9zdDo4MDAwL2FwaS9vd25lci1wcm9maWxlIjtzOjU6InJvdXRlIjtOO319', 1768025858),
+('hVloDBuHoLS3lm4f2cchIvh3sLNLPwUYwfjKzv4E', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoibVlRVFNFSk5hOWFNTzl5cm0yaTNvZjZ6VnlzVFhKN3VCRjJ6SFFnVSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1768027046);
 
 -- --------------------------------------------------------
 
@@ -267,7 +268,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `full_name`, `role`, `avatarUrl`, `branch_id`, `avatar_url`, `phone_number`, `address`, `is_active`, `created_at`, `updated_at`) VALUES
-(1, 'owner_admin', 'bido.vincehannibal@ncst.edu.ph', 'Admin@1234', 'Vince Hannibal R. Bido', 'OWNER', NULL, NULL, NULL, '+63 9948334118', 'Quezon City, Metro Manila', 1, '2026-01-08 16:10:11', '2026-01-08 23:17:13'),
+(1, 'owner_admin', 'bido.vincehannibal@ncst.edu.ph', 'Admin@1234', 'Vince Hannibal R. Bading', 'OWNER', NULL, NULL, '/storage/avatars/avatar_1_1768026928.jpg', '+63 9948334118', 'Quezon City, Metro Manila', 1, '2026-01-08 16:10:11', '2026-01-10 06:35:28'),
 (2, 'branch_mnl', 'branch.mnl@example.com', 'Branch@1234', 'Sample Branch Manager', 'BRANCH_MANAGER', NULL, 1, NULL, '+63 900 000 0001', 'Manila City, Metro Manila', 1, '2026-01-08 16:10:59', '2026-01-08 16:10:59'),
 (3, 'staff_mnl_01', 'staff01@example.com', 'Staff@1234', 'Sample Staff 01', 'STAFF', NULL, 1, NULL, '+63 900 000 0002', 'Manila City, Metro Manila', 1, '2026-01-08 16:11:14', '2026-01-08 16:11:14');
 

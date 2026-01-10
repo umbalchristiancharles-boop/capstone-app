@@ -12,6 +12,7 @@ Route::middleware('web')->group(function () {
     Route::get('/me',              [AuthController::class, 'me']);
     Route::get('/owner-profile',   [AuthController::class, 'ownerProfile']);
     Route::put('/owner-profile',   [AuthController::class, 'updateOwnerProfile']);
+    Route::post('/upload-avatar',  [AuthController::class, 'uploadAvatar']);
 
     Route::get('/owner-dashboard', [OwnerDashboardController::class, 'index']);
 });

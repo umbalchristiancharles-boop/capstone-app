@@ -93,7 +93,7 @@ class AuthController extends Controller
                 'fullName'  => $u->full_name ?? $u->name ?? null,
                 'role'      => $u->role ?? 'OWNER',
                 'email'     => $u->email ?? null,
-                'contact'   => $u->phone ?? null,
+                'contact'   => $u->phone_number ?? null,
                 'branch'    => $u->branch ?? 'Chikin Tayo – QC Main',
                 'accountId' => 'kk' . str_pad($u->id, 5, '0', STR_PAD_LEFT),
                 'avatarUrl' => $u->avatar_url ?? null,
@@ -123,12 +123,45 @@ class AuthController extends Controller
             ->update([
                 'full_name' => $validated['fullName'] ?? $user->full_name ?? $user->name,
                 'email'     => $validated['email'] ?? $user->email,
-                'phone'     => $validated['contact'] ?? $user->phone,
+                'phone_number'     => $validated['contact'] ?? $user->phone_number,
             ]);
 
         return response()->json([
             'ok'      => true,
             'message' => 'Profile updated successfully',
+        ]);
+    }
+
+    public function uploadAvatar(Request $request)
+    {
+        if (!Auth::check()) {
+            return response()->json([
+                'ok'      => false,
+                'message' => 'Unauthenticated',
+            ], 401);
+        }
+
+        $request->validate([
+            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        $user = Auth::user();
+        $file = $request->file('avatar');
+
+        // Generate a unique filename
+        $filename = 'avatar_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+
+        // Store in public/storage/avatars
+        $path = $file->storeAs('avatars', $filename, 'public');
+
+        // Update user avatar_url
+        DB::table('users')
+            ->where('id', $user->id)
+            ->update(['avatar_url' => '/storage/' . $path]);
+
+        return response()->json([
+            'ok'       => true,
+            'avatarUrl' => '/storage/' . $path,
         ]);
     }
 }
