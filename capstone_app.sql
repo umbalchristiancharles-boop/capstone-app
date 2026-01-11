@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jan 10, 2026 at 03:10 PM
+-- Generation Time: Jan 11, 2026 at 04:22 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `chikintayo_db`
+-- Database: `capstone_app`
 --
 
 -- --------------------------------------------------------
@@ -42,7 +42,11 @@ CREATE TABLE `branches` (
 --
 
 INSERT INTO `branches` (`id`, `code`, `name`, `address`, `is_active`, `created_at`, `updated_at`) VALUES
-(1, 'QC_MAIN', 'Quezon City Main Branch', 'Quezon City, Metro Manila', 1, '2026-01-08 16:09:31', '2026-01-08 16:09:31');
+(1, 'QC_MAIN', 'Quezon City Main Branch', 'Quezon City, Metro Manila', 1, '2026-01-08 16:09:31', '2026-01-08 16:09:31'),
+(10, 'MAKATI', 'Makati Branch', 'Makati City, Metro Manila', 1, '2026-01-11 05:03:43', '2026-01-11 05:03:43'),
+(11, 'BGC', 'BGC Branch', 'Bonifacio Global City, Taguig', 1, '2026-01-11 05:03:43', '2026-01-11 05:03:43'),
+(12, 'PASIG', 'Pasig Branch', 'Pasig City, Metro Manila', 1, '2026-01-11 05:03:43', '2026-01-11 05:03:43'),
+(13, 'MANILA', 'Manila Branch', 'Manila City', 1, '2026-01-11 05:03:43', '2026-01-11 05:03:43');
 
 -- --------------------------------------------------------
 
@@ -237,8 +241,11 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('h235t6ajBFPDw7bsIdWxoXQdRFXaSUqnS0whBxfi', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiSk5WMWozOTNSN1gyQUJ0MGlzZHdqQ3pXWDJuenlFdG9aSVJySGJVYiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTtzOjk6Il9wcmV2aW91cyI7YToyOntzOjM6InVybCI7czozOToiaHR0cDovL2xvY2FsaG9zdDo4MDAwL2FwaS9vd25lci1wcm9maWxlIjtzOjU6InJvdXRlIjtOO319', 1768025858),
-('hVloDBuHoLS3lm4f2cchIvh3sLNLPwUYwfjKzv4E', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoibVlRVFNFSk5hOWFNTzl5cm0yaTNvZjZ6VnlzVFhKN3VCRjJ6SFFnVSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1768027046);
+('aI7vaJFAhtTgXQoL4hfVu4Y1NwAnhhJIGYV3LG9g', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiTElGQTlRYXlwWlNhREpyYlNIRHhjb3kwY2FuQ215UXRoV0xxNjdNWiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7fQ==', 1768141920),
+('dDZhqAp5rHxiSE7O8jSHJM7bRdO7TD9291LUyVTF', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoic3IxQjBtWnhqQlhmVXgwVW54V2RiVkdKeEp3cEhOVEtMRE84UGp2SSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7fQ==', 1768144795),
+('jn9JkuOetnc11lAYSPE3LZKOF3tgbuHAgbSFa6JJ', NULL, '127.0.0.1', '', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiNXdwQVVUZjRYTjVLazVna0NXdFBQbEdKVW1oekl0YkFrdmVuanl1RiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvYWRtaW4vYnJhbmNoZXMiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1768136631),
+('LbVuJefJtLzkFBqGX4wZ4PPKrJWHfMFSnhuZrTru', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoibHcwVm4zZkNBV1d2WGVDVkxEYm1DQkhLR0w5OXZnVGxQUWdnem9jaiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7fQ==', 1768137536),
+('UkMOkgOciyWjlbOv0KBRXaHMChqchOGoQkGWPk58', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiZVExbEJGM3VaNElQMjY2ZE8wdE5nVEhBQzRFVUZaRllSOVJqcThJWSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTt9', 1768144639);
 
 -- --------------------------------------------------------
 
@@ -268,7 +275,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `full_name`, `role`, `avatarUrl`, `branch_id`, `avatar_url`, `phone_number`, `address`, `is_active`, `created_at`, `updated_at`) VALUES
-(1, 'owner_admin', 'bido.vincehannibal@ncst.edu.ph', 'Admin@1234', 'Vince Hannibal R. Bading', 'OWNER', NULL, NULL, '/storage/avatars/avatar_1_1768026928.jpg', '+63 9948334118', 'Quezon City, Metro Manila', 1, '2026-01-08 16:10:11', '2026-01-10 06:35:28'),
+(1, 'owner_admin', 'bido.vincehannibal@ncst.edu.ph', 'Admin@1234', 'Vince Hannibal R. Bading', 'OWNER', NULL, NULL, '/storage/avatars/avatar_1_1768126382.jpg', '+63 9948334118', 'Quezon City, Metro Manila', 1, '2026-01-08 16:10:11', '2026-01-11 10:13:02'),
 (2, 'branch_mnl', 'branch.mnl@example.com', 'Branch@1234', 'Sample Branch Manager', 'BRANCH_MANAGER', NULL, 1, NULL, '+63 900 000 0001', 'Manila City, Metro Manila', 1, '2026-01-08 16:10:59', '2026-01-08 16:10:59'),
 (3, 'staff_mnl_01', 'staff01@example.com', 'Staff@1234', 'Sample Staff 01', 'STAFF', NULL, 1, NULL, '+63 900 000 0002', 'Manila City, Metro Manila', 1, '2026-01-08 16:11:14', '2026-01-08 16:11:14');
 
@@ -385,7 +392,7 @@ ALTER TABLE `user_profiles`
 -- AUTO_INCREMENT for table `branches`
 --
 ALTER TABLE `branches`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `failed_jobs`
@@ -415,7 +422,7 @@ ALTER TABLE `orders`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `user_profiles`
