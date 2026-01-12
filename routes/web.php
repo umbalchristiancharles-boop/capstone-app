@@ -17,23 +17,24 @@ Route::get('/logout', [LoginController:: class, 'logout'])->name('logout');
 Route::middleware(['auth'])->group(function () {
     // Admin Dashboard
     Route::get('/admin/dashboard', function () {
-        return view('admin.dashboard');
+        return view('dashboard');
     })->name('admin.dashboard');
 
     // Staff Management Page (Vue)
     Route::get('/admin/staff-management', function () {
-        return view('admin.dashboard');
+        return view('dashboard');
     })->name('admin.staff-management');
 
+    // Admin Panel (Vue)
+    Route::get('/admin-panel', function () {
+        return view('dashboard');
+    })->name('admin.panel');
 
-    });
+});
 
-// ==========================================
-// STAFF ROUTES (Protected by Auth Middleware)
-// ==========================================
 Route::middleware(['auth'])->prefix('staff')->name('staff.')->group(function () {
     Route::get('/dashboard', function () {
-        return view('staff. dashboard');
+        return view('staff.dashboard');
     })->name('dashboard');
 });
 

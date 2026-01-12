@@ -1,110 +1,164 @@
 <template>
-  <div v-if="show" class="modal-backdrop" @click.self="closeModal">
-    <div class="modal-box">
-      <!-- Header -->
-      <div class="modal-header">
-        <h3>{{ isEdit ?  'Edit Staff Account' : 'Create Staff Account' }}</h3>
-        <button class="modal-close" @click="closeModal">×</button>
+  <div v-if="show" class="fixed inset-0 z-50 overflow-y-auto" @click.self="closeModal">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+      <div class="fixed inset-0 transition-opacity" @click="closeModal">
+        <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
       </div>
 
-      <!-- Body -->
-      <div class="modal-body">
+      <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
         <form @submit.prevent="submitForm">
-          <!-- Username & Email -->
-          <div class="form-row">
-            <div class="form-group">
-              <label>Username *</label>
-              <input
-                v-model="form.username"
-                type="text"
-                :disabled="isEdit"
-                placeholder="owner_admin"
-                required
-              />
-            </div>
+          <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div class="sm:flex sm:items-start">
+              <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+                  {{ isEdit ? 'Edit Staff Account' : 'Create Staff Account' }}
+                </h3>
 
-            <div class="form-group">
-              <label>Email *</label>
-              <input
-                v-model="form.email"
-                type="email"
-                placeholder="Enter email"
-                required
-              />
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <!-- Username -->
+                  <div>
+                    <label for="username" class="block text-sm font-medium text-gray-700">Username *</label>
+                    <input
+                      v-model="form.username"
+                      type="text"
+                      id="username"
+                      :disabled="isEdit"
+                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm disabled:bg-gray-100"
+                      placeholder="owner_admin"
+                      required
+                    />
+                  </div>
+
+                  <!-- Email -->
+                  <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700">Email *</label>
+                    <input
+                      v-model="form.email"
+                      type="email"
+                      id="email"
+                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      placeholder="Enter email"
+                      required
+                    />
+                  </div>
+
+                  <!-- Full Name -->
+                  <div>
+                    <label for="fullName" class="block text-sm font-medium text-gray-700">Full Name *</label>
+                    <input
+                      v-model="form.fullName"
+                      type="text"
+                      id="fullName"
+                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      placeholder="Enter full name"
+                      required
+                    />
+                  </div>
+
+                  <!-- Password -->
+                  <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700">Password {{ isEdit ? '' : '*' }}</label>
+                    <input
+                      v-model="form.password"
+                      type="password"
+                      id="password"
+                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      placeholder="••••••••"
+                      :required="!isEdit"
+                    />
+                  </div>
+
+                  <!-- Phone -->
+                  <div>
+                    <label for="phone" class="block text-sm font-medium text-gray-700">Phone Number</label>
+                    <input
+                      v-model="form.phone"
+                      type="text"
+                      id="phone"
+                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      placeholder="+63 XXX XXX XXXX"
+                    />
+                  </div>
+
+                  <!-- Branch -->
+                  <div>
+                    <label for="branch" class="block text-sm font-medium text-gray-700">Branch *</label>
+                    <select
+                      v-model="form.branchId"
+                      id="branch"
+                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      required
+                    >
+                      <option value="" disabled>Select Branch</option>
+                      <option
+                        v-for="branch in branches"
+                        :key="branch.id"
+                        :value="branch.id"
+                      >
+                        {{ branch.name }}
+                      </option>
+                    </select>
+                  </div>
+
+                  <!-- Role -->
+                  <div>
+                    <label for="role" class="block text-sm font-medium text-gray-700">Role *</label>
+                    <select
+                      v-model="form.role"
+                      id="role"
+                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      required
+                    >
+                      <option value="" disabled>Select Role</option>
+                      <option value="BRANCH_MANAGER">Branch Manager</option>
+                      <option value="STAFF">Staff</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Address -->
+                <div class="mt-4">
+                  <label for="address" class="block text-sm font-medium text-gray-700">Address</label>
+                  <textarea
+                    v-model="form.address"
+                    id="address"
+                    rows="3"
+                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    placeholder="Enter address"
+                  ></textarea>
+                </div>
+
+                <!-- Error Message -->
+                <div v-if="errorMessage" class="mt-4 rounded-md bg-red-50 p-4">
+                  <div class="flex">
+                    <div class="flex-shrink-0">
+                      <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                      </svg>
+                    </div>
+                    <div class="ml-3">
+                      <p class="text-sm text-red-700">{{ errorMessage }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- Full Name & Password -->
-          <div class="form-row">
-            <div class="form-group">
-              <label>Full Name *</label>
-              <input
-                v-model="form.fullName"
-                type="text"
-                placeholder="Enter full name"
-                required
-              />
-            </div>
-
-            <div class="form-group">
-              <label>Password {{ isEdit ? '' : '*' }}</label>
-              <input
-                v-model="form.password"
-                type="password"
-                placeholder="••••••••"
-                :required="!isEdit"
-              />
-            </div>
-          </div>
-
-          <!-- Phone & Branch -->
-          <div class="form-row">
-            <div class="form-group">
-              <label>Phone Number</label>
-              <input
-                v-model="form.phone"
-                type="text"
-                placeholder="+63 XXX XXX XXXX"
-              />
-            </div>
-
-            <div class="form-group">
-              <label>Branch *</label>
-              <select v-model="form.branchId" required>
-                <option value="" disabled>Select Branch</option>
-                <option
-                  v-for="branch in branches"
-                  :key="branch.id"
-                  :value="branch.id"
-                >
-                  {{ branch.name }}
-                </option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Address -->
-          <div class="form-group">
-            <label>Address</label>
-            <textarea
-              v-model="form.address"
-              placeholder="Enter address"
-              rows="3"
-            ></textarea>
-          </div>
-
-          <!-- Error Message -->
-          <div v-if="errorMessage" class="error-box">
-            {{ errorMessage }}
-          </div>
-
-          <!-- Actions -->
-          <div class="modal-actions">
-            <button type="button" class="btn-cancel" @click="closeModal">
-              Cancel
-            </button>
-            <button type="submit" class="btn-create" :disabled="isSubmitting">
+          <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+            <button
+              type="submit"
+              :disabled="isSubmitting"
+              class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
+            >
               {{ isSubmitting ? 'Saving...' : (isEdit ? 'Update' : 'Create') }}
+            </button>
+            <button
+              type="button"
+              @click="closeModal"
+              class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+            >
+              Cancel
             </button>
           </div>
         </form>
@@ -133,6 +187,7 @@ export default {
         password: '',
         phone: '',
         branchId: '',
+        role: '',
         address: '',
       },
       branches: [],
@@ -156,6 +211,7 @@ export default {
               password: '',
               phone: this.staff.phone || '',
               branchId: this.staff.branchId,
+              role: this.staff.role || '',
               address: this.staff.address || '',
             }
           } else {
@@ -166,6 +222,7 @@ export default {
               password: '',
               phone: '',
               branchId: '',
+              role: '',
               address: '',
             }
           }
@@ -235,134 +292,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-.modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width:  100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-}
-
-.modal-box {
-  background: white;
-  border-radius: 16px;
-  width: 90%;
-  max-width: 600px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, #ff8c42, #ff6b35);
-  color: white;
-  border-radius: 16px 16px 0 0;
-}
-
-.modal-header h3 {
-  margin:  0;
-  font-size: 1.5rem;
-}
-
-.modal-close {
-  background: transparent;
-  border: none;
-  color: white;
-  font-size: 2rem;
-  cursor: pointer;
-  line-height: 1;
-  padding: 0;
-  width: 32px;
-  height: 32px;
-}
-
-.modal-body {
-  padding: 2rem;
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 1rem;
-}
-
-.form-group label {
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-  color: #333;
-}
-
-.form-group input,
-.form-group select,
-.form-group textarea {
-  padding:  0.75rem;
-  border: 1px solid #ddd;
-  border-radius:  8px;
-  font-size: 1rem;
-}
-
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-  outline: none;
-  border-color: #ff8c42;
-}
-
-.error-box {
-  background: #fee;
-  color:  #c33;
-  padding:  1rem;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-}
-
-.modal-actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-  margin-top: 1.5rem;
-}
-
-.btn-cancel,
-.btn-create {
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor:  pointer;
-}
-
-.btn-cancel {
-  background: #e0e0e0;
-  color: #333;
-}
-
-.btn-create {
-  background: linear-gradient(135deg, #ff8c42, #ff6b35);
-  color: white;
-}
-
-.btn-create:disabled {
-  opacity:  0.5;
-  cursor: not-allowed;
-}
-</style>

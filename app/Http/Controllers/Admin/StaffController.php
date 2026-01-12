@@ -19,7 +19,7 @@ class StaffController extends Controller
     {
         $staffs = DB::table('users')
             ->leftJoin('branches', 'users.branch_id', '=', 'branches.id')
-            ->where('users.role', 'STAFF')
+            ->whereIn('users.role', ['BRANCH_MANAGER', 'STAFF'])
             ->select(
                 'users.id',
                 'users.username',
@@ -28,6 +28,7 @@ class StaffController extends Controller
                 'users.phone_number',
                 'users.address',
                 'users.branch_id',
+                'users.role',
                 'users.is_active',
                 'branches.name as branch_name'
             )
@@ -88,6 +89,7 @@ class StaffController extends Controller
             'phone' => 'nullable|string|max:30',
             'address' => 'nullable|string|max:255',
             'branchId' => 'required|exists:branches,id',
+            'role' => 'required|in:BRANCH_MANAGER,STAFF',
         ]);
 
         $staffId = DB::table('users')->insertGetId([
@@ -95,7 +97,7 @@ class StaffController extends Controller
             'email' => $request->email,
             'password_hash' => password_hash($request->password, PASSWORD_BCRYPT),
             'full_name' => $request->fullName,
-            'role' => 'STAFF',
+            'role' => $request->role,
             'phone_number' => $request->phone,
             'address' => $request->address,
             'branch_id' => $request->branchId,
@@ -123,6 +125,7 @@ class StaffController extends Controller
             'phone' => 'nullable|string|max:30',
             'address' => 'nullable|string|max:255',
             'branchId' => 'required|exists:branches,id',
+            'role' => 'required|in:BRANCH_MANAGER,STAFF',
             'isActive' => 'required|boolean',
         ]);
 
@@ -133,6 +136,7 @@ class StaffController extends Controller
             'phone_number' => $request->phone,
             'address' => $request->address,
             'branch_id' => $request->branchId,
+            'role' => $request->role,
             'is_active' => $request->isActive,
             'updated_at' => now(),
         ];
