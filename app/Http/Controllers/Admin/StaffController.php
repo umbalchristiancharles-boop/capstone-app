@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\User; // ADD THIS IMPORT
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class StaffController extends Controller
 {
@@ -14,46 +16,130 @@ class StaffController extends Controller
     // ==========================================
 
     /**
-     * Get all staff (JSON) - filtered by role
-     * Branch managers only see their own branch's staff
-     * Owners see all staff
+     * Get all staff grouped by branch (JSON)
+     * Branch managers only see their own branch
+     * Owners/Admins see all branches with their managers and staff
      */
     public function apiIndex()
     {
         $user = Auth::user();
-        
+
         if (!$user) {
             return response()->json([
-                'ok' => false,
+                'success' => false,
                 'message' => 'Not authenticated'
             ], 401);
         }
-        
-        \Log::info('Staff API called by user:', [
+
+        Log::info('Staff API called by user:', [
             'user_id' => $user->id,
             'username' => $user->username,
             'role' => $user->role,
             'branch_id' => $user->branch_id
         ]);
-        
-        $query = DB::table('users')
-            ->leftJoin('branches', 'users.branch_id', '=', 'branches.id');
-        
-        // If user is a BRANCH_MANAGER, only show STAFF from their branch
-        if ($user->role === 'BRANCH_MANAGER') {
-            $query->where('users.role', 'STAFF')
-                  ->where('users.branch_id', $user->branch_id);
-            \Log::info('Branch manager filter applied:', [
-                'looking_for_role' => 'STAFF',
-                'in_branch' => $user->branch_id
+
+        try {
+            $branchesQuery = DB::table('branches')
+                ->where('is_active', 1);
+
+            // If branch manager, only show their branch
+            if ($user->role === 'BRANCH_MANAGER') {
+                $branchesQuery->where('branches.id', $user->branch_id);
+            }
+
+            $branches = $branchesQuery
+                ->orderBy('name')
+                ->get();
+
+            $result = [];
+
+            foreach ($branches as $branch) {
+                // Get branch manager for this branch
+                $branchManager = DB:: table('users')
+                    ->where('branch_id', $branch->id)
+                    ->where('role', 'BRANCH_MANAGER')
+                    ->where('is_active', 1)
+                    ->whereNull('deleted_at') // Exclude soft deleted
+                    ->first();
+
+                // Get staff for this branch
+                $staff = DB::table('users')
+                    ->where('branch_id', $branch->id)
+                    ->where('role', 'STAFF')
+                    ->where('is_active', 1)
+                    ->whereNull('deleted_at') // Exclude soft deleted
+                    ->get();
+
+                // Format branch manager data
+                $managerData = null;
+                if ($branchManager) {
+                    $managerData = [
+                        'id' => $branchManager->id,
+                        'username' => $branchManager->username,
+                        'full_name' => $branchManager->full_name,
+                        'email' => $branchManager->email,
+                        'phone_number' => $branchManager->phone_number,
+                        'address' => $branchManager->address,
+                        'role' => 'BRANCH_MANAGER',
+                        'is_active' => $branchManager->is_active,
+                    ];
+                }
+
+                // Format staff data
+                $staffData = $staff->map(function($s) {
+                    return [
+                        'id' => $s->id,
+                        'username' => $s->username,
+                        'full_name' => $s->full_name,
+                        'email' => $s->email,
+                        'phone_number' => $s->phone_number,
+                        'address' => $s->address,
+                        'role' => 'STAFF',
+                        'is_active' => $s->is_active,
+                    ];
+                })->toArray();
+
+                // Only include branches that have manager or staff
+                if ($branchManager || count($staffData) > 0) {
+                    $result[] = [
+                        'branch_id' => $branch->id,
+                        'branch_name' => $branch->name,
+                        'branch_code' => $branch->code,
+                        'branch_address' => $branch->address,
+                        'branch_manager' => $managerData,
+                        'staff' => $staffData
+                    ];
+                }
+            }
+
+            Log::info('Branches with staff count:', ['count' => count($result)]);
+
+            return response()->json([
+                'success' => true,
+                'data' => $result
             ]);
-        } else {
-            // If user is OWNER, show all users (BRANCH_MANAGER and STAFF)
-            $query->whereIn('users.role', ['BRANCH_MANAGER', 'STAFF']);
-            \Log::info('Owner filter applied: showing BRANCH_MANAGER and STAFF');
+
+        } catch (\Exception $e) {
+            Log::error('Staff fetch error:  ' . $e->getMessage());
+            Log::error('Stack trace:  ' . $e->getTraceAsString());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch staff data:  ' . $e->getMessage()
+            ], 500);
         }
-        
-        $staffs = $query
+    }
+
+    /**
+     * Get single staff (JSON)
+     */
+    public function apiShow($id)
+    {
+        $staff = DB::table('users')
+            ->leftJoin('branches', 'users.branch_id', '=', 'branches.id')
+            ->where('users.id', $id)
+            ->whereIn('users. role', ['BRANCH_MANAGER', 'STAFF'])
+            ->whereNull('users.deleted_at') // Exclude soft deleted
             ->select(
                 'users.id',
                 'users.username',
@@ -66,49 +152,18 @@ class StaffController extends Controller
                 'users.is_active',
                 'branches.name as branch_name'
             )
-            ->orderBy('users.created_at', 'desc')
-            ->get();
-
-        \Log::info('Query result count:', ['count' => $staffs->count()]);
-
-        return response()->json([
-            'ok' => true,
-            'staff' => $staffs
-        ]);
-    }
-
-    /**
-     * Get single staff (JSON)
-     */
-    public function apiShow($id)
-    {
-        $staff = DB::table('users')
-            ->leftJoin('branches', 'users.branch_id', '=', 'branches.id')
-            ->where('users.id', $id)
-            ->where('users.role', 'STAFF')
-            ->select(
-                'users.id',
-                'users.username',
-                'users.full_name',
-                'users.email',
-                'users.phone_number',
-                'users.address',
-                'users.branch_id',
-                'users.is_active',
-                'branches.name as branch_name'
-            )
             ->first();
 
         if (!$staff) {
             return response()->json([
-                'ok' => false,
+                'success' => false,
                 'message' => 'Staff not found'
             ], 404);
         }
 
         return response()->json([
-            'ok' => true,
-            'staff' => $staff
+            'success' => true,
+            'data' => $staff
         ]);
     }
 
@@ -117,36 +172,65 @@ class StaffController extends Controller
      */
     public function apiStore(Request $request)
     {
-        $request->validate([
-            'username' => 'required|string|max:50|unique:users,username',
-            'email' => 'required|email|max: 120|unique:users,email',
-            'password' => 'required|string|min:6',
-            'fullName' => 'required|string|max:150',
-            'phone' => 'nullable|string|max:30',
-            'address' => 'nullable|string|max:255',
-            'branchId' => 'required|exists:branches,id',
-            'role' => 'required|in:BRANCH_MANAGER,STAFF',
-        ]);
+        try {
+            $request->validate([
+                'username' => 'required|string|max:50|unique: users,username',
+                'email' => 'required|email|max:120|unique:users,email',
+                'password' => 'required|string|min: 6',
+                'fullName' => 'required|string|max:150',
+                'phone' => 'nullable|string|max:30',
+                'address' => 'nullable|string|max:255',
+                'branchId' => 'required|exists:branches,id',
+                'role' => 'required|in:BRANCH_MANAGER,STAFF',
+            ]);
 
-        $staffId = DB::table('users')->insertGetId([
-            'username' => $request->username,
-            'email' => $request->email,
-            'password_hash' => password_hash($request->password, PASSWORD_BCRYPT),
-            'full_name' => $request->fullName,
-            'role' => $request->role,
-            'phone_number' => $request->phone,
-            'address' => $request->address,
-            'branch_id' => $request->branchId,
-            'is_active' => 1,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+            // Check if branch already has a manager (if creating BRANCH_MANAGER)
+            if ($request->role === 'BRANCH_MANAGER') {
+                $existingManager = DB::table('users')
+                    ->where('branch_id', $request->branchId)
+                    ->where('role', 'BRANCH_MANAGER')
+                    ->where('is_active', 1)
+                    ->whereNull('deleted_at') // Exclude soft deleted
+                    ->exists();
 
-        return response()->json([
-            'ok' => true,
-            'message' => 'Staff account created successfully! ',
-            'staff' => ['id' => $staffId]
-        ], 201);
+                if ($existingManager) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'This branch already has a manager'
+                    ], 400);
+                }
+            }
+
+            $staffId = DB::table('users')->insertGetId([
+                'username' => $request->username,
+                'email' => $request->email,
+                'password_hash' => password_hash($request->password, PASSWORD_BCRYPT),
+                'full_name' => $request->fullName,
+                'role' => $request->role,
+                'phone_number' => $request->phone,
+                'address' => $request->address,
+                'branch_id' => $request->branchId,
+                'is_active' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            Log::info('Staff created:', ['id' => $staffId, 'role' => $request->role]);
+
+            return response()->json([
+                'success' => true,
+                'message' => ($request->role === 'BRANCH_MANAGER' ? 'Branch Manager' :  'Staff') . ' account created successfully! ',
+                'data' => ['id' => $staffId]
+            ], 201);
+
+        } catch (\Exception $e) {
+            Log::error('Staff creation error: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create staff account'
+            ], 500);
+        }
     }
 
     /**
@@ -154,52 +238,114 @@ class StaffController extends Controller
      */
     public function apiUpdate(Request $request, $id)
     {
-        $request->validate([
-            'username' => 'required|string|max:50|unique:users,username,' . $id,
-            'email' => 'required|email|max:120|unique:users,email,' .  $id,
-            'fullName' => 'required|string|max:150',
-            'phone' => 'nullable|string|max:30',
-            'address' => 'nullable|string|max:255',
-            'branchId' => 'required|exists:branches,id',
-            'role' => 'required|in:BRANCH_MANAGER,STAFF',
-            'isActive' => 'required|boolean',
-        ]);
+        try {
+            $request->validate([
+                'username' => 'required|string|max:50|unique: users,username,' . $id,
+                'email' => 'required|email|max:120|unique:users,email,' .  $id,
+                'fullName' => 'required|string|max:150',
+                'phone' => 'nullable|string|max:30',
+                'address' => 'nullable|string|max:255',
+                'branchId' => 'required|exists:branches,id',
+                'role' => 'required|in:BRANCH_MANAGER,STAFF',
+                'isActive' => 'required|boolean',
+            ]);
 
-        $updateData = [
-            'username' => $request->username,
-            'email' => $request->email,
-            'full_name' => $request->fullName,
-            'phone_number' => $request->phone,
-            'address' => $request->address,
-            'branch_id' => $request->branchId,
-            'role' => $request->role,
-            'is_active' => $request->isActive,
-            'updated_at' => now(),
-        ];
+            // Check if branch already has a manager (if changing to BRANCH_MANAGER)
+            if ($request->role === 'BRANCH_MANAGER') {
+                $existingManager = DB::table('users')
+                    ->where('branch_id', $request->branchId)
+                    ->where('role', 'BRANCH_MANAGER')
+                    ->where('is_active', 1)
+                    ->where('id', '!=', $id)
+                    ->whereNull('deleted_at') // Exclude soft deleted
+                    ->exists();
 
-        if ($request->filled('password')) {
-            $updateData['password_hash'] = password_hash($request->password, PASSWORD_BCRYPT);
+                if ($existingManager) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'This branch already has a manager'
+                    ], 400);
+                }
+            }
+
+            $updateData = [
+                'username' => $request->username,
+                'email' => $request->email,
+                'full_name' => $request->fullName,
+                'phone_number' => $request->phone,
+                'address' => $request->address,
+                'branch_id' => $request->branchId,
+                'role' => $request->role,
+                'is_active' => $request->isActive,
+                'updated_at' => now(),
+            ];
+
+            if ($request->filled('password')) {
+                $updateData['password_hash'] = password_hash($request->password, PASSWORD_BCRYPT);
+            }
+
+            DB:: table('users')->where('id', $id)->update($updateData);
+
+            Log::info('Staff updated:', ['id' => $id]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Account updated successfully!'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Staff update error: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update account'
+            ], 500);
         }
-
-        DB:: table('users')->where('id', $id)->update($updateData);
-
-        return response()->json([
-            'ok' => true,
-            'message' => 'Staff account updated successfully!'
-        ]);
     }
 
     /**
-     * Delete staff (JSON)
+     * Delete staff (SOFT DELETE - moves to deleted_at)
      */
     public function apiDestroy($id)
     {
-        DB::table('users')->where('id', $id)->where('role', 'STAFF')->delete();
+        try {
+            // Use Eloquent model for soft delete
+            $user = User::findOrFail($id);
 
-        return response()->json([
-            'ok' => true,
-            'message' => 'Staff account deleted successfully!'
-        ]);
+            // Prevent deleting owner accounts
+            if ($user->role === 'OWNER') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot delete owner account'
+                ], 403);
+            }
+
+            // Check if user is BRANCH_MANAGER or STAFF
+            if (! in_array($user->role, ['BRANCH_MANAGER', 'STAFF'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid user role'
+                ], 400);
+            }
+
+            // Soft delete (sets deleted_at timestamp)
+            $user->delete();
+
+            Log::info('Staff soft deleted:', ['id' => $id, 'role' => $user->role]);
+
+            return response()->json([
+                'success' => true,
+                'message' => ($user->role === 'BRANCH_MANAGER' ? 'Branch Manager' : 'Staff') . ' account moved to deleted history successfully!'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Staff deletion error: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete account:  ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -207,15 +353,25 @@ class StaffController extends Controller
      */
     public function apiBranches()
     {
-        $branches = DB::table('branches')
-            ->where('is_active', 1)
-            ->select('id', 'name')
-            ->orderBy('name')
-            ->get();
+        try {
+            $branches = DB::table('branches')
+                ->where('is_active', 1)
+                ->select('id', 'name', 'code', 'address')
+                ->orderBy('name')
+                ->get();
 
-        return response()->json([
-            'ok' => true,
-            'branches' => $branches
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $branches
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Branches fetch error: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch branches'
+            ], 500);
+        }
     }
 }

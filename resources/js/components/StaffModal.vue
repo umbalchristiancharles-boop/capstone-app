@@ -34,7 +34,7 @@
               <div class="form-group">
                 <label for="email" class="form-label">Email *</label>
                 <input
-                  v-model="form.email"
+                  v-model="form. email"
                   type="email"
                   id="email"
                   class="form-input"
@@ -93,7 +93,7 @@
                   <option value="" disabled>Select Branch</option>
                   <option
                     v-for="branch in branches"
-                    :key="branch.id"
+                    :key="branch. id"
                     :value="branch.id"
                   >
                     {{ branch.name }}
@@ -120,6 +120,19 @@
                 <div class="form-input" style="background-color: #f3f4f6; padding: 0.5rem; border-radius: 8px; display: flex; align-items: center;">
                   Staff
                 </div>
+              </div>
+
+              <!-- Status (Edit Only) -->
+              <div v-if="isEdit" class="form-group">
+                <label for="isActive" class="form-label">Status</label>
+                <select
+                  v-model="form. isActive"
+                  id="isActive"
+                  class="form-input"
+                >
+                  <option :value="true">Active</option>
+                  <option :value="false">Inactive</option>
+                </select>
               </div>
             </div>
 
@@ -155,7 +168,7 @@
               :disabled="isSubmitting"
               class="btn btn-primary"
             >
-              {{ isSubmitting ? 'Saving...' : (isEdit ? 'Update' : 'Create') }}
+              {{ isSubmitting ? 'Saving.. .' : (isEdit ? 'Update' :  'Create') }}
             </button>
           </div>
         </form>
@@ -188,8 +201,9 @@ export default {
         password: '',
         phone: '',
         branchId: '',
-        role: '',
+        role:  '',
         address: '',
+        isActive: true
       },
       branches: [],
       errorMessage: '',
@@ -200,22 +214,24 @@ export default {
     show:  {
       immediate: true,
       async handler(newVal) {
-
         if (newVal) {
           await this.loadBranches()
 
           if (this.isEdit && this.staff) {
+            // Populate form with existing staff data
             this.form = {
-              username: this.staff.username,
-              email: this.staff.email,
-              fullName: this.staff.fullName,
-              password: '',
-              phone: this.staff.phone || '',
-              branchId: this.staff.branchId,
-              role: this.staff.role || '',
+              username: this.staff.username || '',
+              email: this.staff.email || '',
+              fullName: this.staff.full_name || '',
+              password:  '',
+              phone: this.staff. phone_number || '',
+              branchId: this.staff.branch_id || '',
+              role: this. staff.role || '',
               address: this.staff.address || '',
+              isActive: this.staff.is_active !== undefined ? Boolean(this.staff.is_active) : true
             }
           } else {
+            // Reset form for new staff
             this.form = {
               username: '',
               email: '',
@@ -225,6 +241,7 @@ export default {
               branchId: '',
               role: this.branchManagerMode ? 'STAFF' : '',
               address: '',
+              isActive: true
             }
           }
 
@@ -235,17 +252,19 @@ export default {
   },
   methods: {
     async loadBranches() {
-
-        try {
+      try {
         const res = await axios.get('/api/admin/branches', {
           withCredentials: true,
         })
 
-        if (res.data.ok) {
-          this.branches = res.data.branches
-          console.log('📊 Branches count:', this.branches.length)
-        } else {
+        console.log('Branches API response:', res.data)
 
+        // Updated to match new API format
+        if (res.data.success) {
+          this.branches = res.data.data
+          console.log('📊 Branches loaded:', this.branches. length)
+        } else {
+          console.error('Failed to load branches:', res.data.message)
         }
       } catch (e) {
         console.error('💥 Error loading branches:', e)
@@ -260,34 +279,47 @@ export default {
 
       try {
         const url = this.isEdit
-          ? `/api/admin/staff/${this.staff.id}`
+          ?  `/api/admin/staff/${this.staff.id}`
           : '/api/admin/staff'
 
         const method = this.isEdit ? 'put' : 'post'
+
+        console.log('Submitting form:', this.form)
 
         const res = await axios[method](url, this.form, {
           withCredentials: true,
         })
 
-        if (res.data.ok) {
+        console.log('Submit response:', res.data)
+
+        // Updated to match new API format
+        if (res.data.success) {
           this.$emit('success', res.data.message || 'Success!')
           this.closeModal()
         } else {
           this.errorMessage = res.data.message || 'An error occurred.'
         }
       } catch (e) {
-        if (e.response?. data?.errors) {
+        console.error('Submit error:', e)
+
+        if (e.response?.data?.errors) {
+          // Laravel validation errors
           const errors = Object.values(e.response.data.errors).flat()
           this.errorMessage = errors.join(', ')
+        } else if (e. response?.data?.message) {
+          // API error message
+          this.errorMessage = e.response.data.message
         } else {
-          this.errorMessage = e.response?.data?.message || 'An error occurred.  Please try again.'
+          // Generic error
+          this.errorMessage = 'An error occurred. Please try again.'
         }
       } finally {
-        this. isSubmitting = false
+        this.isSubmitting = false
       }
     },
 
     closeModal() {
+      this.errorMessage = ''
       this.$emit('close')
     }
   }
@@ -296,7 +328,7 @@ export default {
 
 <style scoped>
 .modal-overlay {
-  position: fixed;
+  position:  fixed;
   inset: 0;
   z-index: 50;
   background: rgba(0, 0, 0, 0.4);
@@ -326,7 +358,7 @@ export default {
 .modal-card {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.95));
   border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(255, 126, 95, 0.25);
+  box-shadow:  0 20px 60px rgba(255, 126, 95, 0.25);
   overflow: hidden;
   animation: slideUp 0.3s ease;
 }
@@ -353,7 +385,7 @@ export default {
 
 .modal-title {
   font-size: 1.25rem;
-  font-weight: 700;
+  font-weight:  700;
   color: white;
   margin: 0;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
@@ -385,7 +417,7 @@ export default {
 }
 
 .form-grid {
-  display: grid;
+  display:  grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 1rem;
   margin-bottom: 1rem;
@@ -444,7 +476,7 @@ export default {
   background: rgba(239, 68, 68, 0.1);
   color: #dc2626;
   padding: 1rem;
-  border-radius: 8px;
+  border-radius:  8px;
   font-size: 0.875rem;
   font-weight: 600;
   border-left: 4px solid #dc2626;
@@ -478,7 +510,7 @@ export default {
   box-shadow: 0 4px 12px rgba(255, 126, 95, 0.3);
 }
 
-.btn-primary:hover:not(:disabled) {
+btn-primary:hover:not(:disabled) {
   background: linear-gradient(135deg, #ff8c42, #ff6b47);
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(255, 126, 95, 0.4);
@@ -490,7 +522,7 @@ export default {
 }
 
 .btn-secondary {
-  background: white;
+  background:  white;
   color: #374151;
   border: 2px solid #e5e7eb;
 }
