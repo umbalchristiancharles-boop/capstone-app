@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
@@ -18,9 +20,7 @@ class AuthController extends Controller
         ]);
 
         // Hanapin user batay sa username
-        $user = DB::table('users')
-            ->where('username', $credentials['username'])
-            ->first();
+        $user = User::where('username', $credentials['username'])->first();
 
         if (!$user) {
             return response()->json([
@@ -30,8 +30,22 @@ class AuthController extends Controller
         }
 
         // DEMO ONLY:
-        // Direct compare sa password_hash column (plain text, hal. Admin@1234)
-        if (!isset($user->password_hash) || $credentials['password'] !== $user->password_hash) {
+        // Check password - supports both hashed (bcrypt) and plain text for backwards compatibility
+        $passwordValid = false;
+        
+        if (!isset($user->password_hash)) {
+            $passwordValid = false;
+        } else {
+            try {
+                // Try bcrypt check first (works for both hashed and plain text)
+                $passwordValid = Hash::check($credentials['password'], $user->password_hash);
+            } catch (\Exception $e) {
+                // If bcrypt fails, try plain text comparison
+                $passwordValid = $credentials['password'] === $user->password_hash;
+            }
+        }
+        
+        if (!$passwordValid) {
             return response()->json([
                 'ok'      => false,
                 'message' => 'Invalid username or password',
@@ -45,6 +59,12 @@ class AuthController extends Controller
         return response()->json([
             'ok'      => true,
             'message' => 'Login successful',
+            'user'    => [
+                'id'       => $user->id,
+                'username' => $user->username,
+                'role'     => $user->role,
+                'full_name' => $user->full_name,
+            ],
         ]);
     }
 

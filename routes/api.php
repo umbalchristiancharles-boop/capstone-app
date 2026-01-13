@@ -19,16 +19,16 @@ Route::middleware('web')->group(function () {
     Route::post('/upload-avatar',  [AuthController:: class, 'uploadAvatar']);
 
     Route::get('/owner-dashboard', [OwnerDashboardController::class, 'index']);
-});
 
-// ==========================================
-// STAFF MANAGEMENT API (NO CSRF!)
-// ==========================================
-Route:: prefix('admin')->group(function () {
-    Route::get('/staff',           [StaffController::class, 'apiIndex']);
-    Route::get('/staff/{id}',      [StaffController::class, 'apiShow']);
-    Route::post('/staff',          [StaffController:: class, 'apiStore']);
-    Route::put('/staff/{id}',      [StaffController:: class, 'apiUpdate']);
-    Route::delete('/staff/{id}',   [StaffController:: class, 'apiDestroy']);
-    Route::get('/branches',        [StaffController::class, 'apiBranches']);
+    // ==========================================
+    // STAFF MANAGEMENT API
+    // ==========================================
+    Route:: prefix('admin')->group(function () {
+        Route::get('/staff',           [StaffController::class, 'apiIndex']);
+        Route::get('/staff/{id}',      [StaffController::class, 'apiShow']);
+        Route::post('/staff',          [StaffController:: class, 'apiStore']);
+        Route::put('/staff/{id}',      [StaffController:: class, 'apiUpdate']);
+        Route::delete('/staff/{id}',   [StaffController:: class, 'apiDestroy']);
+        Route::get('/branches',        [StaffController::class, 'apiBranches']);
+    });
 });

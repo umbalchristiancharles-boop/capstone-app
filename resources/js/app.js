@@ -3,8 +3,10 @@ import { createRouter, createWebHistory } from 'vue-router'
 import App from './app.vue'
 import Index from './components/index.vue'
 import AdminPanel from './components/adminpanel.vue'
+import ManagerPanel from './components/ManagerPanel.vue'
+import StaffPanel from './components/StaffPanel.vue'
 import adminlogin from './components/adminlogin.vue'
-import StaffList from './components/StaffList.vue'  // ← ADD THIS LINE
+import StaffList from './components/StaffList.vue'
 import axios from 'axios'
 
 axios.defaults.baseURL = 'http://localhost:8000'
@@ -14,13 +16,16 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/', component: Index },
-    { path: '/admin-panel', component: AdminPanel },
+    { path: '/login', component: adminlogin },
     { path: '/admin-login', component: adminlogin },
+    { path: '/admin-panel', component: AdminPanel, meta: { requiresAuth: true } },
+    { path: '/manager-panel', component: ManagerPanel, meta: { requiresAuth: true } },
+    { path: '/staff-panel', component: StaffPanel, meta: { requiresAuth: true } },
     {
       path:  '/admin/staff-management',
       component: StaffList,
       meta: { requiresAuth: true }
-    },  // ← ADD THESE 5 LINES
+    },
   ],
 })
 

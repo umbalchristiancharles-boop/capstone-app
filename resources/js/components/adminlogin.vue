@@ -87,24 +87,32 @@ async function handleLogin() {
   isLoading.value = true
 
   try {
-        const res = await axios.post(
-        '/api/login',
-        {
-            username: username.value,
-            password: password.value,
-        },
-        {
-            withCredentials: true,
-        }
-        )
-
+    const res = await axios.post(
+      '/api/login',
+      {
+        username: username.value,
+        password: password.value,
+      },
+      {
+        withCredentials: true,
+      }
+    )
 
     if (res.data.ok) {
-      overlayText.value = 'Loading admin panel...'
+      overlayText.value = 'Loading panel...'
+      
+      // Determine redirect based on user role
+      let redirectPath = '/admin-panel'
+      if (res.data.user && res.data.user.role === 'BRANCH_MANAGER') {
+        redirectPath = '/manager-panel'
+      } else if (res.data.user && res.data.user.role === 'STAFF') {
+        redirectPath = '/staff-panel'
+      }
+      
       setTimeout(() => {
         showOverlay.value = true
         setTimeout(() => {
-          router.push('/admin-panel')
+          router.push(redirectPath)
         }, 600)
       }, 400)
     } else {

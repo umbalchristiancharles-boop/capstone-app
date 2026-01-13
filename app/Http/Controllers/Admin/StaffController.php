@@ -4,22 +4,56 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class StaffController extends Controller
 {
     // ==========================================
-    // API METHODS (for Vue. js)
+    // API METHODS (for Vue.js)
     // ==========================================
 
     /**
-     * Get all staff (JSON)
+     * Get all staff (JSON) - filtered by role
+     * Branch managers only see their own branch's staff
+     * Owners see all staff
      */
     public function apiIndex()
     {
-        $staffs = DB::table('users')
-            ->leftJoin('branches', 'users.branch_id', '=', 'branches.id')
-            ->whereIn('users.role', ['BRANCH_MANAGER', 'STAFF'])
+        $user = Auth::user();
+        
+        if (!$user) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Not authenticated'
+            ], 401);
+        }
+        
+        \Log::info('Staff API called by user:', [
+            'user_id' => $user->id,
+            'username' => $user->username,
+            'role' => $user->role,
+            'branch_id' => $user->branch_id
+        ]);
+        
+        $query = DB::table('users')
+            ->leftJoin('branches', 'users.branch_id', '=', 'branches.id');
+        
+        // If user is a BRANCH_MANAGER, only show STAFF from their branch
+        if ($user->role === 'BRANCH_MANAGER') {
+            $query->where('users.role', 'STAFF')
+                  ->where('users.branch_id', $user->branch_id);
+            \Log::info('Branch manager filter applied:', [
+                'looking_for_role' => 'STAFF',
+                'in_branch' => $user->branch_id
+            ]);
+        } else {
+            // If user is OWNER, show all users (BRANCH_MANAGER and STAFF)
+            $query->whereIn('users.role', ['BRANCH_MANAGER', 'STAFF']);
+            \Log::info('Owner filter applied: showing BRANCH_MANAGER and STAFF');
+        }
+        
+        $staffs = $query
             ->select(
                 'users.id',
                 'users.username',
@@ -34,6 +68,8 @@ class StaffController extends Controller
             )
             ->orderBy('users.created_at', 'desc')
             ->get();
+
+        \Log::info('Query result count:', ['count' => $staffs->count()]);
 
         return response()->json([
             'ok' => true,

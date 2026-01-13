@@ -5,19 +5,17 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class UserProfile extends Model
+class Branch extends Model
 {
     use HasFactory;
 
-    protected $table = 'user_profiles';
+    protected $table = 'branches';
 
     protected $fillable = [
-        'user_id',
-        'position_title',
-        'bio',
-        'branch_name_label',
-        'emergency_contact',
-        'updated_by',
+        'code',
+        'name',
+        'address',
+        'is_active',
     ];
 
     protected function casts(): array
@@ -29,10 +27,10 @@ class UserProfile extends Model
     }
 
     /**
-     * Relationship: Profile belongs to a user
+     * Relationship: Branch has many users
      */
-    public function user()
+    public function users()
     {
-        return $this->belongsTo(User:: class, 'user_id');
+        return $this->hasMany(User::class, 'branch_id');
     }
 }
