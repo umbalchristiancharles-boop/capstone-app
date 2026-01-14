@@ -1,24 +1,36 @@
 <template>
   <div class="staff-management-container">
-    <!-- Header Section -->
+    <!-- Header Section with Back + Actions -->
     <div class="staff-header">
-  <h2 class="staff-title">Staff Management</h2>
-  <div class="staff-header-actions">
-    <button @click="openCreateModal" class="btn-create-staff">
-      <span class="plus-icon">+</span>
-      Create Staff Account
-    </button>
+      <div class="staff-header-left">
+        <button
+          @click="$router.push('/admin-panel')"
+          class="btn-back-dashboard"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="back-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M15 19l-7-7 7-7" />
+          </svg>
+          Back to Dashboard
+        </button>
 
-    <!-- Deleted History link button -->
-    <button
-      class="btn-deleted-history"
-      @click="$router.push('/admin/deleted-staff')"
-    >
-      🗑️ Deleted History
-    </button>
-  </div>
-</div>
+        <h2 class="staff-title">Staff Management</h2>
+      </div>
 
+      <div class="staff-header-actions">
+        <button @click="openCreateModal" class="btn-create-staff">
+          <span class="plus-icon">+</span>
+          Create Staff Account
+        </button>
+
+        <button
+          class="btn-deleted-history"
+          @click="$router.push('/admin/deleted-staff')"
+        >
+          🗑️ Deleted History
+        </button>
+      </div>
+    </div>
 
     <!-- Alert Messages -->
     <transition name="fade">
@@ -34,7 +46,6 @@
 
     <!-- Branches List -->
     <div v-else class="branches-container">
-      <!-- Each Branch Section -->
       <div v-for="branch in branches" :key="branch.branch_id" class="branch-section">
         <!-- Branch Header -->
         <div class="branch-header">
@@ -55,7 +66,7 @@
               <div class="user-info-grid">
                 <div class="info-item">
                   <span class="info-label">Username</span>
-                  <span class="info-value">{{ branch. branch_manager.username }}</span>
+                  <span class="info-value">{{ branch.branch_manager.username }}</span>
                 </div>
                 <div class="info-item">
                   <span class="info-label">Full Name</span>
@@ -71,7 +82,7 @@
                 </div>
               </div>
               <div class="user-actions">
-                <button @click="editStaff(branch. branch_manager)" class="btn-action btn-edit">
+                <button @click="editStaff(branch.branch_manager)" class="btn-action btn-edit">
                   Edit
                 </button>
                 <button
@@ -79,7 +90,7 @@
                   class="btn-action btn-delete"
                   :disabled="deletingIds.includes(branch.branch_manager.id)"
                 >
-                  {{ deletingIds. includes(branch.branch_manager. id) ? '⏳' : 'Delete' }}
+                  {{ deletingIds.includes(branch.branch_manager.id) ? '⏳' : 'Delete' }}
                 </button>
               </div>
             </div>
@@ -100,7 +111,7 @@
             </div>
 
             <!-- Staff List -->
-            <div v-if="branch.staff. length > 0" class="staff-list">
+            <div v-if="branch.staff.length > 0" class="staff-list">
               <div
                 v-for="staff in branch.staff"
                 :key="staff.id"
@@ -113,7 +124,7 @@
                   </div>
                   <div class="info-item">
                     <span class="info-label">Full Name</span>
-                    <span class="info-value">{{ staff. full_name }}</span>
+                    <span class="info-value">{{ staff.full_name }}</span>
                   </div>
                   <div class="info-item">
                     <span class="info-label">Email</span>
@@ -166,12 +177,12 @@
 
 <script>
 import axios from 'axios'
-import StaffModal from './StaffModal.vue';
+import StaffModal from './StaffModal.vue'
 
 export default {
   name: 'StaffList',
   components: {
-    StaffModal
+    StaffModal,
   },
   data() {
     return {
@@ -182,111 +193,105 @@ export default {
       alertMessage: '',
       alertType: 'success',
       deletingIds: [],
-    };
+    }
   },
   mounted() {
-    this.fetchStaff();
+    this.fetchStaff()
   },
   methods: {
     async fetchStaff() {
-      this.loading = true;
-      this.alertMessage = '';
+      this.loading = true
+      this.alertMessage = ''
 
       try {
-        console.log('Fetching staff grouped by branch...');
-        const res = await axios.get('/api/admin/staff');
+        const res = await axios.get('/api/admin/staff')
 
         if (res.status === 401 || res.data?.status === 401) {
-          this.showAlert('Not authenticated. Please login again.', 'error');
+          this.showAlert('Not authenticated. Please login again.', 'error')
           setTimeout(() => {
-            window.location.href = '/login';
-          }, 2000);
-          return;
+            window.location.href = '/login'
+          }, 2000)
+          return
         }
 
-        const data = res.data;
-        console.log('API Response:', data);
+        const data = res.data
 
         if (data.success) {
-          this.branches = data.data;
-          console.log('Branches loaded:', this.branches.length);
+          this.branches = data.data
         } else {
-          this.showAlert(data.message || 'Failed to load staff data', 'error');
+          this.showAlert(data.message || 'Failed to load staff data', 'error')
         }
       } catch (error) {
-        console.error('Error fetching staff:', error);
-        this.showAlert('Failed to load staff data', 'error');
+        this.showAlert('Failed to load staff data', 'error')
       } finally {
-        this.loading = false;
+        this.loading = false
       }
     },
 
     openCreateModal() {
-      this.selectedStaff = null;
-      this.showModal = true;
+      this.selectedStaff = null
+      this.showModal = true
     },
 
     editStaff(staff) {
-      this.selectedStaff = { ...staff };
-      this.showModal = true;
+      this.selectedStaff = { ...staff }
+      this.showModal = true
     },
 
     async confirmDelete(id, username) {
       if (!confirm(`Are you sure you want to delete "${username}"?`)) {
-        return;
+        return
       }
 
-      this.deletingIds.push(id);
+      this.deletingIds.push(id)
 
       try {
-        const res = await axios.delete(`/api/admin/staff/${id}`);
-        const data = res.data;
+        const res = await axios.delete(`/api/admin/staff/${id}`)
+        const data = res.data
 
         if (res.status === 200 && data.success) {
           this.showAlert(
             data.message || 'Account deleted successfully!',
             'success'
-          );
-          this.fetchStaff();
+          )
+          this.fetchStaff()
         } else {
           this.showAlert(
             data.message || 'Failed to delete account',
             'error'
-          );
+          )
         }
       } catch (error) {
-        console.error('Delete error:', error);
         this.showAlert(
           error.response?.data?.message || 'Failed to delete account',
           'error'
-        );
+        )
       } finally {
-        this.deletingIds = this.deletingIds.filter(delId => delId !== id);
+        this.deletingIds = this.deletingIds.filter(delId => delId !== id)
       }
     },
 
     closeModal() {
-      this.showModal = false;
-      this.selectedStaff = null;
+      this.showModal = false
+      this.selectedStaff = null
     },
 
     handleSaved() {
-      this.closeModal();
-      this.fetchStaff();
-      this.showAlert('Account saved successfully!', 'success');
+      this.closeModal()
+      this.fetchStaff()
+      this.showAlert('Account saved successfully!', 'success')
     },
 
     showAlert(message, type) {
-      this.alertMessage = message;
-      this.alertType = type;
+      this.alertMessage = message
+      this.alertType = type
       setTimeout(() => {
-        this.alertMessage = '';
-      }, 5000);
-    }
-  }
-};
+        this.alertMessage = ''
+      }, 5000)
+    },
+  },
+}
 </script>
-
 
 <style scoped>
 /* Main Container */
@@ -295,7 +300,7 @@ export default {
   padding: 2rem;
   border-radius: 20px;
   min-height: 80vh;
-  box-shadow:  0 10px 40px rgba(255, 126, 95, 0.3);
+  box-shadow: 0 10px 40px rgba(255, 126, 95, 0.3);
 }
 
 /* Header */
@@ -306,6 +311,38 @@ export default {
   margin-bottom: 2rem;
 }
 
+.staff-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.btn-back-dashboard {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: all 0.2s ease;
+}
+
+.btn-back-dashboard:hover {
+  background: rgba(255, 255, 255, 0.32);
+  transform: translateY(-1px);
+}
+
+.back-icon {
+  width: 16px;
+  height: 16px;
+}
+
 .staff-title {
   font-size: 2rem;
   font-weight: 700;
@@ -313,12 +350,18 @@ export default {
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+.staff-header-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
 .btn-create-staff {
   background: rgba(255, 255, 255, 0.95);
   color: #ff7e5f;
   border: none;
   padding: 0.875rem 1.75rem;
-  border-radius:  12px;
+  border-radius: 12px;
   font-weight: 700;
   font-size: 1rem;
   cursor: pointer;
@@ -378,7 +421,7 @@ export default {
 .loading-text {
   color: white;
   font-size: 1.25rem;
-  font-weight:  600;
+  font-weight: 600;
 }
 
 /* Branches Container */
@@ -405,7 +448,7 @@ export default {
   font-size: 1.5rem;
   font-weight: 700;
   color: white;
-  margin:  0;
+  margin: 0;
 }
 
 .branch-code {
@@ -441,7 +484,7 @@ export default {
   font-size: 1rem;
   font-weight: 700;
   color: #ff7e5f;
-  margin:  0;
+  margin: 0;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -487,10 +530,10 @@ export default {
 
 /* User Info Grid */
 .user-info-grid {
-  display:  grid;
+  display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 1.5rem;
-  flex:  1;
+  flex: 1;
 }
 
 .info-item {
@@ -500,7 +543,7 @@ export default {
 }
 
 .info-label {
-  font-size:  0.75rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: #9ca3af;
   text-transform: uppercase;
@@ -508,7 +551,7 @@ export default {
 }
 
 .info-value {
-  font-size:  0.9375rem;
+  font-size: 0.9375rem;
   font-weight: 600;
   color: #1f2937;
 }
@@ -532,11 +575,11 @@ export default {
 
 .btn-edit {
   background: #3b82f6;
-  color:  white;
+  color: white;
 }
 
 .btn-edit:hover {
-  background:  #2563eb;
+  background: #2563eb;
   transform: translateY(-1px);
 }
 
@@ -552,7 +595,7 @@ export default {
 
 .btn-delete:disabled {
   background: #fca5a5;
-  cursor:  not-allowed;
+  cursor: not-allowed;
   opacity: 0.8;
 }
 
@@ -560,7 +603,7 @@ export default {
 .no-manager-notice,
 .no-staff-notice {
   padding: 2rem;
-  text-align:  center;
+  text-align: center;
   color: #9ca3af;
   font-weight: 600;
 }
@@ -568,21 +611,16 @@ export default {
 .no-data-card {
   background: rgba(255, 255, 255, 0.95);
   padding: 3rem;
-  border-radius:  16px;
-  text-align:  center;
-  box-shadow:  0 8px 32px rgba(0, 0, 0, 0.12);
+  border-radius: 16px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
 }
 
 .no-data-card p {
   color: #6b7280;
   font-size: 1.125rem;
   font-weight: 600;
-  margin:  0;
-}
-.staff-header-actions {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
+  margin: 0;
 }
 
 .btn-deleted-history {
@@ -602,5 +640,4 @@ export default {
   background: #020617;
   transform: translateY(-2px);
 }
-
 </style>
