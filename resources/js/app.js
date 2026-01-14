@@ -8,6 +8,9 @@ import StaffList from './components/StaffList.vue'
 import DeletedStaffList from './components/DeletedStaffList.vue'
 import axios from 'axios'
 
+// GLOBAL CSS (body margin reset, etc.)
+import './css/index.css'
+
 // === AXIOS GLOBAL CONFIG ===
 axios.defaults.baseURL = 'http://localhost:8000'
 axios.defaults.withCredentials = true

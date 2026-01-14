@@ -1,4 +1,4 @@
-<! DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -7,18 +7,33 @@
     <title>Staff Management - Admin</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-gray-100">
+<body class="min-h-screen bg-gradient-to-b from-[#FF9A4A] to-[#FF6A3D]">
     <div class="min-h-screen">
+
         <!-- Header -->
-        <nav class="bg-white shadow-lg">
+        <nav class="bg-transparent">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between h-16">
-                    <div class="flex items-center">
-                        <h1 class="text-xl font-bold">Admin Dashboard</h1>
+                <div class="flex justify-between h-16 items-center">
+
+                    <div class="flex items-center gap-3">
+                        {{-- Back button --}}
+                        <a href="{{ route('admin.dashboard') }}"
+                           class="inline-flex items-center px-4 py-2 rounded-lg bg-white/20 text-white text-sm font-medium hover:bg-white/30 transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M15 19l-7-7 7-7" />
+                            </svg>
+                            Back to Dashboard
+                        </a>
+
+                        <h1 class="text-xl font-bold text-white">
+                            Staff Management
+                        </h1>
                     </div>
+
                     <div class="flex items-center space-x-4">
-                        <span class="text-gray-700">{{ Session:: get('user_name') }}</span>
-                        <a href="{{ route('logout') }}" class="text-red-600 hover: text-red-800">Logout</a>
+                        <span class="text-white">{{ Session::get('user_name') }}</span>
+                        <a href="{{ route('logout') }}" class="text-red-100 hover:text-red-300">Logout</a>
                     </div>
                 </div>
             </div>
@@ -27,26 +42,30 @@
         <!-- Main Content -->
         <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
             <div class="px-4 py-6 sm:px-0">
+
                 @if(session('success'))
-                    <div class="rounded-md bg-green-50 p-4 mb-4">
+                    <div class="rounded-md bg-green-50/90 p-4 mb-4">
                         <p class="text-sm font-medium text-green-800">{{ session('success') }}</p>
                     </div>
                 @endif
 
-                <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+                <div class="bg-white/95 shadow-lg overflow-hidden sm:rounded-lg">
                     <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
                         <div>
                             <h3 class="text-lg leading-6 font-medium text-gray-900">
-                                Staff Management
+                                Staff Accounts
                             </h3>
                             <p class="mt-1 max-w-2xl text-sm text-gray-500">
                                 Manage all staff accounts
                             </p>
                         </div>
-                        <a href="{{ route('admin.staff. create') }}"
-                           class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">
+
+                        {{-- Display-only button (real create handled in SPA) --}}
+                        <button
+                            type="button"
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded cursor-default">
                             + Create Staff
-                        </a>
+                        </button>
                     </div>
 
                     <div class="border-t border-gray-200">
@@ -83,13 +102,10 @@
                                                 </span>
                                             @endif
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <a href="{{ route('admin.staff.edit', $staff->id) }}" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
-                                            <form action="{{ route('admin.staff.destroy', $staff->id) }}" method="POST" class="inline">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('Are you sure? ')">Delete</button>
-                                            </form>
+
+                                        {{-- No real routes here, SPA handles edit/delete --}}
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-400">
+                                            Managed in SPA
                                         </td>
                                     </tr>
                                 @empty
@@ -103,6 +119,7 @@
                         </table>
                     </div>
                 </div>
+
             </div>
         </div>
     </div>

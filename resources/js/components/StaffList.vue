@@ -2,12 +2,23 @@
   <div class="staff-management-container">
     <!-- Header Section -->
     <div class="staff-header">
-      <h2 class="staff-title">Staff Management</h2>
-      <button @click="openCreateModal" class="btn-create-staff">
-        <span class="plus-icon">+</span>
-        Create Staff Account
-      </button>
-    </div>
+  <h2 class="staff-title">Staff Management</h2>
+  <div class="staff-header-actions">
+    <button @click="openCreateModal" class="btn-create-staff">
+      <span class="plus-icon">+</span>
+      Create Staff Account
+    </button>
+
+    <!-- Deleted History link button -->
+    <button
+      class="btn-deleted-history"
+      @click="$router.push('/admin/deleted-staff')"
+    >
+      🗑️ Deleted History
+    </button>
+  </div>
+</div>
+
 
     <!-- Alert Messages -->
     <transition name="fade">
