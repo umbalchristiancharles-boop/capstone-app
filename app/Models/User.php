@@ -5,14 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use App\Models\Branch;
-use App\Models\UserProfile;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, SoftDeletes;
 
     protected $table = 'users';
 
@@ -40,6 +39,7 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $hidden = [
+        'password_hash',
         'remember_token',
     ];
 
@@ -53,6 +53,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'is_active' => 'boolean',
+            'deleted_at' => 'datetime',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];
@@ -61,7 +62,7 @@ class User extends Authenticatable
     /**
      * Relationship: User belongs to a Branch
      */
-    public function branch()
+    public function branch():BelongsTo
     {
         return $this->belongsTo(Branch:: class, 'branch_id');
     }
@@ -69,8 +70,8 @@ class User extends Authenticatable
     /**
      * Relationship: User has one profile
      */
-    public function profile()
+    public function profile(): HasOne
     {
-        return $this->hasOne(UserProfile:: class, 'user_id');
+        return $this->hasOne(UserProfile::class, 'user_id');
     }
 }

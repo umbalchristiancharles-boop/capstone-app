@@ -16,50 +16,130 @@
       </div>
     </transition>
 
-    <!-- Staff Table -->
-    <div class="staff-table-wrapper">
-      <table class="staff-table">
-        <thead>
-          <tr>
-            <th>Username</th>
-            <th>Full Name</th>
-            <th>Email</th>
-            <th>Branch</th>
-            <th>Phone</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="staff in staffList" :key="staff.id" class="staff-row">
-            <td class="td-username">{{ staff.username }}</td>
-            <td>{{ staff.full_name }}</td>
-            <td>{{ staff.email }}</td>
-            <td>{{ staff.branch_name || 'N/A' }}</td>
-            <td>{{ staff.phone_number || 'N/A' }}</td>
-            <td>
-              <span :class="['status-badge', staff.is_active ? 'active' :  'inactive']">
-                {{ staff.is_active ? 'Active' : 'Inactive' }}
-              </span>
-            </td>
-            <td class="td-actions">
-              <button @click="editStaff(staff)" class="btn-action btn-edit">
-                Edit
-              </button>
-              <button 
-                @click="confirmDelete(staff.id, staff.username)" 
-                class="btn-action btn-delete"
-                :disabled="deletingIds.includes(staff.id)"
+    <!-- Loading -->
+    <div v-if="loading" class="loading-container">
+      <div class="loading-text">Loading staff data...</div>
+    </div>
+
+    <!-- Branches List -->
+    <div v-else class="branches-container">
+      <!-- Each Branch Section -->
+      <div v-for="branch in branches" :key="branch.branch_id" class="branch-section">
+        <!-- Branch Header -->
+        <div class="branch-header">
+          <h3 class="branch-title">
+            {{ branch.branch_name }}
+            <span class="branch-code">({{ branch.branch_code }})</span>
+          </h3>
+        </div>
+
+        <!-- Branch Content Card -->
+        <div class="branch-content-card">
+          <!-- Branch Manager Section -->
+          <div v-if="branch.branch_manager" class="manager-section">
+            <div class="section-header manager-header">
+              <h4 class="section-title">Branch Manager</h4>
+            </div>
+            <div class="manager-card">
+              <div class="user-info-grid">
+                <div class="info-item">
+                  <span class="info-label">Username</span>
+                  <span class="info-value">{{ branch. branch_manager.username }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Full Name</span>
+                  <span class="info-value">{{ branch.branch_manager.full_name }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Email</span>
+                  <span class="info-value">{{ branch.branch_manager.email }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Phone</span>
+                  <span class="info-value">{{ branch.branch_manager.phone_number || 'N/A' }}</span>
+                </div>
+              </div>
+              <div class="user-actions">
+                <button @click="editStaff(branch. branch_manager)" class="btn-action btn-edit">
+                  Edit
+                </button>
+                <button
+                  @click="confirmDelete(branch.branch_manager.id, branch.branch_manager.username)"
+                  class="btn-action btn-delete"
+                  :disabled="deletingIds.includes(branch.branch_manager.id)"
+                >
+                  {{ deletingIds. includes(branch.branch_manager. id) ? '⏳' : 'Delete' }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- No Manager Notice -->
+          <div v-else class="no-manager-notice">
+            <p>No Branch Manager assigned</p>
+          </div>
+
+          <!-- Staff Section -->
+          <div class="staff-section">
+            <div class="section-header staff-header-bar">
+              <h4 class="section-title">
+                Staff Members
+                <span class="staff-count">({{ branch.staff.length }})</span>
+              </h4>
+            </div>
+
+            <!-- Staff List -->
+            <div v-if="branch.staff. length > 0" class="staff-list">
+              <div
+                v-for="staff in branch.staff"
+                :key="staff.id"
+                class="staff-card"
               >
-                {{ deletingIds.includes(staff.id) ? '⏳ Deleting...' : 'Delete' }}
-              </button>
-            </td>
-          </tr>
-          <tr v-if="staffList.length === 0">
-            <td colspan="7" class="no-data">No staff accounts found</td>
-          </tr>
-        </tbody>
-      </table>
+                <div class="user-info-grid">
+                  <div class="info-item">
+                    <span class="info-label">Username</span>
+                    <span class="info-value">{{ staff.username }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Full Name</span>
+                    <span class="info-value">{{ staff. full_name }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Email</span>
+                    <span class="info-value">{{ staff.email }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Phone</span>
+                    <span class="info-value">{{ staff.phone_number || 'N/A' }}</span>
+                  </div>
+                </div>
+                <div class="user-actions">
+                  <button @click="editStaff(staff)" class="btn-action btn-edit">
+                    Edit
+                  </button>
+                  <button
+                    @click="confirmDelete(staff.id, staff.username)"
+                    class="btn-action btn-delete"
+                    :disabled="deletingIds.includes(staff.id)"
+                  >
+                    {{ deletingIds.includes(staff.id) ? '⏳' : 'Delete' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- No Staff Notice -->
+            <div v-else class="no-staff-notice">
+              <p>No staff members assigned to this branch</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- No Branches Message -->
+      <div v-if="branches.length === 0" class="no-data-card">
+        <p>No branches with staff or managers found</p>
+      </div>
     </div>
 
     <!-- Modal -->
@@ -74,19 +154,20 @@
 </template>
 
 <script>
+import axios from 'axios'
 import StaffModal from './StaffModal.vue';
 
 export default {
   name: 'StaffList',
-  components:  {
+  components: {
     StaffModal
   },
   data() {
     return {
-      staffList: [],
       branches: [],
+      loading: false,
       showModal: false,
-      selectedStaff:  null,
+      selectedStaff: null,
       alertMessage: '',
       alertType: 'success',
       deletingIds: [],
@@ -94,44 +175,38 @@ export default {
   },
   mounted() {
     this.fetchStaff();
-    this.fetchBranches();
   },
   methods: {
     async fetchStaff() {
+      this.loading = true;
+      this.alertMessage = '';
+
       try {
-        console.log('Fetching staff list...');
-        const response = await fetch('/api/admin/staff');
-        console.log('Response status:', response.status);
-        if (response.status === 401) {
+        console.log('Fetching staff grouped by branch...');
+        const res = await axios.get('/api/admin/staff');
+
+        if (res.status === 401 || res.data?.status === 401) {
           this.showAlert('Not authenticated. Please login again.', 'error');
           setTimeout(() => {
             window.location.href = '/login';
           }, 2000);
           return;
         }
-        const data = await response.json();
+
+        const data = res.data;
         console.log('API Response:', data);
-        if (data.ok) {
-          this.staffList = data.staff;
-          console.log('Staff list loaded:', this.staffList.length, 'items');
+
+        if (data.success) {
+          this.branches = data.data;
+          console.log('Branches loaded:', this.branches.length);
         } else {
-          this.showAlert(data.message || 'Failed to load staff list', 'error');
+          this.showAlert(data.message || 'Failed to load staff data', 'error');
         }
       } catch (error) {
         console.error('Error fetching staff:', error);
-        this.showAlert('Failed to load staff list', 'error');
-      }
-    },
-
-    async fetchBranches() {
-      try {
-        const response = await fetch('/api/admin/branches');
-        const data = await response.json();
-        if (data.ok) {
-          this.branches = data.branches;
-        }
-      } catch (error) {
-        console.error('Failed to load branches');
+        this.showAlert('Failed to load staff data', 'error');
+      } finally {
+        this.loading = false;
       }
     },
 
@@ -145,42 +220,41 @@ export default {
       this.showModal = true;
     },
 
-   async confirmDelete(id, username) {
-  if (!confirm(`Are you sure you want to delete "${username}"?`)) {
-    return;
-  }
-
-  this.deletingIds.push(id);
-
-  try {
-    const response = await fetch(`/api/admin/staff/${id}`, {
-      method: 'DELETE',
-      headers:  {
-        'Content-Type':  'application/json',
-        'Accept': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest'
+    async confirmDelete(id, username) {
+      if (!confirm(`Are you sure you want to delete "${username}"?`)) {
+        return;
       }
-    });
 
-    const data = await response.json();
+      this.deletingIds.push(id);
 
-    if (response.ok) {
-      this.showAlert(data.message || 'Staff account deleted successfully!', 'success');
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-    } else {
-      this.showAlert(data.message || 'Failed to delete staff account', 'error');
-      this.deletingIds = this.deletingIds.filter(delId => delId !== id);
-    }
-  } catch (error) {
-    console.error('Delete error:', error);
-    this.showAlert('Failed to delete staff account', 'error');
-    this.deletingIds = this.deletingIds.filter(delId => delId !== id);
-  }
-}
+      try {
+        const res = await axios.delete(`/api/admin/staff/${id}`);
+        const data = res.data;
 
-    ,closeModal() {
+        if (res.status === 200 && data.success) {
+          this.showAlert(
+            data.message || 'Account deleted successfully!',
+            'success'
+          );
+          this.fetchStaff();
+        } else {
+          this.showAlert(
+            data.message || 'Failed to delete account',
+            'error'
+          );
+        }
+      } catch (error) {
+        console.error('Delete error:', error);
+        this.showAlert(
+          error.response?.data?.message || 'Failed to delete account',
+          'error'
+        );
+      } finally {
+        this.deletingIds = this.deletingIds.filter(delId => delId !== id);
+      }
+    },
+
+    closeModal() {
       this.showModal = false;
       this.selectedStaff = null;
     },
@@ -188,7 +262,7 @@ export default {
     handleSaved() {
       this.closeModal();
       this.fetchStaff();
-      this.showAlert('Staff account saved successfully!', 'success');
+      this.showAlert('Account saved successfully!', 'success');
     },
 
     showAlert(message, type) {
@@ -196,21 +270,24 @@ export default {
       this.alertType = type;
       setTimeout(() => {
         this.alertMessage = '';
-      }, 3000);
+      }, 5000);
     }
   }
 };
 </script>
 
+
 <style scoped>
+/* Main Container */
 .staff-management-container {
-  background:  linear-gradient(135deg, #ff9a56 0%, #ff7e5f 100%);
+  background: linear-gradient(135deg, #ff9a56 0%, #ff7e5f 100%);
   padding: 2rem;
   border-radius: 20px;
   min-height: 80vh;
-  box-shadow: 0 10px 40px rgba(255, 126, 95, 0.3);
+  box-shadow:  0 10px 40px rgba(255, 126, 95, 0.3);
 }
 
+/* Header */
 .staff-header {
   display: flex;
   justify-content: space-between;
@@ -228,7 +305,7 @@ export default {
 .btn-create-staff {
   background: rgba(255, 255, 255, 0.95);
   color: #ff7e5f;
-  border:  none;
+  border: none;
   padding: 0.875rem 1.75rem;
   border-radius:  12px;
   font-weight: 700;
@@ -249,9 +326,10 @@ export default {
 
 .plus-icon {
   font-size: 1.25rem;
-  font-weight:  bold;
+  font-weight: bold;
 }
 
+/* Alerts */
 .alert {
   padding: 1rem 1.5rem;
   border-radius: 12px;
@@ -262,7 +340,7 @@ export default {
 
 .alert.success {
   background: #10b981;
-  color:  white;
+  color: white;
 }
 
 .alert.error {
@@ -280,79 +358,161 @@ export default {
   opacity: 0;
 }
 
-.staff-table-wrapper {
+/* Loading */
+.loading-container {
+  text-align: center;
+  padding: 3rem;
+}
+
+.loading-text {
+  color: white;
+  font-size: 1.25rem;
+  font-weight:  600;
+}
+
+/* Branches Container */
+.branches-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Branch Section */
+.branch-section {
+  margin-bottom: 1.5rem;
+}
+
+.branch-header {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  padding: 1rem 1.5rem;
+  border-radius: 12px 12px 0 0;
+  border-bottom: 4px solid rgba(255, 126, 95, 0.8);
+}
+
+.branch-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+  margin:  0;
+}
+
+.branch-code {
+  font-size: 0.875rem;
+  font-weight: 400;
+  opacity: 0.9;
+}
+
+/* Branch Content Card */
+.branch-content-card {
   background: rgba(255, 255, 255, 0.98);
-  border-radius: 16px;
+  border-radius: 0 0 16px 16px;
   overflow: hidden;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
 }
 
-.staff-table {
-  width: 100%;
-  border-collapse: collapse;
+/* Section Headers */
+.section-header {
+  padding: 0.875rem 1.5rem;
 }
 
-.staff-table thead {
-  background: linear-gradient(135deg, #ff9a56, #ff8c5f);
+.manager-header {
+  background: linear-gradient(135deg, #ffecd1 0%, #ffd8a8 100%);
+  border-bottom: 2px solid #ff9a56;
 }
 
-.staff-table thead th {
-  color: white;
-  padding: 1.25rem 1rem;
-  text-align: left;
+.staff-header-bar {
+  background: #f9fafb;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.section-title {
+  font-size: 1rem;
   font-weight: 700;
-  text-transform: uppercase;
-  font-size: 0.875rem;
-  letter-spacing: 0.5px;
-}
-
-.staff-row {
-  transition: background 0.2s;
-}
-
-.staff-row:hover {
-  background:  rgba(255, 154, 86, 0.08);
-}
-
-.staff-table tbody td {
-  padding: 1rem;
-  border-bottom: 1px solid #f3f4f6;
-  color: #374151;
-}
-
-.td-username {
-  font-weight: 600;
   color: #ff7e5f;
-}
-
-.status-badge {
-  padding: 0.375rem 0.875rem;
-  border-radius:  20px;
-  font-size: 0.8125rem;
-  font-weight:  700;
+  margin:  0;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.status-badge.active {
-  background: #d1fae5;
-  color:  #065f46;
+.staff-count {
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 600;
 }
 
-.status-badge.inactive {
-  background: #fee2e2;
-  color:  #991b1b;
+/* Manager Card */
+.manager-card {
+  padding: 1.5rem;
+  background: rgba(255, 154, 86, 0.05);
+  border-bottom: 1px solid #f3f4f6;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.td-actions {
-  display:  flex;
+/* Staff List */
+.staff-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.5rem;
+}
+
+.staff-card {
+  padding: 1.25rem;
+  background: #f9fafb;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s;
+}
+
+.staff-card:hover {
+  background: #f3f4f6;
+  transform: translateX(4px);
+}
+
+/* User Info Grid */
+.user-info-grid {
+  display:  grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+  flex:  1;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.info-label {
+  font-size:  0.75rem;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-value {
+  font-size:  0.9375rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+/* User Actions */
+.user-actions {
+  display: flex;
   gap: 0.5rem;
+  margin-left: 1rem;
 }
 
 .btn-action {
   padding: 0.5rem 1rem;
-  border:  none;
-  border-radius:  8px;
+  border: none;
+  border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -376,19 +536,60 @@ export default {
 
 .btn-delete:hover:not(:disabled) {
   background: #dc2626;
-  transform:  translateY(-1px);
+  transform: translateY(-1px);
 }
 
 .btn-delete:disabled {
   background: #fca5a5;
-  cursor: not-allowed;
+  cursor:  not-allowed;
   opacity: 0.8;
 }
 
-.no-data {
-  text-align: center;
-  padding: 3rem;
+/* No Data Messages */
+.no-manager-notice,
+.no-staff-notice {
+  padding: 2rem;
+  text-align:  center;
   color: #9ca3af;
   font-weight: 600;
 }
+
+.no-data-card {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 3rem;
+  border-radius:  16px;
+  text-align:  center;
+  box-shadow:  0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
+.no-data-card p {
+  color: #6b7280;
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin:  0;
+}
+.staff-header-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.btn-deleted-history {
+  background: #111827;
+  color: #f9fafb;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.btn-deleted-history:hover {
+  background: #020617;
+  transform: translateY(-2px);
+}
+
 </style>
