@@ -328,8 +328,7 @@ class StaffController extends Controller
                 ], 400);
             }
 
-            // Soft delete (sets deleted_at timestamp)
-            $user->delete();
+        
 
             Log::info('Staff soft deleted:', ['id' => $id, 'role' => $user->role]);
 
