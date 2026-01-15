@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Hash;
 
 class StaffController extends Controller
 {
@@ -55,7 +56,7 @@ class StaffController extends Controller
 
             foreach ($branches as $branch) {
                 // Get branch manager for this branch
-                $branchManager = DB:: table('users')
+                $branchManager = DB::table('users')
                     ->where('branch_id', $branch->id)
                     ->where('role', 'BRANCH_MANAGER')
                     ->where('is_active', 1)
@@ -138,7 +139,7 @@ class StaffController extends Controller
         $staff = DB::table('users')
             ->leftJoin('branches', 'users.branch_id', '=', 'branches.id')
             ->where('users.id', $id)
-            ->whereIn('users. role', ['BRANCH_MANAGER', 'STAFF'])
+            ->whereIn('users.role', ['BRANCH_MANAGER', 'STAFF'])
             ->whereNull('users.deleted_at') // Exclude soft deleted
             ->select(
                 'users.id',
@@ -174,9 +175,9 @@ class StaffController extends Controller
     {
         try {
             $request->validate([
-                'username' => 'required|string|max:50|unique: users,username',
+                'username' => 'required|string|max:50|unique:users,username',
                 'email' => 'required|email|max:120|unique:users,email',
-                'password' => 'required|string|min: 6',
+                'password' => 'required|string|min:6',
                 'fullName' => 'required|string|max:150',
                 'phone' => 'nullable|string|max:30',
                 'address' => 'nullable|string|max:255',
@@ -185,9 +186,9 @@ class StaffController extends Controller
             ]);
 
             // Check if branch already has a manager (if creating BRANCH_MANAGER)
-            if ($request->role === 'BRANCH_MANAGER') {
+            if ($request->input('role') === 'BRANCH_MANAGER') {
                 $existingManager = DB::table('users')
-                    ->where('branch_id', $request->branchId)
+                    ->where('branch_id', $request->input('branchId'))
                     ->where('role', 'BRANCH_MANAGER')
                     ->where('is_active', 1)
                     ->whereNull('deleted_at') // Exclude soft deleted
@@ -202,24 +203,24 @@ class StaffController extends Controller
             }
 
             $staffId = DB::table('users')->insertGetId([
-                'username' => $request->username,
-                'email' => $request->email,
-                'password_hash' => password_hash($request->password, PASSWORD_BCRYPT),
-                'full_name' => $request->fullName,
-                'role' => $request->role,
-                'phone_number' => $request->phone,
-                'address' => $request->address,
-                'branch_id' => $request->branchId,
+                'username' => $request->input('username'),
+                'email' => $request->input('email'),
+                'password_hash' => Hash::make($request->input('password')),
+                'full_name' => $request->input('fullName'),
+                'role' => $request->input('role'),
+                'phone_number' => $request->input('phone'),
+                'address' => $request->input('address'),
+                'branch_id' => $request->input('branchId'),
                 'is_active' => 1,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
 
-            Log::info('Staff created:', ['id' => $staffId, 'role' => $request->role]);
+            Log::info('Staff created:', ['id' => $staffId, 'role' => $request->input('role')]);
 
             return response()->json([
                 'success' => true,
-                'message' => ($request->role === 'BRANCH_MANAGER' ? 'Branch Manager' :  'Staff') . ' account created successfully! ',
+                'message' => ($request->input('role') === 'BRANCH_MANAGER' ? 'Branch Manager' : 'Staff') . ' account created successfully!',
                 'data' => ['id' => $staffId]
             ], 201);
 
@@ -240,7 +241,7 @@ class StaffController extends Controller
     {
         try {
             $request->validate([
-                'username' => 'required|string|max:50|unique: users,username,' . $id,
+                'username' => 'required|string|max:50|unique:users,username,' . $id,
                 'email' => 'required|email|max:120|unique:users,email,' .  $id,
                 'fullName' => 'required|string|max:150',
                 'phone' => 'nullable|string|max:30',
@@ -251,9 +252,9 @@ class StaffController extends Controller
             ]);
 
             // Check if branch already has a manager (if changing to BRANCH_MANAGER)
-            if ($request->role === 'BRANCH_MANAGER') {
+            if ($request->input('role') === 'BRANCH_MANAGER') {
                 $existingManager = DB::table('users')
-                    ->where('branch_id', $request->branchId)
+                    ->where('branch_id', $request->input('branchId'))
                     ->where('role', 'BRANCH_MANAGER')
                     ->where('is_active', 1)
                     ->where('id', '!=', $id)
@@ -269,22 +270,22 @@ class StaffController extends Controller
             }
 
             $updateData = [
-                'username' => $request->username,
-                'email' => $request->email,
-                'full_name' => $request->fullName,
-                'phone_number' => $request->phone,
-                'address' => $request->address,
-                'branch_id' => $request->branchId,
-                'role' => $request->role,
-                'is_active' => $request->isActive,
+                'username' => $request->input('username'),
+                'email' => $request->input('email'),
+                'full_name' => $request->input('fullName'),
+                'phone_number' => $request->input('phone'),
+                'address' => $request->input('address'),
+                'branch_id' => $request->input('branchId'),
+                'role' => $request->input('role'),
+                'is_active' => $request->input('isActive'),
                 'updated_at' => now(),
             ];
 
             if ($request->filled('password')) {
-                $updateData['password_hash'] = password_hash($request->password, PASSWORD_BCRYPT);
+                $updateData['password_hash'] = Hash::make($request->input('password'));
             }
 
-            DB:: table('users')->where('id', $id)->update($updateData);
+            DB::table('users')->where('id', $id)->update($updateData);
 
             Log::info('Staff updated:', ['id' => $id]);
 
@@ -330,8 +331,10 @@ class StaffController extends Controller
 
         
 
-            Log::info('Staff soft deleted:', ['id' => $id, 'role' => $user->role]);
+            // Perform soft delete
+            $user->delete();
 
+            Log::info('Staff soft deleted:', ['id' => $id, 'role' => $user->role]);
             return response()->json([
                 'success' => true,
                 'message' => ($user->role === 'BRANCH_MANAGER' ? 'Branch Manager' : 'Staff') . ' account moved to deleted history successfully!'

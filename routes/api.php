@@ -10,7 +10,7 @@ Route::middleware('web')->group(function () {
     // ==========================================
     // AUTH & PROFILE ROUTES
     // ==========================================
-    Route::post('/login',          [AuthController:: class, 'login']);
+    Route::post('/login',          [AuthController:: class, 'login'])->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class);
     Route::post('/logout',         [AuthController::class, 'logout']);
 
     Route::get('/me',              [AuthController::class, 'me']);
