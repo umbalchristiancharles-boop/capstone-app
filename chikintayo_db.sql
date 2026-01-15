@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jan 14, 2026 at 06:51 AM
+-- Generation Time: Jan 15, 2026 at 01:49 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -241,10 +241,15 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('iwd35NsDToYepWqDco992K5IUp3mT2XAqHclW1eD', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiWWJ1UUMwMWJQQjg0d0Nqc2t0MTA4RjFVTm52ajJsN1pjTG0wTWtwaSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1768328887),
-('LWBZKNEy2xCjz0sU6Kh1xOV6LXJcRZF3U2E1CbwO', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiSXY1cGJUTm42eXVQeTU4WjdHallqMHV2NmZsTU5ycG1TNERtcFNYZSI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czo0NDoiaHR0cDovL2xvY2FsaG9zdDo4MDAwL2FkbWluL3N0YWZmLW1hbmFnZW1lbnQiO31zOjk6Il9wcmV2aW91cyI7YToyOntzOjM6InVybCI7czoyNzoiaHR0cDovL2xvY2FsaG9zdDo4MDAwL2xvZ2luIjtzOjU6InJvdXRlIjtzOjU6ImxvZ2luIjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1768367665),
-('lYB8Pm2wpXpnffNQMEBebMm9FMuglH52R3OzFSIs', 11, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il9mbGFzaCI7YToyOntzOjM6Im5ldyI7YTowOnt9czozOiJvbGQiO2E6MDp7fX1zOjk6Il9wcmV2aW91cyI7YToyOntzOjM6InVybCI7czo0NDoiaHR0cDovL2xvY2FsaG9zdDo4MDAwL2FkbWluL3N0YWZmLW1hbmFnZW1lbnQiO3M6NToicm91dGUiO3M6MjI6ImFkbWluLnN0YWZmLW1hbmFnZW1lbnQiO31zOjY6Il90b2tlbiI7czo0MDoiWEcxUk9LTnp2OFZaZHlnblNXb1p3SzR5UlY4dmo1RkZnT3ZDYTBLNiI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czozMzoiaHR0cDovL2xvY2FsaG9zdDo4MDAwL2FkbWluLXBhbmVsIjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTE7fQ==', 1768329733),
-('nEMK8nNRgOS3eRRYZxqTdrIkEriSvdYJXlbzbkPV', 11, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiQTdZWTNyTnNJb0w3bXoxdlVWMUVWVnRTU2h3MmxVcjN3RXRpa0hkUiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDQ6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hZG1pbi9zdGFmZi1tYW5hZ2VtZW50IjtzOjU6InJvdXRlIjtzOjIyOiJhZG1pbi5zdGFmZi1tYW5hZ2VtZW50Ijt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTE7fQ==', 1768369834);
+('22E6GQD0y6uX3gCubHyvfedzE4Zawfi3w2llYtKa', NULL, '127.0.0.1', 'curl/8.16.0', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoiM09kRDh0SURUVngwY2JPZHBtbVZkVFJBNXpsRVhsVjJRVkhuSUhTNiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1768480948),
+('EdaMmZ1hEnYQjwTS1IpdupLFFtvTEj8NikFzA1qs', NULL, '127.0.0.1', 'curl/8.16.0', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoiaTlHYTdxQzhJdzk4ZEd0dmZFR0NDRUZ6OTkxRVNLVmVBYlozcjQ0dCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1768480636),
+('kRst3oPuw7sLZKOWWx7MYU5R2THwG18ztKj7rJwC', NULL, '127.0.0.1', 'curl/8.16.0', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoidkF6enNST25Rc3g1Um5IY1lCTEg4Sm5rcmpTT2J4WVVGSFlicEdJMCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1768481029),
+('Lc4XgAOOcBd4MA105Dott1JFdOjr84xHfkQOE2hm', NULL, '127.0.0.1', 'curl/8.16.0', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiZm15MWllVGlmdTFYNDVYQmdUR2hKZzNOYUVNZVY4V0dPU2FibWM1QiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1768480720),
+('mxJm3X7xRORVHspCrhlwA0qeJ4paXGvTwPOfwgnH', 11, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiSURIQVRhTEtnWmJJbUtDR0s3eHhsVnFudXhXRnlvQ21FUDlRNnVtbCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTE7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9fQ==', 1768481190),
+('PLbpXfTPRdb7GYfmBGPzHACmt5xfEe5OE6ixPaB5', NULL, '127.0.0.1', 'curl/8.16.0', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoicFpDRUlqR1FqQVZMQ1NUZVdiZ1ZOZk9tMnlyVG44cldER254TWppeCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1768480970),
+('uMaJ0XYenTF5Zvv8k3Z7iBwRLZhuHQpq4dKdoqYq', 11, '127.0.0.1', 'curl/8.16.0', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiRVExeGhQRFJTOGs1ZGRDYmdidnI0djlzUURKS2RqMHpyV3BsVVkwZyI7czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTE7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1768481059),
+('vpsGcJpTK5T9Y8oZopC99otzmPRPcmZ4OJbZmgfT', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiRUoyNGNKelVyOFNUUjVMRVRUZU1RcThOVUlwRkVyc3FZMU9uVVViRSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1768476710),
+('XI47rXhIOEJBgMjU7ODmCaHwvJ4fIIvIFKFYqiy1', NULL, '127.0.0.1', 'curl/8.16.0', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiWTE5N1JFWEw3QU43akY4RnZ5Nng0blg1eUpVVXA4d1hmb2dMbVhmdyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1768480837);
 
 -- --------------------------------------------------------
 
@@ -275,11 +280,15 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `full_name`, `role`, `avatarUrl`, `branch_id`, `avatar_url`, `phone_number`, `address`, `is_active`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(11, 'owner_admin', 'owner@chikintayo.com', '$2y$12$MYf/AzoU4mwCKXOJU/sJI./iboBZyo6AntC02heZjc5hqorr9fw.e', 'System Administrator', 'OWNER', NULL, NULL, NULL, '09123456789', 'Main Office', 1, '2026-01-13 16:05:28', '2026-01-13 16:09:05', NULL),
+(11, 'owner_admin', 'owner@chikintayo.com', '$2y$12$iZeTyiGzRbWr8mNWywVhIOqchsqLUZnLZI1xVSZhserukQ37G55lK', 'System Administrator', 'OWNER', NULL, NULL, NULL, '09123456789', 'Main Office', 1, '2026-01-13 16:05:28', '2026-01-15 04:44:19', NULL),
 (12, 'mark_01', 'markjulius@gmail.com', '$2y$10$1kFz4h4Nrj7OUIz4oAjdiuBjjdRpufS65t7lsj6nRVd2XM1lVTc1a', 'Mark Test', 'BRANCH_MANAGER', NULL, 1, NULL, '+63 908 171 8919', 'Dasmariñas Cavite', 1, '2026-01-13 08:37:04', '2026-01-13 08:37:04', NULL),
 (13, 'gab_02', 'gab@test.com', '$2y$10$DvAjtNhK/KSMbmxessPJ8eDANatAhoTd0HANS.liJTL1aBCeP70iy', 'Gab Test', 'BRANCH_MANAGER', NULL, 2, NULL, '+63 908 171 8997', 'Taga Mars', 1, '2026-01-13 08:40:04', '2026-01-13 08:40:04', NULL),
 (14, 'Janne.who', 'jeremy@test.com', '$2y$10$ILwjlAYaTeDFzWUaRg9TiOpdQgNQUgb5GG1777izaTXzutTQ0.6/W', 'Jeremy Anne', 'BRANCH_MANAGER', NULL, 3, NULL, '+63 908 171 0897', 'Taga Elliston', 1, '2026-01-13 08:41:59', '2026-01-13 10:18:03', '2026-01-13 10:18:03'),
-(15, 'vince_bading', 'vie@test.com', '$2y$10$JN.UqE5Kzu2.U5k/spHHv.6XPdtDIC0VWeeg9e.vUPFy9yLadu69u', 'Vince Bading', 'STAFF', NULL, 1, NULL, '+63 908 171 0000', 'Taga Gay', 1, '2026-01-13 08:43:09', '2026-01-13 10:17:52', '2026-01-13 10:17:52');
+(15, 'vince_bading', 'vie@test.com', '$2y$10$JN.UqE5Kzu2.U5k/spHHv.6XPdtDIC0VWeeg9e.vUPFy9yLadu69u', 'Vince Bading', 'STAFF', NULL, 1, NULL, '+63 908 171 0000', 'Taga Gay', 1, '2026-01-13 08:43:09', '2026-01-13 10:17:52', '2026-01-13 10:17:52'),
+(17, 'Juls', 'branch.mnl@example.com', '$2y$10$LOL.J2jupvGNKFQKx8w.seI7WtpS5LZR/V7404wvONzJdRWrmsLH2', 'Julius', 'BRANCH_MANAGER', NULL, 3, NULL, '09156818851', NULL, 1, '2026-01-15 01:03:31', '2026-01-15 01:03:31', NULL),
+(18, 'john', 'john@gmail.com', '$2y$10$brEDWQZECpJdueZbSO5ul.EvWDUQDEpjCjphve5Fq.6afRpvVMF0C', 'john loid', 'STAFF', NULL, 1, NULL, '09156818859', NULL, 1, '2026-01-15 01:09:02', '2026-01-15 01:09:02', NULL),
+(19, 'boi', 'boi@gmail.com', '$2y$10$mI2kXq887rffhVkdpqX6luw4jfZlaMekcjHYUU5CDVbrH7cgyDknS', 'boi boi', 'STAFF', NULL, 3, NULL, '09156818851', NULL, 1, '2026-01-15 01:10:20', '2026-01-15 01:10:20', NULL),
+(20, 'tite', 'tite@gmail.com', '$2y$10$7.tOcRjjmhiF7i8W2aTTsu7mh.hOHeJWaq1UB2aLBOTR3o7trTfmy', 'titee', 'STAFF', NULL, 3, NULL, '09156818870', NULL, 1, '2026-01-15 02:35:52', '2026-01-15 02:35:52', NULL);
 
 -- --------------------------------------------------------
 
@@ -417,7 +426,7 @@ ALTER TABLE `orders`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT for table `user_profiles`
