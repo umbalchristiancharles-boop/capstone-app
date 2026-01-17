@@ -87,6 +87,13 @@ async function handleLogin() {
   isLoading.value = true
 
   try {
+    // Ensure the XSRF cookie is set for stateful authentication
+    try {
+      await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
+    } catch (e) {
+      // Ignore; some environments may not use Sanctum but we'll still attempt login
+    }
+
     const res = await axios.post(
       '/api/login',
       {

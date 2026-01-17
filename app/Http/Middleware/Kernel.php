@@ -1,19 +1,8 @@
 <?php
 
-namespace App\Http;
+namespace App\Http\Middleware;
 
-use Illuminate\Foundation\Http\Kernel as HttpKernel;
-
-class Kernel extends HttpKernel
+class Kernel
 {
-    // ... existing code ...
-
-    /**
-     * The application's route middleware aliases.
-     */
-  protected $middlewareAliases = [
-    'auth' => \App\Http\Middleware\Authenticate::class,
-    'admin' => \App\Http\Middleware\AdminMiddleware::class,  // ← ADD THIS
-    // ... other middleware
-];
+    // placeholder middleware kernel class (no-op)
 }

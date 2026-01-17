@@ -1,20 +1,10 @@
 <?php
 
-namespace App\Http\Middleware;
+namespace App\Models;
 
-use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken as Middleware;
+use Illuminate\Database\Eloquent\Model;
 
-class VerifyCsrfToken extends Middleware
+class VerifyCsrfToken extends Model
 {
-    /**
-     * The URIs that should be excluded from CSRF verification.
-     *
-     * @var array<int, string>
-     */
-   protected $except = [
-    'api/*',
-    '/api/*',
-    'api/admin/*',
-    '/api/admin/*',
-];
+  // Placeholder model (original middleware moved to App\Http\Middleware)
 }

@@ -21,11 +21,20 @@ class StaffController extends Controller
      * Branch managers only see their own branch
      * Owners/Admins see all branches with their managers and staff
      */
-    public function apiIndex()
+    public function apiIndex(Request $request)
     {
         $user = Auth::user();
 
         if (!$user) {
+            Log::warning('Unauthenticated apiIndex call', [
+                'route' => 'apiIndex',
+                'origin' => $request->header('origin'),
+                'cookie_header' => $request->header('cookie'),
+                'x_xsrf_token' => $request->header('x-xsrf-token'),
+                'x_xsrf_token_alt' => $request->header('x-xsrf-token'),
+                'cookies' => $request->cookies->all(),
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Not authenticated'
@@ -237,8 +246,25 @@ class StaffController extends Controller
     /**
      * Update staff (JSON)
      */
+    // Latest Laravel error observed when calling PUT /api/admin/staff/{id} from the SPA:
+    // [2026-01-17 07:32:45] local.ERROR: Staff update error: The branch id field is required.
+    // Please ensure the frontend sends `branchId` (exactly this key) and/or adapt validation to
+    // accept the key the client sends (e.g., `branch_id`).
+    // Full log entries show the same validation error repeated at 07:41:17 as well.
     public function apiUpdate(Request $request, $id)
     {
+        // Copilot prompt:
+        // I get HTTP 500 when calling PUT /api/admin/staff/{id} from Vue.
+        // Here is the Laravel error from laravel.log:
+        // [2026-01-17 07:32:45] local.ERROR: Staff update error: The branch id field is required.
+        // Please rewrite this update() method so that:
+        // - Route uses PUT/PATCH correctly.
+        // - It validates username, email, and phone, ignoring the current record for unique rules.
+        // - It accepts either 'branchId' (SPA key) or 'branch_id' (snake_case) and validates existence.
+        // - Password is only changed if a non-empty password is provided; otherwise keep existing password.
+        // - It returns JSON with success or error messages and appropriate HTTP status codes.
+        // Make sure validation messages map to the frontend keys (branchId or branch_id).
+
         try {
             $request->validate([
                 'username' => 'required|string|max:50|unique:users,username,' . $id,
@@ -246,15 +272,38 @@ class StaffController extends Controller
                 'fullName' => 'required|string|max:150',
                 'phone' => 'nullable|string|max:30',
                 'address' => 'nullable|string|max:255',
-                'branchId' => 'required|exists:branches,id',
+                // accept either branchId (from SPA) or branch_id (from other clients)
+                'branchId' => 'sometimes|required|exists:branches,id',
+                'branch_id' => 'sometimes|required|exists:branches,id',
                 'role' => 'required|in:BRANCH_MANAGER,STAFF',
                 'isActive' => 'required|boolean',
             ]);
 
+            // Ensure request is authenticated
+            $user = Auth::user();
+            if (! $user) {
+                Log::warning('Unauthenticated apiUpdate call', [
+                    'route' => 'apiUpdate',
+                    'id' => $id,
+                    'origin' => $request->header('origin'),
+                    'cookie_header' => $request->header('cookie'),
+                    'x_xsrf_token' => $request->header('x-xsrf-token'),
+                    'cookies' => $request->cookies->all(),
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Not authenticated'
+                ], 401);
+            }
+
+            // Normalize branch id (accept either branchId or branch_id)
+            $branchId = $request->input('branchId') ?? $request->input('branch_id');
+
             // Check if branch already has a manager (if changing to BRANCH_MANAGER)
             if ($request->input('role') === 'BRANCH_MANAGER') {
                 $existingManager = DB::table('users')
-                    ->where('branch_id', $request->input('branchId'))
+                    ->where('branch_id', $branchId)
                     ->where('role', 'BRANCH_MANAGER')
                     ->where('is_active', 1)
                     ->where('id', '!=', $id)
@@ -269,29 +318,39 @@ class StaffController extends Controller
                 }
             }
 
-            $updateData = [
-                'username' => $request->input('username'),
-                'email' => $request->input('email'),
-                'full_name' => $request->input('fullName'),
-                'phone_number' => $request->input('phone'),
-                'address' => $request->input('address'),
-                'branch_id' => $request->input('branchId'),
-                'role' => $request->input('role'),
-                'is_active' => $request->input('isActive'),
-                'updated_at' => now(),
-            ];
+            // Use Eloquent to update the user record
+            $staff = User::findOrFail($id);
+
+            $staff->username = $request->input('username');
+            $staff->email = $request->input('email');
+            $staff->full_name = $request->input('fullName');
+            $staff->phone_number = $request->input('phone');
+            $staff->address = $request->input('address');
+            $staff->branch_id = $branchId;
+            $staff->role = $request->input('role');
+            $staff->is_active = (bool) $request->input('isActive');
 
             if ($request->filled('password')) {
-                $updateData['password_hash'] = Hash::make($request->input('password'));
+                $staff->password_hash = Hash::make($request->input('password'));
             }
 
-            DB::table('users')->where('id', $id)->update($updateData);
+            $staff->updated_at = now();
+            $staff->save();
 
             Log::info('Staff updated:', ['id' => $id]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Account updated successfully!'
+                'message' => 'Account updated successfully!',
+                'data' => [
+                    'id' => $staff->id,
+                    'username' => $staff->username,
+                    'email' => $staff->email,
+                    'full_name' => $staff->full_name,
+                    'branch_id' => $staff->branch_id,
+                    'role' => $staff->role,
+                    'is_active' => $staff->is_active,
+                ]
             ]);
 
         } catch (\Exception $e) {

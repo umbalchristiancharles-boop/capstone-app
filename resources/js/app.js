@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import App from './app.vue'
 import Index from './components/index.vue'
 import AdminPanel from './components/adminpanel.vue'
+import ManagerPanel from './components/ManagerPanel.vue'
 import adminlogin from './components/adminlogin.vue'
 import StaffList from './components/StaffList.vue'
 import DeletedStaffList from './components/DeletedStaffList.vue'
@@ -24,12 +25,23 @@ if (csrfToken) {
   axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken
 }
 
+// Ensure CSRF cookie is initialized (useful when running via Vite dev server)
+axios
+  .get('/sanctum/csrf-cookie', { withCredentials: true })
+  .catch(() => {
+    // ignore errors; server may not have sanctum route in some environments
+  })
+// Configure axios XSRF names to match Laravel defaults
+axios.defaults.xsrfCookieName = 'XSRF-TOKEN'
+axios.defaults.xsrfHeaderName = 'X-XSRF-TOKEN'
+
 // === ROUTER SETUP ===
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/', component: Index },
     { path: '/admin-panel', component: AdminPanel },
+    { path: '/manager-panel', component: ManagerPanel },
     { path: '/admin-login', component: adminlogin },
     {
       path: '/admin/staff-management',
@@ -63,6 +75,27 @@ router.beforeEach(async (to, from, next) => {
   next()
 })
 
-const app = createApp(App)
-app.use(router)
-app.mount('#app')
+// Mount the app after attempting to initialize CSRF cookie so axios can
+// automatically send the X-XSRF-TOKEN header for stateful requests.
+axios
+  .get('/sanctum/csrf-cookie', { withCredentials: true })
+  .finally(() => {
+    // If the XSRF cookie is present, make sure axios sends it as a header
+    function getCookie(name) {
+      const match = document.cookie.match(new RegExp('(^|; )' + name + '=([^;]*)'))
+      return match ? match[2] : null
+    }
+
+    const xsrfCookie = getCookie('XSRF-TOKEN')
+    if (xsrfCookie) {
+      try {
+        axios.defaults.headers.common['X-XSRF-TOKEN'] = decodeURIComponent(xsrfCookie)
+      } catch (e) {
+        axios.defaults.headers.common['X-XSRF-TOKEN'] = xsrfCookie
+      }
+    }
+
+    const app = createApp(App)
+    app.use(router)
+    app.mount('#app')
+  })

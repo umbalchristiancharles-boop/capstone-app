@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Staff Management - Admin</title>
+    <script>
+        // expose server-side session role to the SPA so components can read it
+        window.userRole = {!! json_encode(Session::get('user_role')) !!};
+        if (window.userRole) {
+            try { sessionStorage.setItem('user_role', window.userRole); } catch (e) { /* ignore */ }
+        }
+    </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen bg-gradient-to-b from-[#FF9A4A] to-[#FF6A3D]">
