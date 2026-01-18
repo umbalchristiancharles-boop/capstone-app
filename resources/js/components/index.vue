@@ -2,12 +2,12 @@
   <main class="page">
     <!-- CHIKIN TAYO LOADING OVERLAY PAG CLICK NG LOGIN -->
     <transition name="fade">
-      <template>
-  <div class="min-h-screen bg-gradient-to-b from-[#FF9A4A] to-[#FF6A3D]">
-    <!-- buong admin layout mo dito -->
-  </div>
-</template>
-
+      <div v-if="showLoginLoader" class="mr-loader-overlay">
+        <div class="mr-loader-box">
+          <img :src="mrLoaderImg" alt="Loading" class="mr-loader-img" />
+          <p>Loading admin login...</p>
+        </div>
+      </div>
     </transition>
 
     <section class="hero">

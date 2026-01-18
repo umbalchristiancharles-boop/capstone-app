@@ -74,4 +74,20 @@ class User extends Authenticatable
     {
         return $this->hasOne(UserProfile::class, 'user_id');
     }
+
+    /**
+     * Return the password for the Auth system (we store it in `password_hash`).
+     */
+    public function getAuthPassword()
+    {
+        return $this->password_hash;
+    }
+
+    /**
+     * Map assignments to `$user->password` into the `password_hash` column.
+     */
+    public function setPasswordAttribute($value)
+    {
+        $this->attributes['password_hash'] = $value;
+    }
 }

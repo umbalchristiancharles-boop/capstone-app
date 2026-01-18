@@ -34,7 +34,7 @@
               <div class="form-group">
                 <label for="email" class="form-label">Email *</label>
                 <input
-                  v-model="form. email"
+                  v-model="form.email"
                   type="email"
                   id="email"
                   class="form-input"
@@ -82,27 +82,37 @@
               </div>
 
               <!-- Branch -->
-              <div class="form-group">
-                <label for="branch" class="form-label">Branch *</label>
+              <div class="form-group" v-if="!branchManagerMode">
+                <label for="branch" class="form-label">Branch <span v-if="!isEdit">*</span></label>
                 <select
                   v-model="form.branchId"
                   id="branch"
                   class="form-input"
-                  required
+                  :required="!isEdit"
                 >
-                  <option value="" disabled>Select Branch</option>
+                  <option v-if="!isEdit" value="" disabled>Select Branch</option>
                   <option
-                    v-for="branch in branches"
-                    :key="branch. id"
-                    :value="branch.id"
-                  >
+                        v-for="branch in branches"
+                        :key="branch.id"
+                        :value="branch.id"
+                      >
                     {{ branch.name }}
                   </option>
                 </select>
+                <div v-if="isEdit" class="small-hint" style="margin-top:0.5rem; color:#6b7280; font-size:0.9rem;">
+                  Current branch will be kept unless you choose another.
+                </div>
+              </div>
+              <div class="form-group" v-else>
+                <label class="form-label">Branch *</label>
+                <div class="form-input" style="background-color: #f3f4f6; padding: 0.5rem; border-radius: 8px; display: flex; align-items: center;">
+                  {{ managerBranchName || 'Staff Branch' }}
+                </div>
               </div>
 
               <!-- Role -->
-              <div class="form-group" v-if="!branchManagerMode">
+              <!-- When creating a staff account show the select; when editing, show read-only role text -->
+              <div class="form-group" v-if="!branchManagerMode && !isEdit">
                 <label for="role" class="form-label">Role *</label>
                 <select
                   v-model="form.role"
@@ -115,6 +125,12 @@
                   <option value="STAFF">Staff</option>
                 </select>
               </div>
+              <div v-else-if="!branchManagerMode && isEdit" class="form-group">
+                <label class="form-label">Role *</label>
+                <div class="form-input" style="background-color: #f3f4f6; padding: 0.5rem; border-radius: 8px; display: flex; align-items: center;">
+                  {{ form.role === 'BRANCH_MANAGER' ? 'Branch Manager' : (form.role === 'STAFF' ? 'Staff' : form.role) }}
+                </div>
+              </div>
               <div v-else class="form-group">
                 <label class="form-label">Role *</label>
                 <div class="form-input" style="background-color: #f3f4f6; padding: 0.5rem; border-radius: 8px; display: flex; align-items: center;">
@@ -126,7 +142,7 @@
               <div v-if="isEdit" class="form-group">
                 <label for="isActive" class="form-label">Status</label>
                 <select
-                  v-model="form. isActive"
+                  v-model="form.isActive"
                   id="isActive"
                   class="form-input"
                 >
@@ -190,6 +206,19 @@ export default {
       type: Boolean,
       default: false
     }
+    ,
+    branchForManager: {
+      type: [String, Number],
+      default: null
+    }
+  },
+  computed: {
+    managerBranchName() {
+      const id = this.branchForManager || this.form.branchId
+      if (!id || !this.branches) return null
+      const b = this.branches.find(br => String(br.id) === String(id))
+      return b ? b.name : null
+    }
   },
   emits: ['close', 'success'],
   data() {
@@ -218,15 +247,16 @@ export default {
           await this.loadBranches()
 
           if (this.isEdit && this.staff) {
-            // Populate form with existing staff data
+            // Populate form with existing staff data; accept multiple field shapes
+            const existingBranchId = this.staff.branch_id || (this.staff.branch && this.staff.branch.id) || this.staff.branchId || ''
             this.form = {
               username: this.staff.username || '',
               email: this.staff.email || '',
               fullName: this.staff.full_name || '',
               password:  '',
-              phone: this.staff. phone_number || '',
-              branchId: this.staff.branch_id || '',
-              role: this. staff.role || '',
+              phone: this.staff.phone_number || '',
+              branchId: existingBranchId,
+              role: this.staff.role || '',
               address: this.staff.address || '',
               isActive: this.staff.is_active !== undefined ? Boolean(this.staff.is_active) : true
             }
@@ -242,6 +272,10 @@ export default {
               role: this.branchManagerMode ? 'STAFF' : '',
               address: '',
               isActive: true
+            }
+            // If manager mode, default branch to manager's branch id (if provided)
+            if (this.branchManagerMode && this.branchForManager) {
+              this.form.branchId = this.branchForManager
             }
           }
 
@@ -262,11 +296,11 @@ export default {
         // Updated to match new API format
         if (res.data.success) {
           this.branches = res.data.data
-          console.log('📊 Branches loaded:', this.branches. length)
+          console.log('📊 Branches loaded:', this.branches.length)
         } else {
           console.error('Failed to load branches:', res.data.message)
         }
-      } catch (e) {
+        } catch (e) {
         console.error('💥 Error loading branches:', e)
       }
     },
@@ -286,7 +320,18 @@ export default {
 
         console.log('Submitting form:', this.form)
 
-        const res = await axios[method](url, this.form, {
+        // Map frontend form keys to backend expected keys.
+        const payload = { ...this.form }
+        // backend expects `branch_id` not `branchId`
+        if (payload.branchId !== undefined && payload.branchId !== '') {
+          payload.branch_id = payload.branchId
+        } else if (this.isEdit) {
+          // ensure we send existing branch id when editing (check multiple shapes)
+          payload.branch_id = this.staff?.branch_id || (this.staff?.branch && this.staff.branch.id) || this.staff?.branchId || ''
+        }
+        delete payload.branchId
+
+        const res = await axios[method](url, payload, {
           withCredentials: true,
         })
 
@@ -306,7 +351,7 @@ export default {
           // Laravel validation errors
           const errors = Object.values(e.response.data.errors).flat()
           this.errorMessage = errors.join(', ')
-        } else if (e. response?.data?.message) {
+        } else if (e.response?.data?.message) {
           // API error message
           this.errorMessage = e.response.data.message
         } else {

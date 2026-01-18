@@ -22,8 +22,9 @@ Route::middleware('web')->group(function () {
 
     // ==========================================
     // STAFF MANAGEMENT API
+    // These routes use the session (web) guard and CSRF protection via Sanctum.
     // ==========================================
-    Route:: prefix('admin')->group(function () {
+    Route::prefix('admin')->group(function () {
         Route::get('/staff',           [StaffController::class, 'apiIndex']);
         Route::get('/staff/{id}',      [StaffController::class, 'apiShow']);
         Route::post('/staff',          [StaffController:: class, 'apiStore']);
@@ -32,3 +33,5 @@ Route::middleware('web')->group(function () {
         Route::get('/branches',        [StaffController::class, 'apiBranches']);
     });
 });
+
+// (moved to `web` group above to use Sanctum/session authentication)

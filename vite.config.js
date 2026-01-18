@@ -13,6 +13,20 @@ export default defineConfig({
         tailwindcss(),
     ],
     server: {
+        // Proxy API and Sanctum calls to the Laravel backend so cookies
+        // and CSRF tokens are treated as same-origin during dev.
+        proxy: {
+            '/api': {
+                target: 'http://localhost:8000',
+                changeOrigin: true,
+                secure: false,
+            },
+            '/sanctum': {
+                target: 'http://localhost:8000',
+                changeOrigin: true,
+                secure: false,
+            },
+        },
         watch: {
             ignored: ['**/storage/framework/views/**'],
         },

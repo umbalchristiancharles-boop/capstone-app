@@ -82,7 +82,7 @@
                 </div>
               </div>
               <div class="user-actions">
-                <button @click="editStaff(branch.branch_manager)" class="btn-action btn-edit">
+                <button @click="editStaff(branch.branch_manager, branch.branch_id)" class="btn-action btn-edit">
                   Edit
                 </button>
                 <button
@@ -136,7 +136,7 @@
                   </div>
                 </div>
                 <div class="user-actions">
-                  <button @click="editStaff(staff)" class="btn-action btn-edit">
+                  <button @click="editStaff(staff, branch.branch_id)" class="btn-action btn-edit">
                     Edit
                   </button>
                   <button
@@ -169,6 +169,8 @@
       :show="showModal"
       :staff="selectedStaff"
       :isEdit="!!selectedStaff"
+      :branchManagerMode="isBranchManager"
+      :branchForManager="managerBranchId"
       @close="closeModal"
       @success="handleSaved"
     />
@@ -190,15 +192,33 @@ export default {
       loading: false,
       showModal: false,
       selectedStaff: null,
+      // true when the logged-in user is a branch manager so they can only create staff
+      isBranchManager: sessionStorage.getItem('user_role') === 'BRANCH_MANAGER',
+      // store manager's branch id when available
+      managerBranchId: sessionStorage.getItem('user_branch_id') || null,
       alertMessage: '',
       alertType: 'success',
       deletingIds: [],
     }
   },
-  mounted() {
+  async mounted() {
+    await this.setCurrentUserRole()
     this.fetchStaff()
   },
   methods: {
+    async setCurrentUserRole() {
+      try {
+        const res = await axios.get('/api/me', { withCredentials: true })
+        if (res.data?.ok && res.data.user) {
+          this.isBranchManager = res.data.user.role === 'BRANCH_MANAGER'
+          // capture branch id for branch managers so modals can default branch
+          this.managerBranchId = res.data.user.branch_id || (res.data.user.branch && res.data.user.branch.id) || null
+        }
+      } catch (e) {
+        // ignore and leave default
+        console.warn('Could not determine current user role', e)
+      }
+    },
     async fetchStaff() {
       this.loading = true
       this.alertMessage = ''
@@ -233,8 +253,8 @@ export default {
       this.showModal = true
     },
 
-    editStaff(staff) {
-      this.selectedStaff = { ...staff }
+    editStaff(staff, branchId) {
+      this.selectedStaff = { ...staff, branch_id: branchId }
       this.showModal = true
     },
 

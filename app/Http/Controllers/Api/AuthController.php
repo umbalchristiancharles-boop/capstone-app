@@ -12,61 +12,42 @@ use Illuminate\Support\Facades\Hash;
 class AuthController extends Controller
 {
     public function login(Request $request)
-    {
-        // Basic validation
-        $credentials = $request->validate([
-            'username' => 'required|string',
-            'password' => 'required|string',
-        ]);
+{
+    $credentials = $request->validate([
+        'username' => 'required|string',
+        'password' => 'required|string',
+    ]);
 
-        // Hanapin user batay sa username
-        $user = User::where('username', $credentials['username'])->first();
-
-        if (!$user) {
-            return response()->json([
-                'ok'      => false,
-                'message' => 'Invalid username or password',
-            ], 401);
-        }
-
-        // DEMO ONLY:
-        // Check password - supports both hashed (bcrypt) and plain text for backwards compatibility
-        $passwordValid = false;
-        
-        if (!isset($user->password_hash)) {
-            $passwordValid = false;
-        } else {
-            try {
-                // Try bcrypt check first (works for both hashed and plain text)
-                $passwordValid = Hash::check($credentials['password'], $user->password_hash);
-            } catch (\Exception $e) {
-                // If bcrypt fails, try plain text comparison
-                $passwordValid = $credentials['password'] === $user->password_hash;
-            }
-        }
-        
-        if (!$passwordValid) {
-            return response()->json([
-                'ok'      => false,
-                'message' => 'Invalid username or password',
-            ], 401);
-        }
-
-        // Successful login → gamitin Laravel Auth
-        Auth::loginUsingId($user->id);
-        $request->session()->regenerate();
-
+    if (!Auth::attempt($credentials)) {    // uses getAuthPassword() if defined
         return response()->json([
-            'ok'      => true,
-            'message' => 'Login successful',
-            'user'    => [
-                'id'       => $user->id,
-                'username' => $user->username,
-                'role'     => $user->role,
-                'full_name' => $user->full_name,
-            ],
-        ]);
+            'ok'      => false,
+            'message' => 'Invalid username or password',
+        ], 401);
     }
+
+    $request->session()->regenerate();     // prevent session fixation [web:4][web:6]
+
+    $user = Auth::user();
+
+    if (! $user) {
+        return response()->json([
+            'ok' => false,
+            'message' => 'User not found',
+        ], 401);
+    }
+
+    return response()->json([
+        'ok'      => true,
+        'message' => 'Login successful',
+        'user'    => [
+            'id'        => $user->id,
+            'username'  => $user->username,
+            'role'      => $user->role,
+            'full_name' => $user->full_name,
+        ],
+    ]);
+}
+
 
     public function logout(Request $request)
     {
