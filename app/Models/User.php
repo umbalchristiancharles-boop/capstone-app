@@ -8,8 +8,10 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Contracts\Auth\CanResetPassword;
+use Illuminate\Support\Facades\Hash;  // ← FIXED: Import Hash
 
-class User extends Authenticatable
+class User extends Authenticatable implements CanResetPassword
 {
     use HasFactory, Notifiable, SoftDeletes;
 
@@ -17,8 +19,6 @@ class User extends Authenticatable
 
     /**
      * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
      */
     protected $fillable = [
         'username',
@@ -31,12 +31,11 @@ class User extends Authenticatable
         'phone_number',
         'address',
         'is_active',
+        'password',  // Para sa password reset
     ];
 
     /**
      * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
      */
     protected $hidden = [
         'password_hash',
@@ -45,8 +44,6 @@ class User extends Authenticatable
 
     /**
      * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
      */
     protected function casts(): array
     {
@@ -62,9 +59,9 @@ class User extends Authenticatable
     /**
      * Relationship: User belongs to a Branch
      */
-    public function branch():BelongsTo
+    public function branch(): BelongsTo
     {
-        return $this->belongsTo(Branch:: class, 'branch_id');
+        return $this->belongsTo(Branch::class, 'branch_id');
     }
 
     /**
@@ -76,7 +73,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Return the password for the Auth system (we store it in `password_hash`).
+     * Return the password for the Auth system (stored in `password_hash`).
      */
     public function getAuthPassword()
     {
@@ -84,10 +81,21 @@ class User extends Authenticatable
     }
 
     /**
-     * Map assignments to `$user->password` into the `password_hash` column.
+     * Map `$user->password` to `password_hash` column with hashing.
      */
     public function setPasswordAttribute($value)
     {
-        $this->attributes['password_hash'] = $value;
+        $this->attributes['password_hash'] = Hash::make($value);  // ✅ Now works
+    }
+
+    // Required for Password Reset
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new \App\Notifications\ResetPasswordNotification($token));
+    }
+
+    public function getEmailForPasswordReset()
+    {
+        return $this->email;
     }
 }
