@@ -8,27 +8,24 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
-use Illuminate\Support\Facades\DB;
 
 class AdminPasswordResetController extends Controller
 {
     /**
-     * Display the admin password reset request form.
+     * Show the admin forgot password form.
      */
     public function showLinkRequestForm()
     {
-        // FULL PATH
         return view('auth.admin-forgot-password');
     }
 
     /**
-     * Send admin password reset link to email.
+     * Send the admin password reset link to email.
      */
     public function sendResetLinkEmail(Request $request)
     {
         $request->validate(['email' => 'required|email']);
 
-        // Use 'admins' broker for admin-specific password reset
         $status = Password::broker('admins')->sendResetLink(
             $request->only('email')
         );
@@ -39,18 +36,21 @@ class AdminPasswordResetController extends Controller
     }
 
     /**
-     * Display the admin password reset form.
+     * Show the admin password reset form.
      */
-    public function showResetForm(Request $request, $token = null)
+    public function showResetForm(Request $request, $token)
     {
+        // The email is passed as a query parameter (?email=...)
+        $email = $request->query('email', old('email'));
+
         return view('auth.admin-reset-password', [
             'token' => $token,
-            'email' => $request->email ?? old('email'),
+            'email' => $email,
         ]);
     }
 
     /**
-     * Reset admin password.
+     * Handle the admin password reset.
      */
     public function reset(Request $request)
     {
@@ -60,12 +60,11 @@ class AdminPasswordResetController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        // Use 'admins' broker for admin-specific password reset
         $status = Password::broker('admins')->reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function ($user, $password) {
                 $user->forceFill([
-                    'password' => Hash::make($password)
+                    'password' => Hash::make($password),
                 ])->setRememberToken(Str::random(60));
 
                 $user->save();
@@ -73,7 +72,7 @@ class AdminPasswordResetController extends Controller
         );
 
         return $status === Password::PASSWORD_RESET
-            ? redirect()->route('admin.dashboard')->with('status', __($status))
+            ? redirect()->route('admin.login')->with('status', __($status))
             : back()->withErrors(['email' => [__($status)]]);
     }
 }

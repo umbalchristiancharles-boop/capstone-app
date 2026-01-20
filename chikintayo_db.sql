@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jan 19, 2026 at 04:39 PM
+-- Generation Time: Jan 20, 2026 at 07:49 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `capstone_app`
+-- Database: `chikintayo_db`
 --
 
 -- --------------------------------------------------------
@@ -235,6 +235,14 @@ CREATE TABLE `password_reset_tokens` (
   `created_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `password_reset_tokens`
+--
+
+INSERT INTO `password_reset_tokens` (`email`, `token`, `created_at`) VALUES
+('calicamarkjulius@gmail.com', '$2y$12$3ZWjKruOItB4CE40VCdeT.L6PRvmGmc2Sj.tTexbFsjxG296RKKIq', '2026-01-19 22:37:27'),
+('umbal.christiancharles@ncst.edu.ph', '$2y$12$3tlbaHkeiGMusc7TTDIF2OP40RLhZcbdeGvXek.gOhU/dneP5sTqS', '2026-01-19 21:31:35');
+
 -- --------------------------------------------------------
 
 --
@@ -274,8 +282,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('0mQ61lPBN6TFplsNsXR9EHeR6r7IJK87rqDg711m', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiNWxSR2x2ZEliQ2ltdnQ4dGprNlRkNll3UGMzVjBXY05ObFVJUEVkWiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDM6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hZG1pbi9wYXNzd29yZC9mb3Jnb3QiO3M6NToicm91dGUiO3M6MjI6ImFkbWluLnBhc3N3b3JkLnJlcXVlc3QiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19', 1768837017),
-('QnupWKmKjJQ1N5UjS8PMttG1Eq2yKbKMASbV0qPf', 11, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiT1RCSWd1V1I5ZmdBb1BiOGgzWDBjVTJNQXhoeXQ0WjRpblFtYkdQSSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDM6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hZG1pbi9wYXNzd29yZC9mb3Jnb3QiO3M6NToicm91dGUiO3M6MjI6ImFkbWluLnBhc3N3b3JkLnJlcXVlc3QiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxMTt9', 1768834428);
+('FtkvxyE0x0KK2IVGdL3dMDBbuNF2NTp1Kf5S6TiF', 11, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiVDFwekxaZ3hORW1jNHJkZ0lJRUM1TWRjVXNzOXRqSldEdFpNMHc0QSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDM6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hZG1pbi9wYXNzd29yZC9mb3Jnb3QiO3M6NToicm91dGUiO3M6MjI6ImFkbWluLnBhc3N3b3JkLnJlcXVlc3QiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxMTt9', 1768891051),
+('nymScORTDmUWPyQ2gawDgXva4b9x7bsg8AmBblvt', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoibmR6aDJ0SXdJVFlXOUVlNGUxM1R5MDU0SncyVkE1MzZyUkYzUzM0MyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1768891068);
 
 -- --------------------------------------------------------
 
@@ -306,15 +314,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `full_name`, `role`, `avatarUrl`, `branch_id`, `avatar_url`, `phone_number`, `address`, `is_active`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(11, 'owner_admin', 'owner@chikintayo.com', '$2y$12$iZeTyiGzRbWr8mNWywVhIOqchsqLUZnLZI1xVSZhserukQ37G55lK', 'System Administrator', 'OWNER', NULL, NULL, NULL, '09123456789', 'Main Office', 1, '2026-01-13 16:05:28', '2026-01-15 04:44:19', NULL),
-(12, 'mark_01', 'markjulius@gmail.com', '$2y$10$1kFz4h4Nrj7OUIz4oAjdiuBjjdRpufS65t7lsj6nRVd2XM1lVTc1a', 'Mark TestS', 'BRANCH_MANAGER', NULL, 1, NULL, '+63 908 171 8919', 'Dasmariñas Cavite', 1, '2026-01-13 08:37:04', '2026-01-19 05:56:15', '2026-01-19 05:56:15'),
-(13, 'gab_02', 'gab@test.com', '$2y$10$DvAjtNhK/KSMbmxessPJ8eDANatAhoTd0HANS.liJTL1aBCeP70iy', 'Gab Test', 'BRANCH_MANAGER', NULL, 2, NULL, '+63 908 171 8997', 'Taga Mars', 0, '2026-01-13 08:40:04', '2026-01-16 23:51:12', NULL),
-(14, 'Janne.who', 'jeremy@test.com', '$2y$10$ILwjlAYaTeDFzWUaRg9TiOpdQgNQUgb5GG1777izaTXzutTQ0.6/W', 'Jeremy Anne', 'BRANCH_MANAGER', NULL, 3, NULL, '+63 908 171 0897', 'Taga Elliston', 1, '2026-01-13 08:41:59', '2026-01-13 10:18:03', '2026-01-13 10:18:03'),
-(15, 'vince_bading', 'vie@test.com', '$2y$10$JN.UqE5Kzu2.U5k/spHHv.6XPdtDIC0VWeeg9e.vUPFy9yLadu69u', 'Vince Bading', 'STAFF', NULL, 1, NULL, '+63 908 171 0000', 'Taga Gay', 1, '2026-01-13 08:43:09', '2026-01-13 10:17:52', '2026-01-13 10:17:52'),
-(17, 'Juls', 'branch.mnl@example.com', '$2y$12$PBd9Ph2Riur.d3gzftJ5nuYr91lD/aWB4rrR4klGH.Yrei2RG2Q1u', 'Julius Calica', 'BRANCH_MANAGER', NULL, 3, NULL, '09156818851', NULL, 1, '2026-01-15 01:03:31', '2026-01-19 05:56:25', '2026-01-19 05:56:25'),
-(18, 'john', 'john@gmail.com', '$2y$10$brEDWQZECpJdueZbSO5ul.EvWDUQDEpjCjphve5Fq.6afRpvVMF0C', 'john loid', 'STAFF', NULL, 1, NULL, '09156818859', NULL, 0, '2026-01-15 01:09:02', '2026-01-16 23:50:44', NULL),
-(19, 'boi', 'boi@gmail.com', '$2y$10$mI2kXq887rffhVkdpqX6luw4jfZlaMekcjHYUU5CDVbrH7cgyDknS', 'boi boi', 'STAFF', NULL, 3, NULL, '09156818851', NULL, 1, '2026-01-15 01:10:20', '2026-01-19 05:56:28', '2026-01-19 05:56:28'),
-(20, 'tite', 'tite@gmail.com', '$2y$10$7.tOcRjjmhiF7i8W2aTTsu7mh.hOHeJWaq1UB2aLBOTR3o7trTfmy', 'titee', 'STAFF', NULL, 3, NULL, '09156818870', NULL, 1, '2026-01-15 02:35:52', '2026-01-16 01:48:03', '2026-01-16 01:48:03');
+(11, 'owner_admin', 'calicamarkjulius@gmail.com', '$2y$12$iZeTyiGzRbWr8mNWywVhIOqchsqLUZnLZI1xVSZhserukQ37G55lK', 'System Administrator', 'OWNER', NULL, NULL, NULL, '09123456789', 'Main Office', 1, '2026-01-13 16:05:28', '2026-01-20 05:56:54', NULL);
 
 -- --------------------------------------------------------
 

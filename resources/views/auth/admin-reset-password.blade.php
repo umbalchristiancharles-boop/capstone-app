@@ -1,45 +1,40 @@
+<!-- filepath: c:\xampp\htdocs\capstone-app\resources\views\auth\admin-reset-password.blade.php -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Admin – Reset Password</title>
-    @vite('resources/js/app.js')
+    @vite('resources/css/app.css')
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
-    <form method="POST" action="{{ route('admin.password.update') }}"
-          class="bg-white p-6 rounded shadow w-full max-w-md">
-        @csrf
+<body>
+    <div class="container">
+        <form method="POST" action="{{ route('admin.password.update') }}">
+            @csrf
 
-        <input type="hidden" name="token" value="{{ $token }}">
+            <input type="hidden" name="token" value="{{ $token }}">
 
-        <h1 class="text-xl font-semibold mb-4">Reset Admin Password</h1>
+            <h1 class="text-orange-700" style="margin-bottom: 1.5rem;">Reset Admin Password</h1>
 
-        <label class="block text-sm font-medium mb-1" for="email">Admin Email</label>
-        <input id="email" type="email" name="email" required
-               class="w-full border rounded px-3 py-2 mb-3"
-               value="{{ $email ?? old('email') }}">
+            <label for="email">Admin Email</label>
+            <input id="email" type="email" name="email" required value="{{ $email ?? old('email') }}">
 
-        <label class="block text-sm font-medium mb-1" for="password">New Password</label>
-        <input id="password" type="password" name="password" required
-               class="w-full border rounded px-3 py-2 mb-3">
+            <label for="password">New Password</label>
+            <input id="password" type="password" name="password" required>
 
-        <label class="block text-sm font-medium mb-1" for="password_confirmation">
-            Confirm Password
-        </label>
-        <input id="password_confirmation" type="password" name="password_confirmation" required
-               class="w-full border rounded px-3 py-2 mb-4">
+            <label for="password_confirmation">Confirm Password</label>
+            <input id="password_confirmation" type="password" name="password_confirmation" required>
 
-        @error('email')
-            <p class="text-xs text-red-600 mb-2">{{ $message }}</p>
-        @enderror
-        @error('password')
-            <p class="text-xs text-red-600 mb-2">{{ $message }}</p>
-        @enderror
+            @error('email')
+                <p class="text-xs" style="color: #dc2626; margin-bottom: 0.5rem;">{{ $message }}</p>
+            @enderror
+            @error('password')
+                <p class="text-xs" style="color: #dc2626; margin-bottom: 0.5rem;">{{ $message }}</p>
+            @enderror
 
-        <button type="submit"
-                class="w-full bg-indigo-600 text-white font-semibold py-2 rounded hover:bg-indigo-700">
-            Reset Password
-        </button>
-    </form>
+            <button type="submit">
+                Reset Password
+            </button>
+        </form>
+    </div>
 </body>
 </html>

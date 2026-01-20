@@ -2,9 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router';
 
 // Import components
 import StaffList from '../components/admin/StaffList.vue';
-
-// NEW: Forgot Password import (adjust path base sa folder mo)
-import ForgotPassword from '../components/ForgotPassword.vue';  // ← Change to your actual path
+import ForgotPassword from '../components/ForgotPassword.vue';
+import ResetPassword from '../components/ResetPassword.vue';
 
 const routes = [
   {
@@ -27,18 +26,31 @@ const routes = [
       role: 'OWNER'
     }
   },
-  // NEW: Forgot Password Route (guest only - no auth needed)
+  // Forgot Password Route (guest only)
   {
     path: '/admin/forgot-password',
     name: 'AdminForgotPassword',
     component: ForgotPassword,
     meta: { requiresGuest: true }
   },
-  // NEW: Admin Login Route (add kung wala pa)
+  // Admin Login Route
   {
     path: '/admin-login',
     name: 'AdminLogin',
     component: () => import('../components/adminlogin.vue'),
+    meta: { requiresGuest: true }
+  },
+  // RESET PASSWORD ROUTE (guest only, supports both query and path param)
+  {
+    path: '/admin/reset-password',
+    name: 'AdminResetPassword',
+    component: ResetPassword,
+    meta: { requiresGuest: true }
+  },
+  {
+    path: '/admin/reset-password/:token',
+    name: 'AdminResetPasswordToken',
+    component: ResetPassword,
     meta: { requiresGuest: true }
   }
 ];
@@ -48,26 +60,26 @@ const router = createRouter({
   routes
 });
 
-// Updated Navigation guard (handles requiresGuest + requiresAuth)
+// Navigation guard
 router.beforeEach((to, from, next) => {
   const isAuthenticated = sessionStorage.getItem('user_id');
   const userRole = sessionStorage.getItem('user_role');
 
-  // Guest routes: redirect if already logged in
+  // Redirect logged-in users away from guest-only pages
   if (to.meta.requiresGuest && isAuthenticated) {
-    next('/admin-panel');  // Redirect to dashboard if logged in
+    next('/admin-panel');
     return;
   }
 
-  // Auth required routes: redirect to login if not logged in
+  // Redirect guests to login if route requires auth
   if (to.meta.requiresAuth && !isAuthenticated) {
-    window.location.href = '/admin-login';  // Use Vue route instead of external
+    window.location.href = '/admin-login';
     return;
   }
 
-  // Role check for auth routes
+  // Role-based route protection
   if (to.meta.role && to.meta.role !== userRole) {
-    next('/');  // Redirect to home for wrong role
+    next('/');
     return;
   }
 

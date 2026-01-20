@@ -14,6 +14,11 @@ Route::get('/login', function () {
     return view('dashboard'); // Vue SPA entry for admin login
 })->name('login');
 
+// Explicit admin login route for password reset redirect
+Route::get('/admin/login', function () {
+    return view('dashboard'); // Or your actual admin login view/component
+})->name('admin.login');
+
 Route::get('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // ==========================================
@@ -103,5 +108,4 @@ Route::middleware('auth')->group(function () {
 // ==========================================
 // SPA CATCH-ALL (MUST BE LAST!)
 // ==========================================
-Route::view('/{any}', 'dashboard')
-    ->where('any', '.*');
+Route::view('/{any}', 'dashboard')->where('any', '.*');
