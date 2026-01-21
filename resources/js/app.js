@@ -36,6 +36,8 @@ axios.defaults.xsrfCookieName = 'XSRF-TOKEN'
 axios.defaults.xsrfHeaderName = 'X-XSRF-TOKEN'
 
 // === ROUTER SETUP ===
+const ResetPassword = () => import('./components/ResetPassword.vue');
+
 const router = createRouter({
   history: createWebHistory(),
   routes: [
@@ -52,6 +54,19 @@ const router = createRouter({
       path: '/admin/deleted-staff',
       component: DeletedStaffList,
       meta: { requiresAuth: true },
+    },
+    // Admin Reset Password (SPA route)
+    {
+      path: '/admin/reset-password',
+      name: 'AdminResetPassword',
+      component: ResetPassword,
+      meta: { requiresGuest: true },
+    },
+    {
+      path: '/admin/reset-password/:token',
+      name: 'AdminResetPasswordToken',
+      component: ResetPassword,
+      meta: { requiresGuest: true },
     },
   ],
 })

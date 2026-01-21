@@ -31,7 +31,6 @@ class User extends Authenticatable implements CanResetPassword
         'phone_number',
         'address',
         'is_active',
-        'password',  // Para sa password reset
     ];
 
     /**
@@ -85,7 +84,7 @@ class User extends Authenticatable implements CanResetPassword
      */
     public function setPasswordAttribute($value)
     {
-        $this->attributes['password_hash'] = Hash::make($value);  // ✅ Now works
+        $this->attributes['password_hash'] = Hash::make($value);
     }
 
     // Required for Password Reset

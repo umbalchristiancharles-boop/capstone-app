@@ -65,7 +65,7 @@ async function submitForm() {
   error.value = '';
   success.value = '';
   try {
-    const response = await fetch('/admin/password/reset', {
+    const response = await fetch('/api/reset-password', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -92,5 +92,5 @@ async function submitForm() {
 </script>
 
 <style scoped>
-@import '../../../css/app.css';
+@import '../../css/app.css';
 </style>

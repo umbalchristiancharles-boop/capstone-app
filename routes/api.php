@@ -40,13 +40,11 @@ Route::middleware('web')->group(function () {
 
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),  // FIXED: array only
-            function (User $user, string $password) {  // FIXED: User imported
-                $user->forceFill([
-                    'password' => Hash::make($password)
-                ])->setRememberToken(Str::random(60));
-
+            function (User $user, string $password) {
+                $user->password = $password; // Triggers mutator, hashes and saves to password_hash
+                $user->setRememberToken(Str::random(60));
                 $user->save();
-                // event(new PasswordReset($user));  // Optional, remove if no event listener
+                // event(new PasswordReset($user));
             }
         );
 
