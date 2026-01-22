@@ -657,13 +657,9 @@ async function confirmLogout() {
     )
   } catch (e) {}
 
-  overlayText.value = 'Logging you out...'
-  setTimeout(() => {
-    showOverlay.value = true
-    setTimeout(() => {
-      router.push('/admin-login')
-    }, 600)
-  }, 400)
+
+  // Redirect to index and reload
+  window.location.href = '/'
 
   showLogoutConfirm.value = false
   isLoggingOut.value = false

@@ -196,6 +196,13 @@
 <script>
 import axios from 'axios'
 
+// Always send CSRF token if present (for web.php routes)
+const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+if (csrfToken) {
+  axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken;
+}
+axios.defaults.withCredentials = true;
+
 export default {
   name: 'StaffModal',
   props: {
@@ -322,12 +329,12 @@ export default {
 
         // Map frontend form keys to backend expected keys.
         const payload = { ...this.form }
-        // backend expects `branch_id` not `branchId`
+        // Ensure branchId is a number (not string)
         if (payload.branchId !== undefined && payload.branchId !== '') {
-          payload.branch_id = payload.branchId
+          payload.branch_id = Number(payload.branchId)
         } else if (this.isEdit) {
           // ensure we send existing branch id when editing (check multiple shapes)
-          payload.branch_id = this.staff?.branch_id || (this.staff?.branch && this.staff.branch.id) || this.staff?.branchId || ''
+          payload.branch_id = Number(this.staff?.branch_id || (this.staff?.branch && this.staff.branch.id) || this.staff?.branchId || '')
         }
         delete payload.branchId
 

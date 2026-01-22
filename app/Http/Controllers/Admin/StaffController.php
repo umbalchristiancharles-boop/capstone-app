@@ -182,6 +182,10 @@ class StaffController extends Controller
      */
     public function apiStore(Request $request)
     {
+        Log::debug('apiStore payload', [
+            'branchId' => $request->input('branchId'),
+            'all' => $request->all()
+        ]);
         try {
             $request->validate([
                 'username' => 'required|string|max:50|unique:users,username',
@@ -190,7 +194,9 @@ class StaffController extends Controller
                 'fullName' => 'required|string|max:150',
                 'phone' => 'nullable|string|max:30',
                 'address' => 'nullable|string|max:255',
-                'branchId' => 'required|exists:branches,id',
+                // Accept either branchId (camelCase) or branch_id (snake_case)
+                'branchId' => 'required_without:branch_id|exists:branches,id',
+                'branch_id' => 'required_without:branchId|exists:branches,id',
                 'role' => 'required|in:BRANCH_MANAGER,STAFF',
             ]);
 
@@ -211,19 +217,25 @@ class StaffController extends Controller
                 }
             }
 
-            $staffId = DB::table('users')->insertGetId([
+
+            // Accept both camelCase and snake_case for robustness
+            $fullName = $request->input('fullName') ?? $request->input('full_name');
+            $email = $request->input('email') ?? $request->input('email');
+            $insertData = [
                 'username' => $request->input('username'),
-                'email' => $request->input('email'),
+                'email' => $email,
                 'password_hash' => Hash::make($request->input('password')),
-                'full_name' => $request->input('fullName'),
+                'full_name' => $fullName,
                 'role' => $request->input('role'),
                 'phone_number' => $request->input('phone'),
                 'address' => $request->input('address'),
-                'branch_id' => $request->input('branchId'),
+                'branch_id' => $request->input('branchId') ?? $request->input('branch_id'),
                 'is_active' => 1,
                 'created_at' => now(),
                 'updated_at' => now(),
-            ]);
+            ];
+            Log::debug('Inserting staff with data:', $insertData);
+            $staffId = DB::table('users')->insertGetId($insertData);
 
             Log::info('Staff created:', ['id' => $staffId, 'role' => $request->input('role')]);
 

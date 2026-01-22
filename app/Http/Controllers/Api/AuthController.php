@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
@@ -20,7 +21,7 @@ class AuthController extends Controller
 
         // Debug: log credentials and password hash
         $user = \App\Models\User::where('username', $credentials['username'])->first();
-        \Log::debug('Login attempt', [
+        Log::debug('Login attempt', [
             'username' => $credentials['username'],
             'input_password' => $credentials['password'],
             'db_password' => $user ? $user->password : null,
@@ -28,7 +29,7 @@ class AuthController extends Controller
         ]);
 
         if (!Auth::attempt($credentials)) {    // uses getAuthPassword() if defined
-            \Log::debug('Auth::attempt failed', [
+            Log::debug('Auth::attempt failed', [
                 'username' => $credentials['username'],
                 'input_password' => $credentials['password'],
                 'db_password' => $user ? $user->password : null,
@@ -44,7 +45,7 @@ class AuthController extends Controller
         $user = Auth::user();
 
         if (! $user) {
-            \Log::debug('Auth::user() returned null after attempt', [
+            Log::debug('Auth::user() returned null after attempt', [
                 'username' => $credentials['username'],
             ]);
             return response()->json([
@@ -53,7 +54,7 @@ class AuthController extends Controller
             ], 401);
         }
 
-        \Log::debug('Login successful', [
+        Log::debug('Login successful', [
             'username' => $user->username,
             'id' => $user->id,
         ]);
