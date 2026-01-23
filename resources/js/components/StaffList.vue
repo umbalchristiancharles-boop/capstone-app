@@ -203,6 +203,7 @@ export default {
   },
   async mounted() {
     await this.setCurrentUserRole()
+    await this.ensureCsrf()
     this.fetchStaff()
   },
   methods: {
@@ -245,6 +246,37 @@ export default {
         this.showAlert('Failed to load staff data', 'error')
       } finally {
         this.loading = false
+      }
+    },
+
+    // Ensure axios has the latest CSRF / XSRF tokens set from the page/cookies.
+    async ensureCsrf() {
+      try {
+        // Re-read meta csrf token and set header
+        const metaToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+        if (metaToken) {
+          axios.defaults.headers.common['X-CSRF-TOKEN'] = metaToken
+        }
+
+        // Request sanctum csrf cookie to ensure XSRF-TOKEN cookie is present
+        await axios.get('/sanctum/csrf-cookie', { withCredentials: true }).catch(() => {})
+
+        // Read XSRF-TOKEN cookie and set axios X-XSRF-TOKEN header
+        function getCookie(name) {
+          const match = document.cookie.match(new RegExp('(^|; )' + name + '=([^;]*)'))
+          return match ? match[2] : null
+        }
+
+        const xsrf = getCookie('XSRF-TOKEN')
+        if (xsrf) {
+          try {
+            axios.defaults.headers.common['X-XSRF-TOKEN'] = decodeURIComponent(xsrf)
+          } catch (e) {
+            axios.defaults.headers.common['X-XSRF-TOKEN'] = xsrf
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to refresh CSRF/XSRF tokens', e)
       }
     },
 
@@ -310,6 +342,14 @@ export default {
       }, 5000)
     },
   },
+  watch: {
+    $route(to, from) {
+      if (to.path === '/admin/staff-management') {
+        // When navigated/redirected to staff management, refresh data
+        this.fetchStaff()
+      }
+    }
+  }
 }
 </script>
 

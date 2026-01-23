@@ -231,6 +231,7 @@ export default {
   data() {
     return {
       form: {
+        id: '',
         username: '',
         email: '',
         fullName: '',
@@ -257,6 +258,7 @@ export default {
             // Populate form with existing staff data; accept multiple field shapes
             const existingBranchId = this.staff.branch_id || (this.staff.branch && this.staff.branch.id) || this.staff.branchId || ''
             this.form = {
+              id: this.staff.id || this.staff.user_id || this.staff.userId || '',
               username: this.staff.username || '',
               email: this.staff.email || '',
               fullName: this.staff.full_name || '',
@@ -270,6 +272,7 @@ export default {
           } else {
             // Reset form for new staff
             this.form = {
+              id: '',
               username: '',
               email: '',
               fullName:  '',
@@ -300,59 +303,98 @@ export default {
 
         console.log('Branches API response:', res.data)
 
-        // Updated to match new API format
         if (res.data.success) {
           this.branches = res.data.data
           console.log('📊 Branches loaded:', this.branches.length)
         } else {
           console.error('Failed to load branches:', res.data.message)
         }
-        } catch (e) {
-        console.error('💥 Error loading branches:', e)
+      } catch (e) {
+        console.error('Load branches error:', e)
+        this.errorMessage = e.response?.data?.message || 'Failed to load branches.'
       }
     },
 
     async submitForm() {
-      if (this.isSubmitting) return
-
       this.isSubmitting = true
       this.errorMessage = ''
 
+      // Ensure CSRF cookie/header are set before submitting
       try {
-        const url = this.isEdit
-          ?  `/api/admin/staff/${this.staff.id}`
-          : '/api/admin/staff'
-
-        const method = this.isEdit ? 'put' : 'post'
-
-        console.log('Submitting form:', this.form)
-
-        // Map frontend form keys to backend expected keys.
-        const payload = { ...this.form }
-        // Ensure branchId is a number (not string)
-        if (payload.branchId !== undefined && payload.branchId !== '') {
-          payload.branch_id = Number(payload.branchId)
-        } else if (this.isEdit) {
-          // ensure we send existing branch id when editing (check multiple shapes)
-          payload.branch_id = Number(this.staff?.branch_id || (this.staff?.branch && this.staff.branch.id) || this.staff?.branchId || '')
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+        if (csrfToken) {
+          axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken
         }
-        delete payload.branchId
+        await axios.get('/sanctum/csrf-cookie', { withCredentials: true }).catch(() => {})
 
-        const res = await axios[method](url, payload, {
-          withCredentials: true,
-        })
+        // helper to read cookie
+        function getCookie(name) {
+          const match = document.cookie.match(new RegExp('(^|; )' + name + '=([^;]*)'))
+          return match ? match[2] : null
+        }
+        const xsrf = getCookie('XSRF-TOKEN')
+        if (xsrf) {
+          try {
+            axios.defaults.headers.common['X-XSRF-TOKEN'] = decodeURIComponent(xsrf)
+          } catch (e) {
+            axios.defaults.headers.common['X-XSRF-TOKEN'] = xsrf
+          }
+        }
+      } catch (e) {
+        console.warn('Could not initialize CSRF cookie before submit', e)
+      }
 
-        console.log('Submit response:', res.data)
+      let url, method
+      try {
+        if (this.isEdit) {
+          url = `/api/admin/staff/${this.form.id}`
+          method = 'PUT'
+        } else {
+          url = '/api/admin/staff'
+          method = 'POST'
+        }
 
-        // Updated to match new API format
+        // Send form data
+        const res = await axios({ method, url, data: this.form })
+
         if (res.data.success) {
-          this.$emit('success', res.data.message || 'Success!')
+          this.$emit('success', res.data)
           this.closeModal()
         } else {
           this.errorMessage = res.data.message || 'An error occurred.'
         }
       } catch (e) {
         console.error('Submit error:', e)
+
+        // If we got a 419 due to stale CSRF, try to refresh the CSRF cookie and retry once
+        if (e.response && e.response.status === 419) {
+          try {
+            await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
+            const csrfToken2 = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+            if (csrfToken2) axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken2
+            const xsrf2 = (document.cookie.match(new RegExp('(^|; )' + 'XSRF-TOKEN' + '=([^;]*)')) || [])[2]
+            if (xsrf2) {
+              try { axios.defaults.headers.common['X-XSRF-TOKEN'] = decodeURIComponent(xsrf2) } catch (_) { axios.defaults.headers.common['X-XSRF-TOKEN'] = xsrf2 }
+            }
+
+            // retry the original request once
+            const retryRes = await axios({ method, url, data: this.form })
+            if (retryRes.data && retryRes.data.success) {
+              this.$emit('success', retryRes.data)
+              this.closeModal()
+              return
+            }
+          } catch (retryErr) {
+            console.error('Retry after CSRF refresh failed', retryErr)
+            // Show a visible error to the user so they can manually reload
+            try { console.log('document.cookie:', document.cookie) } catch (e) {}
+            try { console.log('axios.defaults.headers.common:', axios.defaults.headers.common) } catch (e) {}
+            // Try to resync by performing a one-time reload (avoid loops)
+            try { sessionStorage.setItem('appReloaded', '1') } catch (e) {}
+            try { sessionStorage.setItem('preReloadPath', window.location.pathname) } catch (e) {}
+            try { window.location.reload() } catch (e) {}
+          }
+        }
 
         if (e.response?.data?.errors) {
           // Laravel validation errors

@@ -74,11 +74,26 @@ const router = createRouter({
 // === GLOBAL GUARD PARA PROTECTED ANG /admin-panel ===
 router.beforeEach(async (to, from, next) => {
   if (to.path === '/admin-panel' || to.meta.requiresAuth) {
+    // If the user is navigating away from admin panel, clear the reload flag
+    // so coming back to staff-management triggers a fresh reload.
+    if (from && (from.path === '/admin-panel' || from.path === '/manager-panel')) {
+      try { sessionStorage.removeItem('appReloaded') } catch (e) {}
+    }
     try {
       const res = await axios.get('/api/me', {
         withCredentials: true,
       })
       if (res.data.ok) {
+        // If navigating to staff-management, perform a one-time full reload
+        // to ensure server-rendered CSRF meta tag and cookies are in sync.
+        if ((to.path === '/admin/staff-management' || to.path === '/manager-panel') && !sessionStorage.getItem('appReloaded')) {
+          sessionStorage.setItem('appReloaded', '1')
+          // remember where we wanted to go so we can restore after reload
+          sessionStorage.setItem('preReloadPath', to.path || window.location.pathname)
+          window.location.reload()
+          return
+        }
+
         return next()
       }
       return next('/admin-login')
@@ -109,8 +124,28 @@ axios
         axios.defaults.headers.common['X-XSRF-TOKEN'] = xsrfCookie
       }
     }
+    // If the server-rendered page is already at /admin/staff-management,
+    // do a one-time reload to ensure CSRF meta tag and XSRF cookie are fresh
+    if ((window.location.pathname === '/admin/staff-management' || window.location.pathname === '/manager-panel') && !sessionStorage.getItem('appReloaded')) {
+      sessionStorage.setItem('appReloaded', '1')
+      sessionStorage.setItem('preReloadPath', window.location.pathname)
+      window.location.reload()
+      return
+    }
 
     const app = createApp(App)
     app.use(router)
     app.mount('#app')
+
+    // If we saved a preReloadPath, navigate there now to restore user's location
+    try {
+      const pre = sessionStorage.getItem('preReloadPath')
+      if (pre) {
+        sessionStorage.removeItem('preReloadPath')
+        // use router.replace to avoid adding extra history entry
+        router.replace(pre).catch(() => {})
+      }
+    } catch (e) {
+      // ignore
+    }
   })
