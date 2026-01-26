@@ -567,7 +567,17 @@ async function onAvatarChange(event) {
     withCredentials: true,
   })
 
-  staffProfile.value.avatarUrl = res.data.avatarUrl
+  // Fetch latest profile to ensure avatarUrl is up-to-date
+  try {
+    const profileRes = await axios.get('/api/owner-profile', { withCredentials: true })
+    if (profileRes.data.ok && profileRes.data.user) {
+      staffProfile.value.avatarUrl = (profileRes.data.user.avatarUrl || res.data.avatarUrl) + '?t=' + Date.now()
+    } else {
+      staffProfile.value.avatarUrl = res.data.avatarUrl + '?t=' + Date.now()
+    }
+  } catch (e) {
+    staffProfile.value.avatarUrl = res.data.avatarUrl + '?t=' + Date.now()
+  }
 }
 
 async function confirmLogout() {
@@ -611,4 +621,3 @@ onMounted(() => {
     .catch(() => {})
 })
 </script>
-// PC TEST UPDATE

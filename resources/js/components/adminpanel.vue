@@ -96,7 +96,7 @@
                 <div class="owner-extra-row">
                   <span class="owner-label">Assigned Branch:</span>
                   <span class="owner-value">
-                    {{ ownerProfile.branch || 'Chikin Tayo – QC Main' }}
+                    {{ typeof ownerProfile.branch === 'object' && ownerProfile.branch.name ? ownerProfile.branch.name : (ownerProfile.branch || 'Chikin Tayo – QC Main') }}
                   </span>
                 </div>
               </div>
@@ -442,7 +442,9 @@
 
               <div class="info-row">
                 <span class="info-label">Branch</span>
-                <span class="info-value">{{ ownerProfile.branch }}</span>
+                <span class="info-value">
+                  {{ typeof ownerProfile.branch === 'object' && ownerProfile.branch.name ? ownerProfile.branch.name : (ownerProfile.branch || 'Not assigned') }}
+                </span>
               </div>
             </div>
 
@@ -642,7 +644,18 @@ async function onAvatarChange(event) {
     withCredentials: true,
   })
 
-  ownerProfile.value.avatarUrl = res.data.avatarUrl
+  // Fetch latest profile to ensure avatarUrl is up-to-date
+  try {
+    const profileRes = await axios.get('/api/owner-profile', { withCredentials: true })
+    let url = (profileRes.data.ok && profileRes.data.user && profileRes.data.user.avatarUrl) ? profileRes.data.user.avatarUrl : res.data.avatarUrl
+    // Remove any existing ?t=...
+    url = url.replace(/\?t=\d+$/, '')
+    ownerProfile.value.avatarUrl = url + '?t=' + Date.now()
+  } catch (e) {
+    let url = res.data.avatarUrl
+    url = url.replace(/\?t=\d+$/, '')
+    ownerProfile.value.avatarUrl = url + '?t=' + Date.now()
+  }
 }
 
 async function confirmLogout() {

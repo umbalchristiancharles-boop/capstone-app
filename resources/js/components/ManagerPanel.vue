@@ -441,7 +441,9 @@
 
             <div class="info-row">
               <span class="info-label">Branch</span>
-              <span class="info-value">{{ managerProfile.branch }}</span>
+              <span class="info-value">
+                {{ typeof managerProfile.branch === 'object' && managerProfile.branch.name ? managerProfile.branch.name : (managerProfile.branch || 'Not assigned') }}
+              </span>
             </div>
           </div>
 
@@ -651,7 +653,17 @@ async function onAvatarChange(event) {
     withCredentials: true,
   })
 
-  managerProfile.value.avatarUrl = res.data.avatarUrl
+  // Fetch latest profile to ensure avatarUrl is up-to-date
+  try {
+    const profileRes = await axios.get('/api/owner-profile', { withCredentials: true })
+    if (profileRes.data.ok && profileRes.data.user) {
+      managerProfile.value.avatarUrl = (profileRes.data.user.avatarUrl || res.data.avatarUrl) + '?t=' + Date.now()
+    } else {
+      managerProfile.value.avatarUrl = res.data.avatarUrl + '?t=' + Date.now()
+    }
+  } catch (e) {
+    managerProfile.value.avatarUrl = res.data.avatarUrl + '?t=' + Date.now()
+  }
 }
 
 async function confirmLogout() {
