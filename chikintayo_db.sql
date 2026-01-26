@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jan 22, 2026 at 10:37 AM
+-- Generation Time: Jan 26, 2026 at 04:22 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -285,10 +285,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('HGe2ME0IInrRL4VVoygvEJtHNLuVLXWg3HnWNHTz', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiU3ZmMWY0eld2ZTBaaU9ld0tBTk41QXZKZmxXQ0FpOVZRNk56U1liUiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1769069508),
-('l60H22MR9e0JLugGwYgHI5sW4VbgQQOuMyWXBwaJ', 11, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiVHV2VHB4cFZyWjMzbTFpMVRCeFVTcENWVFdtYUVpa2hLdTBxZWFCNCI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czo0NDoiaHR0cDovL2xvY2FsaG9zdDo4MDAwL2FkbWluL3N0YWZmLW1hbmFnZW1lbnQiO31zOjk6Il9wcmV2aW91cyI7YToyOntzOjM6InVybCI7czo3MDoiaHR0cDovL2xvY2FsaG9zdDo4MDAwLy53ZWxsLWtub3duL2FwcHNwZWNpZmljL2NvbS5jaHJvbWUuZGV2dG9vbHMuanNvbiI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTE7fQ==', 1769069829),
-('le4IZWWORXIEgT8oREIjgC1nqkfxO4ysclo7uLGS', 11, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiRUY1a1ZkTTc5MVk3U2xXYlVhNnVsREsyZzkxc09yNDRqUWFSQ0NHaCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjExO30=', 1769070455),
-('XAT4yziEqmHs51v4VdJnKqRuaIRWsez8nWfu7rkD', 11, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiVTlRbUQ2YlJOM2ZBSGlLQzlOcjdvaXVQYXNKdVE5SlJrMFE0UHVrViI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjExO30=', 1769068158);
+('QBWnQ2O1emoCtoduy3dt0FdKIID0wGQEjQXRLxvj', 11, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiUENLV1ZNbnlCUnFFSktwWmxQNnVxdG1ib1RxRlhlOFcyTXhwZWlWbCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzM6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hZG1pbi1sb2dpbiI7czo1OiJyb3V0ZSI7Tjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTE7fQ==', 1769440924),
+('UDFivtz5TNWflhAeixwiQ6McqY9jnNDX3QbAfyx4', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoieXh6UUZ2YWNUbE83VFJ2V2o3MllLYnJCREZVYlBpZlcwM1h2YVU5SiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1769435696);
 
 -- --------------------------------------------------------
 
@@ -321,9 +319,9 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `full_name`, `role`, `avatarUrl`, `branch_id`, `avatar_url`, `phone_number`, `address`, `is_active`, `created_at`, `updated_at`, `deleted_at`, `remember_token`, `password`) VALUES
-(11, 'owner_admin', 'calicamarkjulius@gmail.com', '$2y$12$0UbstBBBR2nY9p9ZANRp1OxlBwWoZeZ/9Zx7WuDERrtMbrq1V/auy', 'System Administrator', 'OWNER', NULL, NULL, NULL, '09123456789', 'Main Office', 1, '2026-01-13 16:05:28', '2026-01-22 09:33:51', NULL, '4HzqyoVzwqblhS8mQr2uNnlWACzFCzsOOIOd5iPOj45esGZ3txwHupwsCziM', '$2y$12$sFbzg7dPLe0R/gYGAzVSjew8oDu8YcxgJ1O5f6x2dC7GgmUmlJNca'),
-(21, 'branch_manager1', 'gab@test.com', '$2y$12$wH8Qw8Qw8Qw8Qw8Qw8Qw8u8Qw8Qw8Qw8Qw8Qw8Qw8Qw8Qw8Qw8Q', 'gabbie', 'BRANCH_MANAGER', NULL, 1, NULL, '09123456780', 'Branch Office Address', 1, '2026-01-22 07:01:43', '2026-01-22 01:29:37', NULL, NULL, NULL),
-(23, 'gab', 'onggab54@gmail.com', '$2y$12$at4w9GoSd7OylPjTyCB7.unz80/SjnzvO1flKzZTr3KISsyPVAs/K', 'gabb', 'BRANCH_MANAGER', NULL, 2, NULL, '09156818851', NULL, 1, '2026-01-22 01:21:23', '2026-01-22 01:29:26', NULL, NULL, NULL);
+(11, 'owner_admin', 'calicamarkjulius@gmail.com', '$2y$12$0UbstBBBR2nY9p9ZANRp1OxlBwWoZeZ/9Zx7WuDERrtMbrq1V/auy', 'System Administrator', 'OWNER', NULL, NULL, '/storage/avatars/avatar_11_1769436632.jpg', '09123456789', 'Main Office', 1, '2026-01-13 16:05:28', '2026-01-26 15:10:23', NULL, 'RDjbCehvW5ZMmdBKgy3GNluFGxSoLOJjQnFz1noIszubygzSnhs9E2dIr8tw', '$2y$12$sFbzg7dPLe0R/gYGAzVSjew8oDu8YcxgJ1O5f6x2dC7GgmUmlJNca'),
+(23, 'gab', 'onggab54@gmail.com', '$2y$12$at4w9GoSd7OylPjTyCB7.unz80/SjnzvO1flKzZTr3KISsyPVAs/K', 'gabb', 'BRANCH_MANAGER', NULL, 2, '/storage/avatars/avatar_23_1769437262.jpg', '09156818851', NULL, 1, '2026-01-22 01:21:23', '2026-01-26 06:21:21', NULL, NULL, NULL),
+(24, 'mark_01', 'mark@test.com', '$2y$12$5hjZqNwfi.69Q9Vn2jPOnOekF1uuWflJdqrcYwyPGbstDZ7pH9dOy', 'Mark Test', 'STAFF', NULL, 2, NULL, '09156818843', 'Taga pala pala', 1, '2026-01-26 06:25:16', '2026-01-26 07:04:02', NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -482,7 +480,7 @@ ALTER TABLE `personal_access_tokens`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
 -- AUTO_INCREMENT for table `user_profiles`
