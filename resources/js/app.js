@@ -4,6 +4,7 @@ import App from './app.vue'
 import Index from './components/index.vue'
 import AdminPanel from './components/adminpanel.vue'
 import ManagerPanel from './components/ManagerPanel.vue'
+import StaffPanel from './components/StaffPanel.vue'
 import adminlogin from './components/adminlogin.vue'
 import StaffList from './components/StaffList.vue'
 import DeletedStaffList from './components/DeletedStaffList.vue'
@@ -44,6 +45,7 @@ const router = createRouter({
     { path: '/', component: Index },
     { path: '/admin-panel', component: AdminPanel },
     { path: '/manager-panel', component: ManagerPanel },
+    { path: '/staff-panel', component: StaffPanel },
     { path: '/admin-login', component: adminlogin },
     {
       path: '/admin/staff-management',

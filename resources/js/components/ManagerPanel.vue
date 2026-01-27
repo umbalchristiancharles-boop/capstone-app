@@ -680,16 +680,13 @@ async function confirmLogout() {
     // client-side logout pa rin
   }
 
-  overlayText.value = 'Logging you out...'
-  setTimeout(() => {
-    showOverlay.value = true
-    setTimeout(() => {
-      router.push('/admin-login')
-    }, 600)
-  }, 400)
-
-  showLogoutConfirm.value = false
-  isLoggingOut.value = false
+  // Redirect to index and reload (mirror AdminPanel behavior)
+  try {
+    window.location.href = '/'
+  } finally {
+    showLogoutConfirm.value = false
+    isLoggingOut.value = false
+  }
 }
 
 function cancelLogout() {
