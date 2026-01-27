@@ -165,27 +165,40 @@ class AuthController extends Controller
             ], 401);
         }
 
+        // Relax validation slightly (allow webp, larger files) and log request for debugging
         $request->validate([
-            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120', // max 5MB
         ]);
 
         $user = Auth::user();
         $file = $request->file('avatar');
 
-        // Generate a unique filename
-        $filename = 'avatar_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+        if (! $file) {
+            Log::debug('uploadAvatar: no file present in request', ['user_id' => $user->id ?? null]);
+            return response()->json(['ok' => false, 'message' => 'No file uploaded'], 400);
+        }
 
-        // Store in public/storage/avatars
-        $path = $file->storeAs('avatars', $filename, 'public');
+        try {
+            // Generate a unique filename
+            $filename = 'avatar_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
 
-        // Update user avatar_url
-        DB::table('users')
-            ->where('id', $user->id)
-            ->update(['avatar_url' => '/storage/' . $path]);
+            // Store in public/storage/avatars
+            $path = $file->storeAs('avatars', $filename, 'public');
 
-        return response()->json([
-            'ok'       => true,
-            'avatarUrl' => '/storage/' . $path,
-        ]);
+            // Update user avatar_url
+            DB::table('users')
+                ->where('id', $user->id)
+                ->update(['avatar_url' => '/storage/' . $path]);
+
+            Log::debug('uploadAvatar: stored avatar', ['user_id' => $user->id, 'path' => $path]);
+
+            return response()->json([
+                'ok'        => true,
+                'avatarUrl' => '/storage/' . $path,
+            ]);
+        } catch (\Exception $ex) {
+            Log::error('uploadAvatar error', ['user_id' => $user->id ?? null, 'exception' => $ex->getMessage()]);
+            return response()->json(['ok' => false, 'message' => 'Failed to upload avatar'], 500);
+        }
     }
 }
