@@ -2,21 +2,21 @@
   <div class="min-h-screen bg-gradient-to-b from-[#FF9A4A] to-[#FF6A3D]">
     <div class="admin-page">
       <section class="admin-layout">
-        <!-- LEFT:  ADMIN PROFILE COLUMN -->
+        <!-- LEFT: HR PROFILE COLUMN -->
         <aside class="admin-profile-column">
           <div class="admin-card admin-card--stacked">
             <!-- PROFILE PICTURE + NAME + ROLE -->
             <div class="admin-card__header admin-card__header--stacked">
               <!-- clickable avatar -->
-              <label class="admin-avatar admin-avatar--photo avatar-upload" for="avatar-input">
+              <label class="admin-avatar admin-avatar--photo avatar-upload" for="hr-avatar-input">
                 <img
-                  v-if="ownerProfile.avatarUrl"
-                  :src="ownerProfile.avatarUrl"
+                  v-if="hrProfile.avatarUrl"
+                  :src="hrProfile.avatarUrl"
                   alt="Profile picture"
                   class="avatar-img"
                 />
                 <div v-else class="avatar-placeholder">
-                  <span class="avatar-initials">CT</span>
+                  <span class="avatar-initials">HR</span>
                 </div>
                 <div class="avatar-overlay">
                   <span class="avatar-change-text">Change Photo</span>
@@ -26,16 +26,16 @@
               <div class="admin-header-text admin-header-text--center">
                 <div class="admin-label">Account</div>
                 <div class="admin-name">
-                  {{ ownerProfile.fullName || 'Vince Hannibal R. Bido' }}
+                  {{ hrProfile.fullName || 'HR Administrator' }}
                 </div>
                 <div class="admin-role">
-                  {{ ownerProfile.role || 'OWNER' }}
+                  {{ hrProfile.role || 'HR DEPARTMENT' }}
                 </div>
               </div>
 
               <!-- hidden file input -->
               <input
-                id="avatar-input"
+                id="hr-avatar-input"
                 type="file"
                 accept="image/*"
                 @change="onAvatarChange"
@@ -43,12 +43,12 @@
               />
             </div>
 
-            <!-- ACCOUNT ID + INFO BUTTON + QR -->
+            <!-- ACCOUNT ID + INFO BUTTON -->
             <div class="admin-card__body admin-card__body--stacked">
               <div class="admin-id-block admin-id-block--center">
-                <span class="admin-id-label">Account I.D: </span>
+                <span class="admin-id-label">HR I.D:</span>
                 <span class="admin-id-value">
-                  &nbsp;{{ ownerProfile.accountId || 'kk19096' }}
+                  &nbsp;{{ hrProfile.accountId || 'HR-0001' }}
                 </span>
               </div>
 
@@ -64,25 +64,25 @@
               </div>
             </div>
 
-            <!-- METRICS + EXTRA + CENTERED LOGOUT -->
+            <!-- METRICS + EXTRA + BUTTONS -->
             <div class="admin-card__footer admin-card__footer--stacked">
               <div class="admin-metrics-row">
                 <div class="admin-metric">
                   <div class="metric-icon">👥</div>
                   <div class="metric-text">
-                    <span class="metric-label">Total Branches: </span>
+                    <span class="metric-label">Total Employees</span>
                     <span class="metric-value">
-                      &nbsp;{{ summaryTotals.totalBranches }}
+                      {{ hrSummaryTotals.totalEmployees }}
                     </span>
                   </div>
                 </div>
 
                 <div class="admin-metric">
-                  <div class="metric-icon">👨‍🍳</div>
+                  <div class="metric-icon">🏬</div>
                   <div class="metric-text">
-                    <span class="metric-label">Total Employees:</span>
+                    <span class="metric-label">Covered Branches</span>
                     <span class="metric-value">
-                      &nbsp;{{ summaryTotals.totalEmployees }}
+                      {{ hrSummaryTotals.totalBranches }}
                     </span>
                   </div>
                 </div>
@@ -91,23 +91,23 @@
               <div class="owner-extra">
                 <div class="owner-extra-row">
                   <span class="owner-label">Access Level:</span>
-                  <span class="owner-value">Full control</span>
+                  <span class="owner-value">HR Management</span>
                 </div>
                 <div class="owner-extra-row">
-                  <span class="owner-label">Assigned Branch:</span>
+                  <span class="owner-label">Department:</span>
                   <span class="owner-value">
-                    {{ typeof ownerProfile.branch === 'object' && ownerProfile.branch.name ? ownerProfile.branch.name : (ownerProfile.branch || 'Chikin Tayo – QC Main') }}
+                    {{ hrProfile.department || 'Human Resources' }}
                   </span>
                 </div>
               </div>
 
               <div class="admin-actions-row">
-                <!-- Staff Management Button -->
+                <!-- Employee Management Button -->
                 <button
                   class="staff-btn staff-btn--center"
-                  @click="goToStaffManagement"
+                  @click="goToEmployeeManagement"
                 >
-                  👥 Staff Management
+                  👥 Employee Management
                 </button>
 
                 <!-- Logout Button -->
@@ -122,18 +122,17 @@
           </div>
         </aside>
 
-        <!-- MIDDLE: MAIN DASHBOARD -->
+        <!-- MIDDLE: HR DASHBOARD -->
         <main class="admin-main">
           <header class="admin-main-header">
             <div class="admin-main-header-top">
               <div>
-                <h1>Chikin Tayo Admin Panel</h1>
+                <h1>Chikin Tayo HR Panel</h1>
                 <p>
-                  Monitor branches, orders, and staff activity from a single
-                  dashboard.
+                  Manage employees, attendance, and HR records across all branches.
                 </p>
                 <p v-if="isLoadingDashboard" class="small-hint">
-                  Loading dashboard…
+                  Loading HR dashboard…
                 </p>
                 <p v-else-if="dashboardError" class="small-hint small-hint--error">
                   {{ dashboardError }}
@@ -151,24 +150,10 @@
                 </button>
                 <button
                   class="range-tab"
-                  :class="{ 'range-tab--active': activeRange === 'yesterday' }"
-                  @click="changeRange('yesterday')"
-                >
-                  Yesterday
-                </button>
-                <button
-                  class="range-tab"
                   :class="{ 'range-tab--active': activeRange === 'thisWeek' }"
                   @click="changeRange('thisWeek')"
                 >
                   This Week
-                </button>
-                <button
-                  class="range-tab"
-                  :class="{ 'range-tab--active': activeRange === 'lastWeek' }"
-                  @click="changeRange('lastWeek')"
-                >
-                  Last Week
                 </button>
                 <button
                   class="range-tab"
@@ -179,70 +164,70 @@
                 </button>
                 <button
                   class="range-tab"
-                  :class="{ 'range-tab--active': activeRange === 'lastMonth' }"
-                  @click="changeRange('lastMonth')"
+                  :class="{ 'range-tab--active': activeRange === 'thisYear' }"
+                  @click="changeRange('thisYear')"
                 >
-                  Last Month
+                  This Year
                 </button>
               </div>
             </div>
           </header>
 
-          <!-- Overview cards -->
+          <!-- Overview cards (HR metrics) -->
           <section class="overview-grid">
             <div class="overview-card">
               <span class="overview-label">
-                Orders<span v-if="activeRange === 'today'"> Today</span>:
+                Employees<span v-if="activeRangeLabel"> ({{ activeRangeLabel }})</span>:
               </span>
               <span class="overview-value">
-                &nbsp;{{ dashboardTotals.orders }}
-              </span>
-            </div>
-            <div class="overview-card">
-              <span class="overview-label">Completed Orders: </span>
-              <span class="overview-value">
-                &nbsp;{{ dashboardTotals.completed }}
+                &nbsp;{{ hrDashboardTotals.newEmployees }}
               </span>
             </div>
             <div class="overview-card">
-              <span class="overview-label">Sales:</span>
+              <span class="overview-label">Pending Leave Requests:</span>
               <span class="overview-value">
-                &nbsp;{{ dashboardTotals.sales }}
+                &nbsp;{{ hrDashboardTotals.pendingLeaves }}
               </span>
             </div>
             <div class="overview-card">
-              <span class="overview-label">Pending Orders:</span>
+              <span class="overview-label">Absent Today:</span>
               <span class="overview-value">
-                &nbsp;{{ dashboardTotals.pending }}
+                &nbsp;{{ hrDashboardTotals.absentToday }}
+              </span>
+            </div>
+            <div class="overview-card">
+              <span class="overview-label">Open Positions:</span>
+              <span class="overview-value">
+                &nbsp;{{ hrDashboardTotals.openPositions }}
               </span>
             </div>
           </section>
 
-          <!-- Orders table -->
+          <!-- Recent hires table -->
           <section class="panel-block">
             <div class="panel-header">
-              <h2>Orders</h2>
+              <h2>Recent Hires</h2>
               <button
                 class="panel-action"
-                @click="showAllOrders = !showAllOrders"
+                @click="showAllHires = !showAllHires"
               >
-                {{ showAllOrders ? 'Show less' : 'View all' }}
+                {{ showAllHires ? 'Show less' : 'View all' }}
               </button>
             </div>
 
             <div class="panel-body panel-body--table">
               <div class="table-header">
-                <span>Order #</span>
-                <span>Customer</span>
-                <span>Status</span>
-                <span>Total</span>
+                <span>Employee</span>
+                <span>Position</span>
+                <span>Branch</span>
+                <span>Hired</span>
               </div>
 
               <div
-                v-if="recentOrders.length === 0"
+                v-if="recentHires.length === 0"
                 class="table-row"
               >
-                <span>No recent orders for this range.</span>
+                <span>No hires for this range.</span>
                 <span></span>
                 <span></span>
                 <span></span>
@@ -250,44 +235,33 @@
 
               <div
                 v-else
-                v-for="order in visibleOrders"
-                :key="order.id"
+                v-for="emp in visibleHires"
+                :key="emp.id"
                 class="table-row"
               >
-                <span>{{ order.code }}</span>
-                <span>{{ order.customer }}</span>
-                <span>
-                  <span
-                    class="badge"
-                    :class="{
-                      'badge--success': order.status === 'completed',
-                      'badge--warning': order.status === 'in_kitchen',
-                      'badge--info': order.status === 'pending'
-                    }"
-                  >
-                    {{ order.statusLabel }}
-                  </span>
-                </span>
-                <span>{{ order.total }}</span>
+                <span>{{ emp.name }}</span>
+                <span>{{ emp.position }}</span>
+                <span>{{ emp.branch }}</span>
+                <span>{{ emp.hiredAt }}</span>
               </div>
             </div>
           </section>
 
-          <!-- Production queue -->
+          <!-- Attendance alerts -->
           <section class="panel-block">
             <div class="panel-header">
-              <h2>Production Queue</h2>
+              <h2>Attendance Alerts</h2>
             </div>
             <div class="panel-body panel-body--list">
               <div
-                v-if="productionQueue.length === 0"
+                v-if="attendanceAlerts.length === 0"
                 class="queue-item"
               >
-                <div class="queue-title">No items in production.</div>
+                <div class="queue-title">No attendance issues detected.</div>
               </div>
               <div
                 v-else
-                v-for="item in productionQueue"
+                v-for="item in attendanceAlerts"
                 :key="item.id"
                 class="queue-item"
               >
@@ -305,73 +279,71 @@
 
         <!-- RIGHT: SIDE PANELS -->
         <aside class="admin-side">
-          <!-- Top products -->
+          <!-- Leave requests -->
           <section class="panel-block">
             <div class="panel-header">
-              <h2>Top Products</h2>
+              <h2>Pending Leave Requests</h2>
             </div>
             <div class="panel-body panel-body--list">
               <div
-                v-if="topProducts.length === 0"
+                v-if="pendingLeaves.length === 0"
                 class="side-item"
               >
-                <span>No data for this range.</span>
+                <span>No pending leave requests.</span>
               </div>
               <div
                 v-else
-                v-for="prod in topProducts"
-                :key="prod.id"
+                v-for="leave in pendingLeaves"
+                :key="leave.id"
                 class="side-item"
               >
-                <span>{{ prod.name }}</span>
-                <span class="side-value">{{ prod.orders }} orders</span>
+                <span>{{ leave.employee }}</span>
+                <span class="side-value">{{ leave.range }}</span>
               </div>
             </div>
           </section>
 
-          <!-- Low stock -->
+          <!-- Open positions / applicants -->
           <section class="panel-block">
             <div class="panel-header">
-              <h2>Low Stock Items</h2>
+              <h2>Open Positions</h2>
             </div>
             <div class="panel-body panel-body--list">
               <div
-                v-if="lowStockItems.length === 0"
-                class="side-item side-item--alert"
+                v-if="openPositions.length === 0"
+                class="side-item"
               >
-                <span>All items above minimum stock.</span>
+                <span>No active job postings.</span>
               </div>
               <div
                 v-else
-                v-for="item in lowStockItems"
-                :key="item.id"
-                class="side-item side-item--alert"
+                v-for="pos in openPositions"
+                :key="pos.id"
+                class="side-item"
               >
-                <span>{{ item.name }}</span>
-                <span class="side-value">
-                  {{ item.qty }} {{ item.unit }} left
-                </span>
+                <span>{{ pos.title }}</span>
+                <span class="side-value">{{ pos.applicants }} applicants</span>
               </div>
             </div>
           </section>
 
-          <!-- Staff activity -->
+          <!-- HR activity log -->
           <section class="panel-block">
             <div class="panel-header">
-              <h2>Staff Activity</h2>
+              <h2>HR Activity</h2>
             </div>
             <div class="panel-body panel-body--list">
               <div
-                v-if="staffActivity.length === 0"
+                v-if="hrActivity.length === 0"
                 class="activity-item"
               >
                 <span class="activity-main">
-                  No staff activity logged for this range.
+                  No HR activity logged for this range.
                 </span>
               </div>
               <div
                 v-else
-                v-for="log in staffActivity"
+                v-for="log in hrActivity"
                 :key="log.id"
                 class="activity-item"
               >
@@ -389,21 +361,20 @@
       <transition name="fade">
         <div v-if="showInfoModal" class="info-backdrop">
           <div class="info-modal">
-            <h3>Owner Information</h3>
+            <h3>HR Account Information</h3>
             <p class="info-sub">
-              Personal details for this administrator can be updated from this
-              panel.
+              Personal details for this HR account can be updated from this panel.
             </p>
 
             <div class="info-grid">
               <div class="info-row">
                 <span class="info-label">Full name</span>
                 <span class="info-value" v-if="!isEditingInfo">
-                  {{ ownerProfile.fullName }}
+                  {{ hrProfile.fullName }}
                 </span>
                 <input
                   v-else
-                  v-model="ownerProfile.fullName"
+                  v-model="hrProfile.fullName"
                   class="info-input"
                   type="text"
                 />
@@ -411,17 +382,19 @@
 
               <div class="info-row">
                 <span class="info-label">Role</span>
-                <span class="info-value">{{ ownerProfile.role }}</span>
+                <span class="info-value">
+                  {{ hrProfile.role || 'HR DEPARTMENT' }}
+                </span>
               </div>
 
               <div class="info-row">
                 <span class="info-label">Email</span>
                 <span class="info-value" v-if="!isEditingInfo">
-                  {{ ownerProfile.email }}
+                  {{ hrProfile.email }}
                 </span>
                 <input
                   v-else
-                  v-model="ownerProfile.email"
+                  v-model="hrProfile.email"
                   class="info-input"
                   type="email"
                 />
@@ -430,20 +403,20 @@
               <div class="info-row">
                 <span class="info-label">Contact</span>
                 <span class="info-value" v-if="!isEditingInfo">
-                  {{ ownerProfile.contact }}
+                  {{ hrProfile.contact }}
                 </span>
                 <input
                   v-else
-                  v-model="ownerProfile.contact"
+                  v-model="hrProfile.contact"
                   class="info-input"
                   type="text"
                 />
               </div>
 
               <div class="info-row">
-                <span class="info-label">Branch</span>
+                <span class="info-label">Department</span>
                 <span class="info-value">
-                  {{ typeof ownerProfile.branch === 'object' && ownerProfile.branch.name ? ownerProfile.branch.name : (ownerProfile.branch || 'Not assigned') }}
+                  {{ hrProfile.department || 'Human Resources' }}
                 </span>
               </div>
             </div>
@@ -454,7 +427,7 @@
               </button>
               <button
                 class="btn-primary"
-                @click="isEditingInfo ? saveOwnerInfo() : (isEditingInfo = true)"
+                @click="isEditingInfo ? saveHrInfo() : (isEditingInfo = true)"
               >
                 {{ isEditingInfo ? 'Save changes' : 'Edit information' }}
               </button>
@@ -467,8 +440,8 @@
       <transition name="fade">
         <div v-if="showLogoutConfirm" class="logout-confirm-backdrop">
           <div class="logout-confirm-box">
-            <h3>Logout from Admin Panel?</h3>
-            <p>This will end your current session for Chikin Tayo Admin.</p>
+            <h3>Logout from HR Panel?</h3>
+            <p>This will end your current session for Chikin Tayo HR.</p>
             <div class="logout-actions">
               <button
                 class="btn-cancel"
@@ -489,7 +462,7 @@
         </div>
       </transition>
 
-      <!-- FULLSCREEN LOADING OVERLAY -->
+      <!-- FULLSCREEN LOADING OVERLAY (CHIKIN TAYO LOGO) -->
       <transition name="fade">
         <div v-if="showOverlay" class="loading-overlay">
           <div class="logo-loading-box">
@@ -505,34 +478,51 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
+// axios pwede nyo nang i-wire later
+// import axios from 'axios'
 import '../css/adminpanel.css'
 
 const router = useRouter()
 const activeRange = ref('today')
 
-const dashboardTotals = ref({
-  orders: 0,
-  completed: 0,
-  sales: '₱0',
-  pending: 0,
+const hrDashboardTotals = ref({
+  newEmployees: 0,
+  pendingLeaves: 0,
+  absentToday: 0,
+  openPositions: 0
 })
 
-const summaryTotals = ref({
-  totalBranches: 0,
+const hrSummaryTotals = ref({
   totalEmployees: 0,
+  totalBranches: 0
 })
 
-const productionQueue = ref([])
-const topProducts = ref([])
-const lowStockItems = ref([])
-const staffActivity = ref([])
-const recentOrders = ref([])
-const showAllOrders = ref(false)
+const recentHires = ref([])
+const attendanceAlerts = ref([])
+const pendingLeaves = ref([])
+const openPositions = ref([])
+const hrActivity = ref([])
 
-const visibleOrders = computed(() => {
-  if (!recentOrders.value || recentOrders.value.length === 0) return []
-  return showAllOrders.value ? recentOrders.value : recentOrders.value.slice(0, 3)
+const showAllHires = ref(false)
+
+const visibleHires = computed(() => {
+  if (!recentHires.value || recentHires.value.length === 0) return []
+  return showAllHires.value ? recentHires.value : recentHires.value.slice(0, 3)
+})
+
+const activeRangeLabel = computed(() => {
+  switch (activeRange.value) {
+    case 'today':
+      return 'Today'
+    case 'thisWeek':
+      return 'This Week'
+    case 'thisMonth':
+      return 'This Month'
+    case 'thisYear':
+      return 'This Year'
+    default:
+      return ''
+  }
 })
 
 const isLoadingDashboard = ref(false)
@@ -542,81 +532,135 @@ const showInfoModal = ref(false)
 const showLogoutConfirm = ref(false)
 const isLoggingOut = ref(false)
 const showOverlay = ref(false)
-const overlayText = ref('Logging out...')
+const overlayText = ref('Loading HR data...')
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
 
-const ownerProfile = ref({
+const hrProfile = ref({
   fullName: '',
-  role: 'Owner',
+  role: 'HR DEPARTMENT',
   email: '',
   contact: '',
-  branch: '',
+  department: 'Human Resources',
   accountId: '',
-  avatarUrl: '',
+  avatarUrl: ''
 })
 
 const isEditingInfo = ref(false)
 
-async function loadDashboard(range) {
+/**
+ * Dummy loader – dito nyo papalitan ng real API call
+ */
+async function loadHrDashboard(range) {
   isLoadingDashboard.value = true
   dashboardError.value = ''
 
   try {
-    const res = await axios.get('/api/owner-dashboard', {
-      params: { range },
-      withCredentials: true,
-    })
+    // Simulated delay
+    await new Promise(resolve => setTimeout(resolve, 500))
 
-    if (res.data.ok) {
-      dashboardTotals.value = res.data.totals || dashboardTotals.value
-      summaryTotals.value = res.data.summary || summaryTotals.value
-      recentOrders.value = res.data.recentOrders || []
-      productionQueue.value = res.data.productionQueue || []
-      topProducts.value = res.data.topProducts || []
-      lowStockItems.value = res.data.lowStockItems || []
-      staffActivity.value = res.data.staffActivity || []
+    // TODO: palitan ng response data galing backend
+    // Example mock values based on range
+    if (range === 'today') {
+      hrDashboardTotals.value = {
+        newEmployees: 1,
+        pendingLeaves: 3,
+        absentToday: 2,
+        openPositions: 2
+      }
+    } else if (range === 'thisWeek') {
+      hrDashboardTotals.value = {
+        newEmployees: 4,
+        pendingLeaves: 5,
+        absentToday: 6,
+        openPositions: 3
+      }
+    } else if (range === 'thisMonth') {
+      hrDashboardTotals.value = {
+        newEmployees: 8,
+        pendingLeaves: 7,
+        absentToday: 10,
+        openPositions: 4
+      }
     } else {
-      dashboardError.value =
-        res.data.message || 'Unable to load dashboard.'
+      hrDashboardTotals.value = {
+        newEmployees: 15,
+        pendingLeaves: 10,
+        absentToday: 18,
+        openPositions: 5
+      }
     }
+
+    hrSummaryTotals.value = {
+      totalEmployees: 35,
+      totalBranches: 3
+    }
+
+    recentHires.value = [
+      { id: 1, name: 'Juan Dela Cruz', position: 'Cook', branch: 'Dasmariñas, Cavite', hiredAt: 'Jan 15' },
+      { id: 2, name: 'Maria Santos', position: 'Cashier', branch: 'General Trias, Cavite', hiredAt: 'Jan 10' },
+      { id: 3, name: 'Pedro Reyes', position: 'Rider', branch: 'Manila Branch', hiredAt: 'Jan 3' },
+      { id: 4, name: 'Ana Cruz', position: 'Shift Leader', branch: 'Dasmariñas, Cavite', hiredAt: 'Dec 28' }
+    ]
+
+    attendanceAlerts.value = [
+      {
+        id: 1,
+        title: 'Multiple late arrivals',
+        meta: '3 lates this week - Dasmariñas, Cavite',
+        badgeClass: 'badge--warning',
+        badgeLabel: 'ATTENTION'
+      },
+      {
+        id: 2,
+        title: 'No time-out recorded',
+        meta: '1 staff - General Trias, Cavite',
+        badgeClass: 'badge--info',
+        badgeLabel: 'CHECK'
+      }
+    ]
+
+    pendingLeaves.value = [
+      { id: 1, employee: 'Maria Santos', range: 'Jan 30 - Jan 31' },
+      { id: 2, employee: 'Mark Test', range: 'Feb 2 - Feb 3' }
+    ]
+
+    openPositions.value = [
+      { id: 1, title: 'Cook - Dasmariñas', applicants: 4 },
+      { id: 2, title: 'Cashier - Manila', applicants: 2 }
+    ]
+
+    hrActivity.value = [
+      { id: 1, message: 'New hire added: Juan Dela Cruz', meta: '5 mins ago' },
+      { id: 2, message: 'Leave request approved: Maria Santos', meta: '30 mins ago' },
+      { id: 3, message: 'Job posting updated: Cashier - Manila', meta: '1 hour ago' }
+    ]
   } catch (e) {
-    dashboardError.value = 'Error loading dashboard.'
+    dashboardError.value = 'Error loading HR dashboard.'
   } finally {
     isLoadingDashboard.value = false
-    // Remove any temporary global overlay created by previous route
-    try {
-      if (window.__chikin_temp_overlay) {
-        window.__chikin_temp_overlay.remove()
-        window.__chikin_temp_overlay = null
-      }
-    } catch (e) {}
-
-    // Hide global page blur (if using the pageBlur helper)
-    try { if (window.pageBlur && typeof window.pageBlur.hide === 'function') window.pageBlur.hide() } catch (e) {}
-
-    // Also ensure local overlay flag is cleared
-    try { showOverlay.value = false } catch (e) {}
   }
 }
 
 async function changeRange(range) {
   if (activeRange.value === range) return
   activeRange.value = range
-  await loadDashboard(range)
+  await loadHrDashboard(range)
 }
 
-async function openInfoModal() {
+function openInfoModal() {
   showInfoModal.value = true
   isEditingInfo.value = false
 
-  try {
-    const res = await axios.get('/api/owner-profile', {
-      withCredentials: true,
-    })
-    if (res.data.ok) {
-      ownerProfile.value = res.data.user
-    }
-  } catch (e) {}
+  // TODO: load HR profile from backend
+  hrProfile.value = {
+    fullName: 'HR Administrator',
+    role: 'HR DEPARTMENT',
+    email: 'hr@chikintayo.com',
+    contact: '09xx-xxx-xxxx',
+    department: 'Human Resources',
+    accountId: 'HR-0001',
+    avatarUrl: hrProfile.value.avatarUrl || ''
+  }
 }
 
 function handleInfoClose() {
@@ -627,48 +671,22 @@ function handleInfoClose() {
   }
 }
 
-async function saveOwnerInfo() {
-  try {
-    const payload = {
-      fullName: ownerProfile.value.fullName,
-      email: ownerProfile.value.email,
-      contact: ownerProfile.value.contact,
-    }
-
-    const res = await axios.put('/api/owner-profile', payload, {
-      withCredentials: true,
-    })
-
-    if (res.data.ok) {
-      isEditingInfo.value = false
-    }
-  } catch (e) {}
+async function saveHrInfo() {
+  // TODO: send update to backend
+  isEditingInfo.value = false
+  showInfoModal.value = false
 }
 
 async function onAvatarChange(event) {
   const file = event.target.files[0]
   if (!file) return
 
-  const formData = new FormData()
-  formData.append('avatar', file)
-
-  const res = await axios.post('/api/upload-avatar', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-    withCredentials: true,
-  })
-
-  // Fetch latest profile to ensure avatarUrl is up-to-date
-  try {
-    const profileRes = await axios.get('/api/owner-profile', { withCredentials: true })
-    let url = (profileRes.data.ok && profileRes.data.user && profileRes.data.user.avatarUrl) ? profileRes.data.user.avatarUrl : res.data.avatarUrl
-    // Remove any existing ?t=...
-    url = url.replace(/\?t=\d+$/, '')
-    ownerProfile.value.avatarUrl = url + '?t=' + Date.now()
-  } catch (e) {
-    let url = res.data.avatarUrl
-    url = url.replace(/\?t=\d+$/, '')
-    ownerProfile.value.avatarUrl = url + '?t=' + Date.now()
+  // TODO: upload to backend, for now fake preview
+  const reader = new FileReader()
+  reader.onload = e => {
+    hrProfile.value.avatarUrl = e.target.result
   }
+  reader.readAsDataURL(file)
 }
 
 async function confirmLogout() {
@@ -676,37 +694,16 @@ async function confirmLogout() {
   isLoggingOut.value = true
 
   try {
-    await axios.post(
-      '/api/logout',
-      {},
-      { withCredentials: true }
-    )
-  } catch (e) {}
-
-  // Show CHIKIN TAYO overlay + page blur, then navigate via router
-  overlayText.value = 'Logging out...'
-  try { if (window.pageBlur && typeof window.pageBlur.show === 'function') window.pageBlur.show() } catch (e) {}
-  showOverlay.value = true
-
-  // close the confirm modal immediately
-  showLogoutConfirm.value = false
-
-  // wait a short moment for the overlay to appear, then use SPA navigation
-  setTimeout(() => {
-    router.push('/').then(() => {
-      // keep overlay a bit for smooth fade, then hide blur and overlay
-      setTimeout(() => {
-        try { if (window.pageBlur && typeof window.pageBlur.hide === 'function') window.pageBlur.hide() } catch (e) {}
-        showOverlay.value = false
-        isLoggingOut.value = false
-      }, 400)
-    }).catch(() => {
-      // fallback: clear loading state
-      try { if (window.pageBlur && typeof window.pageBlur.hide === 'function') window.pageBlur.hide() } catch (e) {}
-      showOverlay.value = false
-      isLoggingOut.value = false
-    })
-  }, 600)
+    showOverlay.value = true
+    overlayText.value = 'Logging out...'
+    await new Promise(resolve => setTimeout(resolve, 800))
+    // TODO: call /api/logout kung gusto nyo
+  } finally {
+    window.location.href = '/'
+    showLogoutConfirm.value = false
+    isLoggingOut.value = false
+    showOverlay.value = false
+  }
 }
 
 function cancelLogout() {
@@ -714,47 +711,15 @@ function cancelLogout() {
   showLogoutConfirm.value = false
 }
 
-function goToStaffManagement() {
-  // create a temporary overlay DOM node so it persists across route change
-  try {
-    if (window.__chikin_temp_overlay) return
-    const overlay = document.createElement('div')
-    overlay.className = 'loading-overlay __chikin_temp_overlay'
-    overlay.style.zIndex = '9999'
-    overlay.style.backdropFilter = 'blur(8px)'
-    overlay.style.webkitBackdropFilter = 'blur(8px)'
-    overlay.innerHTML = `
-      <div class="logo-loading-box">
-        <img src="${logoImg}" alt="Chikin Tayo" class="logo-loading-img" />
-        <p>Opening Staff Management...</p>
-      </div>
-    `
-    document.body.appendChild(overlay)
-    window.__chikin_temp_overlay = overlay
-    // show global page blur so the background is blurred while overlay is visible
-    try { if (window.pageBlur && typeof window.pageBlur.show === 'function') window.pageBlur.show() } catch (e) {}
-
-    // give overlay a short moment to render, then navigate
-    setTimeout(() => {
-      router.push('/admin/staff-management').catch(() => {
-        // navigation failed; leave cleanup to whoever created/handles the overlay
-      })
-    }, 220)
-  } catch (e) {
-    // fallback navigation if DOM manipulation fails
-    try { router.push('/admin/staff-management') } catch (err) {}
-  }
+async function goToEmployeeManagement() {
+  showOverlay.value = true
+  overlayText.value = 'Opening Employee Management...'
+  await new Promise(resolve => setTimeout(resolve, 800))
+  showOverlay.value = false
+  router.push('/hr/employee-management')
 }
 
 onMounted(() => {
-  loadDashboard(activeRange.value)
-  axios
-    .get('/api/owner-profile', { withCredentials: true })
-    .then(res => {
-      if (res.data.ok) {
-        ownerProfile.value = res.data.user
-      }
-    })
-    .catch(() => {})
+  loadHrDashboard(activeRange.value)
 })
 </script>

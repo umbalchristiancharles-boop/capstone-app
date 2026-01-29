@@ -5,6 +5,7 @@ import Index from './components/index.vue'
 import AdminPanel from './components/adminpanel.vue'
 import ManagerPanel from './components/ManagerPanel.vue'
 import StaffPanel from './components/StaffPanel.vue'
+import HrPanel from './components/hrpanel.vue'
 import adminlogin from './components/adminlogin.vue'
 import StaffList from './components/StaffList.vue'
 import DeletedStaffList from './components/DeletedStaffList.vue'
@@ -47,6 +48,7 @@ const router = createRouter({
     { path: '/manager-panel', component: ManagerPanel },
     { path: '/staff-panel', component: StaffPanel },
     { path: '/admin-login', component: adminlogin },
+    { path: '/hr-panel', component: HrPanel},
     {
       path: '/admin/staff-management',
       component: StaffList,
@@ -71,6 +73,44 @@ const router = createRouter({
       meta: { requiresGuest: true },
     },
   ],
+})
+
+// --- Page blur helpers (global) ---
+function showPageBlur() {
+  try {
+    const el = document.getElementById('page-blur')
+    if (el) el.classList.add('active')
+  } catch (e) {}
+}
+
+function hidePageBlur() {
+  try {
+    const el = document.getElementById('page-blur')
+    if (el) el.classList.remove('active')
+  } catch (e) {}
+}
+
+window.pageBlur = {
+  show: showPageBlur,
+  hide: hidePageBlur,
+}
+
+// show blur right when navigation starts; hide after a delay so transition persists
+router.beforeEach((to, from, next) => {
+  // Do not show the global blur when navigating from Index -> Admin Login
+  // (this avoids the delayed blur covering login inputs on that transition)
+  if (to.path === '/admin-login' && from && from.path === '/') {
+    return next()
+  }
+
+  showPageBlur()
+  next()
+})
+
+router.afterEach(() => {
+  setTimeout(() => {
+    hidePageBlur()
+  }, 600)
 })
 
 // === GLOBAL GUARD PARA PROTECTED ANG /admin-panel ===

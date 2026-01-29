@@ -4,7 +4,7 @@
     <div class="staff-header">
       <div class="staff-header-left">
         <button
-          @click="$router.push('/admin-panel')"
+          @click="goToAdminPanel"
           class="btn-back-dashboard"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="back-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -207,6 +207,30 @@ export default {
     this.fetchStaff()
   },
   methods: {
+    goToAdminPanel() {
+      try {
+        if (window.__chikin_temp_overlay) return
+        const overlay = document.createElement('div')
+        overlay.className = 'loading-overlay __chikin_temp_overlay'
+        overlay.style.zIndex = '9999'
+        overlay.style.backdropFilter = 'blur(8px)'
+        overlay.style.webkitBackdropFilter = 'blur(8px)'
+        const logo = new URL('../assets/chikinlogo.png', import.meta.url).href
+        overlay.innerHTML = `\n          <div class="logo-loading-box">\n            <img src="${logo}" alt="Chikin Tayo" class="logo-loading-img" />\n            <p>Loading dashboard...</p>\n          </div>\n        `
+        document.body.appendChild(overlay)
+        window.__chikin_temp_overlay = overlay
+        // show global page blur so the background is blurred while overlay is visible
+        try { if (window.pageBlur && typeof window.pageBlur.show === 'function') window.pageBlur.show() } catch (e) {}
+
+        setTimeout(() => {
+          this.$router.push('/admin-panel').catch(() => {
+            // navigation failed; leave cleanup to destination page
+          })
+        }, 220)
+      } catch (e) {
+        this.$router.push('/admin-panel')
+      }
+    },
     async setCurrentUserRole() {
       try {
         const res = await axios.get('/api/me', { withCredentials: true })
@@ -246,6 +270,17 @@ export default {
         this.showAlert('Failed to load staff data', 'error')
       } finally {
         this.loading = false
+        // If a temporary global CHIKIN TAYO overlay was created by the previous page,
+        // remove it now because the staff data is ready and the view is fully rendered.
+        try {
+          if (window.__chikin_temp_overlay) {
+            window.__chikin_temp_overlay.remove()
+            window.__chikin_temp_overlay = null
+          }
+        } catch (e) {}
+
+        // Hide global page blur if present
+        try { if (window.pageBlur && typeof window.pageBlur.hide === 'function') window.pageBlur.hide() } catch (e) {}
       }
     },
 
@@ -356,9 +391,9 @@ export default {
 <style scoped>
 /* Main Container */
 .staff-management-container {
-  background: linear-gradient(135deg, #ff9a56 0%, #ff7e5f 100%);
+  background: linear-gradient(135deg, #ff6b1c 0%, #ff6b1c 100%);
   padding: 2rem;
-  border-radius: 20px;
+  border-radius: 0;
   min-height: 80vh;
   box-shadow: 0 10px 40px rgba(255, 126, 95, 0.3);
 }
@@ -418,7 +453,7 @@ export default {
 
 .btn-create-staff {
   background: rgba(255, 255, 255, 0.95);
-  color: #ff7e5f;
+  color: #ff6b1c;
   border: none;
   padding: 0.875rem 1.75rem;
   border-radius: 12px;
@@ -520,7 +555,7 @@ export default {
 /* Branch Content Card */
 .branch-content-card {
   background: rgba(255, 255, 255, 0.98);
-  border-radius: 0 0 16px 16px;
+  border-radius: 0;
   overflow: hidden;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
 }
@@ -532,7 +567,7 @@ export default {
 
 .manager-header {
   background: linear-gradient(135deg, #ffecd1 0%, #ffd8a8 100%);
-  border-bottom: 2px solid #ff9a56;
+  border-bottom: 2px solid #ff6b1c;
 }
 
 .staff-header-bar {
@@ -543,7 +578,7 @@ export default {
 .section-title {
   font-size: 1rem;
   font-weight: 700;
-  color: #ff7e5f;
+  color: #ff6b1c;
   margin: 0;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -654,7 +689,7 @@ export default {
 }
 
 .btn-delete:disabled {
-  background: #fca5a5;
+  background: #ff6b1c;
   cursor: not-allowed;
   opacity: 0.8;
 }
@@ -671,7 +706,7 @@ export default {
 .no-data-card {
   background: rgba(255, 255, 255, 0.95);
   padding: 3rem;
-  border-radius: 16px;
+  border-radius: 0;
   text-align: center;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
 }
