@@ -676,11 +676,10 @@ async function confirmLogout() {
   isLoggingOut.value = true
 
   try {
-    await axios.post(
-      '/api/logout',
-      {},
-      { withCredentials: true }
-    )
+    // Use server GET logout endpoint to avoid CSRF token issues (server redirects to landing)
+    // Clear client storage then navigate to server logout which will invalidate session
+    try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
+    window.location.replace('/logout')
   } catch (e) {}
 
   // Show CHIKIN TAYO overlay + page blur, then navigate via router
@@ -692,21 +691,19 @@ async function confirmLogout() {
   showLogoutConfirm.value = false
 
   // wait a short moment for the overlay to appear, then use SPA navigation
-  setTimeout(() => {
-    router.push('/').then(() => {
-      // keep overlay a bit for smooth fade, then hide blur and overlay
-      setTimeout(() => {
-        try { if (window.pageBlur && typeof window.pageBlur.hide === 'function') window.pageBlur.hide() } catch (e) {}
-        showOverlay.value = false
-        isLoggingOut.value = false
-      }, 400)
-    }).catch(() => {
-      // fallback: clear loading state
-      try { if (window.pageBlur && typeof window.pageBlur.hide === 'function') window.pageBlur.hide() } catch (e) {}
-      showOverlay.value = false
-      isLoggingOut.value = false
-    })
-  }, 600)
+    setTimeout(() => {
+      // Clear any client-side state to prevent SPA from showing protected pages
+      try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
+
+      // Use full-page navigation so the browser requests the server (which has invalidated session)
+      // and receives no-cache headers. Use replace to avoid adding a new history entry.
+      try {
+        window.location.replace('/')
+      } catch (e) {
+        // fallback to router navigation if replace fails
+        router.push('/').catch(() => {})
+      }
+    }, 600)
 }
 
 function cancelLogout() {

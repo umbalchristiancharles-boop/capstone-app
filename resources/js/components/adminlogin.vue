@@ -75,7 +75,7 @@
 </template>
 
 <script setup>
-import { ref, onBeforeUnmount } from "vue";
+import { ref } from "vue";
 import { useRouter } from "vue-router";
 import axios from "axios";
 import "../css/adminlogin.css";
@@ -124,10 +124,11 @@ async function handleLogin() {
                 redirectPath = "/manager-panel";
             } else if (res.data.user && res.data.user.role === "STAFF") {
                 redirectPath = "/staff-panel";
+            } else if (res.data.user && res.data.user.role === "HR") {
+                redirectPath = "/hr-panel";
             }
 
             setTimeout(() => {
-                try { if (window.pageBlur && typeof window.pageBlur.show === 'function') window.pageBlur.show() } catch (e) {}
                 showOverlay.value = true;
                 setTimeout(() => {
                     router.push(redirectPath);
@@ -149,15 +150,10 @@ function handleBack() {
     overlayText.value = "Loading home page...";
 
     setTimeout(() => {
-        try { if (window.pageBlur && typeof window.pageBlur.show === 'function') window.pageBlur.show() } catch (e) {}
         showOverlay.value = true;
         setTimeout(() => {
             router.push("/");
         }, 600);
     }, 400);
 }
-
-onBeforeUnmount(() => {
-    try { if (window.pageBlur && typeof window.pageBlur.hide === 'function') window.pageBlur.hide() } catch (e) {}
-})
 </script>

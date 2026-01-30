@@ -123,12 +123,13 @@
                   <option value="" disabled>Select Role</option>
                   <option value="BRANCH_MANAGER">Branch Manager</option>
                   <option value="STAFF">Staff</option>
+                  <option value="HR">HR</option>
                 </select>
               </div>
               <div v-else-if="!branchManagerMode && isEdit" class="form-group">
                 <label class="form-label">Role *</label>
                 <div class="form-input" style="background-color: #f3f4f6; padding: 0.5rem; border-radius: 8px; display: flex; align-items: center;">
-                  {{ form.role === 'BRANCH_MANAGER' ? 'Branch Manager' : (form.role === 'STAFF' ? 'Staff' : form.role) }}
+                  {{ form.role === 'BRANCH_MANAGER' ? 'Branch Manager' : (form.role === 'STAFF' ? 'Staff' : (form.role === 'HR' ? 'HR' : form.role)) }}
                 </div>
               </div>
               <div v-else class="form-group">

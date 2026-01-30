@@ -30,7 +30,7 @@ class DeletedStaffController extends Controller
             }
 
             $query = User::onlyTrashed()
-                ->whereIn('role', ['BRANCH_MANAGER', 'STAFF'])
+                ->whereIn('role', ['BRANCH_MANAGER', 'STAFF', 'HR'])
                 ->with('branch');
 
             // Branch managers can only see deleted users from their branch

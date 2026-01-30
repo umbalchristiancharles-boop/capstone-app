@@ -101,6 +101,55 @@
             <p>No Branch Manager assigned</p>
           </div>
 
+          <!-- HR Section (separate) -->
+          <div v-if="branch.hr && branch.hr.length > 0" class="hr-section">
+            <div class="section-header staff-header-bar">
+              <h4 class="section-title">
+                HR Members
+                <span class="staff-count">({{ branch.hr.length }})</span>
+              </h4>
+            </div>
+
+            <div class="staff-list">
+              <div
+                v-for="h in branch.hr"
+                :key="`hr-${h.id}`"
+                class="staff-card"
+              >
+                <div class="user-info-grid">
+                  <div class="info-item">
+                    <span class="info-label">Username</span>
+                    <span class="info-value">{{ h.username }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Full Name</span>
+                    <span class="info-value">{{ h.full_name }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Email</span>
+                    <span class="info-value">{{ h.email }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Phone</span>
+                    <span class="info-value">{{ h.phone_number || 'N/A' }}</span>
+                  </div>
+                </div>
+                <div class="user-actions">
+                  <button @click="editStaff(h, branch.branch_id)" class="btn-action btn-edit">
+                    Edit
+                  </button>
+                  <button
+                    @click="confirmDelete(h.id, h.username)"
+                    class="btn-action btn-delete"
+                    :disabled="deletingIds.includes(h.id)"
+                  >
+                    {{ deletingIds.includes(h.id) ? '⏳' : 'Delete' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Staff Section -->
           <div class="staff-section">
             <div class="section-header staff-header-bar">

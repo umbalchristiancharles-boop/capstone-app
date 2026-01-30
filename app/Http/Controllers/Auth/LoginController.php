@@ -47,6 +47,9 @@ class LoginController extends Controller
             } elseif ($user->role === 'BRANCH_MANAGER') {
                 return redirect()->route('manager.dashboard')
                     ->with('success', 'Welcome back, Manager!');
+            } elseif ($user->role === 'HR') {
+                return redirect()->route('hr.dashboard')
+                    ->with('success', 'Welcome back, HR!');
             }
         }
 
@@ -55,9 +58,13 @@ class LoginController extends Controller
             ->withErrors(['login' => 'Invalid username or password. ']);
     }
 
-    public function logout()
+    public function logout(\Illuminate\Http\Request $request)
     {
-        Session::flush();
-        return redirect()->route('login')->with('success', 'Logged out successfully.');
+        // Clear session data and prevent session fixation
+        $request->session()->flush();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect('/')->with('success', 'Logged out successfully.');
     }
 }

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jan 26, 2026 at 04:22 PM
+-- Generation Time: Jan 30, 2026 at 07:44 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -148,7 +148,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (8, '2019_12_14_000001_create_personal_access_tokens_table', 6),
 (9, '2026_01_19_141306_create_password_resets_table', 7),
 (10, '2026_01_20_162500_add_remember_token_to_users_table', 8),
-(11, '2026_01_20_170100_add_password_column_and_copy_hash', 9);
+(11, '2026_01_20_170100_add_password_column_and_copy_hash', 9),
+(12, '2026_01_30_130000_change_users_role_to_string', 10);
 
 -- --------------------------------------------------------
 
@@ -285,8 +286,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('QBWnQ2O1emoCtoduy3dt0FdKIID0wGQEjQXRLxvj', 11, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiUENLV1ZNbnlCUnFFSktwWmxQNnVxdG1ib1RxRlhlOFcyTXhwZWlWbCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzM6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hZG1pbi1sb2dpbiI7czo1OiJyb3V0ZSI7Tjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTE7fQ==', 1769440924),
-('UDFivtz5TNWflhAeixwiQ6McqY9jnNDX3QbAfyx4', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoieXh6UUZ2YWNUbE83VFJ2V2o3MllLYnJCREZVYlBpZlcwM1h2YVU5SiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1769435696);
+('DzYsq2C6GqknYXo8EvY15dYL2XcUkvEtzGqwvZrw', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiWjB5bWdyT3o3OEMwMDJqazl5Qkx2QVE4UXJ0UEtJNjBaNXN3YTRiTSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9fQ==', 1769755409),
+('ShsL2VxlbGTzDCQ5nkrqPGPeNjHJOP5mOsSTyuO2', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiUDBqTWpzS2M4MDdmY2xsdFh5eDNma09tcWs2NkNCUldETlZ2RkVpaiI7czo3OiJzdWNjZXNzIjtzOjI0OiJMb2dnZWQgb3V0IHN1Y2Nlc3NmdWxseS4iO3M6NjoiX2ZsYXNoIjthOjI6e3M6MzoibmV3IjthOjA6e31zOjM6Im9sZCI7YToxOntpOjA7czo3OiJzdWNjZXNzIjt9fXM6OToiX3ByZXZpb3VzIjthOjI6e3M6MzoidXJsIjtzOjI4OiJodHRwOi8vbG9jYWxob3N0OjgwMDAvbG9nb3V0IjtzOjU6InJvdXRlIjtzOjY6ImxvZ291dCI7fX0=', 1769750149);
 
 -- --------------------------------------------------------
 
@@ -300,7 +301,7 @@ CREATE TABLE `users` (
   `email` varchar(120) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
   `full_name` varchar(150) NOT NULL,
-  `role` enum('OWNER','BRANCH_MANAGER','STAFF') NOT NULL,
+  `role` varchar(50) NOT NULL DEFAULT 'STAFF',
   `avatarUrl` varchar(255) DEFAULT NULL,
   `branch_id` bigint(20) UNSIGNED DEFAULT NULL,
   `avatar_url` varchar(255) DEFAULT NULL,
@@ -319,9 +320,15 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `full_name`, `role`, `avatarUrl`, `branch_id`, `avatar_url`, `phone_number`, `address`, `is_active`, `created_at`, `updated_at`, `deleted_at`, `remember_token`, `password`) VALUES
-(11, 'owner_admin', 'calicamarkjulius@gmail.com', '$2y$12$0UbstBBBR2nY9p9ZANRp1OxlBwWoZeZ/9Zx7WuDERrtMbrq1V/auy', 'System Administrator', 'OWNER', NULL, NULL, '/storage/avatars/avatar_11_1769436632.jpg', '09123456789', 'Main Office', 1, '2026-01-13 16:05:28', '2026-01-26 15:10:23', NULL, 'RDjbCehvW5ZMmdBKgy3GNluFGxSoLOJjQnFz1noIszubygzSnhs9E2dIr8tw', '$2y$12$sFbzg7dPLe0R/gYGAzVSjew8oDu8YcxgJ1O5f6x2dC7GgmUmlJNca'),
-(23, 'gab', 'onggab54@gmail.com', '$2y$12$at4w9GoSd7OylPjTyCB7.unz80/SjnzvO1flKzZTr3KISsyPVAs/K', 'gabb', 'BRANCH_MANAGER', NULL, 2, '/storage/avatars/avatar_23_1769437262.jpg', '09156818851', NULL, 1, '2026-01-22 01:21:23', '2026-01-26 06:21:21', NULL, NULL, NULL),
-(24, 'mark_01', 'mark@test.com', '$2y$12$5hjZqNwfi.69Q9Vn2jPOnOekF1uuWflJdqrcYwyPGbstDZ7pH9dOy', 'Mark Test', 'STAFF', NULL, 2, NULL, '09156818843', 'Taga pala pala', 1, '2026-01-26 06:25:16', '2026-01-26 07:04:02', NULL, NULL, NULL);
+(11, 'owner_admin', 'calicamarkjulius@gmail.com', '$2y$12$0UbstBBBR2nY9p9ZANRp1OxlBwWoZeZ/9Zx7WuDERrtMbrq1V/auy', 'System Administrator', 'OWNER', NULL, NULL, '/storage/avatars/avatar_11_1769489246.jpg', '09123456789', 'Main Office', 1, '2026-01-13 16:05:28', '2026-01-30 05:04:56', NULL, 'lPthjWkCI5hI8qrTo4E5T4KwKp5h71FQPVylSOXwf3DBa1Os86WFnEgfNw7I', '$2y$12$sFbzg7dPLe0R/gYGAzVSjew8oDu8YcxgJ1O5f6x2dC7GgmUmlJNca'),
+(23, 'gab', 'onggab54@gmail.com', '$2y$12$at4w9GoSd7OylPjTyCB7.unz80/SjnzvO1flKzZTr3KISsyPVAs/K', 'gabbilyn', 'BRANCH_MANAGER', NULL, 2, '/storage/avatars/avatar_23_1769488262.png', '09156818851', NULL, 1, '2026-01-22 01:21:23', '2026-01-29 10:57:18', NULL, NULL, NULL),
+(24, 'mark_01', 'mark@test.com', '$2y$12$5hjZqNwfi.69Q9Vn2jPOnOekF1uuWflJdqrcYwyPGbstDZ7pH9dOy', 'Mark Test', 'STAFF', NULL, 2, '/storage/avatars/avatar_24_1769492714.jpg', '09156818843', 'Taga pala pala', 1, '2026-01-26 06:25:16', '2026-01-27 05:45:14', NULL, NULL, NULL),
+(25, 'Undertaker', 'undertaker@gmail.com', '$2y$12$YGDysnWiBRzmCtirSnAom.HniCBh9Wh/WzaIQrvUy0aPWT7jAKFb.', 'Mark Calaways', 'STAFF', NULL, 1, NULL, '09186305918', 'Dito lang sa TEXAS.', 1, '2026-01-29 11:20:00', '2026-01-29 21:57:45', NULL, NULL, NULL),
+(26, 'Paul Berrer', 'paul@gmail.com', '$2y$12$oF3pFH7PntX8XLGkAxwPJunUq7EHP4Gb7Fo6xZqXvXM6cUNkNdlfS', 'Paul Berrers', 'BRANCH_MANAGER', NULL, 1, NULL, '09099628117', 'Dito lang din sa TEXAS magkabilang bahay lang kami ni undertaker.', 1, '2026-01-29 11:21:45', '2026-01-29 22:06:22', NULL, NULL, NULL),
+(27, 'Vinzie', 'bido.vincehannibal@ncst.edu.ph', '$2y$12$Y4JDEGWNQBJMFjih.wK.yeIKObjVhMR0hYKyeU5uvsjWV/hsfMUUW', 'Vince Hannibal R. Bido', 'STAFF', NULL, 1, NULL, '0994833118', 'Blk M25 Lot 2, Brgy. Emmanuel Bergado II. Dasmariñas City, Cavite. Area E', 1, '2026-01-29 12:14:56', '2026-01-29 21:57:29', '2026-01-29 21:57:29', NULL, NULL),
+(28, 'Gabby', 'gabby@gmail.com', '$2y$12$660MZKQoGT/IGQzw8BNDd.jB3pxsGcrY09qhKFOV1Yf7TuL05KOLW', 'Gabriel Louis Ongsip', 'STAFF', NULL, 1, NULL, '09295426019', 'Summer Wind, Villa Isabel', 1, '2026-01-29 13:56:44', '2026-01-29 13:56:44', NULL, NULL, NULL),
+(29, 'johnnys', 'johnnysins12@gmail.com', '$2y$12$aWAZbX1VnRGueoEzpUpQgOVpbWgFiyWEkmmnUbvYWv1SXY43IHZKe', 'johnny sinss', 'STAFF', NULL, 1, NULL, '09156818888', NULL, 1, '2026-01-29 22:07:42', '2026-01-29 22:07:50', '2026-01-29 22:07:50', NULL, NULL),
+(30, 'asd', 'asd@gmail.com', '$2y$12$qE1aiUPfZ/AYw9pgeFxBVecPCmDf7fwZZ4Mb4n4ukomWZ9Qf/d7VG', 'asdss', 'HR', NULL, 1, NULL, '09123456783', NULL, 1, '2026-01-29 22:20:38', '2026-01-29 22:42:38', NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -462,7 +469,7 @@ ALTER TABLE `jobs`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `orders`
@@ -480,7 +487,7 @@ ALTER TABLE `personal_access_tokens`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 
 --
 -- AUTO_INCREMENT for table `user_profiles`

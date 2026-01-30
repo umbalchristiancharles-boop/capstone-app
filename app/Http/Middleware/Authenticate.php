@@ -14,6 +14,15 @@ class Authenticate
             return redirect()->route('login')->with('error', 'Please login first.');
         }
 
-        return $next($request);
+        $response = $next($request);
+
+        // Prevent browser caching of authenticated pages so back button cannot show content after logout
+        if (method_exists($response, 'header')) {
+            $response->headers->set('Cache-Control', 'no-cache, no-store, must-revalidate');
+            $response->headers->set('Pragma', 'no-cache');
+            $response->headers->set('Expires', '0');
+        }
+
+        return $response;
     }
 }

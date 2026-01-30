@@ -693,17 +693,17 @@ async function confirmLogout() {
   if (isLoggingOut.value) return
   isLoggingOut.value = true
 
-  try {
-    showOverlay.value = true
-    overlayText.value = 'Logging out...'
-    await new Promise(resolve => setTimeout(resolve, 800))
-    // TODO: call /api/logout kung gusto nyo
-  } finally {
-    window.location.href = '/'
-    showLogoutConfirm.value = false
-    isLoggingOut.value = false
-    showOverlay.value = false
-  }
+    try {
+      showOverlay.value = true
+      overlayText.value = 'Logging out...'
+      // Use server GET logout route to invalidate the session and redirect to landing
+      try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
+      window.location.replace('/logout')
+    } finally {
+      showLogoutConfirm.value = false
+      isLoggingOut.value = false
+      showOverlay.value = false
+    }
 }
 
 function cancelLogout() {

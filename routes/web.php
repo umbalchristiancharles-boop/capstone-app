@@ -10,13 +10,24 @@ use App\Http\Controllers\Admin\DeletedStaffController;
 // ==========================================
 // AUTHENTICATION ROUTES (Login/Logout)
 // ==========================================
+// Helper to return views with no-cache headers (prevents back-button cached pages)
+if (! function_exists('no_cache_view')) {
+    function no_cache_view($view)
+    {
+        return response()->view($view)
+            ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
+    }
+}
+
 Route::get('/login', function () {
-    return view('dashboard'); // Vue SPA entry for admin login
+    return no_cache_view('dashboard'); // Vue SPA entry for admin login
 })->name('login');
 
 // Explicit admin login route for password reset redirect
 Route::get('/admin/login', function () {
-    return view('dashboard'); // Or your actual admin login view/component
+    return no_cache_view('dashboard'); // Or your actual admin login view/component
 })->name('admin.login');
 
 Route::get('/logout', [LoginController::class, 'logout'])->name('logout');
@@ -41,24 +52,24 @@ Route::post('/admin/password/reset', [AdminPasswordResetController::class, 'rese
 // ==========================================
 Route::middleware(['auth'])->group(function () {
     // Admin Dashboard
-    Route::get('/admin/dashboard', function () {
-        return view('dashboard'); // Vue SPA
-    })->name('admin.dashboard');
+        Route::get('/admin/dashboard', function () {
+            return view('dashboard'); // Vue SPA
+        })->name('admin.dashboard');
 
     // Staff Management Page (Vue SPA entry)
-    Route::get('/admin/staff-management', function () {
-        return view('dashboard');
-    })->name('admin.staff-management');
+        Route::get('/admin/staff-management', function () {
+            return view('dashboard');
+        })->name('admin.staff-management');
 
     // Deleted Staff History Page (SPA entry - Vue Router will load component)
-    Route::get('/admin/deleted-staff', function () {
-        return view('dashboard');
-    })->name('admin.deleted-staff');
+        Route::get('/admin/deleted-staff', function () {
+            return view('dashboard');
+        })->name('admin.deleted-staff');
 
     // Admin Panel (Vue SPA entry)
-    Route::get('/admin-panel', function () {
-        return view('dashboard');
-    })->name('admin.panel');
+        Route::get('/admin-panel', function () {
+            return view('dashboard');
+        })->name('admin.panel');
 });
 
 // ==========================================
@@ -80,6 +91,15 @@ Route::middleware(['auth'])->prefix('manager')->name('manager.')->group(function
 });
 
 // ==========================================
+// HR ROUTES (Protected by Auth Middleware)
+// ==========================================
+Route::middleware(['auth'])->prefix('hr')->name('hr.')->group(function () {
+    Route::get('/dashboard', function () {
+        return view('dashboard'); // Vue SPA entry for HR
+    })->name('dashboard');
+});
+
+// ==========================================
 // API ROUTES FOR DELETED STAFF
 // (Role checking handled in controller)
 // ==========================================
@@ -93,7 +113,7 @@ Route::middleware(['auth'])->group(function () {
 // EXISTING ROUTES (Your SPA & Profile)
 // ==========================================
 Route::get('/', function () {
-    return view('dashboard'); // Vue SPA entry
+    return no_cache_view('dashboard'); // Vue SPA entry
 });
 
 Route::get('/test', function () {
@@ -108,4 +128,6 @@ Route::middleware('auth')->group(function () {
 // ==========================================
 // SPA CATCH-ALL (MUST BE LAST!)
 // ==========================================
-Route::view('/{any}', 'dashboard')->where('any', '.*');
+Route::get('/{any}', function () {
+    return no_cache_view('dashboard');
+})->where('any', '.*');

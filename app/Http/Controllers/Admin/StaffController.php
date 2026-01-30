@@ -72,12 +72,20 @@ class StaffController extends Controller
                     ->whereNull('deleted_at') // Exclude soft deleted
                     ->first();
 
-                // Get staff for this branch
+                // Get staff for this branch (STAFF only)
                 $staff = DB::table('users')
                     ->where('branch_id', $branch->id)
                     ->where('role', 'STAFF')
                     ->where('is_active', 1)
                     ->whereNull('deleted_at') // Exclude soft deleted
+                    ->get();
+
+                // Get HR for this branch separately
+                $hrUsers = DB::table('users')
+                    ->where('branch_id', $branch->id)
+                    ->where('role', 'HR')
+                    ->where('is_active', 1)
+                    ->whereNull('deleted_at')
                     ->get();
 
                 // Format branch manager data
@@ -95,7 +103,7 @@ class StaffController extends Controller
                     ];
                 }
 
-                // Format staff data
+                // Format staff data (preserve actual role: STAFF)
                 $staffData = $staff->map(function($s) {
                     return [
                         'id' => $s->id,
@@ -104,20 +112,35 @@ class StaffController extends Controller
                         'email' => $s->email,
                         'phone_number' => $s->phone_number,
                         'address' => $s->address,
-                        'role' => 'STAFF',
+                        'role' => $s->role,
                         'is_active' => $s->is_active,
                     ];
                 })->toArray();
 
+                // Format HR data
+                $hrData = $hrUsers->map(function($h) {
+                    return [
+                        'id' => $h->id,
+                        'username' => $h->username,
+                        'full_name' => $h->full_name,
+                        'email' => $h->email,
+                        'phone_number' => $h->phone_number,
+                        'address' => $h->address,
+                        'role' => $h->role,
+                        'is_active' => $h->is_active,
+                    ];
+                })->toArray();
+
                 // Only include branches that have manager or staff
-                if ($branchManager || count($staffData) > 0) {
+                if ($branchManager || count($staffData) > 0 || count($hrData) > 0) {
                     $result[] = [
                         'branch_id' => $branch->id,
                         'branch_name' => $branch->name,
                         'branch_code' => $branch->code,
                         'branch_address' => $branch->address,
                         'branch_manager' => $managerData,
-                        'staff' => $staffData
+                        'staff' => $staffData,
+                        'hr' => $hrData
                     ];
                 }
             }
@@ -148,7 +171,7 @@ class StaffController extends Controller
         $staff = DB::table('users')
             ->leftJoin('branches', 'users.branch_id', '=', 'branches.id')
             ->where('users.id', $id)
-            ->whereIn('users.role', ['BRANCH_MANAGER', 'STAFF'])
+            ->whereIn('users.role', ['BRANCH_MANAGER', 'STAFF', 'HR'])
             ->whereNull('users.deleted_at') // Exclude soft deleted
             ->select(
                 'users.id',
@@ -197,7 +220,7 @@ class StaffController extends Controller
                 // Accept either branchId (camelCase) or branch_id (snake_case)
                 'branchId' => 'required_without:branch_id|exists:branches,id',
                 'branch_id' => 'required_without:branchId|exists:branches,id',
-                'role' => 'required|in:BRANCH_MANAGER,STAFF',
+                'role' => 'required|in:BRANCH_MANAGER,STAFF,HR',
             ]);
 
             // Check if branch already has a manager (if creating BRANCH_MANAGER)
@@ -241,7 +264,7 @@ class StaffController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => ($request->input('role') === 'BRANCH_MANAGER' ? 'Branch Manager' : 'Staff') . ' account created successfully!',
+                'message' => ($request->input('role') === 'BRANCH_MANAGER' ? 'Branch Manager' : ($request->input('role') === 'HR' ? 'HR' : 'Staff')) . ' account created successfully!',
                 'data' => ['id' => $staffId]
             ], 201);
 
@@ -287,7 +310,7 @@ class StaffController extends Controller
                 // accept either branchId (from SPA) or branch_id (from other clients)
                 'branchId' => 'sometimes|required|exists:branches,id',
                 'branch_id' => 'sometimes|required|exists:branches,id',
-                'role' => 'required|in:BRANCH_MANAGER,STAFF',
+                'role' => 'required|in:BRANCH_MANAGER,STAFF,HR',
                 'isActive' => 'required|boolean',
             ]);
 
@@ -392,8 +415,8 @@ class StaffController extends Controller
                 ], 403);
             }
 
-            // Check if user is BRANCH_MANAGER or STAFF
-            if (! in_array($user->role, ['BRANCH_MANAGER', 'STAFF'])) {
+            // Check if user is BRANCH_MANAGER, STAFF or HR
+            if (! in_array($user->role, ['BRANCH_MANAGER', 'STAFF', 'HR'])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Invalid user role'
@@ -408,7 +431,7 @@ class StaffController extends Controller
             Log::info('Staff soft deleted:', ['id' => $id, 'role' => $user->role]);
             return response()->json([
                 'success' => true,
-                'message' => ($user->role === 'BRANCH_MANAGER' ? 'Branch Manager' : 'Staff') . ' account moved to deleted history successfully!'
+                'message' => ($user->role === 'BRANCH_MANAGER' ? 'Branch Manager' : ($user->role === 'HR' ? 'HR' : 'Staff')) . ' account moved to deleted history successfully!'
             ]);
 
         } catch (\Exception $e) {

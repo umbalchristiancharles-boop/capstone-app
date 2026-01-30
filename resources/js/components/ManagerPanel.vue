@@ -671,18 +671,16 @@ async function confirmLogout() {
   isLoggingOut.value = true
 
   try {
-    await axios.post(
-      '/api/logout',
-      {},
-      { withCredentials: true }
-    )
+    try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
+    window.location.replace('/logout')
   } catch (e) {
     // client-side logout pa rin
   }
 
-  // Redirect to index and reload (mirror AdminPanel behavior)
+  // Clear client-side state and perform full-page navigation so server enforces session state
   try {
-    window.location.href = '/'
+    try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
+    window.location.replace('/')
   } finally {
     showLogoutConfirm.value = false
     isLoggingOut.value = false

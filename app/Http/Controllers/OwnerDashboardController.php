@@ -20,8 +20,8 @@ class OwnerDashboardController extends Controller
 
         $user = Auth::user();
 
-        // Count all active employees (STAFF or BRANCH_MANAGER)
-        $totalEmployees = User::whereIn('role', ['STAFF', 'BRANCH_MANAGER'])
+        // Count all active employees (STAFF, BRANCH_MANAGER or HR)
+        $totalEmployees = User::whereIn('role', ['STAFF', 'BRANCH_MANAGER', 'HR'])
             ->where('is_active', 1)
             ->count();
 
@@ -30,9 +30,9 @@ class OwnerDashboardController extends Controller
 
         // For branch manager or staff, count employees in their branch only
         $branchEmployees = null;
-        if (in_array($user->role, ['BRANCH_MANAGER', 'STAFF']) && $user->branch_id) {
-            // Only count STAFF (not branch manager) if the user is STAFF
-            $roles = $user->role === 'STAFF' ? ['STAFF'] : ['STAFF', 'BRANCH_MANAGER'];
+        if (in_array($user->role, ['BRANCH_MANAGER', 'STAFF', 'HR']) && $user->branch_id) {
+            // Only count STAFF (not branch manager) if the user is STAFF; include HR in branch counts
+            $roles = $user->role === 'STAFF' ? ['STAFF'] : ['STAFF', 'BRANCH_MANAGER', 'HR'];
             $branchEmployees = User::whereIn('role', $roles)
                 ->where('is_active', 1)
                 ->where('branch_id', $user->branch_id)
