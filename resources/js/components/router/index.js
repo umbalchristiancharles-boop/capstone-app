@@ -36,11 +36,41 @@ const routes = [
       role: 'BRANCH_MANAGER'
     }
   },
+  // Branch Manager Inventory
+  {
+    path: '/manager/inventory',
+    name: 'ManagerInventory',
+    component: () => import('../components/InventoryManagement.vue'),
+    meta: {
+      requiresAuth: true,
+      role: 'BRANCH_MANAGER'
+    }
+  },
+  // Branch Manager Staff Management
+  {
+    path: '/manager/staff',
+    name: 'ManagerStaffManagement',
+    component: () => import('../components/StaffManagement.vue'),
+    meta: {
+      requiresAuth: true,
+      role: 'BRANCH_MANAGER'
+    }
+  },
   // Staff Routes
   {
     path: '/staff/dashboard',
     name: 'StaffDashboard',
     component: () => import('../components/StaffPanel.vue'),
+    meta: {
+      requiresAuth: true,
+      role: 'STAFF'
+    }
+  },
+  // Staff Clock In/Out
+  {
+    path: '/staff/clock',
+    name: 'StaffClockInOut',
+    component: () => import('../components/ClockInOut.vue'),
     meta: {
       requiresAuth: true,
       role: 'STAFF'

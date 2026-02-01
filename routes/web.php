@@ -139,7 +139,7 @@ Route::prefix('test')->group(function () {
 
     Route::get('/auth', function () {
         $user = \Illuminate\Support\Facades\Auth::user();
-        
+
         if ($user) {
             return response()->json([
                 'authenticated' => true,
@@ -152,7 +152,7 @@ Route::prefix('test')->group(function () {
                 ],
             ]);
         }
-        
+
         return response()->json([
             'authenticated' => false,
             'message' => 'No user logged in',
@@ -161,14 +161,14 @@ Route::prefix('test')->group(function () {
 
     Route::get('/manager-dashboard', function () {
         $testUser = \App\Models\User::where('role', 'BRANCH_MANAGER')->first();
-        
+
         if (!$testUser) {
             return response()->json([
                 'error' => 'No Branch Manager found in database',
                 'hint' => 'Create a Branch Manager user first',
             ]);
         }
-        
+
         return response()->json([
             'message' => 'Branch Manager found',
             'user' => [
@@ -184,14 +184,14 @@ Route::prefix('test')->group(function () {
 
     Route::get('/staff-dashboard', function () {
         $testUser = \App\Models\User::where('role', 'STAFF')->first();
-        
+
         if (!$testUser) {
             return response()->json([
                 'error' => 'No Staff found in database',
                 'hint' => 'Create a Staff user first',
             ]);
         }
-        
+
         return response()->json([
             'message' => 'Staff found',
             'user' => [
@@ -220,7 +220,7 @@ Route::prefix('test')->group(function () {
                 'GET /api/staff/attendance/status',
             ],
         ];
-        
+
         return response()->json([
             'message' => 'Available API routes',
             'routes' => $routes,

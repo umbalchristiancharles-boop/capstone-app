@@ -88,19 +88,19 @@ Route::middleware('web')->group(function () {
     Route::prefix('manager')->group(function () {
         // Dashboard
         Route::get('/dashboard',        [ManagerDashboardController::class, 'index']);
-        
+
         // Inventory Management
         Route::get('/inventory',        [InventoryController::class, 'index']);
         Route::put('/inventory/{id}',   [InventoryController::class, 'updateStock']);
         Route::post('/inventory/delivery', [InventoryController::class, 'recordDelivery']);
-        
+
         // Staff Management
         Route::get('/staff',            [StaffManagementController::class, 'index']);
         Route::post('/staff',           [StaffManagementController::class, 'store']);
         Route::put('/staff/{id}',       [StaffManagementController::class, 'update']);
         Route::get('/staff/schedules',  [StaffManagementController::class, 'schedules']);
         Route::get('/staff/attendance', [StaffManagementController::class, 'attendance']);
-        
+
         // Reports
         Route::get('/reports/sales',    [ReportsController::class, 'salesReport']);
         Route::get('/reports/staff-performance', [ReportsController::class, 'staffPerformanceReport']);
@@ -114,7 +114,7 @@ Route::middleware('web')->group(function () {
     Route::prefix('staff')->group(function () {
         // Dashboard
         Route::get('/dashboard',        [StaffDashboardController::class, 'index']);
-        
+
         // Attendance/Clock In-Out
         Route::post('/clock-in',        [AttendanceController::class, 'clockIn']);
         Route::post('/clock-out',       [AttendanceController::class, 'clockOut']);
