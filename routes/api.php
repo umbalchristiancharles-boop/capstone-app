@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\OwnerDashboardController;
 use App\Http\Controllers\Admin\StaffController;
+use App\Http\Controllers\Admin\DashboardController;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
@@ -66,13 +67,14 @@ Route::middleware('web')->group(function () {
     // STAFF MANAGEMENT API
     // ==========================================
     Route::prefix('admin')->group(function () {
+        Route::get('/dashboard',        [DashboardController::class, 'index']);
         Route::get('/staff',            [StaffController::class, 'apiIndex']);
         Route::get('/staff/{id}',       [StaffController::class, 'apiShow']);
         Route::post('/staff',           [StaffController::class, 'apiStore']);
         Route::put('/staff/{id}',       [StaffController::class, 'apiUpdate']);
         Route::delete('/staff/{id}',    [StaffController::class, 'apiDestroy']);
         Route::get('/branches',         [StaffController::class, 'apiBranches']);
-        
+
     });
-    
+
 });

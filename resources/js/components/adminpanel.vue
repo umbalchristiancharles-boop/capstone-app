@@ -192,7 +192,7 @@
           <section class="overview-grid">
             <div class="overview-card">
               <span class="overview-label">
-                Orders<span v-if="activeRange === 'today'"> Today</span>:
+                Orders:
               </span>
               <span class="overview-value">
                 &nbsp;{{ dashboardTotals.orders }}
@@ -348,9 +348,7 @@
                 class="side-item side-item--alert"
               >
                 <span>{{ item.name }}</span>
-                <span class="side-value">
-                  {{ item.qty }} {{ item.unit }} left
-                </span>
+                <span class="side-value">{{ item.stock }}</span>
               </div>
             </div>
           </section>
@@ -362,23 +360,22 @@
             </div>
             <div class="panel-body panel-body--list">
               <div
-                v-if="staffActivity.length === 0"
-                class="activity-item"
+                v-if="adminStaffActivity.length === 0"
+                class="side-item"
               >
-                <span class="activity-main">
-                  No staff activity logged for this range.
-                </span>
+                <span>No recent staff activity.</span>
               </div>
               <div
                 v-else
-                v-for="log in staffActivity"
-                :key="log.id"
-                class="activity-item"
+                v-for="act in adminStaffActivity"
+                :key="act.name"
+                class="side-item"
               >
-                <span class="activity-main">
-                  {{ log.message }}
-                </span>
-                <span class="activity-meta">{{ log.meta }}</span>
+                <div>
+                  <div class="activity-title">{{ act.name }}</div>
+                  <div class="activity-meta">{{ act.role }} - {{ act.branch }}</div>
+                </div>
+                <span class="activity-time">{{ act.last_active }}</span>
               </div>
             </div>
           </section>
@@ -527,6 +524,7 @@ const productionQueue = ref([])
 const topProducts = ref([])
 const lowStockItems = ref([])
 const staffActivity = ref([])
+const adminStaffActivity = ref([])
 const recentOrders = ref([])
 const showAllOrders = ref(false)
 
@@ -561,26 +559,54 @@ async function loadDashboard(range) {
   isLoadingDashboard.value = true
   dashboardError.value = ''
 
+  // Clear all data while loading
+  dashboardTotals.value = {
+    orders: 0,
+    completed: 0,
+    sales: '₱0',
+    pending: 0,
+  }
+  summaryTotals.value = {
+    totalBranches: 0,
+    totalEmployees: 0,
+  }
+  recentOrders.value = []
+  productionQueue.value = []
+  topProducts.value = []
+  lowStockItems.value = []
+  staffActivity.value = []
+  adminStaffActivity.value = []
+
   try {
-    const res = await axios.get('/api/owner-dashboard', {
-      params: { range },
+    // Fetch admin dashboard data
+    const adminRes = await axios.get('/api/admin/dashboard', {
       withCredentials: true,
     })
 
-    if (res.data.ok) {
-      dashboardTotals.value = res.data.totals || dashboardTotals.value
-      summaryTotals.value = res.data.summary || summaryTotals.value
-      recentOrders.value = res.data.recentOrders || []
-      productionQueue.value = res.data.productionQueue || []
-      topProducts.value = res.data.topProducts || []
-      lowStockItems.value = res.data.lowStockItems || []
-      staffActivity.value = res.data.staffActivity || []
-    } else {
-      dashboardError.value =
-        res.data.message || 'Unable to load dashboard.'
+    if (adminRes.data) {
+      // Update summary totals with admin data
+      summaryTotals.value = {
+        totalBranches: adminRes.data.branches_count || 0,
+        totalEmployees: adminRes.data.staff_count || 0,
+      }
+
+      // Update dashboard totals with admin data
+      dashboardTotals.value = {
+        orders: adminRes.data.orders_count || 0,
+        completed: 0,
+        sales: '₱0',
+        pending: 0,
+      }
+
+      // Update staff activity
+      adminStaffActivity.value = adminRes.data.recent_activity || []
     }
+
+    // Note: Not fetching owner dashboard data anymore
+    // Admin dashboard shows only real data from database
   } catch (e) {
     dashboardError.value = 'Error loading dashboard.'
+    console.error('Dashboard error:', e)
   } finally {
     isLoadingDashboard.value = false
     // Remove any temporary global overlay created by previous route
