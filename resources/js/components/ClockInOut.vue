@@ -29,7 +29,7 @@
       </div>
 
       <div class="button-group">
-        <button 
+        <button
           @click="performClockIn"
           :disabled="status?.is_clocked_in || isProcessing"
           class="btn-clock-in"
@@ -37,7 +37,7 @@
           <span v-if="!isProcessing">Clock In</span>
           <span v-else>Processing...</span>
         </button>
-        <button 
+        <button
           @click="performClockOut"
           :disabled="!status?.is_clocked_in || isProcessing"
           class="btn-clock-out"
@@ -55,7 +55,7 @@
     <!-- Attendance History -->
     <div class="history-section">
       <h2>Attendance History</h2>
-      
+
       <div v-if="historyLoading" class="loading-state">
         <p>Loading history...</p>
       </div>
@@ -115,7 +115,7 @@ let clockInterval = null
 // Methods
 function updateClock() {
   const now = new Date()
-  
+
   currentTime.value = now.toLocaleTimeString('en-US', {
     hour: '2-digit',
     minute: '2-digit',

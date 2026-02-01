@@ -4,10 +4,10 @@
     <div class="staff-header">
       <h1>Staff Management</h1>
       <div class="header-actions">
-        <input 
-          v-model="searchQuery" 
-          type="text" 
-          placeholder="Search staff..." 
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="Search staff..."
           class="search-input"
         >
         <button @click="refreshStaff" class="btn-primary">Refresh</button>
@@ -62,14 +62,14 @@
             </td>
             <td>{{ member.created_at }}</td>
             <td class="actions">
-              <button 
+              <button
                 @click="editStaff(member)"
                 class="btn-sm btn-info"
                 title="Edit"
               >
                 Edit
               </button>
-              <button 
+              <button
                 @click="toggleStatus(member)"
                 :class="['btn-sm', member.is_active ? 'btn-danger' : 'btn-success']"
                 :title="member.is_active ? 'Deactivate' : 'Activate'"
@@ -98,7 +98,7 @@
           <div class="modal-body">
             <div v-if="!isEditingStaff" class="form-group">
               <label>Username:</label>
-              <input 
+              <input
                 v-model="newStaff.username"
                 type="text"
                 class="form-input"
@@ -107,7 +107,7 @@
             </div>
             <div class="form-group">
               <label>Full Name:</label>
-              <input 
+              <input
                 v-model="newStaff.full_name"
                 type="text"
                 class="form-input"
@@ -116,7 +116,7 @@
             </div>
             <div class="form-group">
               <label>Email:</label>
-              <input 
+              <input
                 v-model="newStaff.email"
                 type="email"
                 class="form-input"
@@ -125,7 +125,7 @@
             </div>
             <div class="form-group">
               <label>Phone Number:</label>
-              <input 
+              <input
                 v-model="newStaff.phone_number"
                 type="text"
                 class="form-input"
@@ -134,7 +134,7 @@
             </div>
             <div v-if="!isEditingStaff" class="form-group">
               <label>Password:</label>
-              <input 
+              <input
                 v-model="newStaff.password"
                 type="password"
                 class="form-input"

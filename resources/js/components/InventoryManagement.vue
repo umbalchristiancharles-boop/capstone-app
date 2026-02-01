@@ -4,10 +4,10 @@
     <div class="inventory-header">
       <h1>Inventory Management</h1>
       <div class="header-actions">
-        <input 
-          v-model="searchQuery" 
-          type="text" 
-          placeholder="Search items..." 
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="Search items..."
           class="search-input"
         >
         <button @click="refreshInventory" class="btn-primary">Refresh</button>
@@ -68,14 +68,14 @@
             </td>
             <td>{{ item.last_updated }}</td>
             <td class="actions">
-              <button 
+              <button
                 @click="editItem(item)"
                 class="btn-sm btn-info"
                 title="Update Stock"
               >
                 Update
               </button>
-              <button 
+              <button
                 @click="recordDelivery(item)"
                 class="btn-sm btn-warning"
                 title="Record Delivery"
@@ -104,10 +104,10 @@
           <div class="modal-body">
             <div class="form-group">
               <label>Current Quantity:</label>
-              <input 
-                type="number" 
-                :value="editingItem.quantity" 
-                disabled 
+              <input
+                type="number"
+                :value="editingItem.quantity"
+                disabled
                 class="form-input"
               >
             </div>
@@ -121,9 +121,9 @@
             </div>
             <div class="form-group">
               <label>Quantity:</label>
-              <input 
-                v-model.number="updateQuantity" 
-                type="number" 
+              <input
+                v-model.number="updateQuantity"
+                type="number"
                 min="0"
                 class="form-input"
                 placeholder="Enter quantity"
@@ -131,7 +131,7 @@
             </div>
             <div class="form-group">
               <label>Note (Optional):</label>
-              <textarea 
+              <textarea
                 v-model="updateNote"
                 class="form-input"
                 rows="3"
@@ -158,7 +158,7 @@
           <div class="modal-body">
             <div class="form-group">
               <label>Quantity Received:</label>
-              <input 
+              <input
                 v-model.number="deliveryQuantity"
                 type="number"
                 min="0"
@@ -168,7 +168,7 @@
             </div>
             <div class="form-group">
               <label>Supplier:</label>
-              <input 
+              <input
                 v-model="deliverySupplier"
                 type="text"
                 class="form-input"
@@ -177,7 +177,7 @@
             </div>
             <div class="form-group">
               <label>Note:</label>
-              <textarea 
+              <textarea
                 v-model="deliveryNote"
                 class="form-input"
                 rows="3"
