@@ -26,6 +26,36 @@ const routes = [
       role: 'OWNER'
     }
   },
+  // Branch Manager Routes
+  {
+    path: '/manager/dashboard',
+    name: 'ManagerDashboard',
+    component: () => import('../components/ManagerPanel.vue'),
+    meta: {
+      requiresAuth: true,
+      role: 'BRANCH_MANAGER'
+    }
+  },
+  // Staff Routes
+  {
+    path: '/staff/dashboard',
+    name: 'StaffDashboard',
+    component: () => import('../components/StaffPanel.vue'),
+    meta: {
+      requiresAuth: true,
+      role: 'STAFF'
+    }
+  },
+  // HR Routes
+  {
+    path: '/hr/dashboard',
+    name: 'HRDashboard',
+    component: () => import('../components/hrpanel.vue'),
+    meta: {
+      requiresAuth: true,
+      role: 'HR'
+    }
+  },
   // Forgot Password Route (guest only)
   {
     path: '/admin/forgot-password',

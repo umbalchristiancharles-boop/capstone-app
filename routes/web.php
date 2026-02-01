@@ -126,6 +126,110 @@ Route::middleware('auth')->group(function () {
 });
 
 // ==========================================
+// TEST ROUTES (Development Only)
+// ==========================================
+Route::prefix('test')->group(function () {
+    Route::get('/backend', function () {
+        return response()->json([
+            'status' => 'Backend is working!',
+            'timestamp' => now()->toDateTimeString(),
+            'laravel_version' => app()->version(),
+        ]);
+    });
+
+    Route::get('/auth', function () {
+        $user = \Illuminate\Support\Facades\Auth::user();
+        
+        if ($user) {
+            return response()->json([
+                'authenticated' => true,
+                'user' => [
+                    'id' => $user->id,
+                    'username' => $user->username,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                    'branch_id' => $user->branch_id,
+                ],
+            ]);
+        }
+        
+        return response()->json([
+            'authenticated' => false,
+            'message' => 'No user logged in',
+        ]);
+    });
+
+    Route::get('/manager-dashboard', function () {
+        $testUser = \App\Models\User::where('role', 'BRANCH_MANAGER')->first();
+        
+        if (!$testUser) {
+            return response()->json([
+                'error' => 'No Branch Manager found in database',
+                'hint' => 'Create a Branch Manager user first',
+            ]);
+        }
+        
+        return response()->json([
+            'message' => 'Branch Manager found',
+            'user' => [
+                'id' => $testUser->id,
+                'username' => $testUser->username,
+                'role' => $testUser->role,
+                'branch_id' => $testUser->branch_id,
+            ],
+            'api_endpoint' => '/api/manager/dashboard',
+            'note' => 'Login as this user then access the API',
+        ]);
+    });
+
+    Route::get('/staff-dashboard', function () {
+        $testUser = \App\Models\User::where('role', 'STAFF')->first();
+        
+        if (!$testUser) {
+            return response()->json([
+                'error' => 'No Staff found in database',
+                'hint' => 'Create a Staff user first',
+            ]);
+        }
+        
+        return response()->json([
+            'message' => 'Staff found',
+            'user' => [
+                'id' => $testUser->id,
+                'username' => $testUser->username,
+                'role' => $testUser->role,
+                'branch_id' => $testUser->branch_id,
+            ],
+            'api_endpoint' => '/api/staff/dashboard',
+            'note' => 'Login as this user then access the API',
+        ]);
+    });
+
+    Route::get('/routes', function () {
+        $routes = [
+            'manager_routes' => [
+                'GET /api/manager/dashboard',
+                'GET /api/manager/inventory',
+                'GET /api/manager/staff',
+                'GET /api/manager/reports/sales',
+            ],
+            'staff_routes' => [
+                'GET /api/staff/dashboard',
+                'POST /api/staff/clock-in',
+                'POST /api/staff/clock-out',
+                'GET /api/staff/attendance/status',
+            ],
+        ];
+        
+        return response()->json([
+            'message' => 'Available API routes',
+            'routes' => $routes,
+            'note' => 'All routes require authentication',
+        ]);
+    });
+});
+
+// ==========================================
 // SPA CATCH-ALL (MUST BE LAST!)
 // ==========================================
 Route::get('/{any}', function () {

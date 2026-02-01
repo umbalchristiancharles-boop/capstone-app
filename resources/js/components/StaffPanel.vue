@@ -487,22 +487,41 @@ async function loadDashboard(range) {
   dashboardError.value = ''
 
   try {
-    const res = await axios.get('/api/owner-dashboard', {
+    const res = await axios.get('/api/staff/dashboard', {
       params: { range },
       withCredentials: true,
     })
 
-    if (res.data.ok) {
-      dashboardTotals.value = res.data.totals || dashboardTotals.value
-      summaryTotals.value = res.data.summary || summaryTotals.value
+    if (res.data.success) {
+      // Update dashboard totals
+      dashboardTotals.value = res.data.stats || dashboardTotals.value
+
+      // Update performance
+      if (res.data.performance) {
+        summaryTotals.value.completedOrders = res.data.performance.completedOrders || 0
+        summaryTotals.value.avgPrepTime = res.data.performance.avgPrepTime || '0 min'
+        summaryTotals.value.customerRating = res.data.performance.customerRating || '0'
+      }
+
+      // Update other data
       recentOrders.value = res.data.recentOrders || []
-      productionQueue.value = res.data.productionQueue || []
-      announcements.value = res.data.announcements || []
+      productionQueue.value = res.data.myTasks || []
+      announcements.value = res.data.notifications || []
+
+      // Update staff profile with branch info
+      if (res.data.staff) {
+        staffProfile.value.fullName = res.data.staff.full_name
+        staffProfile.value.email = res.data.staff.email
+        staffProfile.value.avatarUrl = res.data.staff.avatar_url
+      }
+      if (res.data.branch) {
+        staffProfile.value.branch = res.data.branch.name
+      }
     } else {
-      dashboardError.value =
-        res.data.message || 'Unable to load dashboard.'
+      dashboardError.value = res.data.message || 'Unable to load dashboard.'
     }
   } catch (e) {
+    console.error('Dashboard load error:', e)
     dashboardError.value = 'Error loading dashboard.'
   } finally {
     isLoadingDashboard.value = false

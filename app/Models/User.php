@@ -11,6 +11,24 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\CanResetPassword;
 use Illuminate\Support\Facades\Hash;  // ← FIXED: Import Hash
 
+/**
+ * @property int $id
+ * @property string $username
+ * @property string $email
+ * @property string $password_hash
+ * @property string|null $full_name
+ * @property string $role
+ * @property int|null $branch_id
+ * @property string|null $avatar_url
+ * @property string|null $phone_number
+ * @property string|null $address
+ * @property bool $is_active
+ * @property string|null $remember_token
+ * @property \Illuminate\Support\Carbon|null $email_verified_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ */
 class User extends Authenticatable implements CanResetPassword
 {
     use HasFactory, Notifiable, SoftDeletes;

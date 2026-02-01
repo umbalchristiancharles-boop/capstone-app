@@ -567,24 +567,34 @@ async function loadDashboard(range) {
   dashboardError.value = ''
 
   try {
-    const res = await axios.get('/api/owner-dashboard', {
+    const res = await axios.get('/api/manager/dashboard', {
       params: { range },
       withCredentials: true,
     })
 
-    if (res.data.ok) {
-      dashboardTotals.value = res.data.totals || dashboardTotals.value
+    if (res.data.success) {
+      // Update dashboard totals
+      dashboardTotals.value = res.data.stats || dashboardTotals.value
+
+      // Update summary totals
       summaryTotals.value = res.data.summary || summaryTotals.value
+
+      // Update other data
       recentOrders.value = res.data.recentOrders || []
       productionQueue.value = res.data.productionQueue || []
       topProducts.value = res.data.topProducts || []
       lowStockItems.value = res.data.lowStockItems || []
       staffActivity.value = res.data.staffActivity || []
+
+      // Update manager profile with branch info
+      if (res.data.branch) {
+        managerProfile.value.branch = res.data.branch.name
+      }
     } else {
-      dashboardError.value =
-        res.data.message || 'Unable to load dashboard.'
+      dashboardError.value = res.data.message || 'Unable to load dashboard.'
     }
   } catch (e) {
+    console.error('Dashboard load error:', e)
     dashboardError.value = 'Error loading dashboard.'
   } finally {
     isLoadingDashboard.value = false

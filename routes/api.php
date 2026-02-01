@@ -6,6 +6,12 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\OwnerDashboardController;
 use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Manager\ManagerDashboardController;
+use App\Http\Controllers\Manager\InventoryController;
+use App\Http\Controllers\Manager\StaffManagementController;
+use App\Http\Controllers\Manager\ReportsController;
+use App\Http\Controllers\Staff\StaffDashboardController;
+use App\Http\Controllers\Staff\AttendanceController;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
@@ -74,7 +80,46 @@ Route::middleware('web')->group(function () {
         Route::put('/staff/{id}',       [StaffController::class, 'apiUpdate']);
         Route::delete('/staff/{id}',    [StaffController::class, 'apiDestroy']);
         Route::get('/branches',         [StaffController::class, 'apiBranches']);
+    });
 
+    // ==========================================
+    // BRANCH MANAGER API
+    // ==========================================
+    Route::prefix('manager')->group(function () {
+        // Dashboard
+        Route::get('/dashboard',        [ManagerDashboardController::class, 'index']);
+        
+        // Inventory Management
+        Route::get('/inventory',        [InventoryController::class, 'index']);
+        Route::put('/inventory/{id}',   [InventoryController::class, 'updateStock']);
+        Route::post('/inventory/delivery', [InventoryController::class, 'recordDelivery']);
+        
+        // Staff Management
+        Route::get('/staff',            [StaffManagementController::class, 'index']);
+        Route::post('/staff',           [StaffManagementController::class, 'store']);
+        Route::put('/staff/{id}',       [StaffManagementController::class, 'update']);
+        Route::get('/staff/schedules',  [StaffManagementController::class, 'schedules']);
+        Route::get('/staff/attendance', [StaffManagementController::class, 'attendance']);
+        
+        // Reports
+        Route::get('/reports/sales',    [ReportsController::class, 'salesReport']);
+        Route::get('/reports/staff-performance', [ReportsController::class, 'staffPerformanceReport']);
+        Route::get('/reports/inventory', [ReportsController::class, 'inventoryReport']);
+        Route::get('/reports/export',   [ReportsController::class, 'exportCSV']);
+    });
+
+    // ==========================================
+    // STAFF API
+    // ==========================================
+    Route::prefix('staff')->group(function () {
+        // Dashboard
+        Route::get('/dashboard',        [StaffDashboardController::class, 'index']);
+        
+        // Attendance/Clock In-Out
+        Route::post('/clock-in',        [AttendanceController::class, 'clockIn']);
+        Route::post('/clock-out',       [AttendanceController::class, 'clockOut']);
+        Route::get('/attendance/status', [AttendanceController::class, 'status']);
+        Route::get('/attendance/history', [AttendanceController::class, 'history']);
     });
 
 });
