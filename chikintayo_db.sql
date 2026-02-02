@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jan 30, 2026 at 07:44 AM
+-- Generation Time: Feb 02, 2026 at 05:34 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -149,7 +149,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (9, '2026_01_19_141306_create_password_resets_table', 7),
 (10, '2026_01_20_162500_add_remember_token_to_users_table', 8),
 (11, '2026_01_20_170100_add_password_column_and_copy_hash', 9),
-(12, '2026_01_30_130000_change_users_role_to_string', 10);
+(12, '2026_01_30_130000_change_users_role_to_string', 10),
+(13, '2026_02_02_120000_add_must_change_password_to_users_table', 11);
 
 -- --------------------------------------------------------
 
@@ -169,62 +170,6 @@ CREATE TABLE `orders` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `orders`
---
-
-INSERT INTO `orders` (`id`, `order_code`, `owner_id`, `branch_id`, `customer_name`, `status`, `grand_total`, `ordered_at`, `created_at`, `updated_at`) VALUES
-(1, 'CT-0015', 1, 1, 'Customer 15', 'pending', 714.00, '2026-01-04 02:27:00', '2026-01-04 02:27:00', '2026-01-04 02:27:00'),
-(2, 'CT-0016', 1, 1, 'Customer 16', 'completed', 303.00, '2025-12-14 03:12:00', '2025-12-14 03:12:00', '2025-12-14 03:12:00'),
-(3, 'CT-0017', 1, 1, 'Customer 17', 'in_kitchen', 1887.00, '2025-12-29 07:09:00', '2025-12-29 07:09:00', '2025-12-29 07:09:00'),
-(4, 'CT-0018', 1, 1, 'Customer 18', 'pending', 558.00, '2025-12-10 11:31:00', '2025-12-10 11:31:00', '2025-12-10 11:31:00'),
-(5, 'CT-0019', 1, 1, 'Customer 19', 'completed', 472.00, '2026-01-02 10:57:00', '2026-01-02 10:57:00', '2026-01-02 10:57:00'),
-(6, 'CT-0020', 1, 1, 'Customer 20', 'in_kitchen', 654.00, '2025-12-26 02:52:00', '2025-12-26 02:52:00', '2025-12-26 02:52:00'),
-(7, 'CT-0021', 1, 1, 'Customer 21', 'completed', 1884.00, '2025-12-30 02:02:00', '2025-12-30 02:02:00', '2025-12-30 02:02:00'),
-(8, 'CT-0022', 1, 1, 'Customer 22', 'in_kitchen', 874.00, '2025-12-16 00:29:00', '2025-12-16 00:29:00', '2025-12-16 00:29:00'),
-(9, 'CT-0023', 1, 1, 'Customer 23', 'pending', 1221.00, '2025-12-24 10:15:00', '2025-12-24 10:15:00', '2025-12-24 10:15:00'),
-(10, 'CT-0024', 1, 1, 'Customer 24', 'completed', 1930.00, '2026-01-04 12:57:00', '2026-01-04 12:57:00', '2026-01-04 12:57:00'),
-(11, 'CT-0025', 1, 1, 'Customer 25', 'completed', 624.00, '2025-12-25 03:03:00', '2025-12-25 03:03:00', '2025-12-25 03:03:00'),
-(12, 'CT-0026', 1, 1, 'Customer 26', 'completed', 380.00, '2025-12-29 05:43:00', '2025-12-29 05:43:00', '2025-12-29 05:43:00'),
-(13, 'CT-0027', 1, 1, 'Customer 27', 'completed', 519.00, '2025-12-24 07:54:00', '2025-12-24 07:54:00', '2025-12-24 07:54:00'),
-(14, 'CT-0028', 1, 1, 'Customer 28', 'in_kitchen', 1878.00, '2025-12-17 04:14:00', '2025-12-17 04:14:00', '2025-12-17 04:14:00'),
-(15, 'CT-0029', 1, 1, 'Customer 29', 'completed', 1508.00, '2025-12-14 00:37:00', '2025-12-14 00:37:00', '2025-12-14 00:37:00'),
-(16, 'CT-0030', 1, 1, 'Customer 30', 'pending', 1295.00, '2026-01-02 09:16:00', '2026-01-02 09:16:00', '2026-01-02 09:16:00'),
-(17, 'CT-0031', 1, 1, 'Customer 31', 'pending', 969.00, '2025-12-27 04:26:00', '2025-12-27 04:26:00', '2025-12-27 04:26:00'),
-(18, 'CT-0032', 1, 1, 'Customer 32', 'in_kitchen', 1125.00, '2026-01-03 08:45:00', '2026-01-03 08:45:00', '2026-01-03 08:45:00'),
-(19, 'CT-0033', 1, 1, 'Customer 33', 'pending', 1278.00, '2025-12-31 09:40:00', '2025-12-31 09:40:00', '2025-12-31 09:40:00'),
-(20, 'CT-0034', 1, 1, 'Customer 34', 'pending', 662.00, '2025-12-10 01:55:00', '2025-12-10 01:55:00', '2025-12-10 01:55:00'),
-(21, 'CT-0035', 1, 1, 'Customer 35', 'completed', 1977.00, '2025-12-17 07:04:00', '2025-12-17 07:04:00', '2025-12-17 07:04:00'),
-(22, 'CT-0036', 1, 1, 'Customer 36', 'pending', 1984.00, '2025-12-22 02:56:00', '2025-12-22 02:56:00', '2025-12-22 02:56:00'),
-(23, 'CT-0037', 1, 1, 'Customer 37', 'completed', 893.00, '2026-01-01 08:55:00', '2026-01-01 08:55:00', '2026-01-01 08:55:00'),
-(24, 'CT-0038', 1, 1, 'Customer 38', 'completed', 1235.00, '2026-01-06 07:57:00', '2026-01-06 07:57:00', '2026-01-06 07:57:00'),
-(25, 'CT-0039', 1, 1, 'Customer 39', 'in_kitchen', 588.00, '2025-12-14 06:26:00', '2025-12-14 06:26:00', '2025-12-14 06:26:00'),
-(26, 'CT-0040', 1, 1, 'Customer 40', 'pending', 1573.00, '2025-12-11 00:31:00', '2025-12-11 00:31:00', '2025-12-11 00:31:00'),
-(27, 'CT-0041', 1, 1, 'Customer 41', 'completed', 1973.00, '2025-12-25 11:57:00', '2025-12-25 11:57:00', '2025-12-25 11:57:00'),
-(28, 'CT-0042', 1, 1, 'Customer 42', 'pending', 811.00, '2025-12-20 01:28:00', '2025-12-20 01:28:00', '2025-12-20 01:28:00'),
-(29, 'CT-0043', 1, 1, 'Customer 43', 'completed', 1950.00, '2025-12-17 07:07:00', '2025-12-17 07:07:00', '2025-12-17 07:07:00'),
-(30, 'CT-0044', 1, 1, 'Customer 44', 'in_kitchen', 663.00, '2025-12-22 08:43:00', '2025-12-22 08:43:00', '2025-12-22 08:43:00'),
-(31, 'CT-0045', 1, 1, 'Customer 45', 'pending', 469.00, '2025-12-20 11:46:00', '2025-12-20 11:46:00', '2025-12-20 11:46:00'),
-(32, 'CT-0046', 1, 1, 'Customer 46', 'completed', 704.00, '2026-01-04 05:02:00', '2026-01-04 05:02:00', '2026-01-04 05:02:00'),
-(33, 'CT-0047', 1, 1, 'Customer 47', 'in_kitchen', 1040.00, '2025-12-14 03:09:00', '2025-12-14 03:09:00', '2025-12-14 03:09:00'),
-(34, 'CT-0048', 1, 1, 'Customer 48', 'completed', 707.00, '2026-01-05 05:16:00', '2026-01-05 05:16:00', '2026-01-05 05:16:00'),
-(35, 'CT-0049', 1, 1, 'Customer 49', 'completed', 1796.00, '2025-12-29 03:25:00', '2025-12-29 03:25:00', '2025-12-29 03:25:00'),
-(36, 'CT-0050', 1, 1, 'Customer 50', 'completed', 412.00, '2025-12-23 00:00:00', '2025-12-23 00:00:00', '2025-12-23 00:00:00'),
-(37, 'CT-0051', 1, 1, 'Customer 51', 'completed', 1783.00, '2025-12-29 10:35:00', '2025-12-29 10:35:00', '2025-12-29 10:35:00'),
-(38, 'CT-0052', 1, 1, 'Customer 52', 'completed', 776.00, '2026-01-05 09:18:00', '2026-01-05 09:18:00', '2026-01-05 09:18:00'),
-(39, 'CT-0053', 1, 1, 'Customer 53', 'completed', 889.00, '2026-01-01 05:06:00', '2026-01-01 05:06:00', '2026-01-01 05:06:00'),
-(40, 'CT-0054', 1, 1, 'Customer 54', 'in_kitchen', 1280.00, '2025-12-19 09:47:00', '2025-12-19 09:47:00', '2025-12-19 09:47:00'),
-(41, 'CT-0055', 1, 1, 'Customer 55', 'pending', 711.00, '2025-12-24 07:59:00', '2025-12-24 07:59:00', '2025-12-24 07:59:00'),
-(42, 'CT-0056', 1, 1, 'Customer 56', 'completed', 1740.00, '2025-12-26 10:37:00', '2025-12-26 10:37:00', '2025-12-26 10:37:00'),
-(43, 'CT-0057', 1, 1, 'Customer 57', 'in_kitchen', 481.00, '2025-12-30 00:23:00', '2025-12-30 00:23:00', '2025-12-30 00:23:00'),
-(44, 'CT-0058', 1, 1, 'Customer 58', 'completed', 942.00, '2026-01-08 06:35:00', '2026-01-08 06:35:00', '2026-01-08 06:35:00'),
-(45, 'CT-0059', 1, 1, 'Customer 59', 'completed', 1767.00, '2025-12-17 05:39:00', '2025-12-17 05:39:00', '2025-12-17 05:39:00'),
-(46, 'CT-0060', 1, 1, 'Customer 60', 'completed', 1961.00, '2025-12-17 08:43:00', '2025-12-17 08:43:00', '2025-12-17 08:43:00'),
-(47, 'CT-0061', 1, 1, 'Customer 61', 'completed', 1087.00, '2026-01-06 02:51:00', '2026-01-06 02:51:00', '2026-01-06 02:51:00'),
-(48, 'CT-0062', 1, 1, 'Customer 62', 'completed', 1179.00, '2026-01-01 11:29:00', '2026-01-01 11:29:00', '2026-01-01 11:29:00'),
-(49, 'CT-0063', 1, 1, 'Customer 63', 'completed', 489.00, '2026-01-08 10:14:00', '2026-01-08 10:14:00', '2026-01-08 10:14:00'),
-(50, 'CT-0064', 1, 1, 'Customer 64', 'pending', 1959.00, '2025-12-15 02:03:00', '2025-12-15 02:03:00', '2025-12-15 02:03:00');
 
 -- --------------------------------------------------------
 
@@ -286,8 +231,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('DzYsq2C6GqknYXo8EvY15dYL2XcUkvEtzGqwvZrw', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiWjB5bWdyT3o3OEMwMDJqazl5Qkx2QVE4UXJ0UEtJNjBaNXN3YTRiTSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9fQ==', 1769755409),
-('ShsL2VxlbGTzDCQ5nkrqPGPeNjHJOP5mOsSTyuO2', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiUDBqTWpzS2M4MDdmY2xsdFh5eDNma09tcWs2NkNCUldETlZ2RkVpaiI7czo3OiJzdWNjZXNzIjtzOjI0OiJMb2dnZWQgb3V0IHN1Y2Nlc3NmdWxseS4iO3M6NjoiX2ZsYXNoIjthOjI6e3M6MzoibmV3IjthOjA6e31zOjM6Im9sZCI7YToxOntpOjA7czo3OiJzdWNjZXNzIjt9fXM6OToiX3ByZXZpb3VzIjthOjI6e3M6MzoidXJsIjtzOjI4OiJodHRwOi8vbG9jYWxob3N0OjgwMDAvbG9nb3V0IjtzOjU6InJvdXRlIjtzOjY6ImxvZ291dCI7fX0=', 1769750149);
+('iKX1gecbKP7GsVEPftsYPR26UUNRsZah0cuXXlLN', 33, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiZmI5aFJDUkZGelFqd3RZVEsyTGkwdGtMMERyOGtURktmQ2p1d3ZRayI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzM6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hZG1pbi1wYW5lbCI7czo1OiJyb3V0ZSI7czoxMToiYWRtaW4ucGFuZWwiO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aTozMzt9', 1770049825);
 
 -- --------------------------------------------------------
 
@@ -312,23 +256,20 @@ CREATE TABLE `users` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `deleted_at` timestamp NULL DEFAULT NULL,
   `remember_token` varchar(100) DEFAULT NULL,
-  `password` varchar(255) DEFAULT NULL
+  `password` varchar(255) DEFAULT NULL,
+  `must_change_password` tinyint(1) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `full_name`, `role`, `avatarUrl`, `branch_id`, `avatar_url`, `phone_number`, `address`, `is_active`, `created_at`, `updated_at`, `deleted_at`, `remember_token`, `password`) VALUES
-(11, 'owner_admin', 'calicamarkjulius@gmail.com', '$2y$12$0UbstBBBR2nY9p9ZANRp1OxlBwWoZeZ/9Zx7WuDERrtMbrq1V/auy', 'System Administrator', 'OWNER', NULL, NULL, '/storage/avatars/avatar_11_1769489246.jpg', '09123456789', 'Main Office', 1, '2026-01-13 16:05:28', '2026-01-30 05:04:56', NULL, 'lPthjWkCI5hI8qrTo4E5T4KwKp5h71FQPVylSOXwf3DBa1Os86WFnEgfNw7I', '$2y$12$sFbzg7dPLe0R/gYGAzVSjew8oDu8YcxgJ1O5f6x2dC7GgmUmlJNca'),
-(23, 'gab', 'onggab54@gmail.com', '$2y$12$at4w9GoSd7OylPjTyCB7.unz80/SjnzvO1flKzZTr3KISsyPVAs/K', 'gabbilyn', 'BRANCH_MANAGER', NULL, 2, '/storage/avatars/avatar_23_1769488262.png', '09156818851', NULL, 1, '2026-01-22 01:21:23', '2026-01-29 10:57:18', NULL, NULL, NULL),
-(24, 'mark_01', 'mark@test.com', '$2y$12$5hjZqNwfi.69Q9Vn2jPOnOekF1uuWflJdqrcYwyPGbstDZ7pH9dOy', 'Mark Test', 'STAFF', NULL, 2, '/storage/avatars/avatar_24_1769492714.jpg', '09156818843', 'Taga pala pala', 1, '2026-01-26 06:25:16', '2026-01-27 05:45:14', NULL, NULL, NULL),
-(25, 'Undertaker', 'undertaker@gmail.com', '$2y$12$YGDysnWiBRzmCtirSnAom.HniCBh9Wh/WzaIQrvUy0aPWT7jAKFb.', 'Mark Calaways', 'STAFF', NULL, 1, NULL, '09186305918', 'Dito lang sa TEXAS.', 1, '2026-01-29 11:20:00', '2026-01-29 21:57:45', NULL, NULL, NULL),
-(26, 'Paul Berrer', 'paul@gmail.com', '$2y$12$oF3pFH7PntX8XLGkAxwPJunUq7EHP4Gb7Fo6xZqXvXM6cUNkNdlfS', 'Paul Berrers', 'BRANCH_MANAGER', NULL, 1, NULL, '09099628117', 'Dito lang din sa TEXAS magkabilang bahay lang kami ni undertaker.', 1, '2026-01-29 11:21:45', '2026-01-29 22:06:22', NULL, NULL, NULL),
-(27, 'Vinzie', 'bido.vincehannibal@ncst.edu.ph', '$2y$12$Y4JDEGWNQBJMFjih.wK.yeIKObjVhMR0hYKyeU5uvsjWV/hsfMUUW', 'Vince Hannibal R. Bido', 'STAFF', NULL, 1, NULL, '0994833118', 'Blk M25 Lot 2, Brgy. Emmanuel Bergado II. Dasmariñas City, Cavite. Area E', 1, '2026-01-29 12:14:56', '2026-01-29 21:57:29', '2026-01-29 21:57:29', NULL, NULL),
-(28, 'Gabby', 'gabby@gmail.com', '$2y$12$660MZKQoGT/IGQzw8BNDd.jB3pxsGcrY09qhKFOV1Yf7TuL05KOLW', 'Gabriel Louis Ongsip', 'STAFF', NULL, 1, NULL, '09295426019', 'Summer Wind, Villa Isabel', 1, '2026-01-29 13:56:44', '2026-01-29 13:56:44', NULL, NULL, NULL),
-(29, 'johnnys', 'johnnysins12@gmail.com', '$2y$12$aWAZbX1VnRGueoEzpUpQgOVpbWgFiyWEkmmnUbvYWv1SXY43IHZKe', 'johnny sinss', 'STAFF', NULL, 1, NULL, '09156818888', NULL, 1, '2026-01-29 22:07:42', '2026-01-29 22:07:50', '2026-01-29 22:07:50', NULL, NULL),
-(30, 'asd', 'asd@gmail.com', '$2y$12$qE1aiUPfZ/AYw9pgeFxBVecPCmDf7fwZZ4Mb4n4ukomWZ9Qf/d7VG', 'asdss', 'HR', NULL, 1, NULL, '09123456783', NULL, 1, '2026-01-29 22:20:38', '2026-01-29 22:42:38', NULL, NULL, NULL);
+INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `full_name`, `role`, `avatarUrl`, `branch_id`, `avatar_url`, `phone_number`, `address`, `is_active`, `created_at`, `updated_at`, `deleted_at`, `remember_token`, `password`, `must_change_password`) VALUES
+(11, 'owner_admin', 'calicamarkjulius@gmail.com', '$2y$12$0UbstBBBR2nY9p9ZANRp1OxlBwWoZeZ/9Zx7WuDERrtMbrq1V/auy', 'System Administrator', 'OWNER', NULL, NULL, '/storage/avatars/avatar_11_1769948552.png', '09123456789', 'Main Office', 1, '2026-01-13 16:05:28', '2026-02-01 12:22:32', NULL, 'lPthjWkCI5hI8qrTo4E5T4KwKp5h71FQPVylSOXwf3DBa1Os86WFnEgfNw7I', '$2y$12$sFbzg7dPLe0R/gYGAzVSjew8oDu8YcxgJ1O5f6x2dC7GgmUmlJNca', 0),
+(26, 'Paul Berrer', 'paul@gmail.com', '$2y$12$oF3pFH7PntX8XLGkAxwPJunUq7EHP4Gb7Fo6xZqXvXM6cUNkNdlfS', 'Paul Berrers', 'BRANCH_MANAGER', NULL, 1, NULL, '09099628117', 'Dito lang din sa TEXAS magkabilang bahay lang kami ni undertaker.', 1, '2026-01-29 11:21:45', '2026-01-29 22:06:22', NULL, NULL, NULL, 0),
+(28, 'Gabby', 'gabby@gmail.com', '$2y$12$660MZKQoGT/IGQzw8BNDd.jB3pxsGcrY09qhKFOV1Yf7TuL05KOLW', 'Gabriel Louis Ongsip', 'STAFF', NULL, 1, NULL, '09295426019', 'Summer Wind, Villa Isabel', 1, '2026-01-29 13:56:44', '2026-01-29 13:56:44', NULL, NULL, NULL, 0),
+(30, 'asd', 'asd@gmail.com', '$2y$12$qE1aiUPfZ/AYw9pgeFxBVecPCmDf7fwZZ4Mb4n4ukomWZ9Qf/d7VG', 'asdss', 'HR', NULL, 1, NULL, '09123456783', NULL, 1, '2026-01-29 22:20:38', '2026-01-29 22:42:38', NULL, NULL, NULL, 0),
+(33, 'charles_bm', 'christianumbal12@gmail.com', '$2y$12$EeJiLxJphtI/EhI6ZZZMROYlcPYc.Unu9IYTjZobJYLRLoOPUcx42', 'Christian Charles Umbal', 'BRANCH_MANAGER', NULL, 2, NULL, '+63 908 171 8908', 'Alfonso Cavite', 1, '2026-02-02 07:58:19', '2026-02-02 08:19:03', NULL, NULL, NULL, 0);
 
 -- --------------------------------------------------------
 
@@ -469,13 +410,13 @@ ALTER TABLE `jobs`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=51;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `personal_access_tokens`
@@ -487,7 +428,7 @@ ALTER TABLE `personal_access_tokens`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
 
 --
 -- AUTO_INCREMENT for table `user_profiles`

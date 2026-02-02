@@ -57,15 +57,29 @@
               </div>
 
               <!-- Password -->
-              <div class="form-group">
-                <label for="password" class="form-label">Password {{ isEdit ? '' : '*' }}</label>
+              <div class="form-group" v-if="!isEdit">
+                <label for="password" class="form-label">Default Password</label>
+                <input
+                  :value="defaultPassword"
+                  type="text"
+                  id="password"
+                  class="form-input read-only"
+                  readonly
+                  autocomplete="off"
+                />
+                <div class="small-hint" style="margin-top:0.35rem; color:#6b7280; font-size:0.9rem;">
+                  Auto-set on create. User must change on first login.
+                </div>
+              </div>
+              <div class="form-group" v-else>
+                <label for="password" class="form-label">New Password (optional)</label>
                 <input
                   v-model="form.password"
                   type="password"
                   id="password"
                   class="form-input"
                   placeholder="••••••••"
-                  :required="!isEdit"
+                  autocomplete="new-password"
                 />
               </div>
 
@@ -231,6 +245,7 @@ export default {
   emits: ['close', 'success'],
   data() {
     return {
+      defaultPassword: 'ChikinTayo_2526',
       form: {
         id: '',
         username: '',
@@ -353,6 +368,11 @@ export default {
         } else {
           url = '/api/admin/staff'
           method = 'POST'
+        }
+
+        // For create, enforce default password
+        if (!this.isEdit) {
+          this.form.password = this.defaultPassword
         }
 
         // Send form data
@@ -516,6 +536,10 @@ export default {
   grid-template-columns: repeat(2, 1fr);
   gap: 1rem;
   margin-bottom: 1rem;
+}
+
+.read-only {
+  background: #f9fafb;
 }
 
 .form-group {

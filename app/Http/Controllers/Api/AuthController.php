@@ -67,6 +67,7 @@ class AuthController extends Controller
                 'username'  => $user->username,
                 'role'      => $user->role,
                 'full_name' => $user->full_name,
+                'must_change_password' => (bool) $user->must_change_password,
             ],
         ]);
     }
@@ -99,6 +100,71 @@ class AuthController extends Controller
         ]);
     }
 
+    public function profile(Request $request)
+    {
+        if (!Auth::check()) {
+            return response()->json([
+                'ok'      => false,
+                'message' => 'Unauthenticated',
+            ], 401);
+        }
+
+        $u = Auth::user();
+
+        return response()->json([
+            'ok'   => true,
+            'user' => [
+                'id'        => $u->id,
+                'username'  => $u->username,
+                'role'      => $u->role,
+                'full_name' => $u->full_name,
+                'email'     => $u->email,
+                'must_change_password' => (bool) $u->must_change_password,
+            ],
+        ]);
+    }
+
+    public function changePassword(Request $request)
+    {
+        if (!Auth::check()) {
+            return response()->json([
+                'ok'      => false,
+                'message' => 'Unauthenticated',
+            ], 401);
+        }
+
+        $request->validate([
+            'current_password' => 'required|string',
+            'new_password' => [
+                'required',
+                'string',
+                'min:8',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*])[A-Za-z\\d!@#$%^&*]{8,}$/',
+                'confirmed',
+            ],
+        ]);
+
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        if (!Hash::check($request->input('current_password'), $user->password_hash)) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Current password is incorrect',
+            ], 400);
+        }
+
+        $user->password_hash = Hash::make($request->input('new_password'));
+        $user->must_change_password = false;
+        $user->updated_at = now();
+        $user->save();
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'Password updated successfully',
+        ]);
+    }
+
     public function ownerProfile(Request $request)
     {
         if (!Auth::check()) {
@@ -114,7 +180,7 @@ class AuthController extends Controller
             'ok'   => true,
             'user' => [
                 'id'        => $u->id,
-                'fullName'  => $u->full_name ?? $u->name ?? null,
+                'fullName'  => $u->full_name ?? null,
                 'role'      => $u->role ?? 'OWNER',
                 'email'     => $u->email ?? null,
                 'contact'   => $u->phone_number ?? null,
@@ -145,7 +211,7 @@ class AuthController extends Controller
         DB::table('users')
             ->where('id', $user->id)
             ->update([
-                'full_name' => $validated['fullName'] ?? $user->full_name ?? $user->name,
+                'full_name' => $validated['fullName'] ?? $user->full_name,
                 'email'     => $validated['email'] ?? $user->email,
                 'phone_number'     => $validated['contact'] ?? $user->phone_number,
             ]);

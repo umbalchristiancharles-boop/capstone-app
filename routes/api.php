@@ -20,6 +20,13 @@ use App\Models\User;  // ← ADDED: Import your User model
 // API routes using session (web guard)
 Route::middleware('web')->group(function () {
     // ==========================================
+    // CSRF TOKEN ENDPOINT
+    // ==========================================
+    Route::get('/csrf-token', function () {
+        return response()->json(['token' => csrf_token()]);
+    });
+
+    // ==========================================
     // AUTH & PROFILE ROUTES
     // ==========================================
     Route::post('/login',           [AuthController::class, 'login']);
@@ -42,7 +49,12 @@ Route::middleware('web')->group(function () {
         $request->validate([
             'email' => 'required|email',
             'token' => 'required',
-            'password' => 'required|min:8|confirmed',
+            'password' => [
+                'required',
+                'min:8',
+                'confirmed',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*])[A-Za-z\\d!@#$%^&*]{8,}$/',
+            ],
         ]);
 
 
@@ -51,6 +63,7 @@ Route::middleware('web')->group(function () {
             function (User $user, string $password) {
                 // Save to password_hash column for compatibility
                 $user->password_hash = Hash::make($password);
+                $user->must_change_password = false;
                 $user->setRememberToken(Str::random(60));
                 $user->save();
                 // event(new PasswordReset($user));
@@ -63,6 +76,8 @@ Route::middleware('web')->group(function () {
     });
 
     Route::get('/me',               [AuthController::class, 'me']);
+    Route::get('/user/profile',     [AuthController::class, 'profile']);
+    Route::post('/change-password', [AuthController::class, 'changePassword']);
     Route::get('/owner-profile',    [AuthController::class, 'ownerProfile']);
     Route::put('/owner-profile',    [AuthController::class, 'updateOwnerProfile']);
     Route::post('/upload-avatar',   [AuthController::class, 'uploadAvatar']);

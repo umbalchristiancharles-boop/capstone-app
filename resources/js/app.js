@@ -19,23 +19,16 @@ axios.defaults.baseURL = 'http://localhost:8000'
 axios.defaults.withCredentials = true
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest'
 
-const csrfToken = document
-  .querySelector('meta[name="csrf-token"]')
-  ?.getAttribute('content')
-
-if (csrfToken) {
-  axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken
-}
-
-// Ensure CSRF cookie is initialized (useful when running via Vite dev server)
-axios
-  .get('/sanctum/csrf-cookie', { withCredentials: true })
-  .catch(() => {
-    // ignore errors; server may not have sanctum route in some environments
-  })
-// Configure axios XSRF names to match Laravel defaults
-axios.defaults.xsrfCookieName = 'XSRF-TOKEN'
-axios.defaults.xsrfHeaderName = 'X-XSRF-TOKEN'
+// Axios interceptor to always get fresh CSRF token before each request
+axios.interceptors.request.use(config => {
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+  if (csrfToken) {
+    config.headers['X-CSRF-TOKEN'] = csrfToken
+  }
+  return config
+}, error => {
+  return Promise.reject(error)
+})
 
 // === ROUTER SETUP ===
 const ResetPassword = () => import('./components/ResetPassword.vue');
@@ -126,6 +119,9 @@ router.beforeEach(async (to, from, next) => {
         withCredentials: true,
       })
       if (res.data.ok) {
+        if (res.data.user?.must_change_password && to.path !== '/admin-login') {
+          return next('/admin-login')
+        }
         // If navigating to staff-management, perform a one-time full reload
         // to ensure server-rendered CSRF meta tag and cookies are in sync.
         if ((to.path === '/admin/staff-management' || to.path === '/manager-panel') && !sessionStorage.getItem('appReloaded')) {

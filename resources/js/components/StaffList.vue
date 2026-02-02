@@ -88,9 +88,10 @@
                 <button
                   @click="confirmDelete(branch.branch_manager.id, branch.branch_manager.username)"
                   class="btn-action btn-delete"
-                  :disabled="deletingIds.includes(branch.branch_manager.id)"
+                  :disabled="deletingIds.includes(branch.branch_manager.id) || branch.branch_manager.id === currentUserId"
+                  :title="branch.branch_manager.id === currentUserId ? 'Cannot delete your own account' : ''"
                 >
-                  {{ deletingIds.includes(branch.branch_manager.id) ? '⏳' : 'Delete' }}
+                  {{ deletingIds.includes(branch.branch_manager.id) ? 'Deleting...' : 'Delete' }}
                 </button>
               </div>
             </div>
@@ -141,9 +142,10 @@
                   <button
                     @click="confirmDelete(h.id, h.username)"
                     class="btn-action btn-delete"
-                    :disabled="deletingIds.includes(h.id)"
+                    :disabled="deletingIds.includes(h.id) || h.id === currentUserId"
+                    :title="h.id === currentUserId ? 'Cannot delete your own account' : ''"
                   >
-                    {{ deletingIds.includes(h.id) ? '⏳' : 'Delete' }}
+                    {{ deletingIds.includes(h.id) ? 'Deleting...' : 'Delete' }}
                   </button>
                 </div>
               </div>
@@ -191,9 +193,10 @@
                   <button
                     @click="confirmDelete(staff.id, staff.username)"
                     class="btn-action btn-delete"
-                    :disabled="deletingIds.includes(staff.id)"
+                    :disabled="deletingIds.includes(staff.id) || staff.id === currentUserId"
+                    :title="staff.id === currentUserId ? 'Cannot delete your own account' : ''"
                   >
-                    {{ deletingIds.includes(staff.id) ? '⏳' : 'Delete' }}
+                    {{ deletingIds.includes(staff.id) ? 'Deleting...' : 'Delete' }}
                   </button>
                 </div>
               </div>
@@ -245,6 +248,7 @@ export default {
       isBranchManager: sessionStorage.getItem('user_role') === 'BRANCH_MANAGER',
       // store manager's branch id when available
       managerBranchId: sessionStorage.getItem('user_branch_id') || null,
+      currentUserId: null,
       alertMessage: '',
       alertType: 'success',
       deletingIds: [],
@@ -285,6 +289,7 @@ export default {
         const res = await axios.get('/api/me', { withCredentials: true })
         if (res.data?.ok && res.data.user) {
           this.isBranchManager = res.data.user.role === 'BRANCH_MANAGER'
+          this.currentUserId = res.data.user.id
           // capture branch id for branch managers so modals can default branch
           this.managerBranchId = res.data.user.branch_id || (res.data.user.branch && res.data.user.branch.id) || null
         }

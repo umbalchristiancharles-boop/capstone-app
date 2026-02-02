@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Hash;  // ← FIXED: Import Hash
  * @property string|null $phone_number
  * @property string|null $address
  * @property bool $is_active
+ * @property bool $must_change_password
  * @property string|null $remember_token
  * @property \Illuminate\Support\Carbon|null $email_verified_at
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -49,6 +50,7 @@ class User extends Authenticatable implements CanResetPassword
         'phone_number',
         'address',
         'is_active',
+        'must_change_password',
     ];
 
     /**
@@ -67,6 +69,7 @@ class User extends Authenticatable implements CanResetPassword
         return [
             'email_verified_at' => 'datetime',
             'is_active' => 'boolean',
+            'must_change_password' => 'boolean',
             'deleted_at' => 'datetime',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',

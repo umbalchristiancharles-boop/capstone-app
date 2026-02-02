@@ -213,7 +213,6 @@ class StaffController extends Controller
             $request->validate([
                 'username' => 'required|string|max:50|unique:users,username',
                 'email' => 'required|email|max:120|unique:users,email',
-                'password' => 'required|string|min:6',
                 'fullName' => 'required|string|max:150',
                 'phone' => 'nullable|string|max:30',
                 'address' => 'nullable|string|max:255',
@@ -244,16 +243,18 @@ class StaffController extends Controller
             // Accept both camelCase and snake_case for robustness
             $fullName = $request->input('fullName') ?? $request->input('full_name');
             $email = $request->input('email') ?? $request->input('email');
+            $defaultPassword = 'ChikinTayo_2526';
             $insertData = [
                 'username' => $request->input('username'),
                 'email' => $email,
-                'password_hash' => Hash::make($request->input('password')),
+                'password_hash' => Hash::make($defaultPassword),
                 'full_name' => $fullName,
                 'role' => $request->input('role'),
                 'phone_number' => $request->input('phone'),
                 'address' => $request->input('address'),
                 'branch_id' => $request->input('branchId') ?? $request->input('branch_id'),
                 'is_active' => 1,
+                'must_change_password' => 1,
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
@@ -307,6 +308,12 @@ class StaffController extends Controller
                 'fullName' => 'required|string|max:150',
                 'phone' => 'nullable|string|max:30',
                 'address' => 'nullable|string|max:255',
+                'password' => [
+                    'nullable',
+                    'string',
+                    'min:8',
+                    'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*])[A-Za-z\\d!@#$%^&*]{8,}$/',
+                ],
                 // accept either branchId (from SPA) or branch_id (from other clients)
                 'branchId' => 'sometimes|required|exists:branches,id',
                 'branch_id' => 'sometimes|required|exists:branches,id',
@@ -423,7 +430,7 @@ class StaffController extends Controller
                 ], 400);
             }
 
-        
+
 
             // Perform soft delete
             $user->delete();

@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rules;
 
 class AdminPasswordResetController extends Controller
 {
@@ -57,7 +56,12 @@ class AdminPasswordResetController extends Controller
         $request->validate([
             'token' => 'required',
             'email' => 'required|email',
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'password' => [
+                'required',
+                'confirmed',
+                'min:8',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*])[A-Za-z\\d!@#$%^&*]{8,}$/',
+            ],
         ]);
 
         $status = Password::broker('admins')->reset(
@@ -65,6 +69,7 @@ class AdminPasswordResetController extends Controller
             function ($user, $password) {
                 $user->forceFill([
                     'password' => Hash::make($password),
+                    'must_change_password' => false,
                 ])->setRememberToken(Str::random(60));
 
                 $user->save();

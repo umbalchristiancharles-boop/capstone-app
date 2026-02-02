@@ -70,18 +70,20 @@ class StaffManagementController extends Controller
             'email' => 'required|email|unique:users,email',
             'full_name' => 'required|string|max:255',
             'phone_number' => 'nullable|string|max:20',
-            'password' => 'required|string|min:8',
         ]);
+
+        $defaultPassword = 'ChikinTayo_2526';
 
         $staff = User::create([
             'username' => $request->username,
             'email' => $request->email,
             'full_name' => $request->full_name,
             'phone_number' => $request->phone_number,
-            'password_hash' => Hash::make($request->password),
+            'password_hash' => Hash::make($defaultPassword),
             'role' => 'STAFF', // Branch Manager can only create STAFF
             'branch_id' => $user->branch_id, // Assign to manager's branch
             'is_active' => 1,
+            'must_change_password' => 1,
         ]);
 
         return response()->json([

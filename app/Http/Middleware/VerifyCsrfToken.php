@@ -12,8 +12,6 @@ class VerifyCsrfToken extends Middleware
      * @var array<int, string>
      */
     protected $except = [
-        // Exempt all API routes from CSRF (since you're using Axios + Sanctum / SPA)
-        'api/*',
-        'api/admin/*',
+        // Empty - all routes require CSRF protection by default
     ];
 }

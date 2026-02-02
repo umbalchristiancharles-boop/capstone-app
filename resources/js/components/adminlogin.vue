@@ -13,6 +13,10 @@
                 </div>
             </div>
 
+            <div v-if="showForceModal" class="security-banner">
+                First time login? Change your password!
+            </div>
+
             <form class="login-form" @submit.prevent="handleLogin">
                 <div class="field-group">
                     <label for="username">Username</label>
@@ -20,6 +24,8 @@
                         id="username"
                         v-model="username"
                         type="text"
+                        name="username"
+                        autocomplete="username"
                         placeholder="Enter admin username"
                         required
                     />
@@ -31,6 +37,8 @@
                         id="password"
                         v-model="password"
                         type="password"
+                        name="password"
+                        autocomplete="current-password"
                         placeholder="Enter password"
                         required
                     />
@@ -71,14 +79,23 @@
                 </div>
             </div>
         </transition>
+
+        <ForcePasswordChangeModal
+            :show="showForceModal"
+            :username="loggedInUsername"
+            :defaultPassword="defaultPassword"
+            @completed="handleForceCompleted"
+            @cancel="handleForceCancel"
+        />
     </div>
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import axios from "axios";
 import "../css/adminlogin.css";
+import ForcePasswordChangeModal from "./ForcePasswordChangeModal.vue";
 
 const router = useRouter();
 
@@ -88,6 +105,10 @@ const isLoading = ref(false);
 const showOverlay = ref(false);
 const overlayText = ref("Loading Admin Panel...");
 const errorMsg = ref("");
+const showForceModal = ref(false);
+const pendingRedirectPath = ref("/admin-panel");
+const loggedInUsername = ref("");
+const defaultPassword = "ChikinTayo_2526";
 
 const logoImg = new URL("../assets/chikinlogo.png", import.meta.url).href;
 
@@ -119,13 +140,13 @@ async function handleLogin() {
             overlayText.value = "Loading panel...";
 
             // Determine redirect based on user role
-            let redirectPath = "/admin-panel";
-            if (res.data.user && res.data.user.role === "BRANCH_MANAGER") {
-                redirectPath = "/manager-panel";
-            } else if (res.data.user && res.data.user.role === "STAFF") {
-                redirectPath = "/staff-panel";
-            } else if (res.data.user && res.data.user.role === "HR") {
-                redirectPath = "/hr-panel";
+            const redirectPath = resolveRedirectPath(res.data.user?.role);
+
+            if (res.data.user?.must_change_password) {
+                pendingRedirectPath.value = redirectPath;
+                loggedInUsername.value = res.data.user?.username || username.value;
+                showForceModal.value = true;
+                return;
             }
 
             setTimeout(() => {
@@ -156,4 +177,59 @@ function handleBack() {
         }, 600);
     }, 400);
 }
+
+function resolveRedirectPath(role) {
+    if (role === "BRANCH_MANAGER") return "/manager-panel";
+    if (role === "STAFF") return "/staff-panel";
+    if (role === "HR") return "/hr-panel";
+    return "/admin-panel";
+}
+
+function handleForceCompleted() {
+    showForceModal.value = false;
+    overlayText.value = "Loading panel...";
+    setTimeout(() => {
+        showOverlay.value = true;
+        setTimeout(() => {
+            router.push(pendingRedirectPath.value || "/admin-panel");
+        }, 600);
+    }, 400);
+}
+
+async function handleForceCancel() {
+    showForceModal.value = false;
+    try {
+        await axios.post("/api/logout", {}, { withCredentials: true });
+    } catch (e) {
+        // ignore logout errors
+    }
+    // Reload page to get fresh CSRF token
+    window.location.reload();
+}
+
+onMounted(async () => {
+    try {
+        const res = await axios.get("/api/me", { withCredentials: true });
+        if (res.data.ok && res.data.user?.must_change_password) {
+            pendingRedirectPath.value = resolveRedirectPath(res.data.user?.role);
+            loggedInUsername.value = res.data.user?.username || "";
+            showForceModal.value = true;
+        }
+    } catch (e) {
+        // ignore if unauthenticated
+    }
+});
 </script>
+
+<style scoped>
+.security-banner {
+    margin: 0.75rem 0 0.5rem;
+    background: #fff7f1;
+    border: 1px solid #ffd1bf;
+    color: #c2461f;
+    padding: 0.6rem 0.8rem;
+    border-radius: 10px;
+    font-weight: 700;
+    text-align: center;
+}
+</style>
