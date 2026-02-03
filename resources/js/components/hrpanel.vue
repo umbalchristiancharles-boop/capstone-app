@@ -48,7 +48,7 @@
               <div class="admin-id-block admin-id-block--center">
                 <span class="admin-id-label">HR I.D:</span>
                 <span class="admin-id-value">
-                  &nbsp;{{ hrProfile.accountId || 'HR-0001' }}
+                  {{ hrProfile.accountId || 'HR-0001' }}
                 </span>
               </div>
 
@@ -180,25 +180,25 @@
                 Employees<span v-if="activeRangeLabel"> ({{ activeRangeLabel }})</span>:
               </span>
               <span class="overview-value">
-                &nbsp;{{ hrDashboardTotals.newEmployees }}
+                {{ hrDashboardTotals.newEmployees }}
               </span>
             </div>
             <div class="overview-card">
               <span class="overview-label">Pending Leave Requests:</span>
               <span class="overview-value">
-                &nbsp;{{ hrDashboardTotals.pendingLeaves }}
+                {{ hrDashboardTotals.pendingLeaves }}
               </span>
             </div>
             <div class="overview-card">
               <span class="overview-label">Absent Today:</span>
               <span class="overview-value">
-                &nbsp;{{ hrDashboardTotals.absentToday }}
+                {{ hrDashboardTotals.absentToday }}
               </span>
             </div>
             <div class="overview-card">
               <span class="overview-label">Open Positions:</span>
               <span class="overview-value">
-                &nbsp;{{ hrDashboardTotals.openPositions }}
+                {{ hrDashboardTotals.openPositions }}
               </span>
             </div>
           </section>
@@ -357,117 +357,61 @@
         </aside>
       </section>
 
-      <!-- INFO MODAL -->
-      <transition name="fade">
-        <div v-if="showInfoModal" class="info-backdrop">
-          <div class="info-modal">
-            <h3>HR Account Information</h3>
-            <p class="info-sub">
-              Personal details for this HR account can be updated from this panel.
-            </p>
-
-            <div class="info-grid">
-              <div class="info-row">
-                <span class="info-label">Full name</span>
-                <span class="info-value" v-if="!isEditingInfo">
-                  {{ hrProfile.fullName }}
-                </span>
-                <input
-                  v-else
-                  v-model="hrProfile.fullName"
-                  class="info-input"
-                  type="text"
-                />
-              </div>
-
-              <div class="info-row">
-                <span class="info-label">Role</span>
-                <span class="info-value">
-                  {{ hrProfile.role || 'HR DEPARTMENT' }}
-                </span>
-              </div>
-
-              <div class="info-row">
-                <span class="info-label">Email</span>
-                <span class="info-value" v-if="!isEditingInfo">
-                  {{ hrProfile.email }}
-                </span>
-                <input
-                  v-else
-                  v-model="hrProfile.email"
-                  class="info-input"
-                  type="email"
-                />
-              </div>
-
-              <div class="info-row">
-                <span class="info-label">Contact</span>
-                <span class="info-value" v-if="!isEditingInfo">
-                  {{ hrProfile.contact }}
-                </span>
-                <input
-                  v-else
-                  v-model="hrProfile.contact"
-                  class="info-input"
-                  type="text"
-                />
-              </div>
-
-              <div class="info-row">
-                <span class="info-label">Department</span>
-                <span class="info-value">
-                  {{ hrProfile.department || 'Human Resources' }}
-                </span>
-              </div>
-            </div>
-
-            <div class="info-actions">
-              <button class="btn-outline" @click="handleInfoClose">
-                {{ isEditingInfo ? 'Cancel' : 'Close' }}
-              </button>
-              <button
-                class="btn-primary"
-                @click="isEditingInfo ? saveHrInfo() : (isEditingInfo = true)"
-              >
-                {{ isEditingInfo ? 'Save changes' : 'Edit information' }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </transition>
-
-      <!-- LOGOUT CONFIRM MODAL -->
+      <!-- Logout Confirmation Modal (admin style) -->
       <transition name="fade">
         <div v-if="showLogoutConfirm" class="logout-confirm-backdrop">
           <div class="logout-confirm-box">
             <h3>Logout from HR Panel?</h3>
             <p>This will end your current session for Chikin Tayo HR.</p>
             <div class="logout-actions">
-              <button
-                class="btn-cancel"
-                @click="cancelLogout"
-                :disabled="isLoggingOut"
-              >
-                Cancel
-              </button>
-              <button
-                class="btn-confirm"
-                @click="confirmLogout"
-                :disabled="isLoggingOut"
-              >
-                Yes, logout
-              </button>
+              <button class="btn-cancel" @click="cancelLogout" :disabled="isLoggingOut">Cancel</button>
+              <button class="btn-confirm" @click="confirmLogout" :disabled="isLoggingOut">Yes, logout</button>
             </div>
           </div>
         </div>
       </transition>
 
-      <!-- FULLSCREEN LOADING OVERLAY (CHIKIN TAYO LOGO) -->
+      <!-- Info Modal (admin style) -->
       <transition name="fade">
-        <div v-if="showOverlay" class="loading-overlay">
-          <div class="logo-loading-box">
-            <img :src="logoImg" alt="Chikin Tayo" class="logo-loading-img" />
-            <p>{{ overlayText }}</p>
+        <div v-if="showInfoModal" class="info-backdrop">
+          <div class="info-modal">
+            <h3>Profile Information</h3>
+            <p class="info-sub">Personal details for this administrator can be updated from this panel.</p>
+
+            <div class="info-grid">
+              <div class="info-row">
+                <span class="info-label">Full name</span>
+                <span class="info-value" v-if="!isEditingInfo">{{ hrProfile.fullName }}</span>
+                <input v-else v-model="hrProfile.fullName" class="info-input" type="text" />
+              </div>
+
+              <div class="info-row">
+                <span class="info-label">Role</span>
+                <span class="info-value">{{ hrProfile.role }}</span>
+              </div>
+
+              <div class="info-row">
+                <span class="info-label">Email</span>
+                <span class="info-value" v-if="!isEditingInfo">{{ hrProfile.email }}</span>
+                <input v-else v-model="hrProfile.email" class="info-input" type="email" />
+              </div>
+
+              <div class="info-row">
+                <span class="info-label">Contact</span>
+                <span class="info-value" v-if="!isEditingInfo">{{ hrProfile.contact }}</span>
+                <input v-else v-model="hrProfile.contact" class="info-input" type="text" />
+              </div>
+
+              <div class="info-row">
+                <span class="info-label">Department</span>
+                <span class="info-value">{{ hrProfile.department }}</span>
+              </div>
+            </div>
+
+            <div class="info-actions">
+              <button class="btn-outline" @click="handleInfoClose">{{ isEditingInfo ? 'Cancel' : 'Close' }}</button>
+              <button class="btn-primary" @click="isEditingInfo ? saveHrInfo() : (isEditingInfo = true)">{{ isEditingInfo ? 'Save changes' : 'Edit information' }}</button>
+            </div>
           </div>
         </div>
       </transition>
@@ -478,12 +422,18 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-// axios pwede nyo nang i-wire later
-// import axios from 'axios'
+import axios from 'axios'
 import '../css/adminpanel.css'
 
 const router = useRouter()
 const activeRange = ref('today')
+const showAllHires = ref(false)
+const isLoadingDashboard = ref(false)
+const dashboardError = ref('')
+const showInfoModal = ref(false)
+const showLogoutConfirm = ref(false)
+const isLoggingOut = ref(false)
+const isEditingInfo = ref(false)
 
 const hrDashboardTotals = ref({
   newEmployees: 0,
@@ -503,38 +453,6 @@ const pendingLeaves = ref([])
 const openPositions = ref([])
 const hrActivity = ref([])
 
-const showAllHires = ref(false)
-
-const visibleHires = computed(() => {
-  if (!recentHires.value || recentHires.value.length === 0) return []
-  return showAllHires.value ? recentHires.value : recentHires.value.slice(0, 3)
-})
-
-const activeRangeLabel = computed(() => {
-  switch (activeRange.value) {
-    case 'today':
-      return 'Today'
-    case 'thisWeek':
-      return 'This Week'
-    case 'thisMonth':
-      return 'This Month'
-    case 'thisYear':
-      return 'This Year'
-    default:
-      return ''
-  }
-})
-
-const isLoadingDashboard = ref(false)
-const dashboardError = ref('')
-
-const showInfoModal = ref(false)
-const showLogoutConfirm = ref(false)
-const isLoggingOut = ref(false)
-const showOverlay = ref(false)
-const overlayText = ref('Loading HR data...')
-const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
-
 const hrProfile = ref({
   fullName: '',
   role: 'HR DEPARTMENT',
@@ -545,58 +463,53 @@ const hrProfile = ref({
   avatarUrl: ''
 })
 
-const isEditingInfo = ref(false)
+const visibleHires = computed(() => {
+  if (!recentHires.value || recentHires.value.length === 0) return []
+  return showAllHires.value ? recentHires.value : recentHires.value.slice(0, 3)
+})
 
-/**
- * Dummy loader – dito nyo papalitan ng real API call
- */
-async function loadHrDashboard(range) {
+const activeRangeLabel = computed(() => {
+  switch (activeRange.value) {
+    case 'today': return 'Today'
+    case 'thisWeek': return 'This Week'
+    case 'thisMonth': return 'This Month'
+    case 'thisYear': return 'This Year'
+    default: return ''
+  }
+})
+
+function normalizeUser(u) {
+  if (!u) return { fullName: '', role: '', email: '', contact: '', department: 'Human Resources', accountId: '', avatarUrl: '' }
+  return {
+    fullName: u.fullName ?? u.full_name ?? '',
+    role: u.role ?? '',
+    email: u.email ?? '',
+    contact: u.contact ?? u.phone_number ?? '',
+    department: u.department ?? 'Human Resources',
+    accountId: u.accountId ?? u.account_id ?? '',
+    avatarUrl: u.avatarUrl ?? u.avatar_url ?? ''
+  }
+}
+
+async function loadHrDashboard(range = 'today') {
   isLoadingDashboard.value = true
   dashboardError.value = ''
-
+  
   try {
-    // Simulated delay
-    await new Promise(resolve => setTimeout(resolve, 500))
-
-    // TODO: palitan ng response data galing backend
-    // Example mock values based on range
-    if (range === 'today') {
-      hrDashboardTotals.value = {
-        newEmployees: 1,
-        pendingLeaves: 3,
-        absentToday: 2,
-        openPositions: 2
-      }
-    } else if (range === 'thisWeek') {
-      hrDashboardTotals.value = {
-        newEmployees: 4,
-        pendingLeaves: 5,
-        absentToday: 6,
-        openPositions: 3
-      }
-    } else if (range === 'thisMonth') {
-      hrDashboardTotals.value = {
-        newEmployees: 8,
-        pendingLeaves: 7,
-        absentToday: 10,
-        openPositions: 4
-      }
-    } else {
-      hrDashboardTotals.value = {
-        newEmployees: 15,
-        pendingLeaves: 10,
-        absentToday: 18,
-        openPositions: 5
-      }
+    hrDashboardTotals.value = {
+      newEmployees: 5,
+      pendingLeaves: 2,
+      absentToday: 3,
+      openPositions: 2
     }
 
     hrSummaryTotals.value = {
-      totalEmployees: 35,
-      totalBranches: 3
+      totalEmployees: 45,
+      totalBranches: 8
     }
 
     recentHires.value = [
-      { id: 1, name: 'Juan Dela Cruz', position: 'Cook', branch: 'Dasmariñas, Cavite', hiredAt: 'Jan 15' },
+      { id: 1, name: 'Juan Dela Cruz', position: 'Cashier', branch: 'Dasmariñas, Cavite', hiredAt: 'Feb 1' },
       { id: 2, name: 'Maria Santos', position: 'Cashier', branch: 'General Trias, Cavite', hiredAt: 'Jan 10' },
       { id: 3, name: 'Pedro Reyes', position: 'Rider', branch: 'Manila Branch', hiredAt: 'Jan 3' },
       { id: 4, name: 'Ana Cruz', position: 'Shift Leader', branch: 'Dasmariñas, Cavite', hiredAt: 'Dec 28' }
@@ -651,15 +564,31 @@ function openInfoModal() {
   showInfoModal.value = true
   isEditingInfo.value = false
 
-  // TODO: load HR profile from backend
-  hrProfile.value = {
-    fullName: 'HR Administrator',
-    role: 'HR DEPARTMENT',
-    email: 'hr@chikintayo.com',
-    contact: '09xx-xxx-xxxx',
-    department: 'Human Resources',
-    accountId: 'HR-0001',
-    avatarUrl: hrProfile.value.avatarUrl || ''
+  // load actual profile from server if available
+  try {
+    axios.get('/api/owner-profile', { withCredentials: true })
+      .then(res => {
+        if (res.data && res.data.ok && res.data.user) {
+          hrProfile.value = normalizeUser(res.data.user)
+        } else {
+          // fallback to current value or sensible defaults
+          hrProfile.value = Object.assign({}, hrProfile.value, {
+            fullName: hrProfile.value.fullName || 'HR Administrator',
+            role: hrProfile.value.role || 'HR DEPARTMENT'
+          })
+        }
+      })
+      .catch(() => {
+        hrProfile.value = Object.assign({}, hrProfile.value, {
+          fullName: hrProfile.value.fullName || 'HR Administrator',
+          role: hrProfile.value.role || 'HR DEPARTMENT'
+        })
+      })
+  } catch (e) {
+    hrProfile.value = Object.assign({}, hrProfile.value, {
+      fullName: hrProfile.value.fullName || 'HR Administrator',
+      role: hrProfile.value.role || 'HR DEPARTMENT'
+    })
   }
 }
 
@@ -672,38 +601,100 @@ function handleInfoClose() {
 }
 
 async function saveHrInfo() {
-  // TODO: send update to backend
-  isEditingInfo.value = false
-  showInfoModal.value = false
+  const payload = {
+    fullName: hrProfile.value.fullName,
+    email: hrProfile.value.email,
+    contact: hrProfile.value.contact,
+  }
+
+  async function doPut() {
+    return axios.put('/api/owner-profile', payload, { withCredentials: true })
+  }
+
+  try {
+    try {
+      const res = await doPut()
+      if (res.data && res.data.ok) {
+        if (res.data.user) hrProfile.value = normalizeUser(res.data.user)
+        isEditingInfo.value = false
+        showInfoModal.value = false
+        return
+      }
+    } catch (err) {
+      // if CSRF/token expired (Laravel 419) attempt to refresh CSRF cookie and retry
+      const status = err && err.response && err.response.status
+      if (status === 419) {
+        try {
+          await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
+
+          // try to set X-XSRF-TOKEN header from cookie if present
+          try {
+            const m = document.cookie.match(new RegExp('(^|; )' + 'XSRF-TOKEN' + '=([^;]*)'))
+            const xsrf = m ? m[2] : null
+            if (xsrf) {
+              try { axios.defaults.headers.common['X-XSRF-TOKEN'] = decodeURIComponent(xsrf) } catch (_) { axios.defaults.headers.common['X-XSRF-TOKEN'] = xsrf }
+            }
+          } catch (_) {}
+
+          const retry = await doPut()
+          if (retry.data && retry.data.ok) {
+            if (retry.data.user) hrProfile.value = normalizeUser(retry.data.user)
+            isEditingInfo.value = false
+            showInfoModal.value = false
+            return
+          }
+        } catch (e2) {
+          console.error('Retry after CSRF cookie failed:', e2)
+        }
+      }
+      throw err
+    }
+
+    // fallback close modal if response not ok
+    isEditingInfo.value = false
+    showInfoModal.value = false
+  } catch (e) {
+    console.error('Failed to save profile info:', e)
+  }
+}
+
+function goToEmployeeManagement() {
+  router.push('/hr/employees')
 }
 
 async function onAvatarChange(event) {
   const file = event.target.files[0]
   if (!file) return
 
-  // TODO: upload to backend, for now fake preview
+  if (!window.confirm('Are you sure you want to change your profile picture?')) return
+
   const reader = new FileReader()
-  reader.onload = e => {
-    hrProfile.value.avatarUrl = e.target.result
-  }
-  reader.readAsDataURL(file)
+  const dataUrl = await new Promise((resolve, reject) => {
+    reader.onerror = () => reject(new Error('Failed to read file'))
+    reader.onload = () => resolve(reader.result)
+    reader.readAsDataURL(file)
+  })
+  
+  sessionStorage.setItem('pendingAvatar', JSON.stringify({ 
+    dataUrl, 
+    filename: file.name, 
+    panel: 'hr' 
+  }))
+  window.location.reload()
 }
 
 async function confirmLogout() {
   if (isLoggingOut.value) return
   isLoggingOut.value = true
 
-    try {
-      showOverlay.value = true
-      overlayText.value = 'Logging out...'
-      // Use server GET logout route to invalidate the session and redirect to landing
-      try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
-      window.location.replace('/logout')
-    } finally {
-      showLogoutConfirm.value = false
-      isLoggingOut.value = false
-      showOverlay.value = false
-    }
+  try {
+    try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
+    // use server logout to invalidate session cookie
+    window.location.replace('/logout')
+  } catch (e) {
+    console.error('Logout failed:', e)
+    try { window.location.href = '/login' } catch (_) {}
+  }
 }
 
 function cancelLogout() {
@@ -711,15 +702,84 @@ function cancelLogout() {
   showLogoutConfirm.value = false
 }
 
-async function goToEmployeeManagement() {
-  showOverlay.value = true
-  overlayText.value = 'Opening Employee Management...'
-  await new Promise(resolve => setTimeout(resolve, 800))
-  showOverlay.value = false
-  router.push('/hr/employee-management')
-}
-
+// Auto-upload pending avatar after reload
 onMounted(() => {
-  loadHrDashboard(activeRange.value)
+  // load dashboard (don't await so profile fetch can run immediately)
+  loadHrDashboard()
+
+  // fetch profile early so the left column shows the logged-in account
+  try {
+    axios.get('/api/owner-profile', { withCredentials: true })
+      .then(res => {
+        if (res.data && res.data.ok && res.data.user) {
+          hrProfile.value = normalizeUser(res.data.user)
+        }
+      })
+      .catch(() => {})
+  } catch (e) {}
+
+  // If user chose an avatar before reload, perform pending upload (non-blocking)
+  ;(async () => {
+    try {
+      const pendingRaw = sessionStorage.getItem('pendingAvatar')
+      if (!pendingRaw) return
+      const pending = JSON.parse(pendingRaw)
+      if (!pending || pending.panel !== 'hr') return
+
+      function dataURLtoBlob(dataurl) {
+        const arr = dataurl.split(',')
+        const mime = arr[0].match(/:(.*?);/)[1]
+        const bstr = atob(arr[1])
+        let n = bstr.length
+        const u8arr = new Uint8Array(n)
+        while (n--) { u8arr[n] = bstr.charCodeAt(n) }
+        return new Blob([u8arr], { type: mime })
+      }
+
+      const blob = dataURLtoBlob(pending.dataUrl)
+      const file = new File([blob], pending.filename, { type: blob.type })
+      const formData = new FormData()
+      formData.append('avatar', file)
+
+      try { await axios.get('/sanctum/csrf-cookie', { withCredentials: true }) } catch (e) {}
+      await new Promise(resolve => setTimeout(resolve, 50))
+
+      try {
+        function getCookie(name) { const m = document.cookie.match(new RegExp('(^|; )' + name + '=([^;]*)')); return m ? m[2] : null }
+        const xsrf = getCookie('XSRF-TOKEN')
+        if (xsrf) {
+          try { axios.defaults.headers.common['X-XSRF-TOKEN'] = decodeURIComponent(xsrf) } catch (_) { axios.defaults.headers.common['X-XSRF-TOKEN'] = xsrf }
+          try { formData.append('_token', decodeURIComponent(xsrf)) } catch (_) { formData.append('_token', xsrf) }
+        }
+      } catch (e) {}
+
+      try { console.debug('AUTO UPLOAD CSRF: document.cookie=', document.cookie) } catch (_) {}
+      try { console.debug('AUTO UPLOAD CSRF: axios.defaults.headers.common["X-XSRF-TOKEN"]=', axios.defaults.headers.common['X-XSRF-TOKEN']) } catch (_) {}
+
+      try {
+        const res = await axios.post('/api/upload-avatar', formData, { headers: { 'Content-Type': 'multipart/form-data' }, withCredentials: true })
+        try {
+          const profileRes = await axios.get('/api/owner-profile', { withCredentials: true })
+          if (profileRes.data.ok && profileRes.data.user) {
+            hrProfile.value = normalizeUser(profileRes.data.user)
+          } else {
+            let url = res.data.avatarUrl
+            url = url.replace(/\?t=\d+$/, '')
+            hrProfile.value.avatarUrl = url + '?t=' + Date.now()
+          }
+        } catch (e) {
+          let url = res.data.avatarUrl
+          url = url.replace(/\?t=\d+$/, '')
+          hrProfile.value.avatarUrl = url + '?t=' + Date.now()
+        }
+
+        sessionStorage.removeItem('pendingAvatar')
+      } catch (e) {
+        console.error('Auto-upload failed:', e)
+      }
+    } catch (e) {
+      console.error('Auto-upload setup failed:', e)
+    }
+  })()
 })
 </script>

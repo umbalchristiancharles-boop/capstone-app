@@ -1,0 +1,13 @@
+const fs = require('fs');
+const path = process.argv[2] || 'resources/js/components/hrpanel.vue';
+const content = fs.readFileSync(path, 'utf8');
+const idx = content.indexOf('</template>');
+console.log('index of </template>:', idx);
+if (idx===-1) process.exit(1);
+const start = Math.max(0, idx-60);
+const end = Math.min(content.length, idx+60);
+const snippet = content.slice(start,end);
+console.log('---snippet---');
+console.log(snippet);
+console.log('---char codes---');
+console.log(Array.from(snippet).map(c=>c.charCodeAt(0)));

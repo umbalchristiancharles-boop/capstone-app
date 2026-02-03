@@ -560,6 +560,21 @@ const managerProfile = ref({
   avatarUrl: '',
 })
 
+function normalizeUser(u) {
+  if (!u) return {
+    fullName: '', role: '', email: '', contact: '', branch: '', accountId: '', avatarUrl: ''
+  }
+  return {
+    fullName: u.fullName ?? u.full_name ?? '',
+    role: u.role ?? '',
+    email: u.email ?? '',
+    contact: u.contact ?? u.phone_number ?? '',
+    branch: u.branch ?? (u.branch_name ?? ''),
+    accountId: u.accountId ?? (u.account_id ?? ''),
+    avatarUrl: u.avatarUrl ?? (u.avatar_url ?? ''),
+  }
+}
+
 const isEditingInfo = ref(false)
 
 async function loadDashboard(range) {
@@ -616,7 +631,7 @@ async function openInfoModal() {
       withCredentials: true,
     })
     if (res.data.ok) {
-      managerProfile.value = res.data.user
+      managerProfile.value = normalizeUser(res.data.user)
     }
   } catch (e) {
     // optional
@@ -654,14 +669,73 @@ async function saveManagerInfo() {
 async function onAvatarChange(event) {
   const file = event.target.files[0]
   if (!file) return
+  // Confirm before changing profile picture
+  if (!window.confirm('Are you sure you want to change your profile picture?')) return
+
+  // Save chosen file to sessionStorage as dataURL so we can reload first and then upload
+  try {
+    const reader = new FileReader()
+    const dataUrl = await new Promise((resolve, reject) => {
+      reader.onerror = () => reject(new Error('Failed to read file'))
+      reader.onload = () => resolve(reader.result)
+      reader.readAsDataURL(file)
+    })
+    sessionStorage.setItem('pendingAvatar', JSON.stringify({ dataUrl, filename: file.name, panel: 'manager' }))
+    // reload so other panels get fresh state; upload will continue after reload
+    try { window.location.reload() } catch (_) { }
+    return
+  } catch (e) {
+    // fallback to direct upload if reading fails
+  }
 
   const formData = new FormData()
   formData.append('avatar', file)
 
-  const res = await axios.post('/api/upload-avatar', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-    withCredentials: true,
-  })
+  // Ensure fresh CSRF cookie before stateful POST
+  try {
+    await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
+  } catch (e) {}
+
+  // small delay to allow browser to set the XSRF cookie before reading it
+  await new Promise(resolve => setTimeout(resolve, 50))
+
+  // Ensure axios X-XSRF-TOKEN header is set from cookie (helps multipart requests)
+  try {
+    function getCookie(name) { const m = document.cookie.match(new RegExp('(^|; )' + name + '=([^;]*)')); return m ? m[2] : null }
+    const xsrf = getCookie('XSRF-TOKEN')
+    if (xsrf) {
+      try { axios.defaults.headers.common['X-XSRF-TOKEN'] = decodeURIComponent(xsrf) } catch (_) { axios.defaults.headers.common['X-XSRF-TOKEN'] = xsrf }
+    }
+  } catch (e) {}
+
+  // DEBUG: dump cookie + header right before posting
+  try { console.debug('DEBUG CSRF: document.cookie=', document.cookie) } catch (_) {}
+  try { console.debug('DEBUG CSRF: axios.defaults.headers.common["X-XSRF-TOKEN"]=', axios.defaults.headers.common['X-XSRF-TOKEN']) } catch (_) {}
+
+  // Also append CSRF token to FormData to avoid header/cookie race on multipart uploads
+  try {
+    if (typeof xsrf !== 'undefined' && xsrf) {
+      try { formData.append('_token', decodeURIComponent(xsrf)) } catch (_) { formData.append('_token', xsrf) }
+    }
+  } catch (e) {}
+
+  let res
+  try {
+    res = await axios.post('/api/upload-avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      withCredentials: true,
+    })
+  } catch (err) {
+    if (err.response && err.response.status === 419) {
+      try { await axios.get('/sanctum/csrf-cookie', { withCredentials: true }) } catch (e) {}
+      res = await axios.post('/api/upload-avatar', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        withCredentials: true,
+      })
+    } else {
+      throw err
+    }
+  }
 
   // Fetch latest profile to ensure avatarUrl is up-to-date
   try {
@@ -674,7 +748,72 @@ async function onAvatarChange(event) {
   } catch (e) {
     managerProfile.value.avatarUrl = res.data.avatarUrl + '?t=' + Date.now()
   }
+
+  // After successful change, reload so all panels reflect the new profile
+  try { window.location.reload() } catch (_) {}
 }
+
+// If we reloaded after choosing an avatar, perform the pending upload for this panel
+onMounted(async () => {
+  try {
+    const pendingRaw = sessionStorage.getItem('pendingAvatar')
+    if (!pendingRaw) return
+    const pending = JSON.parse(pendingRaw)
+    if (!pending || pending.panel !== 'manager') return
+
+    // convert dataURL back to blob
+    function dataURLtoBlob(dataurl) {
+      const arr = dataurl.split(',')
+      const mime = arr[0].match(/:(.*?);/)[1]
+      const bstr = atob(arr[1])
+      let n = bstr.length
+      const u8arr = new Uint8Array(n)
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n)
+      }
+      return new Blob([u8arr], { type: mime })
+    }
+
+    const blob = dataURLtoBlob(pending.dataUrl)
+    const file = new File([blob], pending.filename, { type: blob.type })
+    const formData = new FormData()
+    formData.append('avatar', file)
+
+    // Ensure fresh CSRF cookie before stateful POST
+    try { await axios.get('/sanctum/csrf-cookie', { withCredentials: true }) } catch (e) {}
+    await new Promise(resolve => setTimeout(resolve, 50))
+
+    // Ensure axios X-XSRF-TOKEN header
+    try {
+      function getCookie(name) { const m = document.cookie.match(new RegExp('(^|; )' + name + '=([^;]*)')); return m ? m[2] : null }
+      const xsrf = getCookie('XSRF-TOKEN')
+      if (xsrf) {
+        try { axios.defaults.headers.common['X-XSRF-TOKEN'] = decodeURIComponent(xsrf) } catch (_) { axios.defaults.headers.common['X-XSRF-TOKEN'] = xsrf }
+        try { formData.append('_token', decodeURIComponent(xsrf)) } catch (_) { formData.append('_token', xsrf) }
+      }
+    } catch (e) {}
+
+    // DEBUG
+    try { console.debug('AUTO UPLOAD CSRF: document.cookie=', document.cookie) } catch (_) {}
+    try { console.debug('AUTO UPLOAD CSRF: axios.defaults.headers.common["X-XSRF-TOKEN"]=', axios.defaults.headers.common['X-XSRF-TOKEN']) } catch (_) {}
+
+    const res = await axios.post('/api/upload-avatar', formData, { headers: { 'Content-Type': 'multipart/form-data' }, withCredentials: true })
+    try {
+      const profileRes = await axios.get('/api/owner-profile', { withCredentials: true })
+      if (profileRes.data.ok && profileRes.data.user) {
+        managerProfile.value.avatarUrl = (profileRes.data.user.avatarUrl || res.data.avatarUrl) + '?t=' + Date.now()
+      } else {
+        managerProfile.value.avatarUrl = res.data.avatarUrl + '?t=' + Date.now()
+      }
+    } catch (e) {
+      managerProfile.value.avatarUrl = res.data.avatarUrl + '?t=' + Date.now()
+    }
+
+    sessionStorage.removeItem('pendingAvatar')
+  } catch (e) {
+    // ignore
+  }
+})
 
 async function confirmLogout() {
   if (isLoggingOut.value) return
@@ -708,7 +847,7 @@ onMounted(() => {
     .get('/api/owner-profile', { withCredentials: true })
     .then(res => {
       if (res.data.ok) {
-        managerProfile.value = res.data.user
+        managerProfile.value = normalizeUser(res.data.user)
       }
     })
     .catch(() => {})

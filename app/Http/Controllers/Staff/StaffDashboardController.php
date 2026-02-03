@@ -59,7 +59,7 @@ class StaffDashboardController extends Controller
             'sales' => Order::where('branch_id', $user->branch_id)
                 ->where('status', 'completed')
                 ->whereBetween('created_at', $dateRange)
-                ->sum('total_price'),
+                ->sum('grand_total'),
         ];
 
         // Get recent orders for this branch
@@ -71,11 +71,11 @@ class StaffDashboardController extends Controller
             ->map(function ($order) {
                 return [
                     'id' => $order->id,
-                    'code' => $order->order_number ?? 'ORD-' . $order->id,
+                    'code' => $order->order_code ?? 'ORD-' . $order->id,
                     'customer' => $order->customer_name ?? 'Guest',
                     'status' => $order->status,
                     'statusLabel' => ucfirst(str_replace('_', ' ', $order->status)),
-                    'total' => '₱' . number_format($order->total_price, 2),
+                    'total' => '₱' . number_format($order->grand_total ?? 0, 2),
                     'created_at' => $order->created_at->format('M d, Y H:i'),
                 ];
             });
@@ -89,7 +89,7 @@ class StaffDashboardController extends Controller
             ->map(function ($order) {
                 return [
                     'id' => $order->id,
-                    'title' => 'Order #' . ($order->order_number ?? $order->id),
+                    'title' => 'Order #' . ($order->order_code ?? $order->id),
                     'meta' => ($order->customer_name ?? 'Guest') . ' • ' . $order->created_at->diffForHumans(),
                     'badgeLabel' => ucfirst(str_replace('_', ' ', $order->status)),
                     'badgeClass' => $order->status === 'in_kitchen' ? 'badge--warning' : 'badge--info',

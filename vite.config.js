@@ -13,6 +13,9 @@ export default defineConfig({
         tailwindcss(),
     ],
     server: {
+        hmr: {
+            overlay: false,
+        },
         // Proxy API and Sanctum calls to the Laravel backend so cookies
         // and CSRF tokens are treated as same-origin during dev.
         proxy: {

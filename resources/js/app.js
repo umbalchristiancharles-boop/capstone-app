@@ -15,7 +15,7 @@ import axios from 'axios'
 import './css/index.css'
 
 // === AXIOS GLOBAL CONFIG ===
-axios.defaults.baseURL = 'http://localhost:8000'
+axios.defaults.baseURL = '' // use relative URLs so requests go to current origin
 axios.defaults.withCredentials = true
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest'
 
@@ -104,6 +104,22 @@ router.afterEach(() => {
   setTimeout(() => {
     hidePageBlur()
   }, 600)
+
+  // Refresh CSRF cookie after navigation to protected panels to avoid 419s
+  try {
+    const protectedPaths = ['/admin-panel', '/manager-panel', '/staff-panel', '/hr-panel', '/admin', '/manager', '/staff', '/hr']
+    const toPath = window.location.pathname || ''
+    if (protectedPaths.some(p => toPath.startsWith(p))) {
+      // fetch fresh XSRF cookie and set axios header
+      axios.get('/sanctum/csrf-cookie', { withCredentials: true }).finally(() => {
+        function getCookie(name) { const match = document.cookie.match(new RegExp('(^|; )' + name + '=([^;]*)')); return match ? match[2] : null }
+        const xsrfCookie = getCookie('XSRF-TOKEN')
+        if (xsrfCookie) {
+          try { axios.defaults.headers.common['X-XSRF-TOKEN'] = decodeURIComponent(xsrfCookie) } catch (e) { axios.defaults.headers.common['X-XSRF-TOKEN'] = xsrfCookie }
+        }
+      }).catch(() => {})
+    }
+  } catch (e) {}
 })
 
 // === GLOBAL GUARD PARA PROTECTED ANG /admin-panel ===

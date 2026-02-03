@@ -33,7 +33,7 @@ class ReportsController extends Controller
             ->whereBetween('created_at', [$startDate, $endDate])
             ->get();
 
-        $totalSales = $orders->where('status', 'completed')->sum('total_price');
+        $totalSales = $orders->where('status', 'completed')->sum('grand_total');
         $totalOrders = $orders->count();
         $completedOrders = $orders->where('status', 'completed')->count();
         $cancelledOrders = $orders->where('status', 'cancelled')->count();
@@ -45,7 +45,7 @@ class ReportsController extends Controller
             })
             ->map(function ($dayOrders) {
                 return [
-                    'total' => $dayOrders->sum('total_price'),
+                    'total' => $dayOrders->sum('grand_total'),
                     'count' => $dayOrders->count(),
                 ];
             });
