@@ -618,6 +618,11 @@ async function loadDashboard(range) {
     // Note: Not fetching owner dashboard data anymore
     // Admin dashboard shows only real data from database
   } catch (e) {
+    // If 401, user session expired - redirect to login
+    if (e.response?.status === 401) {
+      router.push('/admin-login')
+      return
+    }
     dashboardError.value = 'Error loading dashboard.'
     console.error('Dashboard error:', e)
   } finally {
@@ -711,6 +716,24 @@ async function onAvatarChange(event) {
 
 // Auto-upload pending avatar after reload (admin panel)
 onMounted(async () => {
+  // Load dashboard and profile
+  loadDashboard(activeRange.value)
+
+  // Fetch profile
+  try {
+    const res = await axios.get('/api/owner-profile', { withCredentials: true })
+    if (res.data && res.data.ok && res.data.user) {
+      ownerProfile.value = normalizeUser(res.data.user)
+    }
+  } catch (e) {
+    // If 401, user session expired - redirect to login
+    if (e.response?.status === 401) {
+      router.push('/admin-login')
+      return
+    }
+  }
+
+  // Handle pending avatar upload after reload
   try {
     const pendingRaw = sessionStorage.getItem('pendingAvatar')
     if (!pendingRaw) return

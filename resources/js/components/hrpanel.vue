@@ -494,7 +494,7 @@ function normalizeUser(u) {
 async function loadHrDashboard(range = 'today') {
   isLoadingDashboard.value = true
   dashboardError.value = ''
-  
+
   try {
     hrDashboardTotals.value = {
       newEmployees: 5,
@@ -674,11 +674,11 @@ async function onAvatarChange(event) {
     reader.onload = () => resolve(reader.result)
     reader.readAsDataURL(file)
   })
-  
-  sessionStorage.setItem('pendingAvatar', JSON.stringify({ 
-    dataUrl, 
-    filename: file.name, 
-    panel: 'hr' 
+
+  sessionStorage.setItem('pendingAvatar', JSON.stringify({
+    dataUrl,
+    filename: file.name,
+    panel: 'hr'
   }))
   window.location.reload()
 }
@@ -703,7 +703,7 @@ function cancelLogout() {
 }
 
 // Auto-upload pending avatar after reload
-onMounted(() => {
+onMounted(async () => {
   // load dashboard (don't await so profile fetch can run immediately)
   loadHrDashboard()
 
@@ -715,7 +715,12 @@ onMounted(() => {
           hrProfile.value = normalizeUser(res.data.user)
         }
       })
-      .catch(() => {})
+      .catch(err => {
+        // If 401, user session expired - redirect to login
+        if (err.response?.status === 401) {
+          router.push('/admin-login')
+        }
+      })
   } catch (e) {}
 
   // If user chose an avatar before reload, perform pending upload (non-blocking)

@@ -124,36 +124,31 @@ router.afterEach(() => {
 
 // === GLOBAL GUARD PARA PROTECTED ANG /admin-panel ===
 router.beforeEach(async (to, from, next) => {
-  if (to.path === '/admin-panel' || to.meta.requiresAuth) {
-    // If the user is navigating away from admin panel, clear the reload flag
-    // so coming back to staff-management triggers a fresh reload.
+  // Public routes - allow always
+  if (to.path === '/' || to.path === '/admin-login') {
+    return next()
+  }
+
+  // Protected panel routes
+  const protectedRoutes = ['/admin-panel', '/manager-panel', '/staff-panel', '/hr-panel', '/admin/staff-management', '/admin/deleted-staff']
+  const isProtectedRoute = protectedRoutes.some(route => to.path.startsWith(route)) || to.meta.requiresAuth
+
+  if (isProtectedRoute) {
+    // Clear reload flag when navigating away from admin/manager panel
     if (from && (from.path === '/admin-panel' || from.path === '/manager-panel')) {
       try { sessionStorage.removeItem('appReloaded') } catch (e) {}
     }
-    try {
-      const res = await axios.get('/api/me', {
-        withCredentials: true,
-      })
-      if (res.data.ok) {
-        if (res.data.user?.must_change_password && to.path !== '/admin-login') {
-          return next('/admin-login')
-        }
-        // If navigating to staff-management, perform a one-time full reload
-        // to ensure server-rendered CSRF meta tag and cookies are in sync.
-        if ((to.path === '/admin/staff-management' || to.path === '/manager-panel') && !sessionStorage.getItem('appReloaded')) {
-          sessionStorage.setItem('appReloaded', '1')
-          // remember where we wanted to go so we can restore after reload
-          sessionStorage.setItem('preReloadPath', to.path || window.location.pathname)
-          window.location.reload()
-          return
-        }
 
-        return next()
-      }
-      return next('/admin-login')
-    } catch (e) {
-      return next('/admin-login')
+    // One-time reload for staff-management to sync CSRF
+    if ((to.path === '/admin/staff-management' || to.path === '/manager-panel') && !sessionStorage.getItem('appReloaded')) {
+      sessionStorage.setItem('appReloaded', '1')
+      sessionStorage.setItem('preReloadPath', to.path || window.location.pathname)
+      window.location.reload()
+      return
     }
+
+    // Allow navigation to proceed - components will handle auth errors
+    return next()
   }
 
   next()

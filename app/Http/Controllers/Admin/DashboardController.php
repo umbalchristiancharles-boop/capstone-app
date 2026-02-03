@@ -18,14 +18,14 @@ class DashboardController extends Controller
         // Count orders
         $orders = Order::count();
 
-        // Count staff (users with role 'staff')
-        $staffCount = User::where('role', 'staff')->count();
+        // Count employees (active STAFF, BRANCH_MANAGER, HR)
+        $employeeRoles = ['STAFF', 'BRANCH_MANAGER', 'HR'];
+        $staffCount = User::whereIn('role', $employeeRoles)
+            ->where('is_active', 1)
+            ->count();
 
-        // Count branch managers (users with role 'branch_manager')
-        $branchManagers = User::where('role', 'branch_manager')->count();
-
-        // Recent activity - Staff and Branch Managers who recently updated
-        $recentActivity = User::whereIn('role', ['staff', 'branch_manager'])
+        // Recent activity - Employees who recently updated
+        $recentActivity = User::whereIn('role', $employeeRoles)
             ->where('is_active', 1)
             ->latest('updated_at')
             ->limit(10)
@@ -34,7 +34,7 @@ class DashboardController extends Controller
         return response()->json([
             'branches_count' => $branches,
             'orders_count' => $orders,
-            'staff_count' => $staffCount + $branchManagers,
+            'staff_count' => $staffCount,
             'recent_activity' => $recentActivity->map(function ($user) {
                 return [
                     'name' => $user->full_name ?? 'N/A',

@@ -23,12 +23,48 @@ if (! function_exists('no_cache_view')) {
 
 Route::get('/login', function () {
     return no_cache_view('dashboard'); // Vue SPA entry for admin login
-})->name('login');
+})->name('login')->middleware('web');
 
 // Explicit admin login route for password reset redirect
 Route::get('/admin/login', function () {
     return no_cache_view('dashboard'); // Or your actual admin login view/component
-})->name('admin.login');
+})->name('admin.login')->middleware('web');
+
+// Admin panel - with cache control to prevent back button issues
+Route::get('/admin-panel', function () {
+    return response()
+        ->view('dashboard')
+        ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        ->header('Pragma', 'no-cache')
+        ->header('Expires', '0');
+})->name('admin.dashboard')->middleware('web');
+
+// Manager panel
+Route::get('/manager-panel', function () {
+    return response()
+        ->view('dashboard')
+        ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        ->header('Pragma', 'no-cache')
+        ->header('Expires', '0');
+})->name('manager.dashboard')->middleware('web');
+
+// Staff panel
+Route::get('/staff-panel', function () {
+    return response()
+        ->view('dashboard')
+        ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        ->header('Pragma', 'no-cache')
+        ->header('Expires', '0');
+})->name('staff.dashboard')->middleware('web');
+
+// HR panel
+Route::get('/hr-panel', function () {
+    return response()
+        ->view('dashboard')
+        ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        ->header('Pragma', 'no-cache')
+        ->header('Expires', '0');
+})->name('hr.dashboard')->middleware('web');
 
 Route::get('/logout', [LoginController::class, 'logout'])->name('logout');
 
@@ -48,66 +84,23 @@ Route::post('/admin/password/reset', [AdminPasswordResetController::class, 'rese
     ->name('admin.password.update');
 
 // ==========================================
-// ADMIN ROUTES (Protected by Auth Middleware)
+// ADMIN STAFF MANAGEMENT & DELETED STAFF ROUTES
 // ==========================================
-Route::middleware(['auth'])->group(function () {
-    // Admin Dashboard
-        Route::get('/admin/dashboard', function () {
-            return view('dashboard'); // Vue SPA
-        })->name('admin.dashboard');
+Route::get('/admin/staff-management', function () {
+    return response()
+        ->view('dashboard')
+        ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        ->header('Pragma', 'no-cache')
+        ->header('Expires', '0');
+})->name('admin.staff-management')->middleware('web');
 
-    // Staff Management Page (Vue SPA entry)
-        Route::get('/admin/staff-management', function () {
-            return view('dashboard');
-        })->name('admin.staff-management');
-
-    // Deleted Staff History Page (SPA entry - Vue Router will load component)
-        Route::get('/admin/deleted-staff', function () {
-            return view('dashboard');
-        })->name('admin.deleted-staff');
-
-    // Admin Panel (Vue SPA entry)
-        Route::get('/admin-panel', function () {
-            return view('dashboard');
-        })->name('admin.panel');
-});
-
-// ==========================================
-// STAFF ROUTES (Protected by Auth Middleware)
-// ==========================================
-Route::middleware(['auth'])->prefix('staff')->name('staff.')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('staff.dashboard');
-    })->name('dashboard');
-});
-
-// ==========================================
-// MANAGER ROUTES (Protected by Auth Middleware)
-// ==========================================
-Route::middleware(['auth'])->prefix('manager')->name('manager.')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('manager.dashboard');
-    })->name('dashboard');
-});
-
-// ==========================================
-// HR ROUTES (Protected by Auth Middleware)
-// ==========================================
-Route::middleware(['auth'])->prefix('hr')->name('hr.')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('dashboard'); // Vue SPA entry for HR
-    })->name('dashboard');
-});
-
-// ==========================================
-// API ROUTES FOR DELETED STAFF
-// (Role checking handled in controller)
-// ==========================================
-Route::middleware(['auth'])->group(function () {
-    Route::get('/api/admin/deleted-staff', [DeletedStaffController::class, 'apiIndex']);
-    Route::post('/api/admin/deleted-staff/{id}/restore', [DeletedStaffController::class, 'apiRestore']);
-    Route::delete('/api/admin/deleted-staff/{id}/force', [DeletedStaffController::class, 'apiForceDelete']);
-});
+Route::get('/admin/deleted-staff', function () {
+    return response()
+        ->view('dashboard')
+        ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        ->header('Pragma', 'no-cache')
+        ->header('Expires', '0');
+})->name('admin.deleted-staff')->middleware('web');
 
 // ==========================================
 // EXISTING ROUTES (Your SPA & Profile)
