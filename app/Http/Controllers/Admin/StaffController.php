@@ -52,8 +52,8 @@ class StaffController extends Controller
             $branchesQuery = DB::table('branches')
                 ->where('is_active', 1);
 
-            // If branch manager, only show their branch
-            if ($user->role === 'BRANCH_MANAGER') {
+            // If branch manager or HR, only show their branch
+            if (in_array($user->role, ['BRANCH_MANAGER', 'HR'])) {
                 $branchesQuery->where('branches.id', $user->branch_id);
             }
 
@@ -168,6 +168,8 @@ class StaffController extends Controller
      */
     public function apiShow($id)
     {
+        $user = Auth::user();
+
         $staff = DB::table('users')
             ->leftJoin('branches', 'users.branch_id', '=', 'branches.id')
             ->where('users.id', $id)
@@ -194,6 +196,13 @@ class StaffController extends Controller
             ], 404);
         }
 
+        if ($user && $user->role === 'HR' && $user->branch_id && $staff->branch_id !== $user->branch_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Forbidden'
+            ], 403);
+        }
+
         return response()->json([
             'success' => true,
             'data' => $staff
@@ -205,6 +214,14 @@ class StaffController extends Controller
      */
     public function apiStore(Request $request)
     {
+        $user = Auth::user();
+        if (! $user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Not authenticated'
+            ], 401);
+        }
+
         Log::debug('apiStore payload', [
             'branchId' => $request->input('branchId'),
             'all' => $request->all()
@@ -244,6 +261,15 @@ class StaffController extends Controller
             $fullName = $request->input('fullName') ?? $request->input('full_name');
             $email = $request->input('email') ?? $request->input('email');
             $defaultPassword = 'ChikinTayo_2526';
+            $branchId = $request->input('branchId') ?? $request->input('branch_id');
+
+            if ($user->role === 'HR' && $user->branch_id && (int) $branchId !== (int) $user->branch_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Forbidden'
+                ], 403);
+            }
+
             $insertData = [
                 'username' => $request->input('username'),
                 'email' => $email,
@@ -252,7 +278,7 @@ class StaffController extends Controller
                 'role' => $request->input('role'),
                 'phone_number' => $request->input('phone'),
                 'address' => $request->input('address'),
-                'branch_id' => $request->input('branchId') ?? $request->input('branch_id'),
+                'branch_id' => $branchId,
                 'is_active' => 1,
                 'must_change_password' => 1,
                 'created_at' => now(),
@@ -342,6 +368,13 @@ class StaffController extends Controller
             // Normalize branch id (accept either branchId or branch_id)
             $branchId = $request->input('branchId') ?? $request->input('branch_id');
 
+            if ($user->role === 'HR' && $user->branch_id && (int) $branchId !== (int) $user->branch_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Forbidden'
+                ], 403);
+            }
+
             // Check if branch already has a manager (if changing to BRANCH_MANAGER)
             if ($request->input('role') === 'BRANCH_MANAGER') {
                 $existingManager = DB::table('users')
@@ -362,6 +395,13 @@ class StaffController extends Controller
 
             // Use Eloquent to update the user record
             $staff = User::findOrFail($id);
+
+            if ($user->role === 'HR' && $user->branch_id && $staff->branch_id !== $user->branch_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Forbidden'
+                ], 403);
+            }
 
             $staff->username = $request->input('username');
             $staff->email = $request->input('email');
@@ -411,6 +451,14 @@ class StaffController extends Controller
     public function apiDestroy($id)
     {
         try {
+            $actor = Auth::user();
+            if (! $actor) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Not authenticated'
+                ], 401);
+            }
+
             // Use Eloquent model for soft delete
             $user = User::findOrFail($id);
 
@@ -431,6 +479,13 @@ class StaffController extends Controller
             }
 
 
+
+            if ($actor->role === 'HR' && $actor->branch_id && $user->branch_id !== $actor->branch_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Forbidden'
+                ], 403);
+            }
 
             // Perform soft delete
             $user->delete();
@@ -457,11 +512,18 @@ class StaffController extends Controller
     public function apiBranches()
     {
         try {
-            $branches = DB::table('branches')
+            $actor = Auth::user();
+
+            $branchesQuery = DB::table('branches')
                 ->where('is_active', 1)
                 ->select('id', 'name', 'code', 'address')
-                ->orderBy('name')
-                ->get();
+                ->orderBy('name');
+
+            if ($actor && $actor->role === 'HR' && $actor->branch_id) {
+                $branchesQuery->where('id', $actor->branch_id);
+            }
+
+            $branches = $branchesQuery->get();
 
             return response()->json([
                 'success' => true,

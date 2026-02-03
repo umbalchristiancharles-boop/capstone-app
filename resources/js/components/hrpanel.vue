@@ -4,7 +4,7 @@
       <section class="admin-layout">
         <!-- LEFT: HR PROFILE COLUMN -->
         <aside class="admin-profile-column">
-          <div class="admin-card admin-card--stacked">
+          <div v-if="!isProfileLoading" class="admin-card admin-card--stacked">
             <!-- PROFILE PICTURE + NAME + ROLE -->
             <div class="admin-card__header admin-card__header--stacked">
               <!-- clickable avatar -->
@@ -58,10 +58,6 @@
               >
                 Info
               </button>
-
-              <div class="admin-qr-block admin-qr-block--center">
-                <div class="qr-placeholder">QR</div>
-              </div>
             </div>
 
             <!-- METRICS + EXTRA + BUTTONS -->
@@ -107,7 +103,7 @@
                   class="staff-btn staff-btn--center"
                   @click="goToEmployeeManagement"
                 >
-                  👥 Employee Management
+                  👥 Staff Management
                 </button>
 
                 <!-- Logout Button -->
@@ -127,9 +123,9 @@
           <header class="admin-main-header">
             <div class="admin-main-header-top">
               <div>
-                <h1>Chikin Tayo HR Panel</h1>
+                <h1>{{ panelTitle }}</h1>
                 <p>
-                  Manage employees, attendance, and HR records across all branches.
+                  {{ panelDescription }}
                 </p>
                 <p v-if="isLoadingDashboard" class="small-hint">
                   Loading HR dashboard…
@@ -434,6 +430,16 @@ const showInfoModal = ref(false)
 const showLogoutConfirm = ref(false)
 const isLoggingOut = ref(false)
 const isEditingInfo = ref(false)
+const isInitialMount = ref(true)
+const isProfileLoading = ref(true)
+
+const panelTitle = computed(() => {
+  return 'Chikin Tayo HR Panel'
+})
+
+const panelDescription = computed(() => {
+  return 'Manage employees, attendance, and HR records across all branches.'
+})
 
 const hrDashboardTotals = ref({
   newEmployees: 0,
@@ -495,58 +501,69 @@ async function loadHrDashboard(range = 'today') {
   isLoadingDashboard.value = true
   dashboardError.value = ''
 
+  hrDashboardTotals.value = {
+    newEmployees: 0,
+    pendingLeaves: 0,
+    absentToday: 0,
+    openPositions: 0
+  }
+
+  hrSummaryTotals.value = {
+    totalEmployees: 0,
+    totalBranches: 0
+  }
+
+  recentHires.value = []
+  attendanceAlerts.value = []
+  pendingLeaves.value = []
+  openPositions.value = []
+  hrActivity.value = []
+
   try {
-    hrDashboardTotals.value = {
-      newEmployees: 5,
-      pendingLeaves: 2,
-      absentToday: 3,
-      openPositions: 2
-    }
+    const [res, ownerRes] = await Promise.all([
+      axios.get('/api/admin/dashboard', {
+        params: { range },
+        withCredentials: true,
+      }),
+      axios.get('/api/owner-dashboard', {
+        withCredentials: true,
+      })
+    ])
 
-    hrSummaryTotals.value = {
-      totalEmployees: 45,
-      totalBranches: 8
-    }
+    if (res.data) {
+      const ownerSummary = ownerRes?.data?.summary
 
-    recentHires.value = [
-      { id: 1, name: 'Juan Dela Cruz', position: 'Cashier', branch: 'Dasmariñas, Cavite', hiredAt: 'Feb 1' },
-      { id: 2, name: 'Maria Santos', position: 'Cashier', branch: 'General Trias, Cavite', hiredAt: 'Jan 10' },
-      { id: 3, name: 'Pedro Reyes', position: 'Rider', branch: 'Manila Branch', hiredAt: 'Jan 3' },
-      { id: 4, name: 'Ana Cruz', position: 'Shift Leader', branch: 'Dasmariñas, Cavite', hiredAt: 'Dec 28' }
-    ]
-
-    attendanceAlerts.value = [
-      {
-        id: 1,
-        title: 'Multiple late arrivals',
-        meta: '3 lates this week - Dasmariñas, Cavite',
-        badgeClass: 'badge--warning',
-        badgeLabel: 'ATTENTION'
-      },
-      {
-        id: 2,
-        title: 'No time-out recorded',
-        meta: '1 staff - General Trias, Cavite',
-        badgeClass: 'badge--info',
-        badgeLabel: 'CHECK'
+      if (ownerSummary) {
+        const branchEmployees = ownerSummary.branchEmployees
+        hrSummaryTotals.value = {
+          totalEmployees: branchEmployees ?? ownerSummary.totalEmployees ?? 0,
+          totalBranches: ownerSummary.totalBranches ?? 0
+        }
       }
-    ]
 
-    pendingLeaves.value = [
-      { id: 1, employee: 'Maria Santos', range: 'Jan 30 - Jan 31' },
-      { id: 2, employee: 'Mark Test', range: 'Feb 2 - Feb 3' }
-    ]
+      if (res.data.success) {
+        hrDashboardTotals.value = {
+          newEmployees: res.data.stats?.newEmployees || 0,
+          pendingLeaves: res.data.stats?.pendingLeaves || 0,
+          absentToday: res.data.stats?.absentToday || 0,
+          openPositions: res.data.stats?.openPositions || 0
+        }
 
-    openPositions.value = [
-      { id: 1, title: 'Cook - Dasmariñas', applicants: 4 },
-      { id: 2, title: 'Cashier - Manila', applicants: 2 }
-    ]
-
-    hrActivity.value = [
-      { id: 1, message: 'New hire added: Juan Dela Cruz', meta: '5 mins ago' },
-      { id: 2, message: 'Leave request approved: Maria Santos', meta: '30 mins ago' },
-      { id: 3, message: 'Job posting updated: Cashier - Manila', meta: '1 hour ago' }
-    ]
+        recentHires.value = res.data.recentHires ?? []
+        attendanceAlerts.value = res.data.attendanceAlerts ?? []
+        pendingLeaves.value = res.data.pendingLeaves ?? []
+        openPositions.value = res.data.openPositions ?? []
+        hrActivity.value = res.data.hrActivity ?? []
+      } else {
+        // Admin dashboard response structure
+        if (!ownerSummary) {
+          hrSummaryTotals.value = {
+            totalEmployees: res.data.staff_count || 0,
+            totalBranches: res.data.branches_count || 0
+          }
+        }
+      }
+    }
   } catch (e) {
     dashboardError.value = 'Error loading HR dashboard.'
   } finally {
@@ -659,28 +676,56 @@ async function saveHrInfo() {
 }
 
 function goToEmployeeManagement() {
-  router.push('/hr/employees')
+  router.push('/admin/staff-management')
 }
 
 async function onAvatarChange(event) {
   const file = event.target.files[0]
   if (!file) return
-
   if (!window.confirm('Are you sure you want to change your profile picture?')) return
 
-  const reader = new FileReader()
-  const dataUrl = await new Promise((resolve, reject) => {
-    reader.onerror = () => reject(new Error('Failed to read file'))
-    reader.onload = () => resolve(reader.result)
-    reader.readAsDataURL(file)
-  })
+  try {
+    const formData = new FormData()
+    formData.append('avatar', file)
 
-  sessionStorage.setItem('pendingAvatar', JSON.stringify({
-    dataUrl,
-    filename: file.name,
-    panel: 'hr'
-  }))
-  window.location.reload()
+    try { await axios.get('/sanctum/csrf-cookie', { withCredentials: true }) } catch (e) {}
+    await new Promise(resolve => setTimeout(resolve, 50))
+
+    try {
+      function getCookie(name) { const m = document.cookie.match(new RegExp('(^|; )' + name + '=([^;]*)')); return m ? m[2] : null }
+        const xsrf = getCookie('XSRF-TOKEN')
+      if (xsrf) {
+        try { axios.defaults.headers.common['X-XSRF-TOKEN'] = decodeURIComponent(xsrf) } catch (_) { axios.defaults.headers.common['X-XSRF-TOKEN'] = xsrf }
+      }
+    } catch (e) {}
+
+      // Fallback: fetch CSRF token explicitly if cookie is missing
+      try {
+        function getCookie(name) { const m = document.cookie.match(new RegExp('(^|; )' + name + '=([^;]*)')); return m ? m[2] : null }
+        const xsrf = getCookie('XSRF-TOKEN')
+        if (!xsrf) {
+          const tokenRes = await axios.get('/api/csrf-token', { withCredentials: true })
+          const token = tokenRes?.data?.token
+          if (token) {
+            axios.defaults.headers.common['X-CSRF-TOKEN'] = token
+            formData.append('_token', token)
+          }
+        }
+      } catch (e) {}
+
+    const res = await axios.post('/api/upload-avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      withCredentials: true
+    })
+
+    if (res.data && res.data.ok) {
+      hrProfile.value.avatarUrl = res.data.avatarUrl + '?t=' + Date.now()
+      alert('Profile picture updated successfully!')
+    }
+  } catch (e) {
+    console.error('Avatar upload failed:', e)
+    alert('Failed to upload profile picture. Please try again.')
+  }
 }
 
 async function confirmLogout() {
@@ -704,87 +749,42 @@ function cancelLogout() {
 
 // Auto-upload pending avatar after reload
 onMounted(async () => {
-  // load dashboard (don't await so profile fetch can run immediately)
-  loadHrDashboard()
+  // Mark initial mount complete first
+  isInitialMount.value = false
 
-  // fetch profile early so the left column shows the logged-in account
+  // Reset profile to avoid showing stale data
+  hrProfile.value = {
+    fullName: '',
+    role: 'HR',
+    email: '',
+    contact: '',
+    department: 'Human Resources',
+    accountId: '',
+    avatarUrl: ''
+  }
+
+  // Fetch profile
   try {
-    axios.get('/api/owner-profile', { withCredentials: true })
-      .then(res => {
-        if (res.data && res.data.ok && res.data.user) {
-          hrProfile.value = normalizeUser(res.data.user)
-        }
-      })
-      .catch(err => {
-        // If 401, user session expired - redirect to login
-        if (err.response?.status === 401) {
-          router.push('/admin-login')
-        }
-      })
-  } catch (e) {}
-
-  // If user chose an avatar before reload, perform pending upload (non-blocking)
-  ;(async () => {
-    try {
-      const pendingRaw = sessionStorage.getItem('pendingAvatar')
-      if (!pendingRaw) return
-      const pending = JSON.parse(pendingRaw)
-      if (!pending || pending.panel !== 'hr') return
-
-      function dataURLtoBlob(dataurl) {
-        const arr = dataurl.split(',')
-        const mime = arr[0].match(/:(.*?);/)[1]
-        const bstr = atob(arr[1])
-        let n = bstr.length
-        const u8arr = new Uint8Array(n)
-        while (n--) { u8arr[n] = bstr.charCodeAt(n) }
-        return new Blob([u8arr], { type: mime })
-      }
-
-      const blob = dataURLtoBlob(pending.dataUrl)
-      const file = new File([blob], pending.filename, { type: blob.type })
-      const formData = new FormData()
-      formData.append('avatar', file)
-
-      try { await axios.get('/sanctum/csrf-cookie', { withCredentials: true }) } catch (e) {}
-      await new Promise(resolve => setTimeout(resolve, 50))
-
-      try {
-        function getCookie(name) { const m = document.cookie.match(new RegExp('(^|; )' + name + '=([^;]*)')); return m ? m[2] : null }
-        const xsrf = getCookie('XSRF-TOKEN')
-        if (xsrf) {
-          try { axios.defaults.headers.common['X-XSRF-TOKEN'] = decodeURIComponent(xsrf) } catch (_) { axios.defaults.headers.common['X-XSRF-TOKEN'] = xsrf }
-          try { formData.append('_token', decodeURIComponent(xsrf)) } catch (_) { formData.append('_token', xsrf) }
-        }
-      } catch (e) {}
-
-      try { console.debug('AUTO UPLOAD CSRF: document.cookie=', document.cookie) } catch (_) {}
-      try { console.debug('AUTO UPLOAD CSRF: axios.defaults.headers.common["X-XSRF-TOKEN"]=', axios.defaults.headers.common['X-XSRF-TOKEN']) } catch (_) {}
-
-      try {
-        const res = await axios.post('/api/upload-avatar', formData, { headers: { 'Content-Type': 'multipart/form-data' }, withCredentials: true })
-        try {
-          const profileRes = await axios.get('/api/owner-profile', { withCredentials: true })
-          if (profileRes.data.ok && profileRes.data.user) {
-            hrProfile.value = normalizeUser(profileRes.data.user)
-          } else {
-            let url = res.data.avatarUrl
-            url = url.replace(/\?t=\d+$/, '')
-            hrProfile.value.avatarUrl = url + '?t=' + Date.now()
-          }
-        } catch (e) {
-          let url = res.data.avatarUrl
-          url = url.replace(/\?t=\d+$/, '')
-          hrProfile.value.avatarUrl = url + '?t=' + Date.now()
-        }
-
-        sessionStorage.removeItem('pendingAvatar')
-      } catch (e) {
-        console.error('Auto-upload failed:', e)
-      }
-    } catch (e) {
-      console.error('Auto-upload setup failed:', e)
+    const res = await axios.get('/api/owner-profile', { withCredentials: true })
+    if (res.data && res.data.ok && res.data.user) {
+      hrProfile.value = normalizeUser(res.data.user)
     }
+    isProfileLoading.value = false
+  } catch (e) {
+    if (e.response?.status === 401) {
+      router.push('/admin-login')
+      return
+    }
+    isProfileLoading.value = false
+  }
+
+  // Load dashboard
+  loadHrDashboard(activeRange.value)
+
+  // Non-blocking avatar upload logic (removed pending avatar)
+  ;(async () => {
+    // Placeholder for future async operations
+    return
   })()
 })
 </script>

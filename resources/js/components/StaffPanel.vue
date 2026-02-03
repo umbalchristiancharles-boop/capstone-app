@@ -74,7 +74,7 @@
                 <div class="owner-extra-row">
                   <span class="owner-label">Branch:</span>
                   <span class="owner-value">
-                    {{ typeof staffProfile.branch === 'object' && staffProfile.branch.name ? staffProfile.branch.name : (staffProfile.branch || 'Not assigned') }}
+                    {{ branchName }}
                   </span>
                 </div>
               </div>
@@ -97,7 +97,7 @@
           <header class="admin-main-header">
             <div class="admin-main-header-top">
               <div>
-                <h1>Staff Dashboard</h1>
+                <h1>Chikin Tayo Staff Dashboard</h1>
                 <p>
                   View your personal orders, schedule, and performance metrics.
                 </p>
@@ -371,7 +371,7 @@
 
               <div class="info-row">
                 <span class="info-label">Branch</span>
-                <span class="info-value">{{ staffProfile.branch }}</span>
+                <span class="info-value">{{ branchName }}</span>
               </div>
             </div>
 
@@ -480,16 +480,28 @@ const staffProfile = ref({
   avatarUrl: '',
 })
 
+const branchName = computed(() => {
+  const branch = staffProfile.value.branch
+  if (branch && typeof branch === 'object') {
+    return branch.name || branch.branch_name || 'Not assigned'
+  }
+  return branch || 'Not assigned'
+})
+
 function normalizeUser(u) {
   if (!u) return {
     fullName: '', role: '', email: '', contact: '', branch: '', accountId: '', avatarUrl: ''
   }
+  const rawBranch = u.branch ?? u.branch_name ?? ''
+  const normalizedBranch = typeof rawBranch === 'object'
+    ? (rawBranch.name || rawBranch.branch_name || '')
+    : rawBranch
   return {
     fullName: u.fullName ?? u.full_name ?? '',
     role: u.role ?? '',
     email: u.email ?? '',
     contact: u.contact ?? u.phone_number ?? '',
-    branch: u.branch ?? (u.branch_name ?? ''),
+    branch: normalizedBranch,
     accountId: u.accountId ?? (u.account_id ?? ''),
     avatarUrl: u.avatarUrl ?? (u.avatar_url ?? ''),
   }
