@@ -4,7 +4,7 @@
       <section class="admin-layout">
         <!-- LEFT:  ADMIN PROFILE COLUMN -->
         <aside class="admin-profile-column">
-          <div class="admin-card admin-card--stacked">
+          <div v-if="!isProfileLoading" class="admin-card admin-card--stacked">
             <!-- PROFILE PICTURE + NAME + ROLE -->
             <div class="admin-card__header admin-card__header--stacked">
               <!-- clickable avatar -->
@@ -23,10 +23,10 @@
                 </div>
               </label>
 
-              <div class="admin-header-text admin-header-text--center">
+              <div class="admin-header-text admin-admin-header-text--center">
                 <div class="admin-label">Account</div>
                 <div class="admin-name">
-                  {{ ownerProfile.fullName || 'Vince Hannibal R. Bido' }}
+                  {{ ownerProfile.fullName || 'System Administrato' }}
                 </div>
                 <div class="admin-role">
                   {{ ownerProfile.role || 'OWNER' }}
@@ -48,7 +48,7 @@
               <div class="admin-id-block admin-id-block--center">
                 <span class="admin-id-label">Account I.D: </span>
                 <span class="admin-id-value">
-                  &nbsp;{{ ownerProfile.accountId || 'kk19096' }}
+                  &nbsp;{{ ownerProfile.accountId || 'kk0001' }}
                 </span>
               </div>
 
@@ -132,7 +132,7 @@
                   Monitor branches, orders, and staff activity from a single
                   dashboard.
                 </p>
-                <p v-if="isLoadingDashboard" class="small-hint">
+                <p v-if="isLoadingDashboard && !isInitialMount" class="small-hint">
                   Loading dashboard…
                 </p>
                 <p v-else-if="dashboardError" class="small-hint small-hint--error">
@@ -535,6 +535,8 @@ const visibleOrders = computed(() => {
 
 const isLoadingDashboard = ref(false)
 const dashboardError = ref('')
+const isInitialMount = ref(true)  // Hide loading message on initial mount
+const isProfileLoading = ref(true)  // Hide profile until fetched
 
 const showInfoModal = ref(false)
 const showLogoutConfirm = ref(false)
@@ -695,29 +697,56 @@ async function onAvatarChange(event) {
   // Confirm before changing profile picture
   if (!window.confirm('Are you sure you want to change your profile picture?')) return
 
-  // Save chosen file to sessionStorage as dataURL so we can reload first and then upload
   try {
-    const reader = new FileReader()
-    const dataUrl = await new Promise((resolve, reject) => {
-      reader.onerror = () => reject(new Error('Failed to read file'))
-      reader.onload = () => resolve(reader.result)
-      reader.readAsDataURL(file)
-    })
-    sessionStorage.setItem('pendingAvatar', JSON.stringify({ dataUrl, filename: file.name, panel: 'admin' }))
-    try { window.location.reload() } catch (_) {}
-    return
-  } catch (e) {
-    // fallback to direct upload if reading fails
-  }
+    // Prepare form data
+    const formData = new FormData()
+    formData.append('avatar', file)
 
-  const formData = new FormData()
-  formData.append('avatar', file)
+    // Get CSRF cookie
+    try { await axios.get('/sanctum/csrf-cookie', { withCredentials: true }) } catch (e) {}
+    await new Promise(resolve => setTimeout(resolve, 50))
+
+    // Set CSRF token
+    try {
+      function getCookie(name) { const m = document.cookie.match(new RegExp('(^|; )' + name + '=([^;]*)')); return m ? m[2] : null }
+      const xsrf = getCookie('XSRF-TOKEN')
+      if (xsrf) {
+        try { axios.defaults.headers.common['X-XSRF-TOKEN'] = decodeURIComponent(xsrf) } catch (_) { axios.defaults.headers.common['X-XSRF-TOKEN'] = xsrf }
+      }
+    } catch (e) {}
+
+    // Upload directly without reload
+    const res = await axios.post('/api/upload-avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      withCredentials: true
+    })
+
+    if (res.data && res.data.ok) {
+      // Update profile with new avatar URL
+      ownerProfile.value.avatarUrl = res.data.avatarUrl + '?t=' + Date.now()
+      alert('Profile picture updated successfully!')
+    }
+  } catch (e) {
+    console.error('Avatar upload failed:', e)
+    alert('Failed to upload profile picture. Please try again.')
+  }
 }
 
 // Auto-upload pending avatar after reload (admin panel)
 onMounted(async () => {
-  // Load dashboard and profile
-  loadDashboard(activeRange.value)
+  // Mark initial mount complete first (before loading dashboard)
+  isInitialMount.value = false
+
+  // Reset profile to avoid showing stale data
+  ownerProfile.value = {
+    fullName: '',
+    role: 'Owner',
+    email: '',
+    contact: '',
+    branch: '',
+    accountId: '',
+    avatarUrl: '',
+  }
 
   // Fetch profile
   try {
@@ -725,65 +754,18 @@ onMounted(async () => {
     if (res.data && res.data.ok && res.data.user) {
       ownerProfile.value = normalizeUser(res.data.user)
     }
+    isProfileLoading.value = false
   } catch (e) {
     // If 401, user session expired - redirect to login
     if (e.response?.status === 401) {
       router.push('/admin-login')
       return
     }
+    isProfileLoading.value = false
   }
 
-  // Handle pending avatar upload after reload
-  try {
-    const pendingRaw = sessionStorage.getItem('pendingAvatar')
-    if (!pendingRaw) return
-    const pending = JSON.parse(pendingRaw)
-    if (!pending || pending.panel !== 'admin') return
-
-    function dataURLtoBlob(dataurl) {
-      const arr = dataurl.split(',')
-      const mime = arr[0].match(/:(.*?);/)[1]
-      const bstr = atob(arr[1])
-      let n = bstr.length
-      const u8arr = new Uint8Array(n)
-      while (n--) { u8arr[n] = bstr.charCodeAt(n) }
-      return new Blob([u8arr], { type: mime })
-    }
-
-    const blob = dataURLtoBlob(pending.dataUrl)
-    const file = new File([blob], pending.filename, { type: blob.type })
-    const formData = new FormData()
-    formData.append('avatar', file)
-
-    try { await axios.get('/sanctum/csrf-cookie', { withCredentials: true }) } catch (e) {}
-    await new Promise(resolve => setTimeout(resolve, 50))
-
-    try {
-      function getCookie(name) { const m = document.cookie.match(new RegExp('(^|; )' + name + '=([^;]*)')); return m ? m[2] : null }
-      const xsrf = getCookie('XSRF-TOKEN')
-      if (xsrf) {
-        try { axios.defaults.headers.common['X-XSRF-TOKEN'] = decodeURIComponent(xsrf) } catch (_) { axios.defaults.headers.common['X-XSRF-TOKEN'] = xsrf }
-        try { formData.append('_token', decodeURIComponent(xsrf)) } catch (_) { formData.append('_token', xsrf) }
-      }
-    } catch (e) {}
-
-    try { console.debug('AUTO UPLOAD CSRF: document.cookie=', document.cookie) } catch (_) {}
-    try { console.debug('AUTO UPLOAD CSRF: axios.defaults.headers.common["X-XSRF-TOKEN"]=', axios.defaults.headers.common['X-XSRF-TOKEN']) } catch (_) {}
-
-    const res = await axios.post('/api/upload-avatar', formData, { headers: { 'Content-Type': 'multipart/form-data' }, withCredentials: true })
-    try {
-      const profileRes = await axios.get('/api/owner-profile', { withCredentials: true })
-      let url = (profileRes.data.ok && profileRes.data.user && profileRes.data.user.avatarUrl) ? profileRes.data.user.avatarUrl : res.data.avatarUrl
-      url = url.replace(/\?t=\d+$/, '')
-      ownerProfile.value.avatarUrl = url + '?t=' + Date.now()
-    } catch (e) {
-      let url = res.data.avatarUrl
-      url = url.replace(/\?t=\d+$/, '')
-      ownerProfile.value.avatarUrl = url + '?t=' + Date.now()
-    }
-
-    sessionStorage.removeItem('pendingAvatar')
-  } catch (e) {}
+  // Now load dashboard after initial mount flag is set
+  loadDashboard(activeRange.value)
 })
 
 async function confirmLogout() {
