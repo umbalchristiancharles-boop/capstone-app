@@ -67,7 +67,7 @@
             <!-- METRICS + EXTRA + CENTERED LOGOUT -->
             <div class="admin-card__footer admin-card__footer--stacked">
               <div class="admin-metrics-row">
-                <div class="admin-metric">
+                <div v-if="ownerProfile.role !== 'BRANCH_MANAGER'" class="admin-metric">
                   <div class="metric-icon">👥</div>
                   <div class="metric-text">
                     <span class="metric-label">Total Branches: </span>
@@ -127,11 +127,8 @@
           <header class="admin-main-header">
             <div class="admin-main-header-top">
               <div>
-                <h1>Chikin Tayo Admin Panel</h1>
-                <p>
-                  Monitor branches, orders, and staff activity from a single
-                  dashboard.
-                </p>
+                <h1>{{ panelTitle }}</h1>
+                <p>{{ panelDescription }}</p>
                 <p v-if="isLoadingDashboard && !isInitialMount" class="small-hint">
                   Loading dashboard…
                 </p>
@@ -557,6 +554,18 @@ const ownerProfile = ref({
 
 const isEditingInfo = ref(false)
 
+const panelTitle = computed(() => {
+  const role = ownerProfile.value.role || 'OWNER'
+  if (role === 'BRANCH_MANAGER') return 'Chikin Tayo Branch Manager Panel'
+  return 'Chikin Tayo Admin Panel'
+})
+
+const panelDescription = computed(() => {
+  const role = ownerProfile.value.role || 'OWNER'
+  if (role === 'BRANCH_MANAGER') return 'Monitor your branch orders, staff, and activity.'
+  return 'Monitor branches, orders, and staff activity from a single dashboard.'
+})
+
 function normalizeUser(u) {
   if (!u) return { fullName: '', role: '', email: '', contact: '', branch: '', accountId: '', avatarUrl: '' }
   return {
@@ -593,32 +602,55 @@ async function loadDashboard(range) {
   adminStaffActivity.value = []
 
   try {
-    // Fetch admin dashboard data
-    const adminRes = await axios.get('/api/admin/dashboard', {
+    // Determine which endpoint to use based on user role
+    const userRole = ownerProfile.value.role
+    let endpoint = '/api/admin/dashboard'
+
+    if (userRole === 'BRANCH_MANAGER') {
+      endpoint = '/api/manager/dashboard'
+    }
+
+    // Fetch dashboard data
+    const res = await axios.get(endpoint, {
+      params: { range },
       withCredentials: true,
     })
 
-    if (adminRes.data) {
-      // Update summary totals with admin data
-      summaryTotals.value = {
-        totalBranches: adminRes.data.branches_count || 0,
-        totalEmployees: adminRes.data.staff_count || 0,
-      }
+    if (res.data) {
+      if (userRole === 'BRANCH_MANAGER' && res.data.success) {
+        // Manager dashboard response structure
+        summaryTotals.value = {
+          totalBranches: 1,
+          totalEmployees: res.data.summary?.totalEmployees || 0,
+        }
 
-      // Update dashboard totals with admin data
-      dashboardTotals.value = {
-        orders: adminRes.data.orders_count || 0,
-        completed: 0,
-        sales: '₱0',
-        pending: 0,
-      }
+        dashboardTotals.value = {
+          orders: res.data.stats?.orders || 0,
+          completed: res.data.stats?.completed || 0,
+          sales: res.data.stats?.sales || '₱0',
+          pending: res.data.stats?.pending || 0,
+        }
 
-      // Update staff activity
-      adminStaffActivity.value = adminRes.data.recent_activity || []
+        recentOrders.value = res.data.recentOrders || []
+        productionQueue.value = res.data.productionQueue || []
+        staffActivity.value = res.data.staffActivity || []
+      } else {
+        // Admin dashboard response structure
+        summaryTotals.value = {
+          totalBranches: res.data.branches_count || 0,
+          totalEmployees: res.data.staff_count || 0,
+        }
+
+        dashboardTotals.value = {
+          orders: res.data.orders_count || 0,
+          completed: 0,
+          sales: '₱0',
+          pending: 0,
+        }
+
+        adminStaffActivity.value = res.data.recent_activity || []
+      }
     }
-
-    // Note: Not fetching owner dashboard data anymore
-    // Admin dashboard shows only real data from database
   } catch (e) {
     // If 401, user session expired - redirect to login
     if (e.response?.status === 401) {
