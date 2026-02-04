@@ -12,6 +12,7 @@ use App\Http\Controllers\Manager\StaffManagementController;
 use App\Http\Controllers\Manager\ReportsController;
 use App\Http\Controllers\Staff\StaffDashboardController;
 use App\Http\Controllers\Staff\AttendanceController;
+use App\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
@@ -131,10 +132,16 @@ Route::middleware('web')->group(function () {
         Route::get('/dashboard',        [StaffDashboardController::class, 'index']);
 
         // Attendance/Clock In-Out
-        Route::post('/clock-in',        [AttendanceController::class, 'clockIn']);
-        Route::post('/clock-out',       [AttendanceController::class, 'clockOut']);
-        Route::get('/attendance/status', [AttendanceController::class, 'status']);
-        Route::get('/attendance/history', [AttendanceController::class, 'history']);
+        Route::post('/clock-in',        [AttendanceController::class, 'clockIn'])
+            ->withoutMiddleware([VerifyCsrfToken::class]);
+        Route::post('/clock-out',       [AttendanceController::class, 'clockOut'])
+            ->withoutMiddleware([VerifyCsrfToken::class]);
+        Route::get('/attendance/status', [AttendanceController::class, 'status'])
+            ->withoutMiddleware([VerifyCsrfToken::class]);
+        Route::get('/attendance/history', [AttendanceController::class, 'history'])
+            ->withoutMiddleware([VerifyCsrfToken::class]);
+        Route::get('/attendance/branch', [AttendanceController::class, 'getBranchAttendance'])
+            ->withoutMiddleware([VerifyCsrfToken::class]);
     });
 
 });

@@ -101,6 +101,38 @@
                 <p>
                   View your personal orders, schedule, and performance metrics.
                 </p>
+
+                <!-- ATTENDANCE STATUS + CLOCK IN/OUT -->
+                <div class="attendance-status" style="margin: 15px 0; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 8px;">
+                  <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                    <div>
+                      <span style="font-weight: bold; color: white;">Status:</span>
+                      <span style="color: #fff; margin-left: 10px;">
+                        {{ attendanceStatus.clocked_in ? 'Clocked In' : 'Not Clocked In' }}
+                      </span>
+                      <span v-if="attendanceStatus.time_in" style="color: #ddd; margin-left: 10px;">
+                        ({{ attendanceStatus.time_in }})
+                      </span>
+                    </div>
+                    <button
+                      v-if="!attendanceStatus.clocked_in"
+                      @click="clockIn"
+                      :disabled="isClockingInOut"
+                      style="padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;"
+                    >
+                      {{ isClockingInOut ? 'Processing...' : 'Clock In' }}
+                    </button>
+                    <button
+                      v-if="attendanceStatus.clocked_in && !attendanceStatus.clocked_out"
+                      @click="clockOut"
+                      :disabled="isClockingInOut"
+                      style="padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;"
+                    >
+                      {{ isClockingInOut ? 'Processing...' : 'Clock Out' }}
+                    </button>
+                  </div>
+                </div>
+
                 <p v-if="isLoadingDashboard" class="small-hint">
                   Loading dashboard…
                 </p>
@@ -178,6 +210,57 @@
               <span class="overview-value">
                 &nbsp;{{ dashboardTotals.pending }}
               </span>
+            </div>
+          </section>
+
+          <!-- Attendance History Table -->
+          <section class="panel-block">
+            <div class="panel-header">
+              <h2>Attendance History</h2>
+            </div>
+            <div class="panel-body panel-body--table">
+              <div class="table-header">
+                <span>Date</span>
+                <span>Time In</span>
+                <span>Time Out</span>
+                <span>Hours Worked</span>
+                <span>Status</span>
+              </div>
+
+              <div
+                v-if="attendanceHistory.length === 0"
+                class="table-row"
+              >
+                <span>No attendance records.</span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+
+              <div
+                v-else
+                v-for="att in attendanceHistory"
+                :key="att.id"
+                class="table-row"
+              >
+                <span>{{ att.date }}</span>
+                <span>{{ att.time_in || '-' }}</span>
+                <span>{{ att.time_out || '-' }}</span>
+                <span>{{ att.hours_worked || '-' }}</span>
+                <span>
+                  <span
+                    class="badge"
+                    :class="{
+                      'badge--success': att.status === 'present',
+                      'badge--warning': att.status === 'late',
+                      'badge--info': att.status === 'absent'
+                    }"
+                  >
+                    {{ att.status }}
+                  </span>
+                </span>
+              </div>
             </div>
           </section>
 
@@ -312,6 +395,58 @@
               </div>
             </div>
           </section>
+
+          <!-- Calendar -->
+          <section class="panel-block">
+            <div class="panel-header">
+              <h2>Calendar</h2>
+            </div>
+            <div class="panel-body panel-body--list">
+              <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                <select
+                  v-model.number="selectedMonth"
+                  @change="updateCalendarDate"
+                  style="flex: 1; padding: 6px 8px; border-radius: 6px; border: none;"
+                >
+                  <option v-for="(m, idx) in monthOptions" :key="m" :value="idx">
+                    {{ m }}
+                  </option>
+                </select>
+                <select
+                  v-model.number="selectedYear"
+                  @change="updateCalendarDate"
+                  style="width: 110px; padding: 6px 8px; border-radius: 6px; border: none;"
+                >
+                  <option v-for="y in yearOptions" :key="y" :value="y">
+                    {{ y }}
+                  </option>
+                </select>
+              </div>
+              <div style="font-weight: 700; margin-bottom: 8px; color: #fff;">
+                {{ monthLabel }}
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 6px; color: rgba(255,255,255,0.8); font-size: 12px;">
+                <div v-for="day in weekdays" :key="day" style="text-align: center; font-weight: 600;">
+                  {{ day }}
+                </div>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;">
+                <div
+                  v-for="(day, idx) in calendarDays"
+                  :key="idx"
+                  :style="{
+                    textAlign: 'center',
+                    padding: '6px 0',
+                    borderRadius: '6px',
+                    background: day && isToday(day) ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.08)',
+                    color: day ? '#fff' : 'transparent'
+                  }"
+                >
+                  {{ day || '' }}
+                </div>
+              </div>
+            </div>
+          </section>
         </aside>
       </section>
 
@@ -436,7 +571,87 @@ import axios from 'axios'
 import '../css/adminpanel.css'
 
 const router = useRouter()
+
+// Setup CSRF token for axios
+axios.defaults.withCredentials = true
+axios.defaults.xsrfCookieName = 'XSRF-TOKEN'
+axios.defaults.xsrfHeaderName = 'X-XSRF-TOKEN'
+
+const getCookie = (name) => {
+  const value = `; ${document.cookie}`
+  const parts = value.split(`; ${name}=`)
+  if (parts.length === 2) return parts.pop().split(';').shift()
+  return null
+}
+
+const setupCsrfToken = async () => {
+  try {
+    await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
+    const xsrf = getCookie('XSRF-TOKEN')
+    if (xsrf) {
+      const decoded = decodeURIComponent(xsrf)
+      axios.defaults.headers.common['X-XSRF-TOKEN'] = decoded
+      axios.defaults.headers.common['X-CSRF-TOKEN'] = decoded
+      return
+    }
+  } catch (e) {
+    // fallback below
+  }
+
+  try {
+    const res = await axios.get('/api/csrf-token')
+    if (res.data && res.data.token) {
+      axios.defaults.headers.common['X-CSRF-TOKEN'] = res.data.token
+      axios.defaults.headers.common['X-XSRF-TOKEN'] = res.data.token
+    }
+  } catch (e) {
+    console.error('Failed to fetch CSRF token:', e)
+  }
+}
+
 const activeRange = ref('today')
+
+const calendarDate = ref(new Date())
+const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const monthOptions = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+]
+const selectedMonth = ref(calendarDate.value.getMonth())
+const selectedYear = ref(calendarDate.value.getFullYear())
+const yearOptions = computed(() => {
+  const years = []
+  for (let i = 1926; i <= 2126; i++) {
+    years.push(i)
+  }
+  return years
+})
+const updateCalendarDate = () => {
+  calendarDate.value = new Date(selectedYear.value, selectedMonth.value, 1)
+}
+const monthLabel = computed(() => {
+  return calendarDate.value.toLocaleString('en-US', { month: 'long', year: 'numeric' })
+})
+const calendarDays = computed(() => {
+  const year = calendarDate.value.getFullYear()
+  const month = calendarDate.value.getMonth()
+  const firstDay = new Date(year, month, 1).getDay()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const cells = []
+  for (let i = 0; i < firstDay; i++) cells.push(null)
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d)
+  while (cells.length % 7 !== 0) cells.push(null)
+  return cells
+})
+const isToday = (day) => {
+  if (!day) return false
+  const today = new Date()
+  return (
+    day === today.getDate() &&
+    calendarDate.value.getMonth() === today.getMonth() &&
+    calendarDate.value.getFullYear() === today.getFullYear()
+  )
+}
 
 const dashboardTotals = ref({
   orders: 0,
@@ -454,6 +669,15 @@ const productionQueue = ref([])
 const recentOrders = ref([])
 const showAllOrders = ref(false)
 const announcements = ref([])
+const attendanceHistory = ref([])
+const attendanceStatus = ref({
+  clocked_in: false,
+  clocked_out: false,
+  time_in: null,
+  time_out: null,
+  status: null
+})
+const isClockingInOut = ref(false)
 
 const visibleOrders = computed(() => {
   if (!recentOrders.value || recentOrders.value.length === 0) return []
@@ -553,6 +777,10 @@ async function loadDashboard(range) {
   } finally {
     isLoadingDashboard.value = false
   }
+
+  // Load attendance data
+  await loadAttendanceStatus()
+  await loadAttendanceHistory()
 }
 
 async function changeRange(range) {
@@ -624,6 +852,78 @@ async function onAvatarChange(event) {
 
   const formData = new FormData()
   formData.append('avatar', file)
+}
+
+async function clockIn() {
+  isClockingInOut.value = true
+  try {
+    await setupCsrfToken()
+    const res = await axios.post('/api/staff/clock-in', {}, {
+      withCredentials: true
+    })
+    if (res.data.ok) {
+      attendanceStatus.value.clocked_in = true
+      attendanceStatus.value.time_in = res.data.time_in
+      attendanceStatus.value.status = res.data.status
+      alert('Clocked in successfully!')
+      await loadAttendanceHistory()
+    } else {
+      alert(res.data.message || 'Clock in failed')
+    }
+  } catch (e) {
+    alert('Error clocking in: ' + (e.response?.data?.message || e.message))
+  } finally {
+    isClockingInOut.value = false
+  }
+}
+
+async function clockOut() {
+  isClockingInOut.value = true
+  try {
+    await setupCsrfToken()
+    const res = await axios.post('/api/staff/clock-out', {}, {
+      withCredentials: true
+    })
+    if (res.data.ok) {
+      attendanceStatus.value.clocked_out = true
+      attendanceStatus.value.time_out = res.data.time_out
+      alert(`Clocked out successfully! Hours worked: ${res.data.hours_worked}h`)
+      await loadAttendanceHistory()
+    } else {
+      alert(res.data.message || 'Clock out failed')
+    }
+  } catch (e) {
+    alert('Error clocking out: ' + (e.response?.data?.message || e.message))
+  } finally {
+    isClockingInOut.value = false
+  }
+}
+
+async function loadAttendanceStatus() {
+  try {
+    const res = await axios.get('/api/staff/attendance/status', {
+      withCredentials: true
+    })
+    if (res.data.ok) {
+      attendanceStatus.value = res.data
+    }
+  } catch (e) {
+    console.error('Error loading attendance status:', e)
+  }
+}
+
+async function loadAttendanceHistory() {
+  try {
+    const res = await axios.get('/api/staff/attendance/history', {
+      params: { range: activeRange.value },
+      withCredentials: true
+    })
+    if (res.data.ok) {
+      attendanceHistory.value = res.data.data || []
+    }
+  } catch (e) {
+    console.error('Error loading attendance history:', e)
+  }
 }
 
 // Auto-upload pending avatar after reload (staff panel)
@@ -704,7 +1004,8 @@ function cancelLogout() {
   showLogoutConfirm.value = false
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await setupCsrfToken()
   loadDashboard(activeRange.value)
   axios
     .get('/api/owner-profile', { withCredentials: true })

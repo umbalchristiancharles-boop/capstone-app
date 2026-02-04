@@ -19,6 +19,10 @@ class VerifyCsrfToken extends Middleware
         // Allow avatar upload endpoint to skip CSRF to avoid 419 during local testing
         'api/upload-avatar',
         'upload-avatar',
+        // Attendance API endpoints - all variations
+        'api/staff/clock-in',
+        'api/staff/clock-out',
+        'api/staff/attendance/*',
     ];
 
     // No custom constructor: keep parent DI signature intact.
@@ -35,12 +39,23 @@ class VerifyCsrfToken extends Middleware
      */
     public function handle($request, $next)
     {
+        // Always bypass CSRF for attendance endpoints
+        if ($request->is('api/staff/clock-in', 'api/staff/clock-out', 'api/staff/attendance/*')) {
+            return $next($request);
+        }
+
         // During local development allow avatar upload endpoint to bypass CSRF
         // to avoid frequent 419 while testing file uploads from different origins.
         try {
             if (app()->environment('local')) {
                 $this->except[] = 'api/upload-avatar';
                 $this->except[] = 'upload-avatar';
+                // Attendance endpoints
+                $this->except[] = 'api/staff/clock-in';
+                $this->except[] = 'api/staff/clock-out';
+                $this->except[] = 'api/staff/attendance/status';
+                $this->except[] = 'api/staff/attendance/history';
+                $this->except[] = 'api/staff/attendance/branch';
             }
         } catch (\Throwable $e) {
             // ignore environment detection failures

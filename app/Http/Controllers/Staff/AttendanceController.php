@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Staff;
 
 use App\Http\Controllers\Controller;
+use App\Models\Attendance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class AttendanceController extends Controller
 {
@@ -14,29 +16,44 @@ class AttendanceController extends Controller
      */
     public function clockIn(Request $request)
     {
-        if (!Auth::check()) {
-            return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
-        }
-
         $user = Auth::user();
-
-        if ($user->role !== 'STAFF') {
-            return response()->json(['success' => false, 'message' => 'Unauthorized - Staff only'], 403);
+        if (!$user) {
+            return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
         }
 
-        // TODO: Check if already clocked in today
-        // TODO: Save to attendance table
+        $today = Carbon::now()->toDateString();
+
+        // Check if already clocked in
+        $attendance = Attendance::where('user_id', $user->id)
+            ->where('date', $today)
+            ->first();
+
+        if ($attendance && $attendance->time_in) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Already clocked in today',
+                'time_in' => $attendance->time_in->format('H:i')
+            ], 400);
+        }
+
+        // Create or update attendance
+        if (!$attendance) {
+            $attendance = new Attendance([
+                'user_id' => $user->id,
+                'date' => $today,
+            ]);
+        }
+
+        $timeIn = Carbon::now();
+        $attendance->time_in = $timeIn;
+        $attendance->status = $this->determineStatus($timeIn);
+        $attendance->save();
 
         return response()->json([
-            'success' => true,
+            'ok' => true,
             'message' => 'Clocked in successfully',
-            'data' => [
-                'staff_id' => $user->id,
-                'staff_name' => $user->full_name,
-                'clock_in_time' => now()->format('H:i:s'),
-                'date' => now()->format('Y-m-d'),
-                'timestamp' => now()->toIso8601String(),
-            ],
+            'time_in' => $timeIn->format('h:i A'),
+            'status' => $attendance->status
         ]);
     }
 
@@ -45,104 +62,181 @@ class AttendanceController extends Controller
      */
     public function clockOut(Request $request)
     {
-        if (!Auth::check()) {
-            return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
-        }
-
         $user = Auth::user();
-
-        if ($user->role !== 'STAFF') {
-            return response()->json(['success' => false, 'message' => 'Unauthorized - Staff only'], 403);
+        if (!$user) {
+            return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
         }
 
-        // TODO: Check if clocked in today
-        // TODO: Update attendance record with clock out time
+        $today = Carbon::now()->toDateString();
+
+        $attendance = Attendance::where('user_id', $user->id)
+            ->where('date', $today)
+            ->first();
+
+        if (!$attendance || !$attendance->time_in) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Not clocked in yet'
+            ], 400);
+        }
+
+        if ($attendance->time_out) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Already clocked out today',
+                'time_out' => $attendance->time_out->format('H:i')
+            ], 400);
+        }
+
+        $timeOut = Carbon::now();
+        $minutesWorked = $timeOut->diffInMinutes($attendance->time_in);
+
+        $attendance->time_out = $timeOut;
+        $attendance->hours_worked = $minutesWorked;
+        $attendance->save();
 
         return response()->json([
-            'success' => true,
+            'ok' => true,
             'message' => 'Clocked out successfully',
-            'data' => [
-                'staff_id' => $user->id,
-                'staff_name' => $user->full_name,
-                'clock_out_time' => now()->format('H:i:s'),
-                'date' => now()->format('Y-m-d'),
-                'hours_worked' => '8.5', // TODO: Calculate from clock_in time
-                'timestamp' => now()->toIso8601String(),
-            ],
+            'time_out' => $timeOut->format('h:i A'),
+            'hours_worked' => round($minutesWorked / 60, 2)
         ]);
     }
 
     /**
-     * Get attendance status for today
+     * Get attendance status (current clocking status)
      */
     public function status(Request $request)
     {
-        if (!Auth::check()) {
-            return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
-        }
-
         $user = Auth::user();
-
-        if ($user->role !== 'STAFF') {
-            return response()->json(['success' => false, 'message' => 'Unauthorized - Staff only'], 403);
+        if (!$user) {
+            return response()->json(['ok' => false], 401);
         }
 
-        // TODO: Query actual attendance table
-        // Mock data for now
+        $today = Carbon::now()->toDateString();
+        $attendance = Attendance::where('user_id', $user->id)
+            ->where('date', $today)
+            ->first();
+
+        if (!$attendance) {
+            return response()->json([
+                'ok' => true,
+                'clocked_in' => false,
+                'clocked_out' => false
+            ]);
+        }
+
         return response()->json([
-            'success' => true,
-            'status' => [
-                'is_clocked_in' => false,
-                'clock_in_time' => null,
-                'clock_out_time' => null,
-                'hours_worked' => 0,
-                'shift_start' => '08:00',
-                'shift_end' => '16:00',
-                'date' => now()->format('Y-m-d'),
-            ],
+            'ok' => true,
+            'clocked_in' => !!$attendance->time_in,
+            'clocked_out' => !!$attendance->time_out,
+            'time_in' => $attendance->time_in?->format('h:i A'),
+            'time_out' => $attendance->time_out?->format('h:i A'),
+            'status' => $attendance->status
         ]);
     }
 
     /**
-     * Get attendance history for staff
+     * Get attendance history for user
      */
     public function history(Request $request)
     {
-        if (!Auth::check()) {
-            return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
-        }
-
         $user = Auth::user();
-
-        if ($user->role !== 'STAFF') {
-            return response()->json(['success' => false, 'message' => 'Unauthorized - Staff only'], 403);
+        if (!$user) {
+            return response()->json(['ok' => false], 401);
         }
 
-        $limit = $request->query('limit', 10);
+        $range = $request->query('range', 'thisMonth');
+        $query = Attendance::where('user_id', $user->id);
 
-        // TODO: Query actual attendance table
-        // Mock data for now
-        $history = [
-            [
-                'date' => now()->subDays(1)->format('Y-m-d'),
-                'clock_in' => '08:05',
-                'clock_out' => '16:10',
-                'hours_worked' => '8.08',
-                'status' => 'completed',
-            ],
-            [
-                'date' => now()->subDays(2)->format('Y-m-d'),
-                'clock_in' => '08:00',
-                'clock_out' => '16:00',
-                'hours_worked' => '8.00',
-                'status' => 'completed',
-            ],
-        ];
+        // Date filtering
+        if ($range === 'today') {
+            $query->where('date', Carbon::now()->toDateString());
+        } elseif ($range === 'thisWeek') {
+            $query->whereBetween('date', [
+                Carbon::now()->startOfWeek(),
+                Carbon::now()->endOfWeek()
+            ]);
+        } elseif ($range === 'thisMonth') {
+            $query->whereBetween('date', [
+                Carbon::now()->startOfMonth(),
+                Carbon::now()->endOfMonth()
+            ]);
+        }
+
+        $records = $query->orderBy('date', 'desc')->get()->map(fn($att) => [
+            'id' => $att->id,
+            'date' => $att->date->format('Y-m-d'),
+            'time_in' => $att->time_in?->format('h:i A'),
+            'time_out' => $att->time_out?->format('h:i A'),
+            'hours_worked' => is_numeric($att->hours_worked) ? round($att->hours_worked / 60, 2) : 0,
+            'status' => $att->status,
+        ]);
 
         return response()->json([
-            'success' => true,
-            'history' => array_slice($history, 0, $limit),
-            'total' => count($history),
+            'ok' => true,
+            'data' => $records
         ]);
     }
+
+    /**
+     * Get attendance records for branch/team (for managers/HR)
+     */
+    public function getBranchAttendance(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user || !in_array($user->role, ['BRANCH_MANAGER', 'HR'])) {
+            return response()->json(['ok' => false, 'message' => 'Forbidden'], 403);
+        }
+
+        $branchId = $user->branch_id;
+        $range = $request->query('range', 'today');
+        $date = $range === 'today' ? Carbon::now()->toDateString() : null;
+
+        $query = Attendance::whereHas('user', function ($q) use ($branchId) {
+            $q->where('branch_id', $branchId);
+        });
+
+        if ($date) {
+            $query->where('date', $date);
+        }
+
+        $records = $query->with('user:id,full_name,username')
+            ->orderBy('date', 'desc')
+            ->orderBy('time_in', 'desc')
+            ->get()
+            ->map(fn($att) => [
+                'id' => $att->id,
+                'user_id' => $att->user_id,
+                'user_name' => $att->user->full_name,
+                'user_username' => $att->user->username,
+                'date' => $att->date->format('Y-m-d'),
+                'time_in' => $att->time_in?->format('h:i A'),
+                'time_out' => $att->time_out?->format('h:i A'),
+                'hours_worked' => is_numeric($att->hours_worked) ? round($att->hours_worked / 60, 2) : 0,
+                'status' => $att->status,
+            ]);
+
+        return response()->json([
+            'ok' => true,
+            'data' => $records
+        ]);
+    }
+
+    /**
+     * Determine attendance status based on time in
+     */
+    private function determineStatus($timeIn)
+    {
+        // Assuming shift starts at 8:00 AM, late after 8:30 AM
+        $shiftStart = $timeIn->copy()->setTime(8, 0, 0);
+        $lateThreshold = $shiftStart->copy()->addMinutes(30);
+
+        if ($timeIn->greaterThan($lateThreshold)) {
+            return 'late';
+        }
+
+        return 'present';
+    }
 }
+
