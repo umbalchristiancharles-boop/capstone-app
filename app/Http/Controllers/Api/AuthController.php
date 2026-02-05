@@ -176,6 +176,17 @@ class AuthController extends Controller
 
         $u = Auth::user();
 
+        // Generate full absolute URL for avatar if it exists
+        $avatarUrl = null;
+        if ($u->avatar_url) {
+            // If avatar_url doesn't start with http, prepend the full URL
+            if (strpos($u->avatar_url, 'http') === 0) {
+                $avatarUrl = $u->avatar_url;
+            } else {
+                $avatarUrl = url($u->avatar_url);
+            }
+        }
+
         return response()->json([
             'ok'   => true,
             'user' => [
@@ -186,7 +197,7 @@ class AuthController extends Controller
                 'contact'   => $u->phone_number ?? null,
                 'branch'    => $u->branch ?? 'Chikin Tayo – QC Main',
                 'accountId' => 'kk' . str_pad($u->id, 5, '0', STR_PAD_LEFT),
-                'avatarUrl' => $u->avatar_url ?? null,
+                'avatarUrl' => $avatarUrl,
             ],
         ]);
     }
@@ -252,15 +263,16 @@ class AuthController extends Controller
             $path = $file->storeAs('avatars', $filename, 'public');
 
             // Update user avatar_url
+            $storePath = '/storage/' . $path;
             DB::table('users')
                 ->where('id', $user->id)
-                ->update(['avatar_url' => '/storage/' . $path]);
+                ->update(['avatar_url' => $storePath]);
 
             Log::debug('uploadAvatar: stored avatar', ['user_id' => $user->id, 'path' => $path]);
 
             return response()->json([
                 'ok'        => true,
-                'avatarUrl' => '/storage/' . $path,
+                'avatarUrl' => url($storePath),
             ]);
         } catch (\Exception $ex) {
             Log::error('uploadAvatar error', ['user_id' => $user->id ?? null, 'exception' => $ex->getMessage()]);
