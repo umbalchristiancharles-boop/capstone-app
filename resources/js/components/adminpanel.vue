@@ -376,6 +376,50 @@
               </div>
             </div>
           </section>
+
+            <!-- Attendance Monitoring (Admin) -->
+            <section class="panel-block">
+              <div class="panel-header" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                <h2>Attendance Monitoring</h2>
+                <div style="display:flex; gap:8px; align-items:center;">
+                  <select v-model="selectedBranchId" @change="loadAdminAttendance(activeRange)" style="padding:6px; border-radius:6px;">
+                    <option :value="null">All branches</option>
+                    <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
+                  </select>
+                  <button class="panel-action" @click="loadAdminAttendance(activeRange)">Refresh</button>
+                </div>
+              </div>
+              <div class="panel-body panel-body--table">
+                <div class="table-header">
+                  <span>Staff Name</span>
+                  <span>Branch</span>
+                  <span>Time In</span>
+                  <span>Time Out</span>
+                  <span>Hours</span>
+                  <span>Status</span>
+                </div>
+
+                <div v-if="adminAttendance.length === 0" class="table-row">
+                  <span>No attendance records for this range.</span>
+                  <span></span><span></span><span></span><span></span><span></span>
+                </div>
+
+                <div v-else v-for="att in adminAttendance" :key="att.id" class="table-row">
+                  <span>{{ att.user_name }}</span>
+                  <span>{{ att.branch_name || '-' }}</span>
+                  <span>{{ att.time_in || '-' }}</span>
+                  <span>{{ att.time_out || '-' }}</span>
+                  <span>{{ att.hours_worked || '-' }}</span>
+                  <span>
+                    <span class="badge" :class="{
+                      'badge--success': att.status === 'present',
+                      'badge--warning': att.status === 'late',
+                      'badge--info': att.status === 'absent'
+                    }">{{ att.status || '-' }}</span>
+                  </span>
+                </div>
+              </div>
+            </section>
         </aside>
       </section>
 
@@ -522,6 +566,9 @@ const topProducts = ref([])
 const lowStockItems = ref([])
 const staffActivity = ref([])
 const adminStaffActivity = ref([])
+const branches = ref([])
+const selectedBranchId = ref(null)
+const adminAttendance = ref([])
 const recentOrders = ref([])
 const showAllOrders = ref(false)
 
@@ -576,6 +623,34 @@ function normalizeUser(u) {
     branch: u.branch ?? (u.branch_name ?? '') ,
     accountId: u.accountId ?? (u.account_id ?? ''),
     avatarUrl: u.avatarUrl ?? (u.avatar_url ?? ''),
+  }
+}
+
+async function loadBranches() {
+  try {
+    const res = await axios.get('/api/admin/branches', { withCredentials: true })
+    if (res.data) {
+      branches.value = res.data || []
+    }
+  } catch (e) {
+    console.error('Error loading branches:', e)
+    branches.value = []
+  }
+}
+
+async function loadAdminAttendance(range = 'today') {
+  try {
+    const params = { range }
+    if (selectedBranchId.value) params.branch_id = selectedBranchId.value
+    const res = await axios.get('/api/admin/attendance', { params, withCredentials: true })
+    if (res.data && res.data.ok) {
+      adminAttendance.value = res.data.data || []
+    } else {
+      adminAttendance.value = []
+    }
+  } catch (e) {
+    console.error('Error loading admin attendance:', e)
+    adminAttendance.value = []
   }
 }
 
@@ -681,6 +756,8 @@ async function changeRange(range) {
   if (activeRange.value === range) return
   activeRange.value = range
   await loadDashboard(range)
+  // reload admin attendance for new range
+  try { await loadAdminAttendance(range) } catch (e) {}
 }
 
 async function openInfoModal() {
@@ -730,28 +807,43 @@ async function onAvatarChange(event) {
   if (!window.confirm('Are you sure you want to change your profile picture?')) return
 
   try {
+    // Get CSRF cookie first
+    try { await axios.get('/sanctum/csrf-cookie', { withCredentials: true }) } catch (e) {}
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    // Get CSRF token from cookie
+    function getCookie(name) { 
+      const m = document.cookie.match(new RegExp('(^|; )' + name + '=([^;]*)'))
+      return m ? m[2] : null 
+    }
+    const xsrf = getCookie('XSRF-TOKEN')
+    
     // Prepare form data
     const formData = new FormData()
     formData.append('avatar', file)
-
-    // Get CSRF cookie
-    try { await axios.get('/sanctum/csrf-cookie', { withCredentials: true }) } catch (e) {}
-    await new Promise(resolve => setTimeout(resolve, 50))
-
-    // Set CSRF token
-    try {
-      function getCookie(name) { const m = document.cookie.match(new RegExp('(^|; )' + name + '=([^;]*)')); return m ? m[2] : null }
-      const xsrf = getCookie('XSRF-TOKEN')
-      if (xsrf) {
-        try { axios.defaults.headers.common['X-XSRF-TOKEN'] = decodeURIComponent(xsrf) } catch (_) { axios.defaults.headers.common['X-XSRF-TOKEN'] = xsrf }
+    if (xsrf) {
+      try { 
+        formData.append('_token', decodeURIComponent(xsrf)) 
+      } catch (_) { 
+        formData.append('_token', xsrf) 
       }
-    } catch (e) {}
+    }
 
-    // Upload directly without reload
-    const res = await axios.post('/api/upload-avatar', formData, {
+    // Set CSRF token in header
+    const config = {
       headers: { 'Content-Type': 'multipart/form-data' },
       withCredentials: true
-    })
+    }
+    if (xsrf) {
+      try { 
+        config.headers['X-XSRF-TOKEN'] = decodeURIComponent(xsrf) 
+      } catch (_) { 
+        config.headers['X-XSRF-TOKEN'] = xsrf 
+      }
+    }
+
+    // Upload
+    const res = await axios.post('/api/upload-avatar', formData, config)
 
     if (res.data && res.data.ok) {
       // Update profile with new avatar URL
@@ -874,6 +966,9 @@ function goToStaffManagement() {
 
 onMounted(() => {
   loadDashboard(activeRange.value)
+  // load branches + attendance overview for admin
+  loadBranches()
+  loadAdminAttendance(activeRange.value)
   axios
     .get('/api/owner-profile', { withCredentials: true })
     .then(res => {

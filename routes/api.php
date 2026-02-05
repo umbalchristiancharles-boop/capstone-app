@@ -12,6 +12,7 @@ use App\Http\Controllers\Manager\StaffManagementController;
 use App\Http\Controllers\Manager\ReportsController;
 use App\Http\Controllers\Staff\StaffDashboardController;
 use App\Http\Controllers\Staff\AttendanceController;
+use App\Http\Controllers\Admin\AttendanceController as AdminAttendanceController;
 use App\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
@@ -96,6 +97,9 @@ Route::middleware('web')->group(function () {
         Route::put('/staff/{id}',       [StaffController::class, 'apiUpdate']);
         Route::delete('/staff/{id}',    [StaffController::class, 'apiDestroy']);
         Route::get('/branches',         [StaffController::class, 'apiBranches']);
+        // Admin attendance monitoring (owner/admin/HR)
+        Route::get('/attendance',       [AdminAttendanceController::class, 'index'])
+            ->withoutMiddleware([VerifyCsrfToken::class]);
     });
 
     // ==========================================
