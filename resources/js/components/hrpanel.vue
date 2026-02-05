@@ -568,6 +568,12 @@
               </div>
 
               <div class="info-row">
+                <span class="info-label">Username</span>
+                <span class="info-value" v-if="!isEditingInfo">{{ hrProfile.username }}</span>
+                <input v-else v-model="hrProfile.username" class="info-input" type="text" />
+              </div>
+
+              <div class="info-row">
                 <span class="info-label">Role</span>
                 <span class="info-value">{{ hrProfile.role }}</span>
               </div>
@@ -587,6 +593,16 @@
               <div class="info-row">
                 <span class="info-label">Department</span>
                 <span class="info-value">{{ hrProfile.department }}</span>
+              </div>
+
+              <div class="info-row" v-if="isEditingInfo">
+                <span class="info-label">New Password (leave blank to keep current)</span>
+                <input v-model="hrProfile.password" class="info-input" type="password" placeholder="Enter new password" />
+              </div>
+
+              <div class="info-row" v-if="isEditingInfo && hrProfile.password">
+                <span class="info-label">Confirm Password</span>
+                <input v-model="hrProfile.confirmPassword" class="info-input" type="password" placeholder="Confirm password" />
               </div>
             </div>
 
@@ -746,9 +762,12 @@ const isClockingInOut = ref(false)
 
 const hrProfile = ref({
   fullName: '',
+  username: '',
   role: 'HR DEPARTMENT',
   email: '',
   contact: '',
+  password: '',
+  confirmPassword: '',
   department: 'Human Resources',
   accountId: '',
   avatarUrl: ''
@@ -770,12 +789,15 @@ const activeRangeLabel = computed(() => {
 })
 
 function normalizeUser(u) {
-  if (!u) return { fullName: '', role: '', email: '', contact: '', department: 'Human Resources', accountId: '', avatarUrl: '' }
+  if (!u) return { fullName: '', username: '', role: '', email: '', contact: '', password: '', confirmPassword: '', department: 'Human Resources', accountId: '', avatarUrl: '' }
   return {
     fullName: u.fullName ?? u.full_name ?? '',
+    username: u.username ?? '',
     role: u.role ?? '',
     email: u.email ?? '',
     contact: u.contact ?? u.phone_number ?? '',
+    password: '',
+    confirmPassword: '',
     department: u.department ?? 'Human Resources',
     accountId: u.accountId ?? u.account_id ?? '',
     avatarUrl: u.avatarUrl ?? u.avatar_url ?? ''
@@ -1002,10 +1024,37 @@ function handleInfoClose() {
 }
 
 async function saveHrInfo() {
+  // Validate password confirmation if password is provided
+  if (hrProfile.value.password && hrProfile.value.password !== hrProfile.value.confirmPassword) {
+    alert('Passwords do not match!')
+    return
+  }
+
+  // Show loading overlay
+  try {
+    if (window.__chikin_temp_overlay) return
+    const overlay = document.createElement('div')
+    overlay.className = 'loading-overlay __chikin_temp_overlay'
+    overlay.style.zIndex = '9999'
+    overlay.style.backdropFilter = 'blur(8px)'
+    overlay.style.webkitBackdropFilter = 'blur(8px)'
+    const logo = new URL('../assets/chikinlogo.png', import.meta.url).href
+    overlay.innerHTML = `\n          <div class="logo-loading-box">\n            <img src="${logo}" alt="Chikin Tayo" class="logo-loading-img" />\n            <p>Saving profile...</p>\n          </div>\n        `
+    document.body.appendChild(overlay)
+    window.__chikin_temp_overlay = overlay
+    try { if (window.pageBlur && typeof window.pageBlur.show === 'function') window.pageBlur.show() } catch (e) {}
+  } catch (e) {}
+
   const payload = {
     fullName: hrProfile.value.fullName,
+    username: hrProfile.value.username,
     email: hrProfile.value.email,
     contact: hrProfile.value.contact,
+  }
+
+  // Only include password if it's been set and is not empty
+  if (hrProfile.value.password) {
+    payload.password = hrProfile.value.password
   }
 
   async function doPut() {
@@ -1017,8 +1066,22 @@ async function saveHrInfo() {
       const res = await doPut()
       if (res.data && res.data.ok) {
         if (res.data.user) hrProfile.value = normalizeUser(res.data.user)
+        // Clear password fields after successful save
+        hrProfile.value.password = ''
+        hrProfile.value.confirmPassword = ''
         isEditingInfo.value = false
         showInfoModal.value = false
+        
+        // Remove overlay and show success
+        try {
+          if (window.__chikin_temp_overlay) {
+            window.__chikin_temp_overlay.remove()
+            window.__chikin_temp_overlay = null
+          }
+        } catch (e) {}
+        try { if (window.pageBlur && typeof window.pageBlur.hide === 'function') window.pageBlur.hide() } catch (e) {}
+        
+        alert('Profile updated successfully!')
         return
       }
     } catch (err) {
@@ -1040,8 +1103,22 @@ async function saveHrInfo() {
           const retry = await doPut()
           if (retry.data && retry.data.ok) {
             if (retry.data.user) hrProfile.value = normalizeUser(retry.data.user)
+            // Clear password fields after successful save
+            hrProfile.value.password = ''
+            hrProfile.value.confirmPassword = ''
             isEditingInfo.value = false
             showInfoModal.value = false
+            
+            // Remove overlay and show success
+            try {
+              if (window.__chikin_temp_overlay) {
+                window.__chikin_temp_overlay.remove()
+                window.__chikin_temp_overlay = null
+              }
+            } catch (e) {}
+            try { if (window.pageBlur && typeof window.pageBlur.hide === 'function') window.pageBlur.hide() } catch (e) {}
+            
+            alert('Profile updated successfully!')
             return
           }
         } catch (e2) {
@@ -1054,13 +1131,59 @@ async function saveHrInfo() {
     // fallback close modal if response not ok
     isEditingInfo.value = false
     showInfoModal.value = false
+    
+    // Remove overlay
+    try {
+      if (window.__chikin_temp_overlay) {
+        window.__chikin_temp_overlay.remove()
+        window.__chikin_temp_overlay = null
+      }
+    } catch (e) {}
+    try { if (window.pageBlur && typeof window.pageBlur.hide === 'function') window.pageBlur.hide() } catch (e) {}
   } catch (e) {
     console.error('Failed to save profile info:', e)
+    // Remove overlay on error
+    try {
+      if (window.__chikin_temp_overlay) {
+        window.__chikin_temp_overlay.remove()
+        window.__chikin_temp_overlay = null
+      }
+    } catch (ex) {}
+    try { if (window.pageBlur && typeof window.pageBlur.hide === 'function') window.pageBlur.hide() } catch (ex) {}
+    
+    const errorMsg = e?.response?.data?.message || e?.message || 'Failed to save profile'
+    alert(errorMsg)
   }
 }
 
 function goToEmployeeManagement() {
-  router.push('/admin/staff-management')
+  try {
+    if (window.__chikin_temp_overlay) return
+    const overlay = document.createElement('div')
+    overlay.className = 'loading-overlay __chikin_temp_overlay'
+    overlay.style.zIndex = '9999'
+    overlay.style.backdropFilter = 'blur(8px)'
+    overlay.style.webkitBackdropFilter = 'blur(8px)'
+    const logo = new URL('../assets/chikinlogo.png', import.meta.url).href
+    overlay.innerHTML = `\n          <div class="logo-loading-box">\n            <img src="${logo}" alt="Chikin Tayo" class="logo-loading-img" />\n            <p>Loading staff management...</p>\n          </div>\n        `
+    document.body.appendChild(overlay)
+    window.__chikin_temp_overlay = overlay
+    // show global page blur so the background is blurred while overlay is visible
+    try { if (window.pageBlur && typeof window.pageBlur.show === 'function') window.pageBlur.show() } catch (e) {}
+
+    // Navigate immediately
+    router.push('/admin/staff-management').catch(() => {
+      // navigation failed; cleanup overlay
+      try {
+        if (window.__chikin_temp_overlay) {
+          window.__chikin_temp_overlay.remove()
+          window.__chikin_temp_overlay = null
+        }
+      } catch (e) {}
+    })
+  } catch (e) {
+    router.push('/admin/staff-management')
+  }
 }
 
 async function onAvatarChange(event) {
@@ -1165,11 +1288,24 @@ onMounted(async () => {
     isProfileLoading.value = false
   }
 
-  // Load dashboard
-  loadHrDashboard(activeRange.value)
-  loadAttendanceStatus()
-  loadAttendanceHistory(activeRange.value)
-  loadBranchAttendance(activeRange.value)
+  // Load dashboard - await all to ensure data loads before rendering
+  await Promise.all([
+    loadHrDashboard(activeRange.value),
+    loadAttendanceStatus(),
+    loadAttendanceHistory(activeRange.value),
+    loadBranchAttendance(activeRange.value)
+  ])
+
+  // Remove loading overlay after content is loaded
+  try {
+    if (window.__chikin_temp_overlay) {
+      window.__chikin_temp_overlay.remove()
+      window.__chikin_temp_overlay = null
+    }
+  } catch (e) {}
+
+  // Hide global page blur if present
+  try { if (window.pageBlur && typeof window.pageBlur.hide === 'function') window.pageBlur.hide() } catch (e) {}
 
   // Non-blocking avatar upload logic (removed pending avatar)
   ;(async () => {

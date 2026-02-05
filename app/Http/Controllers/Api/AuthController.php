@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 
 class AuthController extends Controller
 {
@@ -191,6 +192,7 @@ class AuthController extends Controller
             'ok'   => true,
             'user' => [
                 'id'        => $u->id,
+                'username'  => $u->username ?? null,
                 'fullName'  => $u->full_name ?? null,
                 'role'      => $u->role ?? 'OWNER',
                 'email'     => $u->email ?? null,
@@ -211,25 +213,65 @@ class AuthController extends Controller
             ], 401);
         }
 
+        $userId = Auth::id();
+        
         $validated = $request->validate([
             'fullName' => 'nullable|string|max:255',
+            'username' => ['nullable', 'string', 'max:255', Rule::unique('users', 'username')->ignore($userId)],
             'email'    => 'nullable|email|max:255',
             'contact'  => 'nullable|string|max:20',
+            'password' => 'nullable|string|min:8',
         ]);
 
         $user = Auth::user();
+        $updateData = [
+            'full_name' => $validated['fullName'] ?? $user->full_name,
+            'email'     => $validated['email'] ?? $user->email,
+            'phone_number'     => $validated['contact'] ?? $user->phone_number,
+        ];
+
+        // Update username if provided
+        if (!empty($validated['username'])) {
+            $updateData['username'] = $validated['username'];
+        }
+
+        // Update password if provided
+        if (!empty($validated['password'])) {
+            $updateData['password_hash'] = Hash::make($validated['password']);
+            $updateData['must_change_password'] = false;
+        }
 
         DB::table('users')
-            ->where('id', $user->id)
-            ->update([
-                'full_name' => $validated['fullName'] ?? $user->full_name,
-                'email'     => $validated['email'] ?? $user->email,
-                'phone_number'     => $validated['contact'] ?? $user->phone_number,
-            ]);
+            ->where('id', $userId)
+            ->update($updateData);
+
+        // Fetch and return updated user data
+        $updatedUser = User::find($userId);
+        
+        // Generate full absolute URL for avatar if it exists
+        $avatarUrl = null;
+        if ($updatedUser->avatar_url) {
+            if (strpos($updatedUser->avatar_url, 'http') === 0) {
+                $avatarUrl = $updatedUser->avatar_url;
+            } else {
+                $avatarUrl = url($updatedUser->avatar_url);
+            }
+        }
 
         return response()->json([
             'ok'      => true,
             'message' => 'Profile updated successfully',
+            'user'    => [
+                'id'        => $updatedUser->id,
+                'username'  => $updatedUser->username ?? null,
+                'fullName'  => $updatedUser->full_name ?? null,
+                'role'      => $updatedUser->role ?? 'OWNER',
+                'email'     => $updatedUser->email ?? null,
+                'contact'   => $updatedUser->phone_number ?? null,
+                'branch'    => $updatedUser->branch ?? 'Chikin Tayo – QC Main',
+                'accountId' => 'kk' . str_pad($updatedUser->id, 5, '0', STR_PAD_LEFT),
+                'avatarUrl' => $avatarUrl,
+            ],
         ]);
     }
 

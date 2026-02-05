@@ -396,32 +396,7 @@
 /* Orders table body with scroll */
 .panel-body--table {
   font-size: 0.8rem;
-  height: 190px;          /* adjust kung gusto mo mas mataas/mababa */
-  overflow-y: auto;       /* dito lalabas ang scroll */
-  padding-right: 6px;     /* para di sumagad sa scrollbar */
 }
-
-/* Chrome, Edge, Safari scrollbar */
-.panel-body--table::-webkit-scrollbar {
-  width: 6px;
-}
-
-.panel-body--table::-webkit-scrollbar-track {
-  background: #fdd9a3;
-  border-radius: 999px;
-}
-
-.panel-body--table::-webkit-scrollbar-thumb {
-  background: #f5b46b;
-  border-radius: 999px;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6);
-}
-
-.panel-body--table::-webkit-scrollbar-thumb:hover {
-  background: #f39a3d;
-}
-
-
 
 .table-header,
 .table-row {

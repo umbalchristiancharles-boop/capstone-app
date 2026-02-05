@@ -249,6 +249,7 @@ export default {
       // store manager's branch id when available
       managerBranchId: sessionStorage.getItem('user_branch_id') || null,
       currentUserId: null,
+      currentUserRole: null,
       alertMessage: '',
       alertType: 'success',
       deletingIds: [],
@@ -275,19 +276,30 @@ export default {
         // show global page blur so the background is blurred while overlay is visible
         try { if (window.pageBlur && typeof window.pageBlur.show === 'function') window.pageBlur.show() } catch (e) {}
 
-        setTimeout(() => {
-          this.$router.push('/admin-panel').catch(() => {
-            // navigation failed; leave cleanup to destination page
-          })
-        }, 220)
+        // Determine which dashboard to go to based on current user's role from API
+        const dashboardRoute = this.currentUserRole === 'HR' ? '/hr-panel' : '/admin-panel'
+
+        // Navigate immediately without delay
+        this.$router.push(dashboardRoute).catch(() => {
+          // navigation failed; cleanup overlay
+          try {
+            if (window.__chikin_temp_overlay) {
+              window.__chikin_temp_overlay.remove()
+              window.__chikin_temp_overlay = null
+            }
+          } catch (e) {}
+        })
       } catch (e) {
-        this.$router.push('/admin-panel')
+        // Fallback: use current user role if available, otherwise admin
+        const dashboardRoute = this.currentUserRole === 'HR' ? '/hr-panel' : '/admin-panel'
+        this.$router.push(dashboardRoute)
       }
     },
     async setCurrentUserRole() {
       try {
         const res = await axios.get('/api/me', { withCredentials: true })
         if (res.data?.ok && res.data.user) {
+          this.currentUserRole = res.data.user.role
           this.isBranchManager = res.data.user.role === 'BRANCH_MANAGER'
           this.currentUserId = res.data.user.id
           // capture branch id for branch managers so modals can default branch

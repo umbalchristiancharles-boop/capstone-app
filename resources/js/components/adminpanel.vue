@@ -889,7 +889,18 @@ onMounted(async () => {
   }
 
   // Now load dashboard after initial mount flag is set
-  loadDashboard(activeRange.value)
+  await loadDashboard(activeRange.value)
+
+  // Remove loading overlay after content is loaded
+  try {
+    if (window.__chikin_temp_overlay) {
+      window.__chikin_temp_overlay.remove()
+      window.__chikin_temp_overlay = null
+    }
+  } catch (e) {}
+
+  // Hide global page blur if present
+  try { if (window.pageBlur && typeof window.pageBlur.hide === 'function') window.pageBlur.hide() } catch (e) {}
 })
 
 async function confirmLogout() {
