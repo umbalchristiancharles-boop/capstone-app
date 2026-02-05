@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 04, 2026 at 05:44 PM
+-- Generation Time: Feb 05, 2026 at 05:45 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -251,10 +251,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('aKVzknoYwaiglGaTniXWglRPvAV1ewfoLTlStKAl', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiVzhYdzlIMTBQNVp2UnVUdUFhNE9aUWFMc2k0TmdYTEV2OG5jT3diZyI7czo3OiJzdWNjZXNzIjtzOjI0OiJMb2dnZWQgb3V0IHN1Y2Nlc3NmdWxseS4iO3M6NjoiX2ZsYXNoIjthOjI6e3M6MzoibmV3IjthOjA6e31zOjM6Im9sZCI7YToxOntpOjA7czo3OiJzdWNjZXNzIjt9fXM6OToiX3ByZXZpb3VzIjthOjI6e3M6MzoidXJsIjtzOjI4OiJodHRwOi8vbG9jYWxob3N0OjgwMDAvbG9nb3V0IjtzOjU6InJvdXRlIjtzOjY6ImxvZ291dCI7fX0=', 1770221896),
-('CTN6VgGHreHHlw1Vb2QLRfb9qj3ESK31INhDTMO1', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoidVkzcjI3ZjVvaXY1WHpDdjNpTlJRZFFPaE5aa21PcGoyZVJ4Qzl2cSI7czo3OiJzdWNjZXNzIjtzOjI0OiJMb2dnZWQgb3V0IHN1Y2Nlc3NmdWxseS4iO3M6NjoiX2ZsYXNoIjthOjI6e3M6MzoibmV3IjthOjA6e31zOjM6Im9sZCI7YToxOntpOjA7czo3OiJzdWNjZXNzIjt9fXM6OToiX3ByZXZpb3VzIjthOjI6e3M6MzoidXJsIjtzOjI4OiJodHRwOi8vbG9jYWxob3N0OjgwMDAvbG9nb3V0IjtzOjU6InJvdXRlIjtzOjY6ImxvZ291dCI7fX0=', 1770218564),
-('MFbZeMiZc3h1k2BuCdoIta2moz0qBoq85SiBkml9', 26, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiMUhEVVU2T2Z2aUhsUDBDRElIQ1RMbnAxamN5SWhFSFc1dFRzaWFkNSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9tYW5hZ2VyLXBhbmVsIjtzOjU6InJvdXRlIjtzOjE3OiJtYW5hZ2VyLmRhc2hib2FyZCI7fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjI2O30=', 1770223334),
-('sbDaXq1p7V5dK8ziD441o2mUd4yw4pR0Yg6GeBAC', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiUU9HVkdpaXNUcXN5QldZc2JSSzNybmRGeWlOUVhudGxWVjFrdUdmMSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1770216948);
+('0lRdebjUDbjkqc7PiI2L5ttt1tZZ88PvHphsHZZX', 26, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiSGJmWEE5V2F1bkl6NlFtNE05TE5XZmNVV3FwcTJzblJSM0ZxbjU2aSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjI2O30=', 1770266234);
 
 -- --------------------------------------------------------
 
@@ -289,7 +286,7 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `full_name`, `role`, `avatarUrl`, `branch_id`, `avatar_url`, `phone_number`, `address`, `is_active`, `created_at`, `updated_at`, `deleted_at`, `remember_token`, `password`, `must_change_password`) VALUES
 (11, 'owner_admin', 'calicamarkjulius@gmail.com', '$2y$12$0UbstBBBR2nY9p9ZANRp1OxlBwWoZeZ/9Zx7WuDERrtMbrq1V/auy', 'System Administrato', 'OWNER', NULL, NULL, '/storage/avatars/avatar_11_1770130083.png', '09123456789', 'Main Office', 1, '2026-01-13 16:05:28', '2026-02-03 14:48:03', NULL, 'lPthjWkCI5hI8qrTo4E5T4KwKp5h71FQPVylSOXwf3DBa1Os86WFnEgfNw7I', '$2y$12$sFbzg7dPLe0R/gYGAzVSjew8oDu8YcxgJ1O5f6x2dC7GgmUmlJNca', 0),
-(26, 'Paul Berrer', 'paul@gmail.com', '$2y$12$oF3pFH7PntX8XLGkAxwPJunUq7EHP4Gb7Fo6xZqXvXM6cUNkNdlfS', 'Astronaut Bm', 'BRANCH_MANAGER', NULL, 1, '/storage/avatars/avatar_26_1770130934.jpg', '09099628117', 'Dito lang din sa TEXAS magkabilang bahay lang kami ni undertaker.', 1, '2026-01-29 11:21:45', '2026-02-03 15:03:12', NULL, NULL, NULL, 0),
+(26, 'Paul Berrer', 'paul@gmail.com', '$2y$12$oF3pFH7PntX8XLGkAxwPJunUq7EHP4Gb7Fo6xZqXvXM6cUNkNdlfS', 'Astronaut Bm', 'BRANCH_MANAGER', NULL, 1, '/storage/avatars/avatar_26_1770266168.jpg', '09099628117', 'Dito lang din sa TEXAS magkabilang bahay lang kami ni undertaker.', 1, '2026-01-29 11:21:45', '2026-02-05 04:36:08', NULL, NULL, NULL, 0),
 (28, 'Gabby', 'gabby@gmail.com', '$2y$12$660MZKQoGT/IGQzw8BNDd.jB3pxsGcrY09qhKFOV1Yf7TuL05KOLW', 'Gabriel Louis Ongsip', 'STAFF', NULL, 1, '/storage/avatars/avatar_28_1770134067.jpg', '09295426078', 'Summer Wind, Villa Isabel', 1, '2026-01-29 13:56:44', '2026-02-03 16:02:08', NULL, NULL, NULL, 0),
 (30, 'asd', 'asd@gmail.com', '$2y$12$qE1aiUPfZ/AYw9pgeFxBVecPCmDf7fwZZ4Mb4n4ukomWZ9Qf/d7VG', 'AKO ANG HR', 'HR', NULL, 1, '/storage/avatars/avatar_30_1770132011.png', '09123456783', NULL, 1, '2026-01-29 22:20:38', '2026-02-03 15:50:24', NULL, NULL, NULL, 0),
 (33, 'charles_bm', 'christianumbal12@gmail.com', '$2y$12$EeJiLxJphtI/EhI6ZZZMROYlcPYc.Unu9IYTjZobJYLRLoOPUcx42', 'Christian Charles Umbal', 'BRANCH_MANAGER', NULL, 2, NULL, '+63 908 171 8908', 'Alfonso Cavite', 1, '2026-02-02 07:58:19', '2026-02-02 08:19:03', NULL, NULL, NULL, 0);

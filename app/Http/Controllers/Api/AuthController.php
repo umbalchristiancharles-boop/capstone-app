@@ -20,7 +20,7 @@ class AuthController extends Controller
         ]);
 
         // Debug: log credentials and password hash
-        $user = \App\Models\User::where('username', $credentials['username'])->first();
+        $user = User::where('username', $credentials['username'])->first();
         Log::debug('Login attempt', [
             'username' => $credentials['username'],
             'input_password' => $credentials['password'],
@@ -144,7 +144,7 @@ class AuthController extends Controller
             ],
         ]);
 
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
 
         if (!Hash::check($request->input('current_password'), $user->password_hash)) {
