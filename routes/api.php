@@ -13,6 +13,7 @@ use App\Http\Controllers\Manager\ReportsController;
 use App\Http\Controllers\Staff\StaffDashboardController;
 use App\Http\Controllers\Staff\AttendanceController;
 use App\Http\Controllers\Admin\AttendanceController as AdminAttendanceController;
+use App\Http\Controllers\TimesheetController;
 use App\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
@@ -97,6 +98,11 @@ Route::middleware('web')->group(function () {
         Route::put('/staff/{id}',       [StaffController::class, 'apiUpdate']);
         Route::delete('/staff/{id}',    [StaffController::class, 'apiDestroy']);
         Route::get('/branches',         [StaffController::class, 'apiBranches']);
+
+        // Document routes
+        Route::get('/staff/{id}/document/{documentType}', [StaffController::class, 'downloadDocument']);
+        Route::delete('/staff/{id}/document/{documentType}', [StaffController::class, 'deleteDocument']);
+        Route::post('/staff/{id}/document/{documentType}', [StaffController::class, 'uploadDocument']);
         // Admin attendance monitoring (owner/admin/HR)
         Route::get('/attendance',       [AdminAttendanceController::class, 'index'])
             ->withoutMiddleware([VerifyCsrfToken::class]);
@@ -148,4 +154,4 @@ Route::middleware('web')->group(function () {
             ->withoutMiddleware([VerifyCsrfToken::class]);
     });
 
-});
+    });

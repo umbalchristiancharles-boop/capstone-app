@@ -386,9 +386,24 @@ export default {
       this.showModal = true
     },
 
-    editStaff(staff, branchId) {
+    async editStaff(staff, branchId) {
       this.selectedStaff = { ...staff, branch_id: branchId }
       this.showModal = true
+
+      try {
+        const res = await axios.get(`/api/admin/staff/${staff.id}`, { withCredentials: true })
+        if (res.data?.success && res.data.data) {
+          const data = res.data.data
+          this.selectedStaff = {
+            ...data,
+            branch_id: data.branch_id || branchId,
+          }
+        } else {
+          this.showAlert(res.data?.message || 'Failed to load staff documents', 'error')
+        }
+      } catch (error) {
+        this.showAlert(error.response?.data?.message || 'Failed to load staff documents', 'error')
+      }
     },
 
     async confirmDelete(id, username) {

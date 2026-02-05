@@ -125,7 +125,7 @@
               </div>
 
               <!-- Role -->
-              <!-- When creating a staff account show the select; when editing, show read-only role text -->
+              <!-- When creating a staff account show the role; when editing, show read-only role text -->
               <div class="form-group" v-if="!branchManagerMode && !isEdit">
                 <label for="role" class="form-label">Role *</label>
                 <select
@@ -134,10 +134,7 @@
                   class="form-input"
                   required
                 >
-                  <option value="" disabled>Select Role</option>
                   <option value="BRANCH_MANAGER">Branch Manager</option>
-                  <option value="STAFF">Staff</option>
-                  <option value="HR">HR</option>
                 </select>
               </div>
               <div v-else-if="!branchManagerMode && isEdit" class="form-group">
@@ -177,6 +174,170 @@
                 class="form-input"
                 placeholder="Enter address"
               ></textarea>
+            </div>
+
+            <!-- Documents (Create Only) -->
+            <div v-if="!isEdit" class="form-group">
+              <label class="form-label">Resume or Biodata *</label>
+              <input
+                type="file"
+                class="form-input"
+                accept=".jpg,.jpeg,.png,.webp,.pdf"
+                required
+                @change="handleFileChange('resume', $event)"
+              >
+            </div>
+            <div v-if="!isEdit" class="form-group">
+              <label class="form-label">Valid Government-issued ID *</label>
+              <input
+                type="file"
+                class="form-input"
+                accept=".jpg,.jpeg,.png,.webp,.pdf"
+                required
+                @change="handleFileChange('government_id', $event)"
+              >
+            </div>
+            <div v-if="!isEdit" class="form-group">
+              <label class="form-label">PSA Birth Certificate *</label>
+              <input
+                type="file"
+                class="form-input"
+                accept=".jpg,.jpeg,.png,.webp,.pdf"
+                required
+                @change="handleFileChange('psa_birth_certificate', $event)"
+              >
+            </div>
+            <div v-if="!isEdit" class="form-group">
+              <label class="form-label">NBI Clearance *</label>
+              <input
+                type="file"
+                class="form-input"
+                accept=".jpg,.jpeg,.png,.webp,.pdf"
+                required
+                @change="handleFileChange('nbi_clearance', $event)"
+              >
+            </div>
+            <div v-if="!isEdit" class="form-group">
+              <label class="form-label">Police Clearance *</label>
+              <input
+                type="file"
+                class="form-input"
+                accept=".jpg,.jpeg,.png,.webp,.pdf"
+                required
+                @change="handleFileChange('police_clearance', $event)"
+              >
+            </div>
+            <div v-if="!isEdit" class="form-group">
+              <label class="form-label">Medical Certificate / Health Clearance *</label>
+              <input
+                type="file"
+                class="form-input"
+                accept=".jpg,.jpeg,.png,.webp,.pdf"
+                required
+                @change="handleFileChange('medical_certificate', $event)"
+              >
+            </div>
+            <div v-if="!isEdit" class="form-group">
+              <label class="form-label">Drug Test Result *</label>
+              <input
+                type="file"
+                class="form-input"
+                accept=".jpg,.jpeg,.png,.webp,.pdf"
+                required
+                @change="handleFileChange('drug_test_result', $event)"
+              >
+            </div>
+            <div v-if="!isEdit" class="form-group">
+              <label class="form-label">SSS Number / SSS ID *</label>
+              <input
+                type="file"
+                class="form-input"
+                accept=".jpg,.jpeg,.png,.webp,.pdf"
+                required
+                @change="handleFileChange('sss_id', $event)"
+              >
+            </div>
+            <div v-if="!isEdit" class="form-group">
+              <label class="form-label">PhilHealth Number / ID *</label>
+              <input
+                type="file"
+                class="form-input"
+                accept=".jpg,.jpeg,.png,.webp,.pdf"
+                required
+                @change="handleFileChange('philhealth_id', $event)"
+              >
+            </div>
+            <div v-if="!isEdit" class="form-group">
+              <label class="form-label">Pag-IBIG Number / MDF *</label>
+              <input
+                type="file"
+                class="form-input"
+                accept=".jpg,.jpeg,.png,.webp,.pdf"
+                required
+                @change="handleFileChange('pagibig_mdf', $event)"
+              >
+            </div>
+            <div v-if="!isEdit" class="form-group">
+              <label class="form-label">TIN (Tax Identification Number) *</label>
+              <input
+                type="file"
+                class="form-input"
+                accept=".jpg,.jpeg,.png,.webp,.pdf"
+                required
+                @change="handleFileChange('tin_id', $event)"
+              >
+            </div>
+            <div v-if="!isEdit" class="form-group">
+              <label class="form-label">Diploma / Transcript / Certificate of Enrollment *</label>
+              <input
+                type="file"
+                class="form-input"
+                accept=".jpg,.jpeg,.png,.webp,.pdf"
+                required
+                @change="handleFileChange('diploma_transcript', $event)"
+              >
+            </div>
+
+            <!-- Documents (Edit Only - View/Download/Delete/Upload) -->
+            <div v-if="isEdit && documents" class="documents-section">
+              <h4 class="documents-title">Staff Documents</h4>
+              <div class="documents-grid">
+                <div 
+                  v-for="(doc, docType) in getDocumentLabels()"
+                  :key="docType"
+                  class="document-item"
+                >
+                  <label class="doc-label">{{ doc.label }}</label>
+                  <div class="doc-controls">
+                    <div v-if="documents[docType]" class="doc-exists">
+                      <button 
+                        type="button"
+                        @click="downloadDocument(docType)"
+                        class="btn-doc-action btn-download"
+                        title="Download"
+                      >
+                        ⬇️ Download
+                      </button>
+                      <button
+                        type="button"
+                        @click="deleteDocument(docType)"
+                        class="btn-doc-action btn-delete-doc"
+                        :disabled="deletingDocs.includes(docType)"
+                        title="Delete"
+                      >
+                        {{ deletingDocs.includes(docType) ? '❌ Deleting...' : '🗑️ Delete' }}
+                      </button>
+                    </div>
+                    <input
+                      type="file"
+                      @change="(e) => handleDocumentUpload(docType, e)"
+                      accept=".jpg,.jpeg,.png,.webp,.pdf"
+                      class="doc-upload-input"
+                      :key="`upload-${docType}`"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- Error Message -->
@@ -258,9 +419,26 @@ export default {
         address: '',
         isActive: true
       },
+      documentFiles: {
+        resume: null,
+        government_id: null,
+        psa_birth_certificate: null,
+        nbi_clearance: null,
+        police_clearance: null,
+        medical_certificate: null,
+        drug_test_result: null,
+        sss_id: null,
+        philhealth_id: null,
+        pagibig_mdf: null,
+        tin_id: null,
+        diploma_transcript: null,
+      },
       branches: [],
       errorMessage: '',
       isSubmitting: false,
+      documents: null,
+      deletingDocs: [],
+      uploadingDocs: {},
     }
   },
   watch: {
@@ -285,6 +463,7 @@ export default {
               address: this.staff.address || '',
               isActive: this.staff.is_active !== undefined ? Boolean(this.staff.is_active) : true
             }
+            this.documents = this.staff.documents || {}
           } else {
             // Reset form for new staff
             this.form = {
@@ -295,7 +474,7 @@ export default {
               password: '',
               phone: '',
               branchId: '',
-              role: this.branchManagerMode ? 'STAFF' : '',
+              role: this.branchManagerMode ? 'STAFF' : 'BRANCH_MANAGER',
               address: '',
               isActive: true
             }
@@ -303,6 +482,8 @@ export default {
             if (this.branchManagerMode && this.branchForManager) {
               this.form.branchId = this.branchForManager
             }
+
+            this.resetDocumentFiles()
           }
 
           this.errorMessage = ''
@@ -311,6 +492,76 @@ export default {
     }
   },
   methods: {
+    resetDocumentFiles() {
+      this.documentFiles = {
+        resume: null,
+        government_id: null,
+        psa_birth_certificate: null,
+        nbi_clearance: null,
+        police_clearance: null,
+        medical_certificate: null,
+        drug_test_result: null,
+        sss_id: null,
+        philhealth_id: null,
+        pagibig_mdf: null,
+        tin_id: null,
+        diploma_transcript: null,
+      }
+    },
+
+    handleFileChange(key, event) {
+      const file = event?.target?.files?.[0] || null
+      this.documentFiles[key] = file
+    },
+
+    getRequiredDocuments() {
+      return {
+        resume: 'Resume or Biodata',
+        government_id: 'Valid Government-issued ID',
+        psa_birth_certificate: 'PSA Birth Certificate',
+        nbi_clearance: 'NBI Clearance',
+        police_clearance: 'Police Clearance',
+        medical_certificate: 'Medical Certificate / Health Clearance',
+        drug_test_result: 'Drug Test Result',
+        sss_id: 'SSS Number / SSS ID',
+        philhealth_id: 'PhilHealth Number / ID',
+        pagibig_mdf: 'Pag-IBIG Number / MDF',
+        tin_id: 'TIN (Tax Identification Number)',
+        diploma_transcript: 'Diploma / Transcript / Certificate of Enrollment',
+      }
+    },
+
+    getMissingDocuments() {
+      const required = this.getRequiredDocuments()
+      return Object.keys(required).filter(key => !this.documentFiles[key])
+        .map(key => required[key])
+    },
+
+    buildCreateFormData() {
+      const formData = new FormData()
+      const role = this.branchManagerMode ? 'STAFF' : 'BRANCH_MANAGER'
+      const branchId = this.branchManagerMode && this.branchForManager
+        ? this.branchForManager
+        : this.form.branchId
+
+      formData.append('username', this.form.username)
+      formData.append('email', this.form.email)
+      formData.append('fullName', this.form.fullName)
+      formData.append('phone', this.form.phone || '')
+      formData.append('address', this.form.address || '')
+      formData.append('branchId', branchId || '')
+      formData.append('role', role)
+      formData.append('password', this.defaultPassword)
+
+      Object.entries(this.documentFiles).forEach(([key, file]) => {
+        if (file) {
+          formData.append(key, file)
+        }
+      })
+
+      return formData
+    },
+
     async loadBranches() {
       try {
         const res = await axios.get('/api/admin/branches', {
@@ -334,6 +585,15 @@ export default {
     async submitForm() {
       this.isSubmitting = true
       this.errorMessage = ''
+
+      if (!this.isEdit) {
+        const missingDocs = this.getMissingDocuments()
+        if (missingDocs.length > 0) {
+          this.errorMessage = `Please upload required documents: ${missingDocs.join(', ')}`
+          this.isSubmitting = false
+          return
+        }
+      }
 
       // Ensure CSRF cookie/header are set before submitting
       try {
@@ -370,13 +630,16 @@ export default {
           method = 'POST'
         }
 
-        // For create, enforce default password
+        let payload = this.form
+        let headers
+
         if (!this.isEdit) {
-          this.form.password = this.defaultPassword
+          payload = this.buildCreateFormData()
+          headers = { 'Content-Type': 'multipart/form-data' }
         }
 
         // Send form data
-        const res = await axios({ method, url, data: this.form })
+        const res = await axios({ method, url, data: payload, headers })
 
         if (res.data.success) {
           this.$emit('success', res.data)
@@ -399,7 +662,9 @@ export default {
             }
 
             // retry the original request once
-            const retryRes = await axios({ method, url, data: this.form })
+            const retryPayload = this.isEdit ? this.form : this.buildCreateFormData()
+            const retryHeaders = this.isEdit ? undefined : { 'Content-Type': 'multipart/form-data' }
+            const retryRes = await axios({ method, url, data: retryPayload, headers: retryHeaders })
             if (retryRes.data && retryRes.data.success) {
               this.$emit('success', retryRes.data)
               this.closeModal()
@@ -436,6 +701,88 @@ export default {
     closeModal() {
       this.errorMessage = ''
       this.$emit('close')
+    },
+
+    getDocumentLabels() {
+      return {
+        resume: { label: 'Resume or Biodata' },
+        government_id: { label: 'Valid Government-issued ID' },
+        psa_birth_certificate: { label: 'PSA Birth Certificate' },
+        nbi_clearance: { label: 'NBI Clearance' },
+        police_clearance: { label: 'Police Clearance' },
+        medical_certificate: { label: 'Medical Certificate / Health Clearance' },
+        drug_test_result: { label: 'Drug Test Result' },
+        sss_id: { label: 'SSS Number / SSS ID' },
+        philhealth_id: { label: 'PhilHealth Number / ID' },
+        pagibig_mdf: { label: 'Pag-IBIG Number / MDF' },
+        tin_id: { label: 'TIN (Tax Identification Number)' },
+        diploma_transcript: { label: 'Diploma / Transcript / Certificate of Enrollment' },
+      }
+    },
+
+    downloadDocument(docType) {
+      const url = `/api/admin/staff/${this.form.id}/document/${docType}`
+      window.open(url, '_blank')
+    },
+
+    async deleteDocument(docType) {
+      if (!confirm(`Delete this ${this.getDocumentLabels()[docType].label}?`)) {
+        return
+      }
+
+      this.deletingDocs.push(docType)
+
+      try {
+        const res = await axios.delete(`/api/admin/staff/${this.form.id}/document/${docType}`, {
+          withCredentials: true
+        })
+
+        if (res.data.success) {
+          this.documents[docType] = null
+          this.$forceUpdate()
+        } else {
+          this.errorMessage = res.data.message || 'Failed to delete document'
+        }
+      } catch (e) {
+        console.error('Delete error:', e)
+        this.errorMessage = e.response?.data?.message || 'Failed to delete document'
+      } finally {
+        this.deletingDocs = this.deletingDocs.filter(d => d !== docType)
+      }
+    },
+
+    async handleDocumentUpload(docType, event) {
+      const file = event?.target?.files?.[0]
+      if (!file) return
+
+      this.uploadingDocs[docType] = true
+
+      try {
+        const formData = new FormData()
+        formData.append('file', file)
+
+        const res = await axios.post(`/api/admin/staff/${this.form.id}/document/${docType}`, formData, {
+          withCredentials: true,
+          headers: { 'Content-Type': 'multipart/form-data' }
+        })
+
+        if (res.data.success) {
+          if (this.documents) {
+            this.documents[docType] = {
+              path: res.data.path,
+              url: `/api/admin/staff/${this.form.id}/document/${docType}`
+            }
+          }
+          this.$forceUpdate()
+        } else {
+          this.errorMessage = res.data.message || 'Failed to upload document'
+        }
+      } catch (e) {
+        console.error('Upload error:', e)
+        this.errorMessage = e.response?.data?.message || 'Failed to upload document'
+      } finally {
+        delete this.uploadingDocs[docType]
+      }
     }
   }
 }
@@ -651,6 +998,108 @@ btn-primary:hover:not(:disabled) {
   border-color: #d1d5db;
 }
 
+.documents-section {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid #e5e7eb;
+}
+
+.documents-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.documents-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.document-item {
+  padding: 1rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.doc-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.doc-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.doc-exists {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.btn-doc-action {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex: 1;
+  min-width: 80px;
+}
+
+.btn-download {
+  background: #3b82f6;
+  color: white;
+}
+
+.btn-download:hover {
+  background: #2563eb;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.btn-delete-doc {
+  background: #ef4444;
+  color: white;
+}
+
+.btn-delete-doc:hover:not(:disabled) {
+  background: #dc2626;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.btn-delete-doc:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.doc-upload-input {
+  padding: 0.5rem;
+  font-size: 0.75rem;
+  border: 1px dashed #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.doc-upload-input:hover {
+  border-color: #ff7e5f;
+  background: rgba(255, 126, 95, 0.05);
+}
+
 @media (max-width: 640px) {
   .modal-container {
     padding: 0.5rem;
@@ -679,6 +1128,18 @@ btn-primary:hover:not(:disabled) {
 
   .form-group:nth-child(n+5) {
     grid-column: span 1;
+  }
+
+  .documents-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .btn-doc-action {
+    min-width: auto;
+  }
+
+  .doc-exists {
+    flex-direction: column;
   }
 }
 </style>
