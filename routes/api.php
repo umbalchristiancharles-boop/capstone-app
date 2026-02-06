@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use App\Models\User;  // ← ADDED: Import your User model
+use App\Http\Controllers\Api\ProductCommentController;
 
 // API routes using session (web guard)
 Route::middleware('web')->group(function () {
@@ -28,6 +29,15 @@ Route::middleware('web')->group(function () {
     Route::get('/csrf-token', function () {
         return response()->json(['token' => csrf_token()]);
     });
+
+    // ==========================================
+    // PRODUCT COMMENTS (PUBLIC)
+    // ==========================================
+    Route::get('/product-comments', [ProductCommentController::class, 'index']);
+    Route::post('/product-comments', [ProductCommentController::class, 'store'])
+        ->middleware('throttle:10,1');
+    Route::post('/product-comment-replies', [ProductCommentController::class, 'storeReply'])
+        ->middleware('throttle:10,1');
 
     // ==========================================
     // AUTH & PROFILE ROUTES

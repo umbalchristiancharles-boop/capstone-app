@@ -168,20 +168,13 @@ async function handleLogin() {
 function handleBack() {
     if (isLoading.value) return;
 
-    // Try to go back in history first
-    if (window.history.length > 1) {
-        window.history.back();
-    } else {
-        // If no history, navigate to home
-        isLoading.value = true;
-        overlayText.value = "Loading home page...";
-        setTimeout(() => {
-            showOverlay.value = true;
-            setTimeout(() => {
-                router.push("/");
-            }, 600);
-        }, 400);
-    }
+    isLoading.value = true;
+    overlayText.value = "Loading CHIKIN TAYO...";
+    showOverlay.value = true;
+
+    setTimeout(() => {
+        router.push("/");
+    }, 2000);
 }
 
 function resolveRedirectPath(role) {
