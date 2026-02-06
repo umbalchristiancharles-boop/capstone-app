@@ -277,7 +277,9 @@ export default {
         try { if (window.pageBlur && typeof window.pageBlur.show === 'function') window.pageBlur.show() } catch (e) {}
 
         // Determine which dashboard to go to based on current user's role from API
-        const dashboardRoute = this.currentUserRole === 'HR' ? '/hr-panel' : '/admin-panel'
+        const dashboardRoute = this.currentUserRole === 'HR'
+          ? '/hr-panel'
+          : (this.currentUserRole === 'BRANCH_MANAGER' ? '/manager-panel' : '/admin-panel')
 
         // Navigate immediately without delay
         this.$router.push(dashboardRoute).catch(() => {
@@ -291,7 +293,9 @@ export default {
         })
       } catch (e) {
         // Fallback: use current user role if available, otherwise admin
-        const dashboardRoute = this.currentUserRole === 'HR' ? '/hr-panel' : '/admin-panel'
+        const dashboardRoute = this.currentUserRole === 'HR'
+          ? '/hr-panel'
+          : (this.currentUserRole === 'BRANCH_MANAGER' ? '/manager-panel' : '/admin-panel')
         this.$router.push(dashboardRoute)
       }
     },

@@ -34,7 +34,7 @@ class StaffController extends Controller
                 'cookie_header' => $request->header('cookie'),
                 'x_xsrf_token' => $request->header('x-xsrf-token'),
                 'x_xsrf_token_alt' => $request->header('x-xsrf-token'),
-                'cookies' => $request->cookies->all(),
+                'cookies' => $request->header('cookie'),
             ]);
 
             return response()->json([
@@ -206,7 +206,7 @@ class StaffController extends Controller
         }
 
         // Fetch documents
-        $documents = StaffDocument::where('user_id', $id)->first();
+        $documents = StaffDocument::where('user_id', '=', $id)->first();
         $documentsList = [];
 
         if ($documents) {
@@ -252,8 +252,19 @@ class StaffController extends Controller
             'all' => $request->all()
         ]);
         try {
-            $isAdmin = in_array($user->role, ['OWNER', 'ADMIN']);
-            $roleRule = $isAdmin ? 'nullable|in:BRANCH_MANAGER' : 'required|in:BRANCH_MANAGER,STAFF,HR';
+            $allowedRoles = [];
+            if (in_array($user->role, ['OWNER', 'ADMIN'])) {
+                $allowedRoles = ['BRANCH_MANAGER'];
+            } elseif ($user->role === 'BRANCH_MANAGER') {
+                $allowedRoles = ['HR', 'STAFF'];
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Forbidden'
+                ], 403);
+            }
+
+            $roleRule = 'required|in:' . implode(',', $allowedRoles);
             $fileRule = 'required|file|mimes:jpg,jpeg,png,webp,pdf|max:5120';
 
             $request->validate([
@@ -281,7 +292,7 @@ class StaffController extends Controller
                 'diploma_transcript' => $fileRule,
             ]);
 
-            $role = $isAdmin ? 'BRANCH_MANAGER' : $request->input('role');
+            $role = $request->input('role');
 
             // Accept both camelCase and snake_case for robustness
             $fullName = $request->input('fullName') ?? $request->input('full_name');
@@ -313,6 +324,13 @@ class StaffController extends Controller
                 ], 403);
             }
 
+            if ($user->role === 'BRANCH_MANAGER' && $user->branch_id && (int) $branchId !== (int) $user->branch_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Forbidden'
+                ], 403);
+            }
+
             $transactionStarted = false;
             $docDir = null;
 
@@ -322,7 +340,7 @@ class StaffController extends Controller
             $insertData = [
                 'username' => $request->input('username'),
                 'email' => $email,
-                'password_hash' => Hash::make($defaultPassword),
+                'password' => Hash::make($defaultPassword),
                 'full_name' => $fullName,
                 'role' => $role,
                 'phone_number' => $request->input('phone'),
@@ -439,7 +457,7 @@ class StaffController extends Controller
                     'origin' => $request->header('origin'),
                     'cookie_header' => $request->header('cookie'),
                     'x_xsrf_token' => $request->header('x-xsrf-token'),
-                    'cookies' => $request->cookies->all(),
+                    'cookies' => $request->header('cookie'),
                 ]);
 
                 return response()->json([
@@ -487,20 +505,22 @@ class StaffController extends Controller
             }
 
             $staff->username = $request->input('username');
-            $staff->email = $request->input('email');
-            $staff->full_name = $request->input('fullName');
-            $staff->phone_number = $request->input('phone');
-            $staff->address = $request->input('address');
-            $staff->branch_id = $branchId;
-            $staff->role = $request->input('role');
-            $staff->is_active = (bool) $request->input('isActive');
+            $updateData = [
+                'email' => $request->input('email'),
+                'full_name' => $request->input('fullName'),
+                'phone_number' => $request->input('phone'),
+                'address' => $request->input('address'),
+                'branch_id' => $branchId,
+                'role' => $request->input('role'),
+                'is_active' => (bool) $request->input('isActive'),
+                'updated_at' => now(),
+            ];
 
             if ($request->filled('password')) {
-                $staff->password_hash = Hash::make($request->input('password'));
+                $updateData['password'] = $request->input('password'); // Mutator will hash
             }
 
-            $staff->updated_at = now();
-            $staff->save();
+            $staff->update($updateData);
 
             Log::info('Staff updated:', ['id' => $id]);
 
@@ -663,7 +683,7 @@ class StaffController extends Controller
                 return response()->json(['success' => false, 'message' => 'Invalid document type'], 400);
             }
 
-            $doc = StaffDocument::where('user_id', $id)->firstOrFail();
+            $doc = StaffDocument::where('user_id', '=', $id)->firstOrFail();
             $fieldName = $fieldMap[$documentType];
 
             if (!$doc->$fieldName) {
@@ -706,7 +726,7 @@ class StaffController extends Controller
                 return response()->json(['success' => false, 'message' => 'Invalid document type'], 400);
             }
 
-            $doc = StaffDocument::where('user_id', $id)->first();
+            $doc = StaffDocument::where('user_id', '=', $id)->first();
             if (!$doc) {
                 return response()->json(['success' => false, 'message' => 'Document record not found'], 404);
             }

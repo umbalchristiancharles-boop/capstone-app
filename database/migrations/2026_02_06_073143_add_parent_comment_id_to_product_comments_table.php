@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('product_comments', function (Blueprint $table) {
-            $table->foreignId('parent_comment_id')->nullable()->after('product_id')->constrained('product_comments')->cascadeOnDelete();
-        });
+        if (Schema::hasTable('product_comments') && !Schema::hasColumn('product_comments', 'parent_comment_id')) {
+            Schema::table('product_comments', function (Blueprint $table) {
+                $table->foreignId('parent_comment_id')->nullable()->after('product_id')->constrained('product_comments')->cascadeOnDelete();
+            });
+        }
     }
 
     /**

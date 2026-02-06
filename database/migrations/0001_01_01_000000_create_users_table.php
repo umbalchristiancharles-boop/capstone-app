@@ -8,16 +8,21 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Disabled: gumamit tayo ng custom users table (already created in MySQL).
-        // Schema::create('users', function (Blueprint $table) {
-        //     $table->id();
-        //     $table->string('name');
-        //     $table->string('email')->unique();
-        //     $table->timestamp('email_verified_at')->nullable();
-        //     $table->string('password');
-        //     $table->rememberToken();
-        //     $table->timestamps();
-        // });
+        Schema::create('users', function (Blueprint $table) {
+            $table->id();
+            $table->string('email', 100)->unique();
+            $table->string('username', 50)->unique()->nullable();
+            $table->string('name', 100)->nullable();
+            $table->string('password');
+            $table->timestamp('email_verified_at')->nullable();
+            $table->enum('role', ['OWNER', 'BRANCH_MANAGER', 'STAFF', 'HR', 'customer'])->default('customer');
+            $table->rememberToken();
+            $table->timestamps();
+
+            $table->index('email');
+            $table->index('username');
+            $table->index('role');
+        });
     }
 
     public function down(): void

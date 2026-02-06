@@ -10,12 +10,13 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\CanResetPassword;
 use Illuminate\Support\Facades\Hash;  // ← FIXED: Import Hash
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
  * @property string $username
  * @property string $email
- * @property string $password_hash
+ * @property string $password
  * @property string|null $full_name
  * @property string $role
  * @property int|null $branch_id
@@ -42,7 +43,7 @@ class User extends Authenticatable implements CanResetPassword
     protected $fillable = [
         'username',
         'email',
-        'password_hash',
+        'password',
         'full_name',
         'role',
         'branch_id',
@@ -51,13 +52,14 @@ class User extends Authenticatable implements CanResetPassword
         'address',
         'is_active',
         'must_change_password',
+        'email_verified_at',
     ];
 
     /**
      * The attributes that should be hidden for serialization.
      */
     protected $hidden = [
-        'password_hash',
+        'password',
         'remember_token',
     ];
 
@@ -93,19 +95,27 @@ class User extends Authenticatable implements CanResetPassword
     }
 
     /**
-     * Return the password for the Auth system (stored in `password_hash`).
+     * Relationship: User has one customer account
      */
-    public function getAuthPassword()
+    public function customerAccount(): HasOne
     {
-        return $this->password_hash;
+        return $this->hasOne(CustomerAccount::class, 'user_id');
     }
 
     /**
-     * Map `$user->password` to `password_hash` column with hashing.
+     * Return the password for the Auth system.
+     */
+    public function getAuthPassword()
+    {
+        return $this->password;
+    }
+
+    /**
+     * Hash the password when setting it.
      */
     public function setPasswordAttribute($value)
     {
-        $this->attributes['password_hash'] = Hash::make($value);
+        $this->attributes['password'] = Hash::make($value);
     }
 
     // Required for Password Reset

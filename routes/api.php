@@ -40,6 +40,20 @@ Route::middleware('web')->group(function () {
         ->middleware('throttle:10,1');
 
     // ==========================================
+    // PUBLIC AUTHENTICATION ROUTES
+    // ==========================================
+    Route::prefix('auth')->group(function () {
+        Route::post('/send-verification', [AuthController::class, 'sendVerification'])
+            ->middleware('throttle:5,1'); // 5 requests per minute
+        Route::post('/verify-code', [AuthController::class, 'verifyCode'])
+            ->middleware('throttle:10,1');
+        Route::post('/register', [AuthController::class, 'registerPublic'])
+            ->middleware('throttle:5,1');
+        Route::post('/login', [AuthController::class, 'loginPublic'])
+            ->middleware('throttle:10,1');
+    });
+
+    // ==========================================
     // AUTH & PROFILE ROUTES
     // ==========================================
     Route::post('/login',           [AuthController::class, 'login']);
@@ -74,11 +88,12 @@ Route::middleware('web')->group(function () {
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function (User $user, string $password) {
-                // Save to password_hash column for compatibility
-                $user->password_hash = Hash::make($password);
-                $user->must_change_password = false;
-                $user->setRememberToken(Str::random(60));
-                $user->save();
+                // Save to password column
+                $user->update([
+                    'password' => Hash::make($password),
+                    'must_change_password' => false,
+                    'remember_token' => Str::random(60),
+                ]);
                 // event(new PasswordReset($user));
             }
         );

@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('product_comments', function (Blueprint $table) {
-            $table->tinyInteger('rating')->nullable()->change();
-        });
+        if (Schema::hasTable('product_comments') && Schema::hasColumn('product_comments', 'rating')) {
+            Schema::table('product_comments', function (Blueprint $table) {
+                $table->unsignedTinyInteger('rating')->nullable()->default(5)->change();
+            });
+        }
     }
 
     /**

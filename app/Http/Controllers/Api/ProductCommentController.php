@@ -11,7 +11,6 @@ class ProductCommentController extends Controller
     public function index(Request $request)
     {
         $query = ProductComment::query()
-            ->with('replies')
             ->whereNull('parent_comment_id')
             ->latest('created_at');
 
@@ -19,7 +18,12 @@ class ProductCommentController extends Controller
             $query->where('product_id', $request->integer('product_id'));
         }
 
-        return response()->json($query->get());
+        $comments = $query->get();
+        
+        // Load replies for each parent comment
+        $comments->load('replies');
+
+        return response()->json($comments);
     }
 
     public function store(Request $request)
@@ -50,7 +54,7 @@ class ProductCommentController extends Controller
 
         $data['product_id'] = $parentComment->product_id;
         $data['ip_address'] = $request->ip();
-        $data['rating'] = null;
+        // Don't set rating for replies - it will use the default value from the database
 
         $reply = ProductComment::create($data);
 

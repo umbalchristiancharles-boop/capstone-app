@@ -152,6 +152,7 @@ async function handleLogin() {
             setTimeout(() => {
                 showOverlay.value = true;
                 setTimeout(() => {
+                    try { sessionStorage.setItem('skipRouteOverlay', '1'); } catch (e) {}
                     router.push(redirectPath);
                 }, 600);
             }, 400);
@@ -173,6 +174,7 @@ function handleBack() {
     showOverlay.value = true;
 
     setTimeout(() => {
+        try { sessionStorage.setItem('skipRouteOverlay', '1'); } catch (e) {}
         router.push("/");
     }, 2000);
 }
@@ -190,6 +192,7 @@ function handleForceCompleted() {
     setTimeout(() => {
         showOverlay.value = true;
         setTimeout(() => {
+            try { sessionStorage.setItem('skipRouteOverlay', '1'); } catch (e) {}
             router.push(pendingRedirectPath.value || "/admin-panel");
         }, 600);
     }, 400);

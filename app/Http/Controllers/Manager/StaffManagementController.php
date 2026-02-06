@@ -79,7 +79,7 @@ class StaffManagementController extends Controller
             'email' => $request->email,
             'full_name' => $request->full_name,
             'phone_number' => $request->phone_number,
-            'password_hash' => Hash::make($defaultPassword),
+            'password' => $defaultPassword, // Mutator will hash this automatically
             'role' => 'STAFF', // Branch Manager can only create STAFF
             'branch_id' => $user->branch_id, // Assign to manager's branch
             'is_active' => 1,

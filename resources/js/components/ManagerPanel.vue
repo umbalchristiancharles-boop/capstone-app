@@ -104,7 +104,7 @@
               <!-- Staff Management Button -->
               <button
                 class="staff-btn staff-btn--center"
-                @click="router.push('/admin/staff-management')"
+                @click="router.push('/manager/staff')"
               >
                 👥 Staff Management
               </button>
@@ -1128,6 +1128,16 @@ async function onAvatarChange(event) {
   try { window.location.reload() } catch (_) {}
 }
 
+function clearTempOverlay() {
+  try {
+    if (window.__chikin_temp_overlay) {
+      window.__chikin_temp_overlay.remove()
+      window.__chikin_temp_overlay = null
+    }
+  } catch (e) {}
+  try { if (window.pageBlur && typeof window.pageBlur.hide === 'function') window.pageBlur.hide() } catch (e) {}
+}
+
 // If we reloaded after choosing an avatar, perform the pending upload for this panel
 onMounted(async () => {
   try {
@@ -1217,6 +1227,7 @@ function cancelLogout() {
 }
 
 onMounted(async () => {
+  clearTempOverlay()
   await setupCsrfToken()
   loadDashboard(activeRange.value)
   loadAttendanceStatus()
@@ -1230,5 +1241,6 @@ onMounted(async () => {
       }
     })
     .catch(() => {})
+  clearTempOverlay()
 })
 </script>

@@ -1,13 +1,35 @@
 <template>
   <div id="app">
-    <router-view></router-view>
+    <router-view v-slot="{ Component }">
+      <transition :name="transitionName" mode="out-in">
+        <div class="route-view">
+          <component :is="Component" />
+        </div>
+      </transition>
+    </router-view>
     <div id="page-blur" aria-hidden="true"></div>
   </div>
 </template>
 
 <script>
 export default {
-  name: 'App'
+  name: 'App',
+  data() {
+    return {
+      transitionName: 'route-fade'
+    }
+  },
+  mounted() {
+    try {
+      if (sessionStorage.getItem('suppressRouteTransition') === '1') {
+        sessionStorage.removeItem('suppressRouteTransition')
+        this.transitionName = ''
+        setTimeout(() => {
+          this.transitionName = 'route-fade'
+        }, 50)
+      }
+    } catch (e) {}
+  }
 }
 </script>
 
@@ -32,6 +54,18 @@ body {
 #app {
   width: 100%;
   min-height: 100vh;
+}
+
+/* Route transitions */
+.route-fade-enter-active,
+.route-fade-leave-active {
+  transition: opacity 260ms ease, transform 260ms ease;
+}
+
+.route-fade-enter-from,
+.route-fade-leave-to {
+  opacity: 0;
+  transform: translateY(6px);
 }
 
 /* Global page blur layer */

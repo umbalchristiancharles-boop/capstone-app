@@ -19,14 +19,36 @@ axios.defaults.baseURL = '' // use relative URLs so requests go to current origi
 axios.defaults.withCredentials = true
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest'
 
+let pendingRequests = 0
+const requestWaiters = []
+
+function notifyRequestWaiters() {
+  if (pendingRequests > 0) return
+  while (requestWaiters.length) {
+    const resolve = requestWaiters.shift()
+    try { resolve() } catch (e) {}
+  }
+}
+
 // Axios interceptor to always get fresh CSRF token before each request
 axios.interceptors.request.use(config => {
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
   if (csrfToken) {
     config.headers['X-CSRF-TOKEN'] = csrfToken
   }
+  pendingRequests += 1
   return config
 }, error => {
+  return Promise.reject(error)
+})
+
+axios.interceptors.response.use(response => {
+  pendingRequests = Math.max(0, pendingRequests - 1)
+  notifyRequestWaiters()
+  return response
+}, error => {
+  pendingRequests = Math.max(0, pendingRequests - 1)
+  notifyRequestWaiters()
   return Promise.reject(error)
 })
 
@@ -44,6 +66,11 @@ const router = createRouter({
     { path: '/hr-panel', component: HrPanel},
     {
       path: '/admin/staff-management',
+      component: StaffList,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/manager/staff',
       component: StaffList,
       meta: { requiresAuth: true },
     },
@@ -88,22 +115,72 @@ window.pageBlur = {
   hide: hidePageBlur,
 }
 
+// --- Global route loading overlay ---
+const routeLogoUrl = new URL('./assets/chikinlogo.png', import.meta.url).href
+
+function showRouteOverlay(text = 'Loading...') {
+  try {
+    if (window.__chikin_temp_overlay || window.__route_loading_overlay) return
+    if (document.querySelector('.loading-overlay')) return
+    const overlay = document.createElement('div')
+    overlay.className = 'route-loading-overlay'
+    overlay.innerHTML = `
+      <div class="logo-loading-box">
+        <img src="${routeLogoUrl}" alt="Chikin Tayo" class="logo-loading-img" />
+        <p>${text}</p>
+      </div>
+    `
+    document.body.appendChild(overlay)
+    window.__route_loading_overlay = overlay
+    requestAnimationFrame(() => overlay.classList.add('active'))
+  } catch (e) {}
+}
+
+function hideRouteOverlay() {
+  try {
+    const overlay = window.__route_loading_overlay
+    if (!overlay) return
+    overlay.classList.remove('active')
+    setTimeout(() => {
+      try { overlay.remove() } catch (e) {}
+      if (window.__route_loading_overlay === overlay) {
+        window.__route_loading_overlay = null
+      }
+    }, 260)
+  } catch (e) {}
+}
+
 // show blur right when navigation starts; hide after a delay so transition persists
 router.beforeEach((to, from, next) => {
-  // Do not show the global blur when navigating from Index -> Admin Login
-  // (this avoids the delayed blur covering login inputs on that transition)
-  if (to.path === '/admin-login' && from && from.path === '/') {
-    return next()
+  const skipOverlay = sessionStorage.getItem('skipRouteOverlay') === '1'
+  const suppressOverlay = sessionStorage.getItem('suppressRouteOverlay') === '1'
+  if (skipOverlay) {
+    try { sessionStorage.removeItem('skipRouteOverlay') } catch (e) {}
   }
-
-  showPageBlur()
+  if (suppressOverlay) {
+    try { sessionStorage.removeItem('suppressRouteOverlay') } catch (e) {}
+  } else if (!skipOverlay) {
+    showRouteOverlay('Loading...')
+    showPageBlur()
+  }
   next()
 })
 
 router.afterEach(() => {
-  setTimeout(() => {
-    hidePageBlur()
-  }, 600)
+  const waitForRequests = (timeoutMs = 2500) => new Promise(resolve => {
+    if (pendingRequests === 0) return resolve()
+    requestWaiters.push(resolve)
+    setTimeout(resolve, timeoutMs)
+  })
+
+  waitForRequests().then(() => {
+    setTimeout(() => {
+      hidePageBlur()
+    }, 200)
+    setTimeout(() => {
+      hideRouteOverlay()
+    }, 200)
+  })
 
   // Refresh CSRF cookie after navigation to protected panels to avoid 419s
   try {
@@ -122,6 +199,11 @@ router.afterEach(() => {
   } catch (e) {}
 })
 
+router.onError(() => {
+  hideRouteOverlay()
+  hidePageBlur()
+})
+
 // === GLOBAL GUARD PARA PROTECTED ANG /admin-panel ===
 router.beforeEach(async (to, from, next) => {
   // Public routes - allow always
@@ -130,7 +212,7 @@ router.beforeEach(async (to, from, next) => {
   }
 
   // Protected panel routes
-  const protectedRoutes = ['/admin-panel', '/manager-panel', '/staff-panel', '/hr-panel', '/admin/staff-management', '/admin/deleted-staff']
+  const protectedRoutes = ['/admin-panel', '/manager-panel', '/staff-panel', '/hr-panel', '/admin/staff-management', '/admin/deleted-staff', '/manager/staff']
   const isProtectedRoute = protectedRoutes.some(route => to.path.startsWith(route)) || to.meta.requiresAuth
 
   if (isProtectedRoute) {
@@ -140,7 +222,11 @@ router.beforeEach(async (to, from, next) => {
     }
 
     // One-time reload for staff-management to sync CSRF
-    if ((to.path === '/admin/staff-management' || to.path === '/manager-panel') && !sessionStorage.getItem('appReloaded')) {
+    if ((to.path === '/admin/staff-management' || to.path === '/manager-panel' || to.path === '/manager/staff') && !sessionStorage.getItem('appReloaded')) {
+      try {
+        sessionStorage.setItem('suppressRouteOverlay', '1')
+        sessionStorage.setItem('suppressRouteTransition', '1')
+      } catch (e) {}
       sessionStorage.setItem('appReloaded', '1')
       sessionStorage.setItem('preReloadPath', to.path || window.location.pathname)
       window.location.reload()
@@ -175,7 +261,11 @@ axios
     }
     // If the server-rendered page is already at /admin/staff-management,
     // do a one-time reload to ensure CSRF meta tag and XSRF cookie are fresh
-    if ((window.location.pathname === '/admin/staff-management' || window.location.pathname === '/manager-panel') && !sessionStorage.getItem('appReloaded')) {
+    if ((window.location.pathname === '/admin/staff-management' || window.location.pathname === '/manager-panel' || window.location.pathname === '/manager/staff') && !sessionStorage.getItem('appReloaded')) {
+      try {
+        sessionStorage.setItem('suppressRouteOverlay', '1')
+        sessionStorage.setItem('suppressRouteTransition', '1')
+      } catch (e) {}
       sessionStorage.setItem('appReloaded', '1')
       sessionStorage.setItem('preReloadPath', window.location.pathname)
       window.location.reload()

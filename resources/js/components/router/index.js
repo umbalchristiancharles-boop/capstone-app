@@ -50,7 +50,7 @@ const routes = [
   {
     path: '/manager/staff',
     name: 'ManagerStaffManagement',
-    component: () => import('../components/StaffManagement.vue'),
+    component: StaffList,
     meta: {
       requiresAuth: true,
       role: 'BRANCH_MANAGER'

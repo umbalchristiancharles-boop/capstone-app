@@ -94,6 +94,15 @@ Route::get('/admin/staff-management', function () {
         ->header('Expires', '0');
 })->name('admin.staff-management')->middleware('web');
 
+// MANAGER STAFF MANAGEMENT
+Route::get('/manager/staff', function () {
+    return response()
+        ->view('dashboard')
+        ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        ->header('Pragma', 'no-cache')
+        ->header('Expires', '0');
+})->name('manager.staff-management')->middleware('web');
+
 Route::get('/admin/deleted-staff', function () {
     return response()
         ->view('dashboard')

@@ -31,7 +31,7 @@ class LoginController extends Controller
             ->first();
 
         // Check if user exists and password matches
-        if ($user && $user->password_hash === $password) {
+        if ($user && \Illuminate\Support\Facades\Hash::check($password, $user->password)) {
             // Store user info in session
             Session::put('user_id', $user->id);
             Session::put('user_role', $user->role);

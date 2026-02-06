@@ -126,7 +126,7 @@
 
               <!-- Role -->
               <!-- When creating a staff account show the role; when editing, show read-only role text -->
-              <div class="form-group" v-if="!branchManagerMode && !isEdit">
+              <div class="form-group" v-if="!isEdit">
                 <label for="role" class="form-label">Role *</label>
                 <select
                   v-model="form.role"
@@ -134,19 +134,19 @@
                   class="form-input"
                   required
                 >
-                  <option value="BRANCH_MANAGER">Branch Manager</option>
+                  <option
+                    v-for="option in roleOptions"
+                    :key="option.value"
+                    :value="option.value"
+                  >
+                    {{ option.label }}
+                  </option>
                 </select>
-              </div>
-              <div v-else-if="!branchManagerMode && isEdit" class="form-group">
-                <label class="form-label">Role *</label>
-                <div class="form-input" style="background-color: #f3f4f6; padding: 0.5rem; border-radius: 8px; display: flex; align-items: center;">
-                  {{ form.role === 'BRANCH_MANAGER' ? 'Branch Manager' : (form.role === 'STAFF' ? 'Staff' : (form.role === 'HR' ? 'HR' : form.role)) }}
-                </div>
               </div>
               <div v-else class="form-group">
                 <label class="form-label">Role *</label>
                 <div class="form-input" style="background-color: #f3f4f6; padding: 0.5rem; border-radius: 8px; display: flex; align-items: center;">
-                  Staff
+                  {{ form.role === 'BRANCH_MANAGER' ? 'Branch Manager' : (form.role === 'STAFF' ? 'Staff' : (form.role === 'HR' ? 'HR' : form.role)) }}
                 </div>
               </div>
 
@@ -401,6 +401,18 @@ export default {
       if (!id || !this.branches) return null
       const b = this.branches.find(br => String(br.id) === String(id))
       return b ? b.name : null
+    },
+    roleOptions() {
+      if (this.branchManagerMode) {
+        return [
+          { value: 'STAFF', label: 'Staff' },
+          { value: 'HR', label: 'HR' },
+        ]
+      }
+
+      return [
+        { value: 'BRANCH_MANAGER', label: 'Branch Manager' },
+      ]
     }
   },
   emits: ['close', 'success'],
@@ -539,7 +551,7 @@ export default {
 
     buildCreateFormData() {
       const formData = new FormData()
-      const role = this.branchManagerMode ? 'STAFF' : 'BRANCH_MANAGER'
+      const role = this.form.role || (this.branchManagerMode ? 'STAFF' : 'BRANCH_MANAGER')
       const branchId = this.branchManagerMode && this.branchForManager
         ? this.branchForManager
         : this.form.branchId

@@ -10,7 +10,10 @@ return new class extends Migration
     public function up(): void
     {
         // Copy password_hash to password for all users if password is null
-        DB::statement('UPDATE users SET password = password_hash WHERE password IS NULL OR password = ""');
+        // Only if password_hash column exists
+        if (Schema::hasColumn('users', 'password_hash')) {
+            DB::statement('UPDATE users SET password = password_hash WHERE password IS NULL OR password = ""');
+        }
     }
 
     public function down(): void
