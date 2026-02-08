@@ -209,17 +209,8 @@ async function handleForceCancel() {
     window.location.reload();
 }
 
-onMounted(async () => {
-    try {
-        const res = await axios.get("/api/me", { withCredentials: true });
-        if (res.data.ok && res.data.user?.must_change_password) {
-            pendingRedirectPath.value = resolveRedirectPath(res.data.user?.role);
-            loggedInUsername.value = res.data.user?.username || "";
-            showForceModal.value = true;
-        }
-    } catch (e) {
-        // ignore if unauthenticated
-    }
+onMounted(() => {
+    // Skip /api/me check on the login page to avoid 401 noise in the console.
 });
 </script>
 

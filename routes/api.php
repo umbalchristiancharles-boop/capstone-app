@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\OwnerDashboardController;
 use App\Http\Controllers\Admin\StaffController;
+use App\Http\Controllers\Admin\DeletedStaffController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Manager\ManagerDashboardController;
 use App\Http\Controllers\Manager\InventoryController;
@@ -123,6 +124,11 @@ Route::middleware('web')->group(function () {
         Route::put('/staff/{id}',       [StaffController::class, 'apiUpdate']);
         Route::delete('/staff/{id}',    [StaffController::class, 'apiDestroy']);
         Route::get('/branches',         [StaffController::class, 'apiBranches']);
+
+        // Deleted staff routes
+        Route::get('/deleted-staff',           [DeletedStaffController::class, 'apiIndex']);
+        Route::post('/deleted-staff/{id}/restore', [DeletedStaffController::class, 'apiRestore']);
+        Route::delete('/deleted-staff/{id}/force', [DeletedStaffController::class, 'apiForceDelete']);
 
         // Document routes
         Route::get('/staff/{id}/document/{documentType}', [StaffController::class, 'downloadDocument']);

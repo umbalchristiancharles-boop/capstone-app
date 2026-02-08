@@ -37,7 +37,7 @@ Route::get('/admin-panel', function () {
         ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
         ->header('Pragma', 'no-cache')
         ->header('Expires', '0');
-})->name('admin.dashboard')->middleware('web');
+})->name('admin.dashboard')->middleware(['web', 'auth']);
 
 // Manager panel
 Route::get('/manager-panel', function () {
@@ -46,7 +46,7 @@ Route::get('/manager-panel', function () {
         ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
         ->header('Pragma', 'no-cache')
         ->header('Expires', '0');
-})->name('manager.dashboard')->middleware('web');
+})->name('manager.dashboard')->middleware(['web', 'auth']);
 
 // Staff panel
 Route::get('/staff-panel', function () {
@@ -55,7 +55,7 @@ Route::get('/staff-panel', function () {
         ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
         ->header('Pragma', 'no-cache')
         ->header('Expires', '0');
-})->name('staff.dashboard')->middleware('web');
+})->name('staff.dashboard')->middleware(['web', 'auth']);
 
 // HR panel
 Route::get('/hr-panel', function () {
@@ -64,7 +64,7 @@ Route::get('/hr-panel', function () {
         ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
         ->header('Pragma', 'no-cache')
         ->header('Expires', '0');
-})->name('hr.dashboard')->middleware('web');
+})->name('hr.dashboard')->middleware(['web', 'auth']);
 
 Route::get('/logout', [LoginController::class, 'logout'])->name('logout');
 
@@ -92,7 +92,7 @@ Route::get('/admin/staff-management', function () {
         ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
         ->header('Pragma', 'no-cache')
         ->header('Expires', '0');
-})->name('admin.staff-management')->middleware('web');
+})->name('admin.staff-management')->middleware(['web', 'auth']);
 
 // MANAGER STAFF MANAGEMENT
 Route::get('/manager/staff', function () {
@@ -101,7 +101,7 @@ Route::get('/manager/staff', function () {
         ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
         ->header('Pragma', 'no-cache')
         ->header('Expires', '0');
-})->name('manager.staff-management')->middleware('web');
+})->name('manager.staff-management')->middleware(['web', 'auth']);
 
 Route::get('/admin/deleted-staff', function () {
     return response()
@@ -109,7 +109,7 @@ Route::get('/admin/deleted-staff', function () {
         ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
         ->header('Pragma', 'no-cache')
         ->header('Expires', '0');
-})->name('admin.deleted-staff')->middleware('web');
+})->name('admin.deleted-staff')->middleware(['web', 'auth']);
 
 // ==========================================
 // EXISTING ROUTES (Your SPA & Profile)

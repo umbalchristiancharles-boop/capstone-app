@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -64,6 +65,11 @@ class AuthController extends Controller
             'id' => $user->id,
         ]);
 
+        // Keep legacy session keys in sync for routes that rely on Session::has('user_id').
+        Session::put('user_id', $user->id);
+        Session::put('user_role', $user->role);
+        Session::put('user_name', $user->full_name);
+
         return response()->json([
             'ok'      => true,
             'message' => 'Login successful',
@@ -81,6 +87,7 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         Auth::logout();
+        Session::forget(['user_id', 'user_role', 'user_name']);
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
@@ -92,7 +99,8 @@ class AuthController extends Controller
 
     public function me(Request $request)
     {
-        if (!Auth::check()) {
+        $user = $this->resolveAuthenticatedUser($request);
+        if (! $user) {
             return response()->json([
                 'ok'      => false,
                 'message' => 'Unauthenticated',
@@ -101,20 +109,19 @@ class AuthController extends Controller
 
         return response()->json([
             'ok'   => true,
-            'user' => Auth::user(),
+            'user' => $user,
         ]);
     }
 
     public function profile(Request $request)
     {
-        if (!Auth::check()) {
+        $u = $this->resolveAuthenticatedUser($request);
+        if (! $u) {
             return response()->json([
                 'ok'      => false,
                 'message' => 'Unauthenticated',
             ], 401);
         }
-
-        $u = Auth::user();
 
         return response()->json([
             'ok'   => true,
@@ -131,7 +138,8 @@ class AuthController extends Controller
 
     public function changePassword(Request $request)
     {
-        if (!Auth::check()) {
+        $user = $this->resolveAuthenticatedUser($request);
+        if (! $user) {
             return response()->json([
                 'ok'      => false,
                 'message' => 'Unauthenticated',
@@ -148,9 +156,6 @@ class AuthController extends Controller
                 'confirmed',
             ],
         ]);
-
-        /** @var User $user */
-        $user = Auth::user();
 
         if (!Hash::check($request->input('current_password'), $user->password)) {
             return response()->json([
@@ -172,14 +177,13 @@ class AuthController extends Controller
 
     public function ownerProfile(Request $request)
     {
-        if (!Auth::check()) {
+        $u = $this->resolveAuthenticatedUser($request);
+        if (! $u) {
             return response()->json([
                 'ok'      => false,
                 'message' => 'Unauthenticated',
             ], 401);
         }
-
-        $u = Auth::user();
 
         // Generate full absolute URL for avatar if it exists
         $avatarUrl = null;
@@ -210,15 +214,16 @@ class AuthController extends Controller
 
     public function updateOwnerProfile(Request $request)
     {
-        if (!Auth::check()) {
+        $user = $this->resolveAuthenticatedUser($request);
+        if (! $user) {
             return response()->json([
                 'ok'      => false,
                 'message' => 'Unauthenticated',
             ], 401);
         }
 
-        $userId = Auth::id();
-        
+        $userId = $user->id;
+
         $validated = $request->validate([
             'fullName' => 'nullable|string|max:255',
             'username' => ['nullable', 'string', 'max:255', Rule::unique('users', 'username')->ignore($userId)],
@@ -227,7 +232,6 @@ class AuthController extends Controller
             'password' => 'nullable|string|min:8',
         ]);
 
-        $user = Auth::user();
         $updateData = [
             'full_name' => $validated['fullName'] ?? $user->full_name,
             'email'     => $validated['email'] ?? $user->email,
@@ -251,7 +255,7 @@ class AuthController extends Controller
 
         // Fetch and return updated user data
         $updatedUser = User::find($userId);
-        
+
         // Generate full absolute URL for avatar if it exists
         $avatarUrl = null;
         if ($updatedUser->avatar_url) {
@@ -281,7 +285,8 @@ class AuthController extends Controller
 
     public function uploadAvatar(Request $request)
     {
-        if (!Auth::check()) {
+        $user = $this->resolveAuthenticatedUser($request);
+        if (! $user) {
             return response()->json([
                 'ok'      => false,
                 'message' => 'Unauthenticated',
@@ -293,7 +298,6 @@ class AuthController extends Controller
             'avatar' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120', // max 5MB
         ]);
 
-        $user = Auth::user();
         $file = $request->file('avatar');
 
         if (! $file) {
@@ -340,16 +344,16 @@ class AuthController extends Controller
                 'message' => 'Email already exists. Please sign in instead.'
             ], 409);
         }
-        
+
         // Generate 6-digit code
         $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-        
+
         // Store code in cache for 10 minutes
         Cache::put('verification_code_' . $email, $code, 600);
-        
+
         // Log verification code for debugging
         Log::info("Verification code generated for {$email}: {$code}");
-        
+
         // Send email with verification code
         try {
             Mail::raw(
@@ -359,9 +363,9 @@ class AuthController extends Controller
                             ->subject('CHIKIN TAYO - Email Verification Code');
                 }
             );
-            
+
             Log::info("Verification email sent to {$email}");
-            
+
             return response()->json([
                 'message' => 'Verification code sent to your email',
                 'code' => $code, // Always show in development for testing
@@ -370,7 +374,7 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             // Log the error
             Log::error("Failed to send verification email to {$email}: " . $e->getMessage());
-            
+
             // In development, show the code anyway
             return response()->json([
                 'message' => 'Verification code generated (email system issue - code shown below)',
@@ -379,6 +383,20 @@ class AuthController extends Controller
                 'error' => config('app.debug') ? $e->getMessage() : 'Email service unavailable'
             ]);
         }
+    }
+
+    private function resolveAuthenticatedUser(Request $request): ?User
+    {
+        if (Auth::check()) {
+            return Auth::user();
+        }
+
+        $sessionUserId = $request->session()->get('user_id');
+        if ($sessionUserId) {
+            return User::find($sessionUserId);
+        }
+
+        return null;
     }
 
     public function verifyCode(Request $request)
@@ -390,28 +408,28 @@ class AuthController extends Controller
 
         $email = $request->input('email');
         $code = $request->input('code');
-        
+
         // Get stored code
         $storedCode = Cache::get('verification_code_' . $email);
-        
+
         if (!$storedCode) {
             return response()->json([
                 'message' => 'Verification code expired. Please request a new one.'
             ], 400);
         }
-        
+
         if ($storedCode !== $code) {
             return response()->json([
                 'message' => 'Invalid verification code.'
             ], 400);
         }
-        
+
         // Code is valid - check if user exists
         $userExists = User::where('email', '=', $email)->exists();
-        
+
         // Mark email as verified
         Cache::put('email_verified_' . $email, true, 3600);
-        
+
         return response()->json([
             'message' => 'Email verified successfully',
             'user_exists' => $userExists
@@ -431,14 +449,14 @@ class AuthController extends Controller
         ]);
 
         $email = $request->input('email');
-        
+
         // Check if email was verified
         if (!Cache::get('email_verified_' . $email)) {
             return response()->json([
                 'message' => 'Email not verified. Please verify your email first.'
             ], 400);
         }
-        
+
         // Create user
         $user = User::create([
             'email' => $email,
@@ -447,7 +465,7 @@ class AuthController extends Controller
             'email_verified_at' => now(),
             'role' => 'customer', // default role for public registration
         ]);
-        
+
         // Create customer account record
         CustomerAccount::create([
             'user_id' => $user->id,
@@ -456,15 +474,15 @@ class AuthController extends Controller
             'status' => 'active',
             'last_activity_at' => now(),
         ]);
-        
+
         // Clear verification cache
         Cache::forget('email_verified_' . $email);
         Cache::forget('verification_code_' . $email);
-        
+
         // Create token
         $token = Str::random(60);
         Cache::put('user_token_' . $token, $user->id, 86400 * 30); // 30 days
-        
+
         return response()->json([
             'message' => 'Account created successfully',
             'user' => [
@@ -486,17 +504,17 @@ class AuthController extends Controller
         $user = User::where('username', '=', $request->input('username'))
                     ->orWhere('email', '=', $request->input('username'))
                     ->first();
-        
+
         if (!$user || !Hash::check($request->input('password'), $user->password)) {
             return response()->json([
                 'message' => 'Invalid credentials'
             ], 401);
         }
-        
+
         // Create token
         $token = Str::random(60);
         Cache::put('user_token_' . $token, $user->id, 86400 * 30); // 30 days
-        
+
         return response()->json([
             'message' => 'Login successful',
             'user' => [

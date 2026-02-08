@@ -16,10 +16,17 @@ class DeletedStaffController extends Controller
     }
 
     // API:  Get deleted staff
-    public function apiIndex()
+    public function apiIndex(Request $request)
     {
         try {
-            $currentUser = Auth::user();
+            $currentUser = $this->resolveAuthenticatedUser($request);
+
+            if (! $currentUser) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Not authenticated'
+                ], 401);
+            }
 
             // Only OWNER and BRANCH_MANAGER can access
             if (! in_array($currentUser->role, ['OWNER', 'BRANCH_MANAGER'])) {
@@ -54,13 +61,20 @@ class DeletedStaffController extends Controller
     }
 
     // API: Restore deleted account
-    public function apiRestore($id)
+    public function apiRestore(Request $request, $id)
     {
         try {
             $user = User::onlyTrashed()->findOrFail($id);
 
             // Check access
-            $currentUser = Auth::user();
+            $currentUser = $this->resolveAuthenticatedUser($request);
+            if (! $currentUser) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Not authenticated'
+                ], 401);
+            }
+
             if ($currentUser->role === 'BRANCH_MANAGER' && $user->branch_id !== $currentUser->branch_id) {
                 return response()->json([
                     'success' => false,
@@ -84,11 +98,18 @@ class DeletedStaffController extends Controller
     }
 
     // API: Permanently delete account
-    public function apiForceDelete($id)
+    public function apiForceDelete(Request $request, $id)
     {
         try {
             // Only OWNER can permanently delete
-            $currentUser = Auth::user();
+            $currentUser = $this->resolveAuthenticatedUser($request);
+            if (! $currentUser) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Not authenticated'
+                ], 401);
+            }
+
             if ($currentUser->role !== 'OWNER') {
                 return response()->json([
                     'success' => false,
@@ -110,5 +131,19 @@ class DeletedStaffController extends Controller
                 'message' => 'Failed to delete account: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    private function resolveAuthenticatedUser(Request $request): ?User
+    {
+        if (Auth::check()) {
+            return Auth::user();
+        }
+
+        $sessionUserId = $request->session()->get('user_id');
+        if ($sessionUserId) {
+            return User::find($sessionUserId);
+        }
+
+        return null;
     }
 }

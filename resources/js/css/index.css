@@ -37,8 +37,8 @@ body {
   z-index: 9999;
   opacity: 0;
   transition: opacity 220ms ease;
-  backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
 }
 
 .route-loading-overlay.active {
@@ -214,10 +214,29 @@ h1 span {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2),
+              0 0 20px rgba(255, 165, 0, 0.4),
+              0 0 40px rgba(255, 140, 0, 0.2);
   text-decoration: none;
   transition: transform 0.15s ease, box-shadow 0.15s ease,
-    background 0.15s ease;
+    background 0.15s ease, filter 0.15s ease;
+  filter: drop-shadow(0 0 15px rgba(255, 140, 0, 0.3));
+  position: relative;
+}
+
+.btn-login::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  right: -5px;
+  bottom: -5px;
+  background: radial-gradient(circle, rgba(255, 165, 0, 0.3) 0%, transparent 70%);
+  border-radius: 999px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  animation: glow-pulse 2s ease-in-out infinite;
 }
 
 .btn-login .icon {
@@ -226,8 +245,26 @@ h1 span {
 
 .btn-login:hover {
   transform: translateY(-2px);
-  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.26);
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.26),
+              0 0 30px rgba(255, 165, 0, 0.6),
+              0 0 50px rgba(255, 140, 0, 0.35);
   background: #ffffff;
+  filter: drop-shadow(0 0 25px rgba(255, 140, 0, 0.5));
+}
+
+.btn-login:hover::before {
+  opacity: 1;
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    opacity: 0.3;
+    filter: blur(8px);
+  }
+  50% {
+    opacity: 0.6;
+    filter: blur(4px);
+  }
 }
 
 .note {
@@ -250,6 +287,52 @@ h1 span {
   align-items: center;
   justify-content: center;
   border-radius: 32px;
+  box-shadow: 0 0 20px rgba(255, 165, 0, 0.7),
+              0 0 40px rgba(255, 140, 0, 0.6),
+              0 0 60px rgba(255, 110, 0, 0.5),
+              0 0 80px rgba(230, 100, 0, 0.3),
+              0 0 120px rgba(200, 80, 0, 0.15);
+  filter: drop-shadow(0 0 15px rgba(255, 165, 0, 0.8))
+          drop-shadow(0 0 35px rgba(255, 110, 0, 0.6))
+          drop-shadow(0 0 60px rgba(200, 80, 0, 0.3));
+  transition: all 0.3s ease;
+  position: relative;
+  animation: logo-glow 3s ease-in-out infinite;
+}
+
+.logo-wrapper:hover {
+  box-shadow: 0 0 30px rgba(255, 165, 0, 0.85),
+              0 0 50px rgba(255, 140, 0, 0.75),
+              0 0 80px rgba(255, 110, 0, 0.6),
+              0 0 110px rgba(230, 100, 0, 0.4),
+              0 0 150px rgba(200, 80, 0, 0.2);
+  filter: drop-shadow(0 0 25px rgba(255, 165, 0, 0.9))
+          drop-shadow(0 0 50px rgba(255, 110, 0, 0.7))
+          drop-shadow(0 0 80px rgba(200, 80, 0, 0.4));
+  transform: scale(1.02);
+}
+
+@keyframes logo-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(255, 165, 0, 0.7),
+                0 0 40px rgba(255, 140, 0, 0.6),
+                0 0 60px rgba(255, 110, 0, 0.5),
+                0 0 80px rgba(230, 100, 0, 0.3),
+                0 0 120px rgba(200, 80, 0, 0.15);
+    filter: drop-shadow(0 0 15px rgba(255, 165, 0, 0.8))
+            drop-shadow(0 0 35px rgba(255, 110, 0, 0.6))
+            drop-shadow(0 0 60px rgba(200, 80, 0, 0.3));
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(255, 165, 0, 0.85),
+                0 0 50px rgba(255, 140, 0, 0.75),
+                0 0 80px rgba(255, 110, 0, 0.6),
+                0 0 110px rgba(230, 100, 0, 0.4),
+                0 0 150px rgba(200, 80, 0, 0.2);
+    filter: drop-shadow(0 0 25px rgba(255, 165, 0, 0.85))
+            drop-shadow(0 0 45px rgba(255, 110, 0, 0.7))
+            drop-shadow(0 0 75px rgba(200, 80, 0, 0.4));
+  }
 }
 
 .logo-wrapper img {
@@ -627,6 +710,7 @@ h1 span {
   display: flex;
   align-items: center;
   justify-content: center;
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   transition: transform 0.3s ease, all 0.3s ease;
   min-height: 220px;
@@ -719,6 +803,7 @@ h1 span {
 
 .product-comments-section {
   background: rgba(255, 255, 255, 0.15);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   padding: 20px;
   border-radius: 0 0 18px 18px;
@@ -1520,6 +1605,7 @@ h1 span {
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.75);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
@@ -1855,11 +1941,11 @@ h1 span {
   .auth-modal {
     padding: 30px 25px;
   }
-  
+
   .auth-step h2 {
     font-size: 1.5rem;
   }
-  
+
   .auth-subtitle {
     font-size: 0.85rem;
   }

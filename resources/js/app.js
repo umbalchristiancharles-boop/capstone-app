@@ -59,10 +59,11 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/', component: Index },
+    { path: '/login', component: adminlogin },
+    { path: '/admin-login', component: adminlogin },
     { path: '/admin-panel', component: AdminPanel },
     { path: '/manager-panel', component: ManagerPanel },
     { path: '/staff-panel', component: StaffPanel },
-    { path: '/admin-login', component: adminlogin },
     { path: '/hr-panel', component: HrPanel},
     {
       path: '/admin/staff-management',
