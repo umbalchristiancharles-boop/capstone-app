@@ -11,7 +11,8 @@
           class="search-input"
         >
         <button @click="refreshStaff" class="btn-primary">Refresh</button>
-        <button @click="showAddStaffModal = true" class="btn-success">+ Add Staff</button>
+        <button @click="openAddStaffModal()" class="btn-success">+ Add Staff</button>
+        <button @click="openAddOwnerModal()" class="btn-primary" style="background:#6f42c1; margin-left:8px">+ Add Owner</button>
       </div>
     </div>
 
@@ -178,6 +179,7 @@ const newStaff = ref({
   password: '',
 })
 const editingStaffId = ref(null)
+const createOwnerMode = ref(false)
 
 // Computed
 const filteredStaff = computed(() => {
@@ -196,12 +198,34 @@ async function loadStaff() {
   errorMessage.value = ''
 
   try {
-    const res = await axios.get('/api/manager/staff', {
+    const res = await axios.get('/api/admin/staff', {
       withCredentials: true
     })
 
     if (res.data.success) {
-      staff.value = res.data.staff
+      // Response may come in two shapes:
+      // - { success: true, staff: [...] } (manager API)
+      // - { success: true, data: [ { branch_name, branch_manager, staff: [...], hr: [...] }, ... ] } (admin API)
+      if (Array.isArray(res.data.staff)) {
+        staff.value = res.data.staff
+      } else if (Array.isArray(res.data.data)) {
+        const list = []
+        res.data.data.forEach(branch => {
+          const branchName = branch.branch_name || ''
+          if (branch.branch_manager) {
+            list.push({ ...branch.branch_manager, branch_name: branchName })
+          }
+          if (Array.isArray(branch.hr)) {
+            branch.hr.forEach(h => list.push({ ...h, branch_name: branchName }))
+          }
+          if (Array.isArray(branch.staff)) {
+            branch.staff.forEach(s => list.push({ ...s, branch_name: branchName }))
+          }
+        })
+        staff.value = list
+      } else {
+        staff.value = []
+      }
     } else {
       errorMessage.value = res.data.message || 'Failed to load staff'
     }
@@ -227,6 +251,7 @@ function resetForm() {
   }
   isEditingStaff.value = false
   editingStaffId.value = null
+  createOwnerMode.value = false
 }
 
 function editStaff(member) {
@@ -239,6 +264,18 @@ function editStaff(member) {
     phone_number: member.phone_number,
     password: '',
   }
+  showAddStaffModal.value = true
+}
+
+function openAddStaffModal() {
+  resetForm()
+  createOwnerMode.value = false
+  showAddStaffModal.value = true
+}
+
+function openAddOwnerModal() {
+  resetForm()
+  createOwnerMode.value = true
   showAddStaffModal.value = true
 }
 
@@ -258,8 +295,8 @@ async function submitStaffForm() {
     let res
 
     if (isEditingStaff.value) {
-      // Update
-      res = await axios.put(`/api/manager/staff/${editingStaffId.value}`, {
+      // Update (use admin endpoint so owners are included)
+      res = await axios.put(`/api/admin/staff/${editingStaffId.value}`, {
         full_name: newStaff.value.full_name,
         email: newStaff.value.email,
         phone_number: newStaff.value.phone_number,
@@ -267,16 +304,30 @@ async function submitStaffForm() {
         withCredentials: true
       })
     } else {
-      // Create
-      res = await axios.post('/api/manager/staff', {
-        username: newStaff.value.username,
-        email: newStaff.value.email,
-        full_name: newStaff.value.full_name,
-        phone_number: newStaff.value.phone_number,
-        password: newStaff.value.password,
-      }, {
-        withCredentials: true
-      })
+        // Create
+        if (createOwnerMode.value) {
+          // Create OWNER via admin API
+          res = await axios.post('/api/admin/staff', {
+            username: newStaff.value.username,
+            email: newStaff.value.email,
+            full_name: newStaff.value.full_name,
+            phone_number: newStaff.value.phone_number,
+            password: newStaff.value.password,
+            role: 'OWNER'
+          }, {
+            withCredentials: true
+          })
+        } else {
+          res = await axios.post('/api/admin/staff', {
+            username: newStaff.value.username,
+            email: newStaff.value.email,
+            full_name: newStaff.value.full_name,
+            phone_number: newStaff.value.phone_number,
+            password: newStaff.value.password,
+          }, {
+            withCredentials: true
+          })
+        }
     }
 
     if (res.data.success) {
@@ -293,7 +344,7 @@ async function submitStaffForm() {
 
 async function toggleStatus(member) {
   try {
-    const res = await axios.put(`/api/manager/staff/${member.id}`, {
+    const res = await axios.put(`/api/admin/staff/${member.id}`, {
       is_active: !member.is_active,
     }, {
       withCredentials: true

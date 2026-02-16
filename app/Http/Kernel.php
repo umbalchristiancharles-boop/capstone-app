@@ -14,6 +14,8 @@ class Kernel extends HttpKernel
   protected $middlewareAliases = [
     'auth' => \App\Http\Middleware\Authenticate::class,
     'admin' => \App\Http\Middleware\AdminMiddleware::class,
+    'ensure.admin' => \App\Http\Middleware\EnsureAdmin::class,
+    'no-cache' => \App\Http\Middleware\NoCache::class,
     // ... other middleware
 ];
 }

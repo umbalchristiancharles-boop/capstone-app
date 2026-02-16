@@ -18,62 +18,18 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
-    path: '/admin/staff-management',
+    path: '/owner-panel',
+    name: 'OwnerPanel',
+    component: () => import('../components/OwnerPanel.vue'),
+    meta: { requiresAuth: true, role: 'OWNER' }
+  },
+  {
+    path: '/staff-management',
     name: 'StaffManagement',
     component: StaffList,
     meta: {
       requiresAuth: true,
       role: 'OWNER'
-    }
-  },
-  // Branch Manager Routes
-  {
-    path: '/manager/dashboard',
-    name: 'ManagerDashboard',
-    component: () => import('../components/ManagerPanel.vue'),
-    meta: {
-      requiresAuth: true,
-      role: 'BRANCH_MANAGER'
-    }
-  },
-  // Branch Manager Inventory
-  {
-    path: '/manager/inventory',
-    name: 'ManagerInventory',
-    component: () => import('../components/InventoryManagement.vue'),
-    meta: {
-      requiresAuth: true,
-      role: 'BRANCH_MANAGER'
-    }
-  },
-  // Branch Manager Staff Management
-  {
-    path: '/manager/staff',
-    name: 'ManagerStaffManagement',
-    component: StaffList,
-    meta: {
-      requiresAuth: true,
-      role: 'BRANCH_MANAGER'
-    }
-  },
-  // Staff Routes
-  {
-    path: '/staff/dashboard',
-    name: 'StaffDashboard',
-    component: () => import('../components/StaffPanel.vue'),
-    meta: {
-      requiresAuth: true,
-      role: 'STAFF'
-    }
-  },
-  // Staff Clock In/Out
-  {
-    path: '/staff/clock',
-    name: 'StaffClockInOut',
-    component: () => import('../components/ClockInOut.vue'),
-    meta: {
-      requiresAuth: true,
-      role: 'STAFF'
     }
   },
   // HR Routes
@@ -118,32 +74,6 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes
-});
-
-// Navigation guard
-router.beforeEach((to, from, next) => {
-  const isAuthenticated = sessionStorage.getItem('user_id');
-  const userRole = sessionStorage.getItem('user_role');
-
-  // Redirect logged-in users away from guest-only pages
-  if (to.meta.requiresGuest && isAuthenticated) {
-    next('/admin-panel');
-    return;
-  }
-
-  // Redirect guests to login if route requires auth
-  if (to.meta.requiresAuth && !isAuthenticated) {
-    window.location.href = '/admin-login';
-    return;
-  }
-
-  // Role-based route protection
-  if (to.meta.role && to.meta.role !== userRole) {
-    next('/');
-    return;
-  }
-
-  next();
 });
 
 export default router;

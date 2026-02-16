@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 08, 2026 at 12:51 PM
+-- Generation Time: Feb 16, 2026 at 10:58 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -39,13 +39,6 @@ CREATE TABLE `attendance` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `attendance`
---
-
-INSERT INTO `attendance` (`id`, `user_id`, `date`, `time_in`, `time_out`, `hours_worked`, `status`, `notes`, `created_at`, `updated_at`) VALUES
-(2, 15, '2026-02-06', '11:48:31', '11:48:35', 0, 'late', NULL, '2026-02-06 03:48:31', '2026-02-06 03:48:35');
 
 -- --------------------------------------------------------
 
@@ -83,24 +76,6 @@ CREATE TABLE `cache` (
   `value` mediumtext NOT NULL,
   `expiration` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `cache`
---
-
-INSERT INTO `cache` (`key`, `value`, `expiration`) VALUES
-('laravel-cache-17ba0791499db908433b80f37c5fbc89b870084b', 'i:1;', 1770351250),
-('laravel-cache-17ba0791499db908433b80f37c5fbc89b870084b:timer', 'i:1770351250;', 1770351250),
-('laravel-cache-424f74a6a7ed4d4ed4761507ebcd209a6ef0937b', 'i:3;', 1770348636),
-('laravel-cache-424f74a6a7ed4d4ed4761507ebcd209a6ef0937b:timer', 'i:1770348636;', 1770348636),
-('laravel-cache-7b52009b64fd0a2a49e6d8a939753077792b0554', 'i:1;', 1770551478),
-('laravel-cache-7b52009b64fd0a2a49e6d8a939753077792b0554:timer', 'i:1770551478;', 1770551478),
-('laravel-cache-user_token_7CZET1js0dDn7sSux5EU8TR3GGzVKc381XDvDJWkw72fg59SPeNA5zplhoDD', 'i:13;', 1772942985),
-('laravel-cache-user_token_d2Pd6AuZALP1gIhjCXRzuKY6zjFd6rdqGk7ccutzELiYvhnYDhaDIDZw5q87', 'i:12;', 1773143418),
-('laravel-cache-user_token_HgNgdx9iH14aXgA4RICkeVPtFuvlesVGFCSLNhhs6lhUOEHm9LlbC1E0RO0n', 'i:13;', 1772940576),
-('laravel-cache-user_token_NuUAZqNz9uTWV9528Zm7BFhdGv3t24CHScMqzCTbnhzmfgeyeZlnsSxejZxy', 'i:13;', 1772940616),
-('laravel-cache-user_token_yHbkJKNUAVR2f0aHcOcm6m2U6mNBlfn01CDsmIfIRnKhqCD5tOkqga83t1Pg', 'i:13;', 1772940562),
-('laravel-cache-verification_code_umbal.christiancharles@ncst.edu.ph', 's:6:\"428210\";', 1770351652);
 
 -- --------------------------------------------------------
 
@@ -171,6 +146,43 @@ CREATE TABLE `failed_jobs` (
   `payload` longtext NOT NULL,
   `exception` longtext NOT NULL,
   `failed_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `feedback_complaints`
+--
+
+CREATE TABLE `feedback_complaints` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `type` enum('FEEDBACK','COMPLAINT','BUG_REPORT','FEATURE_REQUEST') NOT NULL DEFAULT 'FEEDBACK',
+  `subject` varchar(255) NOT NULL,
+  `message` text NOT NULL,
+  `status` enum('PENDING','IN_PROGRESS','RESOLVED','CLOSED') NOT NULL DEFAULT 'PENDING',
+  `priority` enum('LOW','MEDIUM','HIGH','URGENT') NOT NULL DEFAULT 'MEDIUM',
+  `assigned_to` bigint(20) UNSIGNED DEFAULT NULL,
+  `admin_response` text DEFAULT NULL,
+  `responded_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `feedback_replies`
+--
+
+CREATE TABLE `feedback_replies` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `feedback_id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `message` text NOT NULL,
+  `is_admin_reply` tinyint(1) NOT NULL DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -252,7 +264,13 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (25, '2026_02_06_200100_create_customer_accounts_table', 1),
 (26, '2026_02_06_200200_enhance_product_comments_table', 1),
 (27, '2026_02_06_220000_add_missing_columns_to_users_table', 1),
-(29, '2026_02_06_230000_fix_add_parent_comment_id_to_product_comments', 2);
+(29, '2026_02_06_230000_fix_add_parent_comment_id_to_product_comments', 2),
+(30, '2026_02_16_140000_add_department_to_users_table', 3),
+(31, '2026_02_16_150000_create_user_departments_table', 4),
+(32, '2026_02_16_150100_create_system_announcements_table', 4),
+(33, '2026_02_16_150200_create_terms_and_conditions_table', 4),
+(34, '2026_02_16_150300_create_feedback_complaints_table', 4),
+(35, '2026_02_16_150109_create_staff_table', 5);
 
 -- --------------------------------------------------------
 
@@ -272,6 +290,62 @@ CREATE TABLE `orders` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `orders`
+--
+
+INSERT INTO `orders` (`id`, `order_code`, `owner_id`, `branch_id`, `customer_name`, `status`, `grand_total`, `ordered_at`, `created_at`, `updated_at`) VALUES
+(1, 'CT-0015', 1, 1, 'Customer 15', 'completed', 1110.00, '2026-01-29 05:28:00', '2026-01-29 05:28:00', '2026-01-29 05:28:00'),
+(2, 'CT-0016', 1, 1, 'Customer 16', 'completed', 628.00, '2026-01-20 01:55:00', '2026-01-20 01:55:00', '2026-01-20 01:55:00'),
+(3, 'CT-0017', 1, 1, 'Customer 17', 'completed', 418.00, '2026-02-01 11:18:00', '2026-02-01 11:18:00', '2026-02-01 11:18:00'),
+(4, 'CT-0018', 1, 1, 'Customer 18', 'completed', 702.00, '2026-01-22 11:56:00', '2026-01-22 11:56:00', '2026-01-22 11:56:00'),
+(5, 'CT-0019', 1, 1, 'Customer 19', 'in_kitchen', 1297.00, '2026-01-31 04:00:00', '2026-01-31 04:00:00', '2026-01-31 04:00:00'),
+(6, 'CT-0020', 1, 1, 'Customer 20', 'in_kitchen', 936.00, '2026-01-31 06:49:00', '2026-01-31 06:49:00', '2026-01-31 06:49:00'),
+(7, 'CT-0021', 1, 1, 'Customer 21', 'completed', 565.00, '2026-02-04 05:10:00', '2026-02-04 05:10:00', '2026-02-04 05:10:00'),
+(8, 'CT-0022', 1, 1, 'Customer 22', 'completed', 1034.00, '2026-01-16 07:54:00', '2026-01-16 07:54:00', '2026-01-16 07:54:00'),
+(9, 'CT-0023', 1, 1, 'Customer 23', 'in_kitchen', 691.00, '2026-01-29 12:41:00', '2026-01-29 12:41:00', '2026-01-29 12:41:00'),
+(10, 'CT-0024', 1, 1, 'Customer 24', 'completed', 688.00, '2026-01-29 09:26:00', '2026-01-29 09:26:00', '2026-01-29 09:26:00'),
+(11, 'CT-0025', 1, 1, 'Customer 25', 'completed', 967.00, '2026-01-22 10:00:00', '2026-01-22 10:00:00', '2026-01-22 10:00:00'),
+(12, 'CT-0026', 1, 1, 'Customer 26', 'completed', 315.00, '2026-01-25 05:08:00', '2026-01-25 05:08:00', '2026-01-25 05:08:00'),
+(13, 'CT-0027', 1, 1, 'Customer 27', 'completed', 1585.00, '2026-01-23 04:00:00', '2026-01-23 04:00:00', '2026-01-23 04:00:00'),
+(14, 'CT-0028', 1, 1, 'Customer 28', 'completed', 1510.00, '2026-01-28 12:37:00', '2026-01-28 12:37:00', '2026-01-28 12:37:00'),
+(15, 'CT-0029', 1, 1, 'Customer 29', 'in_kitchen', 1300.00, '2026-01-22 04:34:00', '2026-01-22 04:34:00', '2026-01-22 04:34:00'),
+(16, 'CT-0030', 1, 1, 'Customer 30', 'completed', 817.00, '2026-02-05 08:38:00', '2026-02-05 08:38:00', '2026-02-05 08:38:00'),
+(17, 'CT-0031', 1, 1, 'Customer 31', 'pending', 1182.00, '2026-01-18 11:22:00', '2026-01-18 11:22:00', '2026-01-18 11:22:00'),
+(18, 'CT-0032', 1, 1, 'Customer 32', 'completed', 1072.00, '2026-02-01 01:15:00', '2026-02-01 01:15:00', '2026-02-01 01:15:00'),
+(19, 'CT-0033', 1, 1, 'Customer 33', 'completed', 1187.00, '2026-02-12 04:03:00', '2026-02-12 04:03:00', '2026-02-12 04:03:00'),
+(20, 'CT-0034', 1, 1, 'Customer 34', 'completed', 635.00, '2026-01-30 04:01:00', '2026-01-30 04:01:00', '2026-01-30 04:01:00'),
+(21, 'CT-0035', 1, 1, 'Customer 35', 'completed', 1409.00, '2026-01-30 03:05:00', '2026-01-30 03:05:00', '2026-01-30 03:05:00'),
+(22, 'CT-0036', 1, 1, 'Customer 36', 'pending', 710.00, '2026-02-09 04:55:00', '2026-02-09 04:55:00', '2026-02-09 04:55:00'),
+(23, 'CT-0037', 1, 1, 'Customer 37', 'completed', 1659.00, '2026-01-27 08:01:00', '2026-01-27 08:01:00', '2026-01-27 08:01:00'),
+(24, 'CT-0038', 1, 1, 'Customer 38', 'completed', 1604.00, '2026-01-24 04:15:00', '2026-01-24 04:15:00', '2026-01-24 04:15:00'),
+(25, 'CT-0039', 1, 1, 'Customer 39', 'completed', 1421.00, '2026-01-16 00:41:00', '2026-01-16 00:41:00', '2026-01-16 00:41:00'),
+(26, 'CT-0040', 1, 1, 'Customer 40', 'completed', 1260.00, '2026-01-17 10:14:00', '2026-01-17 10:14:00', '2026-01-17 10:14:00'),
+(27, 'CT-0041', 1, 1, 'Customer 41', 'completed', 1971.00, '2026-01-19 09:31:00', '2026-01-19 09:31:00', '2026-01-19 09:31:00'),
+(28, 'CT-0042', 1, 1, 'Customer 42', 'completed', 642.00, '2026-02-04 03:27:00', '2026-02-04 03:27:00', '2026-02-04 03:27:00'),
+(29, 'CT-0043', 1, 1, 'Customer 43', 'completed', 744.00, '2026-01-26 08:54:00', '2026-01-26 08:54:00', '2026-01-26 08:54:00'),
+(30, 'CT-0044', 1, 1, 'Customer 44', 'completed', 1264.00, '2026-02-08 07:03:00', '2026-02-08 07:03:00', '2026-02-08 07:03:00'),
+(31, 'CT-0045', 1, 1, 'Customer 45', 'completed', 1776.00, '2026-02-02 06:51:00', '2026-02-02 06:51:00', '2026-02-02 06:51:00'),
+(32, 'CT-0046', 1, 1, 'Customer 46', 'completed', 1803.00, '2026-01-16 11:35:00', '2026-01-16 11:35:00', '2026-01-16 11:35:00'),
+(33, 'CT-0047', 1, 1, 'Customer 47', 'completed', 1762.00, '2026-01-19 08:12:00', '2026-01-19 08:12:00', '2026-01-19 08:12:00'),
+(34, 'CT-0048', 1, 1, 'Customer 48', 'completed', 837.00, '2026-02-07 05:12:00', '2026-02-07 05:12:00', '2026-02-07 05:12:00'),
+(35, 'CT-0049', 1, 1, 'Customer 49', 'completed', 1438.00, '2026-01-31 10:52:00', '2026-01-31 10:52:00', '2026-01-31 10:52:00'),
+(36, 'CT-0050', 1, 1, 'Customer 50', 'completed', 886.00, '2026-02-07 04:40:00', '2026-02-07 04:40:00', '2026-02-07 04:40:00'),
+(37, 'CT-0051', 1, 1, 'Customer 51', 'completed', 1330.00, '2026-01-22 07:21:00', '2026-01-22 07:21:00', '2026-01-22 07:21:00'),
+(38, 'CT-0052', 1, 1, 'Customer 52', 'completed', 1572.00, '2026-01-27 03:10:00', '2026-01-27 03:10:00', '2026-01-27 03:10:00'),
+(39, 'CT-0053', 1, 1, 'Customer 53', 'in_kitchen', 461.00, '2026-01-18 03:38:00', '2026-01-18 03:38:00', '2026-01-18 03:38:00'),
+(40, 'CT-0054', 1, 1, 'Customer 54', 'completed', 1745.00, '2026-02-09 11:41:00', '2026-02-09 11:41:00', '2026-02-09 11:41:00'),
+(41, 'CT-0055', 1, 1, 'Customer 55', 'completed', 826.00, '2026-01-31 06:05:00', '2026-01-31 06:05:00', '2026-01-31 06:05:00'),
+(42, 'CT-0056', 1, 1, 'Customer 56', 'in_kitchen', 596.00, '2026-02-05 09:32:00', '2026-02-05 09:32:00', '2026-02-05 09:32:00'),
+(43, 'CT-0057', 1, 1, 'Customer 57', 'completed', 529.00, '2026-01-21 10:23:00', '2026-01-21 10:23:00', '2026-01-21 10:23:00'),
+(44, 'CT-0058', 1, 1, 'Customer 58', 'completed', 1704.00, '2026-01-22 08:12:00', '2026-01-22 08:12:00', '2026-01-22 08:12:00'),
+(45, 'CT-0059', 1, 1, 'Customer 59', 'pending', 1270.00, '2026-01-30 12:51:00', '2026-01-30 12:51:00', '2026-01-30 12:51:00'),
+(46, 'CT-0060', 1, 1, 'Customer 60', 'completed', 1688.00, '2026-02-07 04:50:00', '2026-02-07 04:50:00', '2026-02-07 04:50:00'),
+(47, 'CT-0061', 1, 1, 'Customer 61', 'completed', 1511.00, '2026-01-23 04:49:00', '2026-01-23 04:49:00', '2026-01-23 04:49:00'),
+(48, 'CT-0062', 1, 1, 'Customer 62', 'completed', 1592.00, '2026-02-05 02:40:00', '2026-02-05 02:40:00', '2026-02-05 02:40:00'),
+(49, 'CT-0063', 1, 1, 'Customer 63', 'in_kitchen', 357.00, '2026-02-02 10:39:00', '2026-02-02 10:39:00', '2026-02-02 10:39:00'),
+(50, 'CT-0064', 1, 1, 'Customer 64', 'completed', 1245.00, '2026-01-23 09:31:00', '2026-01-23 09:31:00', '2026-01-23 09:31:00');
 
 -- --------------------------------------------------------
 
@@ -304,6 +378,15 @@ CREATE TABLE `personal_access_tokens` (
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `personal_access_tokens`
+--
+
+INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `name`, `token`, `abilities`, `last_used_at`, `expires_at`, `created_at`, `updated_at`) VALUES
+(1, 'App\\Models\\User', 19, 'auth_token', '22d1a2e29fa7cde2c276f4d9dc2f7ec688836ebfeb6f58fa56dd8505f8950a9c', '[\"*\"]', NULL, NULL, '2026-02-16 06:54:18', '2026-02-16 06:54:18'),
+(2, 'App\\Models\\User', 19, 'auth_token', '52f581a401e2672a57a6342ce9e8ab83eb8df702968e3dea0e665fcc7fce7428', '[\"*\"]', NULL, NULL, '2026-02-16 06:58:08', '2026-02-16 06:58:08'),
+(3, 'App\\Models\\User', 19, 'auth_token', 'a6b86bdeba01b6bc7496ea14bf392636c28992d46e65e5bd1d726fc8a99b8497', '[\"*\"]', NULL, NULL, '2026-02-16 07:02:47', '2026-02-16 07:02:47');
+
 -- --------------------------------------------------------
 
 --
@@ -323,12 +406,12 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`id`, `name`, `slug`, `created_at`, `updated_at`) VALUES
-(1, 'Yangyeom', 'yangyeom', '2026-02-06 02:13:25', '2026-02-06 02:13:25'),
-(2, 'Snow Cheese', 'snow-cheese', '2026-02-06 02:13:25', '2026-02-06 02:13:25'),
-(3, 'Corndog', 'corndog', '2026-02-06 02:13:25', '2026-02-06 02:13:25'),
-(4, 'Pastries', 'pastries', '2026-02-06 02:13:25', '2026-02-06 02:13:25'),
-(5, 'Ramen', 'ramen', '2026-02-06 02:13:25', '2026-02-06 02:13:25'),
-(6, 'Ice Cream', 'ice-cream', '2026-02-06 02:13:25', '2026-02-06 02:13:25');
+(1, 'Yangyeom', 'yangyeom', '2026-02-13 13:21:44', '2026-02-13 13:21:44'),
+(2, 'Snow Cheese', 'snowcheese', '2026-02-13 13:21:44', '2026-02-13 13:21:44'),
+(3, 'Corndog', 'corndog', '2026-02-13 13:21:44', '2026-02-13 13:21:44'),
+(4, 'Pastries', 'pastries', '2026-02-13 13:21:44', '2026-02-13 13:21:44'),
+(5, 'Ramen', 'ramen', '2026-02-13 13:21:44', '2026-02-13 13:21:44'),
+(6, 'Ice Cream', 'icecream', '2026-02-13 13:21:44', '2026-02-13 13:21:44');
 
 -- --------------------------------------------------------
 
@@ -348,6 +431,13 @@ CREATE TABLE `product_comments` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `product_comments`
+--
+
+INSERT INTO `product_comments` (`id`, `product_id`, `user_id`, `parent_comment_id`, `author`, `text`, `rating`, `ip_address`, `created_at`, `updated_at`) VALUES
+(7, 2, NULL, NULL, 'umbal.christiancharles@ncst.edu.ph', 'Lasang kalawang', 5, '127.0.0.1', '2026-02-16 05:16:49', '2026-02-16 05:16:49');
 
 -- --------------------------------------------------------
 
@@ -369,11 +459,30 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('3RtbAUifvgztnuP0hsNE7yvNuycCYEs0aSjoIbV4', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiZUNzeXpGUUtPSklyUldqMDdvaG1lNmYwWWx2SlhnMUQ1cDFJUXJmUyI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czozMzoiaHR0cDovL2xvY2FsaG9zdDo4MDAwL3N0YWZmLXBhbmVsIjt9czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9sb2dpbiI7czo1OiJyb3V0ZSI7czo1OiJsb2dpbiI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1770550622),
-('iwh2EpJgwUBDx5zZCUaOdn95ttRbKcjy3TsZYMyz', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiS3pQa2k3cENxSnUxaHJhM3lXYWNGNkEwWHdPbHFqMlNFaVZ4U1lmMyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDQ6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hZG1pbi9zdGFmZi1tYW5hZ2VtZW50IjtzOjU6InJvdXRlIjtzOjIyOiJhZG1pbi5zdGFmZi1tYW5hZ2VtZW50Ijt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1770550323),
-('J4hwms2AgytHY0b3BylbcJxCQLMwrn9yuyHnXcp4', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiYzBiQkJGbTltMW5BRFJGWkdEMXRtTkdYQ2JtVXhkc1FmSXVTU2tUbyI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czo0NDoiaHR0cDovL2xvY2FsaG9zdDo4MDAwL2FkbWluL3N0YWZmLW1hbmFnZW1lbnQiO31zOjk6Il9wcmV2aW91cyI7YToyOntzOjM6InVybCI7czoyNzoiaHR0cDovL2xvY2FsaG9zdDo4MDAwL2xvZ2luIjtzOjU6InJvdXRlIjtzOjU6ImxvZ2luIjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1770550589),
-('pUQP6QtbvwZ03hgJ4GpvK0V00AofonTdeHw4XiX4', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiTDBvYUV2MzF0amVFQU9rWGV3eUVzWlA1N01XQm4xRDl0YkhQTjNrdyI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czozMzoiaHR0cDovL2xvY2FsaG9zdDo4MDAwL2FkbWluLXBhbmVsIjt9czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1770550543),
-('VyEwFOgoDFK4OBPxj8P2R6pMG0S2236Xp5k7civC', 12, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'YTo3OntzOjY6Il90b2tlbiI7czo0MDoiM25tbVJNWTdOQkxocXdQOVVrekc4T09ZcDVTMGt3aDVxYm9TNEk0eiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTI7czo3OiJ1c2VyX2lkIjtpOjEyO3M6OToidXNlcl9yb2xlIjtzOjU6IlNUQUZGIjtzOjk6InVzZXJfbmFtZSI7czoxMjoiR2FiYnkgT25nc2lwIjt9', 1770551472);
+('4rB5eiJBY9SFf70fX0Nwe9Z1VXhy2wEXd7Wf1XLD', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT; Windows NT 10.0; en-PH) WindowsPowerShell/5.1.26100.7705', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiQVZFbWNJUm9HdFBkd09uZlM0NktySlNXOEZTQnhVdnBkSmFhRktQSSI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czoyMToiaHR0cDovLzEyNy4wLjAuMTo4MDAwIjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1771235009),
+('8i77Izf1Df4xaCH0P06OtQKoHwVEuf8J7ffXmWox', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiOVBXcEZ1bTV1aUs2bVhFUm5iNWt1TTZaNHBPTkp6aHZmdDNXbnNyMyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO3M6Mjc6ImdlbmVyYXRlZDo6dnoyTEg3UkZTTXFMUk5TWiI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1771229428),
+('DY59OlMzY5JkkVv06nZdTHDOvOmU4ZLXmNd9jC0Z', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiVFZlaExnR21TUkx3THp0T3RYalVjRnlDTHZadXhBWXZJSVlBUmtBZCI7czo3OiJzdWNjZXNzIjtzOjI0OiJMb2dnZWQgb3V0IHN1Y2Nlc3NmdWxseS4iO3M6NjoiX2ZsYXNoIjthOjI6e3M6MzoibmV3IjthOjA6e31zOjM6Im9sZCI7YToxOntpOjA7czo3OiJzdWNjZXNzIjt9fXM6OToiX3ByZXZpb3VzIjthOjI6e3M6MzoidXJsIjtzOjI4OiJodHRwOi8vbG9jYWxob3N0OjgwMDAvbG9nb3V0IjtzOjU6InJvdXRlIjtzOjY6ImxvZ291dCI7fX0=', 1771235841),
+('NkIy2lK9gosPmvLC4IGkyPCHXs79kczoPxAmrnPs', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT; Windows NT 10.0; en-PH) WindowsPowerShell/5.1.26100.7705', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiUUVsbkZmRHpNSFJGUGJ5NzZqb2NiMzZxbEF0clI0VE51cmR4WjEwOSI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czoyMToiaHR0cDovLzEyNy4wLjAuMTo4MDAwIjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1771234948),
+('oVbuZCYj41sVL5LCJlEqPRUrS9hm33SGxdg4KKmP', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiNHVFRXZTc0ZGWlpvNUlRY3ZVMjJOaHhGNGozVWRrazZYY2g2V3o5aCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1771235843),
+('RVSs7iKdyQEy5mZashKGtIPAK6n8vSXShZuRGrpd', NULL, '127.0.0.1', 'curl/8.16.0', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiMHlyRHJLWXpWWG5vQjU4WFU4RFpoMFpXZ1JQUEVNazhCTU1sSHNVbCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mzc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hcGkvYWRtaW4vc3RhZmYiO3M6NToicm91dGUiO3M6Mjc6ImdlbmVyYXRlZDo6TGpvOGlkUWt4QlZvV3BKZSI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1771229372),
+('zczj0tvkTCIZFuc8FGKpewRmFVpbl2peMRapSe5F', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT; Windows NT 10.0; en-PH) WindowsPowerShell/5.1.26100.7705', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiTjNQUUdpSk5zZ3FsSXcxVnEwd0hOd1ZsTVo3Wm4wd0NQcXk2OXROQiI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czoyMToiaHR0cDovLzEyNy4wLjAuMTo4MDAwIjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1771234966);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `staff`
+--
+
+CREATE TABLE `staff` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `phone_number` varchar(255) DEFAULT NULL,
+  `position` varchar(255) NOT NULL,
+  `branch_id` bigint(20) UNSIGNED NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -405,11 +514,43 @@ CREATE TABLE `staff_documents` (
 --
 
 INSERT INTO `staff_documents` (`id`, `user_id`, `resume_path`, `government_id_path`, `psa_birth_certificate_path`, `nbi_clearance_path`, `police_clearance_path`, `medical_certificate_path`, `drug_test_result_path`, `sss_id_path`, `philhealth_id_path`, `pagibig_mdf_path`, `tin_id_path`, `diploma_transcript_path`, `created_at`, `updated_at`) VALUES
-(4, 11, 'staff-documents/11/resume.jpg', 'staff-documents/11/government_id.jpg', 'staff-documents/11/psa_birth_certificate.jpg', 'staff-documents/11/nbi_clearance.jpg', 'staff-documents/11/police_clearance.jpg', 'staff-documents/11/medical_certificate.jpg', 'staff-documents/11/drug_test_result.jpg', 'staff-documents/11/sss_id.jpg', 'staff-documents/11/philhealth_id.jpg', 'staff-documents/11/pagibig_mdf.jpg', 'staff-documents/11/tin_id.jpg', 'staff-documents/11/diploma_transcript.jpg', '2026-02-06 03:21:52', '2026-02-06 03:21:52'),
-(5, 12, 'staff-documents/12/resume.jpg', 'staff-documents/12/government_id.jpg', 'staff-documents/12/psa_birth_certificate.jpg', 'staff-documents/12/nbi_clearance.jpg', 'staff-documents/12/police_clearance.jpg', 'staff-documents/12/medical_certificate.jpg', 'staff-documents/12/drug_test_result.jpg', 'staff-documents/12/sss_id.jpg', 'staff-documents/12/philhealth_id.jpg', 'staff-documents/12/pagibig_mdf.jpg', 'staff-documents/12/tin_id.jpg', 'staff-documents/12/diploma_transcript.jpg', '2026-02-06 03:23:29', '2026-02-06 03:23:29'),
-(6, 14, 'staff-documents/14/resume.jpg', 'staff-documents/14/government_id.jpg', 'staff-documents/14/psa_birth_certificate.jpg', 'staff-documents/14/nbi_clearance.jpg', 'staff-documents/14/police_clearance.jpg', 'staff-documents/14/medical_certificate.jpg', 'staff-documents/14/drug_test_result.jpg', 'staff-documents/14/sss_id.jpg', 'staff-documents/14/philhealth_id.jpg', 'staff-documents/14/pagibig_mdf.jpg', 'staff-documents/14/tin_id.jpg', 'staff-documents/14/diploma_transcript.jpg', '2026-02-06 03:33:31', '2026-02-06 03:33:31'),
-(7, 15, 'staff-documents/15/resume.jpg', 'staff-documents/15/government_id.jpg', 'staff-documents/15/psa_birth_certificate.jpg', 'staff-documents/15/nbi_clearance.jpg', 'staff-documents/15/police_clearance.jpg', 'staff-documents/15/medical_certificate.jpg', 'staff-documents/15/drug_test_result.jpg', 'staff-documents/15/sss_id.jpg', 'staff-documents/15/philhealth_id.jpg', 'staff-documents/15/pagibig_mdf.jpg', 'staff-documents/15/tin_id.jpg', 'staff-documents/15/diploma_transcript.jpg', '2026-02-06 03:47:16', '2026-02-06 03:47:16'),
-(8, 16, NULL, 'staff-documents/16/government_id.jpg', 'staff-documents/16/psa_birth_certificate.jpg', 'staff-documents/16/nbi_clearance.jpg', 'staff-documents/16/police_clearance.jpg', 'staff-documents/16/medical_certificate.jpg', 'staff-documents/16/drug_test_result.jpg', 'staff-documents/16/sss_id.jpg', 'staff-documents/16/philhealth_id.jpg', 'staff-documents/16/pagibig_mdf.jpg', 'staff-documents/16/tin_id.jpg', 'staff-documents/16/diploma_transcript.jpg', '2026-02-06 03:56:48', '2026-02-06 03:56:59');
+(10, 21, 'staff-documents/21/resume.png', 'staff-documents/21/government_id.png', 'staff-documents/21/psa_birth_certificate.png', 'staff-documents/21/nbi_clearance.png', 'staff-documents/21/police_clearance.png', 'staff-documents/21/medical_certificate.png', 'staff-documents/21/drug_test_result.png', 'staff-documents/21/sss_id.png', 'staff-documents/21/philhealth_id.png', 'staff-documents/21/pagibig_mdf.png', 'staff-documents/21/tin_id.png', 'staff-documents/21/diploma_transcript.png', '2026-02-16 08:34:41', '2026-02-16 08:34:41');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `system_announcements`
+--
+
+CREATE TABLE `system_announcements` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `admin_id` bigint(20) UNSIGNED NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `message` text NOT NULL,
+  `type` enum('MAINTENANCE','INFO','WARNING','UPDATE') NOT NULL DEFAULT 'INFO',
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `scheduled_at` timestamp NULL DEFAULT NULL,
+  `expires_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `terms_and_conditions`
+--
+
+CREATE TABLE `terms_and_conditions` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `created_by` bigint(20) UNSIGNED NOT NULL,
+  `version` varchar(20) NOT NULL,
+  `content` text NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 0,
+  `effective_date` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -425,6 +566,7 @@ CREATE TABLE `users` (
   `password` varchar(255) NOT NULL,
   `email_verified_at` timestamp NULL DEFAULT NULL,
   `role` varchar(50) NOT NULL DEFAULT 'STAFF',
+  `department` varchar(50) DEFAULT NULL,
   `branch_id` bigint(20) UNSIGNED DEFAULT NULL,
   `avatar_url` varchar(255) DEFAULT NULL,
   `phone_number` varchar(255) DEFAULT NULL,
@@ -441,14 +583,40 @@ CREATE TABLE `users` (
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `email`, `username`, `full_name`, `password`, `email_verified_at`, `role`, `branch_id`, `avatar_url`, `phone_number`, `address`, `is_active`, `remember_token`, `created_at`, `updated_at`, `deleted_at`, `must_change_password`) VALUES
-(2, 'admin@chikintayo.com', 'admin', 'Administrator', '$2y$12$BS586ELWL5YpVABOljTMQOzA0uXCeA1rY3sSlABZY9CItGgvrp3jy', NULL, 'OWNER', NULL, '/storage/avatars/avatar_2_1770343713.png', NULL, NULL, 1, NULL, '2026-02-06 02:07:33', '2026-02-06 02:07:33', NULL, 0),
-(11, 'paul@gmail.com', 'Paul Berrer', 'Paul Berrer', '$2y$12$Cb9DUEB13lkBMR0us1WAc.2dnfSLIIT7h6E8vpUa9tfXQxQqutu8u', NULL, 'BRANCH_MANAGER', 1, '/storage/avatars/avatar_11_1770349526.jpg', '09123456799', 'asd', 1, NULL, '2026-02-06 03:21:52', '2026-02-08 10:42:18', NULL, 0),
-(12, 'gabby@gmail.com', 'Gabby', 'Gabby Ongsip', '$2y$12$FLmMvTOdw95Vhy/ynoilVOrzQ3V60nL8/a7nLLjCP215wjdhH57VO', NULL, 'STAFF', 1, '/storage/avatars/avatar_12_1770348642.jpg', '09156818851', 'asd', 1, NULL, '2026-02-06 03:23:29', '2026-02-06 03:24:08', NULL, 0),
-(13, 'umbal.christiancharles@ncst.edu.ph', 'umbal', NULL, '$2y$12$O9zdvoAdRzrxUtHCUY8ah.ghXCdMqwfzT.6CeDwtxnWZre0Dt6C6u', '2026-02-06 03:29:22', 'customer', NULL, NULL, NULL, NULL, 1, NULL, '2026-02-06 03:29:22', '2026-02-06 03:29:22', NULL, 0),
-(14, 'mark@gmail.com', 'mark', 'Mark Calaway', '$2y$12$gsm5n/dNa0OkPopStiES3uVEPXQHbytJYSRfwGr.NvXe75d.jOMHa', NULL, 'BRANCH_MANAGER', 2, '/storage/avatars/avatar_14_1770348856.jpg', '09156818851', 'asd', 1, NULL, '2026-02-06 03:33:31', '2026-02-06 03:34:05', NULL, 0),
-(15, 'janne@gmail.com', 'janne', 'Janne De Guzman', '$2y$12$g5BMuBhoakS7IqHF5SQqne4dlsurJbbwcuSz24HajwVHbAaeiqOiG', NULL, 'HR', 1, NULL, '09099628117', 'asd', 1, NULL, '2026-02-06 03:47:16', '2026-02-06 03:48:23', NULL, 0),
-(16, 'asd@gmail.com', 'asd', 'asds', '$2y$12$NYUBz3TQ9kjoNiECkhaCNu5Ug4md6d/dcpwOzm0SkkRrMPL7tiPBW', NULL, 'STAFF', 1, NULL, '09099628117', 'asd', 1, NULL, '2026-02-06 03:56:48', '2026-02-08 11:31:19', '2026-02-08 11:31:19', 1);
+INSERT INTO `users` (`id`, `email`, `username`, `full_name`, `password`, `email_verified_at`, `role`, `department`, `branch_id`, `avatar_url`, `phone_number`, `address`, `is_active`, `remember_token`, `created_at`, `updated_at`, `deleted_at`, `must_change_password`) VALUES
+(13, 'umbal.christiancharles@ncst.edu.ph', 'umbal', NULL, '$2y$12$O9zdvoAdRzrxUtHCUY8ah.ghXCdMqwfzT.6CeDwtxnWZre0Dt6C6u', '2026-02-06 03:29:22', 'customer', NULL, NULL, NULL, NULL, NULL, 1, NULL, '2026-02-06 03:29:22', '2026-02-06 03:29:22', NULL, 0),
+(18, 'admin@chikintayo.com', 'admin', 'System Administrator', '$2y$12$5MhrY4pfEnAbJwc7qYY2ru/lH3qCvuLY7Bo0HhuZQilp/FXxt.s1u', '2026-02-16 06:43:06', 'ADMIN', NULL, NULL, '/storage/avatars/avatar_18_1771228406.jpg', NULL, NULL, 1, NULL, '2026-02-16 06:43:06', '2026-02-16 06:43:06', NULL, 0),
+(21, 'owner@gmail.com', 'owner', 'GABB', '$2y$12$IXz/PH6AhThR3A62ee.AfOYHtfrRh/GR5fL.md0s4rUpPy4yZK646', NULL, 'OWNER', NULL, NULL, NULL, '09295426078', 'asd', 1, NULL, '2026-02-16 08:34:41', '2026-02-16 09:57:11', NULL, 0);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `user_departments`
+--
+
+CREATE TABLE `user_departments` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `department` varchar(50) NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `user_terms_acceptance`
+--
+
+CREATE TABLE `user_terms_acceptance` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `terms_id` bigint(20) UNSIGNED NOT NULL,
+  `accepted_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `ip_address` varchar(45) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Indexes for dumped tables
@@ -505,6 +673,25 @@ ALTER TABLE `employee_timesheets`
 ALTER TABLE `failed_jobs`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `failed_jobs_uuid_unique` (`uuid`);
+
+--
+-- Indexes for table `feedback_complaints`
+--
+ALTER TABLE `feedback_complaints`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `feedback_complaints_assigned_to_foreign` (`assigned_to`),
+  ADD KEY `feedback_complaints_user_id_index` (`user_id`),
+  ADD KEY `feedback_complaints_status_index` (`status`),
+  ADD KEY `feedback_complaints_priority_index` (`priority`),
+  ADD KEY `feedback_complaints_type_index` (`type`);
+
+--
+-- Indexes for table `feedback_replies`
+--
+ALTER TABLE `feedback_replies`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `feedback_replies_user_id_foreign` (`user_id`),
+  ADD KEY `feedback_replies_feedback_id_index` (`feedback_id`);
 
 --
 -- Indexes for table `jobs`
@@ -572,11 +759,37 @@ ALTER TABLE `sessions`
   ADD KEY `sessions_last_activity_index` (`last_activity`);
 
 --
+-- Indexes for table `staff`
+--
+ALTER TABLE `staff`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `staff_email_unique` (`email`),
+  ADD KEY `staff_branch_id_foreign` (`branch_id`);
+
+--
 -- Indexes for table `staff_documents`
 --
 ALTER TABLE `staff_documents`
   ADD PRIMARY KEY (`id`),
   ADD KEY `staff_documents_user_id_index` (`user_id`);
+
+--
+-- Indexes for table `system_announcements`
+--
+ALTER TABLE `system_announcements`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `system_announcements_admin_id_foreign` (`admin_id`),
+  ADD KEY `system_announcements_is_active_index` (`is_active`),
+  ADD KEY `system_announcements_type_index` (`type`);
+
+--
+-- Indexes for table `terms_and_conditions`
+--
+ALTER TABLE `terms_and_conditions`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `terms_and_conditions_created_by_foreign` (`created_by`),
+  ADD KEY `terms_and_conditions_is_active_index` (`is_active`),
+  ADD KEY `terms_and_conditions_version_index` (`version`);
 
 --
 -- Indexes for table `users`
@@ -589,7 +802,26 @@ ALTER TABLE `users`
   ADD UNIQUE KEY `unique_username` (`username`),
   ADD KEY `users_email_index` (`email`),
   ADD KEY `users_username_index` (`username`),
-  ADD KEY `users_role_index` (`role`);
+  ADD KEY `users_role_index` (`role`),
+  ADD KEY `users_department_index` (`department`);
+
+--
+-- Indexes for table `user_departments`
+--
+ALTER TABLE `user_departments`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `user_departments_user_id_department_unique` (`user_id`,`department`),
+  ADD KEY `user_departments_user_id_index` (`user_id`),
+  ADD KEY `user_departments_department_index` (`department`);
+
+--
+-- Indexes for table `user_terms_acceptance`
+--
+ALTER TABLE `user_terms_acceptance`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `user_terms_acceptance_user_id_terms_id_unique` (`user_id`,`terms_id`),
+  ADD KEY `user_terms_acceptance_terms_id_foreign` (`terms_id`),
+  ADD KEY `user_terms_acceptance_user_id_index` (`user_id`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -626,6 +858,18 @@ ALTER TABLE `failed_jobs`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `feedback_complaints`
+--
+ALTER TABLE `feedback_complaints`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `feedback_replies`
+--
+ALTER TABLE `feedback_replies`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `jobs`
 --
 ALTER TABLE `jobs`
@@ -635,19 +879,19 @@ ALTER TABLE `jobs`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36;
 
 --
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=51;
 
 --
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `products`
@@ -659,19 +903,49 @@ ALTER TABLE `products`
 -- AUTO_INCREMENT for table `product_comments`
 --
 ALTER TABLE `product_comments`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
+-- AUTO_INCREMENT for table `staff`
+--
+ALTER TABLE `staff`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `staff_documents`
 --
 ALTER TABLE `staff_documents`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+
+--
+-- AUTO_INCREMENT for table `system_announcements`
+--
+ALTER TABLE `system_announcements`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `terms_and_conditions`
+--
+ALTER TABLE `terms_and_conditions`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
+
+--
+-- AUTO_INCREMENT for table `user_departments`
+--
+ALTER TABLE `user_departments`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `user_terms_acceptance`
+--
+ALTER TABLE `user_terms_acceptance`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- Constraints for dumped tables
@@ -690,6 +964,20 @@ ALTER TABLE `customer_accounts`
   ADD CONSTRAINT `customer_accounts_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
+-- Constraints for table `feedback_complaints`
+--
+ALTER TABLE `feedback_complaints`
+  ADD CONSTRAINT `feedback_complaints_assigned_to_foreign` FOREIGN KEY (`assigned_to`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `feedback_complaints_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `feedback_replies`
+--
+ALTER TABLE `feedback_replies`
+  ADD CONSTRAINT `feedback_replies_feedback_id_foreign` FOREIGN KEY (`feedback_id`) REFERENCES `feedback_complaints` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `feedback_replies_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
 -- Constraints for table `product_comments`
 --
 ALTER TABLE `product_comments`
@@ -698,10 +986,41 @@ ALTER TABLE `product_comments`
   ADD CONSTRAINT `product_comments_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 
 --
+-- Constraints for table `staff`
+--
+ALTER TABLE `staff`
+  ADD CONSTRAINT `staff_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE;
+
+--
 -- Constraints for table `staff_documents`
 --
 ALTER TABLE `staff_documents`
   ADD CONSTRAINT `staff_documents_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `system_announcements`
+--
+ALTER TABLE `system_announcements`
+  ADD CONSTRAINT `system_announcements_admin_id_foreign` FOREIGN KEY (`admin_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `terms_and_conditions`
+--
+ALTER TABLE `terms_and_conditions`
+  ADD CONSTRAINT `terms_and_conditions_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `user_departments`
+--
+ALTER TABLE `user_departments`
+  ADD CONSTRAINT `user_departments_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `user_terms_acceptance`
+--
+ALTER TABLE `user_terms_acceptance`
+  ADD CONSTRAINT `user_terms_acceptance_terms_id_foreign` FOREIGN KEY (`terms_id`) REFERENCES `terms_and_conditions` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `user_terms_acceptance_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

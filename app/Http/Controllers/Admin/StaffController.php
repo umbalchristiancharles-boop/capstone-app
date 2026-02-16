@@ -149,6 +149,46 @@ class StaffController extends Controller
 
             Log::info('Branches with staff count:', ['count' => count($result)]);
 
+            // Additionally include OWNER accounts (they are not tied to branches).
+            // Only show OWNERs to ADMIN or OWNER users.
+            try {
+                if (in_array($user->role, ['OWNER', 'ADMIN'])) {
+                    $owners = DB::table('users')
+                        ->where('role', 'OWNER')
+                        ->where('is_active', 1)
+                        ->whereNull('deleted_at')
+                        ->get();
+
+                    if ($owners && count($owners) > 0) {
+                        $ownerData = $owners->map(function($o) {
+                            return [
+                                'id' => $o->id,
+                                'username' => $o->username,
+                                'full_name' => $o->full_name,
+                                'email' => $o->email,
+                                'phone_number' => $o->phone_number,
+                                'address' => $o->address,
+                                'role' => $o->role,
+                                'is_active' => $o->is_active,
+                            ];
+                        })->toArray();
+
+                        // Append as a pseudo-branch named 'Owners' so frontend can display them.
+                        $result[] = [
+                            'branch_id' => null,
+                            'branch_name' => 'Owners',
+                            'branch_code' => null,
+                            'branch_address' => null,
+                            'branch_manager' => null,
+                            'staff' => $ownerData,
+                            'hr' => [],
+                        ];
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::warning('Could not append owners to staff list: ' . $e->getMessage());
+            }
+
             return response()->json([
                 'success' => true,
                 'data' => $result
@@ -254,7 +294,8 @@ class StaffController extends Controller
         try {
             $allowedRoles = [];
             if (in_array($user->role, ['OWNER', 'ADMIN'])) {
-                $allowedRoles = ['BRANCH_MANAGER'];
+                // Allow owners/admins to create both branch managers and owner accounts
+                $allowedRoles = ['BRANCH_MANAGER', 'OWNER'];
             } elseif ($user->role === 'BRANCH_MANAGER') {
                 $allowedRoles = ['HR', 'STAFF'];
             } else {
@@ -267,15 +308,15 @@ class StaffController extends Controller
             $roleRule = 'required|in:' . implode(',', $allowedRoles);
             $fileRule = 'required|file|mimes:jpg,jpeg,png,webp,pdf|max:5120';
 
-            $request->validate([
+            // Build validation rules dynamically so OWNER role does not require a branch
+            $requestedRole = $request->input('role');
+
+            $rules = [
                 'username' => 'required|string|max:50|unique:users,username',
                 'email' => 'required|email|max:120|unique:users,email',
                 'fullName' => 'required|string|max:150',
                 'phone' => 'nullable|string|max:30',
                 'address' => 'nullable|string|max:255',
-                // Accept either branchId (camelCase) or branch_id (snake_case)
-                'branchId' => 'required_without:branch_id|exists:branches,id',
-                'branch_id' => 'required_without:branchId|exists:branches,id',
                 'role' => $roleRule,
                 // Required documents (images or PDF, max 5MB each)
                 'resume' => $fileRule,
@@ -290,7 +331,18 @@ class StaffController extends Controller
                 'pagibig_mdf' => $fileRule,
                 'tin_id' => $fileRule,
                 'diploma_transcript' => $fileRule,
-            ]);
+            ];
+
+            // branch is required unless creating an OWNER account
+            if (strtoupper($requestedRole) !== 'OWNER') {
+                $rules['branchId'] = 'required_without:branch_id|exists:branches,id';
+                $rules['branch_id'] = 'required_without:branchId|exists:branches,id';
+            } else {
+                $rules['branchId'] = 'nullable|exists:branches,id';
+                $rules['branch_id'] = 'nullable|exists:branches,id';
+            }
+
+            $request->validate($rules);
 
             $role = $request->input('role');
 
@@ -383,9 +435,14 @@ class StaffController extends Controller
 
             Log::info('Staff created:', ['id' => $staffId, 'role' => $role]);
 
+            $roleLabel = 'Staff';
+            if ($role === 'BRANCH_MANAGER') $roleLabel = 'Branch Manager';
+            elseif ($role === 'HR') $roleLabel = 'HR';
+            elseif ($role === 'OWNER') $roleLabel = 'Owner';
+
             return response()->json([
                 'success' => true,
-                'message' => ($role === 'BRANCH_MANAGER' ? 'Branch Manager' : ($role === 'HR' ? 'HR' : 'Staff')) . ' account created successfully!',
+                'message' => $roleLabel . ' account created successfully!',
                 'data' => ['id' => $staffId]
             ], 201);
 
@@ -442,9 +499,11 @@ class StaffController extends Controller
                     'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*])[A-Za-z\\d!@#$%^&*]{8,}$/',
                 ],
                 // accept either branchId (from SPA) or branch_id (from other clients)
-                'branchId' => 'sometimes|required|exists:branches,id',
-                'branch_id' => 'sometimes|required|exists:branches,id',
-                'role' => 'required|in:BRANCH_MANAGER,STAFF,HR',
+                // make them nullable here and enforce requirement after normalization
+                'branchId' => 'nullable|exists:branches,id',
+                'branch_id' => 'nullable|exists:branches,id',
+                // allow OWNER as well so admin/owner accounts can be edited here
+                'role' => 'required|in:BRANCH_MANAGER,STAFF,HR,OWNER',
                 'isActive' => 'required|boolean',
             ]);
 
@@ -468,6 +527,15 @@ class StaffController extends Controller
 
             // Normalize branch id (accept either branchId or branch_id)
             $branchId = $request->input('branchId') ?? $request->input('branch_id');
+
+            // If role is not OWNER, branch id is required
+            $roleInput = $request->input('role');
+            if (strtoupper($roleInput) !== 'OWNER' && (empty($branchId) && $branchId !== '0')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'The branch id field is required.'
+                ], 422);
+            }
 
             if ($user->role === 'HR' && $user->branch_id && (int) $branchId !== (int) $user->branch_id) {
                 return response()->json([

@@ -963,15 +963,18 @@ function goToStaffManagement() {
     // show global page blur so the background is blurred while overlay is visible
     try { if (window.pageBlur && typeof window.pageBlur.show === 'function') window.pageBlur.show() } catch (e) {}
 
-    // give overlay a short moment to render, then navigate
+    // give overlay a short moment to render, then perform a full-page navigation
     setTimeout(() => {
-      router.push('/admin/staff-management').catch(() => {
-        // navigation failed; leave cleanup to whoever created/handles the overlay
-      })
+      try {
+        window.location.href = '/staff-management'
+      } catch (e) {
+        // fallback to SPA navigation if full-page navigation fails
+        try { router.push('/staff-management') } catch (err) {}
+      }
     }, 220)
   } catch (e) {
     // fallback navigation if DOM manipulation fails
-    try { router.push('/admin/staff-management') } catch (err) {}
+    try { router.push('/staff-management') } catch (err) {}
   }
 }
 

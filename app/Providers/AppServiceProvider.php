@@ -26,5 +26,14 @@ class AppServiceProvider extends ServiceProvider
         } catch (\Throwable $__e) {
             // ignore if the middleware class isn't available for any reason
         }
+
+        // Define no_cache_view helper globally so serialized route closures
+        // that call it won't fail after route caching or serialization.
+        if (! function_exists('no_cache_view')) {
+            function no_cache_view($view)
+            {
+                return view($view);
+            }
+        }
     }
 }

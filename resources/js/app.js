@@ -3,9 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import App from './app.vue'
 import Index from './components/index.vue'
 import AdminPanel from './components/adminpanel.vue'
-import ManagerPanel from './components/ManagerPanel.vue'
-import StaffPanel from './components/StaffPanel.vue'
-import HrPanel from './components/hrpanel.vue'
+import OwnerPanel from './components/OwnerPanel.vue'
 import adminlogin from './components/adminlogin.vue'
 import StaffList from './components/StaffList.vue'
 import DeletedStaffList from './components/DeletedStaffList.vue'
@@ -62,11 +60,11 @@ const router = createRouter({
     { path: '/login', component: adminlogin },
     { path: '/admin-login', component: adminlogin },
     { path: '/admin-panel', component: AdminPanel },
-    { path: '/manager-panel', component: ManagerPanel },
-    { path: '/staff-panel', component: StaffPanel },
-    { path: '/hr-panel', component: HrPanel},
+    { path: '/staff-panel', component: StaffList },
+    { path: '/owner-panel', component: OwnerPanel },
+    { path: '/hr-panel', component: DeletedStaffList},
     {
-      path: '/admin/staff-management',
+      path: '/staff-management',
       component: StaffList,
       meta: { requiresAuth: true },
     },
@@ -213,7 +211,7 @@ router.beforeEach(async (to, from, next) => {
   }
 
   // Protected panel routes
-  const protectedRoutes = ['/admin-panel', '/manager-panel', '/staff-panel', '/hr-panel', '/admin/staff-management', '/admin/deleted-staff', '/manager/staff']
+  const protectedRoutes = ['/admin-panel', '/manager-panel', '/staff-panel', '/hr-panel', '/staff-management', '/admin/deleted-staff', '/manager/staff']
   const isProtectedRoute = protectedRoutes.some(route => to.path.startsWith(route)) || to.meta.requiresAuth
 
   if (isProtectedRoute) {
@@ -223,7 +221,7 @@ router.beforeEach(async (to, from, next) => {
     }
 
     // One-time reload for staff-management to sync CSRF
-    if ((to.path === '/admin/staff-management' || to.path === '/manager-panel' || to.path === '/manager/staff') && !sessionStorage.getItem('appReloaded')) {
+    if ((to.path === '/staff-management' || to.path === '/manager-panel' || to.path === '/manager/staff') && !sessionStorage.getItem('appReloaded')) {
       try {
         sessionStorage.setItem('suppressRouteOverlay', '1')
         sessionStorage.setItem('suppressRouteTransition', '1')
@@ -260,9 +258,9 @@ axios
         axios.defaults.headers.common['X-XSRF-TOKEN'] = xsrfCookie
       }
     }
-    // If the server-rendered page is already at /admin/staff-management,
+    // If the server-rendered page is already at /staff-management,
     // do a one-time reload to ensure CSRF meta tag and XSRF cookie are fresh
-    if ((window.location.pathname === '/admin/staff-management' || window.location.pathname === '/manager-panel' || window.location.pathname === '/manager/staff') && !sessionStorage.getItem('appReloaded')) {
+    if ((window.location.pathname === '/staff-management' || window.location.pathname === '/manager-panel' || window.location.pathname === '/manager/staff') && !sessionStorage.getItem('appReloaded')) {
       try {
         sessionStorage.setItem('suppressRouteOverlay', '1')
         sessionStorage.setItem('suppressRouteTransition', '1')

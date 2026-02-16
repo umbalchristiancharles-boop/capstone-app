@@ -1,9 +1,8 @@
 const fs = require('fs');
 const sfc = require('@vue/compiler-sfc');
-const content = fs.readFileSync('resources/js/components/hrpanel.vue','utf8');
 let res;
 try {
-  res = sfc.parse(content, { filename: 'hrpanel.vue' });
+  res = sfc.parse(fs.readFileSync('resources/js/components/hrpanel.vue','utf8'), { filename: 'hrpanel.vue' });
   console.log('descriptor keys:', Object.keys(res.descriptor));
   if (res.errors && res.errors.length) {
     console.error('errors:');

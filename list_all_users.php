@@ -30,5 +30,5 @@ echo "RECOMMENDED TEST CREDENTIALS\n";
 echo "==========================================\n";
 echo "After password reset, use these:\n\n";
 echo "Paul Berrer / Paul@123\n";
-echo "admin / Admin123! (if exists)\n";
+echo "admin / ChikinTayo_2526 (if exists)\n";
 echo "\n";

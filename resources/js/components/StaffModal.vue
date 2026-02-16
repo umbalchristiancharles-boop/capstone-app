@@ -95,34 +95,7 @@
                 />
               </div>
 
-              <!-- Branch -->
-              <div class="form-group" v-if="!branchManagerMode">
-                <label for="branch" class="form-label">Branch <span v-if="!isEdit">*</span></label>
-                <select
-                  v-model="form.branchId"
-                  id="branch"
-                  class="form-input"
-                  :required="!isEdit"
-                >
-                  <option v-if="!isEdit" value="" disabled>Select Branch</option>
-                  <option
-                        v-for="branch in branches"
-                        :key="branch.id"
-                        :value="branch.id"
-                      >
-                    {{ branch.name }}
-                  </option>
-                </select>
-                <div v-if="isEdit" class="small-hint" style="margin-top:0.5rem; color:#6b7280; font-size:0.9rem;">
-                  Current branch will be kept unless you choose another.
-                </div>
-              </div>
-              <div class="form-group" v-else>
-                <label class="form-label">Branch *</label>
-                <div class="form-input" style="background-color: #f3f4f6; padding: 0.5rem; border-radius: 8px; display: flex; align-items: center;">
-                  {{ managerBranchName || 'Staff Branch' }}
-                </div>
-              </div>
+              <!-- Branch removed: Owner accounts do not require branch selection -->
 
               <!-- Role -->
               <!-- When creating a staff account show the role; when editing, show read-only role text -->
@@ -403,15 +376,10 @@ export default {
       return b ? b.name : null
     },
     roleOptions() {
-      if (this.branchManagerMode) {
-        return [
-          { value: 'STAFF', label: 'Staff' },
-          { value: 'HR', label: 'HR' },
-        ]
-      }
-
+      // For this deployment we only allow creating Owner accounts from admin staff management.
+      // Return only the OWNER role option when creating accounts (non-edit mode).
       return [
-        { value: 'BRANCH_MANAGER', label: 'Branch Manager' },
+        { value: 'OWNER', label: 'Owner' },
       ]
     }
   },
@@ -426,7 +394,7 @@ export default {
         fullName: '',
         password: '',
         phone: '',
-        branchId: '',
+            branchId: '',
         role:  '',
         address: '',
         isActive: true
@@ -445,7 +413,7 @@ export default {
         tin_id: null,
         diploma_transcript: null,
       },
-      branches: [],
+      // branches removed — owner creation does not need branches
       errorMessage: '',
       isSubmitting: false,
       documents: null,
@@ -458,7 +426,6 @@ export default {
       immediate: true,
       async handler(newVal) {
         if (newVal) {
-          await this.loadBranches()
 
           if (this.isEdit && this.staff) {
             // Populate form with existing staff data; accept multiple field shapes
@@ -485,8 +452,8 @@ export default {
               fullName:  '',
               password: '',
               phone: '',
-              branchId: '',
-              role: this.branchManagerMode ? 'STAFF' : 'BRANCH_MANAGER',
+                branchId: '',
+                role: 'OWNER',
               address: '',
               isActive: true
             }
@@ -551,17 +518,17 @@ export default {
 
     buildCreateFormData() {
       const formData = new FormData()
-      const role = this.form.role || (this.branchManagerMode ? 'STAFF' : 'BRANCH_MANAGER')
-      const branchId = this.branchManagerMode && this.branchForManager
-        ? this.branchForManager
-        : this.form.branchId
+      // Force owner role and omit branch for owner accounts
+      const role = 'OWNER'
+      const branchId = ''
 
       formData.append('username', this.form.username)
       formData.append('email', this.form.email)
       formData.append('fullName', this.form.fullName)
       formData.append('phone', this.form.phone || '')
       formData.append('address', this.form.address || '')
-      formData.append('branchId', branchId || '')
+      // don't append branchId for owner accounts (leave empty)
+      formData.append('branchId', branchId)
       formData.append('role', role)
       formData.append('password', this.defaultPassword)
 
@@ -574,25 +541,7 @@ export default {
       return formData
     },
 
-    async loadBranches() {
-      try {
-        const res = await axios.get('/api/admin/branches', {
-          withCredentials: true,
-        })
-
-        console.log('Branches API response:', res.data)
-
-        if (res.data.success) {
-          this.branches = res.data.data
-          console.log('📊 Branches loaded:', this.branches.length)
-        } else {
-          console.error('Failed to load branches:', res.data.message)
-        }
-      } catch (e) {
-        console.error('Load branches error:', e)
-        this.errorMessage = e.response?.data?.message || 'Failed to load branches.'
-      }
-    },
+    // loadBranches removed — branches are not required for Owner creation
 
     async submitForm() {
       this.isSubmitting = true

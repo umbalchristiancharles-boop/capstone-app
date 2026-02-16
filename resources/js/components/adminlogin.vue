@@ -183,6 +183,8 @@ function resolveRedirectPath(role) {
     if (role === "BRANCH_MANAGER") return "/manager-panel";
     if (role === "STAFF") return "/staff-panel";
     if (role === "HR") return "/hr-panel";
+    if (role === "OWNER") return "/owner-panel";
+    if (role === "ADMIN") return "/admin-panel";
     return "/admin-panel";
 }
 

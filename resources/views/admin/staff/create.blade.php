@@ -111,24 +111,8 @@
                                     @enderror
                                 </div>
 
-                                <!-- Branch -->
-                                <div>
-                                    <label for="branch_id" class="block text-sm font-medium text-gray-700">
-                                        Branch *
-                                    </label>
-                                    <select name="branch_id" id="branch_id" required
-                                            class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                                        <option value="">Select Branch</option>
-                                        @foreach($branches as $branch)
-                                            <option value="{{ $branch->id }}" {{ old('branch_id') == $branch->id ? 'selected' : '' }}>
-                                                {{ $branch->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    @error('branch_id')
-                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                    @enderror
-                                </div>
+                                <!-- Branch removed: creating Owner accounts only -->
+                                <input type="hidden" name="role" value="OWNER">
 
                                 <!-- Address -->
                                 <div class="sm:col-span-2">

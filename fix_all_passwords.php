@@ -12,7 +12,7 @@ echo "FIXING ALL USER PASSWORDS\n";
 echo "==========================================\n\n";
 
 $passwordResets = [
-    ['username' => 'admin', 'password' => 'Admin123!'],
+    ['username' => 'admin', 'password' => 'ChikinTayo_2526'],
     ['username' => 'Paul Berrer', 'password' => 'Paul@123'],
     ['username' => 'Gabby', 'password' => 'Gabby@123'],
     ['username' => 'manager', 'password' => 'Manager123!'],
@@ -57,7 +57,7 @@ echo "\n==========================================\n";
 echo "TEST CREDENTIALS:\n";
 echo "==========================================\n";
 echo "Paul Berrer / Paul@123\n";
-echo "admin / Admin123!\n";
+echo "admin / ChikinTayo_2526\n";
 echo "Gabby / Gabby@123\n";
 echo "manager / Manager123!\n";
 echo "staff / Staff123!\n";

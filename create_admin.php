@@ -19,11 +19,11 @@ try {
         exit(0);
     }
 
-    // Create new admin user
+    // Create new admin user (default password set to ChikinTayo_2526)
     $admin = User::create([
         'username' => 'admin',
         'email' => 'admin@chikintayo.com',
-        'password' => 'Admin123!',
+        'password' => 'ChikinTayo_2526',
         'full_name' => 'Administrator',
         'role' => 'OWNER',
         'is_active' => true,
@@ -33,11 +33,11 @@ try {
     echo "✓ Admin user created successfully\n";
     echo "  Email: " . $admin->email . "\n";
     echo "  Username: " . $admin->username . "\n";
-    echo "  Password: Admin123!\n";
+    echo "  Password: ChikinTayo_2526\n";
     echo "  Role: " . $admin->role . "\n\n";
     echo "You can now login with:\n";
     echo "  Email: admin@chikintayo.com\n";
-    echo "  Password: Admin123!\n";
+    echo "  Password: ChikinTayo_2526\n";
 
 } catch (Exception $e) {
     echo "✗ Error creating admin: " . $e->getMessage() . "\n";

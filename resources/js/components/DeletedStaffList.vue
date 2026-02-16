@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="staff-header">
       <h2 class="staff-title">🗑️ Deleted Staff History</h2>
-      <a href="/admin/staff-management" class="btn-back-link">
+      <a href="/staff-management" class="btn-back-link">
         ← Back to Staff Management
       </a>
     </div>

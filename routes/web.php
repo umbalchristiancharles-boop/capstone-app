@@ -39,33 +39,6 @@ Route::get('/admin-panel', function () {
         ->header('Expires', '0');
 })->name('admin.dashboard')->middleware(['web', 'auth']);
 
-// Manager panel
-Route::get('/manager-panel', function () {
-    return response()
-        ->view('dashboard')
-        ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
-        ->header('Pragma', 'no-cache')
-        ->header('Expires', '0');
-})->name('manager.dashboard')->middleware(['web', 'auth']);
-
-// Staff panel
-Route::get('/staff-panel', function () {
-    return response()
-        ->view('dashboard')
-        ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
-        ->header('Pragma', 'no-cache')
-        ->header('Expires', '0');
-})->name('staff.dashboard')->middleware(['web', 'auth']);
-
-// HR panel
-Route::get('/hr-panel', function () {
-    return response()
-        ->view('dashboard')
-        ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
-        ->header('Pragma', 'no-cache')
-        ->header('Expires', '0');
-})->name('hr.dashboard')->middleware(['web', 'auth']);
-
 Route::get('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // ==========================================
@@ -86,7 +59,7 @@ Route::post('/admin/password/reset', [AdminPasswordResetController::class, 'rese
 // ==========================================
 // ADMIN STAFF MANAGEMENT & DELETED STAFF ROUTES
 // ==========================================
-Route::get('/admin/staff-management', function () {
+Route::get('/staff-management', function () {
     return response()
         ->view('dashboard')
         ->header('Cache-Control', 'no-cache, no-store, must-revalidate')

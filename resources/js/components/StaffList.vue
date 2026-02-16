@@ -18,11 +18,7 @@
       </div>
 
       <div class="staff-header-actions">
-        <button @click="openCreateModal" class="btn-create-staff">
-          <span class="plus-icon">+</span>
-          Create Staff Account
-        </button>
-
+        <button class="btn-success" @click="openCreateModal">+ Add Staff</button>
         <button
           class="btn-deleted-history"
           @click="$router.push('/admin/deleted-staff')"
@@ -57,8 +53,8 @@
 
         <!-- Branch Content Card -->
         <div class="branch-content-card">
-          <!-- Branch Manager Section -->
-          <div v-if="branch.branch_manager" class="manager-section">
+          <!-- Branch Manager Section (skip for Owners pseudo-branch) -->
+          <div v-if="branch.branch_manager && branch.branch_name !== 'Owners'" class="manager-section">
             <div class="section-header manager-header">
               <h4 class="section-title">Branch Manager</h4>
             </div>
@@ -97,13 +93,13 @@
             </div>
           </div>
 
-          <!-- No Manager Notice -->
-          <div v-else class="no-manager-notice">
+          <!-- No Manager Notice (only for real branches) -->
+          <div v-else-if="branch.branch_name !== 'Owners'" class="no-manager-notice">
             <p>No Branch Manager assigned</p>
           </div>
 
           <!-- HR Section (separate) -->
-          <div v-if="branch.hr && branch.hr.length > 0" class="hr-section">
+          <div v-if="branch.hr && branch.hr.length > 0 && branch.branch_name !== 'Owners'" class="hr-section">
             <div class="section-header staff-header-bar">
               <h4 class="section-title">
                 HR Members
@@ -156,7 +152,7 @@
           <div class="staff-section">
             <div class="section-header staff-header-bar">
               <h4 class="section-title">
-                Staff Members
+                {{ branch.branch_name === 'Owners' ? 'Owners' : 'Staff Members' }}
                 <span class="staff-count">({{ branch.staff.length }})</span>
               </h4>
             </div>
@@ -354,6 +350,19 @@ export default {
       }
     },
 
+    openCreateModal() {
+      this.selectedStaff = null
+      this.showModal = true
+    },
+
+    editStaff(staff, branchId = null) {
+      // Prepare selected staff object for modal
+      this.selectedStaff = Object.assign({}, staff)
+      // ensure branch_id is present for the modal when available
+      if (branchId) this.selectedStaff.branch_id = branchId
+      this.showModal = true
+    },
+
     // Ensure axios has the latest CSRF / XSRF tokens set from the page/cookies.
     async ensureCsrf() {
       try {
@@ -382,31 +391,6 @@ export default {
         }
       } catch (e) {
         console.warn('Failed to refresh CSRF/XSRF tokens', e)
-      }
-    },
-
-    openCreateModal() {
-      this.selectedStaff = null
-      this.showModal = true
-    },
-
-    async editStaff(staff, branchId) {
-      this.selectedStaff = { ...staff, branch_id: branchId }
-      this.showModal = true
-
-      try {
-        const res = await axios.get(`/api/admin/staff/${staff.id}`, { withCredentials: true })
-        if (res.data?.success && res.data.data) {
-          const data = res.data.data
-          this.selectedStaff = {
-            ...data,
-            branch_id: data.branch_id || branchId,
-          }
-        } else {
-          this.showAlert(res.data?.message || 'Failed to load staff documents', 'error')
-        }
-      } catch (error) {
-        this.showAlert(error.response?.data?.message || 'Failed to load staff documents', 'error')
       }
     },
 
@@ -464,7 +448,7 @@ export default {
   },
   watch: {
     $route(to, from) {
-      if (to.path === '/admin/staff-management') {
+      if (to.path === '/staff-management') {
         // When navigated/redirected to staff management, refresh data
         this.fetchStaff()
       }
