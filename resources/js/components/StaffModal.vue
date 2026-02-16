@@ -123,6 +123,19 @@
                 </div>
               </div>
 
+              <!-- Department -->
+              <div class="form-group">
+                <label for="department" class="form-label">Department</label>
+                <select
+                  v-model="form.department"
+                  id="department"
+                  class="form-input"
+                >
+                  <option value="">-- Select Department (optional) --</option>
+                  <option v-for="d in departmentOptions" :key="d.value" :value="d.value">{{ d.label }}</option>
+                </select>
+              </div>
+
               <!-- Status (Edit Only) -->
               <div v-if="isEdit" class="form-group">
                 <label for="isActive" class="form-label">Status</label>
@@ -382,6 +395,16 @@ export default {
         { value: 'OWNER', label: 'Owner' },
       ]
     }
+    ,
+    departmentOptions() {
+      return [
+        { value: 'HR', label: 'HR' },
+        { value: 'FINANCE', label: 'Finance' },
+        { value: 'INVENTORY', label: 'Inventory' },
+        { value: 'LOGISTICS', label: 'Logistics' },
+        { value: 'CASHIER', label: 'Cashier' }
+      ]
+    }
   },
   emits: ['close', 'success'],
   data() {
@@ -396,6 +419,7 @@ export default {
         phone: '',
             branchId: '',
         role:  '',
+        department: '',
         address: '',
         isActive: true
       },
@@ -439,6 +463,7 @@ export default {
               phone: this.staff.phone_number || '',
               branchId: existingBranchId,
               role: this.staff.role || '',
+              department: this.staff.department || this.staff.dept || '',
               address: this.staff.address || '',
               isActive: this.staff.is_active !== undefined ? Boolean(this.staff.is_active) : true
             }
@@ -454,6 +479,7 @@ export default {
               phone: '',
                 branchId: '',
                 role: 'OWNER',
+                department: '',
               address: '',
               isActive: true
             }
@@ -530,6 +556,7 @@ export default {
       // don't append branchId for owner accounts (leave empty)
       formData.append('branchId', branchId)
       formData.append('role', role)
+      formData.append('department', this.form.department || '')
       formData.append('password', this.defaultPassword)
 
       Object.entries(this.documentFiles).forEach(([key, file]) => {

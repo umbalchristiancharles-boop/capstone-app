@@ -133,6 +133,17 @@
                 placeholder="Enter phone number"
               >
             </div>
+            <div class="form-group">
+              <label>Department:</label>
+              <select v-model="newStaff.department" class="form-input">
+                <option value="">-- Select Department (optional) --</option>
+                <option value="HR">HR</option>
+                <option value="FINANCE">Finance</option>
+                <option value="INVENTORY">Inventory</option>
+                <option value="LOGISTICS">Logistics</option>
+                <option value="CASHIER">Cashier</option>
+              </select>
+            </div>
             <div v-if="!isEditingStaff" class="form-group">
               <label>Password:</label>
               <input
@@ -177,6 +188,7 @@ const newStaff = ref({
   full_name: '',
   phone_number: '',
   password: '',
+  department: '',
 })
 const editingStaffId = ref(null)
 const createOwnerMode = ref(false)
@@ -300,6 +312,7 @@ async function submitStaffForm() {
         full_name: newStaff.value.full_name,
         email: newStaff.value.email,
         phone_number: newStaff.value.phone_number,
+        department: newStaff.value.department,
       }, {
         withCredentials: true
       })
@@ -313,7 +326,8 @@ async function submitStaffForm() {
             full_name: newStaff.value.full_name,
             phone_number: newStaff.value.phone_number,
             password: newStaff.value.password,
-            role: 'OWNER'
+            role: 'OWNER',
+            department: newStaff.value.department
           }, {
             withCredentials: true
           })
@@ -324,6 +338,7 @@ async function submitStaffForm() {
             full_name: newStaff.value.full_name,
             phone_number: newStaff.value.phone_number,
             password: newStaff.value.password,
+            department: newStaff.value.department,
           }, {
             withCredentials: true
           })

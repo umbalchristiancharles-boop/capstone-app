@@ -70,6 +70,7 @@ class StaffManagementController extends Controller
             'email' => 'required|email|unique:users,email',
             'full_name' => 'required|string|max:255',
             'phone_number' => 'nullable|string|max:20',
+            'department' => 'nullable|string|max:100',
         ]);
 
         $defaultPassword = 'ChikinTayo_2526';
@@ -79,6 +80,7 @@ class StaffManagementController extends Controller
             'email' => $request->email,
             'full_name' => $request->full_name,
             'phone_number' => $request->phone_number,
+            'department' => $request->input('department', null),
             'password' => $defaultPassword, // Mutator will hash this automatically
             'role' => 'STAFF', // Branch Manager can only create STAFF
             'branch_id' => $user->branch_id, // Assign to manager's branch
@@ -123,10 +125,11 @@ class StaffManagementController extends Controller
             'full_name' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|unique:users,email,' . $id,
             'phone_number' => 'nullable|string|max:20',
+            'department' => 'nullable|string|max:100',
             'is_active' => 'sometimes|boolean',
         ]);
 
-        $staff->update($request->only(['full_name', 'email', 'phone_number', 'is_active']));
+        $staff->update($request->only(['full_name', 'email', 'phone_number', 'department', 'is_active']));
 
         return response()->json([
             'success' => true,
@@ -137,6 +140,7 @@ class StaffManagementController extends Controller
                 'full_name' => $staff->full_name,
                 'email' => $staff->email,
                 'phone_number' => $staff->phone_number,
+                'department' => $staff->department,
                 'is_active' => $staff->is_active,
             ],
         ]);

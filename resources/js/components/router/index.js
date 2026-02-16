@@ -24,6 +24,12 @@ const routes = [
     meta: { requiresAuth: true, role: 'OWNER' }
   },
   {
+    path: '/owner/staff-management',
+    name: 'OwnerStaffManagement',
+    component: () => import('../components/OwnerStaffManagement.vue'),
+    meta: { requiresAuth: true, role: 'OWNER' }
+  },
+  {
     path: '/staff-management',
     name: 'StaffManagement',
     component: StaffList,

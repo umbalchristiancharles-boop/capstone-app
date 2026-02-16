@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 16, 2026 at 10:58 AM
+-- Generation Time: Feb 16, 2026 at 12:00 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -270,7 +270,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (32, '2026_02_16_150100_create_system_announcements_table', 4),
 (33, '2026_02_16_150200_create_terms_and_conditions_table', 4),
 (34, '2026_02_16_150300_create_feedback_complaints_table', 4),
-(35, '2026_02_16_150109_create_staff_table', 5);
+(35, '2026_02_16_150109_create_staff_table', 5),
+(36, '2026_02_16_000000_add_department_to_users_table', 6);
 
 -- --------------------------------------------------------
 
@@ -460,11 +461,9 @@ CREATE TABLE `sessions` (
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
 ('4rB5eiJBY9SFf70fX0Nwe9Z1VXhy2wEXd7Wf1XLD', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT; Windows NT 10.0; en-PH) WindowsPowerShell/5.1.26100.7705', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiQVZFbWNJUm9HdFBkd09uZlM0NktySlNXOEZTQnhVdnBkSmFhRktQSSI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czoyMToiaHR0cDovLzEyNy4wLjAuMTo4MDAwIjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1771235009),
-('8i77Izf1Df4xaCH0P06OtQKoHwVEuf8J7ffXmWox', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiOVBXcEZ1bTV1aUs2bVhFUm5iNWt1TTZaNHBPTkp6aHZmdDNXbnNyMyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO3M6Mjc6ImdlbmVyYXRlZDo6dnoyTEg3UkZTTXFMUk5TWiI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1771229428),
 ('DY59OlMzY5JkkVv06nZdTHDOvOmU4ZLXmNd9jC0Z', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiVFZlaExnR21TUkx3THp0T3RYalVjRnlDTHZadXhBWXZJSVlBUmtBZCI7czo3OiJzdWNjZXNzIjtzOjI0OiJMb2dnZWQgb3V0IHN1Y2Nlc3NmdWxseS4iO3M6NjoiX2ZsYXNoIjthOjI6e3M6MzoibmV3IjthOjA6e31zOjM6Im9sZCI7YToxOntpOjA7czo3OiJzdWNjZXNzIjt9fXM6OToiX3ByZXZpb3VzIjthOjI6e3M6MzoidXJsIjtzOjI4OiJodHRwOi8vbG9jYWxob3N0OjgwMDAvbG9nb3V0IjtzOjU6InJvdXRlIjtzOjY6ImxvZ291dCI7fX0=', 1771235841),
 ('NkIy2lK9gosPmvLC4IGkyPCHXs79kczoPxAmrnPs', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT; Windows NT 10.0; en-PH) WindowsPowerShell/5.1.26100.7705', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiUUVsbkZmRHpNSFJGUGJ5NzZqb2NiMzZxbEF0clI0VE51cmR4WjEwOSI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czoyMToiaHR0cDovLzEyNy4wLjAuMTo4MDAwIjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1771234948),
-('oVbuZCYj41sVL5LCJlEqPRUrS9hm33SGxdg4KKmP', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiNHVFRXZTc0ZGWlpvNUlRY3ZVMjJOaHhGNGozVWRrazZYY2g2V3o5aCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1771235843),
-('RVSs7iKdyQEy5mZashKGtIPAK6n8vSXShZuRGrpd', NULL, '127.0.0.1', 'curl/8.16.0', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiMHlyRHJLWXpWWG5vQjU4WFU4RFpoMFpXZ1JQUEVNazhCTU1sSHNVbCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mzc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hcGkvYWRtaW4vc3RhZmYiO3M6NToicm91dGUiO3M6Mjc6ImdlbmVyYXRlZDo6TGpvOGlkUWt4QlZvV3BKZSI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1771229372),
+('OTH31yn0DrwJP6FyVa1jf0qB5Um0XMdqih0PxxIk', 21, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo3OntzOjY6Il90b2tlbiI7czo0MDoiRENEM1Z0V0F3TzNjeVBEZm1aRUllYnJnZ3I5Z2FMUk9YYVRNeEVzRSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzM6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9vd25lci1wYW5lbCI7czo1OiJyb3V0ZSI7Tjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MjE7czo3OiJ1c2VyX2lkIjtpOjIxO3M6OToidXNlcl9yb2xlIjtzOjU6Ik9XTkVSIjtzOjk6InVzZXJfbmFtZSI7czo0OiJHQUJCIjt9', 1771239611),
 ('zczj0tvkTCIZFuc8FGKpewRmFVpbl2peMRapSe5F', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT; Windows NT 10.0; en-PH) WindowsPowerShell/5.1.26100.7705', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiTjNQUUdpSk5zZ3FsSXcxVnEwd0hOd1ZsTVo3Wm4wd0NQcXk2OXROQiI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czoyMToiaHR0cDovLzEyNy4wLjAuMTo4MDAwIjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1771234966);
 
 -- --------------------------------------------------------
@@ -879,7 +878,7 @@ ALTER TABLE `jobs`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
 
 --
 -- AUTO_INCREMENT for table `orders`

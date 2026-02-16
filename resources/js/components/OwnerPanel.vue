@@ -98,6 +98,9 @@
               <div>
                 <h1>{{ panelTitle }}</h1>
                 <p>{{ panelDescription }}</p>
+                <div style="margin-top:10px">
+                  <button class="panel-action" @click="router.push('/owner/staff-management')">Staff Management</button>
+                </div>
                 <p v-if="isLoadingDashboard && !isInitialMount" class="small-hint">Loading dashboard…</p>
                 <p v-else-if="dashboardError" class="small-hint small-hint--error">{{ dashboardError }}</p>
               </div>
