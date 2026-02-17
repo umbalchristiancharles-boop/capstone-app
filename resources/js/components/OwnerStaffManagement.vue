@@ -111,6 +111,10 @@
 </template>
 
 <script setup>
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import axios from 'axios'
+import '../css/adminpanel.css'
 import OwnerStaffModal from './OwnerStaffModal.vue'
 
 function onStaffModalSuccess() {
@@ -118,10 +122,6 @@ function onStaffModalSuccess() {
   resetForm()
   loadStaff()
 }
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import axios from 'axios'
-import '../css/adminpanel.css'
 
 const router = useRouter()
 
@@ -151,8 +151,17 @@ const editingStaffId = ref(null)
 
 // Computed
 const filteredStaff = computed(() => {
-  // Only include users where role === 'staff'
-  let filtered = staff.value.filter(member => member.role === 'staff');
+  // Include users where role includes 'STAFF' or 'MANAGER' (case-insensitive)
+  // This handles various role formats from API
+  let filtered = staff.value.filter(member => {
+    const role = (member.role || '').toUpperCase()
+    return role.includes('STAFF') || role.includes('MANAGER')
+  })
+
+  // Exclude the current owner from the list
+  if (currentOwnerId.value) {
+    filtered = filtered.filter(member => member.id !== currentOwnerId.value)
+  }
 
   if (!searchQuery.value.trim()) return filtered;
 
@@ -302,6 +311,14 @@ async function submitStaffForm() {
     if (res.data.success) {
       showAddStaffModal.value = false
       resetForm()
+      // Optimistically add new staff to the list if not present
+      if (!isEditingStaff.value && res.data.staff) {
+        // If API returns the created staff object
+        const exists = staff.value.some(s => s.id === res.data.staff.id)
+        if (!exists) {
+          staff.value.push(res.data.staff)
+        }
+      }
       loadStaff()
       alert(isEditingStaff.value ? 'Staff updated successfully!' : 'Staff added successfully!')
     }

@@ -61,16 +61,30 @@
                   placeholder="Enter phone number"
                 />
               </div>
-              <!-- Department -->
+              <!-- Role/Department -->
               <div class="form-group">
-                <label for="department" class="form-label">Department</label>
-                <select v-model="form.department" id="department" class="form-input">
-                  <option value="">-- Select Department (optional) --</option>
-                  <option value="HR">HR</option>
-                  <option value="FINANCE">Finance</option>
-                  <option value="INVENTORY">Inventory</option>
-                  <option value="LOGISTICS">Logistics</option>
-                  <option value="CASHIER">Cashier</option>
+                <label for="roleDepartment" class="form-label">Role / Department *</label>
+                <select v-model="form.roleDepartment" id="roleDepartment" class="form-input" required>
+                  <option value="">-- Select Role / Department --</option>
+                  <optgroup label="Managers">
+                    <option value="BRANCH_MANAGER hr">Manager HR</option>
+                    <option value="BRANCH_MANAGER finance">Manager Finance</option>
+                    <option value="BRANCH_MANAGER inventory">Manager Inventory</option>
+                    <option value="BRANCH_MANAGER logistics">Manager Logistics</option>
+                  </optgroup>
+                  <optgroup label="Staff">
+                    <option value="STAFF cashier">Staff Cashier</option>
+                    <option value="STAFF finance">Staff Finance</option>
+                    <option value="STAFF inventory">Staff Inventory</option>
+                  </optgroup>
+                </select>
+              </div>
+              <!-- Branch Selection -->
+              <div class="form-group">
+                <label for="branch_id" class="form-label">Branch *</label>
+                <select v-model="form.branch_id" id="branch_id" class="form-input" required>
+                  <option value="">-- Select Branch --</option>
+                  <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
                 </select>
               </div>
               <!-- Password (Create only) -->
@@ -125,7 +139,7 @@ export default {
   props: {
     show: Boolean,
     staff: Object,
-    isEdit: Boolean
+    isEdit: Boolean,
   },
   emits: ['close', 'success'],
   data() {
@@ -136,14 +150,33 @@ export default {
         full_name: '',
         phone_number: '',
         password: '',
-        department: '',
+        roleDepartment: '',
+        branch_id: '',
       },
+      branches: [],
       showPassword: false,
       errorMessage: '',
-      isSubmitting: false
+      isSubmitting: false,
     }
   },
+  mounted() {
+    this.loadBranches()
+  },
   methods: {
+    async loadBranches() {
+      try {
+        const res = await axios.get('/api/admin/branches', { withCredentials: true })
+        if (res.data && res.data.success && Array.isArray(res.data.data)) {
+          this.branches = res.data.data
+        } else if (Array.isArray(res.data)) {
+          this.branches = res.data
+        } else {
+          this.branches = []
+        }
+      } catch (e) {
+        this.branches = []
+      }
+    },
     toggleShowPassword() {
       this.showPassword = !this.showPassword
     },
@@ -151,63 +184,69 @@ export default {
       this.errorMessage = ''
       this.$emit('close')
     },
+    reconstructRoleDepartment(role, department) {
+      if (!role || !department) return ''
+      return `${role} ${department}`
+    },
     async submitForm() {
       this.errorMessage = ''
-
-      // Validate required fields
       if (!this.form.username || this.form.username.trim() === '') {
         this.errorMessage = 'Username is required'
         return
       }
-
       if (!this.form.full_name || this.form.full_name.trim() === '') {
         this.errorMessage = 'Full name is required'
         return
       }
-
       if (!this.form.email || this.form.email.trim() === '') {
         this.errorMessage = 'Email is required'
         return
       }
-
-      // For new staff, password is required
+      if (!this.form.roleDepartment) {
+        this.errorMessage = 'Please select role and department'
+        return
+      }
+      if (!this.form.branch_id) {
+        this.errorMessage = 'Please select a Branch'
+        return
+      }
       if (!this.isEdit) {
         if (!this.form.password || this.form.password.trim() === '') {
           this.errorMessage = 'Password is required'
           return
         }
       }
-
+      // Parse roleDepartment
+      const [role, department] = this.form.roleDepartment.split(' ')
+      if (!role || !department) {
+        this.errorMessage = 'Invalid role/department selection'
+        return
+      }
       this.isSubmitting = true
-
       try {
+        await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
         let res
-
         if (this.isEdit) {
-          // Update existing staff
           res = await axios.put(`/api/admin/staff/${this.staff.id}`, {
             full_name: this.form.full_name,
             email: this.form.email,
             phone_number: this.form.phone_number || '',
-            department: this.form.department || '',
-          }, {
-            withCredentials: true
-          })
+            role: role,
+            department: department,
+            branch_id: this.form.branch_id,
+          }, { withCredentials: true })
         } else {
-          // Create new staff - role should be 'staff' (Owner-specific logic: Owner should not be added as staff)
           res = await axios.post('/api/admin/staff', {
             username: this.form.username,
             email: this.form.email,
             full_name: this.form.full_name,
             phone_number: this.form.phone_number || '',
             password: this.form.password,
-            department: this.form.department || '',
-            role: 'staff', // Owner-specific logic: ensure staff role, not Owner
-          }, {
-            withCredentials: true
-          })
+            role: role,
+            department: department,
+            branch_id: this.form.branch_id,
+          }, { withCredentials: true })
         }
-
         if (res.data.success) {
           this.$emit('success')
         } else {
@@ -226,24 +265,25 @@ export default {
       immediate: true,
       handler(newStaff) {
         if (this.isEdit && newStaff) {
-          // Populate form for edit
+          const reconstructedRoleDept = this.reconstructRoleDepartment(newStaff.role, newStaff.department)
           this.form = {
             username: newStaff.username || '',
             email: newStaff.email || '',
             full_name: newStaff.full_name || '',
             phone_number: newStaff.phone_number || '',
-            password: '', // Don't prefill password
-            department: newStaff.department || '',
+            password: '',
+            roleDepartment: reconstructedRoleDept,
+            branch_id: newStaff.branch_id || '',
           }
         } else {
-          // Reset form for add
           this.form = {
             username: '',
             email: '',
             full_name: '',
             phone_number: '',
             password: 'Chikin_Tayo@2526',
-            department: '',
+            roleDepartment: '',
+            branch_id: '',
           }
         }
       }

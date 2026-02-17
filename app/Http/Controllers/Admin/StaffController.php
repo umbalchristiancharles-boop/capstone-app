@@ -405,6 +405,7 @@ class StaffController extends Controller
                 'password' => Hash::make($defaultPassword),
                 'full_name' => $fullName,
                 'role' => $role,
+                'department' => $request->input('department') ?? '',
                 'phone_number' => $phone,
                 'address' => $address,
                 'branch_id' => $branchId,
@@ -599,6 +600,7 @@ class StaffController extends Controller
                 'address' => $request->input('address'),
                 'branch_id' => $branchId,
                 'role' => $request->input('role'),
+                'department' => $request->input('department') ?? '',
                 'is_active' => (bool) $request->input('isActive'),
                 'updated_at' => now(),
             ];
