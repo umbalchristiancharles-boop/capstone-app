@@ -99,85 +99,25 @@
       <p>No staff members found</p>
     </div>
 
-    <!-- Add/Edit Staff Modal -->
-    <transition name="fade">
-      <div v-if="showAddStaffModal" class="modal-backdrop" @click="showAddStaffModal = false">
-        <div class="modal" @click.stop>
-          <div class="modal-header">
-            <h2>{{ isEditingStaff ? 'Edit Staff Member' : 'Add New Staff Member' }}</h2>
-            <button @click="showAddStaffModal = false" class="close-btn">×</button>
-          </div>
-          <div class="modal-body">
-            <div v-if="!isEditingStaff" class="form-group">
-              <label>Username:</label>
-              <input
-                v-model="newStaff.username"
-                type="text"
-                class="form-input"
-                placeholder="Enter username"
-              >
-            </div>
-            <div class="form-group">
-              <label>Full Name:</label>
-              <input
-                v-model="newStaff.full_name"
-                type="text"
-                class="form-input"
-                placeholder="Enter full name"
-              >
-            </div>
-            <div class="form-group">
-              <label>Email:</label>
-              <input
-                v-model="newStaff.email"
-                type="email"
-                class="form-input"
-                placeholder="Enter email"
-              >
-            </div>
-            <div class="form-group">
-              <label>Phone Number:</label>
-              <input
-                v-model="newStaff.phone_number"
-                type="text"
-                class="form-input"
-                placeholder="Enter phone number"
-              >
-            </div>
-            <div class="form-group">
-              <label>Department:</label>
-              <select v-model="newStaff.department" class="form-input">
-                <option value="">-- Select Department (optional) --</option>
-                <option value="HR">HR</option>
-                <option value="FINANCE">Finance</option>
-                <option value="INVENTORY">Inventory</option>
-                <option value="LOGISTICS">Logistics</option>
-                <option value="CASHIER">Cashier</option>
-              </select>
-            </div>
-            <div v-if="!isEditingStaff" class="form-group">
-              <label>Password:</label>
-              <input
-                v-model="newStaff.password"
-                type="password"
-                class="form-input"
-                placeholder="Enter password (min 8 characters)"
-              >
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button @click="showAddStaffModal = false" class="btn-secondary">Cancel</button>
-            <button @click="submitStaffForm" class="btn-primary">
-              {{ isEditingStaff ? 'Update Staff' : 'Add Staff' }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </transition>
+    <!-- Add/Edit Staff Modal (Modular) -->
+    <OwnerStaffModal
+      :show="showAddStaffModal"
+      :staff="isEditingStaff ? staff.find(s => s.id === editingStaffId) : null"
+      :isEdit="isEditingStaff"
+      @close="showAddStaffModal = false"
+      @success="onStaffModalSuccess"
+    />
   </div>
 </template>
 
 <script setup>
+import OwnerStaffModal from './OwnerStaffModal.vue'
+
+function onStaffModalSuccess() {
+  showAddStaffModal.value = false
+  resetForm()
+  loadStaff()
+}
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
@@ -415,7 +355,10 @@ onMounted(async () => {
 
 .staff-header h1 {
   margin: 0;
-  color: #333;
+  color: #fff;
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -1px;
 }
 
 .header-actions {
@@ -449,7 +392,7 @@ onMounted(async () => {
 
 .btn-primary {
   background: #ff9f43;
-  color: #5a3305;
+  color: #fff;
 }
 
 .btn-primary:hover {
@@ -458,7 +401,7 @@ onMounted(async () => {
 
 .btn-success {
   background: #28a745;
-  color: white;
+  color: #fff;
 }
 
 .btn-success:hover {
@@ -467,7 +410,7 @@ onMounted(async () => {
 
 .btn-secondary {
   background: #6c757d;
-  color: white;
+  color: #fff;
 }
 
 .btn-secondary:hover {
@@ -476,7 +419,7 @@ onMounted(async () => {
 
 .btn-info {
   background: #17a2b8;
-  color: white;
+  color: #fff;
   padding: 0.35rem 0.7rem;
   font-size: 0.8rem;
 }
@@ -487,7 +430,7 @@ onMounted(async () => {
 
 .btn-danger {
   background: #dc3545;
-  color: white;
+  color: #fff;
   padding: 0.35rem 0.7rem;
   font-size: 0.8rem;
 }
@@ -524,7 +467,7 @@ onMounted(async () => {
 
 .summary-card h3 {
   margin: 0;
-  color: #333;
+  color: #222;
 }
 
 .staff-table-wrapper {
@@ -548,13 +491,14 @@ onMounted(async () => {
   padding: 1rem;
   text-align: left;
   font-weight: 600;
-  color: #333;
+  color: #222;
   font-size: 0.9rem;
 }
 
 .staff-table td {
   padding: 1rem;
   border-bottom: 1px solid #dee2e6;
+  color: #222;
 }
 
 .staff-table tbody tr:hover {
@@ -607,7 +551,7 @@ onMounted(async () => {
   padding: 3rem;
   background: white;
   border-radius: 8px;
-  color: #666;
+  color: #444;
 }
 
 .alert {
@@ -690,7 +634,7 @@ onMounted(async () => {
 .form-group label {
   display: block;
   margin-bottom: 0.5rem;
-  color: #333;
+  color: #222;
   font-weight: 500;
   font-size: 0.9rem;
 }

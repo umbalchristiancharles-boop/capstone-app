@@ -294,8 +294,8 @@ class StaffController extends Controller
         try {
             $allowedRoles = [];
             if (in_array($user->role, ['OWNER', 'ADMIN'])) {
-                // Allow owners/admins to create both branch managers and owner accounts
-                $allowedRoles = ['BRANCH_MANAGER', 'OWNER'];
+                // Allow owners/admins to create branch managers, HR, and staff accounts
+                $allowedRoles = ['BRANCH_MANAGER', 'HR', 'STAFF'];
             } elseif ($user->role === 'BRANCH_MANAGER') {
                 $allowedRoles = ['HR', 'STAFF'];
             } else {
@@ -306,19 +306,28 @@ class StaffController extends Controller
             }
 
             $roleRule = 'required|in:' . implode(',', $allowedRoles);
-            $fileRule = 'required|file|mimes:jpg,jpeg,png,webp,pdf|max:5120';
+            $fileRule = 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120';
 
             // Build validation rules dynamically so OWNER role does not require a branch
             $requestedRole = $request->input('role');
 
+            // Accept both camelCase and snake_case field names
+            $fullName = $request->input('fullName') ?? $request->input('full_name') ?? '';
+            $phone = $request->input('phone') ?? $request->input('phone_number') ?? '';
+            $address = $request->input('address') ?? '';
+            $branchId = $request->input('branchId') ?? $request->input('branch_id');
+            $password = $request->input('password');
+
             $rules = [
                 'username' => 'required|string|max:50|unique:users,username',
                 'email' => 'required|email|max:120|unique:users,email',
-                'fullName' => 'required|string|max:150',
+                'full_name' => 'nullable|string|max:150',
+                'fullName' => 'nullable|string|max:150',
                 'phone' => 'nullable|string|max:30',
+                'phone_number' => 'nullable|string|max:30',
                 'address' => 'nullable|string|max:255',
                 'role' => $roleRule,
-                // Required documents (images or PDF, max 5MB each)
+                // Documents are now optional (nullable) for staff creation
                 'resume' => $fileRule,
                 'government_id' => $fileRule,
                 'psa_birth_certificate' => $fileRule,
@@ -331,29 +340,30 @@ class StaffController extends Controller
                 'pagibig_mdf' => $fileRule,
                 'tin_id' => $fileRule,
                 'diploma_transcript' => $fileRule,
+                'password' => 'nullable|string|min:8',
             ];
 
-            // branch is required unless creating an OWNER account
-            if (strtoupper($requestedRole) !== 'OWNER') {
-                $rules['branchId'] = 'required_without:branch_id|exists:branches,id';
-                $rules['branch_id'] = 'required_without:branchId|exists:branches,id';
-            } else {
-                $rules['branchId'] = 'nullable|exists:branches,id';
-                $rules['branch_id'] = 'nullable|exists:branches,id';
-            }
+            // branch is optional for now - Owner can create staff without specifying a branch
+            // The branch can be assigned later
+            $rules['branchId'] = 'nullable|exists:branches,id';
+            $rules['branch_id'] = 'nullable|exists:branches,id';
 
-            $request->validate($rules);
+            // Custom validation messages
+            $messages = [
+                'branchId.required' => 'The branch field is required.',
+                'branch_id.required' => 'The branch field is required.',
+            ];
 
-            $role = $request->input('role');
+            $request->validate($rules, $messages);
 
-            // Accept both camelCase and snake_case for robustness
-            $fullName = $request->input('fullName') ?? $request->input('full_name');
-            $email = $request->input('email') ?? $request->input('email');
-            $defaultPassword = 'ChikinTayo_2526';
-            $branchId = $request->input('branchId') ?? $request->input('branch_id');
+            $role = strtoupper($requestedRole);
+
+            // Use frontend-provided password or default
+            $defaultPassword = !empty($password) ? $password : 'ChikinTayo_2526';
+            $branchId = $branchId ?? null;
 
             // Check if branch already has a manager (if creating BRANCH_MANAGER)
-            if ($role === 'BRANCH_MANAGER') {
+            if ($role === 'BRANCH_MANAGER' && $branchId) {
                 $existingManager = DB::table('users')
                     ->where('branch_id', $branchId)
                     ->where('role', 'BRANCH_MANAGER')
@@ -369,14 +379,14 @@ class StaffController extends Controller
                 }
             }
 
-            if ($user->role === 'HR' && $user->branch_id && (int) $branchId !== (int) $user->branch_id) {
+            if ($user->role === 'HR' && $user->branch_id && $branchId && (int) $branchId !== (int) $user->branch_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Forbidden'
                 ], 403);
             }
 
-            if ($user->role === 'BRANCH_MANAGER' && $user->branch_id && (int) $branchId !== (int) $user->branch_id) {
+            if ($user->role === 'BRANCH_MANAGER' && $user->branch_id && $branchId && (int) $branchId !== (int) $user->branch_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Forbidden'
@@ -391,12 +401,12 @@ class StaffController extends Controller
 
             $insertData = [
                 'username' => $request->input('username'),
-                'email' => $email,
+                'email' => $request->input('email'),
                 'password' => Hash::make($defaultPassword),
                 'full_name' => $fullName,
                 'role' => $role,
-                'phone_number' => $request->input('phone'),
-                'address' => $request->input('address'),
+                'phone_number' => $phone,
+                'address' => $address,
                 'branch_id' => $branchId,
                 'is_active' => 1,
                 'must_change_password' => 1,
@@ -406,30 +416,38 @@ class StaffController extends Controller
             Log::debug('Inserting staff with data:', $insertData);
             $staffId = DB::table('users')->insertGetId($insertData);
 
-            $docDir = 'staff-documents/' . $staffId;
-            $storeFile = function (string $field, string $name) use ($request, $docDir) {
-                $file = $request->file($field);
-                $ext = $file->getClientOriginalExtension();
-                return $file->storeAs($docDir, $name . '.' . $ext, 'public');
-            };
+            // Only create staff documents if files are provided
+            $hasDocuments = $request->hasFile('resume') || $request->hasFile('government_id');
 
-            $documentData = [
-                'user_id' => $staffId,
-                'resume_path' => $storeFile('resume', 'resume'),
-                'government_id_path' => $storeFile('government_id', 'government_id'),
-                'psa_birth_certificate_path' => $storeFile('psa_birth_certificate', 'psa_birth_certificate'),
-                'nbi_clearance_path' => $storeFile('nbi_clearance', 'nbi_clearance'),
-                'police_clearance_path' => $storeFile('police_clearance', 'police_clearance'),
-                'medical_certificate_path' => $storeFile('medical_certificate', 'medical_certificate'),
-                'drug_test_result_path' => $storeFile('drug_test_result', 'drug_test_result'),
-                'sss_id_path' => $storeFile('sss_id', 'sss_id'),
-                'philhealth_id_path' => $storeFile('philhealth_id', 'philhealth_id'),
-                'pagibig_mdf_path' => $storeFile('pagibig_mdf', 'pagibig_mdf'),
-                'tin_id_path' => $storeFile('tin_id', 'tin_id'),
-                'diploma_transcript_path' => $storeFile('diploma_transcript', 'diploma_transcript'),
-            ];
+            if ($hasDocuments) {
+                $docDir = 'staff-documents/' . $staffId;
+                $storeFile = function (string $field, string $name) use ($request, $docDir) {
+                    $file = $request->file($field);
+                    if ($file) {
+                        $ext = $file->getClientOriginalExtension();
+                        return $file->storeAs($docDir, $name . '.' . $ext, 'public');
+                    }
+                    return null;
+                };
 
-            StaffDocument::create($documentData);
+                $documentData = [
+                    'user_id' => $staffId,
+                    'resume_path' => $storeFile('resume', 'resume'),
+                    'government_id_path' => $storeFile('government_id', 'government_id'),
+                    'psa_birth_certificate_path' => $storeFile('psa_birth_certificate', 'psa_birth_certificate'),
+                    'nbi_clearance_path' => $storeFile('nbi_clearance', 'nbi_clearance'),
+                    'police_clearance_path' => $storeFile('police_clearance', 'police_clearance'),
+                    'medical_certificate_path' => $storeFile('medical_certificate', 'medical_certificate'),
+                    'drug_test_result_path' => $storeFile('drug_test_result', 'drug_test_result'),
+                    'sss_id_path' => $storeFile('sss_id', 'sss_id'),
+                    'philhealth_id_path' => $storeFile('philhealth_id', 'philhealth_id'),
+                    'pagibig_mdf_path' => $storeFile('pagibig_mdf', 'pagibig_mdf'),
+                    'tin_id_path' => $storeFile('tin_id', 'tin_id'),
+                    'diploma_transcript_path' => $storeFile('diploma_transcript', 'diploma_transcript'),
+                ];
+
+                StaffDocument::create($documentData);
+            }
 
             DB::commit();
 
@@ -451,6 +469,7 @@ class StaffController extends Controller
                 DB::rollBack();
             }
             Log::error('Staff creation error: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
 
             if (isset($docDir) && $docDir) {
                 Storage::disk('public')->deleteDirectory($docDir);
@@ -458,7 +477,7 @@ class StaffController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to create staff account'
+                'message' => 'Failed to create staff account: ' . $e->getMessage()
             ], 500);
         }
     }
