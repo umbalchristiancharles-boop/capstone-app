@@ -172,6 +172,13 @@ Route::middleware('web')->group(function () {
         // Dashboard
         Route::get('/dashboard',        [StaffDashboardController::class, 'index']);
 
+        // Inventory endpoints for staff
+        Route::get('/inventory/products', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'products']);
+        Route::get('/inventory/profile', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'profile']);
+        Route::post('/inventory/store', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'store']);
+        Route::put('/inventory/update/{id}', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'update']);
+        Route::delete('/inventory/destroy/{id}', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'destroy']);
+
         // Attendance/Clock In-Out
         Route::post('/clock-in',        [AttendanceController::class, 'clockIn'])
             ->withoutMiddleware([VerifyCsrfToken::class]);
