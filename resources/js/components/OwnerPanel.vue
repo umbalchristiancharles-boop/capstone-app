@@ -54,40 +54,49 @@
               </div>
             </div>
 
-            <div class="admin-card__footer admin-card__footer--stacked">
-              <div class="admin-metrics-row">
-                <div class="admin-metric">
-                  <div class="metric-icon">👥</div>
-                  <div class="metric-text">
-                    <span class="metric-label">Total Branches: </span>
-                    <span class="metric-value">&nbsp;{{ summaryTotals.totalBranches }}</span>
+              <div class="admin-card__footer admin-card__footer--stacked">
+                <div class="admin-metrics-row">
+                  <div class="admin-metric">
+                    <div class="metric-icon">👥</div>
+                    <div class="metric-text">
+                      <span class="metric-label">Total Branches: </span>
+                      <span class="metric-value">&nbsp;{{ summaryTotals.totalBranches }}</span>
+                    </div>
+                  </div>
+
+                  <div class="admin-metric">
+                    <div class="metric-icon">👨‍🍳</div>
+                    <div class="metric-text">
+                      <span class="metric-label">Total Employees:</span>
+                      <span class="metric-value">&nbsp;{{ summaryTotals.totalEmployees }}</span>
+                    </div>
                   </div>
                 </div>
 
-                <div class="admin-metric">
-                  <div class="metric-icon">👨‍🍳</div>
-                  <div class="metric-text">
-                    <span class="metric-label">Total Employees:</span>
-                    <span class="metric-value">&nbsp;{{ summaryTotals.totalEmployees }}</span>
+                <div class="owner-extra">
+                  <div class="owner-extra-row">
+                    <span class="owner-label">Access Level:</span>
+                    <span class="owner-value">Full control</span>
+                  </div>
+                  <div class="owner-extra-row">
+                    <span class="owner-label">Assigned Branch:</span>
+                    <span class="owner-value">{{ typeof ownerProfile.branch === 'object' && ownerProfile.branch.name ? ownerProfile.branch.name : (ownerProfile.branch || 'Chikin Tayo – Main') }}</span>
                   </div>
                 </div>
-              </div>
 
-              <div class="owner-extra">
-                <div class="owner-extra-row">
-                  <span class="owner-label">Access Level:</span>
-                  <span class="owner-value">Full control</span>
-                </div>
-                <div class="owner-extra-row">
-                  <span class="owner-label">Assigned Branch:</span>
-                  <span class="owner-value">{{ typeof ownerProfile.branch === 'object' && ownerProfile.branch.name ? ownerProfile.branch.name : (ownerProfile.branch || 'Chikin Tayo – Main') }}</span>
+                <!-- Staff Management button moved here -->
+                <div class="admin-actions-row">
+                  <!-- Staff Management button: visible for OWNER only -->
+                  <button
+                    class="staff-btn staff-btn--center"
+                    v-if="ownerProfile.role === 'OWNER'"
+                    @click="router.push('/owner/staff-management')"
+                  >
+                    Staff Management
+                  </button>
+                  <button class="logout-btn logout-btn--center" @click="showLogoutConfirm = true">Logout</button>
                 </div>
               </div>
-
-              <div class="admin-actions-row">
-                <button class="logout-btn logout-btn--center" @click="showLogoutConfirm = true">Logout</button>
-              </div>
-            </div>
           </div>
         </aside>
 
@@ -98,9 +107,7 @@
               <div>
                 <h1>{{ panelTitle }}</h1>
                 <p>{{ panelDescription }}</p>
-                <div style="margin-top:10px">
-                  <button class="panel-action" @click="router.push('/owner/staff-management')">Staff Management</button>
-                </div>
+                <!-- Staff Management button moved to left column above logout -->
                 <p v-if="isLoadingDashboard && !isInitialMount" class="small-hint">Loading dashboard…</p>
                 <p v-else-if="dashboardError" class="small-hint small-hint--error">{{ dashboardError }}</p>
               </div>

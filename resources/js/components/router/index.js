@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 
 // Import components
-import StaffList from '../components/admin/StaffList.vue';
+import StaffList from '../components/StaffList.vue';
 import ForgotPassword from '../components/ForgotPassword.vue';
 import ResetPassword from '../components/ResetPassword.vue';
 

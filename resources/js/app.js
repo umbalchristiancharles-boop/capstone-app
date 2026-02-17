@@ -6,6 +6,7 @@ import AdminPanel from './components/adminpanel.vue'
 import OwnerPanel from './components/OwnerPanel.vue'
 import adminlogin from './components/adminlogin.vue'
 import StaffList from './components/StaffList.vue'
+import OwnerStaffManagement from './components/OwnerStaffManagement.vue'
 import DeletedStaffList from './components/DeletedStaffList.vue'
 import axios from 'axios'
 
@@ -66,6 +67,11 @@ const router = createRouter({
     {
       path: '/staff-management',
       component: StaffList,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/owner/staff-management',
+      component: OwnerStaffManagement,
       meta: { requiresAuth: true },
     },
     {
