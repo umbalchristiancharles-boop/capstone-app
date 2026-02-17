@@ -249,6 +249,10 @@
 
               <div class="info-row"><span class="info-label">Role</span><span class="info-value">{{ ownerProfile.role }}</span></div>
 
+              <div class="info-row"><span class="info-label">Username</span><span class="info-value" v-if="!isEditingInfo">{{ ownerProfile.username }}</span>
+                <input v-else v-model="ownerProfile.username" class="info-input" type="text" placeholder="Enter username" />
+              </div>
+
               <div class="info-row"><span class="info-label">Email</span><span class="info-value" v-if="!isEditingInfo">{{ ownerProfile.email }}</span>
                 <input v-else v-model="ownerProfile.email" class="info-input" type="email" />
               </div>
@@ -258,11 +262,36 @@
               </div>
 
               <div class="info-row"><span class="info-label">Branch</span><span class="info-value">{{ typeof ownerProfile.branch === 'object' && ownerProfile.branch.name ? ownerProfile.branch.name : (ownerProfile.branch || 'Not assigned') }}</span></div>
+
+              <!-- Password fields - only shown when editing -->
+              <template v-if="isEditingInfo">
+                <div class="info-row info-row--password">
+                  <span class="info-label">New Password</span>
+                  <input v-model="ownerProfile.password" class="info-input" type="password" placeholder="Leave blank to keep current" />
+                </div>
+
+                <div class="info-row info-row--password">
+                  <span class="info-label">Confirm Password</span>
+                  <input v-model="ownerProfile.password_confirmation" class="info-input" type="password" placeholder="Re-enter new password" />
+                </div>
+              </template>
+            </div>
+
+            <!-- Error message display -->
+            <div v-if="profileError" class="info-error">
+              {{ profileError }}
+            </div>
+
+            <!-- Success message display -->
+            <div v-if="profileSuccess" class="info-success">
+              {{ profileSuccess }}
             </div>
 
             <div class="info-actions">
               <button class="btn-outline" @click="handleInfoClose">{{ isEditingInfo ? 'Cancel' : 'Close' }}</button>
-              <button class="btn-primary" @click="isEditingInfo ? saveOwnerInfo() : (isEditingInfo = true)">{{ isEditingInfo ? 'Save changes' : 'Edit information' }}</button>
+              <button class="btn-primary" @click="isEditingInfo ? saveOwnerInfo() : (isEditingInfo = true)" :disabled="isSavingProfile">
+                {{ isEditingInfo ? (isSavingProfile ? 'Saving...' : 'Save changes') : 'Edit information' }}
+              </button>
             </div>
           </div>
         </div>
@@ -296,10 +325,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import '../css/adminpanel.css'
+// Add missing refs for properties used in template
+const profileError = ref('')
+const profileSuccess = ref('')
+const isSavingProfile = ref(false)
 
 const router = useRouter()
 const activeRange = ref('today')
@@ -335,16 +368,17 @@ const showOverlay = ref(false)
 const overlayText = ref('Logging out...')
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
 
-const ownerProfile = ref({ fullName: '', role: 'OWNER', email: '', contact: '', branch: '', accountId: '', avatarUrl: '' })
+const ownerProfile = ref({ fullName: '', username: '', role: 'OWNER', email: '', contact: '', branch: '', accountId: '', avatarUrl: '' })
 const isEditingInfo = ref(false)
 
 const panelTitle = computed(() => 'Chikin Tayo Owner Panel')
 const panelDescription = computed(() => 'Monitor branches, orders, and staff activity as Owner.')
 
 function normalizeUser(u) {
-  if (!u) return { fullName: '', role: '', email: '', contact: '', branch: '', accountId: '', avatarUrl: '' }
+  if (!u) return { fullName: '', username: '', role: '', email: '', contact: '', branch: '', accountId: '', avatarUrl: '' }
   return {
     fullName: u.fullName ?? u.full_name ?? '',
+    username: u.username ?? '',
     role: u.role ?? '',
     email: u.email ?? '',
     contact: u.contact ?? u.phone_number ?? '',
@@ -420,11 +454,35 @@ async function openInfoModal() {
 function handleInfoClose() { if (isEditingInfo.value) isEditingInfo.value = false; else showInfoModal.value = false }
 
 async function saveOwnerInfo() {
+  isSavingProfile.value = true
+  profileError.value = ''
+  profileSuccess.value = ''
   try {
-    const payload = { fullName: ownerProfile.value.fullName, email: ownerProfile.value.email, contact: ownerProfile.value.contact }
+    const payload = {
+      fullName: ownerProfile.value.fullName,
+      username: ownerProfile.value.username,
+      email: ownerProfile.value.email,
+      contact: ownerProfile.value.contact
+    }
+    if (ownerProfile.value.password) {
+      payload.password = ownerProfile.value.password
+      payload.password_confirmation = ownerProfile.value.password_confirmation
+    }
     const res = await axios.put('/api/owner-profile', payload, { withCredentials: true })
-    if (res.data.ok) isEditingInfo.value = false
-  } catch (e) {}
+    if (res.data.ok) {
+      isEditingInfo.value = false
+      profileSuccess.value = 'Profile updated successfully.'
+      // Optionally clear password fields
+      ownerProfile.value.password = ''
+      ownerProfile.value.password_confirmation = ''
+    } else {
+      profileError.value = res.data.message || 'Failed to update profile.'
+    }
+  } catch (e) {
+    profileError.value = e?.response?.data?.message || 'Failed to update profile.'
+  } finally {
+    isSavingProfile.value = false
+  }
 }
 
 async function onAvatarChange(event) {

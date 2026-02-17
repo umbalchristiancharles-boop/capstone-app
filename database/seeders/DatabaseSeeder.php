@@ -11,10 +11,9 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Meron ka nang existing owner_admin sa users table (id = 1),
-        // kaya hindi na tayo gagawa ng bagong user dito.
-
         $this->call([
+            TestUserSeeder::class,
+            AdminUserSeeder::class,
             OrdersTableSeeder::class,
             ProductSeeder::class,
         ]);

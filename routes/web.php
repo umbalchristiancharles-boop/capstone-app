@@ -67,6 +67,15 @@ Route::get('/staff-management', function () {
         ->header('Expires', '0');
 })->name('admin.staff-management')->middleware(['web', 'auth']);
 
+// OWNER STAFF MANAGEMENT ROUTE (for OwnerStaffManagement.vue)
+Route::get('/owner/staff-management', function () {
+    return response()
+        ->view('dashboard')
+        ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        ->header('Pragma', 'no-cache')
+        ->header('Expires', '0');
+})->name('owner.staff-management')->middleware(['web', 'auth', 'owner.only']);
+
 // MANAGER STAFF MANAGEMENT
 Route::get('/manager/staff', function () {
     return response()

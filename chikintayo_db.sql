@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 17, 2026 at 02:54 PM
+-- Generation Time: Feb 17, 2026 at 04:57 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -212,7 +212,13 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (26, '2026_02_06_200200_enhance_product_comments_table', 1),
 (27, '2026_02_06_230000_fix_add_parent_comment_id_to_product_comments', 1),
 (28, '2026_02_10_000000_add_department_to_users_table', 1),
-(29, '2026_02_17_205226_add_fields_to_products_table', 1);
+(29, '2026_02_17_205226_add_fields_to_products_table', 1),
+(30, '2026_02_17_214000_add_branch_id_to_users_table', 2),
+(31, '2026_02_17_213000_add_avatar_url_to_users_table', 3),
+(32, '2026_02_17_212000_add_phone_number_to_users_table', 4),
+(33, '2026_02_17_211000_add_address_to_users_table', 5),
+(34, '2026_02_17_210000_add_is_active_to_users_table', 6),
+(35, '2026_02_17_215000_add_full_name_to_users_table', 7);
 
 -- --------------------------------------------------------
 
@@ -232,6 +238,62 @@ CREATE TABLE `orders` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `orders`
+--
+
+INSERT INTO `orders` (`id`, `order_code`, `owner_id`, `branch_id`, `customer_name`, `status`, `grand_total`, `ordered_at`, `created_at`, `updated_at`) VALUES
+(1, 'CT-0015', 1, 1, 'Customer 15', 'completed', 445.00, '2026-02-17 07:49:00', '2026-02-17 07:49:00', '2026-02-17 07:49:00'),
+(2, 'CT-0016', 1, 1, 'Customer 16', 'completed', 493.00, '2026-02-05 05:54:00', '2026-02-05 05:54:00', '2026-02-05 05:54:00'),
+(3, 'CT-0017', 1, 1, 'Customer 17', 'in_kitchen', 857.00, '2026-02-14 07:53:00', '2026-02-14 07:53:00', '2026-02-14 07:53:00'),
+(4, 'CT-0018', 1, 1, 'Customer 18', 'completed', 1901.00, '2026-02-05 11:59:00', '2026-02-05 11:59:00', '2026-02-05 11:59:00'),
+(5, 'CT-0019', 1, 1, 'Customer 19', 'completed', 440.00, '2026-02-05 07:03:00', '2026-02-05 07:03:00', '2026-02-05 07:03:00'),
+(6, 'CT-0020', 1, 1, 'Customer 20', 'completed', 1234.00, '2026-02-07 02:53:00', '2026-02-07 02:53:00', '2026-02-07 02:53:00'),
+(7, 'CT-0021', 1, 1, 'Customer 21', 'completed', 1078.00, '2026-01-31 07:02:00', '2026-01-31 07:02:00', '2026-01-31 07:02:00'),
+(8, 'CT-0022', 1, 1, 'Customer 22', 'in_kitchen', 1742.00, '2026-02-09 12:22:00', '2026-02-09 12:22:00', '2026-02-09 12:22:00'),
+(9, 'CT-0023', 1, 1, 'Customer 23', 'completed', 318.00, '2026-02-16 08:49:00', '2026-02-16 08:49:00', '2026-02-16 08:49:00'),
+(10, 'CT-0024', 1, 1, 'Customer 24', 'pending', 1970.00, '2026-01-20 03:57:00', '2026-01-20 03:57:00', '2026-01-20 03:57:00'),
+(11, 'CT-0025', 1, 1, 'Customer 25', 'in_kitchen', 1597.00, '2026-02-16 05:21:00', '2026-02-16 05:21:00', '2026-02-16 05:21:00'),
+(12, 'CT-0026', 1, 1, 'Customer 26', 'completed', 1206.00, '2026-02-12 09:18:00', '2026-02-12 09:18:00', '2026-02-12 09:18:00'),
+(13, 'CT-0027', 1, 1, 'Customer 27', 'pending', 1911.00, '2026-02-10 07:19:00', '2026-02-10 07:19:00', '2026-02-10 07:19:00'),
+(14, 'CT-0028', 1, 1, 'Customer 28', 'completed', 1925.00, '2026-01-26 12:46:00', '2026-01-26 12:46:00', '2026-01-26 12:46:00'),
+(15, 'CT-0029', 1, 1, 'Customer 29', 'completed', 838.00, '2026-02-05 01:35:00', '2026-02-05 01:35:00', '2026-02-05 01:35:00'),
+(16, 'CT-0030', 1, 1, 'Customer 30', 'completed', 617.00, '2026-02-04 00:17:00', '2026-02-04 00:17:00', '2026-02-04 00:17:00'),
+(17, 'CT-0031', 1, 1, 'Customer 31', 'completed', 1278.00, '2026-01-26 10:19:00', '2026-01-26 10:19:00', '2026-01-26 10:19:00'),
+(18, 'CT-0032', 1, 1, 'Customer 32', 'pending', 601.00, '2026-02-01 06:29:00', '2026-02-01 06:29:00', '2026-02-01 06:29:00'),
+(19, 'CT-0033', 1, 1, 'Customer 33', 'completed', 1588.00, '2026-02-04 01:24:00', '2026-02-04 01:24:00', '2026-02-04 01:24:00'),
+(20, 'CT-0034', 1, 1, 'Customer 34', 'pending', 966.00, '2026-01-27 06:30:00', '2026-01-27 06:30:00', '2026-01-27 06:30:00'),
+(21, 'CT-0035', 1, 1, 'Customer 35', 'completed', 1121.00, '2026-02-14 11:59:00', '2026-02-14 11:59:00', '2026-02-14 11:59:00'),
+(22, 'CT-0036', 1, 1, 'Customer 36', 'completed', 1531.00, '2026-02-04 07:15:00', '2026-02-04 07:15:00', '2026-02-04 07:15:00'),
+(23, 'CT-0037', 1, 1, 'Customer 37', 'completed', 1174.00, '2026-01-25 12:10:00', '2026-01-25 12:10:00', '2026-01-25 12:10:00'),
+(24, 'CT-0038', 1, 1, 'Customer 38', 'pending', 1700.00, '2026-02-13 06:42:00', '2026-02-13 06:42:00', '2026-02-13 06:42:00'),
+(25, 'CT-0039', 1, 1, 'Customer 39', 'completed', 611.00, '2026-02-09 07:19:00', '2026-02-09 07:19:00', '2026-02-09 07:19:00'),
+(26, 'CT-0040', 1, 1, 'Customer 40', 'completed', 1768.00, '2026-01-30 12:08:00', '2026-01-30 12:08:00', '2026-01-30 12:08:00'),
+(27, 'CT-0041', 1, 1, 'Customer 41', 'in_kitchen', 1377.00, '2026-01-22 00:15:00', '2026-01-22 00:15:00', '2026-01-22 00:15:00'),
+(28, 'CT-0042', 1, 1, 'Customer 42', 'pending', 1895.00, '2026-01-26 00:56:00', '2026-01-26 00:56:00', '2026-01-26 00:56:00'),
+(29, 'CT-0043', 1, 1, 'Customer 43', 'completed', 1085.00, '2026-02-07 10:02:00', '2026-02-07 10:02:00', '2026-02-07 10:02:00'),
+(30, 'CT-0044', 1, 1, 'Customer 44', 'pending', 888.00, '2026-01-27 05:50:00', '2026-01-27 05:50:00', '2026-01-27 05:50:00'),
+(31, 'CT-0045', 1, 1, 'Customer 45', 'pending', 580.00, '2026-01-27 01:13:00', '2026-01-27 01:13:00', '2026-01-27 01:13:00'),
+(32, 'CT-0046', 1, 1, 'Customer 46', 'completed', 326.00, '2026-01-29 03:13:00', '2026-01-29 03:13:00', '2026-01-29 03:13:00'),
+(33, 'CT-0047', 1, 1, 'Customer 47', 'completed', 683.00, '2026-02-08 06:08:00', '2026-02-08 06:08:00', '2026-02-08 06:08:00'),
+(34, 'CT-0048', 1, 1, 'Customer 48', 'pending', 1362.00, '2026-02-16 07:12:00', '2026-02-16 07:12:00', '2026-02-16 07:12:00'),
+(35, 'CT-0049', 1, 1, 'Customer 49', 'in_kitchen', 930.00, '2026-02-12 00:34:00', '2026-02-12 00:34:00', '2026-02-12 00:34:00'),
+(36, 'CT-0050', 1, 1, 'Customer 50', 'in_kitchen', 1741.00, '2026-01-19 11:19:00', '2026-01-19 11:19:00', '2026-01-19 11:19:00'),
+(37, 'CT-0051', 1, 1, 'Customer 51', 'completed', 1847.00, '2026-02-11 06:26:00', '2026-02-11 06:26:00', '2026-02-11 06:26:00'),
+(38, 'CT-0052', 1, 1, 'Customer 52', 'pending', 1870.00, '2026-02-15 03:03:00', '2026-02-15 03:03:00', '2026-02-15 03:03:00'),
+(39, 'CT-0053', 1, 1, 'Customer 53', 'pending', 728.00, '2026-01-29 02:02:00', '2026-01-29 02:02:00', '2026-01-29 02:02:00'),
+(40, 'CT-0054', 1, 1, 'Customer 54', 'pending', 1273.00, '2026-01-26 02:28:00', '2026-01-26 02:28:00', '2026-01-26 02:28:00'),
+(41, 'CT-0055', 1, 1, 'Customer 55', 'in_kitchen', 923.00, '2026-01-19 04:46:00', '2026-01-19 04:46:00', '2026-01-19 04:46:00'),
+(42, 'CT-0056', 1, 1, 'Customer 56', 'completed', 1197.00, '2026-02-12 02:28:00', '2026-02-12 02:28:00', '2026-02-12 02:28:00'),
+(43, 'CT-0057', 1, 1, 'Customer 57', 'completed', 561.00, '2026-02-03 09:12:00', '2026-02-03 09:12:00', '2026-02-03 09:12:00'),
+(44, 'CT-0058', 1, 1, 'Customer 58', 'completed', 808.00, '2026-01-28 07:27:00', '2026-01-28 07:27:00', '2026-01-28 07:27:00'),
+(45, 'CT-0059', 1, 1, 'Customer 59', 'in_kitchen', 343.00, '2026-01-19 12:19:00', '2026-01-19 12:19:00', '2026-01-19 12:19:00'),
+(46, 'CT-0060', 1, 1, 'Customer 60', 'in_kitchen', 1318.00, '2026-02-11 10:04:00', '2026-02-11 10:04:00', '2026-02-11 10:04:00'),
+(47, 'CT-0061', 1, 1, 'Customer 61', 'completed', 585.00, '2026-01-26 11:02:00', '2026-01-26 11:02:00', '2026-01-26 11:02:00'),
+(48, 'CT-0062', 1, 1, 'Customer 62', 'completed', 1446.00, '2026-02-02 00:56:00', '2026-02-02 00:56:00', '2026-02-02 00:56:00'),
+(49, 'CT-0063', 1, 1, 'Customer 63', 'completed', 418.00, '2026-01-24 07:25:00', '2026-01-24 07:25:00', '2026-01-24 07:25:00'),
+(50, 'CT-0064', 1, 1, 'Customer 64', 'completed', 1754.00, '2026-02-15 11:38:00', '2026-02-15 11:38:00', '2026-02-15 11:38:00');
 
 -- --------------------------------------------------------
 
@@ -321,8 +383,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('JNCw26QMlkzvYHhf2GktD9bQmqCyuMoNbXinccGr', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiOHNnZDRKdTFRanlNNWpJTExMY1N5Y1ZZMVRjUnJMdFJBTDZRTEZzViI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czozMzoiaHR0cDovL2xvY2FsaG9zdDo4MDAwL2FkbWluLXBhbmVsIjt9czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9sb2dpbiI7czo1OiJyb3V0ZSI7czo1OiJsb2dpbiI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1771334303),
-('jPIssWJ8VfDlmGVnGHe0xMX5SDgPCdPQ1rlmPtbR', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiUDRKOHlRM2pMc09acEhRQWQ5UkhXWndRM1ZvVmJ2YzM5cVVYc3g5WiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDQ6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9vd25lci9zdGFmZi1tYW5hZ2VtZW50IjtzOjU6InJvdXRlIjtOO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19', 1771334303);
+('F3i2hzzYN8SAuRQ4c9NTKOb0l6goWB5mkHs735Yb', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo3OntzOjY6Il90b2tlbiI7czo0MDoieDNvWjFsbUg4Wmxmc1JvRlV2RGdZTVN5dU1tOUd3aUpLZkZaZ3I1RSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czo3OiJ1c2VyX2lkIjtpOjE7czo5OiJ1c2VyX3JvbGUiO3M6NToiT1dORVIiO3M6OToidXNlcl9uYW1lIjtzOjg6Ik93bmVyIENUIjt9', 1771343796),
+('moYDySJx8JUWJ4Vd7x0afVesWyKX5qFTUimARF8k', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiVG1SYVB1R0k5V0pDbWVyU2RUZmNiSzJwQUJzR0NBOENZbXVHQWFvOCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9fQ==', 1771342878);
 
 -- --------------------------------------------------------
 
@@ -359,10 +421,16 @@ CREATE TABLE `users` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `email` varchar(100) NOT NULL,
   `username` varchar(50) DEFAULT NULL,
+  `full_name` varchar(100) DEFAULT NULL,
   `name` varchar(100) DEFAULT NULL,
   `password` varchar(255) NOT NULL,
   `email_verified_at` timestamp NULL DEFAULT NULL,
   `role` varchar(50) NOT NULL DEFAULT 'STAFF',
+  `branch_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `avatar_url` varchar(255) DEFAULT NULL,
+  `phone_number` varchar(20) DEFAULT NULL,
+  `address` varchar(255) DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
   `department` enum('HR','FINANCE','INVENTORY','LOGISTICS','CASHIER') DEFAULT NULL,
   `remember_token` varchar(100) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -370,6 +438,14 @@ CREATE TABLE `users` (
   `deleted_at` timestamp NULL DEFAULT NULL,
   `must_change_password` tinyint(1) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `users`
+--
+
+INSERT INTO `users` (`id`, `email`, `username`, `full_name`, `name`, `password`, `email_verified_at`, `role`, `branch_id`, `avatar_url`, `phone_number`, `address`, `is_active`, `department`, `remember_token`, `created_at`, `updated_at`, `deleted_at`, `must_change_password`) VALUES
+(1, 'owner12@example.com', 'owner_ph', 'Owner CT', NULL, '$2y$12$NEPG4iRF2bWyJka8dTOxrOpOBxpXpkcK2P6l2xbOMqIhxLGwScV42', '2026-02-17 14:41:30', 'OWNER', NULL, NULL, '09081717813', '123 Main St', 1, 'HR', NULL, '2026-02-17 14:41:30', '2026-02-17 14:41:30', NULL, 0),
+(2, 'admin_main@example.com', 'admin_main', 'Main Admin', NULL, '$2y$12$YkAwoJ2uovKAo1v5f4ZOLOAa0zyTekL2j5J8ZegQAsMkYbVLM1X2C', '2026-02-17 14:46:48', 'ADMIN', NULL, NULL, '09171234567', 'Admin HQ', 1, 'HR', NULL, '2026-02-17 14:46:48', '2026-02-17 14:46:48', NULL, 0);
 
 --
 -- Indexes for dumped tables
@@ -558,13 +634,13 @@ ALTER TABLE `jobs`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36;
 
 --
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=51;
 
 --
 -- AUTO_INCREMENT for table `personal_access_tokens`
@@ -594,7 +670,7 @@ ALTER TABLE `staff_documents`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- Constraints for dumped tables

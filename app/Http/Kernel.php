@@ -16,6 +16,7 @@ class Kernel extends HttpKernel
     'admin' => \App\Http\Middleware\AdminMiddleware::class,
     'ensure.admin' => \App\Http\Middleware\EnsureAdmin::class,
     'no-cache' => \App\Http\Middleware\NoCache::class,
+    'owner.only' => \App\Http\Middleware\OwnerOnly::class,
     // ... other middleware
-];
+  ];
 }

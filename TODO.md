@@ -1,27 +1,25 @@
-# Role-Based System Audit - Fixes TODO
+# Owner Profile Update - Implementation Plan
 
-## Priority 1: Critical Backend Fixes
+## Task: AYUSIN - Owner Profile Update at Credentials Management
 
-- [ ] 1. Add CRUD methods to StaffInventoryController (index, store, update, destroy)
-- [ ] 2. Create ManagerFinanceController
-- [ ] 3. Create ManagerHRController
-- [ ] 4. Create ManagerLogisticsController
-- [ ] 5. Create StaffCashierController
-- [ ] 6. Create StaffFinanceController
-- [ ] 7. Add API routes for all new controllers
+### Backend Changes Required:
+- [ ] 1. Update AuthController.php - updateOwnerProfile() method
+  - [ ] Add password_confirmation field validation
+  - [ ] Add password confirmation match validation
+  - [ ] Add stronger password validation (min:8, uppercase, lowercase, number, special char)
+  - [ ] Ensure password is hashed before saving
 
-## Priority 2: Frontend Fixes
+### Frontend Changes Required:
+- [ ] 2. Update OwnerPanel.vue - Info Modal
+  - [ ] Add username input field
+  - [ ] Add password input field  
+  - [ ] Add confirm password input field
+  - [ ] Update saveOwnerInfo() function to send username, password, password_confirmation
+  - [ ] Add frontend validation for password confirmation match
+  - [ ] Add success/error message display
 
-- [ ] 8. Refactor panels to use MainLayout.vue consistently
-- [ ] 9. Update API endpoint calls in Vue panels
-
-## Priority 3: Security & Middleware
-
-- [ ] 10. Add role-based middleware for managers and staff
-
-## Implementation Order:
-1. StaffInventoryController - CRUD methods
-2. Create Manager controllers (Finance, HR, Logistics)
-3. Create Staff controllers (Cashier, Finance)
-4. Add API routes
-5. Refactor Vue panels
+### Testing:
+- [ ] Verify username can be changed
+- [ ] Verify password can be changed with confirmation
+- [ ] Verify password requires confirmation match
+- [ ] Verify changes reflect immediately in UI

@@ -35,21 +35,38 @@ class LoginController extends Controller
             // Store user info in session
             Session::put('user_id', $user->id);
             Session::put('user_role', $user->role);
+            Session::put('user_department', $user->department ?? null);
             Session::put('user_name', $user->full_name);
 
             // Redirect based on role
-            if ($user->role === 'OWNER') {
+            if ($user->role === 'ADMIN') {
                 return redirect()->route('admin.dashboard')
                     ->with('success', 'Welcome back, Admin!');
-            } elseif ($user->role === 'STAFF') {
-                return redirect()->route('staff.dashboard')
-                    ->with('success', 'Welcome back, ' . $user->full_name .  '!');
+            } elseif ($user->role === 'OWNER') {
+                return redirect()->route('owner.dashboard')
+                    ->with('success', 'Welcome back, Owner!');
             } elseif ($user->role === 'BRANCH_MANAGER') {
                 return redirect()->route('manager.dashboard')
                     ->with('success', 'Welcome back, Manager!');
-            } elseif ($user->role === 'HR') {
-                return redirect()->route('hr.dashboard')
-                    ->with('success', 'Welcome back, HR!');
+            } elseif ($user->role === 'STAFF') {
+                // Department-based staff panels
+                if ($user->department === 'CASHIER') {
+                    return redirect()->route('staff.cashier.dashboard')
+                        ->with('success', 'Welcome back, Cashier!');
+                } elseif ($user->department === 'FINANCE') {
+                    return redirect()->route('staff.finance.dashboard')
+                        ->with('success', 'Welcome back, Finance Staff!');
+                } elseif ($user->department === 'INVENTORY') {
+                    return redirect()->route('staff.inventory.dashboard')
+                        ->with('success', 'Welcome back, Inventory Staff!');
+                } else {
+                    return redirect()->route('staff.dashboard')
+                        ->with('success', 'Welcome back, Staff!');
+                }
+            } elseif (in_array($user->department, ['HR', 'FINANCE', 'INVENTORY', 'LOGISTICS'])) {
+                // Manager panels by department
+                return redirect()->route('manager.' . strtolower($user->department) . '.dashboard')
+                    ->with('success', 'Welcome back, ' . $user->department . ' Manager!');
             }
         }
 

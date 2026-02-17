@@ -229,7 +229,17 @@ class AuthController extends Controller
             'username' => ['nullable', 'string', 'max:255', Rule::unique('users', 'username')->ignore($userId)],
             'email'    => 'nullable|email|max:255',
             'contact'  => 'nullable|string|max:20',
-            'password' => 'nullable|string|min:8',
+            'password' => [
+                'nullable',
+                'string',
+                'min:8',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/',
+                'confirmed',
+            ],
+            'password_confirmation' => 'nullable|string|min:8',
+        ], [
+            'password.regex' => 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (!@#$%^&*).',
+            'password.confirmed' => 'Password confirmation does not match.',
         ]);
 
         $updateData = [
@@ -243,7 +253,7 @@ class AuthController extends Controller
             $updateData['username'] = $validated['username'];
         }
 
-        // Update password if provided
+        // Update password if provided (already validated with confirmation)
         if (!empty($validated['password'])) {
             $updateData['password'] = Hash::make($validated['password']);
             $updateData['must_change_password'] = false;
