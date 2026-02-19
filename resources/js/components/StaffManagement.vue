@@ -133,7 +133,7 @@
                 placeholder="Enter phone number"
               >
             </div>
-            <div class="form-group">
+            <div v-if="isEditingStaff || createOwnerMode" class="form-group">
               <label>Department:</label>
               <select v-model="newStaff.department" class="form-input">
                 <option value="">-- Select Department (optional) --</option>
@@ -260,6 +260,7 @@ function resetForm() {
     full_name: '',
     phone_number: '',
     password: '',
+    department: '',
   }
   isEditingStaff.value = false
   editingStaffId.value = null
@@ -275,6 +276,7 @@ function editStaff(member) {
     full_name: member.full_name,
     phone_number: member.phone_number,
     password: '',
+    department: member.department || '',
   }
   showAddStaffModal.value = true
 }

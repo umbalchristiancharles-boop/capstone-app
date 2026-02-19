@@ -124,7 +124,7 @@
               </div>
 
               <!-- Department -->
-              <div class="form-group">
+              <div class="form-group" v-if="isEdit || currentUserRole === 'OWNER'">
                 <label for="department" class="form-label">Department</label>
                 <select
                   v-model="form.department"
@@ -159,130 +159,38 @@
                 rows="3"
                 class="form-input"
                 placeholder="Enter address"
+                required
               ></textarea>
             </div>
 
-            <!-- Documents (Create Only) -->
-            <div v-if="!isEdit" class="form-group">
-              <label class="form-label">Resume or Biodata *</label>
-              <input
-                type="file"
-                class="form-input"
-                accept=".jpg,.jpeg,.png,.webp,.pdf"
-                required
-                @change="handleFileChange('resume', $event)"
-              >
+            <!-- Province -->
+            <div class="form-group">
+              <label for="province" class="form-label">Province</label>
+              <select v-model="form.province" id="province" class="form-input" @change="onProvinceChange">
+                <option value="">-- Select Province --</option>
+                <option v-for="p in provinces" :key="p.id || p.code || p.name" :value="p.id || p.code || p.name">{{ p.name || p.label || p.province || p }}</option>
+              </select>
             </div>
-            <div v-if="!isEdit" class="form-group">
-              <label class="form-label">Valid Government-issued ID *</label>
-              <input
-                type="file"
-                class="form-input"
-                accept=".jpg,.jpeg,.png,.webp,.pdf"
-                required
-                @change="handleFileChange('government_id', $event)"
-              >
+
+            <!-- City -->
+            <div class="form-group">
+              <label for="city" class="form-label">City / Municipality</label>
+              <select v-model="form.city" id="city" class="form-input" @change="onCityChange">
+                <option value="">-- Select City / Municipality --</option>
+                <option v-for="c in cities" :key="c.id || c.code || c.name" :value="c.id || c.code || c.name">{{ c.name || c.label || c.city || c }}</option>
+              </select>
             </div>
-            <div v-if="!isEdit" class="form-group">
-              <label class="form-label">PSA Birth Certificate *</label>
-              <input
-                type="file"
-                class="form-input"
-                accept=".jpg,.jpeg,.png,.webp,.pdf"
-                required
-                @change="handleFileChange('psa_birth_certificate', $event)"
-              >
+
+            <!-- Barangay -->
+            <div class="form-group">
+              <label for="barangay" class="form-label">Barangay</label>
+              <select v-model="form.barangay" id="barangay" class="form-input">
+                <option value="">-- Select Barangay --</option>
+                <option v-for="b in barangays" :key="b.id || b.code || b.name" :value="b.id || b.code || b.name">{{ b.name || b.label || b.barangay || b }}</option>
+              </select>
             </div>
-            <div v-if="!isEdit" class="form-group">
-              <label class="form-label">NBI Clearance *</label>
-              <input
-                type="file"
-                class="form-input"
-                accept=".jpg,.jpeg,.png,.webp,.pdf"
-                required
-                @change="handleFileChange('nbi_clearance', $event)"
-              >
-            </div>
-            <div v-if="!isEdit" class="form-group">
-              <label class="form-label">Police Clearance *</label>
-              <input
-                type="file"
-                class="form-input"
-                accept=".jpg,.jpeg,.png,.webp,.pdf"
-                required
-                @change="handleFileChange('police_clearance', $event)"
-              >
-            </div>
-            <div v-if="!isEdit" class="form-group">
-              <label class="form-label">Medical Certificate / Health Clearance *</label>
-              <input
-                type="file"
-                class="form-input"
-                accept=".jpg,.jpeg,.png,.webp,.pdf"
-                required
-                @change="handleFileChange('medical_certificate', $event)"
-              >
-            </div>
-            <div v-if="!isEdit" class="form-group">
-              <label class="form-label">Drug Test Result *</label>
-              <input
-                type="file"
-                class="form-input"
-                accept=".jpg,.jpeg,.png,.webp,.pdf"
-                required
-                @change="handleFileChange('drug_test_result', $event)"
-              >
-            </div>
-            <div v-if="!isEdit" class="form-group">
-              <label class="form-label">SSS Number / SSS ID *</label>
-              <input
-                type="file"
-                class="form-input"
-                accept=".jpg,.jpeg,.png,.webp,.pdf"
-                required
-                @change="handleFileChange('sss_id', $event)"
-              >
-            </div>
-            <div v-if="!isEdit" class="form-group">
-              <label class="form-label">PhilHealth Number / ID *</label>
-              <input
-                type="file"
-                class="form-input"
-                accept=".jpg,.jpeg,.png,.webp,.pdf"
-                required
-                @change="handleFileChange('philhealth_id', $event)"
-              >
-            </div>
-            <div v-if="!isEdit" class="form-group">
-              <label class="form-label">Pag-IBIG Number / MDF *</label>
-              <input
-                type="file"
-                class="form-input"
-                accept=".jpg,.jpeg,.png,.webp,.pdf"
-                required
-                @change="handleFileChange('pagibig_mdf', $event)"
-              >
-            </div>
-            <div v-if="!isEdit" class="form-group">
-              <label class="form-label">TIN (Tax Identification Number) *</label>
-              <input
-                type="file"
-                class="form-input"
-                accept=".jpg,.jpeg,.png,.webp,.pdf"
-                required
-                @change="handleFileChange('tin_id', $event)"
-              >
-            </div>
-            <div v-if="!isEdit" class="form-group">
-              <label class="form-label">Diploma / Transcript / Certificate of Enrollment *</label>
-              <input
-                type="file"
-                class="form-input"
-                accept=".jpg,.jpeg,.png,.webp,.pdf"
-                required
-                @change="handleFileChange('diploma_transcript', $event)"
-              >
-            </div>
+
+            <!-- Document uploads removed for admin create flow -->
 
             <!-- Documents (Edit Only - View/Download/Delete/Upload) -->
             <div v-if="isEdit && documents" class="documents-section">
@@ -421,24 +329,18 @@ export default {
         role:  '',
         department: '',
         address: '',
+        province: '',
+        city: '',
+        barangay: '',
         isActive: true
       },
-      documentFiles: {
-        resume: null,
-        government_id: null,
-        psa_birth_certificate: null,
-        nbi_clearance: null,
-        police_clearance: null,
-        medical_certificate: null,
-        drug_test_result: null,
-        sss_id: null,
-        philhealth_id: null,
-        pagibig_mdf: null,
-        tin_id: null,
-        diploma_transcript: null,
-      },
+      provinces: [],
+      cities: [],
+      barangays: [],
+      // documentFiles removed for admin create flow — attachments handled only in edit mode
       // branches removed — owner creation does not need branches
       errorMessage: '',
+      currentUserRole: sessionStorage.getItem('user_role') || null,
       isSubmitting: false,
       documents: null,
       deletingDocs: [],
@@ -468,6 +370,11 @@ export default {
               isActive: this.staff.is_active !== undefined ? Boolean(this.staff.is_active) : true
             }
             this.documents = this.staff.documents || {}
+            this.form.province = this.staff.province || ''
+            this.form.city = this.staff.city || ''
+            this.form.barangay = this.staff.barangay || ''
+            if (this.form.province) this.loadCities(this.form.province)
+            if (this.form.city) this.loadBarangays(this.form.city)
           } else {
             // Reset form for new staff
             this.form = {
@@ -481,6 +388,9 @@ export default {
                 role: 'OWNER',
                 department: '',
               address: '',
+              province: '',
+              city: '',
+              barangay: '',
               isActive: true
             }
             // If manager mode, default branch to manager's branch id (if provided)
@@ -488,7 +398,8 @@ export default {
               this.form.branchId = this.branchForManager
             }
 
-            this.resetDocumentFiles()
+            // load provinces for dropdowns
+            this.loadProvinces()
           }
 
           this.errorMessage = ''
@@ -497,75 +408,23 @@ export default {
     }
   },
   methods: {
-    resetDocumentFiles() {
-      this.documentFiles = {
-        resume: null,
-        government_id: null,
-        psa_birth_certificate: null,
-        nbi_clearance: null,
-        police_clearance: null,
-        medical_certificate: null,
-        drug_test_result: null,
-        sss_id: null,
-        philhealth_id: null,
-        pagibig_mdf: null,
-        tin_id: null,
-        diploma_transcript: null,
-      }
-    },
-
-    handleFileChange(key, event) {
-      const file = event?.target?.files?.[0] || null
-      this.documentFiles[key] = file
-    },
-
-    getRequiredDocuments() {
-      return {
-        resume: 'Resume or Biodata',
-        government_id: 'Valid Government-issued ID',
-        psa_birth_certificate: 'PSA Birth Certificate',
-        nbi_clearance: 'NBI Clearance',
-        police_clearance: 'Police Clearance',
-        medical_certificate: 'Medical Certificate / Health Clearance',
-        drug_test_result: 'Drug Test Result',
-        sss_id: 'SSS Number / SSS ID',
-        philhealth_id: 'PhilHealth Number / ID',
-        pagibig_mdf: 'Pag-IBIG Number / MDF',
-        tin_id: 'TIN (Tax Identification Number)',
-        diploma_transcript: 'Diploma / Transcript / Certificate of Enrollment',
-      }
-    },
-
-    getMissingDocuments() {
-      const required = this.getRequiredDocuments()
-      return Object.keys(required).filter(key => !this.documentFiles[key])
-        .map(key => required[key])
-    },
-
+    // document attachments are not sent during admin create
     buildCreateFormData() {
-      const formData = new FormData()
-      // Force owner role and omit branch for owner accounts
-      const role = 'OWNER'
-      const branchId = ''
-
-      formData.append('username', this.form.username)
-      formData.append('email', this.form.email)
-      formData.append('fullName', this.form.fullName)
-      formData.append('phone', this.form.phone || '')
-      formData.append('address', this.form.address || '')
-      // don't append branchId for owner accounts (leave empty)
-      formData.append('branchId', branchId)
-      formData.append('role', role)
-      formData.append('department', this.form.department || '')
-      formData.append('password', this.defaultPassword)
-
-      Object.entries(this.documentFiles).forEach(([key, file]) => {
-        if (file) {
-          formData.append(key, file)
-        }
-      })
-
-      return formData
+      // return plain object to be sent as JSON for admin create
+      return {
+        username: this.form.username,
+        email: this.form.email,
+        fullName: this.form.fullName,
+        phone: this.form.phone || '',
+        address: this.form.address || '',
+        branchId: this.form.branchId || '',
+        role: this.form.role || 'OWNER',
+        department: this.form.department || '',
+        password: this.defaultPassword,
+        province: this.form.province || '',
+        city: this.form.city || '',
+        barangay: this.form.barangay || ''
+      }
     },
 
     // loadBranches removed — branches are not required for Owner creation
@@ -574,13 +433,11 @@ export default {
       this.isSubmitting = true
       this.errorMessage = ''
 
-      if (!this.isEdit) {
-        const missingDocs = this.getMissingDocuments()
-        if (missingDocs.length > 0) {
-          this.errorMessage = `Please upload required documents: ${missingDocs.join(', ')}`
-          this.isSubmitting = false
-          return
-        }
+      // Require address fields
+      if (!this.form.address || !this.form.province || !this.form.city || !this.form.barangay) {
+        this.errorMessage = 'Please provide Address, Province, City, and Barangay.'
+        this.isSubmitting = false
+        return
       }
 
       // Ensure CSRF cookie/header are set before submitting
@@ -622,8 +479,9 @@ export default {
         let headers
 
         if (!this.isEdit) {
+          // send JSON for admin create (no files attached here)
           payload = this.buildCreateFormData()
-          headers = { 'Content-Type': 'multipart/form-data' }
+          headers = undefined
         }
 
         // Send form data
@@ -651,7 +509,7 @@ export default {
 
             // retry the original request once
             const retryPayload = this.isEdit ? this.form : this.buildCreateFormData()
-            const retryHeaders = this.isEdit ? undefined : { 'Content-Type': 'multipart/form-data' }
+            const retryHeaders = this.isEdit ? undefined : undefined
             const retryRes = await axios({ method, url, data: retryPayload, headers: retryHeaders })
             if (retryRes.data && retryRes.data.success) {
               this.$emit('success', retryRes.data)
@@ -686,6 +544,75 @@ export default {
       }
     },
 
+    async loadProvinces() {
+      const endpoints = ['/api/locations/provinces', '/api/provinces']
+      for (const url of endpoints) {
+        try {
+          const res = await axios.get(url, { withCredentials: true })
+          if (!res || !res.data) continue
+          if (res.data.success && Array.isArray(res.data.data)) {
+            this.provinces = res.data.data
+            return
+          }
+          if (Array.isArray(res.data)) {
+            this.provinces = res.data
+            return
+          }
+        } catch (e) { continue }
+      }
+      this.provinces = []
+    },
+    async loadCities(provinceValue) {
+      if (!provinceValue) { this.cities = []; return }
+      const endpoints = [`/api/locations/cities?province=${encodeURIComponent(provinceValue)}`, `/api/cities?province=${encodeURIComponent(provinceValue)}`]
+      for (const url of endpoints) {
+        try {
+          const res = await axios.get(url, { withCredentials: true })
+          if (!res || !res.data) continue
+          if (res.data.success && Array.isArray(res.data.data)) {
+            this.cities = res.data.data
+            return
+          }
+          if (Array.isArray(res.data)) {
+            this.cities = res.data
+            return
+          }
+        } catch (e) { continue }
+      }
+      this.cities = []
+    },
+    async loadBarangays(cityValue) {
+      if (!cityValue) { this.barangays = []; return }
+      const endpoints = [`/api/locations/barangays?city=${encodeURIComponent(cityValue)}`, `/api/barangays?city=${encodeURIComponent(cityValue)}`]
+      for (const url of endpoints) {
+        try {
+          const res = await axios.get(url, { withCredentials: true })
+          if (!res || !res.data) continue
+          if (res.data.success && Array.isArray(res.data.data)) {
+            this.barangays = res.data.data
+            return
+          }
+          if (Array.isArray(res.data)) {
+            this.barangays = res.data
+            return
+          }
+        } catch (e) { continue }
+      }
+      this.barangays = []
+    },
+    onProvinceChange() {
+      this.form.city = ''
+      this.form.barangay = ''
+      this.cities = []
+      this.barangays = []
+      this.loadCities(this.form.province)
+    },
+    onCityChange() {
+      this.form.barangay = ''
+      this.barangays = []
+      this.loadBarangays(this.form.city)
+    },
+
     closeModal() {
       this.errorMessage = ''
       this.$emit('close')
@@ -693,7 +620,6 @@ export default {
 
     getDocumentLabels() {
       return {
-        resume: { label: 'Resume or Biodata' },
         government_id: { label: 'Valid Government-issued ID' },
         psa_birth_certificate: { label: 'PSA Birth Certificate' },
         nbi_clearance: { label: 'NBI Clearance' },

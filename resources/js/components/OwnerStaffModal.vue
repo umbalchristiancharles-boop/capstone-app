@@ -61,6 +61,40 @@
                   placeholder="Enter phone number"
                 />
               </div>
+
+                <!-- Current Address / Address Cascader -->
+                <div class="form-group" style="grid-column: span 2;">
+                  <label for="address" class="form-label">Current Address</label>
+
+                  <div v-if="addressSaved" class="address-card">
+                    <div class="address-card-header">
+                      <strong>Current Address</strong>
+                      <button type="button" class="btn btn-secondary" @click="editSavedAddress">Edit</button>
+                    </div>
+                    <div class="address-card-body">{{ savedAddress }}</div>
+                  </div>
+
+                  <div v-else>
+                    <textarea
+                      v-model="form.address"
+                      id="address"
+                      rows="2"
+                      class="form-input"
+                      placeholder="House number, street, subdivision"
+                      required
+                    ></textarea>
+
+                    <!-- Address Cascader (Region → Province → City → Barangay) -->
+                    <div style="margin-top:0.5rem;">
+                      <AddressCascader :initialAddress="{ province: form.province, city: form.city, barangay: form.barangay }" :showSaveButton="false" @update:address="onAddressUpdate" />
+                    </div>
+
+                    <div style="margin-top:0.5rem; display:flex; gap:0.5rem;">
+                      <button type="button" class="btn btn-primary" @click="saveAddress">Save Address</button>
+                      <button type="button" class="btn btn-secondary" @click="() => { form.address=''; form.province=''; form.city=''; form.barangay=''; }">Clear</button>
+                    </div>
+                  </div>
+                </div>
               <!-- Role/Department -->
               <div class="form-group">
                 <label for="roleDepartment" class="form-label">Role / Department *</label>
@@ -111,6 +145,117 @@
                   </button>
                 </div>
               </div>
+              <!-- Documents (Create Only) -->
+              <div v-if="!isEdit" class="form-group">
+                <label class="form-label">Valid Government-issued ID *</label>
+                <input
+                  type="file"
+                  class="form-input"
+                  accept=".jpg,.jpeg,.png,.webp,.pdf"
+                  required
+                  @change="(e) => handleFileChange('government_id', e)"
+                >
+              </div>
+              <div v-if="!isEdit" class="form-group">
+                <label class="form-label">PSA Birth Certificate *</label>
+                <input
+                  type="file"
+                  class="form-input"
+                  accept=".jpg,.jpeg,.png,.webp,.pdf"
+                  required
+                  @change="(e) => handleFileChange('psa_birth_certificate', e)"
+                >
+              </div>
+              <div v-if="!isEdit" class="form-group">
+                <label class="form-label">NBI Clearance *</label>
+                <input
+                  type="file"
+                  class="form-input"
+                  accept=".jpg,.jpeg,.png,.webp,.pdf"
+                  required
+                  @change="(e) => handleFileChange('nbi_clearance', e)"
+                >
+              </div>
+              <div v-if="!isEdit" class="form-group">
+                <label class="form-label">Police Clearance *</label>
+                <input
+                  type="file"
+                  class="form-input"
+                  accept=".jpg,.jpeg,.png,.webp,.pdf"
+                  required
+                  @change="(e) => handleFileChange('police_clearance', e)"
+                >
+              </div>
+              <div v-if="!isEdit" class="form-group">
+                <label class="form-label">Medical Certificate / Health Clearance *</label>
+                <input
+                  type="file"
+                  class="form-input"
+                  accept=".jpg,.jpeg,.png,.webp,.pdf"
+                  required
+                  @change="(e) => handleFileChange('medical_certificate', e)"
+                >
+              </div>
+              <div v-if="!isEdit" class="form-group">
+                <label class="form-label">Drug Test Result *</label>
+                <input
+                  type="file"
+                  class="form-input"
+                  accept=".jpg,.jpeg,.png,.webp,.pdf"
+                  required
+                  @change="(e) => handleFileChange('drug_test_result', e)"
+                >
+              </div>
+              <div v-if="!isEdit" class="form-group">
+                <label class="form-label">SSS Number / SSS ID *</label>
+                <input
+                  type="file"
+                  class="form-input"
+                  accept=".jpg,.jpeg,.png,.webp,.pdf"
+                  required
+                  @change="(e) => handleFileChange('sss_id', e)"
+                >
+              </div>
+              <div v-if="!isEdit" class="form-group">
+                <label class="form-label">PhilHealth Number / ID *</label>
+                <input
+                  type="file"
+                  class="form-input"
+                  accept=".jpg,.jpeg,.png,.webp,.pdf"
+                  required
+                  @change="(e) => handleFileChange('philhealth_id', e)"
+                >
+              </div>
+              <div v-if="!isEdit" class="form-group">
+                <label class="form-label">Pag-IBIG Number / MDF *</label>
+                <input
+                  type="file"
+                  class="form-input"
+                  accept=".jpg,.jpeg,.png,.webp,.pdf"
+                  required
+                  @change="(e) => handleFileChange('pagibig_mdf', e)"
+                >
+              </div>
+              <div v-if="!isEdit" class="form-group">
+                <label class="form-label">TIN (Tax Identification Number) *</label>
+                <input
+                  type="file"
+                  class="form-input"
+                  accept=".jpg,.jpeg,.png,.webp,.pdf"
+                  required
+                  @change="(e) => handleFileChange('tin_id', e)"
+                >
+              </div>
+              <div v-if="!isEdit" class="form-group">
+                <label class="form-label">Diploma / Transcript / Certificate of Enrollment *</label>
+                <input
+                  type="file"
+                  class="form-input"
+                  accept=".jpg,.jpeg,.png,.webp,.pdf"
+                  required
+                  @change="(e) => handleFileChange('diploma_transcript', e)"
+                >
+              </div>
             </div>
           </div>
           <!-- Error Message -->
@@ -133,6 +278,7 @@
 
 <script>
 import axios from 'axios'
+import AddressCascader from './AddressCascader.vue'
 
 export default {
   name: 'OwnerStaffModal',
@@ -152,33 +298,197 @@ export default {
         password: '',
         roleDepartment: '',
         branch_id: '',
+        address: '',
+        region: '',
+        province: '',
+        city: '',
+        barangay: '',
       },
+      provinces: [],
+      cities: [],
+      barangays: [],
+      // Local fallback for provinces -> cities -> barangays when backend endpoints are not available
+      locationMap: {
+        "Metro Manila": {
+          cities: {
+            "Quezon City": ["Project 2", "Cubao"],
+            "Manila": ["Tondo", "Binondo"]
+          }
+        },
+        "Cebu": {
+          cities: {
+            "Cebu City": ["Poblacion", "Mabolo"],
+            "Lapu-Lapu City": ["Poblacion", "Marigondon"]
+          }
+        },
+        "Davao del Sur": {
+          cities: {
+            "Davao City": ["Buhangin", "Talomo"]
+          }
+        }
+      },
+      // documentFiles removed — files no longer required for admin/owner creation
       branches: [],
+      // Address UI state
+      addressSaved: false,
+      savedAddress: '',
       showPassword: false,
       errorMessage: '',
       isSubmitting: false,
     }
   },
+  components: { AddressCascader },
   mounted() {
     this.loadBranches()
+    this.loadProvinces()
   },
   methods: {
     async loadBranches() {
-      try {
-        const res = await axios.get('/api/admin/branches', { withCredentials: true })
-        if (res.data && res.data.success && Array.isArray(res.data.data)) {
-          this.branches = res.data.data
-        } else if (Array.isArray(res.data)) {
-          this.branches = res.data
-        } else {
-          this.branches = []
+      // Try multiple endpoints to support different user roles / backends.
+      // 1) Admin endpoint (works for admins)
+      // 2) Owner endpoint (some backends expose this for owners)
+      // 3) Generic branches endpoint
+      const endpoints = ['/api/admin/branches', '/api/owner/branches', '/api/branches']
+      for (const url of endpoints) {
+        try {
+          const res = await axios.get(url, { withCredentials: true })
+          if (!res || !res.data) continue
+
+          // Normalize responses that return { success: true, data: [...] }
+          if (res.data.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+            this.branches = res.data.data
+            return
+          }
+
+          // Responses that directly return an array (res.data = [...])
+          if (Array.isArray(res.data) && res.data.length > 0) {
+            this.branches = res.data
+            return
+          }
+
+          // Some responses might be { data: [...] } without success flag
+          if (res.data.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+            this.branches = res.data.data
+            return
+          }
+        } catch (e) {
+          // try next endpoint
+          continue
         }
-      } catch (e) {
-        this.branches = []
       }
+
+      // If none succeeded, leave branches empty so UI shows placeholder and user gets validation
+      this.branches = []
+    },
+    async loadProvinces() {
+      const endpoints = ['/api/locations/provinces', '/api/provinces']
+      for (const url of endpoints) {
+        try {
+          const res = await axios.get(url, { withCredentials: true })
+          if (!res || !res.data) continue
+          if (res.data.success && Array.isArray(res.data.data)) {
+            this.provinces = res.data.data
+            return
+          }
+          if (Array.isArray(res.data)) {
+            this.provinces = res.data
+            return
+          }
+        } catch (e) { continue }
+      }
+      // Fallback to local locationMap if API did not return results
+      try {
+        const keys = Object.keys(this.locationMap || {})
+        this.provinces = keys.map(k => ({ name: k }))
+      } catch (e) {
+        this.provinces = []
+      }
+    },
+    async loadCities(provinceValue) {
+      if (!provinceValue) { this.cities = []; return }
+      // Local fallback: if province exists in locationMap, use it
+      if (this.locationMap && this.locationMap[provinceValue]) {
+        this.cities = Object.keys(this.locationMap[provinceValue].cities).map(name => ({ name }))
+        return
+      }
+      const endpoints = [`/api/locations/cities?province=${encodeURIComponent(provinceValue)}`, `/api/cities?province=${encodeURIComponent(provinceValue)}`]
+      for (const url of endpoints) {
+        try {
+          const res = await axios.get(url, { withCredentials: true })
+          if (!res || !res.data) continue
+          if (res.data.success && Array.isArray(res.data.data)) {
+            this.cities = res.data.data
+            return
+          }
+          if (Array.isArray(res.data)) {
+            this.cities = res.data
+            return
+          }
+        } catch (e) { continue }
+      }
+      this.cities = []
+    },
+    async loadBarangays(cityValue) {
+      if (!cityValue) { this.barangays = []; return }
+      // Local fallback: search locationMap for city and populate barangays
+      try {
+        const prov = Object.keys(this.locationMap || {}).find(p => Object.prototype.hasOwnProperty.call(this.locationMap[p].cities, cityValue))
+        if (prov) {
+          this.barangays = (this.locationMap[prov].cities[cityValue] || []).map(name => ({ name }))
+          return
+        }
+      } catch (e) {}
+
+      const endpoints = [`/api/locations/barangays?city=${encodeURIComponent(cityValue)}`, `/api/barangays?city=${encodeURIComponent(cityValue)}`]
+      for (const url of endpoints) {
+        try {
+          const res = await axios.get(url, { withCredentials: true })
+          if (!res || !res.data) continue
+          if (res.data.success && Array.isArray(res.data.data)) {
+            this.barangays = res.data.data
+            return
+          }
+          if (Array.isArray(res.data)) {
+            this.barangays = res.data
+            return
+          }
+        } catch (e) { continue }
+      }
+      this.barangays = []
+    },
+    onProvinceChange() {
+      // reset dependent fields and load cities
+      this.form.city = ''
+      this.form.barangay = ''
+      this.cities = []
+      this.barangays = []
+      this.loadCities(this.form.province)
+    },
+    onCityChange() {
+      this.form.barangay = ''
+      this.barangays = []
+      this.loadBarangays(this.form.city)
     },
     toggleShowPassword() {
       this.showPassword = !this.showPassword
+    },
+    buildCreateFormData(role, department) {
+      const formData = new FormData()
+      formData.append('username', this.form.username)
+      formData.append('email', this.form.email)
+      formData.append('fullName', this.form.full_name)
+      formData.append('phone', this.form.phone_number || '')
+      formData.append('address', this.form.address || '')
+      formData.append('region', this.form.region || '')
+      formData.append('province', this.form.province || '')
+      formData.append('city', this.form.city || '')
+      formData.append('barangay', this.form.barangay || '')
+      formData.append('password', this.form.password)
+      formData.append('role', role)
+      formData.append('department', department)
+      formData.append('branchId', this.form.branch_id || '')
+
+      return formData
     },
     closeModal() {
       this.errorMessage = ''
@@ -187,6 +497,33 @@ export default {
     reconstructRoleDepartment(role, department) {
       if (!role || !department) return ''
       return `${role} ${department}`
+    },
+    onAddressSaved(address) {
+      // store to form and build display summary
+      this.form.region = address.region || ''
+      this.form.province = address.province || ''
+      this.form.city = address.city || ''
+      this.form.barangay = address.barangay || ''
+      this.savedAddress = [this.form.address, this.form.barangay, this.form.city, this.form.province].filter(Boolean).join(', ')
+      this.addressSaved = true
+    },
+    // handle address updates from AddressCascader
+    onAddressUpdate(address) {
+      this.form.province = address.province || ''
+      this.form.city = address.city || ''
+      this.form.barangay = address.barangay || ''
+    },
+    saveAddress() {
+      const parts = []
+      if (this.form.address && this.form.address.trim() !== '') parts.push(this.form.address.trim())
+      if (this.form.barangay) parts.push(this.form.barangay)
+      if (this.form.city) parts.push(this.form.city)
+      if (this.form.province) parts.push(this.form.province)
+      this.savedAddress = parts.join(', ')
+      this.addressSaved = true
+    },
+    editSavedAddress() {
+      this.addressSaved = false
     },
     async submitForm() {
       this.errorMessage = ''
@@ -210,11 +547,16 @@ export default {
         this.errorMessage = 'Please select a Branch'
         return
       }
+      if (!this.form.address || !this.form.region || !this.form.province || !this.form.city || !this.form.barangay) {
+        this.errorMessage = 'Please provide Address, Region, Province, City, and Barangay.'
+        return
+      }
       if (!this.isEdit) {
         if (!this.form.password || this.form.password.trim() === '') {
           this.errorMessage = 'Password is required'
           return
         }
+        // Documents are no longer required for creating staff via this modal
       }
       // Parse roleDepartment
       const [role, department] = this.form.roleDepartment.split(' ')
@@ -231,21 +573,18 @@ export default {
             full_name: this.form.full_name,
             email: this.form.email,
             phone_number: this.form.phone_number || '',
+            address: this.form.address || '',
+            region: this.form.region || '',
+            province: this.form.province || '',
+            city: this.form.city || '',
+            barangay: this.form.barangay || '',
             role: role,
             department: department,
             branch_id: this.form.branch_id,
           }, { withCredentials: true })
         } else {
-          res = await axios.post('/api/admin/staff', {
-            username: this.form.username,
-            email: this.form.email,
-            full_name: this.form.full_name,
-            phone_number: this.form.phone_number || '',
-            password: this.form.password,
-            role: role,
-            department: department,
-            branch_id: this.form.branch_id,
-          }, { withCredentials: true })
+          const formData = this.buildCreateFormData(role, department)
+          res = await axios.post('/api/admin/staff', formData, { withCredentials: true, headers: { 'Content-Type': 'multipart/form-data' } })
         }
         if (res.data.success) {
           this.$emit('success')
@@ -274,6 +613,19 @@ export default {
             password: '',
             roleDepartment: reconstructedRoleDept,
             branch_id: newStaff.branch_id || '',
+            address: newStaff.address || '',
+            region: newStaff.region || '',
+            province: newStaff.province || '',
+            city: newStaff.city || '',
+            barangay: newStaff.barangay || '',
+          }
+          // if there are values, try to load lists so selects populate
+          if (this.form.province) this.loadCities(this.form.province)
+          if (this.form.city) this.loadBarangays(this.form.city)
+          // show summary card when editing existing staff with address
+          if (this.form.region || this.form.province || this.form.city || this.form.barangay) {
+            this.savedAddress = [this.form.address, this.form.barangay, this.form.city, this.form.province].filter(Boolean).join(', ')
+            this.addressSaved = true
           }
         } else {
           this.form = {
@@ -284,6 +636,10 @@ export default {
             password: 'Chikin_Tayo@2526',
             roleDepartment: '',
             branch_id: '',
+            address: '',
+            province: '',
+            city: '',
+            barangay: '',
           }
         }
       }
@@ -428,6 +784,23 @@ export default {
 
 .form-input::placeholder {
   color: #d1d5db;
+}
+
+.address-card {
+  padding: 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fafafc;
+}
+.address-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+.address-card-body {
+  margin-top: 0.5rem;
+  color: #374151;
 }
 
 .form-group:nth-child(8) {

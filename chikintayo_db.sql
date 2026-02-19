@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 17, 2026 at 05:23 PM
+-- Generation Time: Feb 19, 2026 at 12:42 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -55,6 +55,17 @@ CREATE TABLE `branches` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `branches`
+--
+
+INSERT INTO `branches` (`id`, `code`, `name`, `address`, `is_active`, `created_at`, `updated_at`) VALUES
+(1, 'QC_MAIN', 'Quezon City Main Branch', 'Quezon City, Metro Manila', 1, '2026-02-19 07:29:08', '2026-02-19 07:29:08'),
+(2, 'MAKATI', 'Makati Branch', 'Makati City, Metro Manila', 1, '2026-02-19 07:29:08', '2026-02-19 07:29:08'),
+(3, 'BGC', 'BGC Branch', 'Bonifacio Global City, Taguig', 1, '2026-02-19 07:29:08', '2026-02-19 07:29:08'),
+(4, 'PASIG', 'Pasig Branch', 'Pasig City, Metro Manila', 1, '2026-02-19 07:29:08', '2026-02-19 07:29:08'),
+(5, 'MANILA', 'Manila Branch', 'Manila City', 1, '2026-02-19 07:29:08', '2026-02-19 07:29:08');
 
 -- --------------------------------------------------------
 
@@ -383,8 +394,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('moYDySJx8JUWJ4Vd7x0afVesWyKX5qFTUimARF8k', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiVG1SYVB1R0k5V0pDbWVyU2RUZmNiSzJwQUJzR0NBOENZbXVHQWFvOCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9fQ==', 1771342878),
-('xaPFYwYgwn3RZmJFpYbEFQ8QndZUe1E3i9ZW442q', 2, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo3OntzOjY6Il90b2tlbiI7czo0MDoiMkRaUjhWYWJjWFRKcUEzd3Q5UUJVVkJSYU54RE1KNnRRdHBwQXFvZCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mzg6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1tYW5hZ2VtZW50IjtzOjU6InJvdXRlIjtzOjIyOiJhZG1pbi5zdGFmZi1tYW5hZ2VtZW50Ijt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MjtzOjc6InVzZXJfaWQiO2k6MjtzOjk6InVzZXJfcm9sZSI7czo1OiJBRE1JTiI7czo5OiJ1c2VyX25hbWUiO3M6MTA6Ik1haW4gQWRtaW4iO30=', 1771345366);
+('4kqRrpEXPya7pKBUxQTeziQOCyss7cRgJgvEU5Hd', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiOGRFYUZscW11RUdnWng5UmtvVmxjaDdFZHNKV3dZaXh5U1J5Uk5FbSI7czo3OiJzdWNjZXNzIjtzOjI0OiJMb2dnZWQgb3V0IHN1Y2Nlc3NmdWxseS4iO3M6NjoiX2ZsYXNoIjthOjI6e3M6MzoibmV3IjthOjA6e31zOjM6Im9sZCI7YToxOntpOjA7czo3OiJzdWNjZXNzIjt9fXM6OToiX3ByZXZpb3VzIjthOjI6e3M6MzoidXJsIjtzOjI4OiJodHRwOi8vbG9jYWxob3N0OjgwMDAvbG9nb3V0IjtzOjU6InJvdXRlIjtzOjY6ImxvZ291dCI7fX0=', 1771492616),
+('Q1ZdJi2LqcJceCuzBdo9JsiJmpgPfEZr8TNA7msY', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo3OntzOjY6Il90b2tlbiI7czo0MDoiN1pUUVZNVjQ4dms2MU5IRlY0dWVtbVBjbmlaR0o5MVFycWU3NlgxUSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czo3OiJ1c2VyX2lkIjtpOjE7czo5OiJ1c2VyX3JvbGUiO3M6NToiT1dORVIiO3M6OToidXNlcl9uYW1lIjtzOjg6Ik93bmVyIENUIjt9', 1771500494);
 
 -- --------------------------------------------------------
 
@@ -410,6 +421,13 @@ CREATE TABLE `staff_documents` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `staff_documents`
+--
+
+INSERT INTO `staff_documents` (`id`, `user_id`, `resume_path`, `government_id_path`, `psa_birth_certificate_path`, `nbi_clearance_path`, `police_clearance_path`, `medical_certificate_path`, `drug_test_result_path`, `sss_id_path`, `philhealth_id_path`, `pagibig_mdf_path`, `tin_id_path`, `diploma_transcript_path`, `created_at`, `updated_at`) VALUES
+(1, 4, 'staff-documents/4/resume.png', 'staff-documents/4/government_id.png', 'staff-documents/4/psa_birth_certificate.png', 'staff-documents/4/nbi_clearance.png', 'staff-documents/4/police_clearance.png', 'staff-documents/4/medical_certificate.png', 'staff-documents/4/drug_test_result.png', 'staff-documents/4/sss_id.png', 'staff-documents/4/philhealth_id.png', 'staff-documents/4/pagibig_mdf.png', 'staff-documents/4/tin_id.png', 'staff-documents/4/diploma_transcript.png', '2026-02-19 07:39:55', '2026-02-19 07:39:55');
 
 -- --------------------------------------------------------
 
@@ -445,7 +463,9 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`id`, `email`, `username`, `full_name`, `name`, `password`, `email_verified_at`, `role`, `branch_id`, `avatar_url`, `phone_number`, `address`, `is_active`, `department`, `remember_token`, `created_at`, `updated_at`, `deleted_at`, `must_change_password`) VALUES
 (1, 'owner12@example.com', 'owner', 'Owner CT', NULL, '$2y$12$VJUll4ZOxJiysf4O7zLXc.LCL78XSzpGNcX9Oh4nUGkMjOIsbudEq', '2026-02-17 14:41:30', 'OWNER', NULL, NULL, '09081717813', '123 Main St', 1, 'HR', NULL, '2026-02-17 14:41:30', '2026-02-17 16:21:23', NULL, 0),
-(2, 'admin_main@example.com', 'admin_main', 'Main Admin', NULL, '$2y$12$YkAwoJ2uovKAo1v5f4ZOLOAa0zyTekL2j5J8ZegQAsMkYbVLM1X2C', '2026-02-17 14:46:48', 'ADMIN', NULL, NULL, '09171234567', 'Admin HQ', 1, 'HR', NULL, '2026-02-17 14:46:48', '2026-02-17 14:46:48', NULL, 0);
+(2, 'admin_main@example.com', 'admin_main', 'Main Admin', NULL, '$2y$12$YkAwoJ2uovKAo1v5f4ZOLOAa0zyTekL2j5J8ZegQAsMkYbVLM1X2C', '2026-02-17 14:46:48', 'ADMIN', NULL, NULL, '09171234567', 'Admin HQ', 1, 'HR', NULL, '2026-02-17 14:46:48', '2026-02-17 14:46:48', NULL, 0),
+(4, 'gab@gmail.com', 'gab', 'gab ong', NULL, '$2y$12$fyksxIfYpN1QcPIKMdaJHerPPDUF6TuKOiZO9x19ljzO0KqIubaAa', NULL, 'BRANCH_MANAGER', 3, NULL, '09156818857', '', 1, 'LOGISTICS', NULL, '2026-02-19 07:39:55', '2026-02-19 07:39:55', NULL, 1),
+(5, 'John@gmail.com', 'John', 'Johny', NULL, '$2y$12$xGMDH2sbm21cf0BjXdq03OBVsm2FpSlewRHYjEl8kV5ISPI.KMpfW', NULL, 'BRANCH_MANAGER', 2, NULL, '09156818858', 's', 1, 'INVENTORY', NULL, '2026-02-19 10:59:04', '2026-02-19 10:59:04', NULL, 1);
 
 --
 -- Indexes for dumped tables
@@ -604,7 +624,7 @@ ALTER TABLE `attendance`
 -- AUTO_INCREMENT for table `branches`
 --
 ALTER TABLE `branches`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `customer_accounts`
@@ -664,13 +684,13 @@ ALTER TABLE `product_comments`
 -- AUTO_INCREMENT for table `staff_documents`
 --
 ALTER TABLE `staff_documents`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- Constraints for dumped tables

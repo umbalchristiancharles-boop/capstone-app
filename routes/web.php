@@ -74,7 +74,7 @@ Route::get('/owner/staff-management', function () {
         ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
         ->header('Pragma', 'no-cache')
         ->header('Expires', '0');
-})->name('owner.staff-management')->middleware(['web', 'auth', 'owner.only']);
+})->name('owner.staff-management')->middleware(['web', 'auth', \App\Http\Middleware\OwnerOnly::class]);
 
 // MANAGER STAFF MANAGEMENT
 Route::get('/manager/staff', function () {
