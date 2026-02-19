@@ -1,6 +1,6 @@
 <template>
-  <div v-if="show" class="modal-overlay" @click.self="closeModal">
-    <div class="modal-container">
+  <div v-if="show" class="modal-backdrop" @click.self="closeModal">
+    <div class="modal">
       <div class="modal-card">
         <form @submit.prevent="submitForm">
           <!-- Modal Header -->
@@ -63,7 +63,7 @@
               </div>
 
                 <!-- Current Address / Address Cascader -->
-                <div class="form-group" style="grid-column: span 2;">
+                <div class="form-group full-span">
                   <label for="address" class="form-label">Current Address</label>
 
                   <div v-if="addressSaved" class="address-card">
@@ -81,7 +81,7 @@
                       rows="2"
                       class="form-input"
                       placeholder="House number, street, subdivision"
-                      required
+                      :required="!isEdit"
                     ></textarea>
 
                     <!-- Address Cascader (Region → Province → City → Barangay) -->
@@ -98,7 +98,7 @@
               <!-- Role/Department -->
               <div class="form-group">
                 <label for="roleDepartment" class="form-label">Role / Department *</label>
-                <select v-model="form.roleDepartment" id="roleDepartment" class="form-input" required>
+                <select v-model="form.roleDepartment" id="roleDepartment" class="form-input" :required="!isEdit">
                   <option value="">-- Select Role / Department --</option>
                   <optgroup label="Managers">
                     <option value="BRANCH_MANAGER hr">Manager HR</option>
@@ -116,7 +116,7 @@
               <!-- Branch Selection -->
               <div class="form-group">
                 <label for="branch_id" class="form-label">Branch *</label>
-                <select v-model="form.branch_id" id="branch_id" class="form-input" required>
+                <select v-model="form.branch_id" id="branch_id" class="form-input" :required="!isEdit">
                   <option value="">-- Select Branch --</option>
                   <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
                 </select>
@@ -146,7 +146,7 @@
                 </div>
               </div>
               <!-- Documents (Create Only) -->
-              <div v-if="!isEdit" class="form-group">
+              <div v-if="!isEdit" class="form-group full-span">
                 <label class="form-label">Valid Government-issued ID *</label>
                 <input
                   type="file"
@@ -156,7 +156,7 @@
                   @change="(e) => handleFileChange('government_id', e)"
                 >
               </div>
-              <div v-if="!isEdit" class="form-group">
+              <div v-if="!isEdit" class="form-group full-span">
                 <label class="form-label">PSA Birth Certificate *</label>
                 <input
                   type="file"
@@ -166,7 +166,7 @@
                   @change="(e) => handleFileChange('psa_birth_certificate', e)"
                 >
               </div>
-              <div v-if="!isEdit" class="form-group">
+              <div v-if="!isEdit" class="form-group full-span">
                 <label class="form-label">NBI Clearance *</label>
                 <input
                   type="file"
@@ -176,7 +176,7 @@
                   @change="(e) => handleFileChange('nbi_clearance', e)"
                 >
               </div>
-              <div v-if="!isEdit" class="form-group">
+              <div v-if="!isEdit" class="form-group full-span">
                 <label class="form-label">Police Clearance *</label>
                 <input
                   type="file"
@@ -186,7 +186,7 @@
                   @change="(e) => handleFileChange('police_clearance', e)"
                 >
               </div>
-              <div v-if="!isEdit" class="form-group">
+              <div v-if="!isEdit" class="form-group full-span">
                 <label class="form-label">Medical Certificate / Health Clearance *</label>
                 <input
                   type="file"
@@ -196,7 +196,7 @@
                   @change="(e) => handleFileChange('medical_certificate', e)"
                 >
               </div>
-              <div v-if="!isEdit" class="form-group">
+              <div v-if="!isEdit" class="form-group full-span">
                 <label class="form-label">Drug Test Result *</label>
                 <input
                   type="file"
@@ -206,7 +206,7 @@
                   @change="(e) => handleFileChange('drug_test_result', e)"
                 >
               </div>
-              <div v-if="!isEdit" class="form-group">
+              <div v-if="!isEdit" class="form-group full-span">
                 <label class="form-label">SSS Number / SSS ID *</label>
                 <input
                   type="file"
@@ -216,7 +216,7 @@
                   @change="(e) => handleFileChange('sss_id', e)"
                 >
               </div>
-              <div v-if="!isEdit" class="form-group">
+              <div v-if="!isEdit" class="form-group full-span">
                 <label class="form-label">PhilHealth Number / ID *</label>
                 <input
                   type="file"
@@ -226,7 +226,7 @@
                   @change="(e) => handleFileChange('philhealth_id', e)"
                 >
               </div>
-              <div v-if="!isEdit" class="form-group">
+              <div v-if="!isEdit" class="form-group full-span">
                 <label class="form-label">Pag-IBIG Number / MDF *</label>
                 <input
                   type="file"
@@ -236,7 +236,7 @@
                   @change="(e) => handleFileChange('pagibig_mdf', e)"
                 >
               </div>
-              <div v-if="!isEdit" class="form-group">
+              <div v-if="!isEdit" class="form-group full-span">
                 <label class="form-label">TIN (Tax Identification Number) *</label>
                 <input
                   type="file"
@@ -246,7 +246,7 @@
                   @change="(e) => handleFileChange('tin_id', e)"
                 >
               </div>
-              <div v-if="!isEdit" class="form-group">
+              <div v-if="!isEdit" class="form-group full-span">
                 <label class="form-label">Diploma / Transcript / Certificate of Enrollment *</label>
                 <input
                   type="file"
@@ -265,6 +265,13 @@
 
           <!-- Modal Footer -->
           <div class="modal-footer">
+            <div style="flex:1; display:flex; align-items:center; gap:12px;">
+              <div v-if="isEdit" class="changes-summary">
+                <strong>Changes:</strong>
+                <span v-if="changedFields.length===0"> 0</span>
+                <span v-else> {{ changedFields.length }} — {{ changedFields.join(', ') }}</span>
+              </div>
+            </div>
             <button type="button" @click="closeModal" class="btn btn-secondary" :disabled="isSubmitting">Cancel</button>
             <button type="submit" class="btn btn-primary" :disabled="isSubmitting">
               {{ isSubmitting ? 'Saving...' : (isEdit ? 'Update Staff' : 'Add Staff') }}
@@ -327,7 +334,8 @@ export default {
           }
         }
       },
-      // documentFiles removed — files no longer required for admin/owner creation
+      // documentFiles stores selected files for upload
+      documentFiles: {},
       branches: [],
       // Address UI state
       addressSaved: false,
@@ -509,12 +517,15 @@ export default {
     },
     // handle address updates from AddressCascader
     onAddressUpdate(address) {
+      this.form.region = address.region || ''
       this.form.province = address.province || ''
       this.form.city = address.city || ''
       this.form.barangay = address.barangay || ''
     },
     saveAddress() {
       const parts = []
+      // ensure region is preserved if provided by the cascader
+      this.form.region = this.form.region || ''
       if (this.form.address && this.form.address.trim() !== '') parts.push(this.form.address.trim())
       if (this.form.barangay) parts.push(this.form.barangay)
       if (this.form.city) parts.push(this.form.city)
@@ -527,63 +538,101 @@ export default {
     },
     async submitForm() {
       this.errorMessage = ''
-      if (!this.form.username || this.form.username.trim() === '') {
-        this.errorMessage = 'Username is required'
-        return
-      }
-      if (!this.form.full_name || this.form.full_name.trim() === '') {
-        this.errorMessage = 'Full name is required'
-        return
-      }
-      if (!this.form.email || this.form.email.trim() === '') {
-        this.errorMessage = 'Email is required'
-        return
-      }
-      if (!this.form.roleDepartment) {
-        this.errorMessage = 'Please select role and department'
-        return
-      }
-      if (!this.form.branch_id) {
-        this.errorMessage = 'Please select a Branch'
-        return
-      }
-      if (!this.form.address || !this.form.region || !this.form.province || !this.form.city || !this.form.barangay) {
-        this.errorMessage = 'Please provide Address, Region, Province, City, and Barangay.'
-        return
-      }
+      // Validation differs for create vs edit
       if (!this.isEdit) {
+        if (!this.form.username || this.form.username.trim() === '') {
+          this.errorMessage = 'Username is required'
+          return
+        }
+        if (!this.form.full_name || this.form.full_name.trim() === '') {
+          this.errorMessage = 'Full name is required'
+          return
+        }
+        if (!this.form.email || this.form.email.trim() === '') {
+          this.errorMessage = 'Email is required'
+          return
+        }
+        if (!this.form.roleDepartment) {
+          this.errorMessage = 'Please select role and department'
+          return
+        }
+        if (!this.form.branch_id) {
+          this.errorMessage = 'Please select a Branch'
+          return
+        }
+        if (!this.form.address || !this.form.region || !this.form.province || !this.form.city || !this.form.barangay) {
+          this.errorMessage = 'Please provide Address, Region, Province, City, and Barangay.'
+          return
+        }
         if (!this.form.password || this.form.password.trim() === '') {
           this.errorMessage = 'Password is required'
           return
         }
-        // Documents are no longer required for creating staff via this modal
+      } else {
+        // Edit: require at least one updatable field and basic full_name presence
+        if (!this.form.full_name || this.form.full_name.trim() === '') {
+          this.errorMessage = 'Full name is required'
+          return
+        }
       }
-      // Parse roleDepartment
-      const [role, department] = this.form.roleDepartment.split(' ')
-      if (!role || !department) {
-        this.errorMessage = 'Invalid role/department selection'
-        return
+      // Parse roleDepartment if provided
+      let parsedRole = null
+      let parsedDepartment = null
+      if (this.form.roleDepartment) {
+        const parts = this.form.roleDepartment.split(' ')
+        parsedRole = parts[0]
+        parsedDepartment = parts.slice(1).join(' ') || null
+        // Normalize to expected casing used by backend
+        if (parsedRole) parsedRole = parsedRole.toUpperCase()
+        if (parsedDepartment) parsedDepartment = parsedDepartment.toUpperCase()
+        if (!parsedRole || !parsedDepartment) {
+          this.errorMessage = 'Invalid role/department selection'
+          return
+        }
       }
       this.isSubmitting = true
       try {
         await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
         let res
         if (this.isEdit) {
-          res = await axios.put(`/api/admin/staff/${this.staff.id}`, {
-            full_name: this.form.full_name,
-            email: this.form.email,
-            phone_number: this.form.phone_number || '',
-            address: this.form.address || '',
-            region: this.form.region || '',
-            province: this.form.province || '',
-            city: this.form.city || '',
-            barangay: this.form.barangay || '',
-            role: role,
-            department: department,
-            branch_id: this.form.branch_id,
-          }, { withCredentials: true })
+          // Build a full payload for the server by merging existing staff values
+          // with provided form values. Some backends expect complete payloads.
+          // Build payload that matches backend validation keys
+          const payload = {
+            username: this.form.username || this.staff.username || '',
+            email: this.form.email || this.staff.email || '',
+            fullName: this.form.full_name || this.staff.full_name || '',
+            phone: this.form.phone_number !== undefined ? this.form.phone_number : (this.staff.phone_number || ''),
+            address: this.form.address || this.staff.address || '',
+            // include location fields if available (backend will ignore extra keys)
+            region: this.form.region || this.staff.region || '',
+            province: this.form.province || this.staff.province || '',
+            city: this.form.city || this.staff.city || '',
+            barangay: this.form.barangay || this.staff.barangay || '',
+            // backend accepts either branchId or branch_id; send camelCase to match SPA
+            branchId: this.form.branch_id || this.staff.branch_id || '',
+            // isActive is required by backend validation; send current staff active flag if present
+            isActive: (this.form.is_active !== undefined) ? this.form.is_active : (this.staff?.is_active ? 1 : 0),
+          }
+          if (parsedRole && parsedDepartment) {
+            payload.role = parsedRole
+            payload.department = parsedDepartment
+          } else if (this.staff && this.staff.role) {
+            payload.role = this.staff.role
+            payload.department = this.staff.department
+          }
+          if (this.form.password && this.form.password.trim() !== '') payload.password = this.form.password
+
+          res = await axios.put(`/api/admin/staff/${this.staff.id}`, payload, { withCredentials: true })
         } else {
-          const formData = this.buildCreateFormData(role, department)
+          const formData = this.buildCreateFormData(parsedRole, parsedDepartment)
+          // attach any selected document files
+          try {
+            for (const k of Object.keys(this.documentFiles || {})) {
+              const f = this.documentFiles[k]
+              if (f) formData.append(k, f)
+            }
+          } catch (e) {}
           res = await axios.post('/api/admin/staff', formData, { withCredentials: true, headers: { 'Content-Type': 'multipart/form-data' } })
         }
         if (res.data.success) {
@@ -592,11 +641,59 @@ export default {
           this.errorMessage = res.data.message || 'Failed to save staff member'
         }
       } catch (error) {
+        // Log full server response for debugging
         console.error('Submit error:', error)
-        this.errorMessage = error.response?.data?.message || 'Failed to save staff member. Please try again.'
+        if (error && error.response) {
+          console.error('Server response:', error.response.data)
+          const serverMsg = error.response.data && (error.response.data.message || error.response.data.error || JSON.stringify(error.response.data))
+          this.errorMessage = `Failed to update account (${error.response.status}): ${serverMsg}`
+        } else if (error && error.message) {
+          this.errorMessage = `Failed to update account: ${error.message}`
+        } else {
+          this.errorMessage = 'Failed to update account. Please try again.'
+        }
       } finally {
         this.isSubmitting = false
       }
+    },
+    handleFileChange(field, e) {
+      try {
+        const file = e.target && e.target.files ? e.target.files[0] : null
+        if (!file) {
+          this.documentFiles[field] = null
+          return
+        }
+        // Vue 3: avoid this.$set (not available); assign directly
+        this.documentFiles[field] = file
+        // also store filename for display if needed
+        this.form[`${field}_filename`] = file.name
+      } catch (err) {
+        console.error('File change handler error:', err)
+      }
+    }
+  },
+  computed: {
+    changedFields() {
+      if (!this.isEdit || !this.staff) return []
+      const changes = []
+      if (this.form.full_name && this.form.full_name !== (this.staff.full_name || '')) changes.push('Full name')
+      if (this.form.email && this.form.email !== (this.staff.email || '')) changes.push('Email')
+      if (this.form.phone_number !== undefined && this.form.phone_number !== (this.staff.phone_number || '')) changes.push('Phone')
+      if (this.form.address && this.form.address !== (this.staff.address || '')) changes.push('Address')
+      if (this.form.region && this.form.region !== (this.staff.region || '')) changes.push('Region')
+      if (this.form.province && this.form.province !== (this.staff.province || '')) changes.push('Province')
+      if (this.form.city && this.form.city !== (this.staff.city || '')) changes.push('City')
+      if (this.form.barangay && this.form.barangay !== (this.staff.barangay || '')) changes.push('Barangay')
+      const currentRoleDept = this.reconstructRoleDepartment(this.staff?.role, this.staff?.department)
+      if (this.form.roleDepartment && this.form.roleDepartment !== currentRoleDept) changes.push('Role/Department')
+      if (this.form.branch_id && String(this.form.branch_id) !== String(this.staff.branch_id || '')) changes.push('Branch')
+      if (this.form.password && this.form.password.trim() !== '') changes.push('Password')
+      // documents
+      if (this.documentFiles && Object.keys(this.documentFiles).length > 0) {
+        const anyFile = Object.values(this.documentFiles).some(f => !!f)
+        if (anyFile) changes.push('Documents')
+      }
+      return changes
     }
   },
   watch: {
@@ -731,10 +828,17 @@ export default {
 }
 
 .form-grid {
-  display:  grid;
+  display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
+  gap: 1.25rem;
   margin-bottom: 1rem;
+  align-items: start;
+}
+
+/* ensure grid items stretch to fill available column space */
+.form-grid {
+  width: 100%;
+  justify-items: stretch;
 }
 
 .read-only {
@@ -744,11 +848,10 @@ export default {
 .form-group {
   display: flex;
   flex-direction: column;
+  width: 100%;
 }
 
-.form-group:nth-child(n+5) {
-  grid-column: span 1;
-}
+/* avoid using nth-child grid rules (v-if changes order) — use explicit .full-span instead */
 
 .form-label {
   font-size: 0.875rem;
@@ -803,8 +906,19 @@ export default {
   color: #374151;
 }
 
-.form-group:nth-child(8) {
-  grid-column: span 2;
+
+.form-group select.form-input,
+.form-group textarea.form-input {
+  width: 100%;
+}
+
+.form-group.full-span {
+  grid-column: 1 / -1;
+}
+
+/* increase spacing for save/clear buttons in address area */
+.form-group.full-span .btn {
+  margin-right: 0.5rem;
 }
 
 .error-message {
@@ -1035,5 +1149,14 @@ btn-primary:hover:not(:disabled) {
 }
 .password-toggle svg {
   display: block;
+}
+
+.changes-summary {
+  font-size: 0.9rem;
+  color: #374151;
+}
+
+.changes-summary strong {
+  margin-right: 6px;
 }
 </style>

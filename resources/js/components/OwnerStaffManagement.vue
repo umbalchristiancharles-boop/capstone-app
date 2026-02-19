@@ -19,6 +19,20 @@
           placeholder="Search staff..."
           class="search-input"
         >
+        <select v-model="branchFilter" class="filter-select">
+          <option value="">All Branches</option>
+          <option v-for="b in branches" :key="b.id" :value="b.name">{{ b.name }}</option>
+        </select>
+
+        <select v-model="roleFilter" class="filter-select">
+          <option value="">All Roles</option>
+          <option v-for="r in availableRoles" :key="r" :value="r">{{ r }}</option>
+        </select>
+
+        <select v-model="departmentFilter" class="filter-select">
+          <option value="">All Departments</option>
+          <option v-for="d in availableDepartments" :key="d" :value="d">{{ d }}</option>
+        </select>
         <button @click="refreshStaff" class="btn-primary">Refresh</button>
         <button @click="openAddStaffModal()" class="btn-success">+ Add Staff</button>
       </div>
@@ -48,6 +62,8 @@
         <thead>
           <tr>
             <th>Name</th>
+            <th>Role</th>
+            <th>Department</th>
             <th>Username</th>
             <th>Email</th>
             <th>Phone</th>
@@ -64,6 +80,8 @@
                 <strong>{{ member.full_name || member.username }}</strong>
               </div>
             </td>
+            <td>{{ displayRole(member.role) }}</td>
+            <td>{{ (member.department || '-') }}</td>
             <td>{{ member.username }}</td>
             <td>{{ member.email }}</td>
             <td>{{ member.phone_number || '-' }}</td>
@@ -135,6 +153,11 @@ const currentOwnerId = ref(null)
 
 // Staff Data
 const staff = ref([])
+// Branches and filters
+const branches = ref([])
+const branchFilter = ref('')
+const roleFilter = ref('')
+const departmentFilter = ref('')
 
 // Form State
 const showAddStaffModal = ref(false)
@@ -149,27 +172,65 @@ const newStaff = ref({
 })
 const editingStaffId = ref(null)
 
-// Computed
-const filteredStaff = computed(() => {
-  // Include users where role includes 'STAFF' or 'MANAGER' (case-insensitive)
-  // This handles various role formats from API
-  let filtered = staff.value.filter(member => {
-    const role = (member.role || '').toUpperCase()
-    return role.includes('STAFF') || role.includes('MANAGER')
-  })
+// Computed: available roles and departments for filter dropdowns
+const defaultRoles = [
+  'Manager HR', 'Manager Finance', 'Manager Inventory', 'Manager Logistics',
+  'Staff Cashier', 'Staff Finance', 'Staff Inventory'
+]
 
-  // Exclude the current owner from the list
+const availableRoles = computed(() => {
+  const set = new Set(defaultRoles)
+  staff.value.forEach(m => { if (m.role) set.add(m.role) })
+  return Array.from(set).sort()
+})
+
+const availableDepartments = computed(() => {
+  const set = new Set()
+  staff.value.forEach(m => { if (m.department) set.add(m.department) })
+  return Array.from(set).sort()
+})
+
+// Computed: filtered staff with branch/role/department/search
+const filteredStaff = computed(() => {
+  let filtered = staff.value.slice()
+
+  // Exclude owner account from list
   if (currentOwnerId.value) {
     filtered = filtered.filter(member => member.id !== currentOwnerId.value)
   }
 
-  if (!searchQuery.value.trim()) return filtered;
+  // Role filter: if set, match exact role
+  if (roleFilter.value) {
+    filtered = filtered.filter(m => (m.role || '').toString() === roleFilter.value)
+  } else {
+    // default: include STAFF and MANAGER variants
+    filtered = filtered.filter(member => {
+      const r = (member.role || '').toUpperCase()
+      return r.includes('STAFF') || r.includes('MANAGER') || r === 'HR' || r === 'BRANCH_MANAGER' || r === 'OWNER'
+    })
+  }
 
-  return filtered.filter(member =>
-    (member.full_name && member.full_name.toLowerCase().includes(searchQuery.value.toLowerCase())) ||
-    (member.username && member.username.toLowerCase().includes(searchQuery.value.toLowerCase())) ||
-    (member.email && member.email.toLowerCase().includes(searchQuery.value.toLowerCase()))
-  );
+  // Branch filter: match by branch_name
+  if (branchFilter.value) {
+    filtered = filtered.filter(m => (m.branch_name || '').toString() === branchFilter.value)
+  }
+
+  // Department filter
+  if (departmentFilter.value) {
+    filtered = filtered.filter(m => (m.department || '').toString() === departmentFilter.value)
+  }
+
+  // Search query
+  if (searchQuery.value && searchQuery.value.trim()) {
+    const q = searchQuery.value.toLowerCase()
+    filtered = filtered.filter(member =>
+      (member.full_name && member.full_name.toLowerCase().includes(q)) ||
+      (member.username && member.username.toLowerCase().includes(q)) ||
+      (member.email && member.email.toLowerCase().includes(q))
+    )
+  }
+
+  return filtered
 })
 
 // Methods
@@ -230,6 +291,17 @@ async function loadStaff() {
     errorMessage.value = 'Error loading staff. Please try again.'
   } finally {
     loading.value = false
+  }
+}
+
+async function loadBranches() {
+  try {
+    const res = await axios.get('/api/admin/branches', { withCredentials: true })
+    if (res.data && res.data.success && Array.isArray(res.data.data)) {
+      branches.value = res.data.data
+    }
+  } catch (e) {
+    console.error('Failed loading branches', e)
   }
 }
 
@@ -348,8 +420,18 @@ async function toggleStatus(member) {
 
 onMounted(async () => {
   await loadCurrentOwner()
+  await loadBranches()
   await loadStaff()
 })
+
+function displayRole(r) {
+  const role = (r || '').toString().toUpperCase()
+  if (role === 'BRANCH_MANAGER') return 'Manager'
+  if (role === 'STAFF') return 'Staff'
+  if (role === 'HR') return 'HR'
+  if (role === 'OWNER') return 'Owner'
+  return role.replace(/_/g, ' ')
+}
 </script>
 
 <style scoped>
@@ -382,6 +464,14 @@ onMounted(async () => {
   display: flex;
   gap: 1rem;
   align-items: center;
+}
+
+.filter-select {
+  padding: 0.45rem 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 0.9rem;
 }
 
 .search-input {

@@ -398,6 +398,75 @@
   font-size: 0.8rem;
 }
 
+/* Global Modal Styles (apply to teleported modals) */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+}
+
+.modal {
+  background: #ffffff;
+  border-radius: 10px;
+  width: 95%;
+  max-width: 1100px;
+  margin: 0 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+  overflow: hidden;
+}
+
+/* Ensure modal card inside the teleported modal stretches to full width */
+.modal > .modal-card {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-body {
+  padding: 1.25rem;
+  max-height: 78vh;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+/* Responsive: single column for narrow screens */
+@media (max-width: 920px) {
+  .modal {
+    max-width: 92%;
+  }
+  .modal-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.modal-footer {
+  padding: 0.9rem 1.25rem;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+/* Make full-width form groups span both columns when necessary */
+.modal-body .form-group.full-span {
+  grid-column: 1 / -1;
+}
+
+
 .table-header,
 .table-row {
   display: grid;

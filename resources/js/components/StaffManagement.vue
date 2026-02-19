@@ -10,6 +10,20 @@
           placeholder="Search staff..."
           class="search-input"
         >
+        <select v-model="branchFilter" class="filter-select">
+          <option value="">All Branches</option>
+          <option v-for="b in branches" :key="b.id" :value="b.name">{{ b.name }}</option>
+        </select>
+
+        <select v-model="roleFilter" class="filter-select">
+          <option value="">All Roles</option>
+          <option v-for="r in availableRoles" :key="r" :value="r">{{ r }}</option>
+        </select>
+
+        <select v-model="departmentFilter" class="filter-select">
+          <option value="">All Departments</option>
+          <option v-for="d in availableDepartments" :key="d" :value="d">{{ d }}</option>
+        </select>
         <button @click="refreshStaff" class="btn-primary">Refresh</button>
         <button @click="openAddStaffModal()" class="btn-success">+ Add Staff</button>
         <button @click="openAddOwnerModal()" class="btn-primary" style="background:#6f42c1; margin-left:8px">+ Add Owner</button>
@@ -37,6 +51,8 @@
         <thead>
           <tr>
             <th>Name</th>
+            <th>Role</th>
+            <th>Department</th>
             <th>Username</th>
             <th>Email</th>
             <th>Phone</th>
@@ -53,6 +69,8 @@
                 <strong>{{ member.full_name || member.username }}</strong>
               </div>
             </td>
+            <td>{{ displayRole(member.role) }}</td>
+            <td>{{ member.department || '-' }}</td>
             <td>{{ member.username }}</td>
             <td>{{ member.email }}</td>
             <td>{{ member.phone_number || '-' }}</td>
@@ -176,6 +194,12 @@ const isLoading = ref(false)
 const errorMessage = ref('')
 const searchQuery = ref('')
 
+// Branches and filters
+const branches = ref([])
+const branchFilter = ref('')
+const roleFilter = ref('')
+const departmentFilter = ref('')
+
 // Staff Data
 const staff = ref([])
 
@@ -194,14 +218,58 @@ const editingStaffId = ref(null)
 const createOwnerMode = ref(false)
 
 // Computed
-const filteredStaff = computed(() => {
-  if (!searchQuery.value.trim()) return staff.value
+const defaultRoles = [
+  'Manager HR', 'Manager Finance', 'Manager Inventory', 'Manager Logistics',
+  'Staff Cashier', 'Staff Finance', 'Staff Inventory'
+]
 
-  return staff.value.filter(member =>
-    member.full_name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-    member.username.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-    member.email.toLowerCase().includes(searchQuery.value.toLowerCase())
-  )
+const availableRoles = computed(() => {
+  const set = new Set(defaultRoles)
+  staff.value.forEach(m => { if (m.role) set.add(m.role) })
+  return Array.from(set).sort()
+})
+
+const availableDepartments = computed(() => {
+  const set = new Set()
+  staff.value.forEach(m => { if (m.department) set.add(m.department) })
+  return Array.from(set).sort()
+})
+
+const filteredStaff = computed(() => {
+  let list = staff.value.slice()
+
+  // branch filter
+  if (branchFilter.value) {
+    list = list.filter(m => (m.branch_name || '') === branchFilter.value)
+  }
+
+  // role filter
+  if (roleFilter.value) {
+    list = list.filter(m => (m.role || '') === roleFilter.value)
+  } else {
+    // default allow staff/manager/HR
+    list = list.filter(member => {
+      const r = (member.role || '').toUpperCase()
+      return r.includes('STAFF') || r.includes('MANAGER') || r === 'HR' || r === 'BRANCH_MANAGER' || r === 'OWNER'
+    })
+  }
+
+  // department filter
+  if (departmentFilter.value) {
+    list = list.filter(m => (m.department || '') === departmentFilter.value)
+  }
+
+  // search
+  if (searchQuery.value && searchQuery.value.trim()) {
+    const q = searchQuery.value.toLowerCase()
+    list = list.filter(member =>
+      (member.full_name && member.full_name.toLowerCase().includes(q)) ||
+      (member.username && member.username.toLowerCase().includes(q)) ||
+      (member.email && member.email.toLowerCase().includes(q))
+    )
+  }
+
+  return list
 })
 
 // Methods
@@ -379,7 +447,29 @@ async function toggleStatus(member) {
 
 onMounted(() => {
   loadStaff()
+  loadBranches()
 })
+
+function displayRole(r) {
+  const role = (r || '').toString().toUpperCase()
+  if (role === 'BRANCH_MANAGER') return 'Manager'
+  if (role === 'STAFF') return 'Staff'
+  if (role === 'HR') return 'HR'
+  if (role === 'OWNER') return 'Owner'
+  // fallback: prettify underscores
+  return role.replace(/_/g, ' ')
+}
+
+async function loadBranches() {
+  try {
+    const res = await axios.get('/api/admin/branches', { withCredentials: true })
+    if (res.data && res.data.success && Array.isArray(res.data.data)) {
+      branches.value = res.data.data
+    }
+  } catch (e) {
+    console.error('Failed loading branches', e)
+  }
+}
 </script>
 
 <style scoped>
@@ -613,8 +703,8 @@ onMounted(() => {
 .modal {
   background: white;
   border-radius: 8px;
-  width: 90%;
-  max-width: 500px;
+  width: 95%;
+  max-width: 900px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
@@ -647,6 +737,10 @@ onMounted(() => {
   padding: 1.5rem;
   max-height: 70vh;
   overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: start;
 }
 
 .modal-footer {

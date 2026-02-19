@@ -99,6 +99,7 @@ class StaffController extends Controller
                         'full_name' => $branchManager->full_name,
                         'email' => $branchManager->email,
                         'phone_number' => $branchManager->phone_number,
+                        'department' => $branchManager->department ?? '',
                         'address' => $branchManager->address,
                         'role' => 'BRANCH_MANAGER',
                         'is_active' => $branchManager->is_active,
@@ -113,6 +114,7 @@ class StaffController extends Controller
                         'full_name' => $s->full_name,
                         'email' => $s->email,
                         'phone_number' => $s->phone_number,
+                        'department' => $s->department ?? '',
                         'address' => $s->address,
                         'role' => $s->role,
                         'is_active' => $s->is_active,
@@ -127,6 +129,7 @@ class StaffController extends Controller
                         'full_name' => $h->full_name,
                         'email' => $h->email,
                         'phone_number' => $h->phone_number,
+                        'department' => $h->department ?? '',
                         'address' => $h->address,
                         'role' => $h->role,
                         'is_active' => $h->is_active,
@@ -167,6 +170,7 @@ class StaffController extends Controller
                                 'full_name' => $o->full_name,
                                 'email' => $o->email,
                                 'phone_number' => $o->phone_number,
+                                'department' => $o->department ?? '',
                                 'address' => $o->address,
                                 'role' => $o->role,
                                 'is_active' => $o->is_active,
@@ -224,6 +228,7 @@ class StaffController extends Controller
                 'users.email',
                 'users.phone_number',
                 'users.address',
+                'users.department',
                 'users.branch_id',
                 'users.role',
                 'users.is_active',
@@ -307,6 +312,21 @@ class StaffController extends Controller
 
             $roleRule = 'required|in:' . implode(',', $allowedRoles);
             $fileRule = 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120';
+
+
+            // Normalize role/department in case the frontend sent a combined value
+            // Example: some clients may send `role` => "BRANCH_MANAGER hr" (role + department)
+            // Accept that and split into role + department so validation works.
+            $rawRole = $request->input('role');
+            if ($rawRole && is_string($rawRole) && preg_match('/\s+/', trim($rawRole))) {
+                $parts = preg_split('/\s+/', trim($rawRole), 2);
+                // merge the normalized role back into the request for validation
+                $request->merge(['role' => strtoupper($parts[0])]);
+                // If department not explicitly provided, use the second token
+                if (!$request->input('department') && isset($parts[1])) {
+                    $request->merge(['department' => $parts[1]]);
+                }
+            }
 
             // Build validation rules dynamically so OWNER role does not require a branch
             $requestedRole = $request->input('role');
@@ -545,11 +565,17 @@ class StaffController extends Controller
                 ], 401);
             }
 
-            // Normalize branch id (accept either branchId or branch_id)
-            $branchId = $request->input('branchId') ?? $request->input('branch_id');
 
-            // If role is not OWNER, branch id is required
-            $roleInput = $request->input('role');
+            // Use Eloquent to update the user record
+            $staff = User::findOrFail($id);
+
+            // Normalize branch id (accept either branchId or branch_id). If omitted, fall back
+            // to the existing staff's branch. This allows editing other fields without re-selecting
+            // the branch when it already exists on the record.
+            $branchId = $request->input('branchId') ?? $request->input('branch_id') ?? $staff->branch_id;
+
+            // If role is not OWNER, branch id is required (but allow existing staff branch)
+            $roleInput = $request->input('role') ?? $staff->role;
             if (strtoupper($roleInput) !== 'OWNER' && (empty($branchId) && $branchId !== '0')) {
                 return response()->json([
                     'success' => false,
@@ -565,7 +591,7 @@ class StaffController extends Controller
             }
 
             // Check if branch already has a manager (if changing to BRANCH_MANAGER)
-            if ($request->input('role') === 'BRANCH_MANAGER') {
+            if (($request->input('role') ?? $staff->role) === 'BRANCH_MANAGER') {
                 $existingManager = DB::table('users')
                     ->where('branch_id', $branchId)
                     ->where('role', 'BRANCH_MANAGER')
@@ -581,9 +607,6 @@ class StaffController extends Controller
                     ], 400);
                 }
             }
-
-            // Use Eloquent to update the user record
-            $staff = User::findOrFail($id);
 
             if ($user->role === 'HR' && $user->branch_id && $staff->branch_id !== $user->branch_id) {
                 return response()->json([

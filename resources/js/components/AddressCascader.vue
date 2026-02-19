@@ -135,7 +135,33 @@ function onSave() {
 </script>
 
 <style scoped>
-.form-row { margin-bottom: 0.75rem }
+.form-row {
+  margin-bottom: 0.75rem;
+  display: flex;
+  flex-direction: column;
+}
+.form-row label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.form-row select {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #374151;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+.form-row select:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+}
 .error { color: #b91c1c; font-size: 0.85rem; margin-top: 0.25rem }
 .actions { margin-top: 1rem }
 </style>

@@ -108,7 +108,7 @@ const errorMsg = ref("");
 const showForceModal = ref(false);
 const pendingRedirectPath = ref("/admin-panel");
 const loggedInUsername = ref("");
-const defaultPassword = "ChikinTayo_2526";
+const defaultPassword = ref("");
 
 const logoImg = new URL("../assets/chikinlogo.png", import.meta.url).href;
 
@@ -145,6 +145,8 @@ async function handleLogin() {
             if (res.data.user?.must_change_password) {
                 pendingRedirectPath.value = redirectPath;
                 loggedInUsername.value = res.data.user?.username || username.value;
+                // Use the exact password the user just submitted as the current/default password
+                defaultPassword.value = password.value;
                 showForceModal.value = true;
                 return;
             }
