@@ -299,8 +299,8 @@ class StaffController extends Controller
         try {
             $allowedRoles = [];
             if (in_array($user->role, ['OWNER', 'ADMIN'])) {
-                // Allow owners/admins to create branch managers, HR, and staff accounts
-                $allowedRoles = ['BRANCH_MANAGER', 'HR', 'STAFF'];
+                // Allow owners/admins to create owner, branch managers, HR, and staff accounts
+                $allowedRoles = ['OWNER', 'BRANCH_MANAGER', 'HR', 'STAFF'];
             } elseif ($user->role === 'BRANCH_MANAGER') {
                 $allowedRoles = ['HR', 'STAFF'];
             } else {
@@ -419,13 +419,18 @@ class StaffController extends Controller
             DB::beginTransaction();
             $transactionStarted = true;
 
+            // Fix: department must be NULL for OWNER, or if not set/invalid
+            $departmentValue = $request->input('department');
+            if ($role === 'OWNER' || $departmentValue === null || $departmentValue === '' || !in_array($departmentValue, ['HR', 'FINANCE', 'INVENTORY', 'LOGISTICS', 'CASHIER'])) {
+                $departmentValue = null;
+            }
             $insertData = [
                 'username' => $request->input('username'),
                 'email' => $request->input('email'),
                 'password' => Hash::make($defaultPassword),
                 'full_name' => $fullName,
                 'role' => $role,
-                'department' => $request->input('department') ?? '',
+                'department' => $departmentValue,
                 'phone_number' => $phone,
                 'address' => $address,
                 'branch_id' => $branchId,

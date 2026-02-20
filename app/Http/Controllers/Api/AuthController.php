@@ -77,6 +77,7 @@ class AuthController extends Controller
                 'id'        => $user->id,
                 'username'  => $user->username,
                 'role'      => $user->role,
+                'department'=> $user->department, // <-- ADD THIS LINE
                 'full_name' => $user->full_name,
                 'must_change_password' => (bool) $user->must_change_password,
             ],

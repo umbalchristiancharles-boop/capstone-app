@@ -1,32 +1,40 @@
 <template>
   <div class="staff-management-page">
-    <!-- Header -->
-    <div class="staff-header">
-      <h1>Staff Management</h1>
-      <div class="header-actions">
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Search staff..."
-          class="search-input"
-        >
-        <select v-model="branchFilter" class="filter-select">
-          <option value="">All Branches</option>
-          <option v-for="b in branches" :key="b.id" :value="b.name">{{ b.name }}</option>
-        </select>
+    <!-- Back to Dashboard Button -->
+    <button @click="$router.push('/admin-panel')" class="btn-secondary back-to-dashboard-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="back-icon">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+      Back to Dashboard
+    </button>
 
-        <select v-model="roleFilter" class="filter-select">
-          <option value="">All Roles</option>
-          <option v-for="r in availableRoles" :key="r" :value="r">{{ r }}</option>
-        </select>
-
-        <select v-model="departmentFilter" class="filter-select">
-          <option value="">All Departments</option>
-          <option v-for="d in availableDepartments" :key="d" :value="d">{{ d }}</option>
-        </select>
-        <button @click="refreshStaff" class="btn-primary">Refresh</button>
-        <button @click="openAddStaffModal()" class="btn-success">+ Add Staff</button>
-        <button @click="openAddOwnerModal()" class="btn-primary" style="background:#6f42c1; margin-left:8px">+ Add Owner</button>
+    <!-- Header & Filters Card -->
+    <div class="staff-header-card">
+      <div class="staff-header">
+        <h1>Staff Management</h1>
+        <div class="header-actions">
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Search staff..."
+            class="search-input"
+          >
+          <select v-model="branchFilter" class="filter-select">
+            <option value="">All Branches</option>
+            <option v-for="b in branches" :key="b.id" :value="b.name">{{ b.name }}</option>
+          </select>
+          <select v-model="roleFilter" class="filter-select">
+            <option value="">All Roles</option>
+            <option v-for="r in availableRoles" :key="r" :value="r">{{ r }}</option>
+          </select>
+          <select v-model="departmentFilter" class="filter-select">
+            <option value="">All Departments</option>
+            <option v-for="d in availableDepartments" :key="d" :value="d">{{ d }}</option>
+          </select>
+          <button @click="refreshStaff" class="btn-primary">Refresh</button>
+          <button @click="openAddStaffModal()" class="btn-success">+ Add Staff</button>
+        </div>
       </div>
     </div>
 
@@ -41,8 +49,11 @@
     </div>
 
     <!-- Summary -->
-    <div v-if="!isLoading && staff" class="summary-card">
-      <h3>Total Staff Members: {{ staff.length }}</h3>
+    <div v-if="!isLoading && filteredStaff.length > 0" class="summary-card">
+      <h3>Total Staff Members: {{ filteredStaff.length }}</h3>
+    </div>
+    <div v-if="!isLoading && filteredStaff.length === 0" class="summary-card">
+      <h3>Total Staff Members: 0</h3>
     </div>
 
     <!-- Staff Table -->
@@ -151,6 +162,12 @@
                 placeholder="Enter phone number"
               >
             </div>
+            <div v-if="false" class="form-group">
+              <label>Role:</label>
+              <select v-model="newStaff.role" class="form-input" required>
+                <option value="OWNER">Owner</option>
+              </select>
+            </div>
             <div v-if="isEditingStaff || createOwnerMode" class="form-group">
               <label>Department:</label>
               <select v-model="newStaff.department" class="form-input">
@@ -213,6 +230,7 @@ const newStaff = ref({
   phone_number: '',
   password: '',
   department: '',
+  role: 'OWNER',
 })
 const editingStaffId = ref(null)
 const createOwnerMode = ref(false)
@@ -329,6 +347,7 @@ function resetForm() {
     phone_number: '',
     password: '',
     department: '',
+    role: 'OWNER',
   }
   isEditingStaff.value = false
   editingStaffId.value = null
@@ -345,6 +364,7 @@ function editStaff(member) {
     phone_number: member.phone_number,
     password: '',
     department: member.department || '',
+    role: member.role || 'OWNER',
   }
   showAddStaffModal.value = true
 }
@@ -372,6 +392,16 @@ async function submitStaffForm() {
     alert('Username and password are required for new staff')
     return
   }
+  if (!newStaff.value.role) {
+    alert('Please select a role')
+    return
+  }
+
+  // Fix: department must be null if not set or if role is OWNER
+  let departmentToSend = newStaff.value.department;
+  if (!departmentToSend || departmentToSend === '' || newStaff.value.role === 'OWNER') {
+    departmentToSend = null;
+  }
 
   try {
     let res
@@ -382,37 +412,24 @@ async function submitStaffForm() {
         full_name: newStaff.value.full_name,
         email: newStaff.value.email,
         phone_number: newStaff.value.phone_number,
-        department: newStaff.value.department,
+        department: departmentToSend,
+        role: newStaff.value.role,
       }, {
         withCredentials: true
       })
     } else {
-        // Create
-        if (createOwnerMode.value) {
-          // Create OWNER via admin API
-          res = await axios.post('/api/admin/staff', {
-            username: newStaff.value.username,
-            email: newStaff.value.email,
-            full_name: newStaff.value.full_name,
-            phone_number: newStaff.value.phone_number,
-            password: newStaff.value.password,
-            role: 'OWNER',
-            department: newStaff.value.department
-          }, {
-            withCredentials: true
-          })
-        } else {
-          res = await axios.post('/api/admin/staff', {
-            username: newStaff.value.username,
-            email: newStaff.value.email,
-            full_name: newStaff.value.full_name,
-            phone_number: newStaff.value.phone_number,
-            password: newStaff.value.password,
-            department: newStaff.value.department,
-          }, {
-            withCredentials: true
-          })
-        }
+      // Create staff with selected role
+      res = await axios.post('/api/admin/staff', {
+        username: newStaff.value.username,
+        email: newStaff.value.email,
+        full_name: newStaff.value.full_name,
+        phone_number: newStaff.value.phone_number,
+        password: newStaff.value.password,
+        role: newStaff.value.role,
+        department: departmentToSend
+      }, {
+        withCredentials: true
+      })
     }
 
     if (res.data.success) {
@@ -489,204 +506,154 @@ async function loadBranches() {
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
+@import url("../js/css/adminpanel.css");
+
+.staff-management-page {
+  min-height: 100vh;
+  background: #ff6b1c;
+  padding: 24px;
+  color: #fff4e6;
+}
+
+.staff-header-card {
+  background: rgba(255,255,255,0.18);
+  -webkit-backdrop-filter: blur(22px);
+  backdrop-filter: blur(22px);
+  border-radius: 32px;
+  border: 1px solid rgba(255,255,255,0.35);
+  margin-bottom: 2rem;
+  padding: 28px 26px;
+}
 
 .staff-header h1 {
-  margin: 0;
-  color: #333;
+  color: #fff4e6;
+  font-size: 2.2rem;
+  font-weight: 800;
+  margin-bottom: 0;
 }
 
-.header-actions {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.search-input {
+.header-actions input,
+.header-actions select {
+  background: rgba(255,255,255,0.7);
+  border: 1px solid #ffd36b;
+  color: #4b2a06;
+  border-radius: 8px;
   padding: 0.5rem 1rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  width: 250px;
+  margin-right: 0.5rem;
+  font-size: 1rem;
 }
 
-.search-input:focus {
-  outline: none;
-  border-color: #FF9A4A;
-  box-shadow: 0 0 0 3px rgba(255, 154, 74, 0.1);
-}
-
-.btn-primary, .btn-success, .btn-secondary, .btn-info, .btn-danger {
-  padding: 0.5rem 1rem;
+.header-actions button {
+  background: linear-gradient(135deg, #ff9a4a, #ff6b1c);
+  color: #fff4e6;
   border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 0.5rem 1.5rem;
+  margin-left: 0.5rem;
+  box-shadow: 0 4px 12px rgba(255, 107, 28, 0.15);
+  transition: all 0.2s;
 }
-
-.btn-primary {
-  background: #FF9A4A;
-  color: white;
-}
-
-.btn-primary:hover {
-  background: #FF6A3D;
-}
-
-.btn-success {
-  background: #28a745;
-  color: white;
-}
-
-.btn-success:hover {
-  background: #218838;
-}
-
-.btn-secondary {
-  background: #6c757d;
-  color: white;
-}
-
-.btn-secondary:hover {
-  background: #5a6268;
-}
-
-.btn-info {
-  background: #17a2b8;
-  color: white;
-  padding: 0.35rem 0.7rem;
-  font-size: 0.8rem;
-}
-
-.btn-info:hover {
-  background: #138496;
-}
-
-.btn-danger {
-  background: #dc3545;
-  color: white;
-  padding: 0.35rem 0.7rem;
-  font-size: 0.8rem;
-}
-
-.btn-danger:hover {
-  background: #c82333;
-}
-
-.btn-sm {
-  padding: 0.35rem 0.7rem;
-  font-size: 0.8rem;
+.header-actions button:hover {
+  background: linear-gradient(135deg, #ff6b1c, #ff9a4a);
+  color: #fff;
 }
 
 .summary-card {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  margin-bottom: 2rem;
-}
-
-.summary-card h3 {
-  margin: 0;
-  color: #333;
+  background: rgba(255,255,255,0.18);
+  border-radius: 18px;
+  padding: 1.2rem 2rem;
+  margin-bottom: 1.5rem;
+  color: #fff4e6;
+  font-weight: 600;
+  font-size: 1.2rem;
 }
 
 .staff-table-wrapper {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  background: rgba(255,255,255,0.18);
+  border-radius: 18px;
+  box-shadow: 0 2px 8px rgba(255, 107, 28, 0.08);
   overflow: hidden;
 }
 
 .staff-table {
   width: 100%;
   border-collapse: collapse;
+  color: #4b2a06;
+  background: transparent;
 }
-
 .staff-table thead {
-  background: #f8f9fa;
-  border-bottom: 2px solid #dee2e6;
+  background: linear-gradient(90deg, #ffe8a3 60%, #ffd36b 100%);
 }
-
 .staff-table th {
   padding: 1rem;
   text-align: left;
-  font-weight: 600;
-  color: #333;
-  font-size: 0.9rem;
+  font-weight: 700;
+  color: #4b2a06;
+  font-size: 1rem;
+  letter-spacing: 0.04em;
 }
-
 .staff-table td {
   padding: 1rem;
-  border-bottom: 1px solid #dee2e6;
+  border-bottom: 1px solid #ffd36b;
 }
-
 .staff-table tbody tr:hover {
-  background: #f8f9fa;
+  background: rgba(255, 232, 163, 0.18);
 }
-
 .staff-table tbody tr.inactive {
   opacity: 0.7;
-  background: #f8f9fa;
+  background: rgba(255, 232, 163, 0.18);
 }
-
 .staff-info {
   display: flex;
   align-items: center;
   gap: 0.75rem;
 }
-
 .avatar {
   width: 32px;
   height: 32px;
   border-radius: 50%;
   object-fit: cover;
+  border: 2px solid #ffd36b;
 }
-
 .badge {
   display: inline-block;
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 700;
 }
-
 .badge-active {
-  background: #d4edda;
-  color: #155724;
+  background: #ffe8a3;
+  color: #4b2a06;
+  border: 1px solid #ffd36b;
 }
-
 .badge-inactive {
-  background: #f8d7da;
-  color: #721c24;
+  background: #ffd6d6;
+  color: #b23c3c;
+  border: 1px solid #ffb3b3;
 }
-
 .actions {
   display: flex;
   gap: 0.5rem;
 }
-
 .empty-state, .loading-state {
   text-align: center;
   padding: 3rem;
-  background: white;
-  border-radius: 8px;
-  color: #666;
+  background: rgba(255,255,255,0.18);
+  border-radius: 18px;
+  color: #fff4e6;
+  font-weight: 600;
 }
-
 .alert {
   padding: 1rem;
-  border-radius: 4px;
+  border-radius: 8px;
   margin-bottom: 1rem;
+  background: #ffd6d6;
+  color: #b23c3c;
+  border: 1px solid #ffb3b3;
 }
-
-.alert-danger {
-  background: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
-}
-
-/* Modal Styles */
 .modal-backdrop {
   position: fixed;
   top: 0;
@@ -699,38 +666,101 @@ async function loadBranches() {
   justify-content: center;
   z-index: 1000;
 }
-
 .modal {
-  background: white;
-  border-radius: 8px;
+  background: #fff4e6;
+  border-radius: 18px;
   width: 95%;
   max-width: 900px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 16px rgba(255, 107, 28, 0.12);
 }
-
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  border-bottom: 1px solid #dee2e6;
+  border-bottom: 1px solid #ffd36b;
 }
-
 .modal-header h2 {
   margin: 0;
-  color: #333;
+  color: #ff6b1c;
+  font-weight: 800;
 }
-
 .close-btn {
   background: none;
   border: none;
   font-size: 1.5rem;
   cursor: pointer;
-  color: #999;
+  color: #ff6b1c;
 }
-
 .close-btn:hover {
-  color: #333;
+  color: #b23c3c;
+}
+.modal-body {
+  padding: 1.5rem;
+  max-height: 70vh;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+.modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #ffd36b;
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+.form-group {
+  margin-bottom: 1rem;
+}
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #ff6b1c;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.form-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ffd36b;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  background: rgba(255,255,255,0.7);
+  color: #4b2a06;
+}
+.form-input:focus {
+  outline: none;
+  border-color: #ff6b1c;
+  box-shadow: 0 0 0 3px rgba(255, 154, 74, 0.12);
+}
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+@media (max-width: 768px) {
+  .staff-header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .header-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+  .search-input {
+    width: 100%;
+  }
+  .staff-table {
+    font-size: 0.85rem;
+  }
+  .staff-table th,
+  .staff-table td {
+    padding: 0.75rem 0.5rem;
+  }
 }
 
 .modal-body {

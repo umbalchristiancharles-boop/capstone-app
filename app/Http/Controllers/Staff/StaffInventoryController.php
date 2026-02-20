@@ -10,6 +10,26 @@ use Illuminate\Support\Str;
 
 class StaffInventoryController extends Controller
 {
+    // PUT /api/staff/inventory/profile
+    public function updateProfile(Request $request)
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $validated = $request->validate([
+            'fullName' => 'sometimes|string|max:255',
+            'username' => 'sometimes|string|max:50|unique:users,username,' . $user->id,
+            'email' => 'nullable|email|unique:users,email,' . $user->id,
+            'contact' => 'sometimes|string|max:50',
+            'password' => 'nullable|string|min:8|confirmed',
+        ]);
+        if (isset($validated['fullName'])) $user->full_name = $validated['fullName'];
+        if (isset($validated['username'])) $user->username = $validated['username'];
+        if (isset($validated['email'])) $user->email = $validated['email'];
+        if (isset($validated['contact'])) $user->phone_number = $validated['contact'];
+        if (isset($validated['password'])) $user->password = $validated['password'];
+        $user->save();
+        return response()->json(['ok' => true, 'message' => 'Profile updated successfully.']);
+    }
     // GET /api/staff/inventory/products
     public function index(Request $request)
     {
@@ -123,25 +143,14 @@ class StaffInventoryController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
         // Attempt to get profile info from related UserProfile if available
-        $profile = method_exists($user, 'profile') ? $user->profile : null;
-        // Safe fallback for name
-        if ($profile && isset($profile->name)) {
-            $fullName = $profile->name;
-        } elseif (isset($user->full_name)) {
-            $fullName = $user->full_name;
-        } elseif (isset($user->username)) {
-            $fullName = $user->username;
-        } elseif (isset($user->email)) {
-            $fullName = $user->email;
-        } else {
-            $fullName = 'Unknown';
-        }
+        // Use only User model fields for name and department
+        $fullName = $user->full_name ?? $user->username ?? $user->email ?? 'Unknown';
         return response()->json([
             'user' => [
                 'id' => $user->id,
                 'fullName' => $fullName,
                 'role' => $user->role,
-                'department' => $profile && isset($profile->department) ? $profile->department : ($user->department ?? null),
+                'department' => $user->department ?? null,
                 'accountId' => $user->account_id ?? null,
                 'avatarUrl' => $user->avatar_url ?? null,
                 'branch_id' => $user->branch_id ?? null,

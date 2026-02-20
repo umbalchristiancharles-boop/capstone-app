@@ -62,11 +62,12 @@ const router = createRouter({
     { path: '/admin-login', component: adminlogin },
     { path: '/admin-panel', component: AdminPanel },
     { path: '/staff-panel', component: StaffList },
+    { path: '/staff/inventory', component: () => import('./components/inventory/InventoryStaffPanel.vue'), meta: { requiresAuth: true } },
     { path: '/owner-panel', component: OwnerPanel },
     { path: '/hr-panel', component: DeletedStaffList},
     {
       path: '/staff-management',
-      component: StaffList,
+      component: () => import('./components/StaffManagement.vue'),
       meta: { requiresAuth: true },
     },
     {

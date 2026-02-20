@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 19, 2026 at 08:04 PM
+-- Generation Time: Feb 20, 2026 at 08:37 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -394,7 +394,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('hZV7hLkJQBc0FNXKs1hT5vP6GIKbbcq4byB8TiBH', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo3OntzOjY6Il90b2tlbiI7czo0MDoiUjhQUGdWa3B3SG9xSDZuYW1NZjV2cXFZWkxRQVhaU0xUb28yZHNwcCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDQ6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9vd25lci9zdGFmZi1tYW5hZ2VtZW50IjtzOjU6InJvdXRlIjtzOjIyOiJvd25lci5zdGFmZi1tYW5hZ2VtZW50Ijt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTtzOjc6InVzZXJfaWQiO2k6MTtzOjk6InVzZXJfcm9sZSI7czo1OiJPV05FUiI7czo5OiJ1c2VyX25hbWUiO3M6ODoiT3duZXIgQ1QiO30=', 1771527788);
+('ssCmBYtuMjcKzaT2dcOTC4FAG4CFwLdJod88gVr3', 5, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo3OntzOjY6Il90b2tlbiI7czo0MDoiTzhjN1ZtdmxTSlpNdXdDMG9iN25Wb1VUSkVENHFtU0RJVzQ0YjJsSCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6NTtzOjc6InVzZXJfaWQiO2k6NTtzOjk6InVzZXJfcm9sZSI7czo1OiJTVEFGRiI7czo5OiJ1c2VyX25hbWUiO3M6NjoiSm9obnlzIjt9', 1771572850);
 
 -- --------------------------------------------------------
 
@@ -463,10 +463,11 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`id`, `email`, `username`, `full_name`, `name`, `password`, `email_verified_at`, `role`, `branch_id`, `avatar_url`, `phone_number`, `address`, `is_active`, `department`, `remember_token`, `created_at`, `updated_at`, `deleted_at`, `must_change_password`) VALUES
 (1, 'owner12@example.com', 'owner', 'Owner CT', NULL, '$2y$12$VJUll4ZOxJiysf4O7zLXc.LCL78XSzpGNcX9Oh4nUGkMjOIsbudEq', '2026-02-17 14:41:30', 'OWNER', NULL, NULL, '09081717813', '123 Main St', 1, 'HR', NULL, '2026-02-17 14:41:30', '2026-02-17 16:21:23', NULL, 0),
-(2, 'admin_main@example.com', 'admin_main', 'Main Admin', NULL, '$2y$12$YkAwoJ2uovKAo1v5f4ZOLOAa0zyTekL2j5J8ZegQAsMkYbVLM1X2C', '2026-02-17 14:46:48', 'ADMIN', NULL, NULL, '09171234567', 'Admin HQ', 1, 'HR', NULL, '2026-02-17 14:46:48', '2026-02-17 14:46:48', NULL, 0),
-(4, 'gab@gmail.com', 'gab', 'gab ong', NULL, '$2y$12$tlCShykOjGeYR9hW7QW0meBrTXw.J.HEVH4bPOxFzXv2FTpicYuQW', NULL, 'BRANCH_MANAGER', 3, NULL, '09156818857', NULL, 1, 'HR', NULL, '2026-02-19 07:39:55', '2026-02-19 18:53:45', NULL, 0),
-(5, 'John@gmail.com', 'John', 'Johny', NULL, '$2y$12$xGMDH2sbm21cf0BjXdq03OBVsm2FpSlewRHYjEl8kV5ISPI.KMpfW', NULL, 'STAFF', 2, NULL, '09156818858', 's', 1, 'INVENTORY', NULL, '2026-02-19 10:59:04', '2026-02-19 18:48:30', NULL, 1),
-(6, 'janne@gmail.com', 'Janne', 'Janne De Guzmans', NULL, '$2y$12$5xIqDK8xH4WU9MpjjyBZA.hRGqiaZrTkn30TjgzKENTeHDxrS8k3O', NULL, 'STAFF', 5, NULL, '09156818859', '2312455', 1, 'INVENTORY', NULL, '2026-02-19 17:49:30', '2026-02-19 18:19:02', NULL, 1);
+(2, 'admin_main@example.com', 'admin_main', 'Main Admin', NULL, '$2y$12$YkAwoJ2uovKAo1v5f4ZOLOAa0zyTekL2j5J8ZegQAsMkYbVLM1X2C', '2026-02-17 14:46:48', 'ADMIN', NULL, '/storage/avatars/avatar_2_1771572511.png', '09171234567', 'Admin HQ', 1, 'HR', NULL, '2026-02-17 14:46:48', '2026-02-17 14:46:48', NULL, 0),
+(4, 'gab@gmail.com', 'gab', 'gab ongs', NULL, '$2y$12$tlCShykOjGeYR9hW7QW0meBrTXw.J.HEVH4bPOxFzXv2FTpicYuQW', NULL, 'BRANCH_MANAGER', 3, NULL, '09156818857', NULL, 1, 'HR', NULL, '2026-02-19 07:39:55', '2026-02-20 03:32:49', NULL, 0),
+(5, 'John@gmail.com', 'John', 'Johnys', NULL, '$2y$12$tOzQICKP7Ga4dVNbh9Bmae16hRHm3tur4t8uFtAILKD90O8M.AF.q', NULL, 'STAFF', 2, NULL, '09156818858', 's', 1, 'INVENTORY', NULL, '2026-02-19 10:59:04', '2026-02-20 03:33:51', NULL, 0),
+(6, 'janne@gmail.com', 'Janne', 'Janne De Guzman', NULL, '$2y$12$5xIqDK8xH4WU9MpjjyBZA.hRGqiaZrTkn30TjgzKENTeHDxrS8k3O', NULL, 'STAFF', 5, NULL, '09156818859', '2312455', 1, 'INVENTORY', NULL, '2026-02-19 17:49:30', '2026-02-20 03:32:24', NULL, 1),
+(7, 'park@gmail.com', 'Park', 'mr.Parks', NULL, '$2y$12$hy1Q0ye2lCk2bnyyBXJ6MOitEZMSqAS03yuQXTWkOwQv68ZOQcHOy', NULL, 'OWNER', NULL, NULL, '09156818853', '', 1, NULL, NULL, '2026-02-20 07:23:35', '2026-02-20 07:23:35', NULL, 1);
 
 --
 -- Indexes for dumped tables
@@ -691,7 +692,7 @@ ALTER TABLE `staff_documents`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- Constraints for dumped tables

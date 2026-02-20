@@ -139,8 +139,8 @@ async function handleLogin() {
         if (res.data.ok) {
             overlayText.value = "Loading panel...";
 
-            // Determine redirect based on user role
-            const redirectPath = resolveRedirectPath(res.data.user?.role);
+            // Determine redirect based on user role AND department
+            const redirectPath = resolveRedirectPath(res.data.user?.role, res.data.user?.department);
 
             if (res.data.user?.must_change_password) {
                 pendingRedirectPath.value = redirectPath;
@@ -181,9 +181,16 @@ function handleBack() {
     }, 2000);
 }
 
-function resolveRedirectPath(role) {
+function resolveRedirectPath(role, department) {
     if (role === "BRANCH_MANAGER") return "/manager-panel";
-    if (role === "STAFF") return "/staff-panel";
+    if (role === "STAFF") {
+        const dept = (department || '').toLowerCase();
+        if (dept === "inventory") return "/staff/inventory";
+        if (dept === "cashier") return "/staff/cashier";
+        if (dept === "finance") return "/staff/finance";
+        // Add more departments as needed
+        return "/staff-panel";
+    }
     if (role === "HR") return "/hr-panel";
     if (role === "OWNER") return "/owner-panel";
     if (role === "ADMIN") return "/admin-panel";
