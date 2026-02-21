@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 20, 2026 at 08:37 AM
+-- Generation Time: Feb 21, 2026 at 09:51 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -394,7 +394,9 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('ssCmBYtuMjcKzaT2dcOTC4FAG4CFwLdJod88gVr3', 5, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo3OntzOjY6Il90b2tlbiI7czo0MDoiTzhjN1ZtdmxTSlpNdXdDMG9iN25Wb1VUSkVENHFtU0RJVzQ0YjJsSCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6NTtzOjc6InVzZXJfaWQiO2k6NTtzOjk6InVzZXJfcm9sZSI7czo1OiJTVEFGRiI7czo5OiJ1c2VyX25hbWUiO3M6NjoiSm9obnlzIjt9', 1771572850);
+('ISKNeTTPFksG6XnEr8zAlajrXO13FV18bUZuJgxo', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiaGZrWEd2UWpQSDJaVnplYjlJQTJQMVlVeFVsZThGc0VpR2x6WDhuOCI7czo3OiJzdWNjZXNzIjtzOjI0OiJMb2dnZWQgb3V0IHN1Y2Nlc3NmdWxseS4iO3M6NjoiX2ZsYXNoIjthOjI6e3M6MzoibmV3IjthOjA6e31zOjM6Im9sZCI7YToxOntpOjA7czo3OiJzdWNjZXNzIjt9fXM6OToiX3ByZXZpb3VzIjthOjI6e3M6MzoidXJsIjtzOjI4OiJodHRwOi8vbG9jYWxob3N0OjgwMDAvbG9nb3V0IjtzOjU6InJvdXRlIjtzOjY6ImxvZ291dCI7fX0=', 1771659709),
+('MqVbJo4pVwZv2xAmYdsoFeM5qlpDtDqSrNjjMYCO', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiSmxPV0JrOXJieUM1dUZtdVQ5VWQyMEVsQ2pISXlubGU5SHNhcjYwYyI7czo3OiJzdWNjZXNzIjtzOjI0OiJMb2dnZWQgb3V0IHN1Y2Nlc3NmdWxseS4iO3M6NjoiX2ZsYXNoIjthOjI6e3M6MzoibmV3IjthOjA6e31zOjM6Im9sZCI7YToxOntpOjA7czo3OiJzdWNjZXNzIjt9fXM6OToiX3ByZXZpb3VzIjthOjI6e3M6MzoidXJsIjtzOjI4OiJodHRwOi8vbG9jYWxob3N0OjgwMDAvbG9nb3V0IjtzOjU6InJvdXRlIjtzOjY6ImxvZ291dCI7fX0=', 1771659423),
+('qF6MbxzHOoMJ7fmd4cnWfGFIfUoMD7KmreJUWNSX', 8, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo3OntzOjY6Il90b2tlbiI7czo0MDoiZmttMjJmWk9VTEp2UlhjMDBnanlUeGZLRnVHQk1kaGFBQ0JQR1FMRiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjg7czo3OiJ1c2VyX2lkIjtpOjg7czo5OiJ1c2VyX3JvbGUiO3M6MTQ6IkJSQU5DSF9NQU5BR0VSIjtzOjk6InVzZXJfbmFtZSI7czoxMzoiUm9iZXJ0IERvd25pZSI7fQ==', 1771663889);
 
 -- --------------------------------------------------------
 
@@ -427,7 +429,8 @@ CREATE TABLE `staff_documents` (
 
 INSERT INTO `staff_documents` (`id`, `user_id`, `resume_path`, `government_id_path`, `psa_birth_certificate_path`, `nbi_clearance_path`, `police_clearance_path`, `medical_certificate_path`, `drug_test_result_path`, `sss_id_path`, `philhealth_id_path`, `pagibig_mdf_path`, `tin_id_path`, `diploma_transcript_path`, `created_at`, `updated_at`) VALUES
 (1, 4, 'staff-documents/4/resume.png', 'staff-documents/4/government_id.png', 'staff-documents/4/psa_birth_certificate.png', 'staff-documents/4/nbi_clearance.png', 'staff-documents/4/police_clearance.png', 'staff-documents/4/medical_certificate.png', 'staff-documents/4/drug_test_result.png', 'staff-documents/4/sss_id.png', 'staff-documents/4/philhealth_id.png', 'staff-documents/4/pagibig_mdf.png', 'staff-documents/4/tin_id.png', 'staff-documents/4/diploma_transcript.png', '2026-02-19 07:39:55', '2026-02-19 07:39:55'),
-(2, 6, NULL, 'staff-documents/6/government_id.png', 'staff-documents/6/psa_birth_certificate.png', 'staff-documents/6/nbi_clearance.png', 'staff-documents/6/police_clearance.png', 'staff-documents/6/medical_certificate.png', 'staff-documents/6/drug_test_result.png', 'staff-documents/6/sss_id.png', 'staff-documents/6/philhealth_id.png', 'staff-documents/6/pagibig_mdf.png', 'staff-documents/6/tin_id.png', 'staff-documents/6/diploma_transcript.png', '2026-02-19 17:49:31', '2026-02-19 17:49:31');
+(2, 6, NULL, 'staff-documents/6/government_id.png', 'staff-documents/6/psa_birth_certificate.png', 'staff-documents/6/nbi_clearance.png', 'staff-documents/6/police_clearance.png', 'staff-documents/6/medical_certificate.png', 'staff-documents/6/drug_test_result.png', 'staff-documents/6/sss_id.png', 'staff-documents/6/philhealth_id.png', 'staff-documents/6/pagibig_mdf.png', 'staff-documents/6/tin_id.png', 'staff-documents/6/diploma_transcript.png', '2026-02-19 17:49:31', '2026-02-19 17:49:31'),
+(3, 8, NULL, 'staff-documents/8/government_id.png', 'staff-documents/8/psa_birth_certificate.png', 'staff-documents/8/nbi_clearance.png', 'staff-documents/8/police_clearance.png', 'staff-documents/8/medical_certificate.png', 'staff-documents/8/drug_test_result.png', 'staff-documents/8/sss_id.png', 'staff-documents/8/philhealth_id.png', 'staff-documents/8/pagibig_mdf.png', 'staff-documents/8/tin_id.png', 'staff-documents/8/diploma_transcript.png', '2026-02-21 07:28:01', '2026-02-21 07:28:01');
 
 -- --------------------------------------------------------
 
@@ -467,7 +470,8 @@ INSERT INTO `users` (`id`, `email`, `username`, `full_name`, `name`, `password`,
 (4, 'gab@gmail.com', 'gab', 'gab ongs', NULL, '$2y$12$tlCShykOjGeYR9hW7QW0meBrTXw.J.HEVH4bPOxFzXv2FTpicYuQW', NULL, 'BRANCH_MANAGER', 3, NULL, '09156818857', NULL, 1, 'HR', NULL, '2026-02-19 07:39:55', '2026-02-20 03:32:49', NULL, 0),
 (5, 'John@gmail.com', 'John', 'Johnys', NULL, '$2y$12$tOzQICKP7Ga4dVNbh9Bmae16hRHm3tur4t8uFtAILKD90O8M.AF.q', NULL, 'STAFF', 2, NULL, '09156818858', 's', 1, 'INVENTORY', NULL, '2026-02-19 10:59:04', '2026-02-20 03:33:51', NULL, 0),
 (6, 'janne@gmail.com', 'Janne', 'Janne De Guzman', NULL, '$2y$12$5xIqDK8xH4WU9MpjjyBZA.hRGqiaZrTkn30TjgzKENTeHDxrS8k3O', NULL, 'STAFF', 5, NULL, '09156818859', '2312455', 1, 'INVENTORY', NULL, '2026-02-19 17:49:30', '2026-02-20 03:32:24', NULL, 1),
-(7, 'park@gmail.com', 'Park', 'mr.Parks', NULL, '$2y$12$hy1Q0ye2lCk2bnyyBXJ6MOitEZMSqAS03yuQXTWkOwQv68ZOQcHOy', NULL, 'OWNER', NULL, NULL, '09156818853', '', 1, NULL, NULL, '2026-02-20 07:23:35', '2026-02-20 07:23:35', NULL, 1);
+(7, 'park@gmail.com', 'Park', 'mr.Parks', NULL, '$2y$12$GOJjIOufxuFrp5o3Ho.UMOsyIrF4vE1.qVL1WF8yV0f/pOujDfjA.', NULL, 'OWNER', NULL, NULL, '09156818853', '', 1, NULL, NULL, '2026-02-20 07:23:35', '2026-02-21 06:55:23', NULL, 0),
+(8, 'robert@gmail.com', 'Robert', 'Robert Downie', NULL, '$2y$12$DwUYoOcKVyt.maIktVGaNe6vcuY0iYIKcvaA2XjoUwP/UpDuDYl4S', NULL, 'BRANCH_MANAGER', 2, NULL, '0915681881', '2314', 1, 'INVENTORY', NULL, '2026-02-21 07:28:00', '2026-02-21 07:28:39', NULL, 0);
 
 --
 -- Indexes for dumped tables
@@ -686,13 +690,13 @@ ALTER TABLE `product_comments`
 -- AUTO_INCREMENT for table `staff_documents`
 --
 ALTER TABLE `staff_documents`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- Constraints for dumped tables

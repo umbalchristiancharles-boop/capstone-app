@@ -54,7 +54,7 @@
 
 <script setup>
 defineProps({
-  userProfile: { type: Object, required: true },
+  userProfile: { type: Object, default: () => ({}) },
   panelTitle: { type: String, required: true },
   panelDescription: { type: String, required: true }
 })

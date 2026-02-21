@@ -60,6 +60,15 @@
                 </a>
             </div>
 
+                    <div class="cookie-debug">
+                        <button type="button" class="cookie-debug-toggle" @click="showCookieDebug = !showCookieDebug">{{ showCookieDebug ? 'Hide' : 'Show' }} Cookie Info</button>
+                        <div v-if="showCookieDebug" class="cookie-debug-box">
+                            <p><strong>document.cookie</strong>: {{ cookieString }}</p>
+                            <p><strong>XSRF-TOKEN</strong>: {{ cookieMap['XSRF-TOKEN'] || '(missing)' }}</p>
+                            <p><strong>laravel_session</strong>: {{ cookieMap['laravel_session'] || '(missing)' }}</p>
+                        </div>
+                    </div>
+
             <p class="login-hint">
                 For demo only. Real authentication will be connected soon.
             </p>
@@ -91,7 +100,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watchEffect } from "vue";
 import { useRouter } from "vue-router";
 import axios from "axios";
 import "../css/adminlogin.css";
@@ -111,6 +120,32 @@ const loggedInUsername = ref("");
 const defaultPassword = ref("");
 
 const logoImg = new URL("../assets/chikinlogo.png", import.meta.url).href;
+const showCookieDebug = ref(false)
+const cookieString = ref('')
+const cookieMap = ref({})
+
+function parseCookies() {
+    try {
+        cookieString.value = document.cookie || ''
+        const map = {}
+        cookieString.value.split(';').map(s => s.trim()).forEach(pair => {
+            if (!pair) return
+            const idx = pair.indexOf('=')
+            if (idx === -1) return
+            const k = pair.substring(0, idx).trim()
+            const v = decodeURIComponent(pair.substring(idx + 1))
+            map[k] = v
+        })
+        cookieMap.value = map
+    } catch (e) {
+        cookieString.value = ''
+        cookieMap.value = {}
+    }
+}
+
+watchEffect(() => {
+    if (showCookieDebug.value) parseCookies()
+})
 
 async function handleLogin() {
     if (isLoading.value) return;
@@ -135,6 +170,12 @@ async function handleLogin() {
                 withCredentials: true,
             },
         );
+
+        try {
+            console.debug('[LOGIN] response status:', res.status)
+            console.debug('[LOGIN] response headers:', res.headers)
+            console.debug('[LOGIN] response data:', res.data)
+        } catch (e) {}
 
         if (res.data.ok) {
             overlayText.value = "Loading panel...";
@@ -162,6 +203,13 @@ async function handleLogin() {
             errorMsg.value = res.data.message || "Login failed.";
         }
     } catch (e) {
+        try {
+            console.warn('[LOGIN] error:', e && e.response ? {
+                status: e.response.status,
+                headers: e.response.headers,
+                data: e.response.data,
+            } : e)
+        } catch (ee) {}
         errorMsg.value = "Invalid username or password.";
     } finally {
         isLoading.value = false;
@@ -182,7 +230,29 @@ function handleBack() {
 }
 
 function resolveRedirectPath(role, department) {
-    if (role === "BRANCH_MANAGER") return "/manager-panel";
+    const r = (role || '').toString().trim().toLowerCase();
+    const d = (department || '').toString().trim().toLowerCase();
+
+    // If department explicitly indicates inventory/finance/etc, prefer that
+    if (d.includes('inventory')) return '/manager/inventory'
+    if (d.includes('finance')) return '/manager/finance'
+    if (d.includes('logistics')) return '/manager/logistics'
+    if (d.includes('hr')) return '/manager/hr'
+
+    // Branch-level manager explicit values (fallback)
+    if (r === 'branch_manager' || r === 'branch manager' || r === 'branch-manager') return '/manager-panel';
+
+    // Manager role string may be like 'Manager Inventory' or 'manager_inventory'
+    if (r.includes('manager')) {
+        // try to detect department in the role string after the word 'manager'
+        const after = r.replace(/manager[_\- ]*/, '')
+        if (after.includes('inventory')) return '/manager/inventory'
+        if (after.includes('finance')) return '/manager/finance'
+        if (after.includes('logistics')) return '/manager/logistics'
+        if (after.includes('hr')) return '/manager/hr'
+        // fallback to manager panel
+        return '/manager-panel'
+    }
     if (role === "STAFF") {
         const dept = (department || '').toLowerCase();
         if (dept === "inventory") return "/staff/inventory";

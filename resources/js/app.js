@@ -17,6 +17,7 @@ import './css/index.css'
 axios.defaults.baseURL = '' // use relative URLs so requests go to current origin
 axios.defaults.withCredentials = true
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest'
+axios.defaults.headers.common['Accept'] = 'application/json'
 
 let pendingRequests = 0
 const requestWaiters = []
@@ -35,6 +36,9 @@ axios.interceptors.request.use(config => {
   if (csrfToken) {
     config.headers['X-CSRF-TOKEN'] = csrfToken
   }
+  try {
+    console.debug('[AXIOS] Request ->', (config.method || '').toUpperCase(), config.url, 'cookies:', document.cookie, 'headers:', config.headers)
+  } catch (e) {}
   pendingRequests += 1
   return config
 }, error => {
@@ -48,6 +52,18 @@ axios.interceptors.response.use(response => {
 }, error => {
   pendingRequests = Math.max(0, pendingRequests - 1)
   notifyRequestWaiters()
+  try {
+    const resp = error && error.response
+    const req = error && error.config
+    const status = resp && resp.status
+    console.warn('[AXIOS] Response error', {
+      url: req && (req.url || req.baseURL),
+      method: req && req.method,
+      status: status,
+      headers: resp && resp.headers,
+      cookie: document.cookie,
+    })
+  } catch (e) {}
   return Promise.reject(error)
 })
 
@@ -61,7 +77,14 @@ const router = createRouter({
     { path: '/login', component: adminlogin },
     { path: '/admin-login', component: adminlogin },
     { path: '/admin-panel', component: AdminPanel },
+    { path: '/manager-panel', component: AdminPanel, meta: { requiresAuth: true } },
+    { path: '/manager/inventory', component: () => import('./components/ManagerInventoryPanel.vue'), meta: { requiresAuth: true } },
+    { path: '/manager/finance', component: () => import('./components/ManagerFinancePanel.vue'), meta: { requiresAuth: true } },
+    { path: '/manager/logistics', component: () => import('./components/ManagerLogisticsPanel.vue'), meta: { requiresAuth: true } },
+    { path: '/manager/hr', component: () => import('./components/ManagerHRPanel.vue'), meta: { requiresAuth: true } },
     { path: '/staff-panel', component: StaffList },
+    { path: '/staff/cashier', component: () => import('./components/StaffCashierPanel.vue'), meta: { requiresAuth: true } },
+    { path: '/staff/finance', component: () => import('./components/StaffFinancePanel.vue'), meta: { requiresAuth: true } },
     { path: '/staff/inventory', component: () => import('./components/inventory/InventoryStaffPanel.vue'), meta: { requiresAuth: true } },
     { path: '/owner-panel', component: OwnerPanel },
     { path: '/hr-panel', component: DeletedStaffList},
@@ -218,7 +241,7 @@ router.beforeEach(async (to, from, next) => {
   }
 
   // Protected panel routes
-  const protectedRoutes = ['/admin-panel', '/manager-panel', '/staff-panel', '/hr-panel', '/staff-management', '/admin/deleted-staff', '/manager/staff']
+  const protectedRoutes = ['/admin-panel', '/manager-panel', '/staff-panel', '/hr-panel', '/staff-management', '/owner/staff-management', '/admin/deleted-staff', '/manager/staff']
   const isProtectedRoute = protectedRoutes.some(route => to.path.startsWith(route)) || to.meta.requiresAuth
 
   if (isProtectedRoute) {
@@ -228,7 +251,7 @@ router.beforeEach(async (to, from, next) => {
     }
 
     // One-time reload for staff-management to sync CSRF
-    if ((to.path === '/staff-management' || to.path === '/manager-panel' || to.path === '/manager/staff') && !sessionStorage.getItem('appReloaded')) {
+    if ((to.path === '/staff-management' || to.path === '/owner/staff-management' || to.path === '/manager-panel' || to.path === '/manager/staff') && !sessionStorage.getItem('appReloaded')) {
       try {
         sessionStorage.setItem('suppressRouteOverlay', '1')
         sessionStorage.setItem('suppressRouteTransition', '1')
@@ -267,7 +290,7 @@ axios
     }
     // If the server-rendered page is already at /staff-management,
     // do a one-time reload to ensure CSRF meta tag and XSRF cookie are fresh
-    if ((window.location.pathname === '/staff-management' || window.location.pathname === '/manager-panel' || window.location.pathname === '/manager/staff') && !sessionStorage.getItem('appReloaded')) {
+    if ((window.location.pathname === '/staff-management' || window.location.pathname === '/owner/staff-management' || window.location.pathname === '/manager-panel' || window.location.pathname === '/manager/staff') && !sessionStorage.getItem('appReloaded')) {
       try {
         sessionStorage.setItem('suppressRouteOverlay', '1')
         sessionStorage.setItem('suppressRouteTransition', '1')
@@ -277,6 +300,72 @@ axios
       window.location.reload()
       return
     }
+
+    // Central interceptor: try to recover from HTML/index responses or auth failures
+    // by refreshing the Sanctum CSRF cookie and retrying the original request once.
+    function isHtmlResponse(res) {
+      try {
+        const ct = res && res.headers && res.headers['content-type']
+        if (typeof res.data === 'string' && res.data.trim().toLowerCase().startsWith('<!doctype')) return true
+        if (ct && ct.indexOf('text/html') !== -1) return true
+      } catch (e) {}
+      return false
+    }
+
+    async function refreshCsrf() {
+      try {
+        await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
+        const match = document.cookie.match(new RegExp('(^|; )' + 'XSRF-TOKEN' + '=([^;]*)'))
+        const token = match ? decodeURIComponent(match[2]) : null
+        if (token) axios.defaults.headers.common['X-XSRF-TOKEN'] = token
+        return true
+      } catch (e) {
+        return false
+      }
+    }
+
+    axios.interceptors.response.use(async function (response) {
+      if (isHtmlResponse(response)) {
+        const req = response.config || {}
+        if (req._retriedForCsrf) {
+          router.replace('/admin-login').catch(() => { window.location.href = '/admin-login' })
+          return Promise.reject(new Error('Received HTML response from API'))
+        }
+        req._retriedForCsrf = true
+        const ok = await refreshCsrf()
+        if (!ok) {
+          router.replace('/admin-login').catch(() => { window.location.href = '/admin-login' })
+          return Promise.reject(new Error('Failed to refresh CSRF'))
+        }
+        return axios(req)
+      }
+      return response
+    }, async function (error) {
+      const resp = error && error.response
+      const req = error.config || {}
+      const status = resp && resp.status
+
+      if ((status === 401 || status === 419 || status === 403) || isHtmlResponse(resp || {})) {
+        if (req._retriedForCsrf) {
+          router.replace('/admin-login').catch(() => { window.location.href = '/admin-login' })
+          return Promise.reject(error)
+        }
+        req._retriedForCsrf = true
+        const ok = await refreshCsrf()
+        if (!ok) {
+          router.replace('/admin-login').catch(() => { window.location.href = '/admin-login' })
+          return Promise.reject(error)
+        }
+        try {
+          return axios(req)
+        } catch (e) {
+          router.replace('/admin-login').catch(() => { window.location.href = '/admin-login' })
+          return Promise.reject(e)
+        }
+      }
+
+      return Promise.reject(error)
+    })
 
     const app = createApp(App)
     app.use(router)
