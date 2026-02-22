@@ -50,7 +50,7 @@ class AuthController extends Controller
 
         $user = Auth::user();
 
-        if (! $user) {
+        if (!$user) {
             Log::debug('Auth::user() returned null after attempt', [
                 'username' => $credentials['username'],
             ]);
@@ -60,40 +60,152 @@ class AuthController extends Controller
             ], 401);
         }
 
-        Log::debug('Login successful', [
+        // CRITICAL: Validate that user's account is active BEFORE allowing login
+        if (!$user->is_active) {
+            Log::warning('Login attempt from inactive account', [
+                'user_id' => $user->id,
+                'username' => $user->username,
+                'role' => $user->role,
+            ]);
+
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return response()->json([
+                'ok' => false,
+                'message' => 'Your account has been deactivated. Please contact support.',
+            ], 403);
+        }
+
+        // Validate role exists and is valid
+        $validRoles = ['ADMIN', 'MANAGER', 'STAFF', 'HR', 'OWNER'];
+        $roleUpper = strtoupper(trim($user->role ?? ''));
+
+        if (!in_array($roleUpper, $validRoles)) {
+            Log::error('Unknown or invalid role detected during login', [
+                'user_id' => $user->id,
+                'username' => $user->username,
+                'role' => $user->role,
+            ]);
+
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return response()->json([
+                'ok' => false,
+                'message' => 'System configuration error. Please contact support.',
+            ], 500);
+        }
+
+        // Determine the correct redirect path server-side (authoritative)
+        $redirectPath = $this->getRedirectPath($user);
+
+        Log::debug('Login successful - role-based redirect', [
             'username' => $user->username,
             'id' => $user->id,
+            'role' => $user->role,
+            'department' => $user->department,
+            'redirect_path' => $redirectPath,
         ]);
 
-        // Keep legacy session keys in sync for routes that rely on Session::has('user_id').
+        // Keep legacy session keys in sync for routes that rely on Session::has('user_id')
         Session::put('user_id', $user->id);
         Session::put('user_role', $user->role);
         Session::put('user_name', $user->full_name);
+        // Store the authoritative redirect path in session
+        Session::put('redirect_path', $redirectPath);
 
         return response()->json([
-            'ok'      => true,
+            'ok' => true,
             'message' => 'Login successful',
-            'user'    => [
-                'id'        => $user->id,
-                'username'  => $user->username,
-                'role'      => $user->role,
-                'department'=> $user->department, // <-- ADD THIS LINE
+            'redirect_path' => $redirectPath,
+            'user' => [
+                'id' => $user->id,
+                'username' => $user->username,
+                'role' => $user->role,
+                'department' => $user->department,
                 'full_name' => $user->full_name,
                 'must_change_password' => (bool) $user->must_change_password,
             ],
         ]);
     }
 
+    /**
+     * Determine the correct redirect path based on user role and department.
+     * This is the server-side authoritative source for routing.
+     */
+    private function getRedirectPath(User $user): string
+    {
+        $role = strtoupper(trim($user->role ?? ''));
+        $department = strtoupper(trim($user->department ?? ''));
+
+        // OWNER - highest privilege
+        if ($role === 'OWNER') {
+            return '/owner-panel';
+        }
+
+        // ADMIN
+        if ($role === 'ADMIN') {
+            return '/admin-panel';
+        }
+
+        // HR
+        if ($role === 'HR') {
+            return '/hr-panel';
+        }
+
+        // MANAGER - check department for specific panel
+        if ($role === 'MANAGER') {
+            if ($department === 'INVENTORY') {
+                return '/manager/inventory';
+            }
+            if ($department === 'FINANCE') {
+                return '/manager/finance';
+            }
+            if ($department === 'LOGISTICS') {
+                return '/manager/logistics';
+            }
+            if ($department === 'HR') {
+                return '/manager/hr';
+            }
+            // Default manager panel
+            return '/manager-panel';
+        }
+
+        // STAFF - check department for specific panel
+        if ($role === 'STAFF') {
+            if ($department === 'INVENTORY') {
+                return '/staff/inventory';
+            }
+            if ($department === 'CASHIER') {
+                return '/staff/cashier';
+            }
+            if ($department === 'FINANCE') {
+                return '/staff/finance';
+            }
+            if ($department === 'LOGISTICS') {
+                return '/staff/logistics';
+            }
+            // Default staff panel
+            return '/staff-panel';
+        }
+
+        // Fallback
+        return '/login?error=unknown_role';
+    }
+
 
     public function logout(Request $request)
     {
         Auth::logout();
-        Session::forget(['user_id', 'user_role', 'user_name']);
+        Session::forget(['user_id', 'user_role', 'user_name', 'redirect_path']);
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
         return response()->json([
-            'ok'      => true,
+            'ok' => true,
             'message' => 'Logout successful',
         ]);
     }

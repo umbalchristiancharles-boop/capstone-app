@@ -20,9 +20,10 @@ class AdminMiddleware
             return redirect('/login')->with('error', 'Please login first.');
         }
 
-        // Check if user role is admin
-        if (session('user_role') !== 'admin') {
-            return redirect('/login')->with('error', 'Unauthorized access.');
+        // Check if user role is admin (case-insensitive check for 'ADMIN')
+        $userRole = strtoupper(session('user_role'));
+        if ($userRole !== 'ADMIN') {
+            return redirect('/login')->with('error', 'Unauthorized access. Admin only.');
         }
 
         return $next($request);

@@ -14,8 +14,9 @@ class AdminOnly
             return redirect()->route('login')->with('error', 'Please login first.');
         }
 
-        if (Session::get('user_role') !== 'OWNER') {
-            return redirect()->route('login')->with('error', 'Access denied.  Admin only.');
+        $userRole = strtoupper(Session::get('user_role', ''));
+        if ($userRole !== 'ADMIN' && $userRole !== 'OWNER') {
+            return redirect()->route('login')->with('error', 'Access denied. Admin only.');
         }
 
         return $next($request);

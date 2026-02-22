@@ -180,8 +180,21 @@ async function handleLogin() {
         if (res.data.ok) {
             overlayText.value = "Loading panel...";
 
-            // Determine redirect based on user role AND department
-            const redirectPath = resolveRedirectPath(res.data.user?.role, res.data.user?.department);
+            // Use server-provided redirect_path as the authoritative source
+            // This ensures proper role-based redirection from backend validation
+            let redirectPath = res.data.redirect_path;
+
+            // Fallback to client-side calculation if server doesn't provide redirect_path
+            if (!redirectPath) {
+                redirectPath = resolveRedirectPath(res.data.user?.role, res.data.user?.department);
+            }
+
+            // Validate redirect path exists to prevent invalid routing
+            if (!redirectPath || redirectPath.includes('error=')) {
+                console.error('Invalid redirect path received:', redirectPath);
+                errorMsg.value = "System configuration error. Please contact support.";
+                return;
+            }
 
             if (res.data.user?.must_change_password) {
                 pendingRedirectPath.value = redirectPath;
@@ -230,41 +243,46 @@ function handleBack() {
 }
 
 function resolveRedirectPath(role, department) {
-    const r = (role || '').toString().trim().toLowerCase();
-    const d = (department || '').toString().trim().toLowerCase();
+    // Use case-insensitive comparison by normalizing to uppercase
+    const r = (role || '').toString().trim().toUpperCase();
+    const d = (department || '').toString().trim().toUpperCase();
 
     // If department explicitly indicates inventory/finance/etc, prefer that
-    if (d.includes('inventory')) return '/manager/inventory'
-    if (d.includes('finance')) return '/manager/finance'
-    if (d.includes('logistics')) return '/manager/logistics'
-    if (d.includes('hr')) return '/manager/hr'
+    if (d.includes('INVENTORY')) return '/manager/inventory'
+    if (d.includes('FINANCE')) return '/manager/finance'
+    if (d.includes('LOGISTICS')) return '/manager/logistics'
+    if (d.includes('HR')) return '/manager/hr'
 
     // Branch-level manager explicit values (fallback)
-    if (r === 'branch_manager' || r === 'branch manager' || r === 'branch-manager') return '/manager-panel';
+    if (r === 'BRANCH_MANAGER' || r === 'BRANCH MANAGER' || r === 'BRANCH-MANAGER') return '/manager-panel';
 
     // Manager role string may be like 'Manager Inventory' or 'manager_inventory'
-    if (r.includes('manager')) {
+    if (r.includes('MANAGER')) {
         // try to detect department in the role string after the word 'manager'
-        const after = r.replace(/manager[_\- ]*/, '')
-        if (after.includes('inventory')) return '/manager/inventory'
-        if (after.includes('finance')) return '/manager/finance'
-        if (after.includes('logistics')) return '/manager/logistics'
-        if (after.includes('hr')) return '/manager/hr'
+        const after = r.replace(/MANAGER[_\- ]*/, '')
+        if (after.includes('INVENTORY')) return '/manager/inventory'
+        if (after.includes('FINANCE')) return '/manager/finance'
+        if (after.includes('LOGISTICS')) return '/manager/logistics'
+        if (after.includes('HR')) return '/manager/hr'
         // fallback to manager panel
         return '/manager-panel'
     }
-    if (role === "STAFF") {
-        const dept = (department || '').toLowerCase();
-        if (dept === "inventory") return "/staff/inventory";
-        if (dept === "cashier") return "/staff/cashier";
-        if (dept === "finance") return "/staff/finance";
+    if (r === "STAFF") {
+        const dept = (department || '').toUpperCase();
+        if (dept === "INVENTORY") return "/staff/inventory";
+        if (dept === "CASHIER") return "/staff/cashier";
+        if (dept === "FINANCE") return "/staff/finance";
+        if (dept === "LOGISTICS") return "/staff/logistics";
         // Add more departments as needed
         return "/staff-panel";
     }
-    if (role === "HR") return "/hr-panel";
-    if (role === "OWNER") return "/owner-panel";
-    if (role === "ADMIN") return "/admin-panel";
-    return "/admin-panel";
+    if (r === "HR") return "/hr-panel";
+    if (r === "OWNER") return "/owner-panel";
+    if (r === "ADMIN") return "/admin-panel";
+
+    // Invalid role - return to login with error
+    console.error('Invalid role detected in redirect:', role);
+    return "/login?error=invalid_role";
 }
 
 function handleForceCompleted() {

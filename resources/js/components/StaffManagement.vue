@@ -289,6 +289,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
+import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import '../css/adminpanel.css'
 
 // State
@@ -658,6 +659,7 @@ async function loadBranches() {
   padding: 2rem;
   background: #f5f5f5;
   min-height: 100vh;
+  margin-top: 40px; /* Prevent overlap with sidebar/dashboard */
 }
 
 .staff-header {
@@ -671,7 +673,6 @@ async function loadBranches() {
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 @import url("../js/css/adminpanel.css");
-
 .staff-management-page {
   min-height: 100vh;
   background: #ff6b1c;
