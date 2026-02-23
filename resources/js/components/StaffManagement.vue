@@ -1,10 +1,5 @@
 <template>
-  <OwnerPanelLayout :userProfile="ownerProfile" :panelTitle="'Staff Management'" :panelDescription="'Manage staff accounts and roles.'" @logout="showLogoutConfirm = true">
-    <template #profileFooter>
-      <button class="admin-info-btn admin-info-btn--center" @click="showInfoModal = true">Info</button>
-    </template>
-    <template #main>
-      <div class="staff-management-page">
+  <div class="staff-management-page">
     <!-- Back to Dashboard Button -->
     <button @click="$router.push('/admin-panel')" class="btn-secondary back-to-dashboard-btn">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="back-icon">
@@ -173,7 +168,7 @@
                 <option value="OWNER">Owner</option>
               </select>
             </div>
-            <div v-if="isEditingStaff || createOwnerMode" class="form-group">
+            <div v-if="isEditingStaff" class="form-group">
               <label>Department:</label>
               <select v-model="newStaff.department" class="form-input">
                 <option value="">-- Select Department (optional) --</option>
@@ -203,93 +198,12 @@
         </div>
       </div>
     </transition>
-      </div>
-    </template>
-  </OwnerPanelLayout>
-
-  <!-- INFO MODAL for owner -->
-  <transition name="fade">
-    <div v-if="showInfoModal" class="info-backdrop">
-      <div class="info-modal">
-        <h3>Owner Information</h3>
-        <p class="info-sub">Personal details for this owner can be updated from this panel.</p>
-
-        <div class="info-grid">
-          <div class="info-row"><span class="info-label">Full name</span><span class="info-value" v-if="!isEditingInfo">{{ ownerProfile.fullName }}</span>
-            <input v-else v-model="ownerProfile.fullName" class="info-input" type="text" />
-          </div>
-
-          <div class="info-row"><span class="info-label">Role</span><span class="info-value">{{ ownerProfile.role }}</span></div>
-
-          <div class="info-row"><span class="info-label">Username</span><span class="info-value" v-if="!isEditingInfo">{{ ownerProfile.username }}</span>
-            <input v-else v-model="ownerProfile.username" class="info-input" type="text" placeholder="Enter username" />
-          </div>
-
-          <div class="info-row"><span class="info-label">Email</span><span class="info-value" v-if="!isEditingInfo">{{ ownerProfile.email }}</span>
-            <input v-else v-model="ownerProfile.email" class="info-input" type="email" />
-          </div>
-
-          <div class="info-row"><span class="info-label">Contact</span><span class="info-value" v-if="!isEditingInfo">{{ ownerProfile.contact }}</span>
-            <input v-else v-model="ownerProfile.contact" class="info-input" type="text" />
-          </div>
-
-          <div class="info-row"><span class="info-label">Branch</span><span class="info-value">{{ typeof ownerProfile.branch === 'object' && ownerProfile.branch.name ? ownerProfile.branch.name : (ownerProfile.branch || 'Not assigned') }}</span></div>
-
-          <template v-if="isEditingInfo">
-            <div class="info-row info-row--password">
-              <span class="info-label">New Password</span>
-              <input v-model="ownerProfile.password" class="info-input" type="password" placeholder="Leave blank to keep current" />
-            </div>
-
-            <div class="info-row info-row--password">
-              <span class="info-label">Confirm Password</span>
-              <input v-model="ownerProfile.password_confirmation" class="info-input" type="password" placeholder="Re-enter new password" />
-            </div>
-          </template>
-        </div>
-
-        <div v-if="profileError" class="info-error">{{ profileError }}</div>
-        <div v-if="profileSuccess" class="info-success">{{ profileSuccess }}</div>
-
-        <div class="info-actions">
-          <button class="btn-outline" @click="handleInfoClose">{{ isEditingInfo ? 'Cancel' : 'Close' }}</button>
-          <button class="btn-primary" @click="isEditingInfo ? saveOwnerInfo() : (isEditingInfo = true)" :disabled="isSavingProfile">
-            {{ isEditingInfo ? (isSavingProfile ? 'Saving...' : 'Save changes') : 'Edit information' }}
-          </button>
-        </div>
-      </div>
-    </div>
-  </transition>
-
-  <!-- LOGOUT CONFIRM -->
-  <transition name="fade">
-    <div v-if="showLogoutConfirm" class="logout-confirm-backdrop">
-      <div class="logout-confirm-box">
-        <h3>Logout from Staff Management?</h3>
-        <p>This will end your current session for Chikin Tayo Owner.</p>
-        <div class="logout-actions">
-          <button class="btn-cancel" @click="cancelLogout" :disabled="isLoggingOut">Cancel</button>
-          <button class="btn-confirm" @click="confirmLogout" :disabled="isLoggingOut">Yes, logout</button>
-        </div>
-      </div>
-    </div>
-  </transition>
-
-  <!-- OVERLAY -->
-  <transition name="fade">
-    <div v-if="showOverlay" class="loading-overlay">
-      <div class="logo-loading-box">
-        <img :src="logoImg" alt="Chikin Tayo" class="logo-loading-img" />
-        <p>{{ overlayText }}</p>
-      </div>
-    </div>
-  </transition>
+  </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
-import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import '../css/adminpanel.css'
 
 // State
@@ -297,25 +211,16 @@ const isLoading = ref(false)
 const errorMessage = ref('')
 const searchQuery = ref('')
 
-// Owner profile (for left column) and UI state
-const ownerProfile = ref({})
-const showInfoModal = ref(false)
-const isEditingInfo = ref(false)
-const profileError = ref('')
-const profileSuccess = ref('')
-const isSavingProfile = ref(false)
-
-const showLogoutConfirm = ref(false)
-const isLoggingOut = ref(false)
-const showOverlay = ref(false)
-const overlayText = ref('Logging out...')
-const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
-
 // Branches and filters
 const branches = ref([])
 const branchFilter = ref('')
 const roleFilter = ref('')
 const departmentFilter = ref('')
+
+// Current user / role
+const currentUserRole = ref(null)
+const currentUserId = ref(null)
+const isBranchManager = computed(() => (currentUserRole.value || '').toUpperCase() === 'BRANCH_MANAGER')
 
 // Staff Data
 const staff = ref([])
@@ -333,7 +238,7 @@ const newStaff = ref({
   role: 'OWNER',
 })
 const editingStaffId = ref(null)
-const createOwnerMode = ref(false)
+// removed createOwnerMode (owner creation not supported in this view)
 
 // Computed
 const defaultRoles = [
@@ -396,9 +301,8 @@ async function loadStaff() {
   errorMessage.value = ''
 
   try {
-    const res = await axios.get('/api/admin/staff', {
-      withCredentials: true
-    })
+    const url = isBranchManager.value ? '/api/manager/staff' : '/api/admin/staff'
+    const res = await axios.get(url, { withCredentials: true })
 
     if (res.data.success) {
       // Response may come in two shapes:
@@ -451,7 +355,6 @@ function resetForm() {
   }
   isEditingStaff.value = false
   editingStaffId.value = null
-  createOwnerMode.value = false
 }
 
 function editStaff(member) {
@@ -471,15 +374,10 @@ function editStaff(member) {
 
 function openAddStaffModal() {
   resetForm()
-  createOwnerMode.value = false
   showAddStaffModal.value = true
 }
 
-function openAddOwnerModal() {
-  resetForm()
-  createOwnerMode.value = true
-  showAddStaffModal.value = true
-}
+// owner creation removed; use openAddStaffModal for new staff
 
 async function submitStaffForm() {
   // Validation
@@ -505,10 +403,11 @@ async function submitStaffForm() {
 
   try {
     let res
+    const baseUrl = isBranchManager.value ? '/api/manager/staff' : '/api/admin/staff'
 
     if (isEditingStaff.value) {
-      // Update (use admin endpoint so owners are included)
-      res = await axios.put(`/api/admin/staff/${editingStaffId.value}`, {
+      // Update (manager/admin endpoints)
+      res = await axios.put(`${baseUrl}/${editingStaffId.value}`, {
         full_name: newStaff.value.full_name,
         email: newStaff.value.email,
         phone_number: newStaff.value.phone_number,
@@ -519,7 +418,7 @@ async function submitStaffForm() {
       })
     } else {
       // Create staff with selected role
-      res = await axios.post('/api/admin/staff', {
+      res = await axios.post(baseUrl, {
         username: newStaff.value.username,
         email: newStaff.value.email,
         full_name: newStaff.value.full_name,
@@ -546,11 +445,10 @@ async function submitStaffForm() {
 
 async function toggleStatus(member) {
   try {
-    const res = await axios.put(`/api/admin/staff/${member.id}`, {
+    const baseUrl = isBranchManager.value ? '/api/manager/staff' : '/api/admin/staff'
+    const res = await axios.put(`${baseUrl}/${member.id}`, {
       is_active: !member.is_active,
-    }, {
-      withCredentials: true
-    })
+    }, { withCredentials: true })
 
     if (res.data.success) {
       loadStaff()
@@ -562,75 +460,30 @@ async function toggleStatus(member) {
   }
 }
 
-async function loadOwnerProfile() {
+// owner profile loading removed from this view
+
+async function setCurrentUserRole() {
   try {
-    const res = await axios.get('/api/owner-profile', { withCredentials: true })
-    if (res.data && res.data.ok) {
-      ownerProfile.value = res.data.user
+    const res = await axios.get('/api/me', { withCredentials: true })
+    if (res.data?.ok && res.data.user) {
+      currentUserRole.value = res.data.user.role
+      currentUserId.value = res.data.user.id
     }
   } catch (e) {
-    // ignore
+    // ignore - default to admin style
+    console.warn('Could not determine current user role', e)
   }
 }
 
 onMounted(() => {
-  loadOwnerProfile()
-  loadStaff()
-  loadBranches()
+  ;(async () => {
+    await setCurrentUserRole()
+    await loadStaff()
+    await loadBranches()
+  })()
 })
 
-function handleInfoClose() {
-  if (isEditingInfo.value) {
-    isEditingInfo.value = false
-  } else {
-    showInfoModal.value = false
-  }
-}
-
-async function saveOwnerInfo() {
-  isSavingProfile.value = true
-  profileError.value = ''
-  profileSuccess.value = ''
-  try {
-    const payload = {
-      fullName: ownerProfile.value.fullName,
-      email: ownerProfile.value.email,
-      contact: ownerProfile.value.contact,
-      password: ownerProfile.value.password || undefined,
-      password_confirmation: ownerProfile.value.password_confirmation || undefined,
-    }
-    const res = await axios.put('/api/owner-profile', payload, { withCredentials: true })
-    if (res.data && res.data.ok) {
-      profileSuccess.value = 'Profile updated.'
-      isEditingInfo.value = false
-    } else {
-      profileError.value = res.data?.message || 'Failed to save profile.'
-    }
-  } catch (err) {
-    profileError.value = err.response?.data?.message || 'Failed to save profile.'
-  }
-  isSavingProfile.value = false
-}
-
-function cancelLogout() {
-  if (isLoggingOut.value) return
-  showLogoutConfirm.value = false
-}
-
-async function confirmLogout() {
-  if (isLoggingOut.value) return
-  isLoggingOut.value = true
-  overlayText.value = 'Logging out...'
-  showOverlay.value = true
-  try {
-    await axios.post('/api/logout', {}, { withCredentials: true })
-  } catch (e) {}
-  try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
-  setTimeout(() => {
-    try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
-    try { window.location.replace('/') } catch (e) {}
-  }, 600)
-}
+// owner/profile & logout helpers removed from this view
 
 function displayRole(r) {
   const role = (r || '').toString().toUpperCase()
@@ -655,6 +508,8 @@ async function loadBranches() {
 </script>
 
 <style scoped>
+@import url("../css/adminpanel.css");
+
 .staff-management-page {
   padding: 2rem;
   background: #f5f5f5;
