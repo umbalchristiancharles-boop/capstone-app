@@ -24,6 +24,12 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // API token guard for Sanctum
+        'sanctum' => [
+            'driver' => 'sanctum',
+            'provider' => 'users',
+        ],
     ],
 
     /*

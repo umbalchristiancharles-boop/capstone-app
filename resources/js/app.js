@@ -236,31 +236,96 @@ router.onError(() => {
 // === GLOBAL GUARD PARA PROTECTED ANG /admin-panel ===
 router.beforeEach(async (to, from, next) => {
   // Public routes - allow always
-  if (to.path === '/' || to.path === '/admin-login') {
+  if (to.path === '/' || to.path === '/admin-login' || to.path === '/login') {
     return next()
   }
 
-  // Protected panel routes
+  // CRITICAL: Get user from localStorage for strict role checking
+  let user = null;
+  try {
+    user = JSON.parse(localStorage.getItem('user') || 'null');
+    // Normalize role to lowercase for comparison (database has uppercase: ADMIN, MANAGER, OWNER, STAFF)
+    if (user) {
+      user.role = (user.role || '').toLowerCase();
+    }
+  } catch (e) {
+    console.warn('[ROUTER] Failed to parse user from localStorage:', e);
+  }
+
+  // Protected panel routes - require authentication
   const protectedRoutes = ['/admin-panel', '/manager-panel', '/staff-panel', '/hr-panel', '/staff-management', '/owner/staff-management', '/admin/deleted-staff', '/manager/staff']
   const isProtectedRoute = protectedRoutes.some(route => to.path.startsWith(route)) || to.meta.requiresAuth
 
   if (isProtectedRoute) {
+    // If no user in localStorage, redirect to login
+    if (!user) {
+      console.warn('[ROUTER] No user in localStorage, redirecting to login');
+      return next('/admin-login');
+    }
+
+    // STRICT ROLE CHECK - Manager Inventory should only access /manager/inventory
+    if (to.path.startsWith('/manager/inventory')) {
+      if (user.role !== 'manager' || user.department !== 'inventory') {
+        console.warn('[ROUTER] Manager Inventory - wrong role/department:', user);
+        return next('/admin-login');
+      }
+    }
+    if (to.path.startsWith('/manager/finance')) {
+      if (user.role !== 'manager' || user.department !== 'finance') {
+        return next('/admin-login');
+      }
+    }
+    if (to.path.startsWith('/manager/logistics')) {
+      if (user.role !== 'manager' || user.department !== 'logistics') {
+        return next('/admin-login');
+      }
+    }
+    if (to.path.startsWith('/manager/hr')) {
+      if (user.role !== 'manager' || user.department !== 'hr') {
+        return next('/admin-login');
+      }
+    }
+
+    // Staff Inventory should only access /staff/inventory
+    if (to.path.startsWith('/staff/inventory')) {
+      if (user.role !== 'staff' || user.department !== 'inventory') {
+        console.warn('[ROUTER] Staff Inventory - wrong role/department:', user);
+        return next('/admin-login');
+      }
+    }
+    if (to.path.startsWith('/staff/cashier')) {
+      if (user.role !== 'staff' || user.department !== 'cashier') {
+        return next('/admin-login');
+      }
+    }
+    if (to.path.startsWith('/staff/finance')) {
+      if (user.role !== 'staff' || user.department !== 'finance') {
+        return next('/admin-login');
+      }
+    }
+
+    // Owner panel
+    if (to.path.startsWith('/owner-panel') || to.path.startsWith('/owner/')) {
+      if (user.role !== 'owner') {
+        return next('/admin-login');
+      }
+    }
+
+    // Admin panel
+    if (to.path === '/admin-panel') {
+      if (user.role !== 'admin') {
+        return next('/admin-login');
+      }
+    }
+
     // Clear reload flag when navigating away from admin/manager panel
     if (from && (from.path === '/admin-panel' || from.path === '/manager-panel')) {
       try { sessionStorage.removeItem('appReloaded') } catch (e) {}
     }
 
-    // One-time reload for staff-management and staff inventory to sync CSRF
-    if ((to.path === '/staff-management' || to.path === '/owner/staff-management' || to.path === '/manager-panel' || to.path === '/manager/staff' || to.path === '/staff/inventory') && !sessionStorage.getItem('appReloaded')) {
-      try {
-        sessionStorage.setItem('suppressRouteOverlay', '1')
-        sessionStorage.setItem('suppressRouteTransition', '1')
-      } catch (e) {}
-      sessionStorage.setItem('appReloaded', '1')
-      sessionStorage.setItem('preReloadPath', to.path || window.location.pathname)
-      window.location.reload()
-      return
-    }
+    // FIXED: Removed problematic auto-reload that was causing logout for non-admin roles
+    // The reload was unnecessary and caused session/localStorage to be lost
+    // CSRF token is now properly handled by axios interceptor
 
     // Allow navigation to proceed - components will handle auth errors
     return next()
@@ -288,18 +353,8 @@ axios
         axios.defaults.headers.common['X-XSRF-TOKEN'] = xsrfCookie
       }
     }
-    // If the server-rendered page is already at /staff-management,
-    // do a one-time reload to ensure CSRF meta tag and XSRF cookie are fresh
-    if ((window.location.pathname === '/staff-management' || window.location.pathname === '/owner/staff-management' || window.location.pathname === '/manager-panel' || window.location.pathname === '/manager/staff' || window.location.pathname === '/staff/inventory') && !sessionStorage.getItem('appReloaded')) {
-      try {
-        sessionStorage.setItem('suppressRouteOverlay', '1')
-        sessionStorage.setItem('suppressRouteTransition', '1')
-      } catch (e) {}
-      sessionStorage.setItem('appReloaded', '1')
-      sessionStorage.setItem('preReloadPath', window.location.pathname)
-      window.location.reload()
-      return
-    }
+    // FIXED: Removed problematic auto-reload on page load that was causing logout
+    // CSRF token is handled by axios interceptor, no page reload needed
 
     // Central interceptor: try to recover from HTML/index responses or auth failures
     // by refreshing the Sanctum CSRF cookie and retrying the original request once.
@@ -345,21 +400,28 @@ axios
       const req = error.config || {}
       const status = resp && resp.status
 
-      if ((status === 401 || status === 419 || status === 403) || isHtmlResponse(resp || {})) {
+      // FIXED: Only logout on TRUE 401 errors - NOT on 419 (CSRF), 403, or network errors
+      if (status === 401) {
+        console.warn('[AXIOS] 401 Unauthorized - clearing user and redirecting to login')
+        try { localStorage.removeItem('user') } catch (e) {}
+        try { sessionStorage.clear() } catch (e) {}
+        router.replace('/admin-login').catch(() => { window.location.href = '/admin-login' })
+        return Promise.reject(error)
+      }
+
+      // For 419 (CSRF) or 403 (forbidden), try to refresh CSRF instead of logout
+      if ((status === 419 || status === 403) || isHtmlResponse(resp || {})) {
         if (req._retriedForCsrf) {
-          router.replace('/admin-login').catch(() => { window.location.href = '/admin-login' })
           return Promise.reject(error)
         }
         req._retriedForCsrf = true
         const ok = await refreshCsrf()
         if (!ok) {
-          router.replace('/admin-login').catch(() => { window.location.href = '/admin-login' })
           return Promise.reject(error)
         }
         try {
           return axios(req)
         } catch (e) {
-          router.replace('/admin-login').catch(() => { window.location.href = '/admin-login' })
           return Promise.reject(e)
         }
       }

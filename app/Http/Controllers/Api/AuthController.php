@@ -79,8 +79,19 @@ class AuthController extends Controller
         }
 
         // Validate role exists and is valid
-        $validRoles = ['ADMIN', 'MANAGER', 'STAFF', 'HR', 'OWNER'];
+        // Include all expected roles: ADMIN, OWNER, MANAGER, MANAGER_HR, HR, STAFF
+        $validRoles = ['ADMIN', 'OWNER', 'MANAGER', 'MANAGER_HR', 'HR', 'STAFF'];
         $roleUpper = strtoupper(trim($user->role ?? ''));
+
+        // Handle MANAGER_HR role specially - treat as MANAGER with HR department
+        if ($roleUpper === 'MANAGER_HR') {
+            $roleUpper = 'MANAGER';
+            // Set department to HR if not already set
+            if (empty($user->department)) {
+                $user->department = 'HR';
+                $user->save();
+            }
+        }
 
         if (!in_array($roleUpper, $validRoles)) {
             Log::error('Unknown or invalid role detected during login', [
@@ -117,16 +128,21 @@ class AuthController extends Controller
         // Store the authoritative redirect path in session
         Session::put('redirect_path', $redirectPath);
 
+        // Create Sanctum token for API authentication
+        $token = $user->createToken('auth-token')->plainTextToken;
+
         return response()->json([
             'ok' => true,
             'message' => 'Login successful',
             'redirect_path' => $redirectPath,
+            'token' => $token, // Send token to frontend for storage
             'user' => [
                 'id' => $user->id,
                 'username' => $user->username,
-                'role' => $user->role,
-                'department' => $user->department,
+                'role' => strtolower($user->role),
+                'department' => strtolower($user->department ?? ''),
                 'full_name' => $user->full_name,
+                'branch_id' => $user->branch_id,
                 'must_change_password' => (bool) $user->must_change_password,
             ],
         ]);
@@ -136,10 +152,16 @@ class AuthController extends Controller
      * Determine the correct redirect path based on user role and department.
      * This is the server-side authoritative source for routing.
      */
-    private function getRedirectPath(User $user): string
+    private function getRedirectPath($user)
     {
         $role = strtoupper(trim($user->role ?? ''));
         $department = strtoupper(trim($user->department ?? ''));
+
+        // Handle MANAGER_HR - treat as MANAGER with HR department
+        if ($role === 'MANAGER_HR') {
+            $role = 'MANAGER';
+            $department = 'HR';
+        }
 
         // OWNER - highest privilege
         if ($role === 'OWNER') {
@@ -508,7 +530,7 @@ class AuthController extends Controller
         }
     }
 
-    private function resolveAuthenticatedUser(Request $request): ?User
+    private function resolveAuthenticatedUser($request)
     {
         if (Auth::check()) {
             return Auth::user();

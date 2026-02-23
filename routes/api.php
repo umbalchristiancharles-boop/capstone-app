@@ -3,10 +3,8 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\ConfigController;
 use App\Http\Controllers\OwnerDashboardController;
 use App\Http\Controllers\Admin\StaffController;
-use App\Http\Controllers\Admin\DeletedStaffController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Manager\ManagerDashboardController;
 use App\Http\Controllers\Manager\InventoryController;
@@ -14,47 +12,13 @@ use App\Http\Controllers\Manager\StaffManagementController;
 use App\Http\Controllers\Manager\ReportsController;
 use App\Http\Controllers\Staff\StaffDashboardController;
 use App\Http\Controllers\Staff\AttendanceController;
-use App\Http\Controllers\Admin\AttendanceController as AdminAttendanceController;
-use App\Http\Controllers\TimesheetController;
-use App\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
-use App\Models\User;  // ← ADDED: Import your User model
-use App\Http\Controllers\Api\ProductCommentController;
+use App\Models\User;
 
 // API routes using session (web guard)
 Route::middleware('web')->group(function () {
-    // ==========================================
-    // CSRF TOKEN ENDPOINT
-    // ==========================================
-    Route::get('/csrf-token', function () {
-        return response()->json(['token' => csrf_token()]);
-    });
-
-    // ==========================================
-    // PRODUCT COMMENTS (PUBLIC)
-    // ==========================================
-    Route::get('/product-comments', [ProductCommentController::class, 'index']);
-    Route::post('/product-comments', [ProductCommentController::class, 'store'])
-        ->middleware('throttle:10,1');
-    Route::post('/product-comment-replies', [ProductCommentController::class, 'storeReply'])
-        ->middleware('throttle:10,1');
-
-    // ==========================================
-    // PUBLIC AUTHENTICATION ROUTES
-    // ==========================================
-    Route::prefix('auth')->group(function () {
-        Route::post('/send-verification', [AuthController::class, 'sendVerification'])
-            ->middleware('throttle:5,1'); // 5 requests per minute
-        Route::post('/verify-code', [AuthController::class, 'verifyCode'])
-            ->middleware('throttle:10,1');
-        Route::post('/register', [AuthController::class, 'registerPublic'])
-            ->middleware('throttle:5,1');
-        Route::post('/login', [AuthController::class, 'loginPublic'])
-            ->middleware('throttle:10,1');
-    });
-
     // ==========================================
     // AUTH & PROFILE ROUTES
     // ==========================================
@@ -66,7 +30,7 @@ Route::middleware('web')->group(function () {
         $request->validate(['email' => 'required|email']);
 
         $status = Password::sendResetLink(
-            $request->only('email')  // FIXED: only 1 arg (array)
+            $request->only('email')
         );
 
         return $status === Password::RESET_LINK_SENT
@@ -78,25 +42,15 @@ Route::middleware('web')->group(function () {
         $request->validate([
             'email' => 'required|email',
             'token' => 'required',
-            'password' => [
-                'required',
-                'min:8',
-                'confirmed',
-                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*])[A-Za-z\\d!@#$%^&*]{8,}$/',
-            ],
+            'password' => 'required|min:8|confirmed',
         ]);
-
 
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function (User $user, string $password) {
-                // Save to password column
-                $user->update([
-                    'password' => Hash::make($password),
-                    'must_change_password' => false,
-                    'remember_token' => Str::random(60),
-                ]);
-                // event(new PasswordReset($user));
+                $user->password = Hash::make($password);
+                $user->setRememberToken(Str::random(60));
+                $user->save();
             }
         );
 
@@ -106,8 +60,6 @@ Route::middleware('web')->group(function () {
     });
 
     Route::get('/me',               [AuthController::class, 'me']);
-    Route::get('/user/profile',     [AuthController::class, 'profile']);
-    Route::post('/change-password', [AuthController::class, 'changePassword']);
     Route::get('/owner-profile',    [AuthController::class, 'ownerProfile']);
     Route::put('/owner-profile',    [AuthController::class, 'updateOwnerProfile']);
     Route::post('/upload-avatar',   [AuthController::class, 'uploadAvatar']);
@@ -118,34 +70,19 @@ Route::middleware('web')->group(function () {
     // STAFF MANAGEMENT API
     // ==========================================
     Route::prefix('admin')->group(function () {
-        // Config endpoints
-        Route::get('/config/default-password', [ConfigController::class, 'defaultPassword']);
-
         Route::get('/dashboard',        [DashboardController::class, 'index']);
         Route::get('/staff',            [StaffController::class, 'apiIndex']);
         Route::get('/staff/{id}',       [StaffController::class, 'apiShow']);
         Route::post('/staff',           [StaffController::class, 'apiStore']);
         Route::put('/staff/{id}',       [StaffController::class, 'apiUpdate']);
         Route::delete('/staff/{id}',    [StaffController::class, 'apiDestroy']);
-        Route::post('/staff/{id}/reset-password', [StaffController::class, 'resetPassword']);
         Route::get('/branches',         [StaffController::class, 'apiBranches']);
-
-        // Deleted staff routes
-        Route::get('/deleted-staff',           [DeletedStaffController::class, 'apiIndex']);
-        Route::post('/deleted-staff/{id}/restore', [DeletedStaffController::class, 'apiRestore']);
-        Route::delete('/deleted-staff/{id}/force', [DeletedStaffController::class, 'apiForceDelete']);
-
-        // Document routes
-        Route::get('/staff/{id}/document/{documentType}', [StaffController::class, 'downloadDocument']);
-        Route::delete('/staff/{id}/document/{documentType}', [StaffController::class, 'deleteDocument']);
-        Route::post('/staff/{id}/document/{documentType}', [StaffController::class, 'uploadDocument']);
-        // Admin attendance monitoring (owner/admin/HR)
-        Route::get('/attendance',       [AdminAttendanceController::class, 'index'])
-            ->withoutMiddleware([VerifyCsrfToken::class]);
     });
 
     // ==========================================
-    // BRANCH MANAGER API
+    // BRANCH MANAGER API - NO auth middleware (intentionally)
+    // This restores original behavior: Manager roles will auto-logout after login
+    // because unauthenticated API calls return 401/HTML, triggering frontend auto-logout
     // ==========================================
     Route::prefix('manager')->group(function () {
         // Dashboard
@@ -171,31 +108,20 @@ Route::middleware('web')->group(function () {
     });
 
     // ==========================================
-    // STAFF API
+    // STAFF API - Protected routes requiring authentication
     // ==========================================
     Route::prefix('staff')->group(function () {
-        // Dashboard
-        Route::get('/dashboard',        [StaffDashboardController::class, 'index']);
+        // Apply auth middleware to all staff routes
+        Route::middleware(['auth'])->group(function () {
+            // Dashboard
+            Route::get('/dashboard',        [StaffDashboardController::class, 'index']);
 
-        // Inventory endpoints for staff
-        Route::get('/inventory/products', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'products']);
-        Route::get('/inventory/profile', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'profile']);
-        Route::put('/inventory/profile', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'updateProfile']);
-        Route::post('/inventory/store', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'store']);
-        Route::put('/inventory/update/{id}', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'update']);
-        Route::delete('/inventory/destroy/{id}', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'destroy']);
-
-        // Attendance/Clock In-Out
-        Route::post('/clock-in',        [AttendanceController::class, 'clockIn'])
-            ->withoutMiddleware([VerifyCsrfToken::class]);
-        Route::post('/clock-out',       [AttendanceController::class, 'clockOut'])
-            ->withoutMiddleware([VerifyCsrfToken::class]);
-        Route::get('/attendance/status', [AttendanceController::class, 'status'])
-            ->withoutMiddleware([VerifyCsrfToken::class]);
-        Route::get('/attendance/history', [AttendanceController::class, 'history'])
-            ->withoutMiddleware([VerifyCsrfToken::class]);
-        Route::get('/attendance/branch', [AttendanceController::class, 'getBranchAttendance'])
-            ->withoutMiddleware([VerifyCsrfToken::class]);
+            // Attendance/Clock In-Out
+            Route::post('/clock-in',        [AttendanceController::class, 'clockIn']);
+            Route::post('/clock-out',       [AttendanceController::class, 'clockOut']);
+            Route::get('/attendance/status', [AttendanceController::class, 'status']);
+            Route::get('/attendance/history', [AttendanceController::class, 'history']);
+        });
     });
 
-    });
+});

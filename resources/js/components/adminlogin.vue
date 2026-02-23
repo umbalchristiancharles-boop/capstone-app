@@ -180,6 +180,29 @@ async function handleLogin() {
         if (res.data.ok) {
             overlayText.value = "Loading panel...";
 
+            // CRITICAL: Save user to localStorage for router guard
+            const userData = {
+                id: res.data.user?.id,
+                username: res.data.user?.username,
+                role: (res.data.user?.role || '').toLowerCase(), // Normalize to lowercase
+                department: (res.data.user?.department || '').toLowerCase(), // Normalize to lowercase
+                full_name: res.data.user?.full_name,
+                branch_id: res.data.user?.branch_id
+            };
+
+            try {
+                localStorage.setItem('user', JSON.stringify(userData));
+                console.debug('[LOGIN] User saved to localStorage:', userData);
+
+                // Store Sanctum token if provided
+                if (res.data.token) {
+                    localStorage.setItem('auth_token', res.data.token);
+                    console.debug('[LOGIN] Token saved to localStorage');
+                }
+            } catch (e) {
+                console.error('[LOGIN] Failed to save user to localStorage:', e);
+            }
+
             // Use server-provided redirect_path as the authoritative source
             // This ensures proper role-based redirection from backend validation
             let redirectPath = res.data.redirect_path;
@@ -216,14 +239,28 @@ async function handleLogin() {
             errorMsg.value = res.data.message || "Login failed.";
         }
     } catch (e) {
+        // Show more specific error message based on response
+        if (e.response && e.response.data) {
+            const data = e.response.data;
+            if (data.message) {
+                errorMsg.value = data.message;
+            } else if (data.error) {
+                errorMsg.value = data.error;
+            } else {
+                errorMsg.value = "Invalid username or password.";
+            }
+        } else if (e.request) {
+            errorMsg.value = "Server not responding. Please check your connection.";
+        } else {
+            errorMsg.value = "Invalid username or password.";
+        }
+
         try {
-            console.warn('[LOGIN] error:', e && e.response ? {
+            console.warn('[LOGIN] error:', e.response ? {
                 status: e.response.status,
-                headers: e.response.headers,
                 data: e.response.data,
             } : e)
         } catch (ee) {}
-        errorMsg.value = "Invalid username or password.";
     } finally {
         isLoading.value = false;
     }
@@ -244,8 +281,13 @@ function handleBack() {
 
 function resolveRedirectPath(role, department) {
     // Use case-insensitive comparison by normalizing to uppercase
-    const r = (role || '').toString().trim().toUpperCase();
+    let r = (role || '').toString().trim().toUpperCase();
     const d = (department || '').toString().trim().toUpperCase();
+
+    // Handle MANAGER_HR role specially - treat as MANAGER with HR department
+    if (r === 'MANAGER_HR') {
+        return '/manager/hr';
+    }
 
     // If department explicitly indicates inventory/finance/etc, prefer that
     if (d.includes('INVENTORY')) return '/manager/inventory'

@@ -11,6 +11,13 @@ class Authenticate
     public function handle(Request $request, Closure $next)
     {
         if (!Session::has('user_id')) {
+            // FIXED: Return JSON for API requests, redirect for web requests
+            if ($request->expectsJson() || $request->is('api/*') || $request->ajax()) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'Unauthenticated. Please login first.',
+                ], 401);
+            }
             return redirect()->route('login')->with('error', 'Please login first.');
         }
 

@@ -11,6 +11,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\CanResetPassword;
 use Illuminate\Support\Facades\Hash;  // ← FIXED: Import Hash
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Laravel\Sanctum\HasApiTokens;
 
 /**
  * @property int $id
@@ -33,7 +34,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class User extends Authenticatable implements CanResetPassword
 {
-    use HasFactory, Notifiable, SoftDeletes;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     protected $table = 'users';
 
