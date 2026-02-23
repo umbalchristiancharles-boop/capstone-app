@@ -22,10 +22,11 @@ echo "  Role: {$user->role}\n";
 echo "  Password Hash: {$user->password}\n\n";
 
 // Test various passwords
+$defaultPw = config('chikintayo.default_password');
 $testPasswords = [
     'Paul@123',
     'paul@123',
-    'ChikinTayo_2526',
+    $defaultPw,
     'Paul Berrer',
     'paulberrer',
 ];

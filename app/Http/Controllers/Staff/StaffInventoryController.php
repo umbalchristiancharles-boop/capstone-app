@@ -58,19 +58,34 @@ class StaffInventoryController extends Controller
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
-            'sku' => 'required|string|unique:products,sku',
+            'sku' => 'nullable|string|unique:products,sku',
         ]);
 
         /** @var \App\Models\User $user */
         $user = Auth::user();
         $branchId = $user->branch_id;
 
+        // If SKU not provided, generate a unique SKU automatically.
+        if (empty($validated['sku'])) {
+            $base = strtoupper(preg_replace('/[^A-Z0-9]+/i', '', substr($validated['name'], 0, 6)));
+            if ($base === '') {
+                $base = 'PRD';
+            }
+            // Try a few times to avoid collisions
+            do {
+                $random = strtoupper(Str::random(4));
+                $sku = $base . '-' . $random;
+            } while (Product::where('sku', $sku)->exists());
+        } else {
+            $sku = $validated['sku'];
+        }
+
         $product = Product::create([
             'name' => $validated['name'],
             'slug' => Str::slug($validated['name']),
             'price' => $validated['price'],
             'stock' => $validated['stock'],
-            'sku' => $validated['sku'],
+            'sku' => $sku,
             'branch_id' => $branchId,
         ]);
 

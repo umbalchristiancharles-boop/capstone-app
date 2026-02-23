@@ -55,7 +55,7 @@ class StaffController extends Controller
                 ->where('is_active', 1);
 
             // If branch manager or HR, only show their branch
-            if (in_array($user->role, ['BRANCH_MANAGER', 'HR'])) {
+            if (in_array($user->role, ['BRANCH_MANAGER', 'MANAGER', 'HR'])) {
                 $branchesQuery->where('branches.id', $user->branch_id);
             }
 
@@ -69,7 +69,7 @@ class StaffController extends Controller
                 // Get branch manager for this branch
                 $branchManager = DB::table('users')
                     ->where('branch_id', $branch->id)
-                    ->where('role', 'BRANCH_MANAGER')
+                    ->whereIn('role', ['BRANCH_MANAGER', 'MANAGER'])
                     ->where('is_active', 1)
                     ->whereNull('deleted_at') // Exclude soft deleted
                     ->first();
@@ -101,7 +101,7 @@ class StaffController extends Controller
                         'phone_number' => $branchManager->phone_number,
                         'department' => $branchManager->department ?? '',
                         'address' => $branchManager->address,
-                        'role' => 'BRANCH_MANAGER',
+                        'role' => $branchManager->role,
                         'is_active' => $branchManager->is_active,
                     ];
                 }
@@ -219,7 +219,7 @@ class StaffController extends Controller
         $staff = DB::table('users')
             ->leftJoin('branches', 'users.branch_id', '=', 'branches.id')
             ->where('users.id', $id)
-            ->whereIn('users.role', ['BRANCH_MANAGER', 'STAFF', 'HR'])
+            ->whereIn('users.role', ['BRANCH_MANAGER', 'MANAGER', 'STAFF', 'HR'])
             ->whereNull('users.deleted_at') // Exclude soft deleted
             ->select(
                 'users.id',
@@ -280,6 +280,49 @@ class StaffController extends Controller
     }
 
     /**
+     * Reset a staff member's password to the default and require change on next login.
+     */
+    public function resetPassword(Request $request, $id)
+    {
+        $user = Auth::user();
+        if (! $user) {
+            return response()->json(['success' => false, 'message' => 'Not authenticated'], 401);
+        }
+
+        // Only allow OWNER/ADMIN to reset any account. Branch managers / HR may reset within their branch.
+        $target = User::find($id);
+        if (! $target) {
+            return response()->json(['success' => false, 'message' => 'User not found'], 404);
+        }
+
+        if (in_array($user->role, ['BRANCH_MANAGER', 'MANAGER', 'HR'])) {
+            // ensure same branch
+            if (! $user->branch_id || $user->branch_id != $target->branch_id) {
+                return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+            }
+        } elseif (! in_array($user->role, ['OWNER', 'ADMIN'])) {
+            return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+        }
+
+        try {
+            $defaultPassword = config('chikintayo.default_password');
+            // Assign plain password so the User model mutator hashes it exactly once
+            $target->password = $defaultPassword;
+            $target->must_change_password = 1;
+            $target->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Password reset to default successfully',
+                'defaultPassword' => $defaultPassword,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to reset password for user ' . $id . ': ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Failed to reset password'], 500);
+        }
+    }
+
+    /**
      * Create staff (JSON)
      */
     public function apiStore(Request $request)
@@ -300,7 +343,7 @@ class StaffController extends Controller
             $allowedRoles = [];
             if (in_array($user->role, ['OWNER', 'ADMIN'])) {
                 // Allow owners/admins to create owner, branch managers, HR, and staff accounts
-                $allowedRoles = ['OWNER', 'BRANCH_MANAGER', 'HR', 'STAFF'];
+                $allowedRoles = ['OWNER', 'BRANCH_MANAGER', 'MANAGER', 'HR', 'STAFF'];
             } elseif ($user->role === 'BRANCH_MANAGER') {
                 $allowedRoles = ['HR', 'STAFF'];
             } else {
@@ -378,15 +421,15 @@ class StaffController extends Controller
 
             $role = strtoupper($requestedRole);
 
-            // Use frontend-provided password or default
-            $defaultPassword = !empty($password) ? $password : 'ChikinTayo_2526';
+            // Use frontend-provided password or default from config
+            $defaultPassword = !empty($password) ? $password : config('chikintayo.default_password');
             $branchId = $branchId ?? null;
 
             // Check if branch already has a manager (if creating BRANCH_MANAGER)
-            if ($role === 'BRANCH_MANAGER' && $branchId) {
+            if (in_array($role, ['BRANCH_MANAGER', 'MANAGER']) && $branchId) {
                 $existingManager = DB::table('users')
                     ->where('branch_id', $branchId)
-                    ->where('role', 'BRANCH_MANAGER')
+                    ->whereIn('role', ['BRANCH_MANAGER', 'MANAGER'])
                     ->where('is_active', 1)
                     ->whereNull('deleted_at') // Exclude soft deleted
                     ->exists();
@@ -406,7 +449,7 @@ class StaffController extends Controller
                 ], 403);
             }
 
-            if ($user->role === 'BRANCH_MANAGER' && $user->branch_id && $branchId && (int) $branchId !== (int) $user->branch_id) {
+            if (in_array($user->role, ['BRANCH_MANAGER', 'MANAGER']) && $user->branch_id && $branchId && (int) $branchId !== (int) $user->branch_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Forbidden'
@@ -421,6 +464,9 @@ class StaffController extends Controller
 
             // Fix: department must be NULL for OWNER, or if not set/invalid
             $departmentValue = $request->input('department');
+            if (is_string($departmentValue) && $departmentValue !== '') {
+                $departmentValue = strtoupper($departmentValue);
+            }
             if ($role === 'OWNER' || $departmentValue === null || $departmentValue === '' || !in_array($departmentValue, ['HR', 'FINANCE', 'INVENTORY', 'LOGISTICS', 'CASHIER'])) {
                 $departmentValue = null;
             }
@@ -480,7 +526,7 @@ class StaffController extends Controller
             Log::info('Staff created:', ['id' => $staffId, 'role' => $role]);
 
             $roleLabel = 'Staff';
-            if ($role === 'BRANCH_MANAGER') $roleLabel = 'Branch Manager';
+            if (in_array($role, ['BRANCH_MANAGER', 'MANAGER'])) $roleLabel = 'Manager';
             elseif ($role === 'HR') $roleLabel = 'HR';
             elseif ($role === 'OWNER') $roleLabel = 'Owner';
 
@@ -548,7 +594,7 @@ class StaffController extends Controller
                 'branchId' => 'nullable|exists:branches,id',
                 'branch_id' => 'nullable|exists:branches,id',
                 // allow OWNER as well so admin/owner accounts can be edited here
-                'role' => 'required|in:BRANCH_MANAGER,STAFF,HR,OWNER',
+                'role' => 'required|in:BRANCH_MANAGER,MANAGER,STAFF,HR,OWNER',
                 'isActive' => 'required|boolean',
             ]);
 
@@ -596,10 +642,10 @@ class StaffController extends Controller
             }
 
             // Check if branch already has a manager (if changing to BRANCH_MANAGER)
-            if (($request->input('role') ?? $staff->role) === 'BRANCH_MANAGER') {
+            if (in_array(($request->input('role') ?? $staff->role), ['BRANCH_MANAGER', 'MANAGER'])) {
                 $existingManager = DB::table('users')
                     ->where('branch_id', $branchId)
-                    ->where('role', 'BRANCH_MANAGER')
+                    ->whereIn('role', ['BRANCH_MANAGER', 'MANAGER'])
                     ->where('is_active', 1)
                     ->where('id', '!=', $id)
                     ->whereNull('deleted_at') // Exclude soft deleted
@@ -628,7 +674,7 @@ class StaffController extends Controller
                 'address' => $request->input('address'),
                 'branch_id' => $branchId,
                 'role' => $request->input('role'),
-                'department' => $request->input('department') ?? '',
+                'department' => is_string($request->input('department')) ? strtoupper($request->input('department')) : ($request->input('department') ?? ''),
                 'is_active' => (bool) $request->input('isActive'),
                 'updated_at' => now(),
             ];
@@ -691,7 +737,7 @@ class StaffController extends Controller
             }
 
             // Check if user is BRANCH_MANAGER, STAFF or HR
-            if (! in_array($user->role, ['BRANCH_MANAGER', 'STAFF', 'HR'])) {
+            if (! in_array($user->role, ['BRANCH_MANAGER', 'MANAGER', 'STAFF', 'HR'])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Invalid user role'
@@ -713,7 +759,7 @@ class StaffController extends Controller
             Log::info('Staff soft deleted:', ['id' => $id, 'role' => $user->role]);
             return response()->json([
                 'success' => true,
-                'message' => ($user->role === 'BRANCH_MANAGER' ? 'Branch Manager' : ($user->role === 'HR' ? 'HR' : 'Staff')) . ' account moved to deleted history successfully!'
+                'message' => (in_array($user->role, ['BRANCH_MANAGER', 'MANAGER']) ? 'Manager' : ($user->role === 'HR' ? 'HR' : 'Staff')) . ' account moved to deleted history successfully!'
             ]);
 
         } catch (\Exception $e) {

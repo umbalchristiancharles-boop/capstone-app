@@ -73,14 +73,17 @@ class StaffManagementController extends Controller
             'department' => 'nullable|string|max:100',
         ]);
 
-        $defaultPassword = 'ChikinTayo_2526';
+        $defaultPassword = config('chikintayo.default_password');
+
+        $dept = $request->input('department', null);
+        if (is_string($dept) && $dept !== '') $dept = strtoupper($dept);
 
         $staff = User::create([
             'username' => $request->username,
             'email' => $request->email,
             'full_name' => $request->full_name,
             'phone_number' => $request->phone_number,
-            'department' => $request->input('department', null),
+            'department' => $dept,
             'password' => $defaultPassword, // Mutator will hash this automatically
             'role' => 'STAFF', // Branch Manager can only create STAFF
             'branch_id' => $user->branch_id, // Assign to manager's branch
@@ -129,7 +132,12 @@ class StaffManagementController extends Controller
             'is_active' => 'sometimes|boolean',
         ]);
 
-        $staff->update($request->only(['full_name', 'email', 'phone_number', 'department', 'is_active']));
+        $updateData = $request->only(['full_name', 'email', 'phone_number', 'department', 'is_active']);
+        if (isset($updateData['department']) && is_string($updateData['department'])) {
+            $updateData['department'] = strtoupper($updateData['department']);
+        }
+
+        $staff->update($updateData);
 
         return response()->json([
             'success' => true,

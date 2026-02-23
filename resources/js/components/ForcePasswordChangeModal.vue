@@ -81,7 +81,7 @@ import axios from 'axios'
 const props = defineProps({
   show: { type: Boolean, default: false },
   username: { type: String, default: '' },
-  defaultPassword: { type: String, default: 'ChikinTayo_2526' }
+  defaultPassword: { type: String, default: '' }
 })
 
 const emit = defineEmits(['completed', 'cancel'])
@@ -146,6 +146,23 @@ watch(() => props.show, (val) => {
   }
 })
 
+// If defaultPassword not provided as prop, try fetching from API when shown
+watch(() => props.show, async (val) => {
+  if (val && (!props.defaultPassword || props.defaultPassword === '')) {
+    try {
+      const res = await axios.get('/api/admin/config/default-password', { withCredentials: true })
+      if (res.data && res.data.success && res.data.default_password) {
+        // store fetched default locally
+        fetchedDefault.value = res.data.default_password
+      }
+    } catch (e) {
+      // ignore failures — fallback will be empty
+    }
+  }
+})
+
+const fetchedDefault = ref('')
+
 async function submit() {
   if (isSubmitting.value) return
   error.value = ''
@@ -173,8 +190,9 @@ async function submit() {
       metaTag.setAttribute('content', freshToken)
     }
 
+    const currentPassword = props.defaultPassword && props.defaultPassword !== '' ? props.defaultPassword : fetchedDefault.value
     const res = await axios.post('/api/change-password', {
-      current_password: props.defaultPassword,
+      current_password: currentPassword,
       new_password: newPassword.value,
       new_password_confirmation: confirmPassword.value,
     })

@@ -65,15 +65,14 @@ function cancelLogout() {
 async function confirmLogout() {
   if (isLoggingOut.value) return
   isLoggingOut.value = true
+  try { try { localStorage.clear(); sessionStorage.clear(); } catch (e) {} window.location.replace('/logout') } catch (e) {}
   overlayText.value = 'Logging out...'
+  try { if (window.pageBlur && typeof window.pageBlur.show === 'function') window.pageBlur.show() } catch (e) {}
   showOverlay.value = true
-  try {
-    await axios.post('/api/logout', {}, { withCredentials: true })
-  } catch (e) {}
-  try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
+  showLogoutConfirm.value = false
   setTimeout(() => {
     try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
-    try { window.location.replace('/') } catch (e) { router.push('/').catch(() => {}) }
+    try { window.location.replace('/') ; window.location.reload(); } catch (e) { router.push('/').catch(() => {}) }
   }, 600)
 }
 

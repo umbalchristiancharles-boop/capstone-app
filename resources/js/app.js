@@ -250,8 +250,8 @@ router.beforeEach(async (to, from, next) => {
       try { sessionStorage.removeItem('appReloaded') } catch (e) {}
     }
 
-    // One-time reload for staff-management to sync CSRF
-    if ((to.path === '/staff-management' || to.path === '/owner/staff-management' || to.path === '/manager-panel' || to.path === '/manager/staff') && !sessionStorage.getItem('appReloaded')) {
+    // One-time reload for staff-management and staff inventory to sync CSRF
+    if ((to.path === '/staff-management' || to.path === '/owner/staff-management' || to.path === '/manager-panel' || to.path === '/manager/staff' || to.path === '/staff/inventory') && !sessionStorage.getItem('appReloaded')) {
       try {
         sessionStorage.setItem('suppressRouteOverlay', '1')
         sessionStorage.setItem('suppressRouteTransition', '1')
@@ -290,7 +290,7 @@ axios
     }
     // If the server-rendered page is already at /staff-management,
     // do a one-time reload to ensure CSRF meta tag and XSRF cookie are fresh
-    if ((window.location.pathname === '/staff-management' || window.location.pathname === '/owner/staff-management' || window.location.pathname === '/manager-panel' || window.location.pathname === '/manager/staff') && !sessionStorage.getItem('appReloaded')) {
+    if ((window.location.pathname === '/staff-management' || window.location.pathname === '/owner/staff-management' || window.location.pathname === '/manager-panel' || window.location.pathname === '/manager/staff' || window.location.pathname === '/staff/inventory') && !sessionStorage.getItem('appReloaded')) {
       try {
         sessionStorage.setItem('suppressRouteOverlay', '1')
         sessionStorage.setItem('suppressRouteTransition', '1')

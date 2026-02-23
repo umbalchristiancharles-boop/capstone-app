@@ -191,6 +191,7 @@
           </div>
           <div class="modal-footer">
             <button @click="showAddStaffModal = false" class="btn-secondary">Cancel</button>
+            <button v-if="isEditingStaff" @click="resetPassword" :disabled="isResetting" class="btn-warning">{{ isResetting ? 'Resetting...' : 'Reset Password' }}</button>
             <button @click="submitStaffForm" class="btn-primary">
               {{ isEditingStaff ? 'Update Staff' : 'Add Staff' }}
             </button>
@@ -336,6 +337,31 @@ async function loadStaff() {
     errorMessage.value = 'Error loading staff. Please try again.'
   } finally {
     isLoading.value = false
+  }
+}
+
+// Reset password from admin modal
+const isResetting = ref(false)
+async function resetPassword() {
+  if (!isEditingStaff.value || !editingStaffId.value) return
+  if (!confirm(`Reset password for "${newStaff.value.username || newStaff.value.full_name}" to default?`)) return
+  isResetting.value = true
+  try {
+    await axios.get('/sanctum/csrf-cookie', { withCredentials: true }).catch(() => {})
+    const res = await axios.post(`/api/admin/staff/${editingStaffId.value}/reset-password`, {}, { withCredentials: true })
+    if (res.data && res.data.success) {
+      alert(res.data.message || 'Password reset successfully')
+      if (res.data.defaultPassword) alert('Default password: ' + res.data.defaultPassword)
+      await loadStaff()
+      showAddStaffModal.value = false
+    } else {
+      alert(res.data?.message || 'Failed to reset password')
+    }
+  } catch (e) {
+    console.error('Reset error:', e)
+    alert(e.response?.data?.message || 'Failed to reset password')
+  } finally {
+    isResetting.value = false
   }
 }
 

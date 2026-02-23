@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 23, 2026 at 05:57 AM
+-- Generation Time: Feb 23, 2026 at 10:53 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -229,7 +229,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (32, '2026_02_17_212000_add_phone_number_to_users_table', 4),
 (33, '2026_02_17_211000_add_address_to_users_table', 5),
 (34, '2026_02_17_210000_add_is_active_to_users_table', 6),
-(35, '2026_02_17_215000_add_full_name_to_users_table', 7);
+(35, '2026_02_17_215000_add_full_name_to_users_table', 7),
+(36, '2026_02_23_000000_create_stock_adjustments_table', 8);
 
 -- --------------------------------------------------------
 
@@ -355,6 +356,14 @@ CREATE TABLE `products` (
   `branch_id` bigint(20) UNSIGNED NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `products`
+--
+
+INSERT INTO `products` (`id`, `name`, `slug`, `created_at`, `updated_at`, `price`, `stock`, `sku`, `branch_id`) VALUES
+(2, 'pepmo', 'pepmo', '2026-02-23 06:36:51', '2026-02-23 07:36:49', 150.00, 2, 'PRD-LJWD', 5),
+(3, 'Water', 'water', '2026-02-23 07:36:29', '2026-02-23 07:36:29', 150.00, 23, 'PRD-VUCK', 5);
+
 -- --------------------------------------------------------
 
 --
@@ -394,7 +403,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('oPwsfdUc8u8uFkrIBN4RWEKBaHRU2fm8tSLc1cUk', 2, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiSFJwM0NEMlhNTHBWYklyOHFMQlMyV095MUgwZFdSckZsV2Nsd2xpVyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mzg6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1tYW5hZ2VtZW50IjtzOjU6InJvdXRlIjtzOjIyOiJhZG1pbi5zdGFmZi1tYW5hZ2VtZW50Ijt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MjtzOjc6InVzZXJfaWQiO2k6MjtzOjk6InVzZXJfcm9sZSI7czo1OiJBRE1JTiI7czo5OiJ1c2VyX25hbWUiO3M6MTA6Ik1haW4gQWRtaW4iO3M6MTM6InJlZGlyZWN0X3BhdGgiO3M6MTI6Ii9hZG1pbi1wYW5lbCI7fQ==', 1771822401);
+('BmD2710NI4d2PeVZqqSONeu970ftJTncPdubuMBL', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiRjFjRzdWT0RKMTNha0dxbmtEaFhEYWhBemE3cTRPWTFJVWNnVlZ3ZSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzM6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9vd25lci1wYW5lbCI7czo1OiJyb3V0ZSI7Tjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTtzOjc6InVzZXJfaWQiO2k6MTtzOjk6InVzZXJfcm9sZSI7czo1OiJPV05FUiI7czo5OiJ1c2VyX25hbWUiO3M6ODoiT3duZXIgQ1QiO3M6MTM6InJlZGlyZWN0X3BhdGgiO3M6MTI6Ii9vd25lci1wYW5lbCI7fQ==', 1771839480);
 
 -- --------------------------------------------------------
 
@@ -426,9 +435,27 @@ CREATE TABLE `staff_documents` (
 --
 
 INSERT INTO `staff_documents` (`id`, `user_id`, `resume_path`, `government_id_path`, `psa_birth_certificate_path`, `nbi_clearance_path`, `police_clearance_path`, `medical_certificate_path`, `drug_test_result_path`, `sss_id_path`, `philhealth_id_path`, `pagibig_mdf_path`, `tin_id_path`, `diploma_transcript_path`, `created_at`, `updated_at`) VALUES
-(1, 4, 'staff-documents/4/resume.png', 'staff-documents/4/government_id.png', 'staff-documents/4/psa_birth_certificate.png', 'staff-documents/4/nbi_clearance.png', 'staff-documents/4/police_clearance.png', 'staff-documents/4/medical_certificate.png', 'staff-documents/4/drug_test_result.png', 'staff-documents/4/sss_id.png', 'staff-documents/4/philhealth_id.png', 'staff-documents/4/pagibig_mdf.png', 'staff-documents/4/tin_id.png', 'staff-documents/4/diploma_transcript.png', '2026-02-19 07:39:55', '2026-02-19 07:39:55'),
 (2, 6, NULL, 'staff-documents/6/government_id.png', 'staff-documents/6/psa_birth_certificate.png', 'staff-documents/6/nbi_clearance.png', 'staff-documents/6/police_clearance.png', 'staff-documents/6/medical_certificate.png', 'staff-documents/6/drug_test_result.png', 'staff-documents/6/sss_id.png', 'staff-documents/6/philhealth_id.png', 'staff-documents/6/pagibig_mdf.png', 'staff-documents/6/tin_id.png', 'staff-documents/6/diploma_transcript.png', '2026-02-19 17:49:31', '2026-02-19 17:49:31'),
-(3, 8, NULL, 'staff-documents/8/government_id.png', 'staff-documents/8/psa_birth_certificate.png', 'staff-documents/8/nbi_clearance.png', 'staff-documents/8/police_clearance.png', 'staff-documents/8/medical_certificate.png', 'staff-documents/8/drug_test_result.png', 'staff-documents/8/sss_id.png', 'staff-documents/8/philhealth_id.png', 'staff-documents/8/pagibig_mdf.png', 'staff-documents/8/tin_id.png', 'staff-documents/8/diploma_transcript.png', '2026-02-21 07:28:01', '2026-02-21 07:28:01');
+(8, 13, NULL, 'staff-documents/13/government_id.png', 'staff-documents/13/psa_birth_certificate.png', 'staff-documents/13/nbi_clearance.png', 'staff-documents/13/police_clearance.png', 'staff-documents/13/medical_certificate.png', 'staff-documents/13/drug_test_result.png', 'staff-documents/13/sss_id.png', 'staff-documents/13/philhealth_id.png', 'staff-documents/13/pagibig_mdf.png', 'staff-documents/13/tin_id.png', 'staff-documents/13/diploma_transcript.png', '2026-02-23 09:35:42', '2026-02-23 09:35:42');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `stock_adjustments`
+--
+
+CREATE TABLE `stock_adjustments` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `product_id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `branch_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `previous_stock` int(11) NOT NULL DEFAULT 0,
+  `new_stock` int(11) NOT NULL DEFAULT 0,
+  `delta` int(11) NOT NULL DEFAULT 0,
+  `note` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -465,11 +492,10 @@ CREATE TABLE `users` (
 INSERT INTO `users` (`id`, `email`, `username`, `full_name`, `name`, `password`, `email_verified_at`, `role`, `branch_id`, `avatar_url`, `phone_number`, `address`, `is_active`, `department`, `remember_token`, `created_at`, `updated_at`, `deleted_at`, `must_change_password`) VALUES
 (1, 'owner12@example.com', 'owner', 'Owner CT', NULL, '$2y$12$VJUll4ZOxJiysf4O7zLXc.LCL78XSzpGNcX9Oh4nUGkMjOIsbudEq', '2026-02-17 14:41:30', 'OWNER', NULL, NULL, '09081717813', '123 Main St', 1, 'HR', NULL, '2026-02-17 14:41:30', '2026-02-17 16:21:23', NULL, 0),
 (2, 'admin_main@example.com', 'admin_main', 'Main Admin', NULL, '$2y$12$YkAwoJ2uovKAo1v5f4ZOLOAa0zyTekL2j5J8ZegQAsMkYbVLM1X2C', '2026-02-17 14:46:48', 'ADMIN', NULL, '/storage/avatars/avatar_2_1771572511.png', '09171234567', 'Admin HQ', 1, 'HR', NULL, '2026-02-17 14:46:48', '2026-02-17 14:46:48', NULL, 0),
-(4, 'gab@gmail.com', 'gab', 'gab ongs', NULL, '$2y$12$tlCShykOjGeYR9hW7QW0meBrTXw.J.HEVH4bPOxFzXv2FTpicYuQW', NULL, 'BRANCH_MANAGER', 3, NULL, '09156818857', NULL, 1, 'HR', NULL, '2026-02-19 07:39:55', '2026-02-20 03:32:49', NULL, 0),
 (5, 'John@gmail.com', 'John', 'Johnys', NULL, '$2y$12$tOzQICKP7Ga4dVNbh9Bmae16hRHm3tur4t8uFtAILKD90O8M.AF.q', NULL, 'STAFF', 2, NULL, '09156818858', 's', 1, 'INVENTORY', NULL, '2026-02-19 10:59:04', '2026-02-20 03:33:51', NULL, 0),
-(6, 'janne@gmail.com', 'Janne', 'Janne De Guzman', NULL, '$2y$12$5xIqDK8xH4WU9MpjjyBZA.hRGqiaZrTkn30TjgzKENTeHDxrS8k3O', NULL, 'STAFF', 5, NULL, '09156818859', '2312455', 1, 'INVENTORY', NULL, '2026-02-19 17:49:30', '2026-02-20 03:32:24', NULL, 1),
+(6, 'janne@gmail.com', 'Janne', 'Janne De Guzman', NULL, '$2y$12$22avZGqhZl5rare6u0xG7efGZEUUvNWL2AE8XXQ8J7WHtBBVW6h2G', NULL, 'STAFF', 5, NULL, '09156818859', '2312455', 1, 'INVENTORY', NULL, '2026-02-19 17:49:30', '2026-02-23 05:07:37', NULL, 0),
 (7, 'park@gmail.com', 'Park', 'mr.Parks', NULL, '$2y$12$GOJjIOufxuFrp5o3Ho.UMOsyIrF4vE1.qVL1WF8yV0f/pOujDfjA.', NULL, 'OWNER', NULL, NULL, '09156818853', '', 1, NULL, NULL, '2026-02-20 07:23:35', '2026-02-21 06:55:23', NULL, 0),
-(8, 'robert@gmail.com', 'Robert', 'Robert Downie', NULL, '$2y$12$DwUYoOcKVyt.maIktVGaNe6vcuY0iYIKcvaA2XjoUwP/UpDuDYl4S', NULL, 'BRANCH_MANAGER', 2, NULL, '0915681881', '2314', 1, 'INVENTORY', NULL, '2026-02-21 07:28:00', '2026-02-21 07:28:39', NULL, 0);
+(13, 'robert@gmail.com', 'Robert', 'Robert Downie', NULL, '$2y$12$bCFwvHUmL5gEHBMqxNT6LOWC.kIjGCNPPmi32ZwNYQxx3QQhXzJ72', NULL, 'MANAGER', 2, NULL, '09156818866', '213', 1, 'INVENTORY', NULL, '2026-02-23 09:35:41', '2026-02-23 09:35:41', NULL, 1);
 
 --
 -- Indexes for dumped tables
@@ -602,6 +628,15 @@ ALTER TABLE `staff_documents`
   ADD KEY `staff_documents_user_id_index` (`user_id`);
 
 --
+-- Indexes for table `stock_adjustments`
+--
+ALTER TABLE `stock_adjustments`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `stock_adjustments_product_id_index` (`product_id`),
+  ADD KEY `stock_adjustments_user_id_index` (`user_id`),
+  ADD KEY `stock_adjustments_branch_id_index` (`branch_id`);
+
+--
 -- Indexes for table `users`
 --
 ALTER TABLE `users`
@@ -658,7 +693,7 @@ ALTER TABLE `jobs`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
 
 --
 -- AUTO_INCREMENT for table `orders`
@@ -676,7 +711,7 @@ ALTER TABLE `personal_access_tokens`
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `product_comments`
@@ -688,13 +723,19 @@ ALTER TABLE `product_comments`
 -- AUTO_INCREMENT for table `staff_documents`
 --
 ALTER TABLE `staff_documents`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
+-- AUTO_INCREMENT for table `stock_adjustments`
+--
+ALTER TABLE `stock_adjustments`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- Constraints for dumped tables
@@ -731,6 +772,12 @@ ALTER TABLE `product_comments`
 --
 ALTER TABLE `staff_documents`
   ADD CONSTRAINT `staff_documents_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `stock_adjustments`
+--
+ALTER TABLE `stock_adjustments`
+  ADD CONSTRAINT `stock_adjustments_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

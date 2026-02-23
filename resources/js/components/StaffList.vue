@@ -249,6 +249,7 @@ export default {
       alertMessage: '',
       alertType: 'success',
       deletingIds: [],
+      resettingIds: [],
     }
   },
   async mounted() {
@@ -424,6 +425,30 @@ export default {
         )
       } finally {
         this.deletingIds = this.deletingIds.filter(delId => delId !== id)
+      }
+    },
+
+    async confirmReset(id, username) {
+      if (!confirm(`Reset password for "${username}" to default?`)) return
+      this.resettingIds.push(id)
+      try {
+        await this.ensureCsrf()
+        const res = await axios.post(`/api/admin/staff/${id}/reset-password`, {}, { withCredentials: true })
+        const data = res.data
+        if (res.status === 200 && data.success) {
+          this.showAlert(data.message || 'Password reset successfully', 'success')
+          // Optionally show the default password to admin (caution)
+          if (data.defaultPassword) {
+            this.showAlert('Default password: ' + data.defaultPassword, 'success')
+          }
+          this.fetchStaff()
+        } else {
+          this.showAlert(data.message || 'Failed to reset password', 'error')
+        }
+      } catch (error) {
+        this.showAlert(error.response?.data?.message || 'Failed to reset password', 'error')
+      } finally {
+        this.resettingIds = this.resettingIds.filter(r => r !== id)
       }
     },
 

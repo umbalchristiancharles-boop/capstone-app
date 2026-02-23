@@ -16,7 +16,7 @@ if (! $owner) {
     exit(1);
 }
 
-$new = 'ChikinTayo_2526';
+$new = config('chikintayo.default_password');
 DB::table('users')->where('id', $owner->id)->update([
     'password' => Hash::make($new),
     'must_change_password' => 1,

@@ -58,17 +58,17 @@
 
               <!-- Password -->
               <div class="form-group" v-if="!isEdit">
-                <label for="password" class="form-label">Default Password</label>
+                <label for="password" class="form-label">Password</label>
                 <input
-                  :value="defaultPassword"
-                  type="text"
+                  v-model="form.password"
+                  type="password"
                   id="password"
-                  class="form-input read-only"
-                  readonly
-                  autocomplete="off"
+                  class="form-input"
+                  placeholder="(optional)"
+                  autocomplete="new-password"
                 />
                 <div class="small-hint" style="margin-top:0.35rem; color:#6b7280; font-size:0.9rem;">
-                  Auto-set on create. User must change on first login.
+                  Leave blank to auto-set the default on create. User must change on first login.
                 </div>
               </div>
               <div class="form-group" v-else>
@@ -119,7 +119,7 @@
               <div v-else class="form-group">
                 <label class="form-label">Role *</label>
                 <div class="form-input" style="background-color: #f3f4f6; padding: 0.5rem; border-radius: 8px; display: flex; align-items: center;">
-                  {{ form.role === 'BRANCH_MANAGER' ? 'Branch Manager' : (form.role === 'STAFF' ? 'Staff' : (form.role === 'HR' ? 'HR' : form.role)) }}
+                  {{ (form.role === 'BRANCH_MANAGER' || form.role === 'MANAGER') ? 'Manager' : (form.role === 'STAFF' ? 'Staff' : (form.role === 'HR' ? 'HR' : form.role)) }}
                 </div>
               </div>
 
@@ -250,6 +250,15 @@
               Cancel
             </button>
             <button
+              v-if="isEdit"
+              type="button"
+              class="btn btn-warning"
+              :disabled="isResetting"
+              @click="resetPassword"
+            >
+              {{ isResetting ? 'Resetting...' : 'Reset Password' }}
+            </button>
+            <button
               type="submit"
               :disabled="isSubmitting"
               class="btn btn-primary"
@@ -317,7 +326,6 @@ export default {
   emits: ['close', 'success'],
   data() {
     return {
-      defaultPassword: 'ChikinTayo_2526',
       form: {
         id: '',
         username: '',
@@ -340,8 +348,10 @@ export default {
       // documentFiles removed for admin create flow — attachments handled only in edit mode
       // branches removed — owner creation does not need branches
       errorMessage: '',
+      successMessage: '',
       currentUserRole: sessionStorage.getItem('user_role') || null,
       isSubmitting: false,
+      isResetting: false,
       documents: null,
       deletingDocs: [],
       uploadingDocs: {},
@@ -419,7 +429,7 @@ export default {
         address: this.form.address || '',
         branchId: this.form.branchId || '',
         role: this.form.role || 'OWNER',
-        department: this.form.department || '',
+        department: this.form.department || null,
         password: this.defaultPassword,
         province: this.form.province || '',
         city: this.form.city || '',
@@ -616,6 +626,45 @@ export default {
     closeModal() {
       this.errorMessage = ''
       this.$emit('close')
+    },
+
+    async resetPassword() {
+      if (!this.isEdit || !this.form.id) return
+      if (!confirm(`Reset password for "${this.form.username || this.form.fullName}" to default?`)) return
+      this.isResetting = true
+      this.errorMessage = ''
+      this.successMessage = ''
+      try {
+        // ensure CSRF
+        try {
+          const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+          if (csrfToken) axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken
+          await axios.get('/sanctum/csrf-cookie', { withCredentials: true }).catch(() => {})
+          const match = document.cookie.match(new RegExp('(^|; )' + 'XSRF-TOKEN' + '=([^;]*)'))
+          const xsrf = match ? match[2] : null
+          if (xsrf) {
+            try { axios.defaults.headers.common['X-XSRF-TOKEN'] = decodeURIComponent(xsrf) } catch (e) { axios.defaults.headers.common['X-XSRF-TOKEN'] = xsrf }
+          }
+        } catch (e) {
+          console.warn('Failed to refresh CSRF before reset', e)
+        }
+
+        const res = await axios.post(`/api/admin/staff/${this.form.id}/reset-password`, {}, { withCredentials: true })
+        if (res.data && res.data.success) {
+          this.successMessage = res.data.message || 'Password reset to default.'
+          // Optionally show default password (be careful in production)
+          if (res.data.defaultPassword) {
+            this.successMessage += ' Default password: ' + res.data.defaultPassword
+          }
+          this.$emit('success', { reset: true, id: this.form.id })
+        } else {
+          this.errorMessage = res.data?.message || 'Failed to reset password.'
+        }
+      } catch (e) {
+        this.errorMessage = e.response?.data?.message || 'Failed to reset password.'
+      } finally {
+        this.isResetting = false
+      }
     },
 
     getDocumentLabels() {

@@ -5,11 +5,12 @@
         <form @submit.prevent="submitForm">
           <div class="modal-header">
             <h2>{{ isEdit ? 'Edit Staff Member' : 'Add New Staff Member' }}</h2>
-            <button @click="closeModal" class="close-button">&times;</button>
+            <button type="button" @click="closeModal" class="close-button">&times;</button>
           </div>
-          
+
           <!-- Basic Info Form Grid -->
           <div class="form-grid">
+
             <!-- Username (Create only, readonly in edit) -->
             <div class="form-group">
               <label for="username" class="form-label">Username {{ !isEdit ? '*' : '' }}</label>
@@ -61,32 +62,52 @@
                 placeholder="Enter phone number"
               />
             </div>
-            <div class="form-group password-group">
-              <label for="password" class="form-label">Password{{ isEdit ? ' (leave blank to keep current)' : ' *' }}</label>
-              <div class="password-input-wrapper">
-                <input
-                  v-model="form.password"
-                  :type="showPassword ? 'text' : 'password'"
-                  id="password"
-                  class="form-input"
-                  :placeholder="isEdit ? 'Enter new password (min 8 characters)' : 'Enter password (min 8 characters)'"
-                  :required="!isEdit"
-                />
-                <button type="button" class="password-toggle" @click="toggleShowPassword" :aria-label="showPassword ? 'Hide password' : 'Show password'">
-                  <span v-if="showPassword">
-                    <!-- Eye-off SVG -->
-                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24">
-                      <path stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M17.94 17.94A10.06 10.06 0 0 1 12 20c-5.05 0-9.29-3.81-10-8 .23-1.44.8-2.79 1.67-3.93M6.12 6.12A9.98 9.98 0 0 1 12 4c5.05 0 9.29 3.81 10 8-.23 1.44-.8 2.79-1.67 3.93M1 1l22 22M9.88 9.88A3 3 0 0 0 12 15a3 3 0 0 0 2.12-5.12"/>
-                    </svg>
-                  </span>
-                  <span v-else>
-                    <!-- Eye SVG -->
-                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24">
-                      <ellipse cx="12" cy="12" rx="10" ry="8" stroke="#888" stroke-width="2"/>
-                      <circle cx="12" cy="12" r="3" stroke="#888" stroke-width="2"/>
-                    </svg>
-                  </span>
-                </button>
+            <div class="form-group password-group" v-if="!isEdit">
+              <label for="password" class="form-label">Password <span style="font-weight:400">*</span></label>
+
+              <div style="display:flex; gap:0.75rem; align-items:flex-start; flex-wrap:wrap;">
+                <!-- password input + toggle -->
+                <div style="display:flex; gap:0.5rem; align-items:center; flex:1; min-width:220px;">
+                  <input
+                    v-model="form.password"
+                    :type="showPassword ? 'text' : 'password'"
+                    id="password"
+                    class="form-input"
+                    :placeholder="'Enter password (min 8 characters)'"
+                    :required="!isEdit"
+                    style="flex:1;"
+                  />
+                  <button type="button" class="password-toggle" @click="toggleShowPassword" :aria-label="showPassword ? 'Hide password' : 'Show password'" style="height:40px;">
+                    <span v-if="showPassword">
+                      <!-- Eye-off SVG -->
+                      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24">
+                        <path stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M17.94 17.94A10.06 10.06 0 0 1 12 20c-5.05 0-9.29-3.81-10-8 .23-1.44.8-2.79 1.67-3.93M6.12 6.12A9.98 9.98 0 0 1 12 4c5.05 0 9.29 3.81 10 8-.23 1.44-.8 2.79-1.67 3.93M1 1l22 22M9.88 9.88A3 3 0 0 0 12 15a3 3 0 0 0 2.12-5.12"/>
+                      </svg>
+                    </span>
+                    <span v-else>
+                      <!-- Eye SVG -->
+                      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24">
+                        <ellipse cx="12" cy="12" rx="10" ry="8" stroke="#888" stroke-width="2"/>
+                        <circle cx="12" cy="12" r="3" stroke="#888" stroke-width="2"/>
+                      </svg>
+                    </span>
+                  </button>
+                </div>
+
+                <!-- default password controls -->
+                <div style="display:flex; gap:0.5rem; align-items:center;">
+                  <div style="display:flex; flex-direction:column; gap:0.25rem; align-items:flex-start;">
+                    <div style="display:flex; gap:0.5rem; align-items:center;">
+                      <button v-if="fetchedDefaultPassword" type="button" @click="showDefaultPassword = !showDefaultPassword" class="btn btn-secondary" style="padding:0.4rem 0.6rem; font-size:0.85rem;">{{ showDefaultPassword ? 'Hide' : 'Show' }} default password</button>
+                      <span v-else-if="fetchingDefaultPassword" style="color:#6b7280; font-size:0.9rem;">Checking default...</span>
+                    </div>
+                    <div v-if="showDefaultPassword && fetchedDefaultPassword" style="display:flex; gap:0.5rem; align-items:center;">
+                      <input type="text" readonly :value="fetchedDefaultPassword" class="form-input read-only" style="width:220px;" />
+                      <button type="button" class="btn btn-primary" @click="copyDefaultToClipboard" style="padding:0.4rem 0.6rem;">Copy</button>
+                    </div>
+                    <div class="form-hint" style="color:#6b7280;font-size:0.9rem;">If left blank, a default password will be set automatically.</div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -134,10 +155,10 @@
               <select v-model="form.roleDepartment" id="roleDepartment" class="form-input" :required="!isEdit">
                 <option value="">-- Select Role / Department --</option>
                 <optgroup label="Managers">
-                  <option value="BRANCH_MANAGER hr">Manager HR</option>
-                  <option value="BRANCH_MANAGER finance">Manager Finance</option>
-                  <option value="BRANCH_MANAGER inventory">Manager Inventory</option>
-                  <option value="BRANCH_MANAGER logistics">Manager Logistics</option>
+                  <option value="MANAGER hr">Manager HR</option>
+                  <option value="MANAGER finance">Manager Finance</option>
+                  <option value="MANAGER inventory">Manager Inventory</option>
+                  <option value="MANAGER logistics">Manager Logistics</option>
                 </optgroup>
                 <optgroup label="Staff">
                   <option value="STAFF cashier">Staff Cashier</option>
@@ -319,6 +340,7 @@
             <button type="submit" class="btn btn-primary" :disabled="isSubmitting">
               {{ isSubmitting ? 'Saving...' : (isEdit ? 'Update Staff' : 'Add Staff') }}
             </button>
+            
           </div>
         </form>
       </div>
@@ -362,8 +384,14 @@ export default {
       addressSaved: false,
       savedAddress: '',
       showPassword: false,
+      // default password fetched from server (OWNER only)
+      fetchedDefaultPassword: null,
+      fetchingDefaultPassword: false,
+      showDefaultPassword: false,
       errorMessage: '',
+      successMessage: '',
       isSubmitting: false,
+      isResetting: false,
       provinces: [],
       cities: [],
       barangays: [],
@@ -424,6 +452,7 @@ export default {
       }
       this.branches = []
     },
+    
 
     async loadProvinces() {
       const endpoints = ['/api/locations/provinces', '/api/provinces']
@@ -558,8 +587,13 @@ export default {
     },
 
     reconstructRoleDepartment(role, department) {
-      if (!role || !department) return ''
-      return `${role} ${department}`
+      if (!role) return ''
+      // Normalize legacy BRANCH_MANAGER to MANAGER for option matching
+      let normalizedRole = String(role)
+      if (normalizedRole.toUpperCase() === 'BRANCH_MANAGER') normalizedRole = 'MANAGER'
+      // Ensure department token matches option values (lowercase)
+      if (!department) return normalizedRole
+      return `${normalizedRole} ${String(department).toLowerCase()}`
     },
 
     buildCreateFormData(role, department) {
@@ -575,7 +609,9 @@ export default {
       formData.append('barangay', this.form.barangay || '')
       formData.append('password', this.form.password)
       formData.append('role', role)
-      formData.append('department', department)
+      if (department !== null && department !== undefined && department !== '') {
+        formData.append('department', department)
+      }
       formData.append('branchId', this.form.branch_id || '')
 
       // Attach document files
@@ -633,10 +669,7 @@ export default {
           this.errorMessage = 'Please provide complete address information.'
           return
         }
-        if (!this.form.password || this.form.password.trim() === '') {
-          this.errorMessage = 'Password is required'
-          return
-        }
+        // Password is optional in create mode. Backend will set a default password if left blank.
         if (Object.keys(this.documentFiles).filter(key => !this.documentFiles[key]).length > 0) {
           this.errorMessage = 'All required documents must be uploaded'
           return
@@ -720,6 +753,29 @@ export default {
       this.errorMessage = ''
       this.documentFiles = {}
       this.$emit('close')
+    }
+    ,
+    async fetchDefaultPassword() {
+      if (this.fetchingDefaultPassword) return
+      this.fetchingDefaultPassword = true
+      try {
+        const res = await axios.get('/api/admin/config/default-password', { withCredentials: true })
+        if (res.data && res.data.success && res.data.default_password) {
+          this.fetchedDefaultPassword = res.data.default_password
+        }
+      } catch (e) {
+        // ignore if not allowed
+        this.fetchedDefaultPassword = null
+      } finally {
+        this.fetchingDefaultPassword = false
+      }
+    },
+
+    copyDefaultToClipboard() {
+      if (!this.fetchedDefaultPassword) return
+      try {
+        navigator.clipboard?.writeText(this.fetchedDefaultPassword)
+      } catch (e) {}
     }
   },
 
@@ -812,9 +868,34 @@ export default {
     show(newVal) {
       if (!newVal) {
         this.closeModal()
+      } else {
+        // When opening the modal in create mode, ensure any previous `staff` prop
+        // value does not leak into the form. Reset the form state for fresh create.
+        if (!this.isEdit) {
+          this.form = {
+            username: '',
+            email: '',
+            full_name: '',
+            phone_number: '',
+            password: '',
+            roleDepartment: '',
+            branch_id: '',
+            address: '',
+            province: '',
+            city: '',
+            barangay: '',
+            region: '',
+          }
+          this.addressSaved = false
+          this.documentFiles = {}
+          this.errorMessage = ''
+          // try to fetch default password for owners/admins (optional display)
+          this.fetchDefaultPassword()
+        }
       }
     }
-  }
+  },
+ 
 }
 </script>
 

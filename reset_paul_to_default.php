@@ -7,7 +7,7 @@ require __DIR__.'/vendor/autoload.php';
 $app = require_once __DIR__.'/bootstrap/app.php';
 $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 
-$defaultPassword = 'ChikinTayo_2526';
+$defaultPassword = config('chikintayo.default_password');
 
 // Reset Paul Berrer to default password
 $user = DB::table('users')->where('username', 'Paul Berrer')->first();
