@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use App\Models\User;
+use App\Http\Controllers\Api\ProductCommentController;
 
 // API routes using session (web guard)
 Route::middleware('web')->group(function () {
@@ -24,6 +25,8 @@ Route::middleware('web')->group(function () {
     // ==========================================
     Route::post('/login',           [AuthController::class, 'login']);
     Route::post('/logout',          [AuthController::class, 'logout']);
+    // Add missing password change route for modal
+    Route::post('/change-password', [AuthController::class, 'changePassword']);
 
     // FIXED: Forgot Password Routes (no auth needed)
     Route::post('/forgot-password', function (Request $request) {
@@ -77,6 +80,7 @@ Route::middleware('web')->group(function () {
         Route::put('/staff/{id}',       [StaffController::class, 'apiUpdate']);
         Route::delete('/staff/{id}',    [StaffController::class, 'apiDestroy']);
         Route::get('/branches',         [StaffController::class, 'apiBranches']);
+        Route::get('/attendance', [\App\Http\Controllers\Admin\AttendanceController::class, 'index']);
     });
 
     // ==========================================
@@ -124,4 +128,10 @@ Route::middleware('web')->group(function () {
         });
     });
 
+    // PRODUCT COMMENTS API
+    Route::get('/product-comments', [ProductCommentController::class, 'index']);
+    Route::post('/product-comments', [ProductCommentController::class, 'store']);
+    Route::post('/product-comment-replies', [ProductCommentController::class, 'storeReply']);
+
+    Route::post('/auth/send-verification', [AuthController::class, 'sendVerification']);
 });

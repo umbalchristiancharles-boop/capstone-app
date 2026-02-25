@@ -347,7 +347,7 @@
           <div v-if="authStep === 2" class="auth-step">
             <h2>Verify Your Email</h2>
             <p class="auth-subtitle">We sent a 6-digit code to <strong>{{ authEmail }}</strong></p>
-            
+            <div v-if="otpError" class="otp-error">{{ otpError }}</div>
             <input
               v-model="verificationCode"
               type="text"
@@ -355,8 +355,12 @@
               class="auth-input code-input"
               maxlength="6"
               @keyup.enter="verifyCode"
+              :disabled="authLoading"
             />
-            
+            <div class="otp-progress-bar" v-if="otpResendCooldown > 0">
+              <div class="otp-progress-fill" :style="{ width: otpResendPercent + '%' }"></div>
+              <span class="otp-progress-text">Resend available in {{ otpResendCooldown }}s</span>
+            </div>
             <button 
               type="button" 
               class="btn-auth-primary"
@@ -365,9 +369,13 @@
             >
               {{ authLoading ? 'Verifying...' : 'Verify Code' }}
             </button>
-            
-            <button type="button" class="btn-resend" @click="sendVerificationCode">
-              Resend Code
+            <button 
+              type="button" 
+              class="btn-resend" 
+              @click="sendVerificationCode"
+              :disabled="otpResendCooldown > 0 || authLoading"
+            >
+              {{ otpResendCooldown > 0 ? `Resend Code (${otpResendCooldown}s)` : 'Resend Code' }}
             </button>
           </div>
 
@@ -526,7 +534,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import axios from 'axios'
 import { useRouter, RouterLink } from 'vue-router'
 
@@ -558,6 +566,12 @@ const authPasswordConfirm = ref('')
 const authLoading = ref(false)
 const showPassword = ref(false)
 const showPasswordConfirm = ref(false)
+// OTP/Verification Code UI state
+const otpError = ref('')
+const otpResendCooldown = ref(0)
+const otpResendTotal = 30 // seconds
+let otpResendTimer = null
+const otpResendPercent = computed(() => otpResendCooldown.value > 0 ? 100 - Math.round((otpResendCooldown.value / otpResendTotal) * 100) : 100)
 
 // Password strength state
 const passwordStrength = ref({ text: '', class: '', width: '0%' })
@@ -599,6 +613,14 @@ function handleScroll() {
 }
 
 onMounted(() => {
+  // Clear any stale user session on landing page
+  try {
+    localStorage.removeItem('user');
+    localStorage.removeItem('authToken');
+    sessionStorage.removeItem('user');
+    sessionStorage.removeItem('authToken');
+  } catch (e) {}
+
   if (sessionStorage.getItem('chikin_show_home_overlay') === '1') {
     sessionStorage.removeItem('chikin_show_home_overlay')
     loaderText.value = 'Loading CHIKIN TAYO...'
@@ -842,58 +864,113 @@ function switchToSignUp() {
 
 async function sendVerificationCode() {
   const email = authEmail.value.trim()
-  
   if (!email || !email.includes('@')) {
-    alert('Please enter a valid email address')
+    otpError.value = 'Please enter a valid email address.'
     return
   }
-  
+  if (otpResendCooldown.value > 0) return
   authLoading.value = true
-  
-  try {
-    const { data } = await axios.post('/api/auth/send-verification', {
-      email: email
-    })
-    
-    authStep.value = 2
-    alert('Verification code sent to your email!')
-  } catch (error) {
-    console.error('Failed to send code:', error)
-    alert(error.response?.data?.message || 'Failed to send verification code. Please try again.')
-  } finally {
-    authLoading.value = false
+  otpError.value = ''
+  let retries = 0
+  const maxRetries = 2
+  while (retries <= maxRetries) {
+    try {
+      const { data } = await axios.post('/api/auth/send-verification', { email })
+      authStep.value = 2
+      otpError.value = ''
+      startOtpResendCooldown()
+      break
+    } catch (error) {
+      retries++
+      if (retries > maxRetries) {
+        otpError.value = error.response?.data?.message || 'Failed to send verification code. Please try again.'
+        break
+      }
+      await new Promise(res => setTimeout(res, 1000 * retries))
+    }
   }
+  authLoading.value = false
 }
 
 async function verifyCode() {
   const code = verificationCode.value.trim()
-  
   if (!code || code.length !== 6) {
-    alert('Please enter the 6-digit code')
+    otpError.value = 'Please enter the 6-digit code.'
     return
   }
-  
   authLoading.value = true
-  
-  try {
-    const { data } = await axios.post('/api/auth/verify-code', {
-      email: authEmail.value,
-      code: code
-    })
-    
-    // Check if user exists or needs to register
-    if (data.user_exists) {
-      authStep.value = 4 // Login
-    } else {
-      authStep.value = 3 // Register
+  otpError.value = ''
+  let retries = 0
+  const maxRetries = 2
+  while (retries <= maxRetries) {
+    try {
+      const { data } = await axios.post('/api/auth/verify-code', {
+        email: authEmail.value,
+        code: code
+      })
+      if (data.user_exists) {
+        authStep.value = 4 // Login
+      } else {
+        authStep.value = 3 // Register
+      }
+      otpError.value = ''
+      break
+    } catch (error) {
+      retries++
+      if (retries > maxRetries) {
+        otpError.value = error.response?.data?.message || 'Invalid verification code. Please try again.'
+        break
+      }
+      await new Promise(res => setTimeout(res, 1000 * retries))
     }
-  } catch (error) {
-    console.error('Verification failed:', error)
-    alert(error.response?.data?.message || 'Invalid verification code. Please try again.')
-  } finally {
-    authLoading.value = false
   }
+  authLoading.value = false
 }
+function startOtpResendCooldown() {
+  otpResendCooldown.value = otpResendTotal
+  if (otpResendTimer) clearInterval(otpResendTimer)
+  otpResendTimer = setInterval(() => {
+    otpResendCooldown.value--
+    if (otpResendCooldown.value <= 0) {
+      clearInterval(otpResendTimer)
+      otpResendTimer = null
+    }
+  }, 1000)
+}
+onUnmounted(() => {
+  if (otpResendTimer) clearInterval(otpResendTimer)
+})
+// Add minimal styles for progress bar and error
+/* Add to <style> or your CSS file if not present */
+/*
+.otp-error {
+  color: #dc2626;
+  margin-bottom: 0.5rem;
+  font-size: 0.95em;
+}
+.otp-progress-bar {
+  position: relative;
+  height: 8px;
+  background: #eee;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  margin-top: 8px;
+}
+.otp-progress-fill {
+  background: #f59e42;
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+.otp-progress-text {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.9em;
+  color: #f59e42;
+}
+*/
 
 async function createAccount() {
   if (!authUsername.value.trim()) {

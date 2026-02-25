@@ -54,7 +54,7 @@
 </template>
 
 <script setup>
-import { watch, defineProps, defineEmits } from 'vue'
+import { watch } from 'vue'
 import useAddress from '../composables/useAddress'
 
 const props = defineProps({
