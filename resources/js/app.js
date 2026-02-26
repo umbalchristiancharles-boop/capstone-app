@@ -121,6 +121,13 @@ const router = createRouter({
       component: ResetPassword,
       meta: { requiresGuest: true },
     },
+    // Unauthorized page for role-based access denied
+    {
+      path: '/unauthorized',
+      name: 'Unauthorized',
+      component: () => import('./components/Unauthorized.vue'),
+      meta: { requiresAuth: false },
+    },
   ],
 })
 
@@ -235,8 +242,8 @@ router.onError(() => {
 
 // === GLOBAL GUARD PARA PROTECTED ANG /admin-panel ===
 router.beforeEach(async (to, from, next) => {
-  // Public routes - allow always
-  if (to.path === '/' || to.path === '/admin-login' || to.path === '/login') {
+  // Public routes - allow always (including unauthorized page)
+  if (to.path === '/' || to.path === '/admin-login' || to.path === '/login' || to.path === '/unauthorized') {
     return next()
   }
 
@@ -267,22 +274,22 @@ router.beforeEach(async (to, from, next) => {
     if (to.path.startsWith('/manager/inventory')) {
       if (user.role !== 'manager' || user.department !== 'inventory') {
         console.warn('[ROUTER] Manager Inventory - wrong role/department:', user);
-        return next('/admin-login');
+        return next('/unauthorized');
       }
     }
     if (to.path.startsWith('/manager/finance')) {
       if (user.role !== 'manager' || user.department !== 'finance') {
-        return next('/admin-login');
+        return next('/unauthorized');
       }
     }
     if (to.path.startsWith('/manager/logistics')) {
       if (user.role !== 'manager' || user.department !== 'logistics') {
-        return next('/admin-login');
+        return next('/unauthorized');
       }
     }
     if (to.path.startsWith('/manager/hr')) {
       if (user.role !== 'manager' || user.department !== 'hr') {
-        return next('/admin-login');
+        return next('/unauthorized');
       }
     }
 
@@ -290,31 +297,31 @@ router.beforeEach(async (to, from, next) => {
     if (to.path.startsWith('/staff/inventory')) {
       if (user.role !== 'staff' || user.department !== 'inventory') {
         console.warn('[ROUTER] Staff Inventory - wrong role/department:', user);
-        return next('/admin-login');
+        return next('/unauthorized');
       }
     }
     if (to.path.startsWith('/staff/cashier')) {
       if (user.role !== 'staff' || user.department !== 'cashier') {
-        return next('/admin-login');
+        return next('/unauthorized');
       }
     }
     if (to.path.startsWith('/staff/finance')) {
       if (user.role !== 'staff' || user.department !== 'finance') {
-        return next('/admin-login');
+        return next('/unauthorized');
       }
     }
 
-    // Owner panel
+    // Owner panel - authenticated but not owner → redirect to unauthorized
     if (to.path.startsWith('/owner-panel') || to.path.startsWith('/owner/')) {
       if (user.role !== 'owner') {
-        return next('/admin-login');
+        return next('/unauthorized');
       }
     }
 
-    // Admin panel
+    // Admin panel - authenticated but not admin → redirect to unauthorized
     if (to.path === '/admin-panel') {
       if (user.role !== 'admin') {
-        return next('/admin-login');
+        return next('/unauthorized');
       }
     }
 
@@ -383,6 +390,7 @@ axios
       if (isHtmlResponse(response)) {
         const req = response.config || {}
         if (req._retriedForCsrf) {
+          console.warn('[AXIOS] HTML response after CSRF retry')
           router.replace('/admin-login').catch(() => { window.location.href = '/admin-login' })
           return Promise.reject(new Error('Received HTML response from API'))
         }
@@ -400,30 +408,35 @@ axios
       const req = error.config || {}
       const status = resp && resp.status
 
-      // FIXED: Only logout on TRUE 401 errors - NOT on 419 (CSRF), 403, or network errors
+      // DEBUG: Log 401 without auto-logout - let app handle it
       if (status === 401) {
-        console.warn('[AXIOS] 401 Unauthorized - clearing user and redirecting to login')
-        try { localStorage.removeItem('user') } catch (e) {}
-        try { sessionStorage.clear() } catch (e) {}
-        router.replace('/admin-login').catch(() => { window.location.href = '/admin-login' })
+        console.warn('[AXIOS] 401 received:', { url: req.url, method: req.method })
+        // DON'T auto-clear localStorage or redirect - could be false positive
         return Promise.reject(error)
       }
 
-      // For 419 (CSRF) or 403 (forbidden), try to refresh CSRF instead of logout
-      if ((status === 419 || status === 403) || isHtmlResponse(resp || {})) {
-        if (req._retriedForCsrf) {
-          return Promise.reject(error)
-        }
+      // For 419 (CSRF), try to refresh
+      if (status === 419) {
+        console.warn('[AXIOS] 419 CSRF - trying refresh')
+        if (req._retriedForCsrf) return Promise.reject(error)
         req._retriedForCsrf = true
         const ok = await refreshCsrf()
-        if (!ok) {
-          return Promise.reject(error)
-        }
-        try {
-          return axios(req)
-        } catch (e) {
-          return Promise.reject(e)
-        }
+        if (!ok) return Promise.reject(error)
+        try { return axios(req) } catch (e) { return Promise.reject(e) }
+      }
+
+      // For 403, just reject - permission issue, not auth
+      if (status === 403) {
+        console.warn('[AXIOS] 403 Forbidden:', { url: req.url })
+      }
+
+      // For HTML responses
+      if (isHtmlResponse(resp || {})) {
+        if (req._retriedForCsrf) return Promise.reject(error)
+        req._retriedForCsrf = true
+        const ok = await refreshCsrf()
+        if (!ok) return Promise.reject(error)
+        try { return axios(req) } catch (e) { return Promise.reject(e) }
       }
 
       return Promise.reject(error)

@@ -108,6 +108,13 @@ const routes = [
     name: 'AdminResetPasswordToken',
     component: ResetPassword,
     meta: { requiresGuest: true }
+  },
+  // Unauthorized page for role-based access denied
+  {
+    path: '/unauthorized',
+    name: 'Unauthorized',
+    component: () => import('../components/Unauthorized.vue'),
+    meta: { requiresAuth: false }
   }
 ];
 
@@ -117,58 +124,149 @@ const router = createRouter({
 });
 
 
-// Role-based route guard
-router.beforeEach(async (to, from, next) => {
-  // Simulate getting user from localStorage/session or API
+// ============================================================
+// FULL ROUTER GUARD WITH DEBUGGING
+// ============================================================
+
+router.beforeEach((to, from, next) => {
+  // DEBUG: Log navigation attempt
+  console.log('[ROUTER] Navigation:', {
+    to: to.path,
+    from: from.path,
+    meta: to.meta
+  });
+
+  // Get user from localStorage
   let user = null;
   try {
-    user = JSON.parse(localStorage.getItem('user')) || null;
-  } catch (e) {}
+    const userStr = localStorage.getItem('user');
+    console.log('[ROUTER] localStorage.getItem("user"):', userStr);
+    user = userStr ? JSON.parse(userStr) : null;
+    console.log('[ROUTER] Parsed user:', user);
+  } catch (e) {
+    console.error('[ROUTER] Error parsing user:', e);
+    user = null;
+  }
 
-  // If route requires authentication
+  // DEBUG: Log auth status
+  console.log('[ROUTER] Auth status:', {
+    hasUser: !!user,
+    userRole: user ? user.role : null,
+    userRoleLower: user ? (user.role || '').toLowerCase() : null
+  });
+
+  // === PUBLIC ROUTES - Allow always ===
+  const publicRoutes = ['/', '/login', '/admin-login', '/unauthorized', '/admin/forgot-password', '/admin/reset-password'];
+  if (publicRoutes.includes(to.path) || to.path.startsWith('/admin/reset-password/')) {
+    console.log('[ROUTER] Public route - allowing');
+    return next();
+  }
+
+  // === LANDING PAGE REDIRECT ===
+  if (to.path === '/' || to.path === '/login') {
+    if (user) {
+      const userRole = (user.role || '').toLowerCase();
+      if (userRole === 'owner') return next('/owner-panel');
+      if (userRole === 'admin') return next('/admin-panel');
+      if (userRole === 'manager') {
+        if (user.department === 'hr') return next('/manager/hr');
+        if (user.department === 'finance') return next('/manager/finance');
+        if (user.department === 'inventory') return next('/manager/inventory');
+        if (user.department === 'logistics') return next('/manager/logistics');
+      }
+      if (userRole === 'staff') {
+        if (user.department === 'cashier') return next('/staff/cashier');
+        if (user.department === 'finance') return next('/staff/finance');
+        if (user.department === 'inventory') return next('/staff/inventory');
+      }
+      return next('/admin-panel');
+    }
+    if (to.path === '/') {
+      return next('/admin-login');
+    }
+  }
+
+  // === CHECK: If NO user (not authenticated) → redirect to /admin-login ===
+  if (!user) {
+    console.log('[ROUTER] NO USER - Redirecting to /admin-login');
+    return next('/admin-login');
+  }
+
+  // === User is authenticated - normalize role to lowercase ===
+  const userRole = (user.role || '').toLowerCase();
+  console.log('[ROUTER] User role (normalized):', userRole);
+
+  // === CHECK: Route requires specific role ===
+  if (to.meta.role) {
+    const requiredRole = (to.meta.role || '').toLowerCase();
+    console.log('[ROUTER] Required role:', requiredRole);
+
+    // Owner routes
+    if (requiredRole === 'owner') {
+      if (userRole === 'owner') {
+        console.log('[ROUTER] Owner check PASSED - allowing access');
+        return next();
+      } else {
+        console.log('[ROUTER] Owner check FAILED - redirecting to /unauthorized');
+        return next('/unauthorized');
+      }
+    }
+
+    // Manager routes
+    if (requiredRole === 'manager') {
+      if (userRole !== 'manager') {
+        console.log('[ROUTER] Manager check FAILED - redirecting to /unauthorized');
+        return next('/unauthorized');
+      }
+      // Check department if specified
+      if (to.meta.department && user.department !== to.meta.department) {
+        console.log('[ROUTER] Manager department check FAILED - redirecting to /unauthorized');
+        return next('/unauthorized');
+      }
+      console.log('[ROUTER] Manager check PASSED - allowing access');
+      return next();
+    }
+
+    // Staff routes
+    if (requiredRole === 'staff') {
+      if (userRole !== 'staff') {
+        console.log('[ROUTER] Staff check FAILED - redirecting to /unauthorized');
+        return next('/unauthorized');
+      }
+      // Check department if specified
+      if (to.meta.department && user.department !== to.meta.department) {
+        console.log('[ROUTER] Staff department check FAILED - redirecting to /unauthorized');
+        return next('/unauthorized');
+      }
+      console.log('[ROUTER] Staff check PASSED - allowing access');
+      return next();
+    }
+  }
+
+  // === Routes that just require authentication (no specific role) ===
   if (to.meta.requiresAuth) {
-    if (!user) {
-      return next({ path: '/admin-login' });
-    }
-    // Owner
-    if (to.meta.role === 'OWNER' && user.role !== 'OWNER') {
-      return next({ path: getPanelRoute(user) });
-    }
-    // Manager
-    if (to.meta.role === 'manager' && user.role === 'manager') {
-      if (to.meta.department && user.department !== to.meta.department) {
-        return next({ path: getPanelRoute(user) });
-      }
-    } else if (to.meta.role === 'manager' && user.role !== 'manager') {
-      return next({ path: getPanelRoute(user) });
-    }
-    // Staff
-    if (to.meta.role === 'staff' && user.role === 'staff') {
-      if (to.meta.department && user.department !== to.meta.department) {
-        return next({ path: getPanelRoute(user) });
-      }
-    } else if (to.meta.role === 'staff' && user.role !== 'staff') {
-      return next({ path: getPanelRoute(user) });
-    }
+    console.log('[ROUTER] Route requires auth only - allowing');
+    return next();
   }
-  // If route requires guest (not logged in)
-  if (to.meta.requiresGuest && user) {
-    return next({ path: getPanelRoute(user) });
-  }
+
+  // Default: allow
+  console.log('[ROUTER] Default - allowing');
   next();
 });
 
 // Helper: get correct panel route for user
 function getPanelRoute(user) {
   if (!user) return '/admin-login';
-  if (user.role === 'OWNER') return '/owner-panel';
-  if (user.role === 'manager') {
+  const userRole = (user.role || '').toLowerCase();
+  if (userRole === 'owner') return '/owner-panel';
+  if (userRole === 'admin') return '/admin-panel';
+  if (userRole === 'manager') {
     if (user.department === 'hr') return '/manager/hr';
     if (user.department === 'finance') return '/manager/finance';
     if (user.department === 'inventory') return '/manager/inventory';
     if (user.department === 'logistics') return '/manager/logistics';
   }
-  if (user.role === 'staff') {
+  if (userRole === 'staff') {
     if (user.department === 'cashier') return '/staff/cashier';
     if (user.department === 'finance') return '/staff/finance';
     if (user.department === 'inventory') return '/staff/inventory';

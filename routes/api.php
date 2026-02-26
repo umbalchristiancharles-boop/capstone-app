@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use App\Models\User;
 use App\Http\Controllers\Api\ProductCommentController;
+use App\Http\Controllers\Api\ConfigController;
 
 // API routes using session (web guard)
 Route::middleware('web')->group(function () {
@@ -25,8 +26,8 @@ Route::middleware('web')->group(function () {
     // ==========================================
     Route::post('/login',           [AuthController::class, 'login']);
     Route::post('/logout',          [AuthController::class, 'logout']);
-// Add missing password change route for modal (should use API middleware)
-Route::post('/change-password', [AuthController::class, 'changePassword']);
+    // Add missing password change route for modal (should use API middleware)
+    Route::post('/change-password', [AuthController::class, 'changePassword']);
 
     // FIXED: Forgot Password Routes (no auth needed)
     Route::post('/forgot-password', function (Request $request) {
@@ -81,6 +82,9 @@ Route::post('/change-password', [AuthController::class, 'changePassword']);
         Route::delete('/staff/{id}',    [StaffController::class, 'apiDestroy']);
         Route::get('/branches',         [StaffController::class, 'apiBranches']);
         Route::get('/attendance', [\App\Http\Controllers\Admin\AttendanceController::class, 'index']);
+
+        // Config endpoint for default password
+        Route::get('/config/default-password', [ConfigController::class, 'defaultPassword']);
     });
 
     // ==========================================
