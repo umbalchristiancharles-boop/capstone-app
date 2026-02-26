@@ -1,4 +1,12 @@
 <template>
+        <!-- Force Password Change Modal -->
+        <ForcePasswordChangeModal
+          v-if="showForceModal"
+          :show="showForceModal"
+          :username="ownerProfile.username"
+          :defaultPassword="''"
+          @close="showForceModal = false"
+        />
   <div class="min-h-screen bg-gradient-to-b from-[#FF9A4A] to-[#FF6A3D]">
     <div class="admin-page">
       <section class="admin-layout">
@@ -325,6 +333,8 @@
 </template>
 
 <script setup>
+import ForcePasswordChangeModal from './ForcePasswordChangeModal.vue'
+const showForceModal = ref(false)
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
@@ -506,7 +516,20 @@ async function onAvatarChange(event) {
 onMounted(async () => {
   isInitialMount.value = false
   ownerProfile.value = { fullName: '', role: 'OWNER', email: '', contact: '', branch: '', accountId: '', avatarUrl: '' }
-  try { const res = await axios.get('/api/owner-profile', { withCredentials: true }); if (res.data && res.data.ok && res.data.user) ownerProfile.value = normalizeUser(res.data.user); isProfileLoading.value = false } catch (e) { if (e.response?.status === 401) { router.push('/admin-login'); return } isProfileLoading.value = false }
+  try {
+    const res = await axios.get('/api/owner-profile', { withCredentials: true });
+    if (res.data && res.data.ok && res.data.user) {
+      ownerProfile.value = normalizeUser(res.data.user);
+      // Show password update modal if must_change_password is true
+      if (res.data.user.must_change_password) {
+        showForceModal.value = true;
+      }
+    }
+    isProfileLoading.value = false;
+  } catch (e) {
+    if (e.response?.status === 401) { router.push('/admin-login'); return }
+    isProfileLoading.value = false;
+  }
   await loadDashboard(activeRange.value)
   try { if (window.__chikin_temp_overlay) { window.__chikin_temp_overlay.remove(); window.__chikin_temp_overlay = null } } catch (e) {}
   try { if (window.pageBlur && typeof window.pageBlur.hide === 'function') window.pageBlur.hide() } catch (e) {}

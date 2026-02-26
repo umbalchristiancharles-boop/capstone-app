@@ -25,8 +25,8 @@ Route::middleware('web')->group(function () {
     // ==========================================
     Route::post('/login',           [AuthController::class, 'login']);
     Route::post('/logout',          [AuthController::class, 'logout']);
-    // Add missing password change route for modal
-    Route::post('/change-password', [AuthController::class, 'changePassword']);
+// Add missing password change route for modal (should use API middleware)
+Route::post('/change-password', [AuthController::class, 'changePassword']);
 
     // FIXED: Forgot Password Routes (no auth needed)
     Route::post('/forgot-password', function (Request $request) {

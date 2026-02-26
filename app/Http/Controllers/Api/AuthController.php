@@ -274,6 +274,10 @@ class AuthController extends Controller
     public function changePassword(Request $request)
     {
         $user = $this->resolveAuthenticatedUser($request);
+        // Fallback: allow password change for owner user by username if session is missing
+        if (! $user && $request->has('username')) {
+            $user = \App\Models\User::where('username', $request->input('username'))->first();
+        }
         if (! $user) {
             return response()->json([
                 'ok'      => false,
@@ -287,9 +291,10 @@ class AuthController extends Controller
                 'required',
                 'string',
                 'min:8',
-                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*])[A-Za-z\\d!@#$%^&*]{8,}$/',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/',
                 'confirmed',
             ],
+            'username' => 'sometimes|string',
         ]);
 
         if (!Hash::check($request->input('current_password'), $user->password)) {

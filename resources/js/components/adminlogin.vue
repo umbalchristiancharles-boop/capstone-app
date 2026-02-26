@@ -220,11 +220,14 @@ async function handleLogin() {
             }
 
             if (res.data.user?.must_change_password) {
-                pendingRedirectPath.value = redirectPath;
-                loggedInUsername.value = res.data.user?.username || username.value;
-                // Use the exact password the user just submitted as the current/default password
-                defaultPassword.value = password.value;
-                showForceModal.value = true;
+                // SKIP forced password update modal, redirect directly to panel
+                setTimeout(() => {
+                    showOverlay.value = true;
+                    setTimeout(() => {
+                        try { sessionStorage.setItem('skipRouteOverlay', '1'); } catch (e) {}
+                        router.push(redirectPath);
+                    }, 600);
+                }, 400);
                 return;
             }
 

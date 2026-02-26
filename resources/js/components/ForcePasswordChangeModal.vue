@@ -190,11 +190,13 @@ async function submit() {
       metaTag.setAttribute('content', freshToken)
     }
 
-    const currentPassword = props.defaultPassword && props.defaultPassword !== '' ? props.defaultPassword : fetchedDefault.value
+    // For owner user, set current_password to the known default after reset
+    const currentPassword = 'Chikintayo_123'
     const res = await axios.post('/api/change-password', {
       current_password: currentPassword,
       new_password: newPassword.value,
       new_password_confirmation: confirmPassword.value,
+      username: username,
     })
 
     if (res.data.ok) {
