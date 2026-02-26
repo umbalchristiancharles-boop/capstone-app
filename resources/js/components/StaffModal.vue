@@ -57,21 +57,44 @@
               </div>
 
               <!-- Password -->
-              <div class="form-group" v-if="!isEdit">
-                <label for="password" class="form-label">Password</label>
-                <input
-                  v-model="form.password"
-                  type="password"
-                  id="password"
-                  class="form-input"
-                  placeholder="(optional)"
-                  autocomplete="new-password"
-                />
-                <div class="small-hint" style="margin-top:0.35rem; color:#6b7280; font-size:0.9rem;">
-                  Leave blank to auto-set the default on create. User must change on first login.
+              <div v-if="!isEdit" class="form-group password-group">
+                <label for="password" class="form-label">Password <span style="font-weight:400">*</span></label>
+                <div style="display:flex; gap:0.75rem; align-items:flex-start; flex-wrap:wrap;">
+                  <!-- password display (read-only) + toggle -->
+                  <div style="display:flex; gap:0.5rem; align-items:center; flex:1; min-width:220px;">
+                    <input
+                      :value="defaultPassword"
+                      :type="showPassword ? 'text' : 'password'"
+                      id="password"
+                      class="form-input read-only"
+                      readonly
+                      autocomplete="new-password"
+                      style="flex:1; background-color: #f3f4f6;"
+                    />
+                    <button type="button" class="password-toggle" @click="showPassword = !showPassword" :aria-label="showPassword ? 'Hide password' : 'Show password'" style="height:40px;">
+                      <span v-if="showPassword">
+                        <!-- Eye-off SVG -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24">
+                          <path stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M17.94 17.94A10.06 10.06 0 0 1 12 20c-5.05 0-9.29-3.81-10-8 .23-1.44.8-2.79 1.67-3.93M6.12 6.12A9.98 9.98 0 0 1 12 4c5.05 0 9.29 3.81 10 8-.23 1.44-.8 2.79-1.67 3.93M1 1l22 22M9.88 9.88A3 3 0 0 0 12 15a3 3 0 0 0 2.12-5.12"/>
+                        </svg>
+                      </span>
+                      <span v-else>
+                        <!-- Eye SVG -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24">
+                          <ellipse cx="12" cy="12" rx="10" ry="8" stroke="#888" stroke-width="2"/>
+                          <circle cx="12" cy="12" r="3" stroke="#888" stroke-width="2"/>
+                        </svg>
+                      </span>
+                    </button>
+                  </div>
+                  <!-- copy button -->
+                  <div style="display:flex; gap:0.5rem; align-items:center;">
+                    <button type="button" class="btn btn-primary" @click="copyDefaultToClipboard" style="padding:0.4rem 0.6rem;">Copy</button>
+                  </div>
+                  <div class="small-hint" style="color:#6b7280;font-size:0.9rem; flex-basis:100%;">Default password is automatically set for new staff.</div>
                 </div>
               </div>
-              <div class="form-group" v-else>
+              <div v-else-if="isEdit" class="form-group">
                 <label for="password" class="form-label">New Password (optional)</label>
                 <input
                   v-model="form.password"
@@ -82,41 +105,7 @@
                   autocomplete="new-password"
                 />
               </div>
-
-              <!-- Phone -->
-              <div class="form-group">
-                <label for="phone" class="form-label">Phone Number</label>
-                <input
-                  v-model="form.phone"
-                  type="text"
-                  id="phone"
-                  class="form-input"
-                  placeholder="+63 XXX XXX XXXX"
-                />
-              </div>
-
-              <!-- Branch removed: Owner accounts do not require branch selection -->
-
-              <!-- Role -->
-              <!-- When creating a staff account show the role; when editing, show read-only role text -->
-              <div class="form-group" v-if="!isEdit">
-                <label for="role" class="form-label">Role *</label>
-                <select
-                  v-model="form.role"
-                  id="role"
-                  class="form-input"
-                  required
-                >
-                  <option
-                    v-for="option in roleOptions"
-                    :key="option.value"
-                    :value="option.value"
-                  >
-                    {{ option.label }}
-                  </option>
-                </select>
-              </div>
-              <div v-else class="form-group">
+              <div v-if="isEdit" class="form-group">
                 <label class="form-label">Role *</label>
                 <div class="form-input" style="background-color: #f3f4f6; padding: 0.5rem; border-radius: 8px; display: flex; align-items: center;">
                   {{ (form.role === 'BRANCH_MANAGER' || form.role === 'MANAGER') ? 'Manager' : (form.role === 'STAFF' ? 'Staff' : (form.role === 'HR' ? 'HR' : form.role)) }}
@@ -326,6 +315,8 @@ export default {
   emits: ['close', 'success'],
   data() {
     return {
+      showPassword: false,
+      defaultPassword: 'Chikintayo_123', // Replace with dynamic fetch if needed
       form: {
         id: '',
         username: '',
@@ -418,6 +409,12 @@ export default {
     }
   },
   methods: {
+    copyDefaultToClipboard() {
+      if (!this.defaultPassword) return
+      try {
+        navigator.clipboard?.writeText(this.defaultPassword)
+      } catch (e) {}
+    },
     // document attachments are not sent during admin create
     buildCreateFormData() {
       // return plain object to be sent as JSON for admin create

@@ -180,13 +180,30 @@
               </select>
             </div>
             <div v-if="!isEditingStaff" class="form-group">
-              <label>Password:</label>
-              <input
-                v-model="newStaff.password"
-                type="password"
-                class="form-input"
-                placeholder="Enter password (min 8 characters)"
-              >
+              <label>Password <span style="font-weight:400; font-size: 0.85rem;">(Default: Chikintayo_123)</span></label>
+              <div style="display:flex; gap:0.5rem; align-items:center;">
+                <input
+                  :value="defaultPasswordValue"
+                  :type="showPassword ? 'text' : 'password'"
+                  class="form-input"
+                  readonly
+                  style="flex:1; background-color: #f3f4f6;"
+                />
+                <button type="button" class="password-toggle-btn" @click="showPassword = !showPassword" :title="showPassword ? 'Hide password' : 'Show password'">
+                  <span v-if="showPassword">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24">
+                      <path stroke="#666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M17.94 17.94A10.06 10.06 0 0 1 12 20c-5.05 0-9.29-3.81-10-8 .23-1.44.8-2.79 1.67-3.93M6.12 6.12A9.98 9.98 0 0 1 12 4c5.05 0 9.29 3.81 10 8-.23 1.44-.8 2.79-1.67 3.93M1 1l22 22M9.88 9.88A3 3 0 0 0 12 15a3 3 0 0 0 2.12-5.12"/>
+                    </svg>
+                  </span>
+                  <span v-else>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24">
+                      <ellipse cx="12" cy="12" rx="10" ry="8" stroke="#666" stroke-width="2"/>
+                      <circle cx="12" cy="12" r="3" stroke="#666" stroke-width="2"/>
+                    </svg>
+                  </span>
+                </button>
+              </div>
+              <div class="small-hint" style="color:#6b7280;font-size:0.8rem; margin-top:0.25rem;">Default password is automatically set for new staff.</div>
             </div>
           </div>
           <div class="modal-footer">
@@ -229,6 +246,7 @@ const staff = ref([])
 // Form State
 const showAddStaffModal = ref(false)
 const isEditingStaff = ref(false)
+const showPassword = ref(false)
 const newStaff = ref({
   username: '',
   email: '',
@@ -258,6 +276,8 @@ const availableDepartments = computed(() => {
   staff.value.forEach(m => { if (m.department) set.add(m.department) })
   return Array.from(set).sort()
 })
+
+const defaultPasswordValue = 'Chikintayo_123'
 
 const filteredStaff = computed(() => {
   let list = staff.value.slice()
@@ -369,6 +389,11 @@ function refreshStaff() {
   loadStaff()
 }
 
+function useDefaultPassword() {
+  newStaff.value.password = 'Chikintayo_123'
+  showPassword.value = true
+}
+
 function resetForm() {
   newStaff.value = {
     username: '',
@@ -412,8 +437,8 @@ async function submitStaffForm() {
     return
   }
 
-  if (!isEditingStaff.value && (!newStaff.value.username || !newStaff.value.password)) {
-    alert('Username and password are required for new staff')
+  if (!isEditingStaff.value && !newStaff.value.username) {
+    alert('Username is required for new staff')
     return
   }
   if (!newStaff.value.role) {
@@ -443,13 +468,13 @@ async function submitStaffForm() {
         withCredentials: true
       })
     } else {
-      // Create staff with selected role
+      // Create staff with default password
       res = await axios.post(baseUrl, {
         username: newStaff.value.username,
         email: newStaff.value.email,
         full_name: newStaff.value.full_name,
         phone_number: newStaff.value.phone_number,
-        password: newStaff.value.password,
+        password: defaultPasswordValue,
         role: newStaff.value.role,
         department: departmentToSend
       }, {
@@ -852,6 +877,23 @@ async function loadBranches() {
   outline: none;
   border-color: #FF9A4A;
   box-shadow: 0 0 0 3px rgba(255, 154, 74, 0.1);
+}
+
+.password-toggle-btn {
+  background: #f3f4f6;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  min-width: 40px;
+}
+
+.password-toggle-btn:hover {
+  background: #e5e7eb;
 }
 
 .fade-enter-active, .fade-leave-active {
