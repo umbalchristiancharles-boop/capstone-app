@@ -219,9 +219,10 @@ const filteredStaff = computed(() => {
     })
   }
 
-  // Branch filter: match by branch_name
+  // Branch filter: match by branch_name (case-insensitive)
   if (branchFilter.value) {
-    filtered = filtered.filter(m => (m.branch_name || '').toString() === branchFilter.value)
+    const selectedBranch = branchFilter.value.toLowerCase()
+    filtered = filtered.filter(m => (m.branch_name || '').toString().toLowerCase() === selectedBranch)
   }
 
   // Department filter

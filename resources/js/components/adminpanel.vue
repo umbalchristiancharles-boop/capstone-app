@@ -685,7 +685,7 @@ async function loadDashboard(range) {
       endpoint = '/api/manager/dashboard'
     }
 
-    // Fetch dashboard data
+    // Fetch dashboard data with date range parameter
     const res = await axios.get(endpoint, {
       params: { range },
       withCredentials: true,
@@ -710,20 +710,39 @@ async function loadDashboard(range) {
         productionQueue.value = res.data.productionQueue || []
         staffActivity.value = res.data.staffActivity || []
       } else {
-        // Admin dashboard response structure
+        // Admin dashboard response structure - map all new fields from enhanced API
         summaryTotals.value = {
           totalBranches: res.data.branches_count || 0,
           totalEmployees: res.data.staff_count || 0,
         }
 
+        // Map all dashboard totals from the enhanced API
         dashboardTotals.value = {
-          orders: res.data.orders_count || 0,
-          completed: 0,
-          sales: '₱0',
-          pending: 0,
+          orders: res.data.orders ?? res.data.orders_count ?? 0,
+          completed: res.data.completed ?? 0,
+          sales: res.data.sales ?? '₱0',
+          pending: res.data.pending ?? 0,
         }
 
-        adminStaffActivity.value = res.data.recent_activity || []
+        // Map recent orders
+        recentOrders.value = res.data.recent_orders || []
+
+        // Map production queue
+        productionQueue.value = res.data.production_queue || []
+
+        // Map top products
+        topProducts.value = res.data.top_products || []
+
+        // Map low stock items
+        lowStockItems.value = res.data.low_stock_items || []
+
+        // Map staff activity
+        adminStaffActivity.value = res.data.recent_activity || res.data.recentActivity || []
+
+        // Update branches if provided
+        if (res.data.branches && res.data.branches.length > 0) {
+          branches.value = res.data.branches
+        }
       }
     }
   } catch (e) {
@@ -812,20 +831,20 @@ async function onAvatarChange(event) {
     await new Promise(resolve => setTimeout(resolve, 100))
 
     // Get CSRF token from cookie
-    function getCookie(name) { 
+    function getCookie(name) {
       const m = document.cookie.match(new RegExp('(^|; )' + name + '=([^;]*)'))
-      return m ? m[2] : null 
+      return m ? m[2] : null
     }
     const xsrf = getCookie('XSRF-TOKEN')
-    
+
     // Prepare form data
     const formData = new FormData()
     formData.append('avatar', file)
     if (xsrf) {
-      try { 
-        formData.append('_token', decodeURIComponent(xsrf)) 
-      } catch (_) { 
-        formData.append('_token', xsrf) 
+      try {
+        formData.append('_token', decodeURIComponent(xsrf))
+      } catch (_) {
+        formData.append('_token', xsrf)
       }
     }
 
@@ -835,10 +854,10 @@ async function onAvatarChange(event) {
       withCredentials: true
     }
     if (xsrf) {
-      try { 
-        config.headers['X-XSRF-TOKEN'] = decodeURIComponent(xsrf) 
-      } catch (_) { 
-        config.headers['X-XSRF-TOKEN'] = xsrf 
+      try {
+        config.headers['X-XSRF-TOKEN'] = decodeURIComponent(xsrf)
+      } catch (_) {
+        config.headers['X-XSRF-TOKEN'] = xsrf
       }
     }
 

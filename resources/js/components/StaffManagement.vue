@@ -298,9 +298,10 @@ const defaultPasswordValue = 'Chikintayo_123'
 const filteredStaff = computed(() => {
   let list = staff.value.slice()
 
-  // branch filter
+  // branch filter (case-insensitive)
   if (branchFilter.value) {
-    list = list.filter(m => (m.branch_name || '') === branchFilter.value)
+    const selectedBranch = branchFilter.value.toLowerCase()
+    list = list.filter(m => (m.branch_name || '').toString().toLowerCase() === selectedBranch)
   }
 
   // role filter
