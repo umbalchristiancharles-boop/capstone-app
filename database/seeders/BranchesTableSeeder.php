@@ -15,33 +15,21 @@ class BranchesTableSeeder extends Seeder
     {
         $branches = [
             [
-                'code' => 'QC_MAIN',
-                'name' => 'Quezon City Main Branch',
+                'code' => 'DASMA_MAIN',
+                'name' => 'Dasmariñas Cavite Main Branch',
+                'address' => 'Dasmariñas, Cavite',
+                'is_active' => 1,
+            ],
+            [
+                'code' => 'GENTRI',
+                'name' => 'General Trias',
+                'address' => 'General Trias, Cavite',
+                'is_active' => 1,
+            ],
+            [
+                'code' => 'QC',
+                'name' => 'Quezon City Branch',
                 'address' => 'Quezon City, Metro Manila',
-                'is_active' => 1,
-            ],
-            [
-                'code' => 'MAKATI',
-                'name' => 'Makati Branch',
-                'address' => 'Makati City, Metro Manila',
-                'is_active' => 1,
-            ],
-            [
-                'code' => 'BGC',
-                'name' => 'BGC Branch',
-                'address' => 'Bonifacio Global City, Taguig',
-                'is_active' => 1,
-            ],
-            [
-                'code' => 'PASIG',
-                'name' => 'Pasig Branch',
-                'address' => 'Pasig City, Metro Manila',
-                'is_active' => 1,
-            ],
-            [
-                'code' => 'MANILA',
-                'name' => 'Manila Branch',
-                'address' => 'Manila City',
                 'is_active' => 1,
             ],
         ];

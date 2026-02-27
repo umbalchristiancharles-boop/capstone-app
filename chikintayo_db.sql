@@ -61,11 +61,9 @@ CREATE TABLE `branches` (
 --
 
 INSERT INTO `branches` (`id`, `code`, `name`, `address`, `is_active`, `created_at`, `updated_at`) VALUES
-(1, 'QC_MAIN', 'Quezon City Main Branch', 'Quezon City, Metro Manila', 1, '2026-02-23 14:44:43', '2026-02-23 14:44:43'),
-(2, 'MAKATI', 'Makati Branch', 'Makati City, Metro Manila', 1, '2026-02-23 14:44:43', '2026-02-23 14:44:43'),
-(3, 'BGC', 'BGC Branch', 'Bonifacio Global City, Taguig', 1, '2026-02-23 14:44:43', '2026-02-23 14:44:43'),
-(4, 'PASIG', 'Pasig Branch', 'Pasig City, Metro Manila', 1, '2026-02-23 14:44:43', '2026-02-23 14:44:43'),
-(5, 'MANILA', 'Manila Branch', 'Manila City', 1, '2026-02-23 14:44:43', '2026-02-23 14:44:43');
+(1, 'DASMA_MAIN', 'Dasmariñas Cavite Main Branch', 'Dasmariñas, Cavite', 1, '2026-02-23 14:44:43', '2026-02-23 14:44:43'),
+(2, 'GENTRI', 'General Trias', 'General Trias, Cavite', 1, '2026-02-23 14:44:43', '2026-02-23 14:44:43'),
+(3, 'QC', 'Quezon City Branch', 'Quezon City, Metro Manila', 1, '2026-02-23 14:44:43', '2026-02-23 14:44:43');
 
 -- --------------------------------------------------------
 
