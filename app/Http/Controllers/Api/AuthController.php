@@ -49,6 +49,7 @@ class AuthController extends Controller
         $request->session()->regenerate();     // prevent session fixation [web:4][web:6]
 
         $user = Auth::user();
+        /** @var \App\Models\User|null $user */
 
         if (!$user) {
             Log::debug('Auth::user() returned null after attempt', [
@@ -89,7 +90,11 @@ class AuthController extends Controller
             // Set department to HR if not already set
             if (empty($user->department)) {
                 $user->department = 'HR';
-                $user->save();
+                if ($user instanceof \App\Models\User) {
+                    $user->save();
+                } else {
+                    \App\Models\User::where('id', $user->id)->update(['department' => 'HR']);
+                }
             }
         }
 
@@ -110,16 +115,27 @@ class AuthController extends Controller
             ], 500);
         }
 
-        // Determine the correct redirect path server-side (authoritative)
-        $redirectPath = $this->getRedirectPath($user);
+        // Check if user must change password - redirect to password change page
+        if ($user->must_change_password) {
+            $redirectPath = '/change-password';
+            Log::debug('Login successful - password change required', [
+                'username' => $user->username,
+                'id' => $user->id,
+                'role' => $user->role,
+                'redirect_path' => $redirectPath,
+            ]);
+        } else {
+            // Determine the normal redirect path based on role
+            $redirectPath = $this->getRedirectPath($user);
 
-        Log::debug('Login successful - role-based redirect', [
-            'username' => $user->username,
-            'id' => $user->id,
-            'role' => $user->role,
-            'department' => $user->department,
-            'redirect_path' => $redirectPath,
-        ]);
+            Log::debug('Login successful - role-based redirect', [
+                'username' => $user->username,
+                'id' => $user->id,
+                'role' => $user->role,
+                'department' => $user->department,
+                'redirect_path' => $redirectPath,
+            ]);
+        }
 
         // Keep legacy session keys in sync for routes that rely on Session::has('user_id')
         Session::put('user_id', $user->id);
@@ -129,6 +145,7 @@ class AuthController extends Controller
         Session::put('redirect_path', $redirectPath);
 
         // Create Sanctum token for API authentication
+        /** @var \App\Models\User $user */
         $token = $user->createToken('auth-token')->plainTextToken;
 
         return response()->json([
@@ -614,6 +631,7 @@ class AuthController extends Controller
             'password' => $request->input('password'), // Model's setter will hash it
             'email_verified_at' => now(),
             'role' => 'customer', // default role for public registration
+            'must_change_password' => true,
         ]);
 
         // Create customer account record
@@ -671,6 +689,7 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'email' => $user->email,
                 'username' => $user->username,
+                'must_change_password' => (bool) $user->must_change_password,
             ],
             'token' => $token
         ]);

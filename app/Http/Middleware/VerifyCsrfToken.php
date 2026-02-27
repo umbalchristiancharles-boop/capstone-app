@@ -23,6 +23,8 @@ class VerifyCsrfToken extends Middleware
         'api/staff/clock-in',
         'api/staff/clock-out',
         'api/staff/attendance/*',
+        // Password change API (exclude from CSRF for SPA/token auth)
+        'api/change-password',
     ];
 
     // No custom constructor: keep parent DI signature intact.

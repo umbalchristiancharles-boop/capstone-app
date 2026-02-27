@@ -31,10 +31,26 @@ function notifyRequestWaiters() {
 }
 
 // Axios interceptor to always get fresh CSRF token before each request
+function getCookie(name) {
+  try {
+    const v = document.cookie.split('; ').find(row => row.startsWith(name + '='))
+    if (!v) return null
+    return decodeURIComponent(v.split('=')[1])
+  } catch (e) {
+    return null
+  }
+}
+
 axios.interceptors.request.use(config => {
-  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-  if (csrfToken) {
-    config.headers['X-CSRF-TOKEN'] = csrfToken
+  // Prefer XSRF token from cookie (set by /sanctum/csrf-cookie) to avoid stale meta tokens
+  const xsrf = getCookie('XSRF-TOKEN')
+  if (xsrf) {
+    config.headers['X-XSRF-TOKEN'] = xsrf
+  } else {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+    if (csrfToken) {
+      config.headers['X-CSRF-TOKEN'] = csrfToken
+    }
   }
   try {
     console.debug('[AXIOS] Request ->', (config.method || '').toUpperCase(), config.url, 'cookies:', document.cookie, 'headers:', config.headers)
@@ -64,6 +80,22 @@ axios.interceptors.response.use(response => {
       cookie: document.cookie,
     })
   } catch (e) {}
+  // Handle 419 CSRF Token Mismatch by fetching a fresh CSRF cookie and retrying once
+  const resp = error && error.response
+  const req = error && error.config
+  if (resp && resp.status === 419 && req && !req._retry) {
+    req._retry = true
+    console.warn('[AXIOS] 419 detected - fetching /sanctum/csrf-cookie and retrying request')
+    return axios.get('/sanctum/csrf-cookie', { withCredentials: true }).then(() => {
+      // Re-attach X-XSRF-TOKEN header from cookie if present
+      const xsrf = (function(){ try { return decodeURIComponent(document.cookie.split('; ').find(r=>r.startsWith('XSRF-TOKEN='))?.split('=')[1]||'') } catch(e){return ''} })()
+      if (xsrf) req.headers['X-XSRF-TOKEN'] = xsrf
+      return axios(req)
+    }).catch(err => {
+      return Promise.reject(err)
+    })
+  }
+
   return Promise.reject(error)
 })
 
@@ -126,6 +158,13 @@ const router = createRouter({
       path: '/unauthorized',
       name: 'Unauthorized',
       component: () => import('./components/Unauthorized.vue'),
+      meta: { requiresAuth: false },
+    },
+    // Change password page for forced password changes
+    {
+      path: '/change-password',
+      name: 'ChangePassword',
+      component: () => import('./components/ChangePasswordPage.vue'),
       meta: { requiresAuth: false },
     },
   ],

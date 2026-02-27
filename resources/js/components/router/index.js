@@ -6,6 +6,12 @@ import ForgotPassword from '../components/ForgotPassword.vue';
 import ResetPassword from '../components/ResetPassword.vue';
 
 const routes = [
+    {
+      path: '/change-password',
+      name: 'ChangePassword',
+      component: () => import('../components/ChangePasswordPage.vue'),
+      meta: { requiresAuth: false }
+    },
   {
     path: '/',
     name: 'Home',

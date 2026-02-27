@@ -1,4 +1,4 @@
-<template>
+  <template>
   <div class="staff-management-page">
     <!-- Back to Dashboard Button -->
     <button @click="$router.push('/admin-panel')" class="btn-secondary back-to-dashboard-btn">
@@ -75,8 +75,21 @@
         <tbody>
           <tr v-for="member in filteredStaff" :key="member.id" :class="{ 'inactive': !member.is_active }">
             <td>
-              <div class="staff-info">
-                <img v-if="member.avatar_url" :src="member.avatar_url" :alt="member.full_name" class="avatar">
+            <div class="staff-info">
+                <div v-if="member.avatar_url" class="avatar-container">
+                  <img
+                    v-if="member.avatar_url"
+                    :src="member.avatar_url"
+                    :alt="member.full_name"
+                    class="avatar"
+                    @load="onImageLoad(member.id)"
+                    @error="onImageLoad(member.id)"
+                  >
+                  <div
+                    v-if="loadingImages[member.id] !== false"
+                    class="absolute inset-0 w-8 h-8 rounded-full bg-gray-200 animate-pulse"
+                  ></div>
+                </div>
                 <strong>{{ member.full_name || member.username }}</strong>
               </div>
             </td>
@@ -228,6 +241,7 @@ import '../css/adminpanel.css'
 const isLoading = ref(false)
 const errorMessage = ref('')
 const searchQuery = ref('')
+const imageLoadingStates = ref({})
 
 // Branches and filters
 const branches = ref([])
@@ -313,6 +327,19 @@ const filteredStaff = computed(() => {
     )
   }
 
+  // Initialize loading state for each participant
+  list.forEach(member => {
+    if (loadingImages.value[member.id] === undefined) {
+      loadingImages.value[member.id] = true
+      // Fallback: set to false after 1 second to handle cached images
+      setTimeout(() => {
+        if (loadingImages.value[member.id]) {
+          loadingImages.value[member.id] = false
+        }
+      }, 1000)
+    }
+  })
+
   return list
 })
 
@@ -349,6 +376,15 @@ async function loadStaff() {
       } else {
         staff.value = []
       }
+
+      // Fallback: ensure shimmer disappears for cached or fast-loading images
+      setTimeout(() => {
+        staff.value.forEach(member => {
+          if (loadingImages.value[member.id]) {
+            loadingImages.value[member.id] = false
+          }
+        })
+      }, 500)
     } else {
       errorMessage.value = res.data.message || 'Failed to load staff'
     }
@@ -532,9 +568,26 @@ onMounted(() => {
     await loadStaff()
     await loadBranches()
   })()
+
+  // Fallback: force all image loading states to false after 3 seconds to prevent stuck shimmers
+  setTimeout(() => {
+    Object.keys(loadingImages.value).forEach(key => {
+      loadingImages.value[key] = false
+    })
+  }, 3000)
 })
 
 // owner/profile & logout helpers removed from this view
+
+function onImageLoad(memberId) {
+  loadingImages.value[memberId] = false
+  // Fallback: ensure shimmer disappears after a short delay
+  setTimeout(() => {
+    if (loadingImages.value[memberId]) {
+      loadingImages.value[memberId] = false
+    }
+  }, 2000) // 2 seconds timeout
+}
 
 function displayRole(r) {
   const role = (r || '').toString().toUpperCase()

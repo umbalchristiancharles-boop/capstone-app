@@ -66,19 +66,18 @@ class User extends Authenticatable implements CanResetPassword
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * The attributes that should be cast to native types.
+     *
+     * @var array
      */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'is_active' => 'boolean',
-            'must_change_password' => 'boolean',
-            'deleted_at' => 'datetime',
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
-        ];
-    }
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'is_active' => 'boolean',
+        'must_change_password' => 'boolean',
+        'deleted_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
 
     /**
      * Relationship: User belongs to a Branch

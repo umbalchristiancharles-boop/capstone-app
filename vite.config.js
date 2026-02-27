@@ -20,12 +20,12 @@ export default defineConfig({
         // and CSRF tokens are treated as same-origin during dev.
         proxy: {
             '/api': {
-                target: 'http://localhost:8000',
+                target: 'http://localhost:8080',
                 changeOrigin: true,
                 secure: false,
             },
             '/sanctum': {
-                target: 'http://localhost:8000',
+                target: 'http://localhost:8080',
                 changeOrigin: true,
                 secure: false,
             },

@@ -220,15 +220,18 @@ async function handleLogin() {
             }
 
             if (res.data.user?.must_change_password) {
-                // SKIP forced password update modal, redirect directly to panel
-                setTimeout(() => {
-                    showOverlay.value = true;
-                    setTimeout(() => {
-                        try { sessionStorage.setItem('skipRouteOverlay', '1'); } catch (e) {}
-                        router.push(redirectPath);
-                    }, 600);
-                }, 400);
-                return;
+                                // Show forced password change modal before redirect
+                                loggedInUsername.value = res.data.user?.username || username.value;
+                                defaultPassword.value = '';
+                                pendingRedirectPath.value = redirectPath;
+                                // Store username for ChangePasswordPage
+                                try {
+                                    localStorage.setItem('pending_username', loggedInUsername.value);
+                                } catch (e) {}
+                                // Immediately update the URL to /change-password
+                                router.push('/change-password');
+                                showForceModal.value = true;
+                                return;
             }
 
             setTimeout(() => {
@@ -337,7 +340,8 @@ function handleForceCompleted() {
         showOverlay.value = true;
         setTimeout(() => {
             try { sessionStorage.setItem('skipRouteOverlay', '1'); } catch (e) {}
-            router.push(pendingRedirectPath.value || "/admin-panel");
+            // Redirect to /change-password so the URL matches the modal
+            router.push('/change-password');
         }, 600);
     }, 400);
 }

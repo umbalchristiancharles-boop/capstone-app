@@ -180,24 +180,28 @@ async function submit() {
 
   isSubmitting.value = true
   try {
-    // Fetch fresh CSRF token and update meta tag
-    const tokenRes = await axios.get('/api/csrf-token')
-    const freshToken = tokenRes.data.token
-
-    // Update meta tag so axios interceptor picks it up
-    const metaTag = document.querySelector('meta[name="csrf-token"]')
-    if (metaTag) {
-      metaTag.setAttribute('content', freshToken)
+    // Ensure CSRF cookie is set (Sanctum) and send request with credentials
+    try {
+      await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
+      // After obtaining cookie, ensure axios header uses cookie value
+      try {
+        const xsrf = decodeURIComponent(document.cookie.split('; ').find(r => r.trim().startsWith('XSRF-TOKEN='))?.split('=')[1] || '')
+        if (xsrf) {
+          axios.defaults.headers.common['X-XSRF-TOKEN'] = xsrf
+        }
+      } catch (e) {}
+    } catch (e) {
+      // ignore, we'll still attempt the POST and surface server errors
     }
 
     // For owner user, set current_password to the known default after reset
-    const currentPassword = 'Chikintayo_123'
+    const currentPassword = props.defaultPassword || fetchedDefault.value || 'Chikintayo_123'
     const res = await axios.post('/api/change-password', {
       current_password: currentPassword,
       new_password: newPassword.value,
       new_password_confirmation: confirmPassword.value,
-      username: username,
-    })
+      username: props.username,
+    }, { withCredentials: true })
 
     if (res.data.ok) {
       success.value = 'Password updated! Redirecting...'
