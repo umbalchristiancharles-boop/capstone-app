@@ -196,7 +196,7 @@ class StaffManagementController extends Controller
     }
 
     /**
-     * Get staff attendance (mock data for now)
+     * Get staff attendance for manager's branch (real data)
      */
     public function attendance(Request $request)
     {
@@ -212,34 +212,57 @@ class StaffManagementController extends Controller
 
         $date = $request->query('date', now()->format('Y-m-d'));
 
-        // Mock attendance data
-        $attendance = [
-            [
-                'staff_id' => 1,
-                'staff_name' => 'Juan Dela Cruz',
-                'clock_in' => '08:05',
-                'clock_out' => null,
-                'status' => 'on_duty',
-                'hours_worked' => '6.5',
-            ],
-            [
-                'staff_id' => 2,
-                'staff_name' => 'Maria Santos',
-                'clock_in' => '16:00',
-                'clock_out' => null,
-                'status' => 'on_duty',
-                'hours_worked' => '2.0',
-            ],
-        ];
+        // Get all staff in the branch (including the manager)
+        $branchUsers = \App\Models\User::where('branch_id', $user->branch_id)
+            ->whereNull('deleted_at')
+            ->where('is_active', 1)
+            ->get();
+
+        // Get attendance records for the date
+        $attendanceRecords = \App\Models\Attendance::where('date', $date)
+            ->whereIn('user_id', $branchUsers->pluck('id'))
+            ->get()
+            ->keyBy('user_id');
+
+        // Build attendance data for each user
+        $attendance = [];
+        $presentCount = 0;
+        $absentCount = 0;
+
+        foreach ($branchUsers as $staff) {
+            $att = $attendanceRecords->get($staff->id);
+
+            if ($att && $att->time_in) {
+                $presentCount++;
+                $attendance[] = [
+                    'staff_id' => $staff->id,
+                    'staff_name' => $staff->full_name ?? $staff->username,
+                    'clock_in' => $att->time_in ? $att->time_in->format('H:i') : null,
+                    'clock_out' => $att->time_out ? $att->time_out->format('H:i') : null,
+                    'status' => $att->status ?? ($att->time_out ? 'completed' : 'on_duty'),
+                    'hours_worked' => is_numeric($att->hours_worked) ? round($att->hours_worked / 60, 2) : 0,
+                ];
+            } else {
+                $absentCount++;
+                $attendance[] = [
+                    'staff_id' => $staff->id,
+                    'staff_name' => $staff->full_name ?? $staff->username,
+                    'clock_in' => null,
+                    'clock_out' => null,
+                    'status' => 'absent',
+                    'hours_worked' => 0,
+                ];
+            }
+        }
 
         return response()->json([
             'success' => true,
             'date' => $date,
             'attendance' => $attendance,
             'summary' => [
-                'total_staff' => 2,
-                'present' => 2,
-                'absent' => 0,
+                'total_staff' => $branchUsers->count(),
+                'present' => $presentCount,
+                'absent' => $absentCount,
             ],
         ]);
     }

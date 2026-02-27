@@ -113,6 +113,12 @@ Route::middleware('web')->group(function () {
         Route::get('/reports/staff-performance', [ReportsController::class, 'staffPerformanceReport']);
         Route::get('/reports/inventory', [ReportsController::class, 'inventoryReport']);
         Route::get('/reports/export',   [ReportsController::class, 'exportCSV']);
+
+        // Attendance - Manager can clock in/out
+        Route::post('/clock-in',        [AttendanceController::class, 'clockIn']);
+        Route::post('/clock-out',       [AttendanceController::class, 'clockOut']);
+        Route::get('/attendance/status', [AttendanceController::class, 'status']);
+        Route::get('/attendance/history', [AttendanceController::class, 'history']);
     });
 
     // ==========================================
@@ -124,7 +130,20 @@ Route::middleware('web')->group(function () {
             // Dashboard
             Route::get('/dashboard',        [StaffDashboardController::class, 'index']);
 
-            // Attendance/Clock In-Out
+            // Attendance/Clock In-Out - works for all roles (Staff, Manager, Owner)
+            Route::post('/clock-in',        [AttendanceController::class, 'clockIn']);
+            Route::post('/clock-out',       [AttendanceController::class, 'clockOut']);
+            Route::get('/attendance/status', [AttendanceController::class, 'status']);
+            Route::get('/attendance/history', [AttendanceController::class, 'history']);
+        });
+    });
+
+    // ==========================================
+    // OWNER/ADMIN API - Attendance routes for Owner and Admin
+    // ==========================================
+    Route::prefix('owner')->group(function () {
+        Route::middleware(['auth'])->group(function () {
+            // Attendance - Owner can clock in/out just like staff
             Route::post('/clock-in',        [AttendanceController::class, 'clockIn']);
             Route::post('/clock-out',       [AttendanceController::class, 'clockOut']);
             Route::get('/attendance/status', [AttendanceController::class, 'status']);

@@ -16,7 +16,7 @@
         <aside class="pl-stats">
           <!-- Owner / Staff profile card (restored) -->
           <div class="profile-card">
-            <div class="profile-avatar"> 
+            <div class="profile-avatar">
               <div class="avatar-circle">{{ staffProfile.fullName ? (staffProfile.fullName.charAt(0) || 'U') : 'U' }}</div>
             </div>
             <div class="profile-info">
@@ -29,6 +29,50 @@
               <button class="btn-info-small" @click="openInfoModal">Info</button>
               <div class="qr-placeholder">QR</div>
             </div>
+
+            <!-- Attendance Clock In/Out Section -->
+            <div class="attendance-card">
+              <div class="attendance-header">
+                <span class="attendance-title">Attendance</span>
+                <span :class="['attendance-status-badge', attendanceStatus.is_clocked_in ? 'status-on-duty' : 'status-off-duty']">
+                  {{ attendanceStatus.is_clocked_in ? 'On Duty' : 'Off Duty' }}
+                </span>
+              </div>
+              <div class="attendance-times" v-if="attendanceStatus.clock_in_time || attendanceStatus.clock_out_time">
+                <div class="time-row">
+                  <span class="time-label">Clock In:</span>
+                  <span class="time-value">{{ attendanceStatus.clock_in_time || '-' }}</span>
+                </div>
+                <div class="time-row">
+                  <span class="time-label">Clock Out:</span>
+                  <span class="time-value">{{ attendanceStatus.clock_out_time || '-' }}</span>
+                </div>
+                <div class="time-row" v-if="attendanceStatus.hours_worked > 0">
+                  <span class="time-label">Hours:</span>
+                  <span class="time-value">{{ attendanceStatus.hours_worked }} hrs</span>
+                </div>
+              </div>
+              <div class="attendance-buttons">
+                <button
+                  @click="performClockIn"
+                  :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing"
+                  class="btn-clock-in"
+                >
+                  {{ isAttendanceProcessing ? '...' : 'Clock In' }}
+                </button>
+                <button
+                  @click="performClockOut"
+                  :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing"
+                  class="btn-clock-out"
+                >
+                  {{ isAttendanceProcessing ? '...' : 'Clock Out' }}
+                </button>
+              </div>
+              <div v-if="attendanceMessage" :class="['attendance-message', attendanceMessageType]">
+                {{ attendanceMessage }}
+              </div>
+            </div>
+
             <div class="profile-actions">
               <div class="small-stats">
                 <div><div class="small-stat-title">Total Branches:</div><div class="small-stat-val">5</div></div>
@@ -231,6 +275,17 @@ const profileSuccess = ref('');
 const showLogoutConfirm = ref(false);
 const isLoggingOut = ref(false);
 
+// Attendance state variables
+const attendanceStatus = ref({
+  is_clocked_in: false,
+  clock_in_time: null,
+  clock_out_time: null,
+  hours_worked: 0
+});
+const isAttendanceProcessing = ref(false);
+const attendanceMessage = ref('');
+const attendanceMessageType = ref('');
+
 // optional products prop (we will rely on ProductList fetch by default)
 const props = defineProps({
   products: { type: Array, default: () => [] }
@@ -326,6 +381,8 @@ onMounted(async () => {
   } finally {
     isProfileLoading.value = false;
   }
+  // Load attendance status on mount
+  loadAttendanceStatus()
   // ProductList will handle fetching when given a fetchUrl; if a parent passed products prop, ProductList will display them.
   // initial stats update after mount
   setTimeout(() => updateStats(), 300)
@@ -501,6 +558,71 @@ async function logout() {
     try { window.location.replace('/') } catch (e) { router.push('/').catch(() => {}) }
   }, 600);
 }
+
+// Attendance functions
+async function loadAttendanceStatus() {
+  try {
+    const res = await axios.get('/api/staff/attendance/status', { withCredentials: true })
+    if (res.data && res.data.ok) {
+      attendanceStatus.value = {
+        is_clocked_in: res.data.status?.is_clocked_in || false,
+        clock_in_time: res.data.status?.clock_in_time || null,
+        clock_out_time: res.data.status?.clock_out_time || null,
+        hours_worked: res.data.status?.hours_worked || 0
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load attendance status:', e)
+  }
+}
+
+async function performClockIn() {
+  if (isAttendanceProcessing.value) return
+  isAttendanceProcessing.value = true
+  attendanceMessage.value = ''
+
+  try {
+    const res = await axios.post('/api/staff/clock-in', {}, { withCredentials: true })
+    if (res.data && (res.data.success || res.data.ok)) {
+      attendanceMessage.value = 'Clocked in successfully!'
+      attendanceMessageType.value = 'success'
+      await loadAttendanceStatus()
+    } else {
+      attendanceMessage.value = res.data.message || 'Failed to clock in'
+      attendanceMessageType.value = 'error'
+    }
+  } catch (e) {
+    attendanceMessage.value = e.response?.data?.message || 'Error clocking in'
+    attendanceMessageType.value = 'error'
+  } finally {
+    isAttendanceProcessing.value = false
+    setTimeout(() => { attendanceMessage.value = '' }, 3000)
+  }
+}
+
+async function performClockOut() {
+  if (isAttendanceProcessing.value) return
+  isAttendanceProcessing.value = true
+  attendanceMessage.value = ''
+
+  try {
+    const res = await axios.post('/api/staff/clock-out', {}, { withCredentials: true })
+    if (res.data && (res.data.success || res.data.ok)) {
+      attendanceMessage.value = 'Clocked out successfully!'
+      attendanceMessageType.value = 'success'
+      await loadAttendanceStatus()
+    } else {
+      attendanceMessage.value = res.data.message || 'Failed to clock out'
+      attendanceMessageType.value = 'error'
+    }
+  } catch (e) {
+    attendanceMessage.value = e.response?.data?.message || 'Error clocking out'
+    attendanceMessageType.value = 'error'
+  } finally {
+    isAttendanceProcessing.value = false
+    setTimeout(() => { attendanceMessage.value = '' }, 3000)
+  }
+}
 </script>
 
 <style scoped>
@@ -579,5 +701,132 @@ ProductList[compact] { width:100% }
 .small-stats { display:flex; justify-content:space-between; gap:12px }
 .small-stat-title { font-size:0.75rem; color:#8a4b1a }
 .small-stat-val { font-weight:800; color:#7a2b00 }
+
+/* Attendance Card Styles */
+.attendance-card {
+  background: rgba(255,255,255,0.7);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.attendance-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.attendance-title {
+  font-weight: 700;
+  color: #7a2b00;
+  font-size: 0.9rem;
+}
+
+.attendance-status-badge {
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.status-on-duty {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-off-duty {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.attendance-times {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+}
+
+.time-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.time-label {
+  color: #8a4b1a;
+}
+
+.time-value {
+  font-weight: 600;
+  color: #7a2b00;
+}
+
+.attendance-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-clock-in,
+.btn-clock-out {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-clock-in {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  color: white;
+}
+
+.btn-clock-in:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.btn-clock-in:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.btn-clock-out {
+  background: linear-gradient(135deg, #dc3545, #ff6b6b);
+  color: white;
+}
+
+.btn-clock-out:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+}
+
+.btn-clock-out:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.attendance-message {
+  padding: 8px;
+  border-radius: 4px;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.attendance-message.success {
+  background: #d4edda;
+  color: #155724;
+}
+
+.attendance-message.error {
+  background: #f8d7da;
+  color: #721c24;
+}
 
 </style>

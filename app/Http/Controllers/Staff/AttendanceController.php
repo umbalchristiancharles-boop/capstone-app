@@ -13,17 +13,18 @@ class AttendanceController extends Controller
 {
     /**
      * Clock In - Staff records arrival
+     * Works for all roles: STAFF, BRANCH_MANAGER, OWNER, ADMIN, HR
      */
     public function clockIn(Request $request)
     {
         $user = Auth::user();
         if (!$user) {
-            return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
+            return response()->json(['ok' => false, 'success' => false, 'message' => 'Not authenticated'], 401);
         }
 
         $today = Carbon::now()->toDateString();
 
-        // Check if already clocked in
+        // Check if already clocked in today
         $attendance = Attendance::where('user_id', $user->id)
             ->where('date', $today)
             ->first();
@@ -31,6 +32,7 @@ class AttendanceController extends Controller
         if ($attendance && $attendance->time_in) {
             return response()->json([
                 'ok' => false,
+                'success' => false,
                 'message' => 'Already clocked in today',
                 'time_in' => $attendance->time_in->format('H:i')
             ], 400);
@@ -51,20 +53,23 @@ class AttendanceController extends Controller
 
         return response()->json([
             'ok' => true,
+            'success' => true,
             'message' => 'Clocked in successfully',
             'time_in' => $timeIn->format('h:i A'),
-            'status' => $attendance->status
+            'status' => $attendance->status,
+            'is_clocked_in' => true
         ]);
     }
 
     /**
      * Clock Out - Staff records departure
+     * Works for all roles: STAFF, BRANCH_MANAGER, OWNER, ADMIN, HR
      */
     public function clockOut(Request $request)
     {
         $user = Auth::user();
         if (!$user) {
-            return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
+            return response()->json(['ok' => false, 'success' => false, 'message' => 'Not authenticated'], 401);
         }
 
         $today = Carbon::now()->toDateString();
@@ -76,6 +81,7 @@ class AttendanceController extends Controller
         if (!$attendance || !$attendance->time_in) {
             return response()->json([
                 'ok' => false,
+                'success' => false,
                 'message' => 'Not clocked in yet'
             ], 400);
         }
@@ -83,6 +89,7 @@ class AttendanceController extends Controller
         if ($attendance->time_out) {
             return response()->json([
                 'ok' => false,
+                'success' => false,
                 'message' => 'Already clocked out today',
                 'time_out' => $attendance->time_out->format('H:i')
             ], 400);
@@ -97,20 +104,23 @@ class AttendanceController extends Controller
 
         return response()->json([
             'ok' => true,
+            'success' => true,
             'message' => 'Clocked out successfully',
             'time_out' => $timeOut->format('h:i A'),
-            'hours_worked' => round($minutesWorked / 60, 2)
+            'hours_worked' => round($minutesWorked / 60, 2),
+            'is_clocked_in' => false
         ]);
     }
 
     /**
      * Get attendance status (current clocking status)
+     * Works for all roles: STAFF, BRANCH_MANAGER, OWNER, ADMIN, HR
      */
     public function status(Request $request)
     {
         $user = Auth::user();
         if (!$user) {
-            return response()->json(['ok' => false], 401);
+            return response()->json(['ok' => false, 'success' => false], 401);
         }
 
         $today = Carbon::now()->toDateString();
@@ -118,35 +128,52 @@ class AttendanceController extends Controller
             ->where('date', $today)
             ->first();
 
+        $clockedIn = $attendance && !!$attendance->time_in;
+        $clockedOut = $attendance && !!$attendance->time_out;
+
+        // Build status object for frontend compatibility
+        $statusObj = [
+            'is_clocked_in' => $clockedIn,
+            'is_clocked_out' => $clockedOut,
+            'clock_in_time' => $attendance->time_in?->format('h:i A') ?? null,
+            'clock_out_time' => $attendance->time_out?->format('h:i A') ?? null,
+            'hours_worked' => is_numeric($attendance->hours_worked) ? round($attendance->hours_worked / 60, 2) : 0,
+        ];
+
         if (!$attendance) {
             return response()->json([
                 'ok' => true,
+                'success' => true,
                 'clocked_in' => false,
-                'clocked_out' => false
+                'clocked_out' => false,
+                'status' => $statusObj
             ]);
         }
 
         return response()->json([
             'ok' => true,
-            'clocked_in' => !!$attendance->time_in,
-            'clocked_out' => !!$attendance->time_out,
+            'success' => true,
+            'clocked_in' => $clockedIn,
+            'clocked_out' => $clockedOut,
             'time_in' => $attendance->time_in?->format('h:i A'),
             'time_out' => $attendance->time_out?->format('h:i A'),
-            'status' => $attendance->status
+            'status' => $statusObj
         ]);
     }
 
     /**
      * Get attendance history for user
+     * Works for all roles: STAFF, BRANCH_MANAGER, OWNER, ADMIN, HR
      */
     public function history(Request $request)
     {
         $user = Auth::user();
         if (!$user) {
-            return response()->json(['ok' => false], 401);
+            return response()->json(['ok' => false, 'success' => false], 401);
         }
 
         $range = $request->query('range', 'thisMonth');
+        $limit = $request->query('limit', null);
         $query = Attendance::where('user_id', $user->id);
 
         // Date filtering
@@ -164,6 +191,10 @@ class AttendanceController extends Controller
             ]);
         }
 
+        if ($limit) {
+            $query->limit((int) $limit);
+        }
+
         $records = $query->orderBy('date', 'desc')->get()->map(fn($att) => [
             'id' => $att->id,
             'date' => $att->date->format('Y-m-d'),
@@ -175,7 +206,9 @@ class AttendanceController extends Controller
 
         return response()->json([
             'ok' => true,
-            'data' => $records
+            'success' => true,
+            'data' => $records,
+            'history' => $records
         ]);
     }
 
