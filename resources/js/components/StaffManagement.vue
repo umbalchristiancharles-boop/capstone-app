@@ -234,6 +234,8 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+// Declare loadingImages as a ref to avoid undefined errors
+const loadingImages = ref({})
 import axios from 'axios'
 import '../css/adminpanel.css'
 
