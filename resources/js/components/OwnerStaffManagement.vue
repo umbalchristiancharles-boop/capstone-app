@@ -129,8 +129,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import '../css/adminpanel.css'
 import OwnerStaffModal from './OwnerStaffModal.vue'
@@ -142,6 +142,15 @@ function onStaffModalSuccess() {
 }
 
 const router = useRouter()
+const currentRoute = useRoute()
+
+// Watch for route changes to reload staff when navigating to this page
+watch(() => currentRoute.path, (newPath) => {
+  if (newPath === '/owner/staff-management' || newPath === '/admin/staff-management') {
+    loadStaff()
+    loadBranches()
+  }
+})
 
 // State
 const loading = ref(false)

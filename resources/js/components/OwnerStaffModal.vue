@@ -69,13 +69,12 @@
                 <!-- password input + toggle -->
                 <div style="display:flex; gap:0.5rem; align-items:center; flex:1; min-width:220px;">
                   <input
-                    v-model="form.password"
+                    :value="defaultPasswordValue"
                     :type="showPassword ? 'text' : 'password'"
                     id="password"
-                    class="form-input"
-                    :placeholder="'Enter password (min 8 characters)'"
-                    :required="!isEdit"
-                    style="flex:1;"
+                    class="form-input read-only"
+                    readonly
+                    style="flex:1; background-color: #f3f4f6;"
                   />
                   <button type="button" class="password-toggle" @click="toggleShowPassword" :aria-label="showPassword ? 'Hide password' : 'Show password'" style="height:40px;">
                     <span v-if="showPassword">
@@ -772,14 +771,29 @@ export default {
     },
 
     copyDefaultToClipboard() {
-      if (!this.fetchedDefaultPassword) return
+      if (!this.defaultPasswordValue) return
       try {
-        navigator.clipboard?.writeText(this.fetchedDefaultPassword)
+        navigator.clipboard?.writeText(this.defaultPasswordValue)
       } catch (e) {}
+    },
+
+    async refreshCsrfToken() {
+      try {
+        await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+        if (csrfToken) {
+          axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken
+        }
+      } catch (e) {
+        console.warn('Failed to refresh CSRF token', e)
+      }
     }
   },
 
   computed: {
+    defaultPasswordValue() {
+      return 'Chikintayo_123'
+    },
     changedFields() {
       if (!this.isEdit || !this.staff) return []
       const changes = []
@@ -869,6 +883,9 @@ export default {
       if (!newVal) {
         this.closeModal()
       } else {
+        // Refresh CSRF token when modal opens to avoid stale token issues
+        this.refreshCsrfToken()
+        
         // When opening the modal in create mode, ensure any previous `staff` prop
         // value does not leak into the form. Reset the form state for fresh create.
         if (!this.isEdit) {
@@ -895,7 +912,6 @@ export default {
       }
     }
   },
- 
 }
 </script>
 

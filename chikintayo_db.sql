@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 26, 2026 at 07:12 PM
+-- Generation Time: Feb 27, 2026 at 03:59 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -454,7 +454,19 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (110, 'App\\Models\\User', 2, 'auth-token', '7d33da1a034d7c702de96d127c4685417cee279fb7774579bbf49c537dfec920', '[\"*\"]', NULL, NULL, '2026-02-26 17:49:41', '2026-02-26 17:49:41'),
 (111, 'App\\Models\\User', 14, 'auth-token', '04e305f2787da4c41b5697e00bbb3166040478c82ca250026841f6e4e5804d43', '[\"*\"]', NULL, NULL, '2026-02-26 18:02:57', '2026-02-26 18:02:57'),
 (112, 'App\\Models\\User', 2, 'auth-token', '40ad4761590fd59e59d0dd7c34f85dc1f521ba821f70f261f429f06940a42aab', '[\"*\"]', NULL, NULL, '2026-02-26 18:09:47', '2026-02-26 18:09:47'),
-(113, 'App\\Models\\User', 15, 'auth-token', '5fcbabb540a4d8c18a4733dbded7b502ac4e088a76e507fa59db7e4141026b3f', '[\"*\"]', NULL, NULL, '2026-02-26 18:12:02', '2026-02-26 18:12:02');
+(113, 'App\\Models\\User', 15, 'auth-token', '5fcbabb540a4d8c18a4733dbded7b502ac4e088a76e507fa59db7e4141026b3f', '[\"*\"]', NULL, NULL, '2026-02-26 18:12:02', '2026-02-26 18:12:02'),
+(114, 'App\\Models\\User', 15, 'auth-token', 'e9aa9eb5c46ae2b99fea4dd8491daf9db59e295738c58f80ae7ed62fb817636b', '[\"*\"]', NULL, NULL, '2026-02-26 19:01:06', '2026-02-26 19:01:06'),
+(115, 'App\\Models\\User', 15, 'auth-token', '3d7174e697ed3f20340cc44587809db3ed9e726a27f37e8165b06dd7afab04e7', '[\"*\"]', NULL, NULL, '2026-02-26 19:16:05', '2026-02-26 19:16:05'),
+(116, 'App\\Models\\User', 15, 'auth-token', 'f47287584e0f8556b84438477a5a0d599117ddad6d4d1d21b09f6eb74c66f396', '[\"*\"]', NULL, NULL, '2026-02-26 19:18:02', '2026-02-26 19:18:02'),
+(117, 'App\\Models\\User', 15, 'auth-token', 'cba4f98357f35a1d58bb90ea02332b07de00896712abd57f6e3f3f7845d12096', '[\"*\"]', NULL, NULL, '2026-02-26 19:23:56', '2026-02-26 19:23:56'),
+(118, 'App\\Models\\User', 15, 'auth-token', '77b086d379ccf0548c1508963e9c160b43593c054762a4bfd2ac3f7166e79455', '[\"*\"]', NULL, NULL, '2026-02-26 19:29:14', '2026-02-26 19:29:14'),
+(119, 'App\\Models\\User', 15, 'auth-token', '839d253b1467fe4e236ed8064562cee45cd1277aad16b3cab8d6655aec9a4450', '[\"*\"]', NULL, NULL, '2026-02-26 19:47:55', '2026-02-26 19:47:55'),
+(120, 'App\\Models\\User', 15, 'auth-token', 'e3ae35b8b6d433b26061bc8ddcde938760e164e073a07260961c55d4a13496f3', '[\"*\"]', NULL, NULL, '2026-02-26 19:52:21', '2026-02-26 19:52:21'),
+(121, 'App\\Models\\User', 15, 'auth-token', '68c0f6a1f99f87668065e03d21cb33c7820d02bada0a3a9850719445d01bea51', '[\"*\"]', NULL, NULL, '2026-02-26 20:01:32', '2026-02-26 20:01:32'),
+(122, 'App\\Models\\User', 15, 'auth-token', '54acc673f9ac9cf2d299945f1a6c170ffb6a6adc63ecc1ba8015c8139c587652', '[\"*\"]', NULL, NULL, '2026-02-26 20:07:30', '2026-02-26 20:07:30'),
+(123, 'App\\Models\\User', 18, 'auth-token', 'e1d282757242b3529ca2dbd8544059219b1e168b50b6d3a500a568c3867a8d9b', '[\"*\"]', NULL, NULL, '2026-02-26 20:08:51', '2026-02-26 20:08:51'),
+(124, 'App\\Models\\User', 15, 'auth-token', 'a09cf9865bacd0958a9fae2bff26e43ad9829c6c55ff2b5d1f2d9b93591dc08b', '[\"*\"]', NULL, NULL, '2026-02-26 20:11:42', '2026-02-26 20:11:42'),
+(125, 'App\\Models\\User', 19, 'auth-token', '5e214c0153f6174ef8fcf5553fc0d349ad712c98241d6e8a1fdcfda062a7755f', '[\"*\"]', NULL, NULL, '2026-02-26 20:13:14', '2026-02-26 20:13:14');
 
 -- --------------------------------------------------------
 
@@ -556,6 +568,14 @@ CREATE TABLE `staff_documents` (
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `staff_documents`
+--
+
+INSERT INTO `staff_documents` (`id`, `user_id`, `resume_path`, `government_id_path`, `psa_birth_certificate_path`, `nbi_clearance_path`, `police_clearance_path`, `medical_certificate_path`, `drug_test_result_path`, `sss_id_path`, `philhealth_id_path`, `pagibig_mdf_path`, `tin_id_path`, `diploma_transcript_path`, `created_at`, `updated_at`) VALUES
+(8, 18, NULL, 'staff-documents/18/government_id.png', 'staff-documents/18/psa_birth_certificate.png', 'staff-documents/18/nbi_clearance.png', 'staff-documents/18/police_clearance.png', 'staff-documents/18/medical_certificate.png', 'staff-documents/18/drug_test_result.png', 'staff-documents/18/sss_id.png', 'staff-documents/18/philhealth_id.png', 'staff-documents/18/pagibig_mdf.png', 'staff-documents/18/tin_id.png', 'staff-documents/18/diploma_transcript.png', '2026-02-26 20:08:30', '2026-02-26 20:08:30'),
+(9, 19, NULL, 'staff-documents/19/government_id.png', 'staff-documents/19/psa_birth_certificate.png', 'staff-documents/19/nbi_clearance.png', 'staff-documents/19/police_clearance.png', 'staff-documents/19/medical_certificate.png', 'staff-documents/19/drug_test_result.png', 'staff-documents/19/sss_id.png', 'staff-documents/19/philhealth_id.png', 'staff-documents/19/pagibig_mdf.png', 'staff-documents/19/tin_id.png', 'staff-documents/19/diploma_transcript.png', '2026-02-26 20:12:39', '2026-02-26 20:12:39');
+
 -- --------------------------------------------------------
 
 --
@@ -590,7 +610,9 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`id`, `email`, `username`, `full_name`, `name`, `password`, `email_verified_at`, `role`, `branch_id`, `department`, `remember_token`, `created_at`, `updated_at`, `deleted_at`, `must_change_password`, `is_active`, `address`, `avatar_url`, `phone_number`) VALUES
 (2, 'admin_main@example.com', 'admin_main', 'Main Admin', NULL, '$2y$12$1o6PwCQnVSntMJaAbnpKQ.V4i2a8pyrZvSv71F1ex//OerR3EbJu.', '2026-02-23 14:44:43', 'ADMIN', NULL, 'HR', NULL, '2026-02-23 14:44:43', '2026-02-23 14:44:43', NULL, 0, 1, 'Admin HQ', NULL, '09171234567'),
-(15, 'owner@gmail.com', 'owner', 'Owners', NULL, '$2y$12$uvczoI9YpYeki8dqE2S9/OugZsLnPeOkhwJX8dERAari3RWgE4l3y', NULL, 'OWNER', NULL, NULL, NULL, '2026-02-26 18:11:40', '2026-02-26 18:11:40', NULL, 1, 1, '', NULL, '09156819999');
+(15, 'owner@gmail.com', 'owner', 'Owners', NULL, '$2y$12$uvczoI9YpYeki8dqE2S9/OugZsLnPeOkhwJX8dERAari3RWgE4l3y', NULL, 'OWNER', NULL, NULL, NULL, '2026-02-26 18:11:40', '2026-02-26 18:11:40', NULL, 1, 1, '', NULL, '09156819999'),
+(18, 'vincetae@gmail.com', 'vince', 'vince bido', NULL, '$2y$12$YNjOqIw04n9UUFUEsIvW5.jlyu/w5BpKGkEPhlharharO9QhBYrGS', NULL, 'STAFF', 2, 'INVENTORY', NULL, '2026-02-26 20:08:30', '2026-02-26 20:08:30', NULL, 1, 1, '213', NULL, '09156818866'),
+(19, 'gab@gmail.com', 'gab', 'gab ongs', NULL, '$2y$12$YaRmH8Q3eQJwsPA2hQkzTezgs7z2dc.5oxiaScq64PKcNfkL3yiQC', NULL, 'MANAGER', 2, 'INVENTORY', NULL, '2026-02-26 20:12:39', '2026-02-26 20:12:39', NULL, 1, 1, '213', NULL, '09156818858');
 
 --
 -- Indexes for dumped tables
@@ -791,7 +813,7 @@ ALTER TABLE `orders`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=114;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=126;
 
 --
 -- AUTO_INCREMENT for table `products`
@@ -809,13 +831,13 @@ ALTER TABLE `product_comments`
 -- AUTO_INCREMENT for table `staff_documents`
 --
 ALTER TABLE `staff_documents`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- Constraints for dumped tables

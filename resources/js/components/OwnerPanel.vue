@@ -98,7 +98,7 @@
                   <button
                     class="staff-btn staff-btn--center"
                     v-if="ownerProfile.role === 'OWNER'"
-                    @click="router.push('/owner/staff-management')"
+                    @click="goToStaffManagement()"
                   >
                     Staff Management
                   </button>
@@ -549,6 +549,15 @@ async function confirmLogout() {
 function cancelLogout() { if (isLoggingOut.value) return; showLogoutConfirm.value = false }
 
 // Staff management navigation removed from Owner panel (owners should not manage staff here)
+
+function goToStaffManagement() {
+  try {
+    // Force a full page navigation so the staff-management page is fully reloaded
+    window.location.href = '/owner/staff-management'
+  } catch (e) {
+    try { router.push('/owner/staff-management') } catch (_) {}
+  }
+}
 
 onMounted(() => {
   loadDashboard(activeRange.value)
