@@ -74,26 +74,31 @@
             </div>
 
             <div class="profile-actions">
-              <div class="small-stats">
-                <div><div class="small-stat-title">Total Branches:</div><div class="small-stat-val">5</div></div>
-                <div><div class="small-stat-title">Total Employees:</div><div class="small-stat-val">4</div></div>
-              </div>
-              <button class="btn-primary" @click="$emit('open-staff-management')">Staff Management</button>
+              <!-- Only show stats and staff management for non-STAFF roles -->
+              <template v-if="staffProfile.role !== 'STAFF'">
+                <div class="small-stats">
+                  <div><div class="small-stat-title">Total Branches:</div><div class="small-stat-val">5</div></div>
+                  <div><div class="small-stat-title">Total Employees:</div><div class="small-stat-val">4</div></div>
+                </div>
+                <button class="btn-primary" @click="$emit('open-staff-management')">Staff Management</button>
+              </template>
               <button class="btn-light" @click="logout">Logout</button>
             </div>
           </div>
-          <div class="stat-card">
-            <div class="stat-title">Total products</div>
-            <div class="stat-value">{{ totalProducts }}</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-title">Low stock</div>
-            <div class="stat-value">{{ lowStockCount }}</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-title">Out of stock</div>
-            <div class="stat-value">{{ outOfStockCount }}</div>
-          </div>
+          <template v-if="staffProfile.role !== 'STAFF'">
+            <div class="stat-card">
+              <div class="stat-title">Total products</div>
+              <div class="stat-value">{{ totalProducts }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">Low stock</div>
+              <div class="stat-value">{{ lowStockCount }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">Out of stock</div>
+              <div class="stat-value">{{ outOfStockCount }}</div>
+            </div>
+          </template>
         </aside>
 
         <main class="pl-main">

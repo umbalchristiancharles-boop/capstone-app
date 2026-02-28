@@ -194,10 +194,12 @@ async function handleLogin() {
                 localStorage.setItem('user', JSON.stringify(userData));
                 console.debug('[LOGIN] User saved to localStorage:', userData);
 
-                // Store Sanctum token if provided
+                // Store Sanctum token if provided (use 'token' key for consistency with app.js)
                 if (res.data.token) {
-                    localStorage.setItem('auth_token', res.data.token);
-                    console.debug('[LOGIN] Token saved to localStorage');
+                    localStorage.setItem('token', res.data.token);
+                    // Also set axios header immediately for subsequent API calls
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
+                    console.debug('[LOGIN] Token saved to localStorage and axios header set');
                 }
             } catch (e) {
                 console.error('[LOGIN] Failed to save user to localStorage:', e);

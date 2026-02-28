@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 27, 2026 at 09:25 PM
+-- Generation Time: Feb 28, 2026 at 11:37 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -511,7 +511,20 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (169, 'App\\Models\\User', 20, 'auth-token', 'c81063f0d9bd3e14af37c80a29b1329e143044ee7c6ca1b05922b5b5f8fe35aa', '[\"*\"]', NULL, NULL, '2026-02-27 20:00:19', '2026-02-27 20:00:19'),
 (170, 'App\\Models\\User', 22, 'auth-token', '3919b91991fa274abfcdfd095df932c633c05b9a40b0df502b8b4d7c7689f289', '[\"*\"]', NULL, NULL, '2026-02-27 20:02:39', '2026-02-27 20:02:39'),
 (171, 'App\\Models\\User', 22, 'auth-token', '9c9210e6d9e9defdcdd44915d7c5e11dd822eaf918833e39a5d370acba7d873b', '[\"*\"]', NULL, NULL, '2026-02-27 20:03:59', '2026-02-27 20:03:59'),
-(172, 'App\\Models\\User', 20, 'auth-token', '10cec00392f61f70c19aac4a4644914cb8147bd6c1aed92264d0c107b55b3bab', '[\"*\"]', NULL, NULL, '2026-02-27 20:22:57', '2026-02-27 20:22:57');
+(172, 'App\\Models\\User', 20, 'auth-token', '10cec00392f61f70c19aac4a4644914cb8147bd6c1aed92264d0c107b55b3bab', '[\"*\"]', NULL, NULL, '2026-02-27 20:22:57', '2026-02-27 20:22:57'),
+(173, 'App\\Models\\User', 2, 'auth-token', '823d260b85f4ba9245e9ba9ae79f56e2731de263ff910a2f7ee0c12a2bedd4d7', '[\"*\"]', NULL, NULL, '2026-02-28 05:24:54', '2026-02-28 05:24:54'),
+(174, 'App\\Models\\User', 22, 'auth-token', 'ccc03d15e8033572fe6bbf1c8b4762fe5699599e6eb8931c168d6d8c5c06db31', '[\"*\"]', NULL, NULL, '2026-02-28 05:25:33', '2026-02-28 05:25:33'),
+(175, 'App\\Models\\User', 20, 'auth-token', 'e935c00a613426a04354c5f25d2727fc1d949c83ca415eb60a0faacc09b8cf73', '[\"*\"]', NULL, NULL, '2026-02-28 05:27:34', '2026-02-28 05:27:34'),
+(176, 'App\\Models\\User', 22, 'auth-token', '8b1b2f065ead4bcc2459d3a68f4e945c5a28d58d3f35f63c6e35e42addb0ab19', '[\"*\"]', NULL, NULL, '2026-02-28 05:49:43', '2026-02-28 05:49:43'),
+(177, 'App\\Models\\User', 23, 'auth-token', '001a6aab434c6ddba4624d93544d2f55d355a21ddf613e1e53ccdfa51e77fa6d', '[\"*\"]', NULL, NULL, '2026-02-28 05:54:23', '2026-02-28 05:54:23'),
+(178, 'App\\Models\\User', 23, 'auth-token', 'e804222bb60bcad99ddb0d59f6917a982bd8edcfdde50a4aee20a83effda617f', '[\"*\"]', NULL, NULL, '2026-02-28 05:54:47', '2026-02-28 05:54:47'),
+(179, 'App\\Models\\User', 22, 'auth-token', '8a6e9ee0568b6e60725d6c5f3ddee5e35f1801f402b92f66768baf44a91a3631', '[\"*\"]', NULL, NULL, '2026-02-28 05:55:15', '2026-02-28 05:55:15'),
+(180, 'App\\Models\\User', 23, 'auth-token', 'b1fc4b3cae9f7183accd63f22c2ab8d7e3c3b4025c98d25c53b81ab00f072e72', '[\"*\"]', NULL, NULL, '2026-02-28 05:55:33', '2026-02-28 05:55:33'),
+(181, 'App\\Models\\User', 23, 'auth-token', '24f3474accc7c3f771be3c204520d404dfc3e1289d1f959a47479045500ed6d4', '[\"*\"]', NULL, NULL, '2026-02-28 05:56:10', '2026-02-28 05:56:10'),
+(182, 'App\\Models\\User', 23, 'auth-token', 'ee42b58d7c187b2523d2bb524c7ccf10331bf7afeeef39d9267d3a466a2c7cea', '[\"*\"]', NULL, NULL, '2026-02-28 06:09:35', '2026-02-28 06:09:35'),
+(183, 'App\\Models\\User', 23, 'auth-token', 'bc68bb3c08c6414961b4a191d723c5fdc5bd05592332e2b0b3eba2ff8d9cb4cb', '[\"*\"]', NULL, NULL, '2026-02-28 09:15:08', '2026-02-28 09:15:08'),
+(184, 'App\\Models\\User', 20, 'auth-token', 'cb02baaa07850794613c73a6bb4ba00b924db6cd917e42a3a5b4cd5d69dbb0b8', '[\"*\"]', NULL, NULL, '2026-02-28 09:54:11', '2026-02-28 09:54:11'),
+(185, 'App\\Models\\User', 23, 'auth-token', '3c9b8f7f40115ba7ffb7af5fe502865123c188497fc5a72bb0e0726817487183', '[\"*\"]', NULL, NULL, '2026-02-28 10:36:45', '2026-02-28 10:36:45');
 
 -- --------------------------------------------------------
 
@@ -618,7 +631,8 @@ CREATE TABLE `staff_documents` (
 --
 
 INSERT INTO `staff_documents` (`id`, `user_id`, `resume_path`, `government_id_path`, `psa_birth_certificate_path`, `nbi_clearance_path`, `police_clearance_path`, `medical_certificate_path`, `drug_test_result_path`, `sss_id_path`, `philhealth_id_path`, `pagibig_mdf_path`, `tin_id_path`, `diploma_transcript_path`, `created_at`, `updated_at`) VALUES
-(11, 22, NULL, 'staff-documents/22/government_id.png', 'staff-documents/22/psa_birth_certificate.png', 'staff-documents/22/nbi_clearance.png', 'staff-documents/22/police_clearance.png', 'staff-documents/22/medical_certificate.png', 'staff-documents/22/drug_test_result.png', 'staff-documents/22/sss_id.png', 'staff-documents/22/philhealth_id.png', 'staff-documents/22/pagibig_mdf.png', 'staff-documents/22/tin_id.png', 'staff-documents/22/diploma_transcript.png', '2026-02-27 18:19:55', '2026-02-27 18:19:55');
+(11, 22, NULL, 'staff-documents/22/government_id.png', 'staff-documents/22/psa_birth_certificate.png', 'staff-documents/22/nbi_clearance.png', 'staff-documents/22/police_clearance.png', 'staff-documents/22/medical_certificate.png', 'staff-documents/22/drug_test_result.png', 'staff-documents/22/sss_id.png', 'staff-documents/22/philhealth_id.png', 'staff-documents/22/pagibig_mdf.png', 'staff-documents/22/tin_id.png', 'staff-documents/22/diploma_transcript.png', '2026-02-27 18:19:55', '2026-02-27 18:19:55'),
+(12, 23, NULL, 'staff-documents/23/government_id.jpg', 'staff-documents/23/psa_birth_certificate.jpg', 'staff-documents/23/nbi_clearance.png', 'staff-documents/23/police_clearance.png', 'staff-documents/23/medical_certificate.png', 'staff-documents/23/drug_test_result.png', 'staff-documents/23/sss_id.png', 'staff-documents/23/philhealth_id.png', 'staff-documents/23/pagibig_mdf.jpg', 'staff-documents/23/tin_id.jpg', 'staff-documents/23/diploma_transcript.png', '2026-02-28 05:53:39', '2026-02-28 05:53:39');
 
 -- --------------------------------------------------------
 
@@ -655,7 +669,8 @@ CREATE TABLE `users` (
 INSERT INTO `users` (`id`, `email`, `username`, `full_name`, `name`, `password`, `email_verified_at`, `role`, `branch_id`, `department`, `remember_token`, `created_at`, `updated_at`, `deleted_at`, `must_change_password`, `is_active`, `address`, `avatar_url`, `phone_number`) VALUES
 (2, 'admin_main@example.com', 'admin_main', 'Main Admin', NULL, '$2y$12$1o6PwCQnVSntMJaAbnpKQ.V4i2a8pyrZvSv71F1ex//OerR3EbJu.', '2026-02-23 14:44:43', 'ADMIN', NULL, 'HR', NULL, '2026-02-23 14:44:43', '2026-02-23 14:44:43', NULL, 0, 1, 'Admin HQ', '/storage/avatars/avatar_2_1772218769.png', '09171234567'),
 (20, 'owner@gmail.com', 'owner', 'Owner', NULL, '$2y$12$TBXmy38apD/nkh9e3Ra4vuW25BRVqYGzqYkvllb4yqTrYq602mUj6', NULL, 'OWNER', NULL, NULL, NULL, '2026-02-27 07:24:19', '2026-02-27 09:01:57', NULL, 0, 1, '', NULL, '09156919980'),
-(22, 'charles@test.com', 'charles', 'Charles Umbal', NULL, '$2y$12$1QcE4/a2IjAwkaQAn25C7O.2/QFrk2TNxslW8lXqrcaUbTvl79Gi.', NULL, 'STAFF', 1, 'INVENTORY', NULL, '2026-02-27 18:19:55', '2026-02-27 18:21:38', NULL, 0, 1, '12', NULL, '09871513425');
+(22, 'charles@test.com', 'charles', 'Charles Umbal', NULL, '$2y$12$1QcE4/a2IjAwkaQAn25C7O.2/QFrk2TNxslW8lXqrcaUbTvl79Gi.', NULL, 'STAFF', 1, 'INVENTORY', NULL, '2026-02-27 18:19:55', '2026-02-27 18:21:38', NULL, 0, 1, '12', NULL, '09871513425'),
+(23, 'vince@test.com', 'vince', 'Vince Hannibal Bido', NULL, '$2y$12$7dbRnk.3E6tDfAh7jtfUy.eQJ1pD6UbfocShAYVoVyogpMKQrU9R.', NULL, 'MANAGER', 2, 'HR', NULL, '2026-02-28 05:53:39', '2026-02-28 05:54:35', NULL, 0, 1, '167', NULL, '09041717616');
 
 --
 -- Indexes for dumped tables
@@ -856,7 +871,7 @@ ALTER TABLE `orders`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=173;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=186;
 
 --
 -- AUTO_INCREMENT for table `products`
@@ -874,13 +889,13 @@ ALTER TABLE `product_comments`
 -- AUTO_INCREMENT for table `staff_documents`
 --
 ALTER TABLE `staff_documents`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
 -- Constraints for dumped tables

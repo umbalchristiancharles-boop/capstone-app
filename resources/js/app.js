@@ -8,6 +8,11 @@ import adminlogin from './components/adminlogin.vue'
 import StaffList from './components/StaffList.vue'
 import OwnerStaffManagement from './components/OwnerStaffManagement.vue'
 import DeletedStaffList from './components/DeletedStaffList.vue'
+import ManagerInventoryPanel from './components/ManagerInventoryPanel.vue'
+import ManagerFinancePanel from './components/ManagerFinancePanel.vue'
+import ManagerLogisticsPanel from './components/ManagerLogisticsPanel.vue'
+import ManagerHRPanel from './components/ManagerHRPanel.vue'
+import StaffCashierPanel from './components/StaffCashierPanel.vue'
 import axios from 'axios'
 
 // GLOBAL CSS (body margin reset, etc.)
@@ -18,6 +23,17 @@ axios.defaults.baseURL = '' // use relative URLs so requests go to current origi
 axios.defaults.withCredentials = true
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest'
 axios.defaults.headers.common['Accept'] = 'application/json'
+
+// Set Authorization header from token if available (set after login)
+function setAuthToken() {
+  const token = localStorage.getItem('token')
+  if (token) {
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+  }
+}
+
+// Initialize auth token on app load
+setAuthToken()
 
 let pendingRequests = 0
 const requestWaiters = []
@@ -110,12 +126,12 @@ const router = createRouter({
     { path: '/admin-login', component: adminlogin },
     { path: '/admin-panel', component: AdminPanel },
     { path: '/manager-panel', component: AdminPanel, meta: { requiresAuth: true } },
-    { path: '/manager/inventory', component: () => import('./components/ManagerInventoryPanel.vue'), meta: { requiresAuth: true } },
-    { path: '/manager/finance', component: () => import('./components/ManagerFinancePanel.vue'), meta: { requiresAuth: true } },
-    { path: '/manager/logistics', component: () => import('./components/ManagerLogisticsPanel.vue'), meta: { requiresAuth: true } },
-    { path: '/manager/hr', component: () => import('./components/ManagerHRPanel.vue'), meta: { requiresAuth: true } },
+    { path: '/manager/inventory', component: ManagerInventoryPanel, meta: { requiresAuth: true } },
+    { path: '/manager/finance', component: ManagerFinancePanel, meta: { requiresAuth: true } },
+    { path: '/manager/logistics', component: ManagerLogisticsPanel, meta: { requiresAuth: true } },
+    { path: '/manager/hr', component: ManagerHRPanel, meta: { requiresAuth: true } },
     { path: '/staff-panel', component: StaffList },
-    { path: '/staff/cashier', component: () => import('./components/StaffCashierPanel.vue'), meta: { requiresAuth: true } },
+    { path: '/staff/cashier', component: StaffCashierPanel, meta: { requiresAuth: true } },
     { path: '/staff/finance', component: () => import('./components/StaffFinancePanel.vue'), meta: { requiresAuth: true } },
     { path: '/staff/inventory', component: () => import('./components/inventory/InventoryStaffPanel.vue'), meta: { requiresAuth: true } },
     { path: '/owner-panel', component: OwnerPanel },
@@ -425,18 +441,37 @@ axios
       }
     }
 
+    let htmlLogoutInProgress = false
+
     axios.interceptors.response.use(async function (response) {
       if (isHtmlResponse(response)) {
         const req = response.config || {}
-        if (req._retriedForCsrf) {
-          console.warn('[AXIOS] HTML response after CSRF retry')
-          router.replace('/admin-login').catch(() => { window.location.href = '/admin-login' })
+        
+        // If already retried for CSRF once, force logout
+        if (req._retriedForCsrf || htmlLogoutInProgress) {
+          console.warn('[AXIOS] HTML response after CSRF retry - forcing logout')
+          if (!htmlLogoutInProgress) {
+            htmlLogoutInProgress = true
+            localStorage.removeItem('user')
+            localStorage.removeItem('token')
+            delete axios.defaults.headers.common['Authorization']
+            router.replace('/admin-login').catch(() => { window.location.href = '/admin-login' })
+          }
           return Promise.reject(new Error('Received HTML response from API'))
         }
+        
+        // First HTML response - try refreshing CSRF once
         req._retriedForCsrf = true
         const ok = await refreshCsrf()
         if (!ok) {
-          router.replace('/admin-login').catch(() => { window.location.href = '/admin-login' })
+          console.warn('[AXIOS] Failed to refresh CSRF - forcing logout')
+          if (!htmlLogoutInProgress) {
+            htmlLogoutInProgress = true
+            localStorage.removeItem('user')
+            localStorage.removeItem('token')
+            delete axios.defaults.headers.common['Authorization']
+            router.replace('/admin-login').catch(() => { window.location.href = '/admin-login' })
+          }
           return Promise.reject(new Error('Failed to refresh CSRF'))
         }
         return axios(req)
@@ -447,17 +482,38 @@ axios
       const req = error.config || {}
       const status = resp && resp.status
 
-      // DEBUG: Log 401 without auto-logout - let app handle it
+      // Handle 401 - force logout once
       if (status === 401) {
         console.warn('[AXIOS] 401 received:', { url: req.url, method: req.method })
-        // DON'T auto-clear localStorage or redirect - could be false positive
+        
+        // If already retried once or logout in progress, reject
+        if (req._retriedForAuth || htmlLogoutInProgress) {
+          return Promise.reject(error)
+        }
+        
+        // Try once more with refreshed CSRF
+        req._retriedForAuth = true
+        const ok = await refreshCsrf()
+        if (ok) {
+          try { return axios(req) } catch (e) { return Promise.reject(e) }
+        }
+        
+        // Failed - force logout
+        console.warn('[AXIOS] 401 after CSRF refresh - forcing logout')
+        if (!htmlLogoutInProgress) {
+          htmlLogoutInProgress = true
+          localStorage.removeItem('user')
+          localStorage.removeItem('token')
+          delete axios.defaults.headers.common['Authorization']
+          router.replace('/admin-login').catch(() => { window.location.href = '/admin-login' })
+        }
         return Promise.reject(error)
       }
 
       // For 419 (CSRF), try to refresh
       if (status === 419) {
         console.warn('[AXIOS] 419 CSRF - trying refresh')
-        if (req._retriedForCsrf) return Promise.reject(error)
+        if (req._retriedForCsrf || htmlLogoutInProgress) return Promise.reject(error)
         req._retriedForCsrf = true
         const ok = await refreshCsrf()
         if (!ok) return Promise.reject(error)
@@ -469,9 +525,9 @@ axios
         console.warn('[AXIOS] 403 Forbidden:', { url: req.url })
       }
 
-      // For HTML responses
+      // For HTML responses in error
       if (isHtmlResponse(resp || {})) {
-        if (req._retriedForCsrf) return Promise.reject(error)
+        if (req._retriedForCsrf || htmlLogoutInProgress) return Promise.reject(error)
         req._retriedForCsrf = true
         const ok = await refreshCsrf()
         if (!ok) return Promise.reject(error)

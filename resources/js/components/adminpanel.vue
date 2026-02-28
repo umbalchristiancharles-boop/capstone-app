@@ -66,58 +66,68 @@
 
             <!-- METRICS + EXTRA + CENTERED LOGOUT -->
             <div class="admin-card__footer admin-card__footer--stacked">
-              <div class="admin-metrics-row">
-                <div v-if="ownerProfile.role !== 'BRANCH_MANAGER'" class="admin-metric">
-                  <div class="metric-icon">👥</div>
-                  <div class="metric-text">
-                    <span class="metric-label">Total Branches: </span>
-                    <span class="metric-value">
-                      &nbsp;{{ summaryTotals.totalBranches }}
+              <!-- Only show metrics and staff management for non-STAFF roles -->
+              <template v-if="ownerProfile.role !== 'STAFF'">
+                <div class="admin-metrics-row">
+                  <div v-if="ownerProfile.role !== 'BRANCH_MANAGER'" class="admin-metric">
+                    <div class="metric-icon">👥</div>
+                    <div class="metric-text">
+                      <span class="metric-label">Total Branches: </span>
+                      <span class="metric-value">
+                        &nbsp;{{ summaryTotals.totalBranches }}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="admin-metric">
+                    <div class="metric-icon">👨‍🍳</div>
+                    <div class="metric-text">
+                      <span class="metric-label">Total Employees:</span>
+                      <span class="metric-value">
+                        &nbsp;{{ summaryTotals.totalEmployees }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div class="owner-extra">
+                  <div class="owner-extra-row">
+                    <span class="owner-label">Access Level:</span>
+                    <span class="owner-value">Full control</span>
+                  </div>
+                  <div class="owner-extra-row">
+                    <span class="owner-label">Assigned Branch:</span>
+                    <span class="owner-value">
+                      {{ typeof ownerProfile.branch === 'object' && ownerProfile.branch.name ? ownerProfile.branch.name : (ownerProfile.branch || 'Chikin Tayo – QC Main') }}
                     </span>
                   </div>
                 </div>
-
-                <div class="admin-metric">
-                  <div class="metric-icon">👨‍🍳</div>
-                  <div class="metric-text">
-                    <span class="metric-label">Total Employees:</span>
-                    <span class="metric-value">
-                      &nbsp;{{ summaryTotals.totalEmployees }}
-                    </span>
-                  </div>
+                <div class="admin-actions-row">
+                  <!-- Staff Management Button -->
+                  <button
+                    class="staff-btn staff-btn--center"
+                    @click="goToStaffManagement"
+                  >
+                    👥 Staff Management
+                  </button>
+                  <!-- Logout Button -->
+                  <button
+                    class="logout-btn logout-btn--center"
+                    @click="showLogoutConfirm = true"
+                  >
+                    Logout
+                  </button>
                 </div>
-              </div>
-
-              <div class="owner-extra">
-                <div class="owner-extra-row">
-                  <span class="owner-label">Access Level:</span>
-                  <span class="owner-value">Full control</span>
+              </template>
+              <!-- For STAFF role, only show logout -->
+              <template v-else>
+                <div class="admin-actions-row">
+                  <button
+                    class="logout-btn logout-btn--center"
+                    @click="showLogoutConfirm = true"
+                  >
+                    Logout
+                  </button>
                 </div>
-                <div class="owner-extra-row">
-                  <span class="owner-label">Assigned Branch:</span>
-                  <span class="owner-value">
-                    {{ typeof ownerProfile.branch === 'object' && ownerProfile.branch.name ? ownerProfile.branch.name : (ownerProfile.branch || 'Chikin Tayo – QC Main') }}
-                  </span>
-                </div>
-              </div>
-
-              <div class="admin-actions-row">
-                <!-- Staff Management Button -->
-                <button
-                  class="staff-btn staff-btn--center"
-                  @click="goToStaffManagement"
-                >
-                  👥 Staff Management
-                </button>
-
-                <!-- Logout Button -->
-                <button
-                  class="logout-btn logout-btn--center"
-                  @click="showLogoutConfirm = true"
-                >
-                  Logout
-                </button>
-              </div>
+              </template>
             </div>
           </div>
         </aside>
@@ -556,10 +566,12 @@ const dashboardTotals = ref({
   pending: 0,
 })
 
-const summaryTotals = ref({
-  totalBranches: 0,
-  totalEmployees: 0,
-})
+// Only define summaryTotals for non-STAFF roles
+const summaryTotals = ref(
+  ownerProfile.value.role !== 'STAFF'
+    ? { totalBranches: 0, totalEmployees: 0 }
+    : null
+)
 
 const productionQueue = ref([])
 const topProducts = ref([])
@@ -665,9 +677,11 @@ async function loadDashboard(range) {
     sales: '₱0',
     pending: 0,
   }
-  summaryTotals.value = {
-    totalBranches: 0,
-    totalEmployees: 0,
+  if (ownerProfile.value.role !== 'STAFF') {
+    summaryTotals.value = {
+      totalBranches: 0,
+      totalEmployees: 0,
+    }
   }
   recentOrders.value = []
   productionQueue.value = []
@@ -711,9 +725,11 @@ async function loadDashboard(range) {
         staffActivity.value = res.data.staffActivity || []
       } else {
         // Admin dashboard response structure - map all new fields from enhanced API
-        summaryTotals.value = {
-          totalBranches: res.data.branches_count || 0,
-          totalEmployees: res.data.staff_count || 0,
+        if (userRole !== 'STAFF') {
+          summaryTotals.value = {
+            totalBranches: res.data.branches_count || 0,
+            totalEmployees: res.data.staff_count || 0,
+          }
         }
 
         // Map all dashboard totals from the enhanced API
@@ -962,8 +978,9 @@ function cancelLogout() {
   showLogoutConfirm.value = false
 }
 
+// Only define goToStaffManagement for non-STAFF roles
 function goToStaffManagement() {
-  // create a temporary overlay DOM node so it persists across route change
+  if (ownerProfile.value.role === 'STAFF') return
   try {
     if (window.__chikin_temp_overlay) return
     const overlay = document.createElement('div')
@@ -979,20 +996,15 @@ function goToStaffManagement() {
     `
     document.body.appendChild(overlay)
     window.__chikin_temp_overlay = overlay
-    // show global page blur so the background is blurred while overlay is visible
     try { if (window.pageBlur && typeof window.pageBlur.show === 'function') window.pageBlur.show() } catch (e) {}
-
-    // give overlay a short moment to render, then perform a full-page navigation
     setTimeout(() => {
       try {
         window.location.href = '/staff-management'
       } catch (e) {
-        // fallback to SPA navigation if full-page navigation fails
         try { router.push('/staff-management') } catch (err) {}
       }
     }, 220)
   } catch (e) {
-    // fallback navigation if DOM manipulation fails
     try { router.push('/staff-management') } catch (err) {}
   }
 }

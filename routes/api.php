@@ -88,11 +88,11 @@ Route::middleware('web')->group(function () {
     });
 
     // ==========================================
-    // BRANCH MANAGER API - NO auth middleware (intentionally)
-    // This restores original behavior: Manager roles will auto-logout after login
-    // because unauthenticated API calls return 401/HTML, triggering frontend auto-logout
+    // BRANCH MANAGER API - Protected with auth middleware
+    // All manager routes require authentication
+    // Using 'auth' middleware (web guard) which works with both session and token
     // ==========================================
-    Route::prefix('manager')->group(function () {
+    Route::prefix('manager')->middleware('auth')->group(function () {
         // Dashboard
         Route::get('/dashboard',        [ManagerDashboardController::class, 'index']);
 
@@ -119,6 +119,34 @@ Route::middleware('web')->group(function () {
         Route::post('/clock-out',       [AttendanceController::class, 'clockOut']);
         Route::get('/attendance/status', [AttendanceController::class, 'status']);
         Route::get('/attendance/history', [AttendanceController::class, 'history']);
+
+        // Manager Profile Endpoints (for HR, Finance, Logistics, Inventory departments)
+        Route::get('/hr/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'hrProfile']);
+        Route::put('/hr/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'updateHrProfile']);
+        Route::get('/hr/dashboard', [\App\Http\Controllers\Api\ManagerProfileController::class, 'hrDashboard']);
+        Route::get('/hr/staff', [\App\Http\Controllers\Api\ManagerProfileController::class, 'hrStaff']);
+        Route::post('/hr/staff', [\App\Http\Controllers\Api\ManagerProfileController::class, 'createHrStaff']);
+        Route::put('/hr/staff/{id}', [\App\Http\Controllers\Api\ManagerProfileController::class, 'updateHrStaff']);
+        Route::delete('/hr/staff/{id}', [\App\Http\Controllers\Api\ManagerProfileController::class, 'deleteHrStaff']);
+        Route::get('/hr/reports', [\App\Http\Controllers\Api\ManagerProfileController::class, 'hrReports']);
+
+        Route::get('/finance/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'financeProfile']);
+        Route::put('/finance/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'updateFinanceProfile']);
+        Route::get('/finance/dashboard', [\App\Http\Controllers\Api\ManagerProfileController::class, 'financeDashboard']);
+        Route::get('/finance/reports', [\App\Http\Controllers\Api\ManagerProfileController::class, 'financeReports']);
+        Route::get('/finance/transactions', [\App\Http\Controllers\Api\ManagerProfileController::class, 'financeTransactions']);
+
+        Route::get('/logistics/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'logisticsProfile']);
+        Route::put('/logistics/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'updateLogisticsProfile']);
+        Route::get('/logistics/dashboard', [\App\Http\Controllers\Api\ManagerProfileController::class, 'logisticsDashboard']);
+        Route::get('/logistics/deliveries', [\App\Http\Controllers\Api\ManagerProfileController::class, 'logisticsDeliveries']);
+        Route::get('/logistics/suppliers', [\App\Http\Controllers\Api\ManagerProfileController::class, 'logisticsSuppliers']);
+
+        Route::get('/inventory/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'inventoryProfile']);
+        Route::put('/inventory/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'updateInventoryProfile']);
+        Route::get('/inventory/dashboard', [\App\Http\Controllers\Api\ManagerProfileController::class, 'inventoryDashboard']);
+        Route::get('/inventory/products', [\App\Http\Controllers\Api\ManagerProfileController::class, 'inventoryProducts']);
+        Route::get('/inventory/reports', [\App\Http\Controllers\Api\ManagerProfileController::class, 'inventoryReports']);
     });
 
     // ==========================================

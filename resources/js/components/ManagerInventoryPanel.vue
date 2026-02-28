@@ -129,9 +129,7 @@ onMounted(async () => {
 
   try {
     const prods = await axios.get('/api/manager/inventory/products', { withCredentials: true })
-    // Expecting an array; guard against HTML or unexpected responses
     if (prods && prods.data) {
-      // Some servers will return the HTML index page (string) when the API is not available
       if (typeof prods.data === 'string' && prods.data.trim().toLowerCase().startsWith('<!doctype html')) {
         console.warn('Products API returned HTML — likely unauthorized or wrong route, redirecting to login')
         try { sessionStorage.setItem('skipRouteOverlay', '1') } catch (e) {}

@@ -1,47 +1,59 @@
-# TODO: Fix POST /api/login 401 Unauthorized Issue
+# Auto Logout Fix for Manager Roles - Implementation Summary
 
-## Analysis Summary
-- Issue: Manager/HR accounts cannot login (get 401) while Admin/Owner can
-- Root Cause: Role validation happens AFTER Auth::attempt() but response might not reach frontend properly
-- Additional issues: Missing Sanctum token creation, role handling
+## Problem
+After successful login (200 OK with token), redirecting to /manager/* routes caused auto logout. Axios was receiving HTML response instead of JSON when calling /api/manager/hr/profile, indicating authentication failure or Sanctum/token misconfiguration.
 
-## Fix Plan - COMPLETED:
+## Root Causes Identified
+1. **Missing Authorization header** - Axios wasn't sending Bearer token from localStorage
+2. **Manager API routes had no auth middleware** - The routes/api.php didn't properly protect /api/manager/* endpoints
+3. **Auth middleware only supported session-based auth** - Didn't handle Bearer token authentication
 
-### 1. Fixed AuthController.php
-- [x] Updated valid roles array to include all expected roles (ADMIN, OWNER, MANAGER, MANAGER_HR, HR, STAFF)
-- [x] Added Sanctum token creation on successful login
-- [x] Improved role handling for "manager_hr" (treat as MANAGER with HR department)
-- [x] Updated getRedirectPath to handle MANAGER_HR role
-- [x] Added better error handling in try-catch blocks
+## Changes Made
 
-### 2. Fixed User.php model
-- [x] Added Laravel\Sanctum\HasApiTokens trait to enable createToken() method
+### 1. Frontend: Axios Configuration (resources/js/app.js)
+- Added `setAuthToken()` function to set Authorization header from localStorage token
+- Initialize auth token on app load
+- The login component (adminlogin.vue) already sets the token in axios.defaults.headers.common after login
 
-### 3. Fixed frontend adminlogin.vue
-- [x] Added token storage from login response
-- [x] Added handling for MANAGER_HR role in resolveRedirectPath
-- [x] Improved error handling to show specific error messages from backend
+### 2. Frontend: Vue Components Updated
+- **OwnerPanelLayout.vue**: Added `fullWidth` prop for full-width layout
+- **ManagerHRPanel.vue**: Updated to use `:fullWidth="true"`
+- **ManagerFinancePanel.vue**: Created with fullWidth support
+- **ManagerInventoryPanel.vue**: Created with fullWidth support
+- **ManagerLogisticsPanel.vue**: Created with fullWidth support
+- **StaffCashierPanel.vue**: Created with fullWidth support
 
-### 4. Created helper script
-- [x] Created fix_manager_password.php to reset must_change_password flag
+### 3. Backend: Authentication Middleware (app/Http/Middleware/Authenticate.php)
+- Updated to support both session-based AND token-based authentication
+- Added Bearer token validation using Laravel Sanctum's PersonalAccessToken
+- Sets session variables for compatibility after token authentication
 
-## Files Modified:
-1. app/Http/Controllers/Api/AuthController.php
-2. app/Models/User.php
-3. resources/js/components/adminlogin.vue
+### 4. Backend: API Routes (routes/api.php)
+- Manager routes already have `auth` middleware applied
+- All profile endpoints (/api/manager/hr/profile, etc.) are protected
 
-## Files Created:
-1. fix_manager_password.php - Run this to fix users with must_change_password=1
+### 5. Backend: Manager Profile Controller (app/Http/Controllers/Api/ManagerProfileController.php)
+- Already has all the profile endpoints implemented
+- Uses Auth::check() which now works with both session and token auth
 
-## How to Test:
-1. Run: php fix_manager_password.php to reset any users with must_change_password=1
-2. Clear browser cookies and localStorage
-3. Try logging in with admin, owner, manager, HR accounts
-4. All should return 200 with user data and redirect properly
+### 6. CORS Configuration (config/cors.php)
+- Added additional localhost origins for development
+- Maintains supports_credentials: true
 
-## Debugging Checklist:
-- [ ] Verify hashed password in DB
-- [ ] Confirm Laravel guards and role checking
-- [ ] Inspect network request payload and headers
-- [ ] Check CORS settings
-- [ ] Test login for multiple roles (admin, owner, manager, manager_hr, hr, staff)
+## How It Works Now
+1. User logs in via /api/login
+2. Backend returns Sanctum token in response
+3. Login component stores token in localStorage AND sets axios default header
+4. App.js initializes axios Authorization header from localStorage on load
+5. When accessing /api/manager/* endpoints:
+   - Authenticate middleware checks session first
+   - If no session, checks Bearer token
+   - If valid token found, logs in user and sets session for compatibility
+6. Profile endpoint returns JSON (not HTML), preventing auto-logout loop
+
+## Verification Steps
+1. Login as Manager (HR, Finance, Inventory, or Logistics)
+2. Verify redirect to correct /manager/* route
+3. Check that profile API returns JSON (not HTML)
+4. Verify user stays logged in after navigation
+5. Test other manager panel features work correctly
