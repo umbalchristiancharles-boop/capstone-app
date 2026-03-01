@@ -185,4 +185,18 @@ Route::middleware('web')->group(function () {
     Route::post('/product-comment-replies', [ProductCommentController::class, 'storeReply']);
 
     Route::post('/auth/send-verification', [AuthController::class, 'sendVerification']);
+
+    // ==========================================
+    // ATTENDANCE SETTINGS API
+    // ==========================================
+    Route::prefix('attendance')->middleware('auth')->group(function () {
+        // Get attendance settings for user's branch
+        Route::get('/settings', [\App\Http\Controllers\Staff\AttendanceSettingsController::class, 'getSettings']);
+
+        // Toggle early clock-out override (OWNER/HR only)
+        Route::patch('/override', [\App\Http\Controllers\Staff\AttendanceSettingsController::class, 'toggleOverride']);
+
+        // Update attendance settings (OWNER/HR only)
+        Route::put('/settings', [\App\Http\Controllers\Staff\AttendanceSettingsController::class, 'updateSettings']);
+    });
 });

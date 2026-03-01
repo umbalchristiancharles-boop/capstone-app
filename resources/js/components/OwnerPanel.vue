@@ -221,6 +221,24 @@
                 <button class="panel-action" @click="loadAdminAttendance(activeRange)">Refresh</button>
               </div>
             </div>
+
+            <!-- Early Clock-Out Override Toggle for Owner/HR only -->
+            <div class="attendance-override-toggle" v-if="ownerProfile.role === 'OWNER' || ownerProfile.role === 'HR'">
+              <div class="toggle-label">
+                <span class="toggle-title">Enable Early Clock-Out</span>
+                <span class="toggle-desc">Allow staff to clock out before scheduled time</span>
+              </div>
+              <label class="toggle-switch">
+                <input
+                  type="checkbox"
+                  v-model="earlyClockoutOverride"
+                  @change="toggleEarlyClockout"
+                  :disabled="isTogglingOverride"
+                >
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
             <div class="panel-body panel-body--table">
               <div class="table-header"><span>Staff Name</span><span>Branch</span><span>Time In</span><span>Time Out</span><span>Hours</span><span>Status</span></div>
               <div v-if="adminAttendance.length === 0" class="table-row"><span>No attendance records for this range.</span><span></span><span></span><span></span><span></span><span></span></div>
@@ -381,6 +399,42 @@ const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
 const ownerProfile = ref({ fullName: '', username: '', role: 'OWNER', email: '', contact: '', branch: '', accountId: '', avatarUrl: '' })
 const isEditingInfo = ref(false)
 
+// Early clock-out override toggle
+const earlyClockoutOverride = ref(false)
+const isTogglingOverride = ref(false)
+
+async function loadAttendanceSettings() {
+  try {
+    const res = await axios.get('/api/attendance/settings', { withCredentials: true })
+    if (res.data && res.data.ok && res.data.data) {
+      earlyClockoutOverride.value = res.data.data.early_clockout_override || false
+    }
+  } catch (e) {
+    console.error('Failed to load attendance settings:', e)
+  }
+}
+
+async function toggleEarlyClockout() {
+  isTogglingOverride.value = true
+  try {
+    await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
+    const res = await axios.patch('/api/attendance/override', {
+      early_clockout_override: earlyClockoutOverride.value
+    }, { withCredentials: true })
+    if (res.data && res.data.ok) {
+      alert(res.data.message || 'Settings updated successfully')
+    } else {
+      earlyClockoutOverride.value = !earlyClockoutOverride.value
+      alert(res.data.message || 'Failed to update settings')
+    }
+  } catch (e) {
+    earlyClockoutOverride.value = !earlyClockoutOverride.value
+    alert(e.response?.data?.message || 'Error updating settings')
+  } finally {
+    isTogglingOverride.value = false
+  }
+}
+
 const panelTitle = computed(() => 'Chikin Tayo Owner Panel')
 const panelDescription = computed(() => 'Monitor branches, orders, and staff activity as Owner.')
 
@@ -533,6 +587,11 @@ onMounted(async () => {
   await loadDashboard(activeRange.value)
   try { if (window.__chikin_temp_overlay) { window.__chikin_temp_overlay.remove(); window.__chikin_temp_overlay = null } } catch (e) {}
   try { if (window.pageBlur && typeof window.pageBlur.hide === 'function') window.pageBlur.hide() } catch (e) {}
+
+  // Load attendance settings and branch data
+  loadBranches()
+  loadAdminAttendance(activeRange.value)
+  loadAttendanceSettings()
 })
 
 async function confirmLogout() {
@@ -558,11 +617,73 @@ function goToStaffManagement() {
     try { router.push('/owner/staff-management') } catch (_) {}
   }
 }
-
-onMounted(() => {
-  loadDashboard(activeRange.value)
-  loadBranches()
-  loadAdminAttendance(activeRange.value)
-  axios.get('/api/owner-profile', { withCredentials: true }).then(res => { if (res.data.ok) ownerProfile.value = normalizeUser(res.data.user) }).catch(() => {})
-})
 </script>
+
+<style scoped>
+.attendance-override-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+.toggle-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.toggle-title {
+  font-weight: 600;
+  color: #333;
+  font-size: 0.9rem;
+}
+.toggle-desc {
+  font-size: 0.75rem;
+  color: #666;
+}
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 26px;
+}
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.3s;
+  border-radius: 26px;
+}
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+}
+.toggle-switch input:checked + .toggle-slider {
+  background: linear-gradient(135deg, #28a745, #20c997);
+}
+.toggle-switch input:checked + .toggle-slider:before {
+  transform: translateX(24px);
+}
+.toggle-switch input:disabled + .toggle-slider {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+</style>

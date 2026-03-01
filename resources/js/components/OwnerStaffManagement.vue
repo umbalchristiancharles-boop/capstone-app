@@ -464,7 +464,7 @@ function displayRole(r) {
 
 .staff-header h1 {
   margin: 0;
-  color: #fff;
+  color: #000;
   font-size: 2.5rem;
   font-weight: 700;
   letter-spacing: -1px;

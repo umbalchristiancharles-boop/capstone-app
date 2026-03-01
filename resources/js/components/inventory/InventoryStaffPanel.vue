@@ -62,11 +62,16 @@
                 </button>
                 <button
                   @click="performClockOut"
-                  :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing"
+                  :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockOut"
                   class="btn-clock-out"
+                  :class="{ 'btn-disabled': !canClockOut && attendanceStatus.is_clocked_in }"
                 >
                   {{ isAttendanceProcessing ? '...' : 'Clock Out' }}
                 </button>
+              </div>
+              <div v-if="!canClockOut && attendanceStatus.is_clocked_in" class="clockout-restriction">
+                <span class="restriction-icon">🔒</span>
+                <span>Cannot clock out before {{ scheduledTimeOut }}</span>
               </div>
               <div v-if="attendanceMessage" :class="['attendance-message', attendanceMessageType]">
                 {{ attendanceMessage }}
@@ -291,6 +296,46 @@ const isAttendanceProcessing = ref(false);
 const attendanceMessage = ref('');
 const attendanceMessageType = ref('');
 
+// Attendance settings state
+const attendanceSettings = ref({
+  early_clockout_override: false,
+  scheduled_time_out: '17:00:00'
+});
+
+// Computed property for scheduled time out display
+const scheduledTimeOut = computed(() => {
+  const time = attendanceSettings.value.scheduled_time_out || '17:00:00'
+  const [hours, minutes] = time.split(':')
+  const hour = parseInt(hours)
+  const ampm = hour >= 12 ? 'PM' : 'AM'
+  const hour12 = hour % 12 || 12
+  return `${hour12}:${minutes} ${ampm}`
+})
+
+// Computed property to check if clock out is allowed
+const canClockOut = computed(() => {
+  // If not clocked in, can't clock out
+  if (!attendanceStatus.value.is_clocked_in) return false
+
+  // If override is enabled, allow clock out
+  if (attendanceSettings.value.early_clockout_override) return true
+
+  // Get current time
+  const now = new Date()
+  const currentHours = now.getHours()
+  const currentMinutes = now.getMinutes()
+
+  // Get scheduled time out
+  const [scheduledHours, scheduledMinutes] = (attendanceSettings.value.scheduled_time_out || '17:00:00').split(':')
+
+  // Compare times
+  const currentTotalMinutes = currentHours * 60 + currentMinutes
+  const scheduledTotalMinutes = parseInt(scheduledHours) * 60 + parseInt(scheduledMinutes)
+
+  // Allow clock out if current time >= scheduled time
+  return currentTotalMinutes >= scheduledTotalMinutes
+})
+
 // optional products prop (we will rely on ProductList fetch by default)
 const props = defineProps({
   products: { type: Array, default: () => [] }
@@ -386,8 +431,9 @@ onMounted(async () => {
   } finally {
     isProfileLoading.value = false;
   }
-  // Load attendance status on mount
+  // Load attendance status and settings on mount
   loadAttendanceStatus()
+  loadAttendanceSettings()
   // ProductList will handle fetching when given a fetchUrl; if a parent passed products prop, ProductList will display them.
   // initial stats update after mount
   setTimeout(() => updateStats(), 300)
@@ -578,6 +624,24 @@ async function loadAttendanceStatus() {
     }
   } catch (e) {
     console.error('Failed to load attendance status:', e)
+  }
+}
+
+async function loadAttendanceSettings() {
+  try {
+    const res = await axios.get('/api/attendance/settings', { withCredentials: true })
+    if (res.data && res.data.ok && res.data.data) {
+      attendanceSettings.value = {
+        early_clockout_override: res.data.data.early_clockout_override || false,
+        scheduled_time_out: res.data.data.scheduled_time_out || '17:00:00'
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load attendance settings:', e)
+    attendanceSettings.value = {
+      early_clockout_override: false,
+      scheduled_time_out: '17:00:00'
+    }
   }
 }
 
@@ -814,6 +878,28 @@ ProductList[compact] { width:100% }
   background: #ccc;
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+.btn-disabled {
+  background: #999 !important;
+  cursor: not-allowed !important;
+}
+
+.clockout-restriction {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 6px;
+  color: #856404;
+  font-size: 0.7rem;
+}
+
+.restriction-icon {
+  font-size: 1rem;
 }
 
 .attendance-message {

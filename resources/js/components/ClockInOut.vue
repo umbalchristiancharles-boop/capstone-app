@@ -39,12 +39,18 @@
         </button>
         <button
           @click="performClockOut"
-          :disabled="!status?.is_clocked_in || isProcessing"
+          :disabled="!status?.is_clocked_in || isProcessing || !canClockOut"
           class="btn-clock-out"
+          :class="{ 'btn-disabled': !canClockOut && status?.is_clocked_in }"
         >
           <span v-if="!isProcessing">Clock Out</span>
           <span v-else>Processing...</span>
         </button>
+      </div>
+
+      <div v-if="!canClockOut && status?.is_clocked_in" class="clockout-restriction">
+        <span class="restriction-icon">🔒</span>
+        <span>You cannot clock out before your scheduled time ({{ scheduledTimeOut }})</span>
       </div>
 
       <div v-if="message" :class="['alert', messageType]">
@@ -95,7 +101,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
 import '../css/adminpanel.css'
 
@@ -109,8 +115,49 @@ const historyLoading = ref(false)
 const message = ref('')
 const messageType = ref('')
 
+// Attendance settings state
+const attendanceSettings = ref({
+  early_clockout_override: false,
+  scheduled_time_out: '17:00:00'
+})
+const settingsLoading = ref(false)
+
 // Clock Update Interval
 let clockInterval = null
+
+// Computed property to check if clock out is allowed
+const scheduledTimeOut = computed(() => {
+  const time = attendanceSettings.value.scheduled_time_out || '17:00:00'
+  // Convert 24-hour format to 12-hour format for display
+  const [hours, minutes] = time.split(':')
+  const hour = parseInt(hours)
+  const ampm = hour >= 12 ? 'PM' : 'AM'
+  const hour12 = hour % 12 || 12
+  return `${hour12}:${minutes} ${ampm}`
+})
+
+const canClockOut = computed(() => {
+  // If not clocked in, can't clock out
+  if (!status.value?.is_clocked_in) return false
+
+  // If override is enabled, allow clock out
+  if (attendanceSettings.value.early_clockout_override) return true
+
+  // Get current time
+  const now = new Date()
+  const currentHours = now.getHours()
+  const currentMinutes = now.getMinutes()
+
+  // Get scheduled time out
+  const [scheduledHours, scheduledMinutes] = (attendanceSettings.value.scheduled_time_out || '17:00:00').split(':')
+
+  // Compare times
+  const currentTotalMinutes = currentHours * 60 + currentMinutes
+  const scheduledTotalMinutes = parseInt(scheduledHours) * 60 + parseInt(scheduledMinutes)
+
+  // Allow clock out if current time >= scheduled time
+  return currentTotalMinutes >= scheduledTotalMinutes
+})
 
 // Methods
 function updateClock() {
@@ -168,6 +215,30 @@ async function loadHistory() {
     console.error('History load error:', error)
   } finally {
     historyLoading.value = false
+  }
+}
+
+async function loadAttendanceSettings() {
+  settingsLoading.value = true
+  try {
+    const res = await axios.get('/api/attendance/settings', {
+      withCredentials: true
+    })
+
+    if (res.data && res.data.ok && res.data.data) {
+      attendanceSettings.value = {
+        early_clockout_override: res.data.data.early_clockout_override || false,
+        scheduled_time_out: res.data.data.scheduled_time_out || '17:00:00'
+      }
+    }
+  } catch (error) {
+    console.error('Settings load error:', error)
+    attendanceSettings.value = {
+      early_clockout_override: false,
+      scheduled_time_out: '17:00:00'
+    }
+  } finally {
+    settingsLoading.value = false
   }
 }
 
@@ -238,9 +309,12 @@ onMounted(() => {
   // Load data
   loadStatus()
   loadHistory()
+  loadAttendanceSettings()
 
   // Refresh status every 30 seconds
   setInterval(loadStatus, 30000)
+  // Refresh settings every minute
+  setInterval(loadAttendanceSettings, 60000)
 })
 
 onUnmounted(() => {
@@ -393,6 +467,29 @@ onUnmounted(() => {
   background: #ccc;
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+.btn-disabled {
+  background: #999 !important;
+  cursor: not-allowed !important;
+}
+
+.clockout-restriction {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  margin-top: 1rem;
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  color: #856404;
+  font-size: 0.9rem;
+}
+
+.restriction-icon {
+  font-size: 1.2rem;
 }
 
 .alert {

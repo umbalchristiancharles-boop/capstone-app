@@ -653,7 +653,7 @@ async function loadBranches() {
 }
 
 .staff-header h1 {
-  color: #fff4e6;
+  color: #000;
   font-size: 2.2rem;
   font-weight: 800;
   margin-bottom: 0;

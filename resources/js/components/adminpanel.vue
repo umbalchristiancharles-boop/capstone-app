@@ -399,6 +399,24 @@
                   <button class="panel-action" @click="loadAdminAttendance(activeRange)">Refresh</button>
                 </div>
               </div>
+
+            <!-- Early Clock-Out Override Toggle for Owner/HR only -->
+            <div class="attendance-override-toggle" v-if="ownerProfile.role === 'OWNER' || ownerProfile.role === 'HR'">
+              <div class="toggle-label">
+                <span class="toggle-title">Enable Early Clock-Out</span>
+                <span class="toggle-desc">Allow staff to clock out before scheduled time</span>
+              </div>
+              <label class="toggle-switch">
+                <input
+                  type="checkbox"
+                  v-model="earlyClockoutOverride"
+                  @change="toggleEarlyClockout"
+                  :disabled="isTogglingOverride"
+                >
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
               <div class="panel-body panel-body--table">
                 <div class="table-header">
                   <span>Staff Name</span>
@@ -566,12 +584,8 @@ const dashboardTotals = ref({
   pending: 0,
 })
 
-// Only define summaryTotals for non-STAFF roles
-const summaryTotals = ref(
-  ownerProfile.value.role !== 'STAFF'
-    ? { totalBranches: 0, totalEmployees: 0 }
-    : null
-)
+// Initialize summaryTotals with default value (will be updated after profile loads)
+const summaryTotals = ref({ totalBranches: 0, totalEmployees: 0 })
 
 const productionQueue = ref([])
 const topProducts = ref([])
@@ -612,6 +626,42 @@ const ownerProfile = ref({
 })
 
 const isEditingInfo = ref(false)
+
+// Early clock-out override toggle
+const earlyClockoutOverride = ref(false)
+const isTogglingOverride = ref(false)
+
+async function loadAttendanceSettings() {
+  try {
+    const res = await axios.get('/api/attendance/settings', { withCredentials: true })
+    if (res.data && res.data.ok && res.data.data) {
+      earlyClockoutOverride.value = res.data.data.early_clockout_override || false
+    }
+  } catch (e) {
+    console.error('Failed to load attendance settings:', e)
+  }
+}
+
+async function toggleEarlyClockout() {
+  isTogglingOverride.value = true
+  try {
+    await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
+    const res = await axios.patch('/api/attendance/override', {
+      early_clockout_override: earlyClockoutOverride.value
+    }, { withCredentials: true })
+    if (res.data && res.data.ok) {
+      alert(res.data.message || 'Settings updated successfully')
+    } else {
+      earlyClockoutOverride.value = !earlyClockoutOverride.value
+      alert(res.data.message || 'Failed to update settings')
+    }
+  } catch (e) {
+    earlyClockoutOverride.value = !earlyClockoutOverride.value
+    alert(e.response?.data?.message || 'Error updating settings')
+  } finally {
+    isTogglingOverride.value = false
+  }
+}
 
 const panelTitle = computed(() => {
   const role = ownerProfile.value.role || 'OWNER'
@@ -1014,6 +1064,7 @@ onMounted(() => {
   // load branches + attendance overview for admin
   loadBranches()
   loadAdminAttendance(activeRange.value)
+  loadAttendanceSettings()
   axios
     .get('/api/owner-profile', { withCredentials: true })
     .then(res => {

@@ -95,6 +95,35 @@ class AttendanceController extends Controller
             ], 400);
         }
 
+        // Get user's branch ID
+        $branchId = $user->branch_id;
+
+        // If user has no branch, allow clock out (for system admins without branch assignment)
+        if (!$branchId) {
+            $branchId = 1; // Default to branch 1
+        }
+
+        // Check if early clock-out is allowed
+        $currentTime = Carbon::now();
+        $scheduledTimeOut = Carbon::now()->format('Y-m-d') . ' ' . config('attendance.default_time_out');
+        $scheduledTimeOut = Carbon::parse($scheduledTimeOut);
+
+        // Get branch override setting
+        $settings = \App\Models\AttendanceSettings::getForBranch($branchId);
+        $overrideEnabled = $settings->early_clockout_override;
+
+        // If current time is before scheduled time AND override is not enabled, deny clock out
+        if ($currentTime->lessThan($scheduledTimeOut) && !$overrideEnabled) {
+            return response()->json([
+                'ok' => false,
+                'success' => false,
+                'message' => 'Clock out not allowed before scheduled time.',
+                'scheduled_time_out' => $scheduledTimeOut->format('h:i A'),
+                'current_time' => $currentTime->format('h:i A'),
+                'override_enabled' => $overrideEnabled
+            ], 403);
+        }
+
         $timeOut = Carbon::now();
         $minutesWorked = $timeOut->diffInMinutes($attendance->time_in);
 
