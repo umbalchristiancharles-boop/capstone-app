@@ -183,6 +183,18 @@ async function fetchProducts() {
   isLoading.value = true
   try {
     const res = await fetch(props.fetchUrl, { credentials: 'same-origin' })
+
+    // Validate JSON response before parsing
+    const contentType = res.headers.get('content-type')
+    if (!contentType || !contentType.includes('application/json')) {
+      console.error('Invalid JSON response - received', contentType || 'no content-type header')
+      // Try to get text for debugging
+      const text = await res.text()
+      console.error('Response body (first 200 chars):', text.substring(0, 200))
+      internal.value = []
+      return
+    }
+
     const data = await res.json()
     if (Array.isArray(data)) internal.value = data
     else if (data && Array.isArray(data.products)) internal.value = data.products

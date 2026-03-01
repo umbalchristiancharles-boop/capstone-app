@@ -163,6 +163,16 @@ Route::middleware('web')->group(function () {
             Route::post('/clock-out',       [AttendanceController::class, 'clockOut']);
             Route::get('/attendance/status', [AttendanceController::class, 'status']);
             Route::get('/attendance/history', [AttendanceController::class, 'history']);
+
+            // Staff Inventory - Products
+            Route::get('/inventory/products', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'index']);
+            Route::post('/inventory/products', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'store']);
+            Route::put('/inventory/products/{id}', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'update']);
+            Route::delete('/inventory/products/{id}', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'destroy']);
+
+            // Staff Inventory - Profile
+            Route::get('/inventory/profile', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'profile']);
+            Route::put('/inventory/profile', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'updateProfile']);
         });
     });
 
