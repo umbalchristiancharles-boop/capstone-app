@@ -9,12 +9,16 @@
         </div>
       </header>
 
-      <!-- Controls removed per request -->
-
-      <!-- Content: stats left, table right -->
-      <section class="pl-content">
-        <aside class="pl-stats">
-          <!-- Owner / Staff profile card (restored) -->
+      <!-- Product List with Profile/Attendance in left panel -->
+      <ProductList ref="productListRef" fetchUrl="/api/staff/inventory/products" compact
+        @open-add="openAddProduct"
+        @edit="handleEdit"
+        @delete="deleteProduct"
+        @adjust="openAdjustModal"
+        @count="openCountModal"
+      >
+        <!-- Profile Slot -->
+        <template #profile>
           <div class="profile-card">
             <div class="profile-avatar">
               <div class="avatar-circle">{{ staffProfile.fullName ? (staffProfile.fullName.charAt(0) || 'U') : 'U' }}</div>
@@ -29,55 +33,6 @@
               <button class="btn-info-small" @click="openInfoModal">Info</button>
               <div class="qr-placeholder">QR</div>
             </div>
-
-            <!-- Attendance Clock In/Out Section -->
-            <div class="attendance-card">
-              <div class="attendance-header">
-                <span class="attendance-title">Attendance</span>
-                <span :class="['attendance-status-badge', attendanceStatus.is_clocked_in ? 'status-on-duty' : 'status-off-duty']">
-                  {{ attendanceStatus.is_clocked_in ? 'On Duty' : 'Off Duty' }}
-                </span>
-              </div>
-              <div class="attendance-times" v-if="attendanceStatus.clock_in_time || attendanceStatus.clock_out_time">
-                <div class="time-row">
-                  <span class="time-label">Clock In:</span>
-                  <span class="time-value">{{ attendanceStatus.clock_in_time || '-' }}</span>
-                </div>
-                <div class="time-row">
-                  <span class="time-label">Clock Out:</span>
-                  <span class="time-value">{{ attendanceStatus.clock_out_time || '-' }}</span>
-                </div>
-                <div class="time-row" v-if="attendanceStatus.hours_worked > 0">
-                  <span class="time-label">Hours:</span>
-                  <span class="time-value">{{ attendanceStatus.hours_worked }} hrs</span>
-                </div>
-              </div>
-              <div class="attendance-buttons">
-                <button
-                  @click="performClockIn"
-                  :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing"
-                  class="btn-clock-in"
-                >
-                  {{ isAttendanceProcessing ? '...' : 'Clock In' }}
-                </button>
-                <button
-                  @click="performClockOut"
-                  :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockOut"
-                  class="btn-clock-out"
-                  :class="{ 'btn-disabled': !canClockOut && attendanceStatus.is_clocked_in }"
-                >
-                  {{ isAttendanceProcessing ? '...' : 'Clock Out' }}
-                </button>
-              </div>
-              <div v-if="!canClockOut && attendanceStatus.is_clocked_in" class="clockout-restriction">
-                <span class="restriction-icon">🔒</span>
-                <span>Cannot clock out before {{ scheduledTimeOut }}</span>
-              </div>
-              <div v-if="attendanceMessage" :class="['attendance-message', attendanceMessageType]">
-                {{ attendanceMessage }}
-              </div>
-            </div>
-
             <div class="profile-actions">
               <!-- Only show stats and staff management for non-STAFF roles -->
               <template v-if="staffProfile.role !== 'STAFF'">
@@ -90,6 +45,60 @@
               <button class="btn-light" @click="logout">Logout</button>
             </div>
           </div>
+        </template>
+
+        <!-- Attendance Slot -->
+        <template #attendance>
+          <div class="attendance-card">
+            <div class="attendance-header">
+              <span class="attendance-title">Attendance</span>
+              <span :class="['attendance-status-badge', attendanceStatus.is_clocked_in ? 'status-on-duty' : 'status-off-duty']">
+                {{ attendanceStatus.is_clocked_in ? 'On Duty' : 'Off Duty' }}
+              </span>
+            </div>
+            <div class="attendance-times" v-if="attendanceStatus.clock_in_time || attendanceStatus.clock_out_time">
+              <div class="time-row">
+                <span class="time-label">Clock In:</span>
+                <span class="time-value">{{ attendanceStatus.clock_in_time || '-' }}</span>
+              </div>
+              <div class="time-row">
+                <span class="time-label">Clock Out:</span>
+                <span class="time-value">{{ attendanceStatus.clock_out_time || '-' }}</span>
+              </div>
+              <div class="time-row" v-if="attendanceStatus.hours_worked > 0">
+                <span class="time-label">Hours:</span>
+                <span class="time-value">{{ attendanceStatus.hours_worked }} hrs</span>
+              </div>
+            </div>
+            <div class="attendance-buttons">
+              <button
+                @click="performClockIn"
+                :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing"
+                class="btn-clock-in"
+              >
+                {{ isAttendanceProcessing ? '...' : 'Clock In' }}
+              </button>
+              <button
+                @click="performClockOut"
+                :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockOut"
+                class="btn-clock-out"
+                :class="{ 'btn-disabled': !canClockOut && attendanceStatus.is_clocked_in }"
+              >
+                {{ isAttendanceProcessing ? '...' : 'Clock Out' }}
+              </button>
+            </div>
+            <div v-if="!canClockOut && attendanceStatus.is_clocked_in" class="clockout-restriction">
+              <span class="restriction-icon">🔒</span>
+              <span>Cannot clock out before {{ scheduledTimeOut }}</span>
+            </div>
+            <div v-if="attendanceMessage" :class="['attendance-message', attendanceMessageType]">
+              {{ attendanceMessage }}
+            </div>
+          </div>
+        </template>
+
+        <!-- Stats Slot (for non-STAFF roles) -->
+        <template #stats>
           <template v-if="staffProfile.role !== 'STAFF'">
             <div class="stat-card">
               <div class="stat-title">Total products</div>
@@ -104,18 +113,8 @@
               <div class="stat-value">{{ outOfStockCount }}</div>
             </div>
           </template>
-        </aside>
-
-        <main class="pl-main">
-          <ProductList ref="productListRef" fetchUrl="/api/staff/inventory/products" compact
-            @open-add="openAddProduct"
-            @edit="handleEdit"
-            @delete="deleteProduct"
-            @adjust="openAdjustModal"
-            @count="openCountModal"
-          />
-        </main>
-      </section>
+        </template>
+      </ProductList>
 
       <!-- COUNT / ADJUST / ADD MODALS -->
       <transition name="fade">
@@ -735,7 +734,7 @@ async function performClockOut() {
 
 /* New layout styles for InventoryStaffPanel */
 .pl-page { padding: 18px; background: linear-gradient(180deg,#FF9A4A 0%,#FF6A3D 100%); min-height: 100vh }
-.pl-container { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px }
+.pl-container { max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px }
 .pl-page-header { background: transparent; padding: 4px 0 }
 .pl-h1 { margin:0; font-size:1.4rem; color:#7a2b00 }
 .pl-lead { margin:0; color:#8a4b1a }
@@ -743,8 +742,6 @@ async function performClockOut() {
 .pl-controls-left { flex:1 }
 .pl-controls-right { display:flex; gap:8px; align-items:center }
 .pl-search { width:100%; padding:8px 12px; border-radius:8px; border:1px solid rgba(255,211,107,0.4); background:#fff3e6 }
-.pl-content { display:grid; grid-template-columns: 280px 1fr; gap:16px; align-items:start }
-@media (max-width:880px) { .pl-content { grid-template-columns: 1fr } }
 .pl-stats { display:flex; flex-direction:column; gap:12px }
 .stat-card { background: rgba(255,244,230,0.9); padding:12px; border-radius:10px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
 .stat-title { color:#8a4b1a; font-size:0.85rem }
@@ -920,4 +917,118 @@ ProductList[compact] { width:100% }
   color: #721c24;
 }
 
+/* Modal styles */
+.info-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.info-modal {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.info-modal h3 {
+  margin: 0 0 8px;
+  color: #7a2b00;
+}
+
+.info-sub {
+  margin: 0 0 16px;
+  color: #8a4b1a;
+  font-size: 0.9rem;
+}
+
+.info-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.info-label {
+  font-weight: 600;
+  color: #7a2b00;
+}
+
+.info-value {
+  color: #8a4b1a;
+}
+
+.info-input {
+  padding: 8px 12px;
+  border: 1px solid rgba(255,211,107,0.4);
+  border-radius: 6px;
+  width: 200px;
+}
+
+.info-error {
+  color: #dc3545;
+  background: #f8d7da;
+  padding: 8px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.info-success {
+  color: #155724;
+  background: #d4edda;
+  padding: 8px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.info-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.btn-outline {
+  padding: 8px 16px;
+  border: 1px solid rgba(255,211,107,0.4);
+  border-radius: 6px;
+  background: transparent;
+  color: #7a2b00;
+  cursor: pointer;
+}
+
+.btn-primary {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  background: linear-gradient(180deg,#ff7a18,#ff6a3d);
+  color: white;
+  cursor: pointer;
+}
+
+/* Transitions */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
 </style>
