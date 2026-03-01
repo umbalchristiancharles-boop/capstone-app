@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Staff;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Product;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class StaffInventoryController extends Controller
@@ -15,21 +17,84 @@ class StaffInventoryController extends Controller
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
+
+        // Check if user is staff (not owner/admin/manager)
+        $isStaff = ($user->role === 'staff');
+
         $validated = $request->validate([
-            'fullName' => 'sometimes|string|max:255',
-            'username' => 'sometimes|string|max:50|unique:users,username,' . $user->id,
-            'email' => 'nullable|email|unique:users,email,' . $user->id,
-            'contact' => 'sometimes|string|max:50',
-            'password' => 'nullable|string|min:8|confirmed',
+            'fullName' => $isStaff ? 'nullable' : 'sometimes|string|max:255',
+            'username' => $isStaff ? 'nullable' : 'sometimes|string|max:50|unique:users,username,' . $user->id,
+            'email' => $isStaff ? 'nullable' : 'nullable|email|unique:users,email,' . $user->id,
+            'contact' => $isStaff ? 'nullable' : 'sometimes|string|max:50',
+            'password' => $isStaff ? 'required|string|min:8|confirmed' : 'nullable|string|min:8|confirmed',
         ]);
-        if (isset($validated['fullName'])) $user->full_name = $validated['fullName'];
-        if (isset($validated['username'])) $user->username = $validated['username'];
-        if (isset($validated['email'])) $user->email = $validated['email'];
-        if (isset($validated['contact'])) $user->phone_number = $validated['contact'];
-        if (isset($validated['password'])) $user->password = $validated['password'];
+
+        // For staff role: ONLY allow password update, block all other fields
+        if ($isStaff) {
+            $user->password = Hash::make($validated['password']);
+            $user->save();
+
+            return response()->json([
+                'ok' => true,
+                'message' => 'Password updated successfully.',
+                'user' => [
+                    'id' => $user->id,
+                    'fullName' => $user->full_name ?? $user->username,
+                    'full_name' => $user->full_name,
+                    'username' => $user->username,
+                    'email' => $user->email,
+                    'phone_number' => $user->phone_number,
+                    'contact' => $user->phone_number,
+                    'role' => $user->role,
+                    'department' => $user->department ?? null,
+                    'avatarUrl' => $user->avatar_url ? url($user->avatar_url) : null,
+                ]
+            ]);
+        }
+
+        // For owner/admin/manager: allow all fields to be updated
+        // Update fields only if provided
+        if (!empty($validated['fullName'])) {
+            $user->full_name = $validated['fullName'];
+        }
+
+        if (!empty($validated['username'])) {
+            $user->username = $validated['username'];
+        }
+
+        if (isset($validated['email'])) {
+            $user->email = $validated['email'];
+        }
+
+        if (!empty($validated['contact'])) {
+            $user->phone_number = $validated['contact'];
+        }
+
+        // Only update password if provided and not empty
+        if (!empty($validated['password'])) {
+            $user->password = Hash::make($validated['password']);
+        }
+
         $user->save();
-        return response()->json(['ok' => true, 'message' => 'Profile updated successfully.']);
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'Profile updated successfully.',
+            'user' => [
+                'id' => $user->id,
+                'fullName' => $user->full_name ?? $user->username,
+                'full_name' => $user->full_name,
+                'username' => $user->username,
+                'email' => $user->email,
+                'phone_number' => $user->phone_number,
+                'contact' => $user->phone_number,
+                'role' => $user->role,
+                'department' => $user->department ?? null,
+                'avatarUrl' => $user->avatar_url ? url($user->avatar_url) : null,
+            ]
+        ]);
     }
+
     // GET /api/staff/inventory/products
     public function index(Request $request)
     {
@@ -157,19 +222,66 @@ class StaffInventoryController extends Controller
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        // Attempt to get profile info from related UserProfile if available
-        // Use only User model fields for name and department
         $fullName = $user->full_name ?? $user->username ?? $user->email ?? 'Unknown';
+
+        // Generate full avatar URL
+        $avatarUrl = null;
+        if ($user->avatar_url) {
+            if (strpos($user->avatar_url, 'http') === 0) {
+                $avatarUrl = $user->avatar_url;
+            } else {
+                $avatarUrl = url($user->avatar_url);
+            }
+        }
+
         return response()->json([
             'user' => [
                 'id' => $user->id,
                 'fullName' => $fullName,
+                'full_name' => $user->full_name,
+                'username' => $user->username,
+                'email' => $user->email,
+                'phone_number' => $user->phone_number,
+                'contact' => $user->phone_number,
                 'role' => $user->role,
                 'department' => $user->department ?? null,
-                'accountId' => $user->account_id ?? null,
-                'avatarUrl' => $user->avatar_url ?? null,
+                'accountId' => 'kk' . str_pad($user->id, 5, '0', STR_PAD_LEFT),
+                'avatarUrl' => $avatarUrl,
                 'branch_id' => $user->branch_id ?? null,
             ]
         ]);
+    }
+
+    // POST /api/staff/inventory/avatar
+    public function uploadAvatar(Request $request)
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        $request->validate([
+            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+        ]);
+
+        $file = $request->file('avatar');
+
+        if (!$file) {
+            return response()->json(['ok' => false, 'message' => 'No file uploaded'], 400);
+        }
+
+        try {
+            $filename = 'avatar_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('avatars', $filename, 'public');
+            $storePath = '/storage/' . $path;
+
+            $user->avatar_url = $storePath;
+            $user->save();
+
+            return response()->json([
+                'ok' => true,
+                'avatarUrl' => url($storePath),
+            ]);
+        } catch (\Exception $ex) {
+            return response()->json(['ok' => false, 'message' => 'Failed to upload avatar'], 500);
+        }
     }
 }

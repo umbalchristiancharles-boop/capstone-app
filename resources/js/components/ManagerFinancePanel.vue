@@ -1,5 +1,11 @@
 <template>
-  <OwnerPanelLayout :userProfile="userProfile" :panelTitle="'Manager Finance Panel'" :panelDescription="'View financial reports, approve transactions, and analyze revenue.'">
+  <OwnerPanelLayout
+    :userProfile="userProfile"
+    :panelTitle="'Manager Finance Panel'"
+    :panelDescription="'View financial reports, approve transactions, and analyze revenue.'"
+    :enableProfileUpdate="true"
+    @profile-updated="onProfileUpdated"
+  >
     <template #main>
       <div class="overview-grid">
         <div class="overview-card"><span class="overview-label">Total Sales:</span><span class="overview-value">{{ dashboardTotals.totalSales }}</span></div>
@@ -21,6 +27,11 @@ const userProfile = ref({})
 const dashboardTotals = ref({ totalSales: 0, pendingApprovals: 0, revenue: 0 })
 const financeReports = ref([])
 const transactions = ref([])
+
+// Handle profile update from layout
+function onProfileUpdated(updatedProfile) {
+  userProfile.value = { ...userProfile.value, ...updatedProfile }
+}
 
 onMounted(async () => {
   const res = await axios.get('/api/manager/finance/profile', { withCredentials: true })

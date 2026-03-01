@@ -142,11 +142,11 @@ Route::middleware('web')->group(function () {
         Route::get('/logistics/deliveries', [\App\Http\Controllers\Api\ManagerProfileController::class, 'logisticsDeliveries']);
         Route::get('/logistics/suppliers', [\App\Http\Controllers\Api\ManagerProfileController::class, 'logisticsSuppliers']);
 
-        Route::get('/inventory/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'inventoryProfile']);
-        Route::put('/inventory/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'updateInventoryProfile']);
-        Route::get('/inventory/dashboard', [\App\Http\Controllers\Api\ManagerProfileController::class, 'inventoryDashboard']);
-        Route::get('/inventory/products', [\App\Http\Controllers\Api\ManagerProfileController::class, 'inventoryProducts']);
-        Route::get('/inventory/reports', [\App\Http\Controllers\Api\ManagerProfileController::class, 'inventoryReports']);
+        Route::get('/inventory/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'invProfile']);
+        Route::put('/inventory/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'updateInvProfile']);
+        Route::get('/inventory/dashboard', [\App\Http\Controllers\Api\ManagerProfileController::class, 'invDashboard']);
+        Route::get('/inventory/products', [\App\Http\Controllers\Api\ManagerProfileController::class, 'invProducts']);
+        Route::get('/inventory/reports', [\App\Http\Controllers\Api\ManagerProfileController::class, 'invReports']);
     });
 
     // ==========================================
@@ -173,6 +173,27 @@ Route::middleware('web')->group(function () {
             // Staff Inventory - Profile
             Route::get('/inventory/profile', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'profile']);
             Route::put('/inventory/profile', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'updateProfile']);
+            Route::post('/inventory/avatar', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'uploadAvatar']);
+
+            // Staff Profile - Generic endpoints for all staff roles
+            Route::get('/profile', [\App\Http\Controllers\Staff\StaffProfileController::class, 'profile']);
+            Route::put('/profile', [\App\Http\Controllers\Staff\StaffProfileController::class, 'updateProfile']);
+            Route::post('/avatar', [\App\Http\Controllers\Staff\StaffProfileController::class, 'uploadAvatar']);
+
+            // Staff Finance - Finance staff endpoints
+            Route::get('/finance/profile', [\App\Http\Controllers\Staff\StaffProfileController::class, 'profile']);
+            Route::put('/finance/profile', [\App\Http\Controllers\Staff\StaffProfileController::class, 'updateProfile']);
+            Route::get('/finance/logs', function() { return response()->json([]); });
+
+            // Staff Cashier - Cashier staff endpoints
+            Route::get('/cashier/profile', [\App\Http\Controllers\Staff\StaffProfileController::class, 'profile']);
+            Route::put('/cashier/profile', [\App\Http\Controllers\Staff\StaffProfileController::class, 'updateProfile']);
+            Route::get('/cashier/transactions', function() { return response()->json([]); });
+
+            // Staff Logistics - Logistics staff endpoints
+            Route::get('/logistics/profile', [\App\Http\Controllers\Staff\StaffProfileController::class, 'profile']);
+            Route::put('/logistics/profile', [\App\Http\Controllers\Staff\StaffProfileController::class, 'updateProfile']);
+            Route::get('/logistics/deliveries', function() { return response()->json([]); });
         });
     });
 

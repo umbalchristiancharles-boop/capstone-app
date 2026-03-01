@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 01, 2026 at 02:18 PM
+-- Generation Time: Mar 01, 2026 at 06:47 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -66,7 +66,8 @@ CREATE TABLE `attendance_settings` (
 --
 
 INSERT INTO `attendance_settings` (`id`, `branch_id`, `early_clockout_override`, `created_at`, `updated_at`) VALUES
-(1, 1, 0, '2026-03-01 06:49:13', '2026-03-01 10:14:56');
+(1, 1, 0, '2026-03-01 06:49:13', '2026-03-01 15:40:40'),
+(2, 2, 0, '2026-03-01 17:42:36', '2026-03-01 17:42:36');
 
 -- --------------------------------------------------------
 
@@ -583,7 +584,22 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (212, 'App\\Models\\User', 20, 'auth-token', '2797711798a44c695253578d6804935ffd6640864bc96da5ffff13aa32234470', '[\"*\"]', NULL, NULL, '2026-03-01 10:45:33', '2026-03-01 10:45:33'),
 (213, 'App\\Models\\User', 22, 'auth-token', '56c4de7d7e0a8e571147f121334aa2c1bff6052f7f94f3efe1cf555bff5a29a6', '[\"*\"]', NULL, NULL, '2026-03-01 12:13:35', '2026-03-01 12:13:35'),
 (214, 'App\\Models\\User', 2, 'auth-token', '372a4140d5b2cc14946266d1e4f5c0cf60eefd14e6844a6a8ae986b564a72f92', '[\"*\"]', NULL, NULL, '2026-03-01 12:35:45', '2026-03-01 12:35:45'),
-(215, 'App\\Models\\User', 22, 'auth-token', 'c626cb6db96e6faa86b4fbb6c4e2335dab06a180ae7ab245c3e600a354731a69', '[\"*\"]', NULL, NULL, '2026-03-01 13:11:34', '2026-03-01 13:11:34');
+(215, 'App\\Models\\User', 22, 'auth-token', 'c626cb6db96e6faa86b4fbb6c4e2335dab06a180ae7ab245c3e600a354731a69', '[\"*\"]', NULL, NULL, '2026-03-01 13:11:34', '2026-03-01 13:11:34'),
+(216, 'App\\Models\\User', 24, 'auth-token', '25e2a0e76697adc69616d4509dd1ce3c35a5e55590ced0b6b826fb204317c01b', '[\"*\"]', NULL, NULL, '2026-03-01 13:44:25', '2026-03-01 13:44:25'),
+(217, 'App\\Models\\User', 24, 'auth-token', 'ebbe9d4f503309aa0d6a3e4295de389ba8762db37a9edd4ad098d22a882b63df', '[\"*\"]', NULL, NULL, '2026-03-01 13:45:06', '2026-03-01 13:45:06'),
+(218, 'App\\Models\\User', 22, 'auth-token', 'de314b0f3a575de7e876215e14f50eda665574e9754843ea3ead9b48418b14ab', '[\"*\"]', NULL, NULL, '2026-03-01 14:16:38', '2026-03-01 14:16:38'),
+(219, 'App\\Models\\User', 22, 'auth-token', 'f19474a116c20b3ca99fa150143d8ceabc4b4697fe27ac285b0e82191a2e6add', '[\"*\"]', NULL, NULL, '2026-03-01 14:45:09', '2026-03-01 14:45:09'),
+(220, 'App\\Models\\User', 24, 'auth-token', 'c7d97d641482cdded3382beeaad75293e0cf4d8e54c5f80b07e86dfe8310a8fe', '[\"*\"]', NULL, NULL, '2026-03-01 14:45:45', '2026-03-01 14:45:45'),
+(221, 'App\\Models\\User', 22, 'auth-token', '706184fd8cc6c38663cd0ee8a3ad9f74db73a829fc5dc778d6c692d7d38772c6', '[\"*\"]', NULL, NULL, '2026-03-01 14:46:45', '2026-03-01 14:46:45'),
+(222, 'App\\Models\\User', 22, 'auth-token', '3c0bb0ca7677693ebb540b6c8787f06994b87db172989b569c9ce94df33d27a2', '[\"*\"]', NULL, NULL, '2026-03-01 15:06:33', '2026-03-01 15:06:33'),
+(223, 'App\\Models\\User', 22, 'auth-token', 'd3f6081e1b1edccdb8a5d28cd5e944704358c4405315e1bf09fed6db98a639fb', '[\"*\"]', NULL, NULL, '2026-03-01 16:53:00', '2026-03-01 16:53:00'),
+(224, 'App\\Models\\User', 22, 'auth-token', '47859cd3c05561263c9eac2ce67315a8861454b3f7131e0467f9e52644ee10dd', '[\"*\"]', NULL, NULL, '2026-03-01 17:12:15', '2026-03-01 17:12:15'),
+(225, 'App\\Models\\User', 22, 'auth-token', 'aac66073f17709574b37cff69a26e9f31bb9dd1f6710af9e1820af5fb8322145', '[\"*\"]', NULL, NULL, '2026-03-01 17:21:20', '2026-03-01 17:21:20'),
+(226, 'App\\Models\\User', 22, 'auth-token', 'ee5d33c54e434bf2a43e3568cbc81c1aeb5cfc4a1b966febe563319eed912911', '[\"*\"]', NULL, NULL, '2026-03-01 17:26:27', '2026-03-01 17:26:27'),
+(227, 'App\\Models\\User', 20, 'auth-token', 'dec9c5299b0fae9e764f515657210796a8783dddb05541d8ce0f81319532871a', '[\"*\"]', NULL, NULL, '2026-03-01 17:34:23', '2026-03-01 17:34:23'),
+(228, 'App\\Models\\User', 23, 'auth-token', '324c6ba409886a2e9ffa69c34960732a298ebc0dbbded9064528d07b3823710d', '[\"*\"]', NULL, NULL, '2026-03-01 17:42:32', '2026-03-01 17:42:32'),
+(229, 'App\\Models\\User', 2, 'auth-token', '366d3943710d81ba78bc66825d26454a38a178f4d786214293889660975a1af2', '[\"*\"]', NULL, NULL, '2026-03-01 17:42:48', '2026-03-01 17:42:48'),
+(230, 'App\\Models\\User', 22, 'auth-token', 'fbe69bee0934f3ff146697dd453bfc84527c40d4a2c69ae44446078a56e56eb9', '[\"*\"]', NULL, NULL, '2026-03-01 17:45:47', '2026-03-01 17:45:47');
 
 -- --------------------------------------------------------
 
@@ -654,9 +670,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('1JYQrk6R4dDwsbQmaTyWPaDjN774EgcScm21McNb', 20, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiT1lsR3NITERiSTVmSlF1NWJ2RWNRRFBWZFNPVmZHaVZwZVVGaFRmdCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjIwO3M6NzoidXNlcl9pZCI7aToyMDtzOjk6InVzZXJfcm9sZSI7czo1OiJPV05FUiI7czo5OiJ1c2VyX25hbWUiO3M6NToiT3duZXIiO3M6MTM6InJlZGlyZWN0X3BhdGgiO3M6MTI6Ii9vd25lci1wYW5lbCI7fQ==', 1772369999),
-('5CSavMwfj4S1cdjvmkj3ZBjosh2EpmkdmaU2El8m', 22, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiY1ZHTnhhV0pWbUZ1QXhiTERSRWxGMDFTajNranZwVHFDeUJ2YlhTNSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvc3RhZmYvaW52ZW50b3J5L3Byb2R1Y3RzIjtzOjU6InJvdXRlIjtOO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToyMjtzOjc6InVzZXJfaWQiO2k6MjI7czo5OiJ1c2VyX3JvbGUiO3M6NToiU1RBRkYiO3M6OToidXNlcl9uYW1lIjtzOjEzOiJDaGFybGVzIFVtYmFsIjtzOjEzOiJyZWRpcmVjdF9wYXRoIjtzOjE2OiIvc3RhZmYvaW52ZW50b3J5Ijt9', 1772370804),
-('Am3194A1ZFa0NjqTQ51BD3L1j7Kv1ttrdzkjqbLa', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiaXR4TncxTm1VQlRGZnN4ODZHc1VSa1lnbHBOR2dUOTFMUURUSW1QZSI7czo3OiJzdWNjZXNzIjtzOjI0OiJMb2dnZWQgb3V0IHN1Y2Nlc3NmdWxseS4iO3M6NjoiX2ZsYXNoIjthOjI6e3M6MzoibmV3IjthOjA6e31zOjM6Im9sZCI7YToxOntpOjA7czo3OiJzdWNjZXNzIjt9fXM6OToiX3ByZXZpb3VzIjthOjI6e3M6MzoidXJsIjtzOjI4OiJodHRwOi8vbG9jYWxob3N0OjgwMDAvbG9nb3V0IjtzOjU6InJvdXRlIjtzOjY6ImxvZ291dCI7fX0=', 1772370655);
+('mrT4QtccXJ9CEZ9vgnLIpaNTiiAApW3HLaNHnlnp', 22, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiT29nNHRwcVdZbG5Vb3llVTVIcERxdXBOUFJ3clFzWnJLMnlPUlFvWSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvc3RhZmYvaW52ZW50b3J5L3Byb2R1Y3RzIjtzOjU6InJvdXRlIjtOO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToyMjtzOjc6InVzZXJfaWQiO2k6MjI7czo5OiJ1c2VyX3JvbGUiO3M6NToiU1RBRkYiO3M6OToidXNlcl9uYW1lIjtzOjIzOiJDaHJpc3RpYW4gQ2hhcmxlcyBVbWJhbCI7czoxMzoicmVkaXJlY3RfcGF0aCI7czoxNjoiL3N0YWZmL2ludmVudG9yeSI7fQ==', 1772387150),
+('tO8ru2B5mTZJCd9MFAkNRu65CDU9VXmzfb2ygT29', 20, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoidzRZamlJWWd1Nk5jN2FSenp6dVh0QklFTVVnd256ak9qMEpCNnZXNyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjIwO3M6NzoidXNlcl9pZCI7aToyMDtzOjk6InVzZXJfcm9sZSI7czo1OiJPV05FUiI7czo5OiJ1c2VyX25hbWUiO3M6NToiT3duZXIiO3M6MTM6InJlZGlyZWN0X3BhdGgiO3M6MTI6Ii9vd25lci1wYW5lbCI7fQ==', 1772387168);
 
 -- --------------------------------------------------------
 
@@ -689,7 +704,8 @@ CREATE TABLE `staff_documents` (
 
 INSERT INTO `staff_documents` (`id`, `user_id`, `resume_path`, `government_id_path`, `psa_birth_certificate_path`, `nbi_clearance_path`, `police_clearance_path`, `medical_certificate_path`, `drug_test_result_path`, `sss_id_path`, `philhealth_id_path`, `pagibig_mdf_path`, `tin_id_path`, `diploma_transcript_path`, `created_at`, `updated_at`) VALUES
 (11, 22, NULL, 'staff-documents/22/government_id.png', 'staff-documents/22/psa_birth_certificate.png', 'staff-documents/22/nbi_clearance.png', 'staff-documents/22/police_clearance.png', 'staff-documents/22/medical_certificate.png', 'staff-documents/22/drug_test_result.png', 'staff-documents/22/sss_id.png', 'staff-documents/22/philhealth_id.png', 'staff-documents/22/pagibig_mdf.png', 'staff-documents/22/tin_id.png', 'staff-documents/22/diploma_transcript.png', '2026-02-27 18:19:55', '2026-02-27 18:19:55'),
-(12, 23, NULL, 'staff-documents/23/government_id.jpg', 'staff-documents/23/psa_birth_certificate.jpg', 'staff-documents/23/nbi_clearance.png', 'staff-documents/23/police_clearance.png', 'staff-documents/23/medical_certificate.png', 'staff-documents/23/drug_test_result.png', 'staff-documents/23/sss_id.png', 'staff-documents/23/philhealth_id.png', 'staff-documents/23/pagibig_mdf.jpg', 'staff-documents/23/tin_id.jpg', 'staff-documents/23/diploma_transcript.png', '2026-02-28 05:53:39', '2026-02-28 05:53:39');
+(12, 23, NULL, 'staff-documents/23/government_id.jpg', 'staff-documents/23/psa_birth_certificate.jpg', 'staff-documents/23/nbi_clearance.png', 'staff-documents/23/police_clearance.png', 'staff-documents/23/medical_certificate.png', 'staff-documents/23/drug_test_result.png', 'staff-documents/23/sss_id.png', 'staff-documents/23/philhealth_id.png', 'staff-documents/23/pagibig_mdf.jpg', 'staff-documents/23/tin_id.jpg', 'staff-documents/23/diploma_transcript.png', '2026-02-28 05:53:39', '2026-02-28 05:53:39'),
+(13, 24, NULL, 'staff-documents/24/government_id.jpg', 'staff-documents/24/psa_birth_certificate.jpg', 'staff-documents/24/nbi_clearance.jpg', 'staff-documents/24/police_clearance.jpg', 'staff-documents/24/medical_certificate.jpg', 'staff-documents/24/drug_test_result.jpg', 'staff-documents/24/sss_id.jpg', 'staff-documents/24/philhealth_id.jpg', 'staff-documents/24/pagibig_mdf.jpg', 'staff-documents/24/tin_id.jpg', 'staff-documents/24/diploma_transcript.jpg', '2026-03-01 13:43:49', '2026-03-01 13:43:49');
 
 -- --------------------------------------------------------
 
@@ -725,9 +741,10 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`id`, `email`, `username`, `full_name`, `name`, `password`, `email_verified_at`, `role`, `branch_id`, `department`, `remember_token`, `created_at`, `updated_at`, `deleted_at`, `must_change_password`, `is_active`, `address`, `avatar_url`, `phone_number`) VALUES
 (2, 'admin_main@example.com', 'admin_main', 'Chikin Tayo', NULL, '$2y$12$1o6PwCQnVSntMJaAbnpKQ.V4i2a8pyrZvSv71F1ex//OerR3EbJu.', '2026-02-23 14:44:43', 'ADMIN', NULL, 'HR', NULL, '2026-02-23 14:44:43', '2026-02-23 14:44:43', NULL, 0, 1, 'Admin HQ', '/storage/avatars/avatar_2_1772368552.jpg', '09171234567'),
-(20, 'owner@gmail.com', 'owner', 'Owner', NULL, '$2y$12$TBXmy38apD/nkh9e3Ra4vuW25BRVqYGzqYkvllb4yqTrYq602mUj6', NULL, 'OWNER', NULL, NULL, NULL, '2026-02-27 07:24:19', '2026-02-27 09:01:57', NULL, 0, 1, '', '/storage/avatars/avatar_20_1772360129.png', '09156919980'),
-(22, 'charles@test.com', 'charles', 'Charles Umbal', NULL, '$2y$12$1QcE4/a2IjAwkaQAn25C7O.2/QFrk2TNxslW8lXqrcaUbTvl79Gi.', NULL, 'STAFF', 1, 'INVENTORY', NULL, '2026-02-27 18:19:55', '2026-02-27 18:21:38', NULL, 0, 1, '12', NULL, '09871513425'),
-(23, 'vince@test.com', 'vince', 'Vince Hannibal Bido', NULL, '$2y$12$7dbRnk.3E6tDfAh7jtfUy.eQJ1pD6UbfocShAYVoVyogpMKQrU9R.', NULL, 'MANAGER', 2, 'HR', NULL, '2026-02-28 05:53:39', '2026-02-28 05:54:35', NULL, 0, 1, '167', NULL, '09041717616');
+(20, 'owner@gmail.com', 'owner', 'Owner', NULL, '$2y$12$124QJpzJQnJg/r9WkEf0vuZ3CpSvw/G8TP.ppjCz5bpTwtyyvlujm', NULL, 'OWNER', NULL, NULL, NULL, '2026-02-27 07:24:19', '2026-02-27 09:01:57', NULL, 0, 1, '', '/storage/avatars/avatar_20_1772360129.png', '09156919980'),
+(22, 'charles@test.com', 'charles', 'Christian Charles Umbal', NULL, '$2y$12$1QcE4/a2IjAwkaQAn25C7O.2/QFrk2TNxslW8lXqrcaUbTvl79Gi.', NULL, 'STAFF', 1, 'INVENTORY', NULL, '2026-02-27 18:19:55', '2026-03-01 16:57:51', NULL, 0, 1, '12', '/storage/avatars/avatar_22_1772384271.jpg', '09061515313'),
+(23, 'vince@test.com', 'vince', 'Vince Hannibal Bido', NULL, '$2y$12$7dbRnk.3E6tDfAh7jtfUy.eQJ1pD6UbfocShAYVoVyogpMKQrU9R.', NULL, 'MANAGER', 2, 'HR', NULL, '2026-02-28 05:53:39', '2026-02-28 05:54:35', NULL, 0, 1, '167', NULL, '09041717616'),
+(24, 'gab@test.com', 'gabriel', 'Gabriel Ongsip', NULL, '$2y$12$OLfHtNa649f8TwGcXb/XZ.YAHTfKrygbpBjHsYhzzZvSvXPxYmv1C', NULL, 'MANAGER', 1, 'FINANCE', NULL, '2026-03-01 13:43:49', '2026-03-01 13:44:53', NULL, 0, 1, '432', '/storage/avatars/avatar_24_1772376373.jpg', '09081717616');
 
 --
 -- Indexes for dumped tables
@@ -893,7 +910,7 @@ ALTER TABLE `attendance`
 -- AUTO_INCREMENT for table `attendance_settings`
 --
 ALTER TABLE `attendance_settings`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `branches`
@@ -941,7 +958,7 @@ ALTER TABLE `orders`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=216;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=231;
 
 --
 -- AUTO_INCREMENT for table `products`
@@ -959,13 +976,13 @@ ALTER TABLE `product_comments`
 -- AUTO_INCREMENT for table `staff_documents`
 --
 ALTER TABLE `staff_documents`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
 -- Constraints for dumped tables

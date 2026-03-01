@@ -1,5 +1,11 @@
 <template>
-  <OwnerPanelLayout :userProfile="userProfile" :panelTitle="'Manager HR Panel'" :panelDescription="'Manage staff, view HR reports, and monitor staff status.'">
+  <OwnerPanelLayout
+    :userProfile="userProfile"
+    :panelTitle="'Manager HR Panel'"
+    :panelDescription="'Manage staff, view HR reports, and monitor staff status.'"
+    :enableProfileUpdate="true"
+    @profile-updated="onProfileUpdated"
+  >
     <template #main>
       <!-- HR-specific dashboard cards -->
       <div class="overview-grid">
@@ -152,8 +158,14 @@ onMounted(async () => {
   loadAttendanceSettings()
 })
 
+// Handle profile update from layout
+function onProfileUpdated(updatedProfile) {
+  userProfile.value = { ...userProfile.value, ...updatedProfile }
+}
+
 // Expose refresh function for child components
 defineExpose({
-  refreshAllData
+  refreshAllData,
+  onProfileUpdated
 })
 </script>

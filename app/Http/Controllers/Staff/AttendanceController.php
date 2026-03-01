@@ -147,47 +147,61 @@ class AttendanceController extends Controller
      */
     public function status(Request $request)
     {
-        $user = Auth::user();
-        if (!$user) {
-            return response()->json(['ok' => false, 'success' => false], 401);
-        }
+        try {
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json([
+                    'ok' => true,
+                    'success' => true,
+                    'clocked_in' => false,
+                    'clocked_out' => false,
+                    'status' => ['is_clocked_in' => false, 'is_clocked_out' => false, 'clock_in_time' => null, 'clock_out_time' => null, 'hours_worked' => 0]
+                ], 200);
+            }
 
-        $today = Carbon::now()->toDateString();
-        $attendance = Attendance::where('user_id', $user->id)
-            ->where('date', $today)
-            ->first();
+            $today = Carbon::now()->toDateString();
+            $attendance = Attendance::where('user_id', $user->id)->where('date', $today)->first();
 
-        $clockedIn = $attendance && !!$attendance->time_in;
-        $clockedOut = $attendance && !!$attendance->time_out;
+            $clockedIn = false;
+            $clockedOut = false;
+            $clockInTime = null;
+            $clockOutTime = null;
+            $hoursWorked = 0;
 
-        // Build status object for frontend compatibility
-        $statusObj = [
-            'is_clocked_in' => $clockedIn,
-            'is_clocked_out' => $clockedOut,
-            'clock_in_time' => $attendance->time_in?->format('h:i A') ?? null,
-            'clock_out_time' => $attendance->time_out?->format('h:i A') ?? null,
-            'hours_worked' => is_numeric($attendance->hours_worked) ? round($attendance->hours_worked / 60, 2) : 0,
-        ];
+            if ($attendance) {
+                $timeIn = $attendance->getAttribute('time_in');
+                $timeOut = $attendance->getAttribute('time_out');
+                $clockedIn = !empty($timeIn);
+                $clockedOut = !empty($timeOut);
 
-        if (!$attendance) {
+                if ($clockedIn && $timeIn) {
+                    try { $clockInTime = Carbon::parse($timeIn)->format('h:i A'); } catch (\Exception $e) { $clockInTime = null; }
+                }
+                if ($clockedOut && $timeOut) {
+                    try { $clockOutTime = Carbon::parse($timeOut)->format('h:i A'); } catch (\Exception $e) { $clockOutTime = null; }
+                }
+                $hw = $attendance->getAttribute('hours_worked');
+                if (is_numeric($hw)) { $hoursWorked = round($hw / 60, 2); }
+            }
+
+            return response()->json([
+                'ok' => true,
+                'success' => true,
+                'clocked_in' => $clockedIn,
+                'clocked_out' => $clockedOut,
+                'time_in' => $clockInTime,
+                'time_out' => $clockOutTime,
+                'status' => ['is_clocked_in' => $clockedIn, 'is_clocked_out' => $clockedOut, 'clock_in_time' => $clockInTime, 'clock_out_time' => $clockOutTime, 'hours_worked' => $hoursWorked]
+            ], 200);
+        } catch (\Exception $e) {
             return response()->json([
                 'ok' => true,
                 'success' => true,
                 'clocked_in' => false,
                 'clocked_out' => false,
-                'status' => $statusObj
-            ]);
+                'status' => ['is_clocked_in' => false, 'is_clocked_out' => false, 'clock_in_time' => null, 'clock_out_time' => null, 'hours_worked' => 0]
+            ], 200);
         }
-
-        return response()->json([
-            'ok' => true,
-            'success' => true,
-            'clocked_in' => $clockedIn,
-            'clocked_out' => $clockedOut,
-            'time_in' => $attendance->time_in?->format('h:i A'),
-            'time_out' => $attendance->time_out?->format('h:i A'),
-            'status' => $statusObj
-        ]);
     }
 
     /**
@@ -301,4 +315,3 @@ class AttendanceController extends Controller
         return 'present';
     }
 }
-

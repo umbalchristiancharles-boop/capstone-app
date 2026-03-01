@@ -21,7 +21,20 @@
         <template #profile>
           <div class="profile-card">
             <div class="profile-avatar">
-              <div class="avatar-circle">{{ staffProfile.fullName ? (staffProfile.fullName.charAt(0) || 'U') : 'U' }}</div>
+              <label class="avatar-upload" for="staff-avatar-input">
+                <img v-if="staffProfile.avatarUrl" :src="staffProfile.avatarUrl" alt="Profile picture" class="avatar-img" />
+                <div v-else class="avatar-circle">{{ staffProfile.fullName ? (staffProfile.fullName.charAt(0) || 'U') : 'U' }}</div>
+                <div class="avatar-overlay">
+                  <span class="avatar-change-text">Change Photo</span>
+                </div>
+              </label>
+              <input
+                id="staff-avatar-input"
+                type="file"
+                accept="image/*"
+                @change="onAvatarChange"
+                style="display: none"
+              />
             </div>
             <div class="profile-info">
               <div class="profile-role">ACCOUNT</div>
@@ -246,7 +259,7 @@
             <div v-if="profileError" class="info-error">{{ profileError }}</div>
             <div v-if="profileSuccess" class="info-success">{{ profileSuccess }}</div>
             <div class="info-actions">
-              <button class="btn-outline" @click="handleInfoClose">{{ isEditingInfo ? 'Cancel' : 'Close' }}</button>
+              <button class="btn-outline" @click="handleInfoClose">{{ isEditingInfo ? ' Cancel' : 'Close' }}</button>
               <button class="btn-primary" @click="isEditingInfo ? saveStaffInfo() : (isEditingInfo = true)" :disabled="isSavingProfile">
                 {{ isEditingInfo ? (isSavingProfile ? 'Saving...' : 'Save changes') : 'Edit information' }}
               </button>
@@ -605,9 +618,56 @@ async function saveStaffInfo() {
   }, 1000);
 }
 
-function onAvatarChange(e) {
-  // TODO: Implement avatar upload
-  profileError.value = 'Avatar upload not implemented.';
+async function onAvatarChange(event) {
+  const file = event.target.files[0]
+  if (!file) return
+  if (!window.confirm('Are you sure you want to change your profile picture?')) return
+
+  try {
+    await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    function getCookie(name) {
+      const m = document.cookie.match(new RegExp('(^|; )' + name + '=([^;]*)'))
+      return m ? m[2] : null
+    }
+
+    const xsrf = getCookie('XSRF-TOKEN')
+    const formData = new FormData()
+    formData.append('avatar', file)
+
+    if (xsrf) {
+      try {
+        formData.append('_token', decodeURIComponent(xsrf))
+      } catch (_) {
+        formData.append('_token', xsrf)
+      }
+    }
+
+    const config = {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      withCredentials: true
+    }
+
+    if (xsrf) {
+      try {
+        config.headers['X-XSRF-TOKEN'] = decodeURIComponent(xsrf)
+      } catch (_) {
+        config.headers['X-XSRF-TOKEN'] = xsrf
+      }
+    }
+
+    const endpoint = '/api/staff/inventory/avatar'
+    const res = await axios.post(endpoint, formData, config)
+
+    if (res.data && res.data.ok) {
+      staffProfile.value.avatarUrl = res.data.avatarUrl + '?t=' + Date.now()
+      alert('Profile picture updated successfully!')
+    }
+  } catch (e) {
+    console.error('Avatar upload failed:', e)
+    alert(e.response?.data?.message || 'Failed to upload profile picture. Please try again.')
+  }
 }
 
 async function logout() {
@@ -783,6 +843,13 @@ ProductList[compact] { width:100% }
 .small-stats { display:flex; justify-content:space-between; gap:12px }
 .small-stat-title { font-size:0.75rem; color:#8a4b1a }
 .small-stat-val { font-weight:800; color:#7a2b00 }
+
+/* Avatar upload styles */
+.avatar-upload { cursor: pointer; position: relative; display: inline-block; }
+.avatar-img { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 4px solid rgba(255,244,230,0.9); }
+.avatar-overlay { position: absolute; top: 0; left: 0; width: 72px; height: 72px; border-radius: 50%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease; }
+.avatar-upload:hover .avatar-overlay { opacity: 1; }
+.avatar-change-text { color: white; font-size: 0.6rem; font-weight: 500; text-transform: uppercase; text-align: center; }
 
 /* Attendance Card Styles */
 .attendance-card {

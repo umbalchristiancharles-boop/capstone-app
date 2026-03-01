@@ -1,13 +1,23 @@
 <template>
-  <OwnerPanelLayout :userProfile="userProfile" :panelTitle="'Staff Inventory Panel'" :panelDescription="'Update stock and view product list.'" @logout="showLogoutConfirm = true">
+  <OwnerPanelLayout
+    :userProfile="userProfile"
+    :panelTitle="'Staff Inventory Panel'"
+    :panelDescription="'Update stock and view product list.'"
+    :enableProfileUpdate="true"
+    :canEditProfile="false"
+    avatarEndpoint="/api/staff/inventory/avatar"
+    profileEndpoint="/api/staff/inventory/profile"
+    updateEndpoint="/api/staff/inventory/profile"
+    @logout="showLogoutConfirm = true"
+    @profile-updated="onProfileUpdated"
+  >
+    <template #profileFooter>
+      <!-- No additional footer content needed -->
+    </template>
     <template #main>
       <inventory-staff-panel :products="products" />
     </template>
-    <template #profileFooter>
-      <button class="admin-info-btn admin-info-btn--center" @click="showInfoModal = true">Info</button>
-    </template>
   </OwnerPanelLayout>
-  <StaffInfoModal :show="showInfoModal" :staff="userProfile" @close="showInfoModal = false" @updated="onProfileUpdated" />
   <transition name="fade">
     <div v-if="showLogoutConfirm" class="logout-confirm-backdrop">
       <div class="logout-confirm-box">
@@ -35,7 +45,6 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import InventoryStaffPanel from './inventory/InventoryStaffPanel.vue'
-import StaffInfoModal from './StaffInfoModal.vue'
 import axios from 'axios'
 import '../css/adminpanel.css'
 
@@ -48,7 +57,6 @@ const isLoggingOut = ref(false)
 const showOverlay = ref(false)
 const overlayText = ref('Logging out...')
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
-const showInfoModal = ref(false)
 
 onMounted(async () => {
   const res = await axios.get('/api/staff/inventory/profile', { withCredentials: true })

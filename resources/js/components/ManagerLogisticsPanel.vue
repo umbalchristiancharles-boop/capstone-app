@@ -1,5 +1,11 @@
 <template>
-  <OwnerPanelLayout :userProfile="userProfile" :panelTitle="'Manager Logistics Panel'" :panelDescription="'Track deliveries and manage suppliers.'">
+  <OwnerPanelLayout
+    :userProfile="userProfile"
+    :panelTitle="'Manager Logistics Panel'"
+    :panelDescription="'Track deliveries and manage suppliers.'"
+    :enableProfileUpdate="true"
+    @profile-updated="onProfileUpdated"
+  >
     <template #main>
       <div class="overview-grid">
         <div class="overview-card"><span class="overview-label">Active Deliveries:</span><span class="overview-value">{{ dashboardTotals.activeDeliveries }}</span></div>
@@ -20,6 +26,11 @@ const userProfile = ref({})
 const dashboardTotals = ref({ activeDeliveries: 0, suppliers: 0 })
 const deliveries = ref([])
 const suppliers = ref([])
+
+// Handle profile update from layout
+function onProfileUpdated(updatedProfile) {
+  userProfile.value = { ...userProfile.value, ...updatedProfile }
+}
 
 onMounted(async () => {
   const res = await axios.get('/api/manager/logistics/profile', { withCredentials: true })

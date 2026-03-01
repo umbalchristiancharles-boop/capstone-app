@@ -12,15 +12,6 @@ if (tokenMeta) {
 // Send cookies (session / XSRF cookie) on cross-site requests when needed
 window.axios.defaults.withCredentials = true;
 
-// If using Laravel Sanctum, request the CSRF cookie so the `XSRF-TOKEN` cookie is set.
-// This ensures subsequent stateful requests from the SPA include the CSRF token.
-try {
-	// Only attempt when running in a browser environment
-	if (typeof window !== 'undefined' && window.location) {
-		window.axios.get('/sanctum/csrf-cookie').catch(() => {
-			// ignore errors; some setups may not use sanctum
-		});
-	}
-} catch (e) {
-	// no-op
-}
+// CSRF token is already loaded from meta tag above.
+// The /sanctum/csrf-cookie call should only be made when actually needed
+// (e.g., before first stateful request), not automatically on every page load.

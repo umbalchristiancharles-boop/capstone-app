@@ -1,8 +1,12 @@
 <template>
-  <OwnerPanelLayout :userProfile="userProfile" :panelTitle="'Manager Inventory Panel'" :panelDescription="'Monitor stock, add/update products, and view inventory reports.'" @logout="showLogoutConfirm = true">
-    <template #profileFooter>
-      <button class="admin-info-btn admin-info-btn--center" @click="showInfoModal = true">Info</button>
-    </template>
+  <OwnerPanelLayout
+    :userProfile="userProfile"
+    :panelTitle="'Manager Inventory Panel'"
+    :panelDescription="'Monitor stock, add/update products, and view inventory reports.'"
+    :enableProfileUpdate="true"
+    @logout="showLogoutConfirm = true"
+    @profile-updated="onProfileUpdated"
+  >
     <template #main>
       <div class="overview-grid">
         <div class="overview-card"><span class="overview-label">Total Products:</span><span class="overview-value">{{ dashboardTotals.totalProducts }}</span></div>
@@ -12,60 +16,6 @@
       <inventory-panel-content :products="products" :reports="inventoryReports" />
     </template>
   </OwnerPanelLayout>
-
-  <!-- INFO MODAL (view/edit manager profile) -->
-  <transition name="fade">
-    <div v-if="showInfoModal" class="info-backdrop">
-      <div class="info-modal">
-        <h3>Manager Information</h3>
-        <p class="info-sub">Update your personal details from this panel.</p>
-
-        <div class="info-grid">
-          <div class="info-row"><span class="info-label">Full name</span><span class="info-value" v-if="!isEditingInfo">{{ userProfile.fullName }}</span>
-            <input v-else v-model="userProfile.fullName" class="info-input" type="text" />
-          </div>
-
-          <div class="info-row"><span class="info-label">Role</span><span class="info-value">{{ userProfile.role }}</span></div>
-
-          <div class="info-row"><span class="info-label">Username</span><span class="info-value" v-if="!isEditingInfo">{{ userProfile.username }}</span>
-            <input v-else v-model="userProfile.username" class="info-input" type="text" placeholder="Enter username" />
-          </div>
-
-          <div class="info-row"><span class="info-label">Email</span><span class="info-value" v-if="!isEditingInfo">{{ userProfile.email }}</span>
-            <input v-else v-model="userProfile.email" class="info-input" type="email" />
-          </div>
-
-          <div class="info-row"><span class="info-label">Contact</span><span class="info-value" v-if="!isEditingInfo">{{ userProfile.contact }}</span>
-            <input v-else v-model="userProfile.contact" class="info-input" type="text" />
-          </div>
-
-          <div class="info-row"><span class="info-label">Branch</span><span class="info-value">{{ typeof userProfile.branch === 'object' && userProfile.branch.name ? userProfile.branch.name : (userProfile.branch || 'Not assigned') }}</span></div>
-
-          <template v-if="isEditingInfo">
-            <div class="info-row info-row--password">
-              <span class="info-label">New Password</span>
-              <input v-model="userProfile.password" class="info-input" type="password" placeholder="Leave blank to keep current" />
-            </div>
-
-            <div class="info-row info-row--password">
-              <span class="info-label">Confirm Password</span>
-              <input v-model="userProfile.password_confirmation" class="info-input" type="password" placeholder="Re-enter new password" />
-            </div>
-          </template>
-        </div>
-
-        <div v-if="profileError" class="info-error">{{ profileError }}</div>
-        <div v-if="profileSuccess" class="info-success">{{ profileSuccess }}</div>
-
-        <div class="info-actions">
-          <button class="btn-outline" @click="handleInfoClose">{{ isEditingInfo ? 'Cancel' : 'Close' }}</button>
-          <button class="btn-primary" @click="isEditingInfo ? saveManagerInfo() : (isEditingInfo = true)" :disabled="isSavingProfile">
-            {{ isEditingInfo ? (isSavingProfile ? 'Saving...' : 'Save changes') : 'Edit information' }}
-          </button>
-        </div>
-      </div>
-    </div>
-  </transition>
 
   <!-- LOGOUT CONFIRM -->
   <transition name="fade">
@@ -104,12 +54,6 @@ const products = ref([])
 const inventoryReports = ref([])
 
 // UI / modal state
-const showInfoModal = ref(false)
-const isEditingInfo = ref(false)
-const profileError = ref('')
-const profileSuccess = ref('')
-const isSavingProfile = ref(false)
-
 const showLogoutConfirm = ref(false)
 const isLoggingOut = ref(false)
 const showOverlay = ref(false)
@@ -167,35 +111,6 @@ onMounted(async () => {
     }
   } catch (e) { console.warn('Failed to load reports', e) }
 })
-
-function handleInfoClose() {
-  if (isEditingInfo.value) {
-    isEditingInfo.value = false
-  } else {
-    showInfoModal.value = false
-  }
-}
-
-async function saveManagerInfo() {
-  isSavingProfile.value = true
-  profileError.value = ''
-  profileSuccess.value = ''
-  try {
-    const payload = {
-      fullName: userProfile.value.fullName,
-      email: userProfile.value.email,
-      contact: userProfile.value.contact,
-      password: userProfile.value.password || undefined,
-      password_confirmation: userProfile.value.password_confirmation || undefined,
-    }
-    await axios.put('/api/manager/inventory/profile', payload, { withCredentials: true })
-    profileSuccess.value = 'Profile updated.'
-    isEditingInfo.value = false
-  } catch (err) {
-    profileError.value = err.response?.data?.message || 'Failed to save profile.'
-  }
-  isSavingProfile.value = false
-}
 
 function cancelLogout() {
   if (isLoggingOut.value) return
