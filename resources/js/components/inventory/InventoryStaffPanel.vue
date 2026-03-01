@@ -4,7 +4,7 @@
       <!-- Page Header -->
       <header class="pl-page-header">
         <div>
-          <h1 class="pl-h1">Product List</h1>
+          <h1 class="pl-h1">Staff Inventory</h1>
           <p class="pl-lead">Manage your branch inventory</p>
         </div>
       </header>
