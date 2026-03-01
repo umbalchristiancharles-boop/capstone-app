@@ -288,7 +288,11 @@ const isMobile = computed(() => window.matchMedia && window.matchMedia('(max-wid
 
 // stats
 const totalProducts = computed(() => internal.value.length)
-const lowStockCount = computed(() => internal.value.filter(p => p.stock != null && p.stock > 0 && p.stock <= 10).length)
+const lowStockCount = computed(() => internal.value.filter(p => {
+  if (p.stock == null || p.stock <= 0) return false
+  const threshold = p.low_stock_threshold ?? 10
+  return p.stock <= threshold
+}).length)
 const outOfStockCount = computed(() => internal.value.filter(p => p.stock != null && p.stock <= 0).length)
 
 // pagination reactive reset when perPage changes
@@ -299,7 +303,11 @@ watch(perPage, () => goToPage(1))
 function getStats() {
   return {
     total: internal.value.length,
-    low: internal.value.filter(p => p.stock != null && p.stock > 0 && p.stock <= 10).length,
+    low: internal.value.filter(p => {
+      if (p.stock == null || p.stock <= 0) return false
+      const threshold = p.low_stock_threshold ?? 10
+      return p.stock <= threshold
+    }).length,
     out: internal.value.filter(p => p.stock != null && p.stock <= 0).length
   }
 }

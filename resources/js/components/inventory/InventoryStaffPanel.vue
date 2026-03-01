@@ -95,6 +95,22 @@
               {{ attendanceMessage }}
             </div>
           </div>
+
+          <!-- Inventory Summary Cards (below Attendance card) -->
+          <div class="inventory-summary">
+            <div class="stat-card">
+              <div class="stat-title">Total Products</div>
+              <div class="stat-value">{{ totalProducts }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">Low Stock</div>
+              <div class="stat-value">{{ lowStockCount }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">Out of Stock</div>
+              <div class="stat-value">{{ outOfStockCount }}</div>
+            </div>
+          </div>
         </template>
 
         <!-- Stats Slot (for non-STAFF roles) -->
@@ -776,6 +792,20 @@ ProductList[compact] { width:100% }
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+/* Inventory Summary Cards - below Attendance card */
+.inventory-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 10px;
+}
+
+@media (max-width: 600px) {
+  .inventory-summary {
+    grid-template-columns: 1fr;
+  }
 }
 
 .attendance-header {
