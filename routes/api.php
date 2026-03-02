@@ -216,6 +216,9 @@ Route::middleware('web')->group(function () {
     Route::post('/product-comment-replies', [ProductCommentController::class, 'storeReply']);
 
     Route::post('/auth/send-verification', [AuthController::class, 'sendVerification']);
+    Route::post('/auth/verify-code', [AuthController::class, 'verifyCode']);
+    Route::post('/auth/register', [AuthController::class, 'registerPublic']);
+    Route::post('/auth/login', [AuthController::class, 'loginPublic']);
 
     // ==========================================
     // ATTENDANCE SETTINGS API

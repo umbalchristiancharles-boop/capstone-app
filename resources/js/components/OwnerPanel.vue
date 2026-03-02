@@ -484,9 +484,33 @@ async function loadDashboard(range) {
   try {
     const res = await axios.get('/api/admin/dashboard', { params: { range }, withCredentials: true })
     if (res.data) {
-      summaryTotals.value = { totalBranches: res.data.branches_count || 0, totalEmployees: res.data.staff_count || 0 }
-      dashboardTotals.value = { orders: res.data.orders_count || 0, completed: 0, sales: '₱0', pending: 0 }
-      adminStaffActivity.value = res.data.recent_activity || []
+      // Map summaryTotals from API response - support both response structures
+      // DashboardController returns: branches_count, staff_count
+      // OwnerDashboardController returns: summary.totalBranches, summary.totalEmployees
+      if (res.data.summary) {
+        // OwnerDashboardController response structure
+        summaryTotals.value = {
+          totalBranches: res.data.summary.totalBranches || 0,
+          totalEmployees: res.data.summary.totalEmployees || 0
+        }
+      } else {
+        // DashboardController response structure
+        summaryTotals.value = {
+          totalBranches: res.data.branches_count || 0,
+          totalEmployees: res.data.staff_count || 0
+        }
+      }
+
+      // Map dashboardTotals
+      dashboardTotals.value = {
+        orders: res.data.orders_count || res.data.orders || 0,
+        completed: res.data.completed || 0,
+        sales: res.data.sales || '₱0',
+        pending: res.data.pending || 0
+      }
+
+      // Map recent activity
+      adminStaffActivity.value = res.data.recent_activity || res.data.staffActivity || []
     }
   } catch (e) {
     if (e.response?.status === 401) { router.push('/admin-login'); return }
