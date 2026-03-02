@@ -57,6 +57,14 @@ const isLoggingOut = ref(false)
 const showOverlay = ref(false)
 const overlayText = ref('Logging out...')
 
+// Helper function to safely extract array from response
+const extractArray = (response, key = null) => {
+  if (Array.isArray(response)) return response
+  if (response?.data && Array.isArray(response.data)) return response.data
+  if (key && response?.[key]?.data) return response[key].data
+  return []
+}
+
 const userProfile = ref({})
 const dashboardTotals = ref({ totalSales: 0, pendingApprovals: 0, revenue: 0 })
 const financeReports = ref([])
@@ -93,8 +101,8 @@ onMounted(async () => {
   const dash = await axios.get('/api/manager/finance/dashboard', { withCredentials: true })
   dashboardTotals.value = dash.data
   const reports = await axios.get('/api/manager/finance/reports', { withCredentials: true })
-  financeReports.value = reports.data
+  financeReports.value = extractArray(reports.data, 'reports')
   const tx = await axios.get('/api/manager/finance/transactions', { withCredentials: true })
-  transactions.value = tx.data
+  transactions.value = extractArray(tx.data, 'transactions')
 })
 </script>
