@@ -4,6 +4,8 @@
     :panelTitle="'Manager Finance Panel'"
     :panelDescription="'View financial reports, approve transactions, and analyze revenue.'"
     :enableProfileUpdate="true"
+    :canEditProfile="userProfile.role === 'OWNER'"
+    :canChangePassword="true"
     @logout="showLogoutConfirm = true"
     @profile-updated="onProfileUpdated"
   >

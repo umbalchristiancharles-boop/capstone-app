@@ -4,6 +4,8 @@
     :panelTitle="'Manager HR Panel'"
     :panelDescription="'Manage staff, view HR reports, and monitor staff status.'"
     :enableProfileUpdate="true"
+    :canEditProfile="userProfile.role === 'OWNER'"
+    :canChangePassword="true"
     @logout="showLogoutConfirm = true"
     @profile-updated="onProfileUpdated"
   >

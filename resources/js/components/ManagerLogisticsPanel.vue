@@ -4,6 +4,8 @@
     :panelTitle="'Manager Logistics Panel'"
     :panelDescription="'Track deliveries and manage suppliers.'"
     :enableProfileUpdate="true"
+    :canEditProfile="userProfile.role === 'OWNER'"
+    :canChangePassword="true"
     @logout="showLogoutConfirm = true"
     @profile-updated="onProfileUpdated"
   >

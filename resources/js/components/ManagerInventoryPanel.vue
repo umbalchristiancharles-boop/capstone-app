@@ -4,6 +4,8 @@
     :panelTitle="'Manager Inventory Panel'"
     :panelDescription="'Monitor stock, add/update products, and view inventory reports.'"
     :enableProfileUpdate="true"
+    :canEditProfile="userProfile.role === 'OWNER'"
+    :canChangePassword="true"
     @logout="showLogoutConfirm = true"
     @profile-updated="onProfileUpdated"
   >

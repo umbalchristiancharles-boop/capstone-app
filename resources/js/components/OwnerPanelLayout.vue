@@ -32,8 +32,8 @@
                 <span class="admin-id-label">Account I.D: </span>
                 <span class="admin-id-value">&nbsp;{{ userProfile.accountId || userProfile.account_id || 'id0001' }}</span>
               </div>
-              <!-- Edit Profile Button -->
-              <button v-if="enableProfileUpdate" class="admin-info-btn admin-info-btn--center" @click="openInfoModal">Edit Profile</button>
+              <!-- View Info Button -->
+              <button v-if="enableProfileUpdate" class="admin-info-btn admin-info-btn--center" @click="openInfoModal">Info</button>
             </div>
             <div class="admin-card__footer admin-card__footer--stacked">
               <slot name="profileFooter"></slot>
@@ -63,41 +63,37 @@
       </section>
     </div>
 
-    <!-- PROFILE EDIT MODAL -->
+    <!-- PROFILE INFO MODAL -->
     <transition name="fade">
       <div v-if="showInfoModal" class="info-backdrop">
         <div class="info-modal">
-          <h3>Edit Profile</h3>
-          <p class="info-sub">Update your personal information below.</p>
+          <h3>Info</h3>
+          <p class="info-sub">Your account information.</p>
 
           <div class="info-grid">
             <div class="info-row">
               <span class="info-label">Full name</span>
-              <span class="info-value" v-if="!isEditingInfo || !canEditProfile">{{ localProfile.fullName || localProfile.full_name }}</span>
-              <input v-else v-model="localProfile.fullName" class="info-input" type="text" :readonly="!canEditProfile" />
+              <span class="info-value">{{ localProfile.fullName || localProfile.full_name || '-' }}</span>
             </div>
 
             <div class="info-row">
               <span class="info-label">Role</span>
-              <span class="info-value">{{ localProfile.role }}</span>
+              <span class="info-value">{{ localProfile.role || '-' }}</span>
             </div>
 
             <div class="info-row">
               <span class="info-label">Username</span>
-              <span class="info-value" v-if="!isEditingInfo || !canEditProfile">{{ localProfile.username }}</span>
-              <input v-else v-model="localProfile.username" class="info-input" type="text" placeholder="Enter username" :readonly="!canEditProfile" />
+              <span class="info-value">{{ localProfile.username || '-' }}</span>
             </div>
 
             <div class="info-row">
               <span class="info-label">Email</span>
-              <span class="info-value" v-if="!isEditingInfo || !canEditProfile">{{ localProfile.email }}</span>
-              <input v-else v-model="localProfile.email" class="info-input" type="email" :readonly="!canEditProfile" />
+              <span class="info-value">{{ localProfile.email || '-' }}</span>
             </div>
 
             <div class="info-row">
               <span class="info-label">Contact</span>
-              <span class="info-value" v-if="!isEditingInfo || !canEditProfile">{{ localProfile.contact || localProfile.phone_number }}</span>
-              <input v-else v-model="localProfile.contact" class="info-input" type="text" :readonly="!canEditProfile" />
+              <span class="info-value">{{ localProfile.contact || localProfile.phone_number || '-' }}</span>
             </div>
 
             <div class="info-row">
@@ -105,12 +101,12 @@
               <span class="info-value">{{ localProfile.department || '-' }}</span>
             </div>
 
-            <!-- Password fields - only shown when editing -->
-            <template v-if="isEditingInfo">
+            <!-- Password fields - only shown when canChangePassword is true and editing -->
+            <template v-if="canChangePassword && isEditingInfo">
               <form @submit.prevent="saveProfile">
                 <div class="info-row info-row--password">
                   <span class="info-label">New Password</span>
-                  <input v-model="localProfile.password" class="info-input" type="password" placeholder="Leave blank to keep current" />
+                  <input v-model="localProfile.password" class="info-input" type="password" placeholder="Enter new password" />
                 </div>
 
                 <div class="info-row info-row--password">
@@ -133,21 +129,45 @@
 
           <div class="info-actions">
             <button class="btn-outline" @click="handleInfoClose">{{ isEditingInfo ? 'Cancel' : 'Close' }}</button>
+
+            <!-- Show Change Password button for Owner/HR roles -->
             <button
-              v-if="canEditProfile"
+              v-if="canChangePassword && !isEditingInfo"
               class="btn-primary"
-              @click="isEditingInfo ? saveProfile() : (isEditingInfo = true)"
+              @click="isEditingInfo = true"
               :disabled="isSavingProfile"
             >
-              {{ isEditingInfo ? (isSavingProfile ? 'Saving...' : 'Save changes') : 'Edit information' }}
+              Change Password
             </button>
+
+            <!-- Show Save button when editing and canChangePassword -->
             <button
-              v-else
+              v-if="canChangePassword && isEditingInfo"
               class="btn-primary"
-              @click="isEditingInfo ? saveProfile() : (isEditingInfo = true)"
+              @click="saveProfile"
               :disabled="isSavingProfile"
             >
-              {{ isEditingInfo ? (isSavingProfile ? 'Saving...' : 'Change Password') : 'Change Password' }}
+              {{ isSavingProfile ? 'Saving...' : 'Save Password' }}
+            </button>
+
+            <!-- Show Edit Information button for Owner role (canEditProfile) -->
+            <button
+              v-if="canEditProfile && !isEditingInfo"
+              class="btn-primary"
+              @click="isEditingInfo = true"
+              :disabled="isSavingProfile"
+            >
+              Edit Information
+            </button>
+
+            <!-- Show Save button when editing and canEditProfile -->
+            <button
+              v-if="canEditProfile && isEditingInfo"
+              class="btn-primary"
+              @click="saveProfile"
+              :disabled="isSavingProfile"
+            >
+              {{ isSavingProfile ? 'Saving...' : 'Save Changes' }}
             </button>
           </div>
         </div>
@@ -166,7 +186,8 @@ const props = defineProps({
   panelDescription: { type: String, required: true },
   fullWidth: { type: Boolean, default: false },
   enableProfileUpdate: { type: Boolean, default: false },
-  canEditProfile: { type: Boolean, default: true },
+  canEditProfile: { type: Boolean, default: false },
+  canChangePassword: { type: Boolean, default: false },
   profileEndpoint: { type: String, default: '' },
   updateEndpoint: { type: String, default: '' },
   avatarEndpoint: { type: String, default: '' }
@@ -180,6 +201,17 @@ const isEditingInfo = ref(false)
 const isSavingProfile = ref(false)
 const profileError = ref('')
 const profileSuccess = ref('')
+
+// Computed property to check if password change is allowed for the current user's role
+const canChangePasswordForRole = computed(() => {
+  const role = (props.userProfile.role || '').toUpperCase()
+  return role === 'OWNER' || role === 'HR'
+})
+
+// Combined computed property that checks both the prop and the role
+const canChangePassword = computed(() => {
+  return props.canChangePassword && canChangePasswordForRole.value
+})
 
 watch(() => props.userProfile, (newVal) => {
   if (newVal) {
@@ -261,17 +293,26 @@ async function saveProfile() {
   profileSuccess.value = ''
 
   try {
+    // Fetch CSRF cookie first
+    await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
+    await new Promise(resolve => setTimeout(resolve, 100))
+
     const endpoint = getUpdateEndpoint()
 
-    const isPasswordOnlyMode = !props.canEditProfile
+    // Determine mode based on props
+    const isPasswordOnlyMode = props.canChangePassword && !props.canEditProfile
+    const isFullEditMode = props.canEditProfile
+
     let payload = {}
 
     if (isPasswordOnlyMode) {
+      // Password only mode (HR role)
       const password = (localProfile.value.password || '').trim()
       const passwordConfirmation = localProfile.value.password_confirmation || ''
 
       if (!password) {
         profileError.value = 'Please enter a new password.'
+        isSavingProfile.value = false
         return
       }
 
@@ -279,7 +320,8 @@ async function saveProfile() {
         password,
         password_confirmation: passwordConfirmation
       }
-    } else {
+    } else if (isFullEditMode) {
+      // Full edit mode (Owner role)
       payload = {
         fullName: localProfile.value.fullName || '',
         username: localProfile.value.username || '',
