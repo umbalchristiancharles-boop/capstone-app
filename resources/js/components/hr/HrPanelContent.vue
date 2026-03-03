@@ -3,15 +3,24 @@
     <!-- Header with Actions -->
     <div class="staff-header">
       <h2>Staff Management</h2>
-      <div class="header-actions">
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Search staff..."
-          class="search-input"
-        />
-        <button @click="refreshStaff" class="btn-primary">Refresh</button>
-        <button @click="openAddStaffModal()" class="btn-success">+ Add Staff</button>
+      <div class="hr-header-actions">
+        <div class="hr-search-wrapper">
+          <svg class="hr-search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Search staff..."
+            class="hr-search-input"
+          />
+        </div>
+        <button @click="refreshStaff" class="hr-btn hr-btn--refresh">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+          Refresh
+        </button>
+        <button @click="openAddStaffModal()" class="hr-btn hr-btn--add">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          + Add Staff
+        </button>
       </div>
     </div>
 
@@ -25,24 +34,15 @@
       {{ errorMessage }}
     </div>
 
-    <!-- Summary -->
-    <div v-if="!loading" class="summary-card">
-      <h3>Total Staff Members: {{ filteredStaff.length }}</h3>
-    </div>
-
     <!-- Staff Table -->
     <div v-if="!loading && filteredStaff.length > 0" class="staff-table-wrapper">
       <table class="staff-table">
         <thead>
           <tr>
             <th>Name</th>
-            <th>Role</th>
             <th>Department</th>
-            <th>Username</th>
-            <th>Email</th>
-            <th>Phone</th>
+            <th>Position</th>
             <th>Status</th>
-            <th>Joined</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -53,17 +53,13 @@
                 <strong>{{ member.full_name || member.username }}</strong>
               </div>
             </td>
-            <td>{{ displayRole(member.role) }}</td>
             <td>{{ member.department || '-' }}</td>
-            <td>{{ member.username }}</td>
-            <td>{{ member.email }}</td>
-            <td>{{ member.phone_number || '-' }}</td>
+            <td>{{ displayRole(member.role) }}</td>
             <td>
               <span :class="['badge', member.is_active ? 'badge-active' : 'badge-inactive']">
                 {{ member.is_active ? 'Active' : 'Inactive' }}
               </span>
             </td>
-            <td>{{ formatDate(member.created_at) }}</td>
             <td class="actions">
               <button
                 @click="editStaff(member)"
@@ -94,6 +90,7 @@
 
     <!-- Empty State -->
     <div v-if="!loading && filteredStaff.length === 0" class="empty-state">
+      <svg class="empty-state-icon" xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" y1="8" x2="19" y2="14"></line><line x1="22" y1="11" x2="16" y2="11"></line></svg>
       <p>No staff members found</p>
     </div>
 
