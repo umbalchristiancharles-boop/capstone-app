@@ -12,6 +12,7 @@ import ManagerInventoryPanel from './components/ManagerInventoryPanel.vue'
 import ManagerFinancePanel from './components/ManagerFinancePanel.vue'
 import ManagerLogisticsPanel from './components/ManagerLogisticsPanel.vue'
 import ManagerHRPanel from './components/ManagerHRPanel.vue'
+import ManagerHRStaffManagement from './components/ManagerHRStaffManagement.vue'
 import StaffCashierPanel from './components/StaffCashierPanel.vue'
 import axios from 'axios'
 
@@ -129,7 +130,8 @@ const router = createRouter({
     { path: '/manager/inventory', component: ManagerInventoryPanel, meta: { requiresAuth: true } },
     { path: '/manager/finance', component: ManagerFinancePanel, meta: { requiresAuth: true } },
     { path: '/manager/logistics', component: ManagerLogisticsPanel, meta: { requiresAuth: true } },
-    { path: '/manager/hr', component: ManagerHRPanel, meta: { requiresAuth: true } },
+{ path: '/manager/hr', component: ManagerHRPanel, meta: { requiresAuth: true } },
+    { path: '/manager/hr/staff-management', component: ManagerHRStaffManagement, meta: { requiresAuth: true } },
     { path: '/staff-panel', component: StaffList },
     { path: '/staff/cashier', component: StaffCashierPanel, meta: { requiresAuth: true } },
     { path: '/staff/finance', component: () => import('./components/StaffFinancePanel.vue'), meta: { requiresAuth: true } },
@@ -346,6 +348,8 @@ router.beforeEach(async (to, from, next) => {
       if (user.role !== 'manager' || user.department !== 'hr') {
         return next('/unauthorized');
       }
+      // Allow navigation to staff-management sub-route
+      return next();
     }
 
     // Staff Inventory should only access /staff/inventory
@@ -446,7 +450,7 @@ axios
     axios.interceptors.response.use(async function (response) {
       if (isHtmlResponse(response)) {
         const req = response.config || {}
-        
+
         // If already retried for CSRF once, force logout
         if (req._retriedForCsrf || htmlLogoutInProgress) {
           console.warn('[AXIOS] HTML response after CSRF retry - forcing logout')
@@ -459,7 +463,7 @@ axios
           }
           return Promise.reject(new Error('Received HTML response from API'))
         }
-        
+
         // First HTML response - try refreshing CSRF once
         req._retriedForCsrf = true
         const ok = await refreshCsrf()
@@ -485,19 +489,19 @@ axios
       // Handle 401 - force logout once
       if (status === 401) {
         console.warn('[AXIOS] 401 received:', { url: req.url, method: req.method })
-        
+
         // If already retried once or logout in progress, reject
         if (req._retriedForAuth || htmlLogoutInProgress) {
           return Promise.reject(error)
         }
-        
+
         // Try once more with refreshed CSRF
         req._retriedForAuth = true
         const ok = await refreshCsrf()
         if (ok) {
           try { return axios(req) } catch (e) { return Promise.reject(e) }
         }
-        
+
         // Failed - force logout
         console.warn('[AXIOS] 401 after CSRF refresh - forcing logout')
         if (!htmlLogoutInProgress) {

@@ -52,6 +52,12 @@ const routes = [
     meta: { requiresAuth: true, role: 'manager', department: 'hr' }
   },
   {
+    path: '/manager/hr/staff-management',
+    name: 'ManagerHRStaffManagement',
+    component: () => import('../components/ManagerHRStaffManagement.vue'),
+    meta: { requiresAuth: true, role: 'manager', department: 'hr' }
+  },
+  {
     path: '/manager/finance',
     name: 'ManagerFinancePanel',
     component: () => import('../components/ManagerFinancePanel.vue'),
