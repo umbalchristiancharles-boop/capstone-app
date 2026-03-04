@@ -11,13 +11,13 @@
   >
     <template #profileFooter>
       <div class="admin-actions-row">
-        <button class="staff-btn staff-btn--center" @click="toggleStaffManagement()">
-          {{ showStaffManagement ? 'Hide Staff Management' : 'Staff Management' }}
+        <button class="staff-btn staff-btn--center" @click="goToStaffManagement()">
+          Staff Management
         </button>
       </div>
     </template>
     <template #main>
-      <!-- Bento-style Stats Cards - Always visible -->
+      <!-- Bento-style Stats Cards -->
       <div class="hr-stats-grid">
         <div class="hr-stat-card hr-stat-card--total">
           <div class="hr-stat-icon">
@@ -47,101 +47,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Staff Management Section - Hidden by default -->
-      <section v-if="showStaffManagement" class="hr-panel-content">
-        <div class="staff-header">
-          <h2>Staff Management</h2>
-          <div class="hr-header-actions">
-            <div class="hr-search-wrapper">
-              <svg class="hr-search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-              <input v-model="searchQuery" type="text" placeholder="Search staff..." class="hr-search-input" />
-            </div>
-            <button @click="refreshStaff" class="hr-btn hr-btn--refresh">Refresh</button>
-            <button @click="openAddStaffModal()" class="hr-btn hr-btn--add">+ Add Staff</button>
-          </div>
-        </div>
-
-        <div v-if="loading" class="loading-state"><p>Loading staff...</p></div>
-        <div v-if="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
-
-        <div v-if="!loading && filteredStaff.length > 0" class="staff-table-wrapper">
-          <table class="staff-table">
-            <thead>
-              <tr><th>Name</th><th>Department</th><th>Position</th><th>Status</th><th>Actions</th></tr>
-            </thead>
-            <tbody>
-              <tr v-for="member in filteredStaff" :key="member.id" :class="{ 'inactive': !member.is_active }">
-                <td><strong>{{ member.full_name || member.username }}</strong></td>
-                <td>{{ member.department || '-' }}</td>
-                <td>{{ displayRole(member.role) }}</td>
-                <td><span :class="['badge', member.is_active ? 'badge-active' : 'badge-inactive']">{{ member.is_active ? 'Active' : 'Inactive' }}</span></td>
-                <td class="actions">
-                  <button @click="editStaff(member)" class="btn-sm btn-info">Edit</button>
-                  <button @click="toggleStatus(member)" :class="['btn-sm', member.is_active ? 'btn-danger' : 'btn-success']">{{ member.is_active ? 'Deactivate' : 'Activate' }}</button>
-                  <button @click="deleteStaff(member)" class="btn-sm btn-danger">Delete</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div v-if="!loading && filteredStaff.length === 0" class="empty-state"><p>No staff members found</p></div>
-
-        <!-- Add/Edit Modal -->
-        <div v-if="showModal" class="modal-backdrop" @click.self="closeModal">
-          <div class="modal">
-            <div class="modal-header">
-              <h2>{{ isEditing ? 'Edit Staff Member' : 'Add New Staff Member' }}</h2>
-              <button type="button" @click="closeModal" class="close-button">&times;</button>
-            </div>
-            <form @submit.prevent="submitStaffForm">
-              <div class="modal-body">
-                <div class="form-group" v-if="!isEditing">
-                  <label>Username *</label>
-                  <input v-model="formData.username" type="text" class="form-input" placeholder="Enter username" required />
-                </div>
-                <div class="form-group">
-                  <label>Email {{ !isEditing ? '*' : '' }}</label>
-                  <input v-model="formData.email" type="email" class="form-input" placeholder="Enter email address" :required="!isEditing" />
-                </div>
-                <div class="form-group">
-                  <label>Full Name *</label>
-                  <input v-model="formData.full_name" type="text" class="form-input" placeholder="Enter full name" required />
-                </div>
-                <div class="form-group">
-                  <label>Phone Number</label>
-                  <input v-model="formData.phone_number" type="tel" class="form-input" placeholder="Enter phone number" />
-                </div>
-                <div class="form-group">
-                  <label>Department</label>
-                  <select v-model="formData.department" class="form-input">
-                    <option value="">-- Select Department --</option>
-                    <option value="Cashier">Cashier</option>
-                    <option value="Kitchen">Kitchen</option>
-                    <option value="Service">Service</option>
-                    <option value="Delivery">Delivery</option>
-                  </select>
-                </div>
-                <div class="form-group" v-if="!isEditing">
-                  <label>Password</label>
-                  <input v-model="formData.password" type="password" class="form-input" placeholder="Leave blank for default password" />
-                  <small class="form-hint">Default: Chikintayo_123</small>
-                </div>
-                <div class="form-group" v-if="isEditing">
-                  <label>New Password (leave blank to keep current)</label>
-                  <input v-model="formData.password" type="password" class="form-input" placeholder="Enter new password" />
-                </div>
-                <div v-if="formError" class="error-message">{{ formError }}</div>
-              </div>
-              <div class="modal-footer">
-                <button type="button" @click="closeModal" class="btn btn-secondary" :disabled="isSubmitting">Cancel</button>
-                <button type="submit" class="btn btn-primary" :disabled="isSubmitting">{{ isSubmitting ? 'Saving...' : (isEditing ? 'Update Staff' : 'Add Staff') }}</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </section>
     </template>
 
     <template #side>
@@ -242,6 +147,10 @@ const isTogglingOverride = ref(false)
 
 function toggleStaffManagement() {
   showStaffManagement.value = !showStaffManagement.value
+}
+
+function goToStaffManagement() {
+  router.push('/manager/hr/staff-management')
 }
 
 async function loadAttendanceSettings() {
