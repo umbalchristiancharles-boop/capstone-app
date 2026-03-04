@@ -218,12 +218,18 @@ function mapRoleToDisplayRole(role) {
   if (upperRole === 'MANAGER_INVENTORY') return 'Manager Inventory'
   if (upperRole === 'MANAGER_LOGISTICS') return 'Manager Logistics'
   if (upperRole === 'BRANCH_MANAGER') return 'Manager'
+  if (upperRole === 'MANAGER') return 'Manager' // Handle plain MANAGER role
   if (upperRole === 'HR') return 'Staff'
   if (upperRole === 'STAFF_CASHIER') return 'Staff Cashier'
   if (upperRole === 'STAFF_FINANCE') return 'Staff Finance'
   if (upperRole === 'STAFF_INVENTORY') return 'Staff Inventory'
   if (upperRole === 'STAFF_LOGISTICS') return 'Staff'
   if (upperRole === 'STAFF') return 'Staff'
+
+  // Fallback: if role contains MANAGER (any variant), map to Manager
+  if (upperRole.includes('MANAGER')) return 'Manager'
+  // Fallback: if role contains STAFF (any variant), map to Staff
+  if (upperRole.includes('STAFF')) return 'Staff'
 
   return null
 }
