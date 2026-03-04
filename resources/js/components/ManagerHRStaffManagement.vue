@@ -11,7 +11,7 @@
 
     <!-- Header -->
     <div class="staff-header">
-      <h1>Staff Management</h1>
+      <h1 class="manager-hr-title">Staff Management</h1>
       <div class="header-actions">
         <input
           v-model="searchQuery"
@@ -36,10 +36,10 @@
 
     <!-- Summary -->
     <div v-if="!loading && staffList.length > 0" class="summary-card">
-      <h3>Total Staff Members: {{ filteredStaff.length }}</h3>
+      <h3 class="manager-hr-total">Total Staff Members: {{ filteredStaff.length }}</h3>
     </div>
     <div v-if="!loading && staffList.length === 0" class="summary-card">
-      <h3>Total Staff Members: 0</h3>
+      <h3 class="manager-hr-total">Total Staff Members: 0</h3>
     </div>
 
     <!-- Staff Table -->
@@ -488,6 +488,15 @@ onMounted(async () => {
   font-size: 2.5rem;
   font-weight: 700;
   letter-spacing: -1px;
+}
+
+.staff-header .manager-hr-title {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.summary-card .manager-hr-total {
+  color: #ffffff;
 }
 
 .header-actions {
