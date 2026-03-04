@@ -48,11 +48,13 @@
         <thead>
           <tr>
             <th>Name</th>
+            <th>Role</th>
             <th>Department</th>
-            <th>Position</th>
+            <th>Username</th>
             <th>Email</th>
             <th>Phone</th>
             <th>Status</th>
+            <th>Joined</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -64,15 +66,17 @@
                 <strong>{{ member.full_name || member.username }}</strong>
               </div>
             </td>
-            <td>{{ member.department || '-' }}</td>
             <td>{{ displayRole(member.role) }}</td>
+            <td>{{ member.department || '-' }}</td>
+            <td>{{ member.username }}</td>
             <td>{{ member.email }}</td>
             <td>{{ member.phone_number || '-' }}</td>
             <td>
-              <span :class="['badge', member.is_active ? 'badge-active' : 'badge-inactive']">
-                {{ member.is_active ? 'Active' : 'Inactive' }}
+              <span :class="['badge', member.is_online ? 'badge-online' : 'badge-offline']">
+                {{ member.is_online ? 'Online' : 'Offline' }}
               </span>
             </td>
+            <td>{{ formatDate(member.created_at) }}</td>
             <td class="actions">
               <button
                 @click="editStaff(member)"
@@ -458,6 +462,19 @@ function displayRole(r) {
   return role.replace(/_/g, ' ')
 }
 
+// Format date to MM-DD-YYYY
+function formatDate(dateString) {
+  if (!dateString) return '-'
+  const date = new Date(dateString)
+  if (isNaN(date.getTime())) return dateString
+
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const year = date.getFullYear()
+
+  return `${month}-${day}-${year}`
+}
+
 // On mounted
 onMounted(async () => {
   await loadStaff()
@@ -673,6 +690,17 @@ onMounted(async () => {
 .badge-inactive {
   background: #f8d7da;
   color: #721c24;
+}
+
+/* Online/Offline status badges */
+.badge-online {
+  background: #28a745;
+  color: #ffffff;
+}
+
+.badge-offline {
+  background: #6c757d;
+  color: #ffffff;
 }
 
 .actions {
