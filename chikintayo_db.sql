@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 04, 2026 at 06:25 PM
+-- Generation Time: Mar 04, 2026 at 07:32 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -68,7 +68,8 @@ CREATE TABLE `attendance_settings` (
 
 INSERT INTO `attendance_settings` (`id`, `branch_id`, `early_clockout_override`, `created_at`, `updated_at`) VALUES
 (1, 1, 0, '2026-03-01 06:49:13', '2026-03-01 15:40:40'),
-(2, 2, 0, '2026-03-01 17:42:36', '2026-03-01 17:42:36');
+(2, 2, 0, '2026-03-01 17:42:36', '2026-03-01 17:42:36'),
+(3, 3, 0, '2026-03-04 18:11:43', '2026-03-04 18:11:43');
 
 -- --------------------------------------------------------
 
@@ -661,7 +662,14 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (280, 'App\\Models\\User', 2, 'auth-token', '2202e41f7032ff74f26b7df771321e44decf0a4121084c9b921b965f8d15cae4', '[\"*\"]', NULL, NULL, '2026-03-04 16:51:25', '2026-03-04 16:51:25'),
 (281, 'App\\Models\\User', 26, 'auth-token', 'fda84b7377ae0b9a97a0ccf052f293ef6f9212d328d932dfefd3fdf953b57fb4', '[\"*\"]', NULL, NULL, '2026-03-04 16:57:13', '2026-03-04 16:57:13'),
 (282, 'App\\Models\\User', 2, 'auth-token', '34ceebb1e6c67d891a5dc945794466f23b25b7d74bc6f6f523fb6afcf74d8e99', '[\"*\"]', NULL, NULL, '2026-03-04 16:57:41', '2026-03-04 16:57:41'),
-(283, 'App\\Models\\User', 20, 'auth-token', '92e9d33bcab79d970bcf8abf9cdda43557bcca23e1f365c6c3576f23bbc058c3', '[\"*\"]', NULL, NULL, '2026-03-04 16:58:12', '2026-03-04 16:58:12');
+(283, 'App\\Models\\User', 20, 'auth-token', '92e9d33bcab79d970bcf8abf9cdda43557bcca23e1f365c6c3576f23bbc058c3', '[\"*\"]', NULL, NULL, '2026-03-04 16:58:12', '2026-03-04 16:58:12'),
+(284, 'App\\Models\\User', 26, 'auth-token', '713badc3b327eaf7d6e4db686bc9a9d17302c63880e3ca0ce836d2e0f0befa30', '[\"*\"]', NULL, NULL, '2026-03-04 17:55:30', '2026-03-04 17:55:30'),
+(285, 'App\\Models\\User', 26, 'auth-token', '26a90aca25957ff52704b8e766d8c56ac3ba0fa0b7a11a1552316d72a1c5bb05', '[\"*\"]', NULL, NULL, '2026-03-04 17:56:08', '2026-03-04 17:56:08'),
+(286, 'App\\Models\\User', 23, 'auth-token', 'a678ef3ba51a3d79546039d61fd4fecd670d222c3d89ce4cfc1f07b7facfafa3', '[\"*\"]', NULL, NULL, '2026-03-04 18:01:34', '2026-03-04 18:01:34'),
+(287, 'App\\Models\\User', 27, 'auth-token', 'ccf49eccff1e35c4b70dea8d8b7ee973fd983f0a65f45a09aa68b3f4d986a5c8', '[\"*\"]', NULL, NULL, '2026-03-04 18:11:17', '2026-03-04 18:11:17'),
+(288, 'App\\Models\\User', 27, 'auth-token', '0625566bba330d8850e6160a5ed6c8e3a56568173ce96219cddeaa41549f8130', '[\"*\"]', NULL, NULL, '2026-03-04 18:11:39', '2026-03-04 18:11:39'),
+(289, 'App\\Models\\User', 27, 'auth-token', 'a22674517af03c7434ed8f5fd2d8ee6ac4f272cd2e268aa1a548b45a0b49df39', '[\"*\"]', NULL, NULL, '2026-03-04 18:16:11', '2026-03-04 18:16:11'),
+(290, 'App\\Models\\User', 27, 'auth-token', '1917d4da660f170935b8d066b959da3c3ef450a1f5978c8d4ceb39ab6359401b', '[\"*\"]', NULL, NULL, '2026-03-04 18:16:37', '2026-03-04 18:16:37');
 
 -- --------------------------------------------------------
 
@@ -732,9 +740,10 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('1FoNh6uIam4OMmIFhVarsHff3UgxmVhWiO0bOdXQ', 2, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiUWpNYU1tVmt2Z2lHRGZQVXlheUxMMVdybU0yZFNxNU9USm9pT240SCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjI7czo3OiJ1c2VyX2lkIjtpOjI7czo5OiJ1c2VyX3JvbGUiO3M6NToiQURNSU4iO3M6OToidXNlcl9uYW1lIjtzOjExOiJDaGlraW4gVGF5byI7czoxMzoicmVkaXJlY3RfcGF0aCI7czoxMjoiL2FkbWluLXBhbmVsIjt9', 1772643119),
-('O6g0Zohg4toLWnsZDM4CYbeFhVARDkLFdWu28Mx8', 26, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiTUFlUGhnQVNoclMzQ1RoZ0hNRGdxR2tZSXBtRDE1VkFzcXppazFUVCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjI2O3M6NzoidXNlcl9pZCI7aToyNjtzOjk6InVzZXJfcm9sZSI7czo1OiJTVEFGRiI7czo5OiJ1c2VyX25hbWUiO3M6MTQ6Ikphbm5lIERlZ3V6bWFuIjtzOjEzOiJyZWRpcmVjdF9wYXRoIjtzOjE0OiIvc3RhZmYvY2FzaGllciI7fQ==', 1772643435),
-('qzSw00tQfZ6iXJ1c07Ay3mEUNYYIGh7pC6I4PQAG', 20, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiQkFqRTRIc213Z0RKY0ZWWFZDb0p3RjJLTGdBbDcyWXhRRVJvSjRkbSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjIwO3M6NzoidXNlcl9pZCI7aToyMDtzOjk6InVzZXJfcm9sZSI7czo1OiJPV05FUiI7czo5OiJ1c2VyX25hbWUiO3M6NToiT3duZXIiO3M6MTM6InJlZGlyZWN0X3BhdGgiO3M6MTI6Ii9vd25lci1wYW5lbCI7fQ==', 1772645043);
+('KYeZ9TWrSPBRx2PcFEkgV5bbOdaCfIJqGdSrVPFR', 27, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoieE5JNDViN3NncnpFdTdYMmN5MkJBZGdxdUdBTm9CbjBFSmJWN09HZSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6Mjc7czo3OiJ1c2VyX2lkIjtpOjI3O3M6OToidXNlcl9yb2xlIjtzOjU6IlNUQUZGIjtzOjk6InVzZXJfbmFtZSI7czo5OiJNYXJrIEp1bHMiO3M6MTM6InJlZGlyZWN0X3BhdGgiO3M6MTY6Ii9zdGFmZi9pbnZlbnRvcnkiO30=', 1772648230),
+('TxzZvev7xPPuNFMxLSxENOkZtb39gINqtdkSD7Dg', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiUzROQ0VvS0d6YUx0Um1uM1ROZ3djVWZiTm1FZmY0QUhiSUZIamNTRCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi9jYXNoaWVyIjtzOjU6InJvdXRlIjtOO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19', 1772647006),
+('UCFsmHtG2rBorVrTYz2s1FrKoKabxJFmLakj760z', 23, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoia3Q1cmFOQU1tNk81T3dPcG9hMXoxMWxwV0w3N3dsODlsMjUyeEdQeSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MjM7czo3OiJ1c2VyX2lkIjtpOjIzO3M6OToidXNlcl9yb2xlIjtzOjc6Ik1BTkFHRVIiO3M6OToidXNlcl9uYW1lIjtzOjE5OiJWaW5jZSBIYW5uaWJhbCBCaWRvIjtzOjEzOiJyZWRpcmVjdF9wYXRoIjtzOjExOiIvbWFuYWdlci9ociI7fQ==', 1772649090),
+('ZbglwE3ExkRJLOrEdt7aO8l5GPpXdU0ppJkRZTFc', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiVER6RVpmb0tTMG0xSzhwTldrUFF0WjdKRkt5emJTNmRuQkM1MUczeCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9fQ==', 1772649125);
 
 -- --------------------------------------------------------
 
@@ -769,7 +778,8 @@ INSERT INTO `staff_documents` (`id`, `user_id`, `resume_path`, `government_id_pa
 (11, 22, NULL, 'staff-documents/22/government_id.png', 'staff-documents/22/psa_birth_certificate.png', 'staff-documents/22/nbi_clearance.png', 'staff-documents/22/police_clearance.png', 'staff-documents/22/medical_certificate.png', 'staff-documents/22/drug_test_result.png', 'staff-documents/22/sss_id.png', 'staff-documents/22/philhealth_id.png', 'staff-documents/22/pagibig_mdf.png', 'staff-documents/22/tin_id.png', 'staff-documents/22/diploma_transcript.png', '2026-02-27 18:19:55', '2026-02-27 18:19:55'),
 (12, 23, NULL, 'staff-documents/23/government_id.jpg', 'staff-documents/23/psa_birth_certificate.jpg', 'staff-documents/23/nbi_clearance.png', 'staff-documents/23/police_clearance.png', 'staff-documents/23/medical_certificate.png', 'staff-documents/23/drug_test_result.png', 'staff-documents/23/sss_id.png', 'staff-documents/23/philhealth_id.png', 'staff-documents/23/pagibig_mdf.jpg', 'staff-documents/23/tin_id.jpg', 'staff-documents/23/diploma_transcript.png', '2026-02-28 05:53:39', '2026-02-28 05:53:39'),
 (13, 24, NULL, 'staff-documents/24/government_id.jpg', 'staff-documents/24/psa_birth_certificate.jpg', 'staff-documents/24/nbi_clearance.jpg', 'staff-documents/24/police_clearance.jpg', 'staff-documents/24/medical_certificate.jpg', 'staff-documents/24/drug_test_result.jpg', 'staff-documents/24/sss_id.jpg', 'staff-documents/24/philhealth_id.jpg', 'staff-documents/24/pagibig_mdf.jpg', 'staff-documents/24/tin_id.jpg', 'staff-documents/24/diploma_transcript.jpg', '2026-03-01 13:43:49', '2026-03-01 13:43:49'),
-(14, 26, NULL, 'staff-documents/26/government_id.jpg', 'staff-documents/26/psa_birth_certificate.jpg', 'staff-documents/26/nbi_clearance.jpg', 'staff-documents/26/police_clearance.jpg', 'staff-documents/26/medical_certificate.jpg', 'staff-documents/26/drug_test_result.jpg', 'staff-documents/26/sss_id.jpg', 'staff-documents/26/philhealth_id.jpg', 'staff-documents/26/pagibig_mdf.jpg', 'staff-documents/26/tin_id.jpg', 'staff-documents/26/diploma_transcript.jpg', '2026-03-04 15:21:32', '2026-03-04 15:21:32');
+(14, 26, NULL, 'staff-documents/26/government_id.jpg', 'staff-documents/26/psa_birth_certificate.jpg', 'staff-documents/26/nbi_clearance.jpg', 'staff-documents/26/police_clearance.jpg', 'staff-documents/26/medical_certificate.jpg', 'staff-documents/26/drug_test_result.jpg', 'staff-documents/26/sss_id.jpg', 'staff-documents/26/philhealth_id.jpg', 'staff-documents/26/pagibig_mdf.jpg', 'staff-documents/26/tin_id.jpg', 'staff-documents/26/diploma_transcript.jpg', '2026-03-04 15:21:32', '2026-03-04 15:21:32'),
+(15, 27, NULL, 'staff-documents/27/government_id.jpg', 'staff-documents/27/psa_birth_certificate.jpg', 'staff-documents/27/nbi_clearance.jpg', 'staff-documents/27/police_clearance.jpg', 'staff-documents/27/medical_certificate.jpg', 'staff-documents/27/drug_test_result.jpg', 'staff-documents/27/sss_id.jpg', 'staff-documents/27/philhealth_id.jpg', 'staff-documents/27/pagibig_mdf.jpg', 'staff-documents/27/tin_id.jpg', 'staff-documents/27/diploma_transcript.jpg', '2026-03-04 18:10:13', '2026-03-04 18:10:13');
 
 -- --------------------------------------------------------
 
@@ -810,7 +820,8 @@ INSERT INTO `users` (`id`, `email`, `username`, `full_name`, `name`, `password`,
 (23, 'vince@test.com', 'vince', 'Vince Hannibal Bido', NULL, '$2y$12$7dbRnk.3E6tDfAh7jtfUy.eQJ1pD6UbfocShAYVoVyogpMKQrU9R.', NULL, 'MANAGER', 2, 'HR', NULL, '2026-02-28 05:53:39', '2026-02-28 05:54:35', NULL, 0, 1, '167', '/storage/avatars/avatar_23_1772636159.jpg', '09041717616'),
 (24, 'gab@test.com', 'gabriel', 'Gabriel Ongsip', NULL, '$2y$12$OLfHtNa649f8TwGcXb/XZ.YAHTfKrygbpBjHsYhzzZvSvXPxYmv1C', NULL, 'MANAGER', 1, 'FINANCE', NULL, '2026-03-01 13:43:49', '2026-03-01 13:44:53', NULL, 0, 1, '432', '/storage/avatars/avatar_24_1772468129.jpg', '09081717616'),
 (25, 'christianumbal12@gmail.com', 'roseeeeee', NULL, NULL, '$2y$12$DTbKm8HGoUdmjkmKy3.vC.djLFaIcyXeVskjuO2JcyvR5P3QOl5Bu', '2026-03-02 19:10:23', 'customer', NULL, NULL, NULL, '2026-03-02 19:10:24', '2026-03-02 19:10:24', NULL, 1, 1, NULL, NULL, NULL),
-(26, 'janne@test.com', 'janne', 'Janne Deguzman', NULL, '$2y$12$MldD4hcw6a.h.oteGvN4gu.GwHm726ycXVWCJr6JCtvn.4zPGMGSy', NULL, 'STAFF', 2, 'CASHIER', NULL, '2026-03-04 15:21:32', '2026-03-04 15:23:17', NULL, 0, 1, 'BLK 20', NULL, '09051414312');
+(26, 'janne@test.com', 'janne', 'Janne Deguzman', NULL, '$2y$12$MldD4hcw6a.h.oteGvN4gu.GwHm726ycXVWCJr6JCtvn.4zPGMGSy', NULL, 'STAFF', 2, 'CASHIER', NULL, '2026-03-04 15:21:32', '2026-03-04 15:23:17', NULL, 0, 1, 'BLK 20', NULL, '09051414312'),
+(27, 'mark@test.com', 'mark', 'Mark Juls', NULL, '$2y$12$tyfexPP2Rpr3G4.S9FGhCOHL0zLEaRPMojWlPmCJYdPEnLChE92pq', NULL, 'STAFF', 3, 'INVENTORY', NULL, '2026-03-04 18:10:13', '2026-03-04 18:11:34', NULL, 0, 1, '122', NULL, '09871513424');
 
 --
 -- Indexes for dumped tables
@@ -976,7 +987,7 @@ ALTER TABLE `attendance`
 -- AUTO_INCREMENT for table `attendance_settings`
 --
 ALTER TABLE `attendance_settings`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `branches`
@@ -1024,7 +1035,7 @@ ALTER TABLE `orders`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=284;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=291;
 
 --
 -- AUTO_INCREMENT for table `products`
@@ -1042,13 +1053,13 @@ ALTER TABLE `product_comments`
 -- AUTO_INCREMENT for table `staff_documents`
 --
 ALTER TABLE `staff_documents`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
 
 --
 -- Constraints for dumped tables

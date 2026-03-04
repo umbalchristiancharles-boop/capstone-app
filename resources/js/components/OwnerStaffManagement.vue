@@ -61,7 +61,7 @@
       <div v-for="group in groupedStaff" :key="group.branchName" class="branch-group">
         <!-- Branch Header -->
         <div class="branch-header">
-          <h2 class="branch-title">{{ group.branchName }}</h2>
+          <h2 class="branch-title">{{ group.branchName }}{{ group.branchName !== 'Unassigned' ? ' Branch' : '' }}</h2>
           <span class="branch-count">{{ group.staff.length }} staff member{{ group.staff.length !== 1 ? 's' : '' }}</span>
         </div>
 
@@ -99,7 +99,7 @@
                     {{ member.is_online ? 'Online' : 'Offline' }}
                   </span>
                 </td>
-                <td>{{ member.created_at }}</td>
+                <td>{{ formatDate(member.created_at) }}</td>
                 <td class="actions">
                   <button
                     @click="editStaff(member)"
@@ -541,6 +541,19 @@ function displayRole(r) {
   if (role === 'HR') return 'HR'
   if (role === 'OWNER') return 'Owner'
   return role.replace(/_/g, ' ')
+}
+
+function formatDate(dateString) {
+  if (dateString === null || dateString === undefined) return '-'
+  const normalizedDate = String(dateString).trim()
+  if (!normalizedDate) return '-'
+
+  const date = new Date(normalizedDate)
+  if (isNaN(date.getTime())) return '-'
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const year = date.getFullYear()
+  return `${month}-${day}-${year}`
 }
 </script>
 
