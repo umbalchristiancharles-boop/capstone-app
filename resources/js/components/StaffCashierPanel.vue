@@ -5,12 +5,37 @@
     :panelDescription="'POS panel for creating transactions.'"
     :enableProfileUpdate="true"
     :canEditProfile="false"
+    @logout="showLogoutConfirm = true"
     @profile-updated="onProfileUpdated"
   >
     <template #main>
       <cashier-pos-panel :transactions="transactions" />
     </template>
   </OwnerPanelLayout>
+
+  <!-- LOGOUT CONFIRM -->
+  <transition name="fade">
+    <div v-if="showLogoutConfirm" class="logout-confirm-backdrop">
+      <div class="logout-confirm-box">
+        <h3>Logout from Cashier Panel?</h3>
+        <p>This will end your current session for Chikin Tayo.</p>
+        <div class="logout-actions">
+          <button class="btn-cancel" @click="cancelLogout" :disabled="isLoggingOut">Cancel</button>
+          <button class="btn-confirm" @click="confirmLogout" :disabled="isLoggingOut">Yes, logout</button>
+        </div>
+      </div>
+    </div>
+  </transition>
+
+  <!-- FULLSCREEN LOADING OVERLAY -->
+  <transition name="fade">
+    <div v-if="showOverlay" class="loading-overlay">
+      <div class="logo-loading-box">
+        <img :src="logoImg" alt="Chikin Tayo" class="logo-loading-img" />
+        <p>{{ overlayText }}</p>
+      </div>
+    </div>
+  </transition>
 </template>
 
 <script setup>
@@ -19,12 +44,41 @@ import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import CashierPosPanel from './cashier/CashierPosPanel.vue'
 import axios from 'axios'
 
+// Logo image
+const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
+
+// Logout state
+const showLogoutConfirm = ref(false)
+const isLoggingOut = ref(false)
+const showOverlay = ref(false)
+const overlayText = ref('Logging out...')
+
 const userProfile = ref({})
 const transactions = ref([])
 
 // Handle profile update from layout
 function onProfileUpdated(updatedProfile) {
   userProfile.value = { ...userProfile.value, ...updatedProfile }
+}
+
+function cancelLogout() {
+  if (isLoggingOut.value) return
+  showLogoutConfirm.value = false
+}
+
+async function confirmLogout() {
+  if (isLoggingOut.value) return
+  isLoggingOut.value = true
+  overlayText.value = 'Logging out...'
+  showOverlay.value = true
+  try {
+    await axios.post('/api/logout', {}, { withCredentials: true })
+  } catch (e) {}
+  try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
+  setTimeout(() => {
+    try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
+    try { window.location.replace('/') } catch (e) { /* ignore */ }
+  }, 600)
 }
 
 onMounted(async () => {
