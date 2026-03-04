@@ -56,60 +56,71 @@
       <h3 class="owner-staff-total">Total Staff Members: 0</h3>
     </div>
 
-    <!-- Staff Table -->
-    <div v-if="!loading && filteredStaff.length > 0" class="staff-table-wrapper">
-      <table class="staff-table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Role</th>
-            <th>Department</th>
-            <th>Username</th>
-            <th>Email</th>
-            <th>Phone</th>
-            <th>Status</th>
-            <th>Joined</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="member in filteredStaff" :key="member.id" :class="{ 'inactive': !member.is_active }">
-            <td>
-              <div class="staff-info">
-                <img v-if="member.avatar_url" :src="member.avatar_url" :alt="member.full_name" class="avatar">
-                <strong>{{ member.full_name || member.username }}</strong>
-              </div>
-            </td>
-            <td>{{ displayRole(member.role) }}</td>
-            <td>{{ (member.department || '-') }}</td>
-            <td>{{ member.username }}</td>
-            <td>{{ member.email }}</td>
-            <td>{{ member.phone_number || '-' }}</td>
-            <td>
-              <span :class="['badge', member.is_online ? 'badge-online' : 'badge-offline']">
-                {{ member.is_online ? 'Online' : 'Offline' }}
-              </span>
-            </td>
-            <td>{{ member.created_at }}</td>
-            <td class="actions">
-              <button
-                @click="editStaff(member)"
-                class="btn-sm btn-info"
-                title="Edit"
-              >
-                Edit
-              </button>
-              <button
-                @click="toggleStatus(member)"
-                :class="['btn-sm', member.is_active ? 'btn-danger' : 'btn-success']"
-                :title="member.is_active ? 'Deactivate' : 'Activate'"
-              >
-                {{ member.is_active ? 'Deactivate' : 'Activate' }}
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <!-- Staff Tables Grouped by Branch -->
+    <div v-if="!loading && groupedStaff.length > 0">
+      <div v-for="group in groupedStaff" :key="group.branchName" class="branch-group">
+        <!-- Branch Header -->
+        <div class="branch-header">
+          <h2 class="branch-title">{{ group.branchName }}</h2>
+          <span class="branch-count">{{ group.staff.length }} staff member{{ group.staff.length !== 1 ? 's' : '' }}</span>
+        </div>
+
+        <!-- Branch Staff Table -->
+        <div class="staff-table-wrapper">
+          <table class="staff-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Role</th>
+                <th>Department</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Status</th>
+                <th>Joined</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="member in group.staff" :key="member.id" :class="{ 'inactive': !member.is_active }">
+                <td>
+                  <div class="staff-info">
+                    <img v-if="member.avatar_url" :src="member.avatar_url" :alt="member.full_name" class="avatar">
+                    <strong>{{ member.full_name || member.username }}</strong>
+                  </div>
+                </td>
+                <td>{{ displayRole(member.role) }}</td>
+                <td>{{ (member.department || '-') }}</td>
+                <td>{{ member.username }}</td>
+                <td>{{ member.email }}</td>
+                <td>{{ member.phone_number || '-' }}</td>
+                <td>
+                  <span :class="['badge', member.is_online ? 'badge-online' : 'badge-offline']">
+                    {{ member.is_online ? 'Online' : 'Offline' }}
+                  </span>
+                </td>
+                <td>{{ member.created_at }}</td>
+                <td class="actions">
+                  <button
+                    @click="editStaff(member)"
+                    class="btn-sm btn-info"
+                    title="Edit"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    @click="toggleStatus(member)"
+                    :class="['btn-sm', member.is_active ? 'btn-danger' : 'btn-success']"
+                    :title="member.is_active ? 'Deactivate' : 'Activate'"
+                  >
+                    {{ member.is_active ? 'Deactivate' : 'Activate' }}
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <!-- Empty State -->
@@ -181,6 +192,50 @@ const newStaff = ref({
 })
 const editingStaffId = ref(null)
 
+// Role hierarchy - lower number = higher priority (Owner at very top)
+const rolePriority = {
+  'Owner': 1,
+  'Manager HR': 2,
+  'Manager Finance': 3,
+  'Manager Inventory': 4,
+  'Manager Logistics': 5,
+  'Manager': 6,   // Any branch manager
+  'Staff': 7,
+  'Staff Cashier': 8,
+  'Staff Finance': 9,
+  'Staff Inventory': 10
+}
+
+// Map database role values to display role for priority sorting
+function mapRoleToDisplayRole(role) {
+  if (!role) return null
+  const upperRole = role.toUpperCase()
+
+  // Map database values to display role values
+  if (upperRole === 'OWNER') return 'Owner'
+  if (upperRole === 'MANAGER_HR') return 'Manager HR'
+  if (upperRole === 'MANAGER_FINANCE') return 'Manager Finance'
+  if (upperRole === 'MANAGER_INVENTORY') return 'Manager Inventory'
+  if (upperRole === 'MANAGER_LOGISTICS') return 'Manager Logistics'
+  if (upperRole === 'BRANCH_MANAGER') return 'Manager'
+  if (upperRole === 'HR') return 'Staff'
+  if (upperRole === 'STAFF_CASHIER') return 'Staff Cashier'
+  if (upperRole === 'STAFF_FINANCE') return 'Staff Finance'
+  if (upperRole === 'STAFF_INVENTORY') return 'Staff Inventory'
+  if (upperRole === 'STAFF_LOGISTICS') return 'Staff'
+  if (upperRole === 'STAFF') return 'Staff'
+
+  return null
+}
+
+// Get role priority for sorting (lower = higher priority, Owner = 1)
+function getRolePriority(role) {
+  if (!role) return 999 // Unknown roles go to the bottom
+  const displayRole = mapRoleToDisplayRole(role)
+  if (!displayRole) return 999
+  return rolePriority[displayRole] ?? 999
+}
+
 // Computed: available roles and departments for filter dropdowns
 const defaultRoles = [
   'Manager HR', 'Manager Finance', 'Manager Inventory', 'Manager Logistics',
@@ -241,6 +296,42 @@ const filteredStaff = computed(() => {
   }
 
   return filtered
+})
+
+// Computed: group staff by branch with role hierarchy sorting
+// Note: The logged-in Owner is already excluded in filteredStaff
+const groupedStaff = computed(() => {
+  const groups = {}
+
+  filteredStaff.value.forEach(member => {
+    const branchName = member.branch_name || 'Unassigned'
+    if (!groups[branchName]) {
+      groups[branchName] = []
+    }
+    groups[branchName].push(member)
+  })
+
+  // Sort staff within each branch by role priority (lowest number first = highest priority)
+  // Managers (priority 1-6) will appear before Staff (priority 7-10)
+  Object.keys(groups).forEach(branch => {
+    groups[branch].sort((a, b) => {
+      // Get priorities - lower number = higher priority
+      const priorityA = getRolePriority(a.role)
+      const priorityB = getRolePriority(b.role)
+
+      // Sort by priority ascending (lower number first)
+      return priorityA - priorityB
+    })
+  })
+
+  // Get all branch names sorted alphabetically
+  const sortedBranchNames = Object.keys(groups).sort()
+
+  // Return as array of { branchName, staff: [] } sorted by branch name
+  return sortedBranchNames.map(branchName => ({
+    branchName,
+    staff: groups[branchName]
+  }))
 })
 
 // Methods
@@ -595,6 +686,37 @@ function displayRole(r) {
 /* Override h3 color for owner-staff-total */
 .owner-staff-total {
   color: #ffffff !important;
+}
+
+/* Branch Group Styles */
+.branch-group {
+  margin-bottom: 2rem;
+}
+
+.branch-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1rem 1.5rem;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+  border-left: 4px solid #FF9A4A;
+}
+
+.branch-title {
+  margin: 0;
+  color: #222;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.branch-count {
+  color: #555;
+  font-size: 0.9rem;
+  background: rgba(255, 255, 255, 0.4);
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
 }
 
 .staff-table-wrapper {
