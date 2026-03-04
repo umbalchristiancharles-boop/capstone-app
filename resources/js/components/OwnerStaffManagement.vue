@@ -11,7 +11,7 @@
 
     <!-- Header -->
     <div class="staff-header">
-      <h1>Staff Management</h1>
+      <h1 class="owner-staff-title">Staff Management</h1>
       <div class="header-actions">
         <input
           v-model="searchQuery"
@@ -50,10 +50,10 @@
 
     <!-- Summary -->
     <div v-if="!loading && filteredStaff.length > 0" class="summary-card">
-      <h3>Total Staff Members: {{ filteredStaff.length }}</h3>
+      <h3 class="owner-staff-total">Total Staff Members: {{ filteredStaff.length }}</h3>
     </div>
     <div v-if="!loading && filteredStaff.length === 0" class="summary-card">
-      <h3>Total Staff Members: 0</h3>
+      <h3 class="owner-staff-total">Total Staff Members: 0</h3>
     </div>
 
     <!-- Staff Table -->
@@ -86,8 +86,8 @@
             <td>{{ member.email }}</td>
             <td>{{ member.phone_number || '-' }}</td>
             <td>
-              <span :class="['badge', member.is_active ? 'badge-active' : 'badge-inactive']">
-                {{ member.is_active ? 'Active' : 'Inactive' }}
+              <span :class="['badge', member.is_online ? 'badge-online' : 'badge-offline']">
+                {{ member.is_online ? 'Online' : 'Offline' }}
               </span>
             </td>
             <td>{{ member.created_at }}</td>
@@ -470,6 +470,11 @@ function displayRole(r) {
   letter-spacing: -1px;
 }
 
+/* Override h1 color for owner-staff-title */
+.owner-staff-title {
+  color: #ffffff !important;
+}
+
 .header-actions {
   display: flex;
   gap: 1rem;
@@ -587,6 +592,11 @@ function displayRole(r) {
   color: #222;
 }
 
+/* Override h3 color for owner-staff-total */
+.owner-staff-total {
+  color: #ffffff !important;
+}
+
 .staff-table-wrapper {
   background: rgba(255,255,255,0.18);
   border-radius: 8px;
@@ -656,6 +666,17 @@ function displayRole(r) {
 .badge-inactive {
   background: #f8d7da;
   color: #721c24;
+}
+
+/* Online/Offline status badges */
+.badge-online {
+  background: #28a745;
+  color: #ffffff;
+}
+
+.badge-offline {
+  background: #6c757d;
+  color: #ffffff;
 }
 
 .actions {

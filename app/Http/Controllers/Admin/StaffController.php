@@ -14,9 +14,32 @@ use Illuminate\Support\Facades\Storage;
 
 class StaffController extends Controller
 {
+    // Online threshold in minutes (user is considered online if activity within this time)
+    private const ONLINE_THRESHOLD_MINUTES = 5;
+
     // ==========================================
     // API METHODS (for Vue.js)
     // ==========================================
+
+    /**
+     * Check if a user has an active session within the threshold
+     */
+    private function isUserOnline(int $userId): bool
+    {
+        try {
+            $threshold = now()->subMinutes(self::ONLINE_THRESHOLD_MINUTES);
+
+            $sessionExists = DB::table('sessions')
+                ->where('user_id', $userId)
+                ->where('last_activity', '>=', $threshold->timestamp)
+                ->exists();
+
+            return $sessionExists;
+        } catch (\Exception $e) {
+            Log::warning('Error checking user online status: ' . $e->getMessage());
+            return false;
+        }
+    }
 
     /**
      * Get all staff grouped by branch (JSON)
@@ -103,6 +126,7 @@ class StaffController extends Controller
                         'address' => $branchManager->address,
                         'role' => $branchManager->role,
                         'is_active' => $branchManager->is_active,
+                        'is_online' => $this->isUserOnline($branchManager->id),
                     ];
                 }
 
@@ -118,6 +142,7 @@ class StaffController extends Controller
                         'address' => $s->address,
                         'role' => $s->role,
                         'is_active' => $s->is_active,
+                        'is_online' => $this->isUserOnline($s->id),
                     ];
                 })->toArray();
 
@@ -133,6 +158,7 @@ class StaffController extends Controller
                         'address' => $h->address,
                         'role' => $h->role,
                         'is_active' => $h->is_active,
+                        'is_online' => $this->isUserOnline($h->id),
                     ];
                 })->toArray();
 
@@ -174,6 +200,7 @@ class StaffController extends Controller
                                 'address' => $o->address,
                                 'role' => $o->role,
                                 'is_active' => $o->is_active,
+                                'is_online' => $this->isUserOnline($o->id),
                             ];
                         })->toArray();
 
