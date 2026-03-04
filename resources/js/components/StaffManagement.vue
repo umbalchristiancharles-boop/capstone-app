@@ -99,8 +99,8 @@
             <td>{{ member.email }}</td>
             <td>{{ member.phone_number || '-' }}</td>
             <td>
-              <span :class="['badge', member.is_active ? 'badge-active' : 'badge-inactive']">
-                {{ member.is_active ? 'Active' : 'Inactive' }}
+              <span :class="['badge', member.is_online ? 'badge-online' : 'badge-offline']">
+                {{ member.is_online ? 'Online' : 'Offline' }}
               </span>
             </td>
             <td>{{ member.created_at }}</td>
@@ -760,6 +760,15 @@ async function loadBranches() {
   background: #ffd6d6;
   color: #b23c3c;
   border: 1px solid #ffb3b3;
+}
+/* Online/Offline status badges */
+.badge-online {
+  background: #28a745;
+  color: #ffffff;
+}
+.badge-offline {
+  background: #6c757d;
+  color: #ffffff;
 }
 .actions {
   display: flex;

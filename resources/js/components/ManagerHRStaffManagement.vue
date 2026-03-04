@@ -48,7 +48,6 @@
         <thead>
           <tr>
             <th>Name</th>
-            <th>Role</th>
             <th>Department</th>
             <th>Username</th>
             <th>Email</th>
@@ -66,7 +65,6 @@
                 <strong>{{ member.full_name || member.username }}</strong>
               </div>
             </td>
-            <td>{{ displayRole(member.role) }}</td>
             <td>{{ member.department || '-' }}</td>
             <td>{{ member.username }}</td>
             <td>{{ member.email }}</td>
@@ -87,17 +85,10 @@
               </button>
               <button
                 @click="toggleStatus(member)"
-                :class="['btn-sm', member.is_active ? 'btn-danger' : 'btn-success']"
-                :title="member.is_active ? 'Deactivate' : 'Activate'"
-              >
-                {{ member.is_active ? 'Deactivate' : 'Activate' }}
-              </button>
-              <button
-                @click="deleteStaff(member)"
                 class="btn-sm btn-danger"
-                title="Delete"
+                title="Deactivate"
               >
-                Delete
+                Deactivate
               </button>
             </td>
           </tr>
@@ -626,11 +617,13 @@ onMounted(async () => {
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   overflow: hidden;
+  overflow-x: auto;
 }
 
 .staff-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .staff-table thead {
@@ -639,17 +632,23 @@ onMounted(async () => {
 }
 
 .staff-table th {
-  padding: 1rem;
+  padding: 1rem 0.5rem;
   text-align: left;
   font-weight: 600;
   color: #222;
   font-size: 0.9rem;
+  width: 12.5%;
+  white-space: nowrap;
 }
 
 .staff-table td {
-  padding: 1rem;
+  padding: 1rem 0.5rem;
   border-bottom: 1px solid #dee2e6;
   color: #222;
+  width: 12.5%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .staff-table tbody tr:hover {
@@ -703,9 +702,26 @@ onMounted(async () => {
   color: #ffffff;
 }
 
-.actions {
+/* Ensure action buttons don't wrap or overflow */
+.staff-table td.actions {
+  overflow: visible !important;
+  white-space: nowrap;
+  min-width: 140px;
   display: flex;
-  gap: 0.5rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.staff-table td.actions .btn-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8rem;
+  min-width: 60px;
+  min-height: 32px;
+  margin: 0 4px;
 }
 
 .empty-state, .loading-state {
