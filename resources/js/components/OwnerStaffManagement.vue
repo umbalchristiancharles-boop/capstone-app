@@ -273,10 +273,10 @@ const filteredStaff = computed(() => {
   if (roleFilter.value) {
     filtered = filtered.filter(m => (m.role || '').toString() === roleFilter.value)
   } else {
-    // default: include STAFF and MANAGER variants
+    // default: include STAFF and MANAGER variants (exclude OWNER)
     filtered = filtered.filter(member => {
       const r = (member.role || '').toUpperCase()
-      return r.includes('STAFF') || r.includes('MANAGER') || r === 'HR' || r === 'BRANCH_MANAGER' || r === 'OWNER'
+      return r.includes('STAFF') || r.includes('MANAGER') || r === 'HR' || r === 'BRANCH_MANAGER'
     })
   }
 
@@ -334,10 +334,13 @@ const groupedStaff = computed(() => {
   const sortedBranchNames = Object.keys(groups).sort()
 
   // Return as array of { branchName, staff: [] } sorted by branch name
-  return sortedBranchNames.map(branchName => ({
-    branchName,
-    staff: groups[branchName]
-  }))
+  // Exclude the "Owners" branch entirely
+  return sortedBranchNames
+    .filter(branchName => branchName.toLowerCase() !== 'owners')
+    .map(branchName => ({
+      branchName,
+      staff: groups[branchName]
+    }))
 })
 
 // Methods
