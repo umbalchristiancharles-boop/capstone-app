@@ -359,4 +359,3 @@ defineExpose({ refreshAllData, onProfileUpdated })
 .side-item { padding: 0.5rem 0; color: #666; font-size: 0.9rem; }
 @media (max-width: 768px) { .staff-header { flex-direction: column; gap: 1rem; } .hr-header-actions { width: 100%; flex-wrap: wrap; } .hr-search-input { width: 100%; } .staff-table { font-size: 0.8rem; } .staff-table th, .staff-table td { padding: 0.5rem; } }
 </style>
-

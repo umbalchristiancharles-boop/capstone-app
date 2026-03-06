@@ -68,12 +68,36 @@ Route::middleware('web')->group(function () {
     Route::put('/owner-profile',    [AuthController::class, 'updateOwnerProfile']);
     Route::post('/upload-avatar',   [AuthController::class, 'uploadAvatar']);
 
+    // Super Admin Profile endpoints
+    Route::get('/superadmin-profile', [\App\Http\Controllers\Api\SuperAdminController::class, 'profile']);
+    Route::put('/superadmin-profile', [\App\Http\Controllers\Api\SuperAdminController::class, 'updateProfile']);
+    Route::post('/superadmin/avatar', [\App\Http\Controllers\Api\SuperAdminController::class, 'uploadAvatar']);
+    Route::get('/superadmin/dashboard', [\App\Http\Controllers\Api\SuperAdminController::class, 'dashboard']);
+    Route::get('/superadmin/all-staff', [\App\Http\Controllers\Api\SuperAdminController::class, 'allStaff']);
+Route::post('/superadmin/announce', [\App\Http\Controllers\Api\SuperAdminController::class, 'sendAnnouncement']);
+    Route::post('/superadmin/terms', [\App\Http\Controllers\Api\SuperAdminController::class, 'updateTerms']);
+    
+// SuperAdmin Logistics - Product Management across all branches
+    Route::get('/superadmin/logistics/products', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsProducts']);
+    Route::post('/superadmin/logistics/products', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsStoreProduct']);
+    Route::put('/superadmin/logistics/products/{id}', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsUpdateProduct']);
+    Route::delete('/superadmin/logistics/products/{id}', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsDestroyProduct']);
+    Route::get('/superadmin/logistics/branches', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsBranches']);
+
+    // ==========================================
+    // SUPERADMIN CASHIER
+    // ==========================================
+    Route::get('/superadmin/cashier/branches',    [\App\Http\Controllers\Api\CashierController::class, 'branches']);
+    Route::get('/superadmin/cashier/products',    [\App\Http\Controllers\Api\CashierController::class, 'products']);
+    Route::post('/superadmin/cashier/checkout',   [\App\Http\Controllers\Api\CashierController::class, 'checkout']);
+    Route::get('/superadmin/cashier/transactions',[\App\Http\Controllers\Api\CashierController::class, 'transactions']);
+
     Route::get('/owner-dashboard', [OwnerDashboardController::class, 'index']);
 
     // ==========================================
     // STAFF MANAGEMENT API
     // ==========================================
-    Route::prefix('admin')->group(function () {
+    Route::prefix('admin')->middleware('auth')->group(function () {
         Route::get('/dashboard',        [DashboardController::class, 'index']);
         Route::get('/staff',            [StaffController::class, 'apiIndex']);
         Route::get('/staff/{id}',       [StaffController::class, 'apiShow']);
@@ -83,7 +107,7 @@ Route::middleware('web')->group(function () {
         Route::get('/branches',         [StaffController::class, 'apiBranches']);
         Route::get('/attendance', [\App\Http\Controllers\Admin\AttendanceController::class, 'index']);
 
-        // Config endpoint for default password
+        // Config endpoint for default password (requires authentication)
         Route::get('/config/default-password', [ConfigController::class, 'defaultPassword']);
     });
 

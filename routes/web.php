@@ -39,6 +39,15 @@ Route::get('/admin-panel', function () {
         ->header('Expires', '0');
 })->name('admin.dashboard')->middleware(['web', 'auth']);
 
+// Super Admin Panel - full system access
+Route::get('/super-admin-panel', function () {
+    return response()
+        ->view('dashboard')
+        ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        ->header('Pragma', 'no-cache')
+        ->header('Expires', '0');
+})->name('superadmin.dashboard')->middleware(['web', 'auth']);
+
 Route::get('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // ==========================================

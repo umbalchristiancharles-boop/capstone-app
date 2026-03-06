@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 05, 2026 at 10:14 AM
+-- Generation Time: Mar 06, 2026 at 03:57 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -20,8 +20,6 @@ SET time_zone = "+00:00";
 --
 -- Database: `chikintayo_db`
 --
-CREATE DATABASE IF NOT EXISTS `chikintayo_db` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-USE `chikintayo_db`;
 
 -- --------------------------------------------------------
 
@@ -115,7 +113,7 @@ CREATE TABLE `cache` (
 --
 
 INSERT INTO `cache` (`key`, `value`, `expiration`) VALUES
-('laravel-cache-user_token_ZeWBCbFApdZi6teSk8KP6B0Zu3OFJTdgZH93zp2OBbfQOsRYFqA1qiy4U5on', 'i:25;', 1775070624);
+('laravel-cache-user_token_SSoopgAEr9zdbm3thOpogIc9Djxr9FI8xw0nm6tm7KZyW65UtzuZPJfdsaho', 'i:29;', 1775332852);
 
 -- --------------------------------------------------------
 
@@ -152,6 +150,13 @@ CREATE TABLE `customer_accounts` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `customer_accounts`
+--
+
+INSERT INTO `customer_accounts` (`id`, `user_id`, `email`, `full_name`, `phone_number`, `address`, `city`, `province`, `postal_code`, `total_comments`, `total_ratings`, `last_activity_at`, `status`, `created_at`, `updated_at`) VALUES
+(2, 29, 'umbal.christiancharles@ncst.edu.ph', 'umballs', NULL, NULL, NULL, NULL, NULL, 0, 0, '2026-03-05 20:00:52', 'active', '2026-03-05 20:00:52', '2026-03-05 20:00:52');
 
 -- --------------------------------------------------------
 
@@ -268,7 +273,11 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (33, '2026_02_17_213000_add_avatar_url_to_users_table', 1),
 (34, '2026_02_17_214000_add_branch_id_to_users_table', 1),
 (35, '2026_02_17_215000_add_full_name_to_users_table', 1),
-(36, '2026_02_20_000000_create_attendance_settings_table', 2);
+(36, '2026_02_20_000000_create_attendance_settings_table', 2),
+(37, '2026_03_06_043915_add_payment_fields_to_orders_table', 3),
+(38, '2026_03_06_043929_create_order_items_table', 3),
+(39, '2026_03_10_000000_add_is_active_to_products_table', 4),
+(40, '2026_03_15_000000_add_min_stock_to_products_table', 5);
 
 -- --------------------------------------------------------
 
@@ -280,10 +289,13 @@ CREATE TABLE `orders` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `order_code` varchar(255) NOT NULL,
   `owner_id` bigint(20) UNSIGNED NOT NULL,
+  `cashier_id` bigint(20) UNSIGNED DEFAULT NULL,
   `branch_id` bigint(20) UNSIGNED DEFAULT NULL,
   `customer_name` varchar(255) DEFAULT NULL,
   `status` enum('pending','in_kitchen','completed','cancelled') NOT NULL,
   `grand_total` decimal(10,2) NOT NULL,
+  `amount_paid` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `change_amount` decimal(10,2) NOT NULL DEFAULT 0.00,
   `ordered_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
@@ -293,57 +305,42 @@ CREATE TABLE `orders` (
 -- Dumping data for table `orders`
 --
 
-INSERT INTO `orders` (`id`, `order_code`, `owner_id`, `branch_id`, `customer_name`, `status`, `grand_total`, `ordered_at`, `created_at`, `updated_at`) VALUES
-(1, 'CT-0015', 1, 1, 'Customer 15', 'pending', 1811.00, '2026-01-26 02:17:00', '2026-01-26 02:17:00', '2026-01-26 02:17:00'),
-(2, 'CT-0016', 1, 1, 'Customer 16', 'in_kitchen', 776.00, '2026-02-11 00:05:00', '2026-02-11 00:05:00', '2026-02-11 00:05:00'),
-(3, 'CT-0017', 1, 1, 'Customer 17', 'completed', 684.00, '2026-01-25 07:51:00', '2026-01-25 07:51:00', '2026-01-25 07:51:00'),
-(4, 'CT-0018', 1, 1, 'Customer 18', 'completed', 1516.00, '2026-02-03 04:02:00', '2026-02-03 04:02:00', '2026-02-03 04:02:00'),
-(5, 'CT-0019', 1, 1, 'Customer 19', 'pending', 1633.00, '2026-02-16 01:00:00', '2026-02-16 01:00:00', '2026-02-16 01:00:00'),
-(6, 'CT-0020', 1, 1, 'Customer 20', 'in_kitchen', 1763.00, '2026-02-17 12:54:00', '2026-02-17 12:54:00', '2026-02-17 12:54:00'),
-(7, 'CT-0021', 1, 1, 'Customer 21', 'in_kitchen', 823.00, '2026-02-18 03:20:00', '2026-02-18 03:20:00', '2026-02-18 03:20:00'),
-(8, 'CT-0022', 1, 1, 'Customer 22', 'in_kitchen', 690.00, '2026-02-06 12:09:00', '2026-02-06 12:09:00', '2026-02-06 12:09:00'),
-(9, 'CT-0023', 1, 1, 'Customer 23', 'in_kitchen', 1719.00, '2026-02-19 07:14:00', '2026-02-19 07:14:00', '2026-02-19 07:14:00'),
-(10, 'CT-0024', 1, 1, 'Customer 24', 'completed', 935.00, '2026-02-06 01:08:00', '2026-02-06 01:08:00', '2026-02-06 01:08:00'),
-(11, 'CT-0025', 1, 1, 'Customer 25', 'completed', 639.00, '2026-02-01 06:49:00', '2026-02-01 06:49:00', '2026-02-01 06:49:00'),
-(12, 'CT-0026', 1, 1, 'Customer 26', 'pending', 673.00, '2026-02-20 11:57:00', '2026-02-20 11:57:00', '2026-02-20 11:57:00'),
-(13, 'CT-0027', 1, 1, 'Customer 27', 'in_kitchen', 1524.00, '2026-01-31 07:09:00', '2026-01-31 07:09:00', '2026-01-31 07:09:00'),
-(14, 'CT-0028', 1, 1, 'Customer 28', 'completed', 1220.00, '2026-01-31 01:12:00', '2026-01-31 01:12:00', '2026-01-31 01:12:00'),
-(15, 'CT-0029', 1, 1, 'Customer 29', 'in_kitchen', 745.00, '2026-01-28 05:13:00', '2026-01-28 05:13:00', '2026-01-28 05:13:00'),
-(16, 'CT-0030', 1, 1, 'Customer 30', 'completed', 1832.00, '2026-01-28 02:42:00', '2026-01-28 02:42:00', '2026-01-28 02:42:00'),
-(17, 'CT-0031', 1, 1, 'Customer 31', 'completed', 1424.00, '2026-02-13 11:25:00', '2026-02-13 11:25:00', '2026-02-13 11:25:00'),
-(18, 'CT-0032', 1, 1, 'Customer 32', 'completed', 1464.00, '2026-02-20 02:37:00', '2026-02-20 02:37:00', '2026-02-20 02:37:00'),
-(19, 'CT-0033', 1, 1, 'Customer 33', 'completed', 1187.00, '2026-01-25 09:36:00', '2026-01-25 09:36:00', '2026-01-25 09:36:00'),
-(20, 'CT-0034', 1, 1, 'Customer 34', 'pending', 476.00, '2026-02-10 12:13:00', '2026-02-10 12:13:00', '2026-02-10 12:13:00'),
-(21, 'CT-0035', 1, 1, 'Customer 35', 'completed', 1420.00, '2026-02-11 01:43:00', '2026-02-11 01:43:00', '2026-02-11 01:43:00'),
-(22, 'CT-0036', 1, 1, 'Customer 36', 'in_kitchen', 1012.00, '2026-01-25 06:29:00', '2026-01-25 06:29:00', '2026-01-25 06:29:00'),
-(23, 'CT-0037', 1, 1, 'Customer 37', 'completed', 1582.00, '2026-02-10 06:46:00', '2026-02-10 06:46:00', '2026-02-10 06:46:00'),
-(24, 'CT-0038', 1, 1, 'Customer 38', 'pending', 448.00, '2026-02-23 05:29:00', '2026-02-23 05:29:00', '2026-02-23 05:29:00'),
-(25, 'CT-0039', 1, 1, 'Customer 39', 'completed', 376.00, '2026-02-22 07:41:00', '2026-02-22 07:41:00', '2026-02-22 07:41:00'),
-(26, 'CT-0040', 1, 1, 'Customer 40', 'completed', 1562.00, '2026-01-26 12:39:00', '2026-01-26 12:39:00', '2026-01-26 12:39:00'),
-(27, 'CT-0041', 1, 1, 'Customer 41', 'completed', 1663.00, '2026-02-20 09:26:00', '2026-02-20 09:26:00', '2026-02-20 09:26:00'),
-(28, 'CT-0042', 1, 1, 'Customer 42', 'pending', 1909.00, '2026-02-19 04:57:00', '2026-02-19 04:57:00', '2026-02-19 04:57:00'),
-(29, 'CT-0043', 1, 1, 'Customer 43', 'completed', 445.00, '2026-02-06 09:04:00', '2026-02-06 09:04:00', '2026-02-06 09:04:00'),
-(30, 'CT-0044', 1, 1, 'Customer 44', 'completed', 842.00, '2026-02-20 11:28:00', '2026-02-20 11:28:00', '2026-02-20 11:28:00'),
-(31, 'CT-0045', 1, 1, 'Customer 45', 'completed', 1976.00, '2026-02-16 03:20:00', '2026-02-16 03:20:00', '2026-02-16 03:20:00'),
-(32, 'CT-0046', 1, 1, 'Customer 46', 'completed', 514.00, '2026-02-13 12:07:00', '2026-02-13 12:07:00', '2026-02-13 12:07:00'),
-(33, 'CT-0047', 1, 1, 'Customer 47', 'completed', 388.00, '2026-02-13 02:30:00', '2026-02-13 02:30:00', '2026-02-13 02:30:00'),
-(34, 'CT-0048', 1, 1, 'Customer 48', 'completed', 1499.00, '2026-02-14 02:54:00', '2026-02-14 02:54:00', '2026-02-14 02:54:00'),
-(35, 'CT-0049', 1, 1, 'Customer 49', 'in_kitchen', 1149.00, '2026-02-07 04:08:00', '2026-02-07 04:08:00', '2026-02-07 04:08:00'),
-(36, 'CT-0050', 1, 1, 'Customer 50', 'completed', 1495.00, '2026-02-09 04:01:00', '2026-02-09 04:01:00', '2026-02-09 04:01:00'),
-(37, 'CT-0051', 1, 1, 'Customer 51', 'in_kitchen', 1828.00, '2026-02-02 06:47:00', '2026-02-02 06:47:00', '2026-02-02 06:47:00'),
-(38, 'CT-0052', 1, 1, 'Customer 52', 'in_kitchen', 1751.00, '2026-02-16 11:13:00', '2026-02-16 11:13:00', '2026-02-16 11:13:00'),
-(39, 'CT-0053', 1, 1, 'Customer 53', 'completed', 1281.00, '2026-01-25 11:24:00', '2026-01-25 11:24:00', '2026-01-25 11:24:00'),
-(40, 'CT-0054', 1, 1, 'Customer 54', 'in_kitchen', 1370.00, '2026-02-02 07:25:00', '2026-02-02 07:25:00', '2026-02-02 07:25:00'),
-(41, 'CT-0055', 1, 1, 'Customer 55', 'pending', 1830.00, '2026-02-07 06:57:00', '2026-02-07 06:57:00', '2026-02-07 06:57:00'),
-(42, 'CT-0056', 1, 1, 'Customer 56', 'pending', 1924.00, '2026-01-28 11:16:00', '2026-01-28 11:16:00', '2026-01-28 11:16:00'),
-(43, 'CT-0057', 1, 1, 'Customer 57', 'in_kitchen', 927.00, '2026-01-28 07:25:00', '2026-01-28 07:25:00', '2026-01-28 07:25:00'),
-(44, 'CT-0058', 1, 1, 'Customer 58', 'pending', 1851.00, '2026-02-12 08:46:00', '2026-02-12 08:46:00', '2026-02-12 08:46:00'),
-(45, 'CT-0059', 1, 1, 'Customer 59', 'completed', 318.00, '2026-01-28 12:29:00', '2026-01-28 12:29:00', '2026-01-28 12:29:00'),
-(46, 'CT-0060', 1, 1, 'Customer 60', 'pending', 705.00, '2026-02-06 06:09:00', '2026-02-06 06:09:00', '2026-02-06 06:09:00'),
-(47, 'CT-0061', 1, 1, 'Customer 61', 'completed', 1606.00, '2026-02-16 11:49:00', '2026-02-16 11:49:00', '2026-02-16 11:49:00'),
-(48, 'CT-0062', 1, 1, 'Customer 62', 'completed', 671.00, '2026-02-07 06:32:00', '2026-02-07 06:32:00', '2026-02-07 06:32:00'),
-(49, 'CT-0063', 1, 1, 'Customer 63', 'completed', 1741.00, '2026-02-02 06:09:00', '2026-02-02 06:09:00', '2026-02-02 06:09:00'),
-(50, 'CT-0064', 1, 1, 'Customer 64', 'completed', 1293.00, '2026-02-22 06:02:00', '2026-02-22 06:02:00', '2026-02-22 06:02:00');
+INSERT INTO `orders` (`id`, `order_code`, `owner_id`, `cashier_id`, `branch_id`, `customer_name`, `status`, `grand_total`, `amount_paid`, `change_amount`, `ordered_at`, `created_at`, `updated_at`) VALUES
+(51, 'CT-0001', 28, 28, 1, 'Walk-in', 'completed', 200.00, 500.00, 300.00, '2026-03-05 20:49:08', '2026-03-05 20:49:08', '2026-03-05 20:49:08'),
+(52, 'CT-0002', 28, 28, 1, 'Walk-in', 'completed', 2750.00, 3000.00, 250.00, '2026-03-05 20:59:43', '2026-03-05 20:59:43', '2026-03-05 20:59:43'),
+(53, 'CT-0003', 28, 28, 1, 'Walk-in', 'completed', 250.00, 260.00, 10.00, '2026-03-05 21:05:23', '2026-03-05 21:05:23', '2026-03-05 21:05:23'),
+(54, 'CT-0004', 28, 28, 2, 'Walk-in', 'completed', 4000.00, 5000.00, 1000.00, '2026-03-05 21:07:17', '2026-03-05 21:07:17', '2026-03-05 21:07:17'),
+(55, 'CT-0005', 28, 28, 2, 'Walk-in', 'completed', 2000.00, 2000.00, 0.00, '2026-03-05 21:42:13', '2026-03-05 21:42:13', '2026-03-05 21:42:13'),
+(56, 'CT-0006', 28, 28, 3, 'Walk-in', 'completed', 12000.00, 20000.00, 8000.00, '2026-03-05 21:42:53', '2026-03-05 21:42:53', '2026-03-05 21:42:53');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `order_items`
+--
+
+CREATE TABLE `order_items` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `order_id` bigint(20) UNSIGNED NOT NULL,
+  `product_id` bigint(20) UNSIGNED NOT NULL,
+  `product_name` varchar(255) NOT NULL,
+  `unit_price` decimal(10,2) NOT NULL,
+  `quantity` int(11) NOT NULL,
+  `subtotal` decimal(10,2) NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `order_items`
+--
+
+INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `product_name`, `unit_price`, `quantity`, `subtotal`, `created_at`, `updated_at`) VALUES
+(2, 52, 7, 'condoms', 250.00, 11, 2750.00, '2026-03-05 20:59:43', '2026-03-05 20:59:43'),
+(3, 53, 7, 'condoms', 250.00, 1, 250.00, '2026-03-05 21:05:23', '2026-03-05 21:05:23'),
+(4, 54, 8, 'dildo', 2000.00, 2, 4000.00, '2026-03-05 21:07:17', '2026-03-05 21:07:17'),
+(5, 55, 8, 'dildo', 2000.00, 1, 2000.00, '2026-03-05 21:42:13', '2026-03-05 21:42:13'),
+(6, 56, 9, 'fleshlight', 3000.00, 4, 12000.00, '2026-03-05 21:42:53', '2026-03-05 21:42:53');
 
 -- --------------------------------------------------------
 
@@ -680,7 +677,45 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (296, 'App\\Models\\User', 22, 'auth-token', '27d86a1759f1df92ab4bb0d53a256a346acdbeb130a0f62ec3d1280cd2c9a7a9', '[\"*\"]', NULL, NULL, '2026-03-05 06:20:02', '2026-03-05 06:20:02'),
 (297, 'App\\Models\\User', 2, 'auth-token', '96e9145acef69df8cd2b942dde94769137bcb124e41c10332d3e37e55e8de168', '[\"*\"]', NULL, NULL, '2026-03-05 06:22:01', '2026-03-05 06:22:01'),
 (298, 'App\\Models\\User', 2, 'auth-token', '07628a22bd4ab890d4b7ee181fb9e8a37dbc1ca05efb3f092098560858d351a2', '[\"*\"]', NULL, NULL, '2026-03-05 07:57:55', '2026-03-05 07:57:55'),
-(299, 'App\\Models\\User', 20, 'auth-token', 'c158ff213c237f0df4d14dc560fee408cc75611d9551b3c5d707da54469f9eb9', '[\"*\"]', NULL, NULL, '2026-03-05 07:58:52', '2026-03-05 07:58:52');
+(299, 'App\\Models\\User', 20, 'auth-token', 'c158ff213c237f0df4d14dc560fee408cc75611d9551b3c5d707da54469f9eb9', '[\"*\"]', NULL, NULL, '2026-03-05 07:58:52', '2026-03-05 07:58:52'),
+(300, 'App\\Models\\User', 26, 'auth-token', '688e325bdd8d846d59d0e317b91631759d94d1e91e1852c4c59290b138e43957', '[\"*\"]', NULL, NULL, '2026-03-05 09:18:44', '2026-03-05 09:18:44'),
+(301, 'App\\Models\\User', 26, 'auth-token', 'b81fe73d089e7338f80bc4182bee438e24d8dc8b50ad3817700883514ea50d5a', '[\"*\"]', NULL, NULL, '2026-03-05 09:23:17', '2026-03-05 09:23:17'),
+(302, 'App\\Models\\User', 23, 'auth-token', 'e6df75b463fc62d59304aaa5860a2d9af3b789b68e9e1994a56d587a9fc5a48a', '[\"*\"]', NULL, NULL, '2026-03-05 09:23:30', '2026-03-05 09:23:30'),
+(303, 'App\\Models\\User', 2, 'auth-token', 'a2c56b4f2503dd8f4c5c3803ef4509fce3f159d114e3a60e5de5ab0d16fbcea3', '[\"*\"]', NULL, NULL, '2026-03-05 14:44:20', '2026-03-05 14:44:20'),
+(304, 'App\\Models\\User', 20, 'auth-token', 'e6d464362fa8c19929249ee4e1d75a919047a46810cea8d672445abee40402a3', '[\"*\"]', NULL, NULL, '2026-03-05 14:45:01', '2026-03-05 14:45:01'),
+(305, 'App\\Models\\User', 28, 'auth-token', 'aff49acacacd431ad142cfb2d00aa821dfa3cb383cdf04bd7c43b57fedede504', '[\"*\"]', NULL, NULL, '2026-03-05 15:25:40', '2026-03-05 15:25:40'),
+(306, 'App\\Models\\User', 28, 'auth-token', '686efc0199a83f7ad35c159287fafd3a1c02dc09681be16e057ecd51a1ed0598', '[\"*\"]', NULL, NULL, '2026-03-05 15:42:13', '2026-03-05 15:42:13'),
+(307, 'App\\Models\\User', 28, 'auth-token', 'cd7e87e6e95f3153b444b269d4c665a5ab25b45073c929296c95d8aae7e4c220', '[\"*\"]', NULL, NULL, '2026-03-05 15:44:00', '2026-03-05 15:44:00'),
+(308, 'App\\Models\\User', 28, 'auth-token', '410d4238b783922daa046f39625396c9841e1064ac9ed406755d84b5d8566e0a', '[\"*\"]', NULL, NULL, '2026-03-05 15:44:16', '2026-03-05 15:44:16'),
+(309, 'App\\Models\\User', 28, 'auth-token', '6096a2131e27347ef069a6abaab95913797caa34279296a02c98fb393e4ddfa6', '[\"*\"]', NULL, NULL, '2026-03-05 15:46:42', '2026-03-05 15:46:42'),
+(310, 'App\\Models\\User', 28, 'auth-token', '110f37a23176b51a5080dc060e3595b104c1c617902b8470e99e40fee48d1fd4', '[\"*\"]', NULL, NULL, '2026-03-05 15:46:57', '2026-03-05 15:46:57'),
+(311, 'App\\Models\\User', 28, 'auth-token', 'ca4820257071b47b00515f69473a5dc0906df95aef2274aac3ad9a935a4cbdae', '[\"*\"]', NULL, NULL, '2026-03-05 15:59:15', '2026-03-05 15:59:15'),
+(312, 'App\\Models\\User', 27, 'auth-token', '2a9e7890711ef15cfe329b0f72d5874aa6646468d1248fd35d8cb74197efb981', '[\"*\"]', NULL, NULL, '2026-03-05 15:59:59', '2026-03-05 15:59:59'),
+(313, 'App\\Models\\User', 28, 'auth-token', 'fb92558f3d130084baa3aa3b56d6e19fdb498ffefe67471ec383b694c2a8d7fd', '[\"*\"]', NULL, NULL, '2026-03-05 16:00:15', '2026-03-05 16:00:15'),
+(314, 'App\\Models\\User', 28, 'auth-token', 'f56492fd2da05b3f2f48f5935c03f7f750256a6461371c46491f96a3ee973668', '[\"*\"]', NULL, NULL, '2026-03-05 16:14:29', '2026-03-05 16:14:29'),
+(315, 'App\\Models\\User', 28, 'auth-token', 'e35dc24f07c74bbca4ca880988e87cec9c3bc0aeac57e6adbd795e536ac3ef08', '[\"*\"]', NULL, NULL, '2026-03-05 17:06:06', '2026-03-05 17:06:06'),
+(316, 'App\\Models\\User', 28, 'auth-token', '6fa03fdf1483f1d55c3ccc0cfa33a734dc311e2cbeb893f1ad60844edbce1e00', '[\"*\"]', NULL, NULL, '2026-03-05 17:06:15', '2026-03-05 17:06:15'),
+(317, 'App\\Models\\User', 28, 'auth-token', '83223d8b0dd2a813d242de80bfc9e9a5108990c6dbe57778cbb522899df0bf4c', '[\"*\"]', NULL, NULL, '2026-03-05 17:10:00', '2026-03-05 17:10:00'),
+(318, 'App\\Models\\User', 28, 'auth-token', '542125c4fdd2cb538578520400efcaaed57e558bff74a94969306a71d9664600', '[\"*\"]', NULL, NULL, '2026-03-05 17:29:16', '2026-03-05 17:29:16'),
+(319, 'App\\Models\\User', 28, 'auth-token', 'a4a15d246c303064e851824a71f645f352048b1c9292f0f54be236a3546dcdd9', '[\"*\"]', NULL, NULL, '2026-03-05 17:44:28', '2026-03-05 17:44:28'),
+(320, 'App\\Models\\User', 28, 'auth-token', 'f0f345a6cc37cad7ff5005e61ba707e6db1af570e0bd968a0fd73273d63f8de7', '[\"*\"]', NULL, NULL, '2026-03-05 18:16:48', '2026-03-05 18:16:48'),
+(321, 'App\\Models\\User', 28, 'auth-token', 'c1c48cebb31048e8fd577fe12bb6a7b2bff6bb47a46bdb4cca1a30f7d55d11dc', '[\"*\"]', NULL, NULL, '2026-03-05 18:44:44', '2026-03-05 18:44:44'),
+(322, 'App\\Models\\User', 28, 'auth-token', '0d5790cfbb75dacc4b1d8c6d29b500d63d1b33109616e99f23e7b4ceace1897c', '[\"*\"]', NULL, NULL, '2026-03-05 18:50:30', '2026-03-05 18:50:30'),
+(323, 'App\\Models\\User', 28, 'auth-token', 'e4f97abd4a12785cd26dd4be2f6c3bcfc5e8e812fa412b09ce0ae4eaa7d5404f', '[\"*\"]', NULL, NULL, '2026-03-05 19:09:24', '2026-03-05 19:09:24'),
+(324, 'App\\Models\\User', 28, 'auth-token', '5ff94c2eead62a9326fb3910260b5acb1f26c9bd8f62874680056baf918d1c89', '[\"*\"]', NULL, NULL, '2026-03-05 19:36:48', '2026-03-05 19:36:48'),
+(325, 'App\\Models\\User', 22, 'auth-token', 'ade65caa3a04f6790592663b5781d5e9b23ff179ff6ae850a592bbdfc5a2df59', '[\"*\"]', NULL, NULL, '2026-03-05 19:49:42', '2026-03-05 19:49:42'),
+(326, 'App\\Models\\User', 2, 'auth-token', 'b12a484c6c38a29b972555a02f842b658d5de1a3b20d5f3ea7e58ce5c62f6d1e', '[\"*\"]', NULL, NULL, '2026-03-05 19:50:28', '2026-03-05 19:50:28'),
+(327, 'App\\Models\\User', 28, 'auth-token', 'f68bdba2e661d247a084d5e8f3b5deb6357bde09583d045299264293e4c8a05a', '[\"*\"]', NULL, NULL, '2026-03-05 19:50:39', '2026-03-05 19:50:39'),
+(328, 'App\\Models\\User', 22, 'auth-token', '799686993aa092ad80d2a98a43a5c1be3a8db892d907a57cf93740b39de7e18c', '[\"*\"]', NULL, NULL, '2026-03-05 19:51:37', '2026-03-05 19:51:37'),
+(329, 'App\\Models\\User', 28, 'auth-token', '24d8698232ef15abc8f3ea3e0bce6435b08406b52ee7682d1be1bff36c5cc90b', '[\"*\"]', NULL, NULL, '2026-03-05 20:07:17', '2026-03-05 20:07:17'),
+(330, 'App\\Models\\User', 28, 'auth-token', '54b49a389d1f9bdc6b2df7550b69c6ac384f0c43bf5f056bcfcec9b71c5c39c0', '[\"*\"]', NULL, NULL, '2026-03-05 20:09:40', '2026-03-05 20:09:40'),
+(331, 'App\\Models\\User', 22, 'auth-token', 'baf238881c4ef5a8d8cf04d50536e60cd54edaf2c9c68e5d0e144d54744ed1f9', '[\"*\"]', NULL, NULL, '2026-03-05 20:10:07', '2026-03-05 20:10:07'),
+(332, 'App\\Models\\User', 28, 'auth-token', '7be4350c4264391e51be4415ca5c1e737cce5a563d85bef5e2fb725c6e5515af', '[\"*\"]', NULL, NULL, '2026-03-05 20:15:18', '2026-03-05 20:15:18'),
+(333, 'App\\Models\\User', 28, 'auth-token', '9143c9776b5f6f4b888e04813429f39399f8047e7865851fee237bd1f36dba5a', '[\"*\"]', NULL, NULL, '2026-03-05 21:51:08', '2026-03-05 21:51:08'),
+(334, 'App\\Models\\User', 28, 'auth-token', '7d3bd78ab2c41a28855fa16d29a4b027da5a8949903c53ad4e7d2ce5fb0ac919', '[\"*\"]', NULL, NULL, '2026-03-06 00:14:06', '2026-03-06 00:14:06'),
+(335, 'App\\Models\\User', 28, 'auth-token', 'e09c376692c6d30f1cff0da30066a33abd3b863113ad9fceb26f5f3d5776390b', '[\"*\"]', NULL, NULL, '2026-03-06 02:55:38', '2026-03-06 02:55:38'),
+(336, 'App\\Models\\User', 22, 'auth-token', '2ed8446244d75ecec2402a970f2e611e40f5954e6beaad4c0eda27ae7367b298', '[\"*\"]', NULL, NULL, '2026-03-06 02:56:02', '2026-03-06 02:56:02'),
+(337, 'App\\Models\\User', 20, 'auth-token', 'a6beb50bc904d71814a686eef0d45db1a2161b2cc6c1d3f6bb5c72fa9cf552b8', '[\"*\"]', NULL, NULL, '2026-03-06 02:56:47', '2026-03-06 02:56:47');
 
 -- --------------------------------------------------------
 
@@ -696,21 +731,20 @@ CREATE TABLE `products` (
   `updated_at` timestamp NULL DEFAULT NULL,
   `price` decimal(10,2) NOT NULL DEFAULT 0.00,
   `stock` int(11) NOT NULL DEFAULT 0,
+  `min_stock` int(11) NOT NULL DEFAULT 10,
   `sku` varchar(255) NOT NULL DEFAULT 'SKU-DEFAULT',
-  `branch_id` bigint(20) UNSIGNED NOT NULL DEFAULT 1
+  `branch_id` bigint(20) UNSIGNED NOT NULL DEFAULT 1,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `products`
 --
 
-INSERT INTO `products` (`id`, `name`, `slug`, `created_at`, `updated_at`, `price`, `stock`, `sku`, `branch_id`) VALUES
-(1, 'Yangyeom', 'yangyeom', '2026-02-23 14:44:43', '2026-02-23 14:44:43', 0.00, 0, 'SKU-YANGYEOM', 1),
-(2, 'Snow Cheese', 'snowcheese', '2026-02-23 14:44:43', '2026-02-23 14:44:43', 0.00, 0, 'SKU-SNOWCHEESE', 1),
-(3, 'Corndog', 'corndog', '2026-02-23 14:44:43', '2026-02-23 14:44:43', 0.00, 0, 'SKU-CORNDOG', 1),
-(4, 'Pastries', 'pastries', '2026-02-23 14:44:43', '2026-02-23 14:44:43', 0.00, 0, 'SKU-PASTRIES', 1),
-(5, 'Ramen', 'ramen', '2026-02-23 14:44:43', '2026-02-23 14:44:43', 0.00, 0, 'SKU-RAMEN', 1),
-(6, 'Ice Cream', 'icecream', '2026-02-23 14:44:43', '2026-02-23 14:44:43', 0.00, 0, 'SKU-ICECREAM', 1);
+INSERT INTO `products` (`id`, `name`, `slug`, `created_at`, `updated_at`, `price`, `stock`, `min_stock`, `sku`, `branch_id`, `is_active`) VALUES
+(7, 'condoms', 'condoms', '2026-03-05 20:58:27', '2026-03-05 21:05:55', 250.00, 17, 10, 'SKU-PNDBYX', 1, 1),
+(8, 'dildo', 'dildo', '2026-03-05 21:06:20', '2026-03-05 21:42:13', 2000.00, 25, 10, 'SKU-6VGZ7B', 2, 1),
+(9, 'fleshlight', 'fleshlight', '2026-03-05 21:06:57', '2026-03-05 21:42:53', 3000.00, 16, 10, 'SKU-OBOUHG', 3, 1);
 
 -- --------------------------------------------------------
 
@@ -751,9 +785,9 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('kZJPA8Di89IUAQsxr0NPy6PQabRRjYZKBW8gA7O8', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiNjg5UEVvbHBudWZuUHdhUXNDZmlqMjRoN0lrRkI5QXJOaFE5RmJkaSI7czo3OiJzdWNjZXNzIjtzOjI0OiJMb2dnZWQgb3V0IHN1Y2Nlc3NmdWxseS4iO3M6NjoiX2ZsYXNoIjthOjI6e3M6MzoibmV3IjthOjA6e31zOjM6Im9sZCI7YToxOntpOjA7czo3OiJzdWNjZXNzIjt9fXM6OToiX3ByZXZpb3VzIjthOjI6e3M6MzoidXJsIjtzOjI4OiJodHRwOi8vbG9jYWxob3N0OjgwMDAvbG9nb3V0IjtzOjU6InJvdXRlIjtzOjY6ImxvZ291dCI7fX0=', 1772691790),
-('MyOfns6CxOOidjUpYIw5njy05ZlnasMGRKMdnL6P', 2, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiQm8xUEZJYU13SEIyMmhvZnJCZzQ2UDl1WG5kOGllWkY0dWxmYlFLYyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mzg6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1tYW5hZ2VtZW50IjtzOjU6InJvdXRlIjtzOjIyOiJhZG1pbi5zdGFmZi1tYW5hZ2VtZW50Ijt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MjtzOjc6InVzZXJfaWQiO2k6MjtzOjk6InVzZXJfcm9sZSI7czo1OiJBRE1JTiI7czo5OiJ1c2VyX25hbWUiO3M6MTE6IkNoaWtpbiBUYXlvIjtzOjEzOiJyZWRpcmVjdF9wYXRoIjtzOjEyOiIvYWRtaW4tcGFuZWwiO30=', 1772697870),
-('uDOzG8eXZROQHplIfrfhTtw8zMcJu8LfsWy7TaTs', 20, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiVWFxN0Y0VmNIU083OWRIR0VDb3VONU42Z29WUHFLbXFUdXRLc2RGbiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDQ6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9vd25lci9zdGFmZi1tYW5hZ2VtZW50IjtzOjU6InJvdXRlIjtzOjIyOiJvd25lci5zdGFmZi1tYW5hZ2VtZW50Ijt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MjA7czo3OiJ1c2VyX2lkIjtpOjIwO3M6OToidXNlcl9yb2xlIjtzOjU6Ik9XTkVSIjtzOjk6InVzZXJfbmFtZSI7czo1OiJPd25lciI7czoxMzoicmVkaXJlY3RfcGF0aCI7czoxMjoiL293bmVyLXBhbmVsIjt9', 1772697702);
+('BxMASddaIxTJV7oc7AB932LEK02X5xUXieoXwtgc', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiOWJjZkpGb0ZGaWxWajRvZkpFRTNsV1BMSlV5SllaYmhzMzlkYXJSMiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fX0=', 1772765826),
+('KlKhDvBC7QLth2zM52cQ0HnbYOMH9vKHJ5NFgZdA', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiYUpNNjRYN3dIbG92d3VId1B5TzJEbnBkNUpaeUpGQVpZZGFnMmlMOSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1772765717),
+('oad0wTB5regni4GyVka6HiOvIGgMeRQbQHrbONnL', 28, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiQldwTUpnRXo3Rjc1b2hCT2NOZE1LQmp3d29qcURRU0dOejJrNEo4aiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6Mjg7czo3OiJ1c2VyX2lkIjtpOjI4O3M6OToidXNlcl9yb2xlIjtzOjExOiJTVVBFUl9BRE1JTiI7czo5OiJ1c2VyX25hbWUiO3M6MjA6IlN1cGVyIEFkbWluaXN0cmF0b3JzIjtzOjEzOiJyZWRpcmVjdF9wYXRoIjtzOjE4OiIvc3VwZXItYWRtaW4tcGFuZWwiO30=', 1772765831);
 
 -- --------------------------------------------------------
 
@@ -789,7 +823,8 @@ INSERT INTO `staff_documents` (`id`, `user_id`, `resume_path`, `government_id_pa
 (12, 23, NULL, 'staff-documents/23/government_id.jpg', 'staff-documents/23/psa_birth_certificate.jpg', 'staff-documents/23/nbi_clearance.png', 'staff-documents/23/police_clearance.png', 'staff-documents/23/medical_certificate.png', 'staff-documents/23/drug_test_result.png', 'staff-documents/23/sss_id.png', 'staff-documents/23/philhealth_id.png', 'staff-documents/23/pagibig_mdf.jpg', 'staff-documents/23/tin_id.jpg', 'staff-documents/23/diploma_transcript.png', '2026-02-28 05:53:39', '2026-02-28 05:53:39'),
 (13, 24, NULL, 'staff-documents/24/government_id.jpg', 'staff-documents/24/psa_birth_certificate.jpg', 'staff-documents/24/nbi_clearance.jpg', 'staff-documents/24/police_clearance.jpg', 'staff-documents/24/medical_certificate.jpg', 'staff-documents/24/drug_test_result.jpg', 'staff-documents/24/sss_id.jpg', 'staff-documents/24/philhealth_id.jpg', 'staff-documents/24/pagibig_mdf.jpg', 'staff-documents/24/tin_id.jpg', 'staff-documents/24/diploma_transcript.jpg', '2026-03-01 13:43:49', '2026-03-01 13:43:49'),
 (14, 26, NULL, 'staff-documents/26/government_id.jpg', 'staff-documents/26/psa_birth_certificate.jpg', 'staff-documents/26/nbi_clearance.jpg', 'staff-documents/26/police_clearance.jpg', 'staff-documents/26/medical_certificate.jpg', 'staff-documents/26/drug_test_result.jpg', 'staff-documents/26/sss_id.jpg', 'staff-documents/26/philhealth_id.jpg', 'staff-documents/26/pagibig_mdf.jpg', 'staff-documents/26/tin_id.jpg', 'staff-documents/26/diploma_transcript.jpg', '2026-03-04 15:21:32', '2026-03-04 15:21:32'),
-(15, 27, NULL, 'staff-documents/27/government_id.jpg', 'staff-documents/27/psa_birth_certificate.jpg', 'staff-documents/27/nbi_clearance.jpg', 'staff-documents/27/police_clearance.jpg', 'staff-documents/27/medical_certificate.jpg', 'staff-documents/27/drug_test_result.jpg', 'staff-documents/27/sss_id.jpg', 'staff-documents/27/philhealth_id.jpg', 'staff-documents/27/pagibig_mdf.jpg', 'staff-documents/27/tin_id.jpg', 'staff-documents/27/diploma_transcript.jpg', '2026-03-04 18:10:13', '2026-03-04 18:10:13');
+(15, 27, NULL, 'staff-documents/27/government_id.jpg', 'staff-documents/27/psa_birth_certificate.jpg', 'staff-documents/27/nbi_clearance.jpg', 'staff-documents/27/police_clearance.jpg', 'staff-documents/27/medical_certificate.jpg', 'staff-documents/27/drug_test_result.jpg', 'staff-documents/27/sss_id.jpg', 'staff-documents/27/philhealth_id.jpg', 'staff-documents/27/pagibig_mdf.jpg', 'staff-documents/27/tin_id.jpg', 'staff-documents/27/diploma_transcript.jpg', '2026-03-04 18:10:13', '2026-03-04 18:10:13'),
+(16, 30, NULL, 'staff-documents/30/government_id.png', 'staff-documents/30/psa_birth_certificate.png', 'staff-documents/30/nbi_clearance.png', 'staff-documents/30/police_clearance.png', 'staff-documents/30/medical_certificate.png', 'staff-documents/30/drug_test_result.png', 'staff-documents/30/sss_id.png', 'staff-documents/30/philhealth_id.png', 'staff-documents/30/pagibig_mdf.png', 'staff-documents/30/tin_id.png', 'staff-documents/30/diploma_transcript.png', '2026-03-05 21:38:20', '2026-03-05 21:38:20');
 
 -- --------------------------------------------------------
 
@@ -829,9 +864,11 @@ INSERT INTO `users` (`id`, `email`, `username`, `full_name`, `name`, `password`,
 (22, 'charles@test.com', 'charles', 'Christian Charles Umbal', NULL, '$2y$12$1QcE4/a2IjAwkaQAn25C7O.2/QFrk2TNxslW8lXqrcaUbTvl79Gi.', NULL, 'STAFF', 1, 'INVENTORY', NULL, '2026-02-27 18:19:55', '2026-03-05 06:20:52', NULL, 0, 1, '12', '/storage/avatars/avatar_22_1772691652.jpg', '09061515313'),
 (23, 'vince@test.com', 'vince', 'Vince Hannibal Bido', NULL, '$2y$12$7dbRnk.3E6tDfAh7jtfUy.eQJ1pD6UbfocShAYVoVyogpMKQrU9R.', NULL, 'MANAGER', 2, 'HR', NULL, '2026-02-28 05:53:39', '2026-03-05 06:18:18', NULL, 0, 1, '1674', '/storage/avatars/avatar_23_1772636159.jpg', '09041717616'),
 (24, 'gab@test.com', 'gabriel', 'Gabriel Ongsip', NULL, '$2y$12$OLfHtNa649f8TwGcXb/XZ.YAHTfKrygbpBjHsYhzzZvSvXPxYmv1C', NULL, 'MANAGER', 1, 'FINANCE', NULL, '2026-03-01 13:43:49', '2026-03-01 13:44:53', NULL, 0, 1, '432', '/storage/avatars/avatar_24_1772468129.jpg', '09081717616'),
-(25, 'christianumbal12@gmail.com', 'roseeeeee', NULL, NULL, '$2y$12$DTbKm8HGoUdmjkmKy3.vC.djLFaIcyXeVskjuO2JcyvR5P3QOl5Bu', '2026-03-02 19:10:23', 'customer', NULL, NULL, NULL, '2026-03-02 19:10:24', '2026-03-02 19:10:24', NULL, 1, 1, NULL, NULL, NULL),
 (26, 'janne@test.com', 'janne', 'Janne Deguzman', NULL, '$2y$12$MldD4hcw6a.h.oteGvN4gu.GwHm726ycXVWCJr6JCtvn.4zPGMGSy', NULL, 'STAFF', 2, 'CASHIER', NULL, '2026-03-04 15:21:32', '2026-03-04 15:23:17', NULL, 0, 1, 'BLK 20', NULL, '09051414312'),
-(27, 'mark@test.com', 'mark', 'Mark Juls', NULL, '$2y$12$tyfexPP2Rpr3G4.S9FGhCOHL0zLEaRPMojWlPmCJYdPEnLChE92pq', NULL, 'STAFF', 3, 'INVENTORY', NULL, '2026-03-04 18:10:13', '2026-03-04 18:11:34', NULL, 0, 1, '122', NULL, '09871513424');
+(27, 'mark@test.com', 'mark', 'Mark Juls', NULL, '$2y$12$tyfexPP2Rpr3G4.S9FGhCOHL0zLEaRPMojWlPmCJYdPEnLChE92pq', NULL, 'STAFF', 3, 'INVENTORY', NULL, '2026-03-04 18:10:13', '2026-03-04 18:11:34', NULL, 0, 1, '122', NULL, '09871513424'),
+(28, 'superadmin@example.com', 'superadmin', 'Super Administrators', NULL, '$2y$12$f67akYY/xm/H9KJoqytmXeblCxSgZ786slMmHkmqzlMozGUn3Ew7G', '2026-03-05 15:03:55', 'SUPER_ADMIN', NULL, NULL, NULL, '2026-03-05 15:03:55', '2026-03-05 16:01:06', NULL, 0, 1, NULL, '/storage/avatars/hkt6q9sq1yYpnTGkMyayeLp3bmIjf5hPNM2LnCBo.png', NULL),
+(29, 'umbal.christiancharles@ncst.edu.ph', 'umballs', NULL, NULL, '$2y$12$05J2guUFR9PN1TuRwlF0WuRcRx2CyKeVChVKwIORgl.IMiK.fqsQC', '2026-03-05 20:00:52', 'customer', NULL, NULL, NULL, '2026-03-05 20:00:52', '2026-03-05 20:00:52', NULL, 1, 1, NULL, NULL, NULL),
+(30, 'robert@gmail.com', 'Robert', 'Robert Downie', NULL, '$2y$12$jxrZqsD8cqoLEj8vpE3dO.WH1QC9BfsbqPuUquazMbMt3Dx2nLoSe', NULL, 'STAFF', 2, 'CASHIER', NULL, '2026-03-05 21:38:20', '2026-03-05 21:38:20', NULL, 1, 1, '213', NULL, '09156818821');
 
 --
 -- Indexes for dumped tables
@@ -923,6 +960,14 @@ ALTER TABLE `orders`
   ADD UNIQUE KEY `orders_order_code_unique` (`order_code`);
 
 --
+-- Indexes for table `order_items`
+--
+ALTER TABLE `order_items`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `order_items_order_id_foreign` (`order_id`),
+  ADD KEY `order_items_product_id_foreign` (`product_id`);
+
+--
 -- Indexes for table `password_reset_tokens`
 --
 ALTER TABLE `password_reset_tokens`
@@ -1009,7 +1054,7 @@ ALTER TABLE `branches`
 -- AUTO_INCREMENT for table `customer_accounts`
 --
 ALTER TABLE `customer_accounts`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `employee_timesheets`
@@ -1033,43 +1078,49 @@ ALTER TABLE `jobs`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=41;
 
 --
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=51;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=57;
+
+--
+-- AUTO_INCREMENT for table `order_items`
+--
+ALTER TABLE `order_items`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=300;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=338;
 
 --
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `product_comments`
 --
 ALTER TABLE `product_comments`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `staff_documents`
 --
 ALTER TABLE `staff_documents`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 
 --
 -- Constraints for dumped tables
@@ -1094,6 +1145,13 @@ ALTER TABLE `customer_accounts`
   ADD CONSTRAINT `customer_accounts_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
+-- Constraints for table `order_items`
+--
+ALTER TABLE `order_items`
+  ADD CONSTRAINT `order_items_order_id_foreign` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `order_items_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE;
+
+--
 -- Constraints for table `products`
 --
 ALTER TABLE `products`
@@ -1112,448 +1170,6 @@ ALTER TABLE `product_comments`
 --
 ALTER TABLE `staff_documents`
   ADD CONSTRAINT `staff_documents_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
---
--- Database: `phpmyadmin`
---
-CREATE DATABASE IF NOT EXISTS `phpmyadmin` DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;
-USE `phpmyadmin`;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `pma__bookmark`
---
-
-CREATE TABLE `pma__bookmark` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `dbase` varchar(255) NOT NULL DEFAULT '',
-  `user` varchar(255) NOT NULL DEFAULT '',
-  `label` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `query` text NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin COMMENT='Bookmarks';
-
--- --------------------------------------------------------
-
---
--- Table structure for table `pma__central_columns`
---
-
-CREATE TABLE `pma__central_columns` (
-  `db_name` varchar(64) NOT NULL,
-  `col_name` varchar(64) NOT NULL,
-  `col_type` varchar(64) NOT NULL,
-  `col_length` text DEFAULT NULL,
-  `col_collation` varchar(64) NOT NULL,
-  `col_isNull` tinyint(1) NOT NULL,
-  `col_extra` varchar(255) DEFAULT '',
-  `col_default` text DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin COMMENT='Central list of columns';
-
--- --------------------------------------------------------
-
---
--- Table structure for table `pma__column_info`
---
-
-CREATE TABLE `pma__column_info` (
-  `id` int(5) UNSIGNED NOT NULL,
-  `db_name` varchar(64) NOT NULL DEFAULT '',
-  `table_name` varchar(64) NOT NULL DEFAULT '',
-  `column_name` varchar(64) NOT NULL DEFAULT '',
-  `comment` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `mimetype` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `transformation` varchar(255) NOT NULL DEFAULT '',
-  `transformation_options` varchar(255) NOT NULL DEFAULT '',
-  `input_transformation` varchar(255) NOT NULL DEFAULT '',
-  `input_transformation_options` varchar(255) NOT NULL DEFAULT ''
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin COMMENT='Column information for phpMyAdmin';
-
--- --------------------------------------------------------
-
---
--- Table structure for table `pma__designer_settings`
---
-
-CREATE TABLE `pma__designer_settings` (
-  `username` varchar(64) NOT NULL,
-  `settings_data` text NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin COMMENT='Settings related to Designer';
-
--- --------------------------------------------------------
-
---
--- Table structure for table `pma__export_templates`
---
-
-CREATE TABLE `pma__export_templates` (
-  `id` int(5) UNSIGNED NOT NULL,
-  `username` varchar(64) NOT NULL,
-  `export_type` varchar(10) NOT NULL,
-  `template_name` varchar(64) NOT NULL,
-  `template_data` text NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin COMMENT='Saved export templates';
-
--- --------------------------------------------------------
-
---
--- Table structure for table `pma__favorite`
---
-
-CREATE TABLE `pma__favorite` (
-  `username` varchar(64) NOT NULL,
-  `tables` text NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin COMMENT='Favorite tables';
-
--- --------------------------------------------------------
-
---
--- Table structure for table `pma__history`
---
-
-CREATE TABLE `pma__history` (
-  `id` bigint(20) UNSIGNED NOT NULL,
-  `username` varchar(64) NOT NULL DEFAULT '',
-  `db` varchar(64) NOT NULL DEFAULT '',
-  `table` varchar(64) NOT NULL DEFAULT '',
-  `timevalue` timestamp NOT NULL DEFAULT current_timestamp(),
-  `sqlquery` text NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin COMMENT='SQL history for phpMyAdmin';
-
--- --------------------------------------------------------
-
---
--- Table structure for table `pma__navigationhiding`
---
-
-CREATE TABLE `pma__navigationhiding` (
-  `username` varchar(64) NOT NULL,
-  `item_name` varchar(64) NOT NULL,
-  `item_type` varchar(64) NOT NULL,
-  `db_name` varchar(64) NOT NULL,
-  `table_name` varchar(64) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin COMMENT='Hidden items of navigation tree';
-
--- --------------------------------------------------------
-
---
--- Table structure for table `pma__pdf_pages`
---
-
-CREATE TABLE `pma__pdf_pages` (
-  `db_name` varchar(64) NOT NULL DEFAULT '',
-  `page_nr` int(10) UNSIGNED NOT NULL,
-  `page_descr` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT ''
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin COMMENT='PDF relation pages for phpMyAdmin';
-
--- --------------------------------------------------------
-
---
--- Table structure for table `pma__recent`
---
-
-CREATE TABLE `pma__recent` (
-  `username` varchar(64) NOT NULL,
-  `tables` text NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin COMMENT='Recently accessed tables';
-
--- --------------------------------------------------------
-
---
--- Table structure for table `pma__relation`
---
-
-CREATE TABLE `pma__relation` (
-  `master_db` varchar(64) NOT NULL DEFAULT '',
-  `master_table` varchar(64) NOT NULL DEFAULT '',
-  `master_field` varchar(64) NOT NULL DEFAULT '',
-  `foreign_db` varchar(64) NOT NULL DEFAULT '',
-  `foreign_table` varchar(64) NOT NULL DEFAULT '',
-  `foreign_field` varchar(64) NOT NULL DEFAULT ''
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin COMMENT='Relation table';
-
--- --------------------------------------------------------
-
---
--- Table structure for table `pma__savedsearches`
---
-
-CREATE TABLE `pma__savedsearches` (
-  `id` int(5) UNSIGNED NOT NULL,
-  `username` varchar(64) NOT NULL DEFAULT '',
-  `db_name` varchar(64) NOT NULL DEFAULT '',
-  `search_name` varchar(64) NOT NULL DEFAULT '',
-  `search_data` text NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin COMMENT='Saved searches';
-
--- --------------------------------------------------------
-
---
--- Table structure for table `pma__table_coords`
---
-
-CREATE TABLE `pma__table_coords` (
-  `db_name` varchar(64) NOT NULL DEFAULT '',
-  `table_name` varchar(64) NOT NULL DEFAULT '',
-  `pdf_page_number` int(11) NOT NULL DEFAULT 0,
-  `x` float UNSIGNED NOT NULL DEFAULT 0,
-  `y` float UNSIGNED NOT NULL DEFAULT 0
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin COMMENT='Table coordinates for phpMyAdmin PDF output';
-
--- --------------------------------------------------------
-
---
--- Table structure for table `pma__table_info`
---
-
-CREATE TABLE `pma__table_info` (
-  `db_name` varchar(64) NOT NULL DEFAULT '',
-  `table_name` varchar(64) NOT NULL DEFAULT '',
-  `display_field` varchar(64) NOT NULL DEFAULT ''
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin COMMENT='Table information for phpMyAdmin';
-
--- --------------------------------------------------------
-
---
--- Table structure for table `pma__table_uiprefs`
---
-
-CREATE TABLE `pma__table_uiprefs` (
-  `username` varchar(64) NOT NULL,
-  `db_name` varchar(64) NOT NULL,
-  `table_name` varchar(64) NOT NULL,
-  `prefs` text NOT NULL,
-  `last_update` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin COMMENT='Tables'' UI preferences';
-
--- --------------------------------------------------------
-
---
--- Table structure for table `pma__tracking`
---
-
-CREATE TABLE `pma__tracking` (
-  `db_name` varchar(64) NOT NULL,
-  `table_name` varchar(64) NOT NULL,
-  `version` int(10) UNSIGNED NOT NULL,
-  `date_created` datetime NOT NULL,
-  `date_updated` datetime NOT NULL,
-  `schema_snapshot` text NOT NULL,
-  `schema_sql` text DEFAULT NULL,
-  `data_sql` longtext DEFAULT NULL,
-  `tracking` set('UPDATE','REPLACE','INSERT','DELETE','TRUNCATE','CREATE DATABASE','ALTER DATABASE','DROP DATABASE','CREATE TABLE','ALTER TABLE','RENAME TABLE','DROP TABLE','CREATE INDEX','DROP INDEX','CREATE VIEW','ALTER VIEW','DROP VIEW') DEFAULT NULL,
-  `tracking_active` int(1) UNSIGNED NOT NULL DEFAULT 1
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin COMMENT='Database changes tracking for phpMyAdmin';
-
--- --------------------------------------------------------
-
---
--- Table structure for table `pma__userconfig`
---
-
-CREATE TABLE `pma__userconfig` (
-  `username` varchar(64) NOT NULL,
-  `timevalue` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `config_data` text NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin COMMENT='User preferences storage for phpMyAdmin';
-
---
--- Dumping data for table `pma__userconfig`
---
-
-INSERT INTO `pma__userconfig` (`username`, `timevalue`, `config_data`) VALUES
-('root', '2019-10-21 13:37:09', '{\"Console\\/Mode\":\"collapse\"}');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `pma__usergroups`
---
-
-CREATE TABLE `pma__usergroups` (
-  `usergroup` varchar(64) NOT NULL,
-  `tab` varchar(64) NOT NULL,
-  `allowed` enum('Y','N') NOT NULL DEFAULT 'N'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin COMMENT='User groups with configured menu items';
-
--- --------------------------------------------------------
-
---
--- Table structure for table `pma__users`
---
-
-CREATE TABLE `pma__users` (
-  `username` varchar(64) NOT NULL,
-  `usergroup` varchar(64) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin COMMENT='Users and their assignments to user groups';
-
---
--- Indexes for dumped tables
---
-
---
--- Indexes for table `pma__bookmark`
---
-ALTER TABLE `pma__bookmark`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indexes for table `pma__central_columns`
---
-ALTER TABLE `pma__central_columns`
-  ADD PRIMARY KEY (`db_name`,`col_name`);
-
---
--- Indexes for table `pma__column_info`
---
-ALTER TABLE `pma__column_info`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `db_name` (`db_name`,`table_name`,`column_name`);
-
---
--- Indexes for table `pma__designer_settings`
---
-ALTER TABLE `pma__designer_settings`
-  ADD PRIMARY KEY (`username`);
-
---
--- Indexes for table `pma__export_templates`
---
-ALTER TABLE `pma__export_templates`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `u_user_type_template` (`username`,`export_type`,`template_name`);
-
---
--- Indexes for table `pma__favorite`
---
-ALTER TABLE `pma__favorite`
-  ADD PRIMARY KEY (`username`);
-
---
--- Indexes for table `pma__history`
---
-ALTER TABLE `pma__history`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `username` (`username`,`db`,`table`,`timevalue`);
-
---
--- Indexes for table `pma__navigationhiding`
---
-ALTER TABLE `pma__navigationhiding`
-  ADD PRIMARY KEY (`username`,`item_name`,`item_type`,`db_name`,`table_name`);
-
---
--- Indexes for table `pma__pdf_pages`
---
-ALTER TABLE `pma__pdf_pages`
-  ADD PRIMARY KEY (`page_nr`),
-  ADD KEY `db_name` (`db_name`);
-
---
--- Indexes for table `pma__recent`
---
-ALTER TABLE `pma__recent`
-  ADD PRIMARY KEY (`username`);
-
---
--- Indexes for table `pma__relation`
---
-ALTER TABLE `pma__relation`
-  ADD PRIMARY KEY (`master_db`,`master_table`,`master_field`),
-  ADD KEY `foreign_field` (`foreign_db`,`foreign_table`);
-
---
--- Indexes for table `pma__savedsearches`
---
-ALTER TABLE `pma__savedsearches`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `u_savedsearches_username_dbname` (`username`,`db_name`,`search_name`);
-
---
--- Indexes for table `pma__table_coords`
---
-ALTER TABLE `pma__table_coords`
-  ADD PRIMARY KEY (`db_name`,`table_name`,`pdf_page_number`);
-
---
--- Indexes for table `pma__table_info`
---
-ALTER TABLE `pma__table_info`
-  ADD PRIMARY KEY (`db_name`,`table_name`);
-
---
--- Indexes for table `pma__table_uiprefs`
---
-ALTER TABLE `pma__table_uiprefs`
-  ADD PRIMARY KEY (`username`,`db_name`,`table_name`);
-
---
--- Indexes for table `pma__tracking`
---
-ALTER TABLE `pma__tracking`
-  ADD PRIMARY KEY (`db_name`,`table_name`,`version`);
-
---
--- Indexes for table `pma__userconfig`
---
-ALTER TABLE `pma__userconfig`
-  ADD PRIMARY KEY (`username`);
-
---
--- Indexes for table `pma__usergroups`
---
-ALTER TABLE `pma__usergroups`
-  ADD PRIMARY KEY (`usergroup`,`tab`,`allowed`);
-
---
--- Indexes for table `pma__users`
---
-ALTER TABLE `pma__users`
-  ADD PRIMARY KEY (`username`,`usergroup`);
-
---
--- AUTO_INCREMENT for dumped tables
---
-
---
--- AUTO_INCREMENT for table `pma__bookmark`
---
-ALTER TABLE `pma__bookmark`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `pma__column_info`
---
-ALTER TABLE `pma__column_info`
-  MODIFY `id` int(5) UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `pma__export_templates`
---
-ALTER TABLE `pma__export_templates`
-  MODIFY `id` int(5) UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `pma__history`
---
-ALTER TABLE `pma__history`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `pma__pdf_pages`
---
-ALTER TABLE `pma__pdf_pages`
-  MODIFY `page_nr` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `pma__savedsearches`
---
-ALTER TABLE `pma__savedsearches`
-  MODIFY `id` int(5) UNSIGNED NOT NULL AUTO_INCREMENT;
---
--- Database: `test`
---
-CREATE DATABASE IF NOT EXISTS `test` DEFAULT CHARACTER SET latin1 COLLATE latin1_swedish_ci;
-USE `test`;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

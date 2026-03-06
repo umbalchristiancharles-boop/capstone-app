@@ -4,13 +4,17 @@
       <!-- Page Header -->
       <header class="pl-page-header">
         <div>
-          <h1 class="pl-h1">Staff Inventory</h1>
+          <h1 class="pl-h1">{{ pageTitle }}</h1>
           <p class="pl-lead">Manage your branch inventory</p>
         </div>
       </header>
 
       <!-- Product List with Profile/Attendance in left panel -->
-      <ProductList ref="productListRef" fetchUrl="/api/staff/inventory/products" compact
+      <ProductList 
+        ref="productListRef" 
+        :fetchUrl="fetchUrl" 
+        :products="internalProducts"
+        compact
         @open-add="openAddProduct"
         @edit="handleEdit"
         @delete="deleteProduct"
@@ -366,8 +370,43 @@ const canClockOut = computed(() => {
 
 // optional products prop (we will rely on ProductList fetch by default)
 const props = defineProps({
-  products: { type: Array, default: () => [] }
+  products: { type: Array, default: () => [] },
+  fetchUrl: { type: String, default: '/api/staff/inventory/products' },
+  pageTitle: { type: String, default: 'Staff Inventory' },
+  isSuperAdmin: { type: Boolean, default: false }
 });
+
+// Internal products from parent (used when not fetching via API)
+const internalProducts = ref(props.products || [])
+
+// Watch for products prop changes
+watch(() => props.products, (newProducts) => {
+  internalProducts.value = newProducts || []
+})
+
+// Computed title
+const pageTitle = computed(() => props.pageTitle)
+
+// Compute API endpoints based on whether it's superadmin or not
+const endpoints = computed(() => {
+  if (props.isSuperAdmin) {
+    return {
+      products: '/api/superadmin/logistics/products',
+      store: '/api/superadmin/logistics/products',
+      update: (id) => `/api/superadmin/logistics/products/${id}`,
+      destroy: (id) => `/api/superadmin/logistics/products/${id}`
+    }
+  }
+  return {
+    products: '/api/staff/inventory/products',
+    store: '/api/staff/inventory/store',
+    update: (id) => `/api/staff/inventory/update/${id}`,
+    destroy: (id) => `/api/staff/inventory/destroy/${id}`
+  }
+})
+
+// Also update the fetchUrl to use computed endpoints
+const fetchUrl = computed(() => endpoints.value.products)
 
 // ref to the ProductList child so we can trigger refreshes
 const productListRef = ref(null)
@@ -488,7 +527,7 @@ async function submitCount() {
   if (!okCsrf) { formError.value = 'Unable to refresh CSRF token. Please reload or login.'; return }
   try {
     const payload = { stock: Number(countValue.value) };
-    const res = await axios.put(`/api/staff/inventory/update/${activeProduct.value.id}`, payload, { withCredentials: true });
+    const res = await axios.put(endpoints.value.update(activeProduct.value.id), payload, { withCredentials: true });
     // refresh the list from server
     refreshList()
     formSuccess.value = 'Stock updated successfully.';
@@ -521,7 +560,7 @@ async function submitAdjust() {
   try {
     const newStock = Number(activeProduct.value.stock) + Number(adjust.value.delta);
     const payload = { stock: newStock };
-    const res = await axios.put(`/api/staff/inventory/update/${activeProduct.value.id}`, payload, { withCredentials: true });
+    const res = await axios.put(endpoints.value.update(activeProduct.value.id), payload, { withCredentials: true });
     refreshList()
     formSuccess.value = 'Stock adjusted successfully.';
     showAdjustModal.value = false;
@@ -549,9 +588,9 @@ async function submitAddProduct() {
     let res
     if (payload.id) {
       // update existing product
-      res = await axios.put(`/api/staff/inventory/update/${payload.id}`, payload, { withCredentials: true })
+      res = await axios.put(endpoints.value.update(payload.id), payload, { withCredentials: true })
     } else {
-      res = await axios.post('/api/staff/inventory/store', payload, { withCredentials: true });
+      res = await axios.post(endpoints.value.store, payload, { withCredentials: true });
     }
     if (res.data && (res.data.product || res.data.ok)) {
       // refresh the list so ProductList reflects the change
@@ -569,7 +608,7 @@ async function deleteProduct(prod) {
   const okCsrf = await ensureCsrf()
   if (!okCsrf) { alert('Unable to refresh CSRF token. Please reload or login.'); return }
   try {
-    await axios.delete(`/api/staff/inventory/destroy/${prod.id}`, { withCredentials: true });
+    await axios.delete(endpoints.value.destroy(prod.id), { withCredentials: true });
     refreshList()
   } catch (e) {
     alert((e.response && e.response.data && e.response.data.message) || 'Failed to delete product');

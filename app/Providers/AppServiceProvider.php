@@ -3,7 +3,6 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Cookie\Middleware\EncryptCookies as EncryptCookiesMiddleware;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -20,12 +19,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Ensure the XSRF-TOKEN cookie is not encrypted so front-end JS can read it.
-        try {
-            EncryptCookiesMiddleware::except(['XSRF-TOKEN']);
-        } catch (\Throwable $__e) {
-            // ignore if the middleware class isn't available for any reason
-        }
+        // NOTE: Do NOT exclude XSRF-TOKEN from encryption.
+        // Laravel's CSRF middleware expects to decrypt the X-XSRF-TOKEN header.
+        // The encrypted cookie value is readable by JS and sent in the header,
+        // then decrypted server-side for comparison.
 
         // Define no_cache_view helper globally so serialized route closures
         // that call it won't fail after route caching or serialization.

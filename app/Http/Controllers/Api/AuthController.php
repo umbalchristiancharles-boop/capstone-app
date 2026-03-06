@@ -80,8 +80,8 @@ class AuthController extends Controller
         }
 
         // Validate role exists and is valid
-        // Include all expected roles: ADMIN, OWNER, MANAGER, MANAGER_HR, HR, STAFF
-        $validRoles = ['ADMIN', 'OWNER', 'MANAGER', 'MANAGER_HR', 'HR', 'STAFF'];
+        // Include all expected roles: SUPER_ADMIN, ADMIN, OWNER, MANAGER, MANAGER_HR, HR, STAFF
+        $validRoles = ['SUPER_ADMIN', 'ADMIN', 'OWNER', 'MANAGER', 'MANAGER_HR', 'HR', 'STAFF'];
         $roleUpper = strtoupper(trim($user->role ?? ''));
 
         // Handle MANAGER_HR role specially - treat as MANAGER with HR department
@@ -183,6 +183,11 @@ class AuthController extends Controller
         // OWNER - highest privilege
         if ($role === 'OWNER') {
             return '/owner-panel';
+        }
+
+        // SUPER_ADMIN - full system access
+        if ($role === 'SUPER_ADMIN') {
+            return '/super-admin-panel';
         }
 
         // ADMIN

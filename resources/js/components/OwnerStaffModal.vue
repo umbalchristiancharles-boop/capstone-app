@@ -65,47 +65,26 @@
             <div class="form-group password-group" v-if="!isEdit">
               <label for="password" class="form-label">Password <span style="font-weight:400">*</span></label>
 
-              <div style="display:flex; gap:0.75rem; align-items:flex-start; flex-wrap:wrap;">
-                <!-- password input + toggle -->
-                <div style="display:flex; gap:0.5rem; align-items:center; flex:1; min-width:220px;">
-                  <input
-                    :value="defaultPasswordValue"
-                    :type="showPassword ? 'text' : 'password'"
-                    id="password"
-                    class="form-input read-only"
-                    readonly
-                    style="flex:1; background-color: #f3f4f6;"
-                  />
-                  <button type="button" class="password-toggle" @click="toggleShowPassword" :aria-label="showPassword ? 'Hide password' : 'Show password'" style="height:40px;">
-                    <span v-if="showPassword">
-                      <!-- Eye-off SVG -->
-                      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24">
-                        <path stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M17.94 17.94A10.06 10.06 0 0 1 12 20c-5.05 0-9.29-3.81-10-8 .23-1.44.8-2.79 1.67-3.93M6.12 6.12A9.98 9.98 0 0 1 12 4c5.05 0 9.29 3.81 10 8-.23 1.44-.8 2.79-1.67 3.93M1 1l22 22M9.88 9.88A3 3 0 0 0 12 15a3 3 0 0 0 2.12-5.12"/>
+              <div class="password-display-container">
+                <!-- Password Display Card -->
+                <div class="password-display-card">
+                  <div class="password-display-label">Default Password (will be set for new staff):</div>
+                  <div class="password-display-value">
+                    <span class="password-text">{{ fetchedDefaultPassword || defaultPasswordValue }}</span>
+                    <button type="button" class="btn btn-primary btn-copy" @click="copyDefaultToClipboard">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                       </svg>
-                    </span>
-                    <span v-else>
-                      <!-- Eye SVG -->
-                      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24">
-                        <ellipse cx="12" cy="12" rx="10" ry="8" stroke="#888" stroke-width="2"/>
-                        <circle cx="12" cy="12" r="3" stroke="#888" stroke-width="2"/>
-                      </svg>
-                    </span>
-                  </button>
-                </div>
-
-                <!-- default password controls -->
-                <div style="display:flex; gap:0.5rem; align-items:center;">
-                  <div style="display:flex; flex-direction:column; gap:0.25rem; align-items:flex-start;">
-                    <div style="display:flex; gap:0.5rem; align-items:center;">
-                      <button v-if="fetchedDefaultPassword" type="button" @click="showDefaultPassword = !showDefaultPassword" class="btn btn-secondary" style="padding:0.4rem 0.6rem; font-size:0.85rem;">{{ showDefaultPassword ? 'Hide' : 'Show' }} default password</button>
-                      <span v-else-if="fetchingDefaultPassword" style="color:#6b7280; font-size:0.9rem;">Checking default...</span>
-                    </div>
-                    <div v-if="showDefaultPassword && fetchedDefaultPassword" style="display:flex; gap:0.5rem; align-items:center;">
-                      <input type="text" readonly :value="fetchedDefaultPassword" class="form-input read-only" style="width:220px;" />
-                      <button type="button" class="btn btn-primary" @click="copyDefaultToClipboard" style="padding:0.4rem 0.6rem;">Copy</button>
-                    </div>
-                    <div class="form-hint" style="color:#6b7280;font-size:0.9rem;">If left blank, a default password will be set automatically.</div>
+                      Copy Password
+                    </button>
                   </div>
+                  <div class="form-hint">This password will be assigned to the new staff member. They will be required to change it upon first login.</div>
+                </div>
+                
+                <!-- Loading state -->
+                <div v-if="fetchingDefaultPassword" class="password-loading">
+                  <span style="color:#6b7280; font-size:0.9rem;">Loading default password...</span>
                 </div>
               </div>
             </div>
@@ -755,26 +734,50 @@ export default {
     }
     ,
     async fetchDefaultPassword() {
+      // Only try to fetch default password for OWNER, ADMIN, or SUPER_ADMIN users
+      // Skip for other roles to avoid 403 errors
+      const userRole = window.userRole || '';
+      if (userRole !== 'OWNER' && userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN' && userRole !== 'SUPERADMIN') {
+        // Fallback to hardcoded default for display purposes
+        this.fetchedDefaultPassword = 'Chikintayo_123';
+        return;
+      }
+      
       if (this.fetchingDefaultPassword) return
       this.fetchingDefaultPassword = true
       try {
         const res = await axios.get('/api/admin/config/default-password', { withCredentials: true })
         if (res.data && res.data.success && res.data.default_password) {
           this.fetchedDefaultPassword = res.data.default_password
+        } else {
+          // Fallback to hardcoded default
+          this.fetchedDefaultPassword = 'Chikintayo_123'
         }
       } catch (e) {
-        // ignore if not allowed
-        this.fetchedDefaultPassword = null
+        // Fallback to hardcoded default on error - default password is optional feature
+        this.fetchedDefaultPassword = 'Chikintayo_123'
       } finally {
         this.fetchingDefaultPassword = false
       }
     },
 
     copyDefaultToClipboard() {
-      if (!this.defaultPasswordValue) return
+      const passwordToCopy = this.fetchedDefaultPassword || this.defaultPasswordValue
+      if (!passwordToCopy) return
       try {
-        navigator.clipboard?.writeText(this.defaultPasswordValue)
-      } catch (e) {}
+        navigator.clipboard?.writeText(passwordToCopy)
+        // Show visual feedback
+        alert('Password copied to clipboard: ' + passwordToCopy)
+      } catch (e) {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea')
+        textArea.value = passwordToCopy
+        document.body.appendChild(textArea)
+        textArea.select()
+        document.execCommand('copy')
+        document.body.removeChild(textArea)
+        alert('Password copied to clipboard: ' + passwordToCopy)
+      }
     },
 
     async refreshCsrfToken() {
@@ -1196,6 +1199,69 @@ select.form-input {
 
 .password-toggle svg {
   display: block;
+}
+
+/* Password Display Styles */
+.password-display-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.password-display-card {
+  background: linear-gradient(135deg, #fef3e2 0%, #fde8d4 100%);
+  border: 2px solid #ff9a56;
+  border-radius: 10px;
+  padding: 1.25rem;
+}
+
+.password-display-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #92400e;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.password-display-value {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.password-text {
+  font-family: 'Courier New', monospace;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+  background: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  letter-spacing: 1px;
+}
+
+.btn-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.password-display-card .form-hint {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: #92400e;
+}
+
+.password-loading {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem;
 }
 
 .changes-summary {

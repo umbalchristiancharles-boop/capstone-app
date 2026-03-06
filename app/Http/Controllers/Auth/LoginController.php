@@ -39,6 +39,11 @@ class LoginController extends Controller
             Session::put('user_name', $user->full_name);
 
             // Redirect based on role
+            if ($user->role === 'SUPER_ADMIN') {
+                return redirect()->route('superadmin.dashboard')
+                    ->with('success', 'Welcome back, Super Admin!');
+            }
+
             if ($user->role === 'ADMIN') {
                 return redirect()->route('admin.dashboard')
                     ->with('success', 'Welcome back, Admin!');

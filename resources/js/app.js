@@ -14,6 +14,7 @@ import ManagerLogisticsPanel from './components/ManagerLogisticsPanel.vue'
 import ManagerHRPanel from './components/ManagerHRPanel.vue'
 import ManagerHRStaffManagement from './components/ManagerHRStaffManagement.vue'
 import StaffCashierPanel from './components/StaffCashierPanel.vue'
+import SuperAdmin from './components/SuperAdmin.vue'
 import axios from 'axios'
 
 // GLOBAL CSS (body margin reset, etc.)
@@ -126,6 +127,10 @@ const router = createRouter({
     { path: '/login', component: adminlogin },
     { path: '/admin-login', component: adminlogin },
     { path: '/admin-panel', component: AdminPanel },
+    { path: '/super-admin-panel', component: SuperAdmin, meta: { requiresAuth: true } },
+{ path: '/super-admin/hr', component: () => import('./components/HRStaffManagement.vue'), meta: { requiresAuth: true } },
+    { path: '/super-admin/logistics', component: () => import('./components/LogisticsManager.vue'), meta: { requiresAuth: true } },
+    { path: '/super-admin/cashier', component: () => import('./components/Cashier.vue'), meta: { requiresAuth: true } },
     { path: '/manager-panel', component: AdminPanel, meta: { requiresAuth: true } },
     { path: '/manager/inventory', component: ManagerInventoryPanel, meta: { requiresAuth: true } },
     { path: '/manager/finance', component: ManagerFinancePanel, meta: { requiresAuth: true } },
@@ -277,7 +282,7 @@ router.afterEach(() => {
 
   // Refresh CSRF cookie after navigation to protected panels to avoid 419s
   try {
-    const protectedPaths = ['/admin-panel', '/manager-panel', '/staff-panel', '/hr-panel', '/admin', '/manager', '/staff', '/hr']
+    const protectedPaths = ['/admin-panel', '/manager-panel', '/staff-panel', '/hr-panel', '/admin', '/manager', '/staff', '/hr', '/super-admin']
     const toPath = window.location.pathname || ''
     if (protectedPaths.some(p => toPath.startsWith(p))) {
       // fetch fresh XSRF cookie and set axios header
@@ -317,7 +322,7 @@ router.beforeEach(async (to, from, next) => {
   }
 
   // Protected panel routes - require authentication
-  const protectedRoutes = ['/admin-panel', '/manager-panel', '/staff-panel', '/hr-panel', '/staff-management', '/owner/staff-management', '/admin/deleted-staff', '/manager/staff']
+  const protectedRoutes = ['/admin-panel', '/manager-panel', '/staff-panel', '/hr-panel', '/staff-management', '/owner/staff-management', '/admin/deleted-staff', '/manager/staff', '/super-admin']
   const isProtectedRoute = protectedRoutes.some(route => to.path.startsWith(route)) || to.meta.requiresAuth
 
   if (isProtectedRoute) {
@@ -380,6 +385,14 @@ router.beforeEach(async (to, from, next) => {
     // Admin panel - authenticated but not admin → redirect to unauthorized
     if (to.path === '/admin-panel') {
       if (user.role !== 'admin') {
+        return next('/unauthorized');
+      }
+    }
+
+    // Super Admin panel and sub-routes - authenticated but not superadmin → redirect to unauthorized
+    if (to.path === '/super-admin-panel' || to.path.startsWith('/super-admin/')) {
+      const userRoleUpper = (user.role || '').toUpperCase();
+      if (userRoleUpper !== 'SUPER_ADMIN' && userRoleUpper !== 'SUPERADMIN') {
         return next('/unauthorized');
       }
     }

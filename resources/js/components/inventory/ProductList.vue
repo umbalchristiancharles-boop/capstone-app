@@ -151,7 +151,7 @@ const props = defineProps({
   compact: { type: Boolean, default: false } // when true hide header/sidebar for embedding
 })
 
-const emit = defineEmits(['open-add', 'edit', 'delete'])
+const emit = defineEmits(['open-add', 'edit', 'delete', 'count', 'adjust'])
 
 const q = ref('')
 const stockFilter = ref('all')

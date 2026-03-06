@@ -156,6 +156,16 @@ async function handleLogin() {
         // Ensure the XSRF cookie is set for stateful authentication
         try {
             await axios.get("/sanctum/csrf-cookie", { withCredentials: true });
+            
+            // Get the XSRF token from cookie and set it as header
+            function getCookie(name) {
+                const match = document.cookie.match(new RegExp('(^|; )' + name + '=([^;]*)'));
+                return match ? match[2] : null;
+            }
+            const xsrfToken = getCookie('XSRF-TOKEN');
+            if (xsrfToken) {
+                axios.defaults.headers.common['X-XSRF-TOKEN'] = decodeURIComponent(xsrfToken);
+            }
         } catch (e) {
             // Ignore; some environments may not use Sanctum but we'll still attempt login
         }
@@ -329,6 +339,7 @@ function resolveRedirectPath(role, department) {
     if (r === "HR") return "/hr-panel";
     if (r === "OWNER") return "/owner-panel";
     if (r === "ADMIN") return "/admin-panel";
+    if (r === "SUPER_ADMIN" || r === "SUPERADMIN") return "/super-admin-panel";
 
     // Invalid role - return to login with error
     console.error('Invalid role detected in redirect:', role);

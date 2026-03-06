@@ -23,6 +23,18 @@ const routes = [
     component: () => import('../components/AdminPanel.vue'),
     meta: { requiresAuth: true }
   },
+{
+    path: '/super-admin-panel',
+    name: 'SuperAdminPanel',
+    component: () => import('../components/SuperAdmin.vue'),
+    meta: { requiresAuth: true, role: 'superadmin' }
+  },
+  {
+    path: '/super-admin/logistics',
+    name: 'SuperAdminLogistics',
+    component: () => import('../components/LogisticsManager.vue'),
+    meta: { requiresAuth: true, role: 'superadmin' }
+  },
   {
     path: '/owner-panel',
     name: 'OwnerPanel',
@@ -252,6 +264,17 @@ router.beforeEach((to, from, next) => {
       }
       console.log('[ROUTER] Staff check PASSED - allowing access');
       return next();
+    }
+
+    // Generic role check for roles not explicitly handled above (admin, superadmin, etc.)
+    // If requiredRole equals the current user's role, allow; otherwise deny.
+    if (requiredRole && requiredRole !== 'owner' && requiredRole !== 'manager' && requiredRole !== 'staff') {
+      if (userRole === requiredRole) {
+        console.log('[ROUTER] Generic role check PASSED - allowing access');
+        return next();
+      }
+      console.log('[ROUTER] Generic role check FAILED - redirecting to /unauthorized');
+      return next('/unauthorized');
     }
   }
 

@@ -1,0 +1,15 @@
+<template>
+  <div v-if="show" class="modal-backdrop" @click.self="closeModal">
+    <div class="modal">
+      <div class="modal-card">
+        <form @submit.prevent="submitForm">
+          ...original content backed up for debugging...
+        </form>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+// backup only
+</script>

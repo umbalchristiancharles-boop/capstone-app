@@ -13,8 +13,10 @@ class Product extends Model
         'slug',
         'price',
         'stock',
+        'min_stock',
         'sku',
         'branch_id',
+        'is_active',
     ];
 
     public function comments(): HasMany

@@ -178,10 +178,10 @@ class StaffController extends Controller
 
             Log::info('Branches with staff count:', ['count' => count($result)]);
 
-            // Additionally include OWNER accounts (they are not tied to branches).
-            // Only show OWNERs to ADMIN or OWNER users.
+        // Additionally include OWNER accounts (they are not tied to branches).
+            // Only show OWNERs to ADMIN, OWNER, or SUPER_ADMIN users.
             try {
-                if (in_array($user->role, ['OWNER', 'ADMIN'])) {
+                if (in_array($user->role, ['OWNER', 'ADMIN', 'SUPER_ADMIN', 'SUPERADMIN'])) {
                     $owners = DB::table('users')
                         ->where('role', 'OWNER')
                         ->where('is_active', 1)
@@ -316,7 +316,7 @@ class StaffController extends Controller
             return response()->json(['success' => false, 'message' => 'Not authenticated'], 401);
         }
 
-        // Only allow OWNER/ADMIN to reset any account. Branch managers / HR may reset within their branch.
+        // Only allow OWNER/ADMIN/SUPER_ADMIN to reset any account. Branch managers / HR may reset within their branch.
         $target = User::find($id);
         if (! $target) {
             return response()->json(['success' => false, 'message' => 'User not found'], 404);
@@ -327,7 +327,7 @@ class StaffController extends Controller
             if (! $user->branch_id || $user->branch_id != $target->branch_id) {
                 return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
             }
-        } elseif (! in_array($user->role, ['OWNER', 'ADMIN'])) {
+        } elseif (! in_array($user->role, ['OWNER', 'ADMIN', 'SUPER_ADMIN', 'SUPERADMIN'])) {
             return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
         }
 
@@ -368,8 +368,8 @@ class StaffController extends Controller
         ]);
         try {
             $allowedRoles = [];
-            if (in_array($user->role, ['OWNER', 'ADMIN'])) {
-                // Allow owners/admins to create owner, branch managers, HR, and staff accounts
+            if (in_array($user->role, ['OWNER', 'ADMIN', 'SUPER_ADMIN', 'SUPERADMIN'])) {
+                // Allow owners/admins/superadmins to create owner, branch managers, HR, and staff accounts
                 $allowedRoles = ['OWNER', 'BRANCH_MANAGER', 'MANAGER', 'HR', 'STAFF'];
             } elseif ($user->role === 'BRANCH_MANAGER') {
                 $allowedRoles = ['HR', 'STAFF'];
@@ -620,8 +620,8 @@ class StaffController extends Controller
                 // make them nullable here and enforce requirement after normalization
                 'branchId' => 'nullable|exists:branches,id',
                 'branch_id' => 'nullable|exists:branches,id',
-                // allow OWNER as well so admin/owner accounts can be edited here
-                'role' => 'required|in:BRANCH_MANAGER,MANAGER,STAFF,HR,OWNER',
+                // allow OWNER, ADMIN, and SUPER_ADMIN as well so these accounts can be edited here
+                'role' => 'required|in:BRANCH_MANAGER,MANAGER,STAFF,HR,OWNER,SUPER_ADMIN,SUPERADMIN',
                 'isActive' => 'required|boolean',
             ]);
 
