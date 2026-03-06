@@ -84,6 +84,10 @@ Route::post('/superadmin/announce', [\App\Http\Controllers\Api\SuperAdminControl
     Route::delete('/superadmin/logistics/products/{id}', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsDestroyProduct']);
     Route::get('/superadmin/logistics/branches', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsBranches']);
 
+    // SuperAdmin Branch Management
+    Route::get('/superadmin/branches', [\App\Http\Controllers\Api\SuperAdminController::class, 'branchesWithAccounts']);
+    Route::post('/superadmin/branches', [\App\Http\Controllers\Api\SuperAdminController::class, 'storeBranch']);
+
     // ==========================================
     // SUPERADMIN CASHIER
     // ==========================================
@@ -104,6 +108,7 @@ Route::post('/superadmin/announce', [\App\Http\Controllers\Api\SuperAdminControl
         Route::post('/staff',           [StaffController::class, 'apiStore']);
         Route::put('/staff/{id}',       [StaffController::class, 'apiUpdate']);
         Route::delete('/staff/{id}',    [StaffController::class, 'apiDestroy']);
+        Route::post('/staff/{id}/reset-password', [StaffController::class, 'resetPassword']);
         Route::get('/branches',         [StaffController::class, 'apiBranches']);
         Route::get('/attendance', [\App\Http\Controllers\Admin\AttendanceController::class, 'index']);
 

@@ -48,6 +48,15 @@ Route::get('/super-admin-panel', function () {
         ->header('Expires', '0');
 })->name('superadmin.dashboard')->middleware(['web', 'auth']);
 
+// Owner Add Branches page
+Route::get('/owner/add-branches', function () {
+    return response()
+        ->view('dashboard')
+        ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        ->header('Pragma', 'no-cache')
+        ->header('Expires', '0');
+})->name('owner.add-branches')->middleware(['web', 'auth']);
+
 Route::get('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // ==========================================

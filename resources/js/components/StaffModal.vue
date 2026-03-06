@@ -180,6 +180,18 @@
                 </button>
               </div>
             </div>
+
+            <!-- Reset Password to Default (Edit mode) -->
+            <div class="form-group full-span" v-if="isEdit">
+              <div class="reset-password-section">
+                <button type="button" class="btn btn-reset-default" @click="resetPasswordToDefault" :disabled="isResetting">
+                  {{ isResetting ? 'Resetting...' : '🔑 Reset Password to Default' }}
+                </button>
+                <span class="reset-hint">Resets password to the system default. Staff will need to change it on next login.</span>
+                <div v-if="resetSuccessMsg" class="reset-success">{{ resetSuccessMsg }}</div>
+                <div v-if="resetErrorMsg" class="reset-error">{{ resetErrorMsg }}</div>
+              </div>
+            </div>
           </div>
 
           <!-- Documents (Create Only) -->
@@ -369,6 +381,8 @@ export default {
       successMessage: '',
       isSubmitting: false,
       isResetting: false,
+      resetSuccessMsg: '',
+      resetErrorMsg: '',
       provinces: [],
       cities: [],
       barangays: [],
@@ -729,7 +743,29 @@ export default {
     closeModal() {
       this.errorMessage = ''
       this.documentFiles = {}
+      this.resetSuccessMsg = ''
+      this.resetErrorMsg = ''
       this.$emit('close')
+    },
+
+    async resetPasswordToDefault() {
+      if (!this.staff || !this.staff.id) return
+      if (!confirm('Reset this staff member\'s password to the system default?')) return
+      this.isResetting = true
+      this.resetSuccessMsg = ''
+      this.resetErrorMsg = ''
+      try {
+        const res = await axios.post(`/api/admin/staff/${this.staff.id}/reset-password`, {}, { withCredentials: true })
+        if (res.data && res.data.success) {
+          this.resetSuccessMsg = 'Password reset to default: ' + (res.data.defaultPassword || 'Chikintayo_123')
+        } else {
+          this.resetErrorMsg = res.data?.message || 'Failed to reset password.'
+        }
+      } catch (e) {
+        this.resetErrorMsg = e?.response?.data?.message || 'Failed to reset password.'
+      } finally {
+        this.isResetting = false
+      }
     }
     ,
     async fetchDefaultPassword() {
@@ -1285,6 +1321,63 @@ select.form-input {
     gap: 1rem;
     padding: 1rem;
   }
+}
+
+.reset-password-section {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+}
+
+.btn-reset-default {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-reset-default:hover {
+  background: #b91c1c;
+}
+
+.btn-reset-default:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.reset-hint {
+  font-size: 0.8rem;
+  color: #92400e;
+}
+
+.reset-success {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  border-radius: 6px;
+  color: #166534;
+  font-size: 0.85rem;
+}
+
+.reset-error {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  color: #dc2626;
+  font-size: 0.85rem;
 }
 </style>
   

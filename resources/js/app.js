@@ -131,6 +131,7 @@ const router = createRouter({
 { path: '/super-admin/hr', component: () => import('./components/HRStaffManagement.vue'), meta: { requiresAuth: true } },
     { path: '/super-admin/logistics', component: () => import('./components/LogisticsManager.vue'), meta: { requiresAuth: true } },
     { path: '/super-admin/cashier', component: () => import('./components/Cashier.vue'), meta: { requiresAuth: true } },
+    { path: '/owner/add-branches', component: () => import('./components/OwnerAddBranches.vue'), meta: { requiresAuth: true } },
     { path: '/manager-panel', component: AdminPanel, meta: { requiresAuth: true } },
     { path: '/manager/inventory', component: ManagerInventoryPanel, meta: { requiresAuth: true } },
     { path: '/manager/finance', component: ManagerFinancePanel, meta: { requiresAuth: true } },
@@ -375,9 +376,9 @@ router.beforeEach(async (to, from, next) => {
       }
     }
 
-    // Owner panel - authenticated but not owner → redirect to unauthorized
+    // Owner panel - allow OWNER users and also SUPER_ADMIN users to access owner routes
     if (to.path.startsWith('/owner-panel') || to.path.startsWith('/owner/')) {
-      if (user.role !== 'owner') {
+      if (!(user.role === 'owner' || user.role === 'super_admin' || user.role === 'superadmin')) {
         return next('/unauthorized');
       }
     }

@@ -639,5 +639,186 @@ class SuperAdminController extends Controller
 
         return response()->json($branches);
     }
+
+    /**
+     * Get all branches with their default Admin and HR Manager accounts.
+     */
+    public function branchesWithAccounts(Request $request)
+    {
+        $user = $this->resolveAuthenticatedUser($request);
+
+        if (!$user) {
+            return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
+        }
+
+        $roleUpper = strtoupper($user->role ?? '');
+        if (!in_array($roleUpper, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER'])) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $branches = Branch::orderBy('name', 'asc')->get();
+
+        $result = $branches->map(function ($branch) {
+            $adminUser = User::where('branch_id', $branch->id)
+                ->where('role', 'ADMIN')
+                ->whereNull('deleted_at')
+                ->first();
+
+            $hrManager = User::where('branch_id', $branch->id)
+                ->where('role', 'MANAGER')
+                ->where('department', 'HR')
+                ->whereNull('deleted_at')
+                ->first();
+
+            $staffCount = User::where('branch_id', $branch->id)
+                ->whereNull('deleted_at')
+                ->count();
+
+            return [
+                'id' => $branch->id,
+                'code' => $branch->code,
+                'name' => $branch->name,
+                'address' => $branch->address,
+                'is_active' => (bool) $branch->is_active,
+                'staff_count' => $staffCount,
+                'admin_user' => $adminUser ? [
+                    'id' => $adminUser->id,
+                    'username' => $adminUser->username,
+                    'email' => $adminUser->email,
+                    'is_active' => (bool) $adminUser->is_active,
+                ] : null,
+                'hr_manager' => $hrManager ? [
+                    'id' => $hrManager->id,
+                    'username' => $hrManager->username,
+                    'email' => $hrManager->email,
+                    'is_active' => (bool) $hrManager->is_active,
+                ] : null,
+            ];
+        });
+
+        return response()->json(['ok' => true, 'branches' => $result]);
+    }
+
+    /**
+     * Create a new branch with default Admin and HR Manager accounts.
+     */
+    public function storeBranch(Request $request)
+    {
+        $user = $this->resolveAuthenticatedUser($request);
+
+        if (!$user) {
+            return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
+        }
+
+        $roleUpper = strtoupper($user->role ?? '');
+        if (!in_array($roleUpper, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER'])) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'code' => 'nullable|string|max:20',
+            'name' => 'required|string|max:100',
+            'address' => 'nullable|string|max:255',
+        ]);
+
+        $code = $request->input('code');
+        $name = $request->input('name');
+        $address = $request->input('address');
+
+        $defaultPassword = config('chikintayo.default_password', 'Chikintayo_123');
+
+        // If no code provided, auto-generate from name. Ensure uniqueness.
+        if (empty($code)) {
+            $base = preg_replace('/[^A-Za-z0-9]/', '', strtolower($name));
+            $base = substr($base, 0, 8);
+            if (empty($base)) {
+                $base = 'br' . substr(time(), -6);
+            }
+            $candidate = strtoupper($base);
+            $suffix = 0;
+            while (DB::table('branches')->where('code', $candidate)->exists()) {
+                $suffix++;
+                $candidate = strtoupper($base) . '_' . $suffix;
+                if ($suffix > 999) break;
+            }
+            $code = $candidate;
+        }
+
+        $codeSlug = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $code));
+
+        DB::beginTransaction();
+        try {
+            // Create the branch
+            $branch = Branch::create([
+                'code' => $code,
+                'name' => $name,
+                'address' => $address,
+                'is_active' => 1,
+            ]);
+
+            // Create default ADMIN account for this branch
+            $adminUsername = 'admin_' . $codeSlug;
+            $adminEmail = 'admin_' . $codeSlug . '@chikintayo.com';
+
+            // Check if username/email already exists
+            if (User::where('username', $adminUsername)->exists()) {
+                $adminUsername = 'admin_' . $codeSlug . '_' . $branch->id;
+            }
+            if (User::where('email', $adminEmail)->exists()) {
+                $adminEmail = 'admin_' . $codeSlug . '_' . $branch->id . '@chikintayo.com';
+            }
+
+            User::create([
+                'username' => $adminUsername,
+                'email' => $adminEmail,
+                'password' => Hash::make($defaultPassword),
+                'full_name' => 'Admin - ' . $name,
+                'role' => 'ADMIN',
+                'department' => null,
+                'branch_id' => $branch->id,
+                'is_active' => 1,
+                'must_change_password' => 1,
+            ]);
+
+            // Create default HR Manager account for this branch
+            $hrUsername = 'hr_' . $codeSlug;
+            $hrEmail = 'hr_' . $codeSlug . '@chikintayo.com';
+
+            if (User::where('username', $hrUsername)->exists()) {
+                $hrUsername = 'hr_' . $codeSlug . '_' . $branch->id;
+            }
+            if (User::where('email', $hrEmail)->exists()) {
+                $hrEmail = 'hr_' . $codeSlug . '_' . $branch->id . '@chikintayo.com';
+            }
+
+            User::create([
+                'username' => $hrUsername,
+                'email' => $hrEmail,
+                'password' => Hash::make($defaultPassword),
+                'full_name' => 'HR Manager - ' . $name,
+                'role' => 'MANAGER',
+                'department' => 'HR',
+                'branch_id' => $branch->id,
+                'is_active' => 1,
+                'must_change_password' => 1,
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'ok' => true,
+                'message' => "Branch '{$name}' created with default Admin and HR Manager accounts.",
+                'branch_id' => $branch->id,
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('storeBranch error: ' . $e->getMessage());
+            return response()->json([
+                'ok' => false,
+                'message' => 'Failed to create branch: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 }
 

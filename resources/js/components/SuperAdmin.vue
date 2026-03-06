@@ -100,6 +100,9 @@
               </div>
 
               <div class="admin-actions-row">
+                <button class="staff-btn staff-btn--center" @click="ownerAddBranches">OwnerAddBranches</button>
+              </div>
+              <div class="admin-actions-row">
                 <button class="primary-action-btn" @click="showAnnouncement = true">📢 Send Announcement</button>
                 <button class="secondary-action-btn" @click="showTerms = true">📄 Update Terms</button>
               </div>
@@ -350,12 +353,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import '../css/adminpanel.css'
 
 const router = useRouter()
+const route = useRoute()
 
 // Profile state
 const superAdminProfile = ref({
@@ -562,6 +566,11 @@ function openModule(name) {
   }
 }
 
+function ownerAddBranches() {
+  // Navigate to the owner add branches page (route should exist or be implemented separately)
+  router.push('/owner/add-branches')
+}
+
 async function sendAnnouncement() {
   if (!announcementTitle.value.trim() || !announcementText.value.trim()) {
     announcementError.value = 'Please enter a title and message.'
@@ -645,6 +654,16 @@ onMounted(async () => {
   superAdminProfile.value = { fullName: '', role: 'SUPER_ADMIN', email: '', contact: '', accountId: '', avatarUrl: '' }
   await loadProfile()
   await loadDashboard(activeRange.value)
+})
+
+// Reload dashboard whenever we navigate to this route so external changes (like added branches)
+// are reflected immediately without requiring a manual refresh.
+watch(() => route.path, (p) => {
+  try {
+    if (p === '/super-admin-panel') {
+      loadDashboard(activeRange.value)
+    }
+  } catch (e) {}
 })
 </script>
 

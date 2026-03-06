@@ -77,8 +77,8 @@ class StaffController extends Controller
             $branchesQuery = DB::table('branches')
                 ->where('is_active', 1);
 
-            // If branch manager or HR, only show their branch
-            if (in_array($user->role, ['BRANCH_MANAGER', 'MANAGER', 'HR'])) {
+            // If branch manager, HR, or ADMIN, only show their branch
+            if (in_array($user->role, ['BRANCH_MANAGER', 'MANAGER', 'HR', 'ADMIN'])) {
                 $branchesQuery->where('branches.id', $user->branch_id);
             }
 
@@ -181,7 +181,7 @@ class StaffController extends Controller
         // Additionally include OWNER accounts (they are not tied to branches).
             // Only show OWNERs to ADMIN, OWNER, or SUPER_ADMIN users.
             try {
-                if (in_array($user->role, ['OWNER', 'ADMIN', 'SUPER_ADMIN', 'SUPERADMIN'])) {
+                if (in_array($user->role, ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN'])) {
                     $owners = DB::table('users')
                         ->where('role', 'OWNER')
                         ->where('is_active', 1)
@@ -270,7 +270,7 @@ class StaffController extends Controller
             ], 404);
         }
 
-        if ($user && $user->role === 'HR' && $user->branch_id && $staff->branch_id !== $user->branch_id) {
+        if ($user && in_array($user->role, ['HR', 'ADMIN']) && $user->branch_id && $staff->branch_id !== $user->branch_id) {
             return response()->json([
                 'success' => false,
                 'message' => 'Forbidden'
@@ -368,9 +368,12 @@ class StaffController extends Controller
         ]);
         try {
             $allowedRoles = [];
-            if (in_array($user->role, ['OWNER', 'ADMIN', 'SUPER_ADMIN', 'SUPERADMIN'])) {
-                // Allow owners/admins/superadmins to create owner, branch managers, HR, and staff accounts
+            if (in_array($user->role, ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN'])) {
+                // Allow owners/superadmins to create owner, branch managers, HR, and staff accounts
                 $allowedRoles = ['OWNER', 'BRANCH_MANAGER', 'MANAGER', 'HR', 'STAFF'];
+            } elseif ($user->role === 'ADMIN') {
+                // ADMIN is per-branch, can create branch-level staff only
+                $allowedRoles = ['BRANCH_MANAGER', 'MANAGER', 'HR', 'STAFF'];
             } elseif ($user->role === 'BRANCH_MANAGER') {
                 $allowedRoles = ['HR', 'STAFF'];
             } else {
@@ -469,7 +472,7 @@ class StaffController extends Controller
                 }
             }
 
-            if ($user->role === 'HR' && $user->branch_id && $branchId && (int) $branchId !== (int) $user->branch_id) {
+            if (in_array($user->role, ['HR', 'ADMIN']) && $user->branch_id && $branchId && (int) $branchId !== (int) $user->branch_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Forbidden'
@@ -621,7 +624,7 @@ class StaffController extends Controller
                 'branchId' => 'nullable|exists:branches,id',
                 'branch_id' => 'nullable|exists:branches,id',
                 // allow OWNER, ADMIN, and SUPER_ADMIN as well so these accounts can be edited here
-                'role' => 'required|in:BRANCH_MANAGER,MANAGER,STAFF,HR,OWNER,SUPER_ADMIN,SUPERADMIN',
+                'role' => 'required|in:BRANCH_MANAGER,MANAGER,STAFF,HR,OWNER,ADMIN,SUPER_ADMIN,SUPERADMIN',
                 'isActive' => 'required|boolean',
             ]);
 
@@ -661,7 +664,7 @@ class StaffController extends Controller
                 ], 422);
             }
 
-            if ($user->role === 'HR' && $user->branch_id && (int) $branchId !== (int) $user->branch_id) {
+            if (in_array($user->role, ['HR', 'ADMIN']) && $user->branch_id && (int) $branchId !== (int) $user->branch_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Forbidden'
@@ -686,7 +689,7 @@ class StaffController extends Controller
                 }
             }
 
-            if ($user->role === 'HR' && $user->branch_id && $staff->branch_id !== $user->branch_id) {
+            if (in_array($user->role, ['HR', 'ADMIN']) && $user->branch_id && $staff->branch_id !== $user->branch_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Forbidden'
@@ -773,7 +776,7 @@ class StaffController extends Controller
 
 
 
-            if ($actor->role === 'HR' && $actor->branch_id && $user->branch_id !== $actor->branch_id) {
+            if (in_array($actor->role, ['HR', 'ADMIN']) && $actor->branch_id && $user->branch_id !== $actor->branch_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Forbidden'
@@ -812,7 +815,7 @@ class StaffController extends Controller
                 ->select('id', 'name', 'code', 'address')
                 ->orderBy('name');
 
-            if ($actor && $actor->role === 'HR' && $actor->branch_id) {
+            if ($actor && in_array($actor->role, ['HR', 'ADMIN']) && $actor->branch_id) {
                 $branchesQuery->where('id', $actor->branch_id);
             }
 
