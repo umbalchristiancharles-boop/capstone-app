@@ -87,6 +87,8 @@ Route::post('/superadmin/announce', [\App\Http\Controllers\Api\SuperAdminControl
     // SuperAdmin Branch Management
     Route::get('/superadmin/branches', [\App\Http\Controllers\Api\SuperAdminController::class, 'branchesWithAccounts']);
     Route::post('/superadmin/branches', [\App\Http\Controllers\Api\SuperAdminController::class, 'storeBranch']);
+    // Delete a branch (soft-delete branch and associated user accounts)
+    Route::delete('/superadmin/branches/{id}', [\App\Http\Controllers\Api\SuperAdminController::class, 'deleteBranch']);
 
     // ==========================================
     // SUPERADMIN CASHIER

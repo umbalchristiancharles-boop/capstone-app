@@ -1,12 +1,12 @@
 <template>
   <div class="staff-management-page">
-    <!-- Back to Super Admin -->
-    <button @click="router.push('/super-admin-panel')" class="btn-secondary back-to-dashboard-btn">
+    <!-- Back button: goes to Owner or Super Admin depending on role -->
+    <button @click="handleBack" class="btn-secondary back-to-dashboard-btn">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="back-icon">
         <line x1="19" y1="12" x2="5" y2="12"></line>
         <polyline points="12 19 5 12 12 5"></polyline>
       </svg>
-      Back to Super Admin
+      {{ backLabel }}
     </button>
 
     <!-- Header -->
@@ -17,8 +17,7 @@
         <button @click="openAddBranchForm" class="btn-success">+ Add Branch</button>
       </div>
     </div>
-
-    <!-- Add Branch Modal -->
+    
     <div v-if="showAddBranchForm" class="modal-backdrop" @click.self="closeAddBranch">
       <div class="modal">
         <div class="modal-card">
@@ -53,14 +52,24 @@
                   <span class="account-role-badge admin-badge">ADMIN</span>
                   <div class="account-details">
                     <span>Username: <strong>admin_{{ branchForm.code ? branchForm.code.toLowerCase() : 'branchcode' }}</strong></span>
-                    <span>Password: <strong>{{ defaultPassword }}</strong></span>
+                    <span>
+                      Password: <strong>{{ showPassword ? defaultPassword : maskedPassword }}</strong>
+                      <button type="button" class="btn btn-secondary" style="margin-left:8px; padding:4px 8px; font-size:0.78rem;" @click="toggleShowPassword">
+                        {{ showPassword ? 'Hide' : 'Show' }}
+                      </button>
+                    </span>
                   </div>
                 </div>
                 <div class="default-account-item">
                   <span class="account-role-badge hr-badge">HR MANAGER</span>
                   <div class="account-details">
                     <span>Username: <strong>hr_{{ branchForm.code ? branchForm.code.toLowerCase() : 'branchcode' }}</strong></span>
-                    <span>Password: <strong>{{ defaultPassword }}</strong></span>
+                    <span>
+                      Password: <strong>{{ showPassword ? defaultPassword : maskedPassword }}</strong>
+                      <button type="button" class="btn btn-secondary" style="margin-left:8px; padding:4px 8px; font-size:0.78rem;" @click="toggleShowPassword">
+                        {{ showPassword ? 'Hide' : 'Show' }}
+                      </button>
+                    </span>
                   </div>
                 </div>
               </div>
@@ -110,6 +119,7 @@
                 <th>HR Manager Account</th>
                 <th>Status</th>
                 <th>Staff Count</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -139,6 +149,11 @@
                   </span>
                 </td>
                 <td>{{ branch.staff_count || 0 }}</td>
+                <td>
+                  <button class="btn btn-secondary" @click="confirmDeleteBranch(branch)" :disabled="isDeleting">
+                    Delete
+                  </button>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -154,18 +169,58 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import '../css/adminpanel.css'
 
 const router = useRouter()
 
+const backTarget = computed(() => {
+  try {
+    const u = JSON.parse(localStorage.getItem('user') || 'null')
+    const role = (u && u.role) ? String(u.role).toLowerCase() : ''
+    if (role === 'owner') return '/owner-panel'
+    if (role === 'super_admin' || role === 'superadmin') return '/super-admin-panel'
+  } catch (e) {}
+  return '/owner-panel'
+})
+
+const backLabel = computed(() => {
+  try {
+    const u = JSON.parse(localStorage.getItem('user') || 'null')
+    const role = (u && u.role) ? String(u.role).toLowerCase() : ''
+    if (role === 'owner') return 'Back to Owner'
+    if (role === 'super_admin' || role === 'superadmin') return 'Back to Super Admin'
+  } catch (e) {}
+  return 'Back'
+})
+
+function handleBack() {
+  try {
+    window.location.href = backTarget.value
+  } catch (e) {
+    try { router.push(backTarget.value) } catch (_) {}
+  }
+}
+
 // State
 const loading = ref(false)
 const errorMessage = ref('')
 const branches = ref([])
 const defaultPassword = ref('Chikintayo_123')
+
+// Show/hide password toggle for default password preview
+const showPassword = ref(false)
+const maskedPassword = computed(() => {
+  try {
+    return '*'.repeat(Math.max(6, (defaultPassword.value || '').length))
+  } catch (e) { return '******' }
+})
+
+function toggleShowPassword() {
+  showPassword.value = !showPassword.value
+}
 
 // Add Branch Form
 const showAddBranchForm = ref(false)
@@ -177,6 +232,38 @@ const branchForm = ref({
   name: '',
   address: ''
 })
+
+const isDeleting = ref(false)
+
+async function confirmDeleteBranch(branch) {
+  try {
+    const count = branch.staff_count || 0
+    const ok = confirm(`Delete branch "${branch.name}" and all ${count} account(s) in it? This will permanently delete those accounts and the branch from the database. This cannot be undone.`)
+    if (!ok) return
+    await deleteBranch(branch.id)
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+async function deleteBranch(branchId) {
+  isDeleting.value = true
+  try {
+    await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
+    const res = await axios.delete(`/api/superadmin/branches/${branchId}`, { withCredentials: true })
+    if (res.data && res.data.ok) {
+      formSuccess.value = res.data.message || 'Branch deleted.'
+      await loadBranches()
+      setTimeout(() => { formSuccess.value = '' }, 2000)
+    } else {
+      formError.value = res.data?.message || 'Failed to delete branch.'
+    }
+  } catch (e) {
+    formError.value = e.response?.data?.message || 'Failed to delete branch.'
+  } finally {
+    isDeleting.value = false
+  }
+}
 
 async function loadBranches() {
   loading.value = true
@@ -199,7 +286,15 @@ async function loadBranches() {
 }
 
 async function loadDefaultPassword() {
+  // Only owners or admins are allowed to fetch this value from the server.
   try {
+    const u = JSON.parse(localStorage.getItem('user') || 'null')
+    const role = (u && u.role) ? String(u.role).toLowerCase() : ''
+    if (!['owner', 'admin'].includes(role)) {
+      // Skip fetching for other roles (e.g. superadmin) to avoid 403 responses
+      return
+    }
+
     const res = await axios.get('/api/admin/config/default-password', { withCredentials: true })
     if (res.data && res.data.success && res.data.default_password) {
       defaultPassword.value = res.data.default_password

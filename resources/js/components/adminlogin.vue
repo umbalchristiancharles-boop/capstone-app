@@ -33,15 +33,22 @@
 
                 <div class="field-group">
                     <label for="password">Password</label>
-                    <input
-                        id="password"
-                        v-model="password"
-                        type="password"
-                        name="password"
-                        autocomplete="current-password"
-                        placeholder="Enter password"
-                        required
-                    />
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <input
+                            id="password"
+                            v-model="password"
+                            :type="showPassword ? 'text' : 'password'"
+                            name="password"
+                            autocomplete="current-password"
+                            placeholder="Enter password"
+                            required
+                            style="flex:1; width:100%;"
+                        />
+                        <button type="button" class="btn btn-secondary" @click="toggleShowPassword" :aria-pressed="showPassword" :title="showPassword ? 'Hide password' : 'Show password'" style="display:flex; align-items:center; justify-content:center; padding:6px 8px; width:40px;">
+                            <svg v-if="!showPassword" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                            <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.79 21.79 0 0 1 5.06-6.94"></path><path d="M1 1l22 22"></path><path d="M9.88 9.88A3 3 0 0 0 14.12 14.12"></path></svg>
+                        </button>
+                    </div>
                 </div>
 
                 <button class="login-btn" type="submit" :disabled="isLoading">
@@ -110,6 +117,7 @@ const router = useRouter();
 
 const username = ref("");
 const password = ref("");
+const showPassword = ref(false)
 const isLoading = ref(false);
 const showOverlay = ref(false);
 const overlayText = ref("Loading Admin Panel...");
@@ -373,6 +381,10 @@ async function handleForceCancel() {
 onMounted(() => {
     // Skip /api/me check on the login page to avoid 401 noise in the console.
 });
+
+function toggleShowPassword() {
+    showPassword.value = !showPassword.value
+}
 </script>
 
 <style scoped>

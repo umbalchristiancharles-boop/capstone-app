@@ -820,5 +820,48 @@ class SuperAdminController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Delete a branch and associated user accounts (soft-delete).
+     */
+    public function deleteBranch(Request $request, $id)
+    {
+        $user = $this->resolveAuthenticatedUser($request);
+
+        if (!$user) {
+            return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
+        }
+
+        $roleUpper = strtoupper($user->role ?? '');
+        if (!in_array($roleUpper, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER'])) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $branch = Branch::find($id);
+        if (!$branch) {
+            return response()->json(['ok' => false, 'message' => 'Branch not found'], 404);
+        }
+
+        DB::beginTransaction();
+        try {
+            // Permanently delete all users belonging to this branch (admins, hr managers, staff)
+            // Include already soft-deleted users and force delete them from the database
+            User::withTrashed()->where('branch_id', $branch->id)->forceDelete();
+
+            // Soft-delete the branch itself
+            $branch->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'ok' => true,
+                'message' => "Branch '{$branch->name}' and its accounts were permanently deleted.",
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('deleteBranch error: ' . $e->getMessage());
+            return response()->json(['ok' => false, 'message' => 'Failed to delete branch: ' . $e->getMessage()], 500);
+        }
+    }
 }
 

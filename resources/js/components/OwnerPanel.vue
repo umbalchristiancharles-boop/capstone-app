@@ -102,6 +102,14 @@
                   >
                     Staff Management
                   </button>
+                  <button
+                    class="staff-btn staff-btn--center"
+                    v-if="ownerProfile.role === 'OWNER'"
+                    @click="goToBranchManagement()"
+                    style="margin-top:8px;"
+                  >
+                    + Add Branch
+                  </button>
                   <button class="logout-btn logout-btn--center" @click="showLogoutConfirm = true">Logout</button>
                 </div>
               </div>
@@ -639,6 +647,14 @@ function goToStaffManagement() {
     window.location.href = '/owner/staff-management'
   } catch (e) {
     try { router.push('/owner/staff-management') } catch (_) {}
+  }
+}
+
+function goToBranchManagement() {
+  try {
+    window.location.href = '/owner/add-branches'
+  } catch (e) {
+    try { router.push('/owner/add-branches') } catch (_) {}
   }
 }
 </script>

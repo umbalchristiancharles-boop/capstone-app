@@ -34,7 +34,6 @@
           <option v-for="d in availableDepartments" :key="d" :value="d">{{ d }}</option>
         </select>
         <button @click="refreshStaff" class="btn-primary">Refresh</button>
-        <button @click="openAddStaffModal()" class="btn-success">+ Add Staff</button>
       </div>
     </div>
 
@@ -108,13 +107,7 @@
                   >
                     Edit
                   </button>
-                  <button
-                    @click="toggleStatus(member)"
-                    :class="['btn-sm', member.is_active ? 'btn-danger' : 'btn-success']"
-                    :title="member.is_active ? 'Deactivate' : 'Activate'"
-                  >
-                    {{ member.is_active ? 'Deactivate' : 'Activate' }}
-                  </button>
+                  
                 </td>
               </tr>
             </tbody>
