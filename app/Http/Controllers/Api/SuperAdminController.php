@@ -771,7 +771,7 @@ class SuperAdminController extends Controller
             User::create([
                 'username' => $adminUsername,
                 'email' => $adminEmail,
-                'password' => Hash::make($defaultPassword),
+                'password' => $defaultPassword, // Mutator will hash this automatically
                 'full_name' => 'Admin - ' . $name,
                 'role' => 'ADMIN',
                 'department' => null,
@@ -794,7 +794,7 @@ class SuperAdminController extends Controller
             User::create([
                 'username' => $hrUsername,
                 'email' => $hrEmail,
-                'password' => Hash::make($defaultPassword),
+                'password' => $defaultPassword, // Mutator will hash this automatically
                 'full_name' => 'HR Manager - ' . $name,
                 'role' => 'MANAGER',
                 'department' => 'HR',

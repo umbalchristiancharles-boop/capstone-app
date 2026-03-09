@@ -6,12 +6,12 @@
         <line x1="19" y1="12" x2="5" y2="12"></line>
         <polyline points="12 19 5 12 12 5"></polyline>
       </svg>
-      Back to HR Dashboard
+      Back to HR Panel
     </button>
 
     <!-- Header -->
     <div class="staff-header">
-      <h1 class="manager-hr-title">Staff Management</h1>
+      <h1 class="owner-staff-title">HR Staff Management</h1>
       <div class="header-actions">
         <input
           v-model="searchQuery"
@@ -19,6 +19,16 @@
           placeholder="Search staff..."
           class="search-input"
         >
+        
+        <select v-model="roleFilter" class="filter-select">
+          <option value="">All Roles</option>
+          <option v-for="r in availableRoles" :key="r" :value="r">{{ r }}</option>
+        </select>
+
+        <select v-model="departmentFilter" class="filter-select">
+          <option value="">All Departments</option>
+          <option v-for="d in availableDepartments" :key="d" :value="d">{{ d }}</option>
+        </select>
         <button @click="refreshStaff" class="btn-primary">Refresh</button>
         <button @click="openAddStaffModal()" class="btn-success">+ Add Staff</button>
       </div>
@@ -35,11 +45,13 @@
     </div>
 
     <!-- Summary -->
-    <div v-if="!loading && staffList.length > 0" class="summary-card">
-      <h3 class="manager-hr-total">Total Staff Members: {{ filteredStaff.length }}</h3>
+    <div v-if="!loading && filteredStaff.length > 0" class="summary-card">
+      <h3 class="owner-staff-total">Total Staff Members: {{ filteredStaff.length }}</h3>
+      <p class="branch-info" v-if="hrBranchName">Branch: {{ hrBranchName }}</p>
     </div>
-    <div v-if="!loading && staffList.length === 0" class="summary-card">
-      <h3 class="manager-hr-total">Total Staff Members: 0</h3>
+    <div v-if="!loading && filteredStaff.length === 0" class="summary-card">
+      <h3 class="owner-staff-total">Total Staff Members: 0</h3>
+      <p class="branch-info" v-if="hrBranchName">Branch: {{ hrBranchName }}</p>
     </div>
 
     <!-- Staff Table -->
@@ -48,6 +60,7 @@
         <thead>
           <tr>
             <th>Name</th>
+            <th>Role</th>
             <th>Department</th>
             <th>Username</th>
             <th>Email</th>
@@ -65,7 +78,8 @@
                 <strong>{{ member.full_name || member.username }}</strong>
               </div>
             </td>
-            <td>{{ member.department || '-' }}</td>
+            <td>{{ displayRole(member.role) }}</td>
+            <td>{{ (member.department || '-') }}</td>
             <td>{{ member.username }}</td>
             <td>{{ member.email }}</td>
             <td>{{ member.phone_number || '-' }}</td>
@@ -85,10 +99,10 @@
               </button>
               <button
                 @click="toggleStatus(member)"
-                class="btn-sm btn-danger"
-                title="Deactivate"
+                :class="['btn-sm', member.is_active ? 'btn-danger' : 'btn-success']"
+                :title="member.is_active ? 'Deactivate' : 'Activate'"
               >
-                Deactivate
+                {{ member.is_active ? 'Deactivate' : 'Activate' }}
               </button>
             </td>
           </tr>
@@ -102,112 +116,14 @@
     </div>
 
     <!-- Add/Edit Staff Modal -->
-    <div v-if="showModal" class="modal-backdrop" @click.self="closeModal">
-      <div class="modal">
-        <div class="modal-header">
-          <h2>{{ isEditing ? 'Edit Staff Member' : 'Add New Staff Member' }}</h2>
-          <button type="button" @click="closeModal" class="close-button">&times;</button>
-        </div>
-        <form @submit.prevent="submitStaffForm">
-          <div class="modal-body">
-            <!-- Username (Create only) -->
-            <div class="form-group" v-if="!isEditing">
-              <label>Username *</label>
-              <input
-                v-model="formData.username"
-                type="text"
-                class="form-input"
-                placeholder="Enter username"
-                required
-              />
-            </div>
-
-            <!-- Email -->
-            <div class="form-group">
-              <label>Email {{ !isEditing ? '*' : '' }}</label>
-              <input
-                v-model="formData.email"
-                type="email"
-                class="form-input"
-                placeholder="Enter email address"
-                :required="!isEditing"
-              />
-            </div>
-
-            <!-- Full Name -->
-            <div class="form-group">
-              <label>Full Name *</label>
-              <input
-                v-model="formData.full_name"
-                type="text"
-                class="form-input"
-                placeholder="Enter full name"
-                required
-              />
-            </div>
-
-            <!-- Phone Number -->
-            <div class="form-group">
-              <label>Phone Number</label>
-              <input
-                v-model="formData.phone_number"
-                type="tel"
-                class="form-input"
-                placeholder="Enter phone number"
-              />
-            </div>
-
-            <!-- Department -->
-            <div class="form-group">
-              <label>Department</label>
-              <select v-model="formData.department" class="form-input">
-                <option value="">-- Select Department --</option>
-                <option value="Cashier">Cashier</option>
-                <option value="Kitchen">Kitchen</option>
-                <option value="Service">Service</option>
-                <option value="Delivery">Delivery</option>
-              </select>
-            </div>
-
-            <!-- Password (Create mode only) -->
-            <div class="form-group" v-if="!isEditing">
-              <label>Password</label>
-              <input
-                v-model="formData.password"
-                type="password"
-                class="form-input"
-                placeholder="Leave blank for default password"
-              />
-              <small class="form-hint">Default: Chikintayo_123</small>
-            </div>
-
-            <!-- Password (Edit mode - optional) -->
-            <div class="form-group" v-if="isEditing">
-              <label>New Password (leave blank to keep current)</label>
-              <input
-                v-model="formData.password"
-                type="password"
-                class="form-input"
-                placeholder="Enter new password"
-              />
-            </div>
-
-            <!-- Error Message -->
-            <div v-if="formError" class="error-message">
-              {{ formError }}
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" @click="closeModal" class="btn btn-secondary" :disabled="isSubmitting">
-              Cancel
-            </button>
-            <button type="submit" class="btn btn-primary" :disabled="isSubmitting">
-              {{ isSubmitting ? 'Saving...' : (isEditing ? 'Update Staff' : 'Add Staff') }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <StaffModal
+      :show="showAddStaffModal"
+      :staff="isEditingStaff ? staff.find(s => s.id === editingStaffId) : null"
+      :isEdit="isEditingStaff"
+      :preSelectedBranchId="hrBranchId"
+      @close="showAddStaffModal = false"
+      @success="onStaffModalSuccess"
+    />
   </div>
 </template>
 
@@ -215,36 +131,119 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
+import '../css/adminpanel.css'
+import StaffModal from './StaffModal.vue'
 
 const router = useRouter()
+
+function onStaffModalSuccess() {
+  showAddStaffModal.value = false
+  resetForm()
+  loadStaff()
+}
 
 // State
 const loading = ref(false)
 const errorMessage = ref('')
 const searchQuery = ref('')
 
-// Staff data
-const staffList = ref([])
+// Staff Data
+const staff = ref([])
 
-// Loading and error states
-const showModal = ref(false)
-const isEditing = ref(false)
-const isSubmitting = ref(false)
-const formError = ref('')
+// HR Manager's branch info
+const hrBranchId = ref(null)
+const hrBranchName = ref('')
+
+// Filters
+const roleFilter = ref('')
+const departmentFilter = ref('')
+
+// Form State
+const showAddStaffModal = ref(false)
+const isEditingStaff = ref(false)
 const editingStaffId = ref(null)
 
-const formData = ref({
-  username: '',
-  email: '',
-  full_name: '',
-  phone_number: '',
-  department: '',
-  password: ''
+// Role hierarchy - lower number = higher priority
+const rolePriority = {
+  'Owner': 1,
+  'Manager HR': 2,
+  'Manager Finance': 3,
+  'Manager Inventory': 4,
+  'Manager Logistics': 5,
+  'Manager': 6,
+  'Staff': 7,
+  'Staff Cashier': 8,
+  'Staff Finance': 9,
+  'Staff Inventory': 10
+}
+
+function mapRoleToDisplayRole(role) {
+  if (!role) return null
+  const upperRole = role.toUpperCase()
+
+  if (upperRole === 'OWNER') return 'Owner'
+  if (upperRole === 'MANAGER_HR') return 'Manager HR'
+  if (upperRole === 'MANAGER_FINANCE') return 'Manager Finance'
+  if (upperRole === 'MANAGER_INVENTORY') return 'Manager Inventory'
+  if (upperRole === 'MANAGER_LOGISTICS') return 'Manager Logistics'
+  if (upperRole === 'BRANCH_MANAGER') return 'Manager'
+  if (upperRole === 'MANAGER') return 'Manager'
+  if (upperRole === 'HR') return 'Staff'
+  if (upperRole === 'STAFF_CASHIER') return 'Staff Cashier'
+  if (upperRole === 'STAFF_FINANCE') return 'Staff Finance'
+  if (upperRole === 'STAFF_INVENTORY') return 'Staff Inventory'
+  if (upperRole === 'STAFF_LOGISTICS') return 'Staff'
+  if (upperRole === 'STAFF') return 'Staff'
+
+  if (upperRole.includes('MANAGER')) return 'Manager'
+  if (upperRole.includes('STAFF')) return 'Staff'
+
+  return null
+}
+
+function getRolePriority(role) {
+  if (!role) return 999
+  const displayRole = mapRoleToDisplayRole(role)
+  if (!displayRole) return 999
+  return rolePriority[displayRole] ?? 999
+}
+
+// Computed: available roles and departments
+const defaultRoles = [
+  'Manager HR', 'Manager Finance', 'Manager Inventory', 'Manager Logistics',
+  'Staff Cashier', 'Staff Finance', 'Staff Inventory'
+]
+
+const availableRoles = computed(() => {
+  const set = new Set(defaultRoles)
+  staff.value.forEach(m => { if (m.role) set.add(m.role) })
+  return Array.from(set).sort()
 })
 
-// Computed: filtered staff with search
+const availableDepartments = computed(() => {
+  const set = new Set()
+  staff.value.forEach(m => { if (m.department) set.add(m.department) })
+  return Array.from(set).sort()
+})
+
+// Computed: filtered staff
 const filteredStaff = computed(() => {
-  let filtered = staffList.value.slice()
+  let filtered = staff.value.slice()
+
+  // Role filter
+  if (roleFilter.value) {
+    filtered = filtered.filter(m => (m.role || '').toString() === roleFilter.value)
+  } else {
+    filtered = filtered.filter(member => {
+      const r = (member.role || '').toUpperCase()
+      return r.includes('STAFF') || r.includes('MANAGER') || r === 'HR' || r === 'BRANCH_MANAGER'
+    })
+  }
+
+  // Department filter
+  if (departmentFilter.value) {
+    filtered = filtered.filter(m => (m.department || '').toString() === departmentFilter.value)
+  }
 
   // Search query
   if (searchQuery.value && searchQuery.value.trim()) {
@@ -256,10 +255,17 @@ const filteredStaff = computed(() => {
     )
   }
 
+  // Sort by role priority
+  filtered.sort((a, b) => {
+    const priorityA = getRolePriority(a.role)
+    const priorityB = getRolePriority(b.role)
+    return priorityA - priorityB
+  })
+
   return filtered
 })
 
-// Load staff data from Manager HR API (already filtered by branch)
+// Methods
 async function loadStaff() {
   loading.value = true
   errorMessage.value = ''
@@ -269,10 +275,10 @@ async function loadStaff() {
       withCredentials: true
     })
 
-    if (res.data.ok) {
-      staffList.value = res.data.staff || []
+    if (res.data && res.data.ok) {
+      staff.value = res.data.staff || []
     } else {
-      errorMessage.value = res.data.message || 'Failed to load staff'
+      errorMessage.value = res.data?.message || 'Failed to load staff'
     }
   } catch (error) {
     console.error('Staff load error:', error)
@@ -282,129 +288,39 @@ async function loadStaff() {
   }
 }
 
-// Refresh staff
+async function loadHRProfile() {
+  try {
+    const res = await axios.get('/api/manager/hr/profile', { withCredentials: true })
+    if (res.data && res.data.user) {
+      const user = res.data.user
+      hrBranchId.value = user.branch_id || null
+      hrBranchName.value = user.branch_name || ''
+    }
+  } catch (error) {
+    console.error('Failed to load HR profile:', error)
+  }
+}
+
 function refreshStaff() {
   loadStaff()
 }
 
-// Reset form
 function resetForm() {
-  formData.value = {
-    username: '',
-    email: '',
-    full_name: '',
-    phone_number: '',
-    department: '',
-    password: ''
-  }
-  isEditing.value = false
+  isEditingStaff.value = false
   editingStaffId.value = null
-  formError.value = ''
 }
 
-// Open add staff modal
+function editStaff(member) {
+  isEditingStaff.value = true
+  editingStaffId.value = member.id
+  showAddStaffModal.value = true
+}
+
 function openAddStaffModal() {
   resetForm()
-  showModal.value = true
+  showAddStaffModal.value = true
 }
 
-// Edit staff
-function editStaff(member) {
-  isEditing.value = true
-  editingStaffId.value = member.id
-  formData.value = {
-    username: member.username,
-    email: member.email,
-    full_name: member.full_name,
-    phone_number: member.phone_number || '',
-    department: member.department || '',
-    password: ''
-  }
-  showModal.value = true
-}
-
-// Close modal
-function closeModal() {
-  showModal.value = false
-  resetForm()
-}
-
-// Submit staff form
-async function submitStaffForm() {
-  formError.value = ''
-
-  // Validation
-  if (!formData.value.full_name || formData.value.full_name.trim() === '') {
-    formError.value = 'Full name is required'
-    return
-  }
-
-  if (!isEditing.value) {
-    if (!formData.value.username || formData.value.username.trim() === '') {
-      formError.value = 'Username is required'
-      return
-    }
-    if (!formData.value.email || formData.value.email.trim() === '') {
-      formError.value = 'Email is required'
-      return
-    }
-  }
-
-  isSubmitting.value = true
-
-  try {
-    let res
-
-    if (isEditing.value) {
-      // Update
-      const payload = {
-        fullName: formData.value.full_name,
-        email: formData.value.email,
-        phone: formData.value.phone_number,
-        department: formData.value.department,
-      }
-
-      if (formData.value.password && formData.value.password.trim() !== '') {
-        payload.password = formData.value.password
-      }
-
-      res = await axios.put(`/api/manager/hr/staff/${editingStaffId.value}`, payload, {
-        withCredentials: true
-      })
-    } else {
-      // Create
-      res = await axios.post('/api/manager/hr/staff', {
-        username: formData.value.username,
-        email: formData.value.email,
-        fullName: formData.value.full_name,
-        phone: formData.value.phone_number,
-        department: formData.value.department,
-        password: formData.value.password,
-      }, {
-        withCredentials: true
-      })
-    }
-
-    if (res.data.ok) {
-      closeModal()
-      loadStaff()
-      alert(isEditing.value ? 'Staff updated successfully!' : 'Staff added successfully!')
-    } else {
-      formError.value = res.data.message || 'Failed to save staff'
-    }
-  } catch (error) {
-    console.error('Submit error:', error)
-    if (error.response?.data?.message) {
-      formError.value = error.response.data.message
-    } else {
-      formError.value = 'Failed to save staff. Please try again.'
-    }
-  } finally {
-    isSubmitting.value = false
-  }
-}
-
-// Toggle staff status
 async function toggleStatus(member) {
   try {
     const res = await axios.put(`/api/manager/hr/staff/${member.id}`, {
@@ -423,53 +339,32 @@ async function toggleStatus(member) {
   }
 }
 
-// Delete staff
-async function deleteStaff(member) {
-  if (!confirm(`Are you sure you want to delete ${member.full_name || member.username}?`)) {
-    return
-  }
+onMounted(async () => {
+  await loadHRProfile()
+  await loadStaff()
+})
 
-  try {
-    const res = await axios.delete(`/api/manager/hr/staff/${member.id}`, {
-      withCredentials: true
-    })
-
-    if (res.data.ok) {
-      loadStaff()
-      alert('Staff deleted successfully')
-    }
-  } catch (error) {
-    console.error('Delete error:', error)
-    alert('Failed to delete staff')
-  }
-}
-
-// Display role
 function displayRole(r) {
   const role = (r || '').toString().toUpperCase()
   if (role === 'BRANCH_MANAGER') return 'Manager'
   if (role === 'STAFF') return 'Staff'
   if (role === 'HR') return 'HR'
+  if (role === 'OWNER') return 'Owner'
   return role.replace(/_/g, ' ')
 }
 
-// Format date to MM-DD-YYYY
 function formatDate(dateString) {
-  if (!dateString) return '-'
-  const date = new Date(dateString)
-  if (isNaN(date.getTime())) return dateString
+  if (dateString === null || dateString === undefined) return '-'
+  const normalizedDate = String(dateString).trim()
+  if (!normalizedDate) return '-'
 
+  const date = new Date(normalizedDate)
+  if (isNaN(date.getTime())) return '-'
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
   const year = date.getFullYear()
-
   return `${month}-${day}-${year}`
 }
-
-// On mounted
-onMounted(async () => {
-  await loadStaff()
-})
 </script>
 
 <style scoped>
@@ -498,19 +393,22 @@ onMounted(async () => {
   letter-spacing: -1px;
 }
 
-.staff-header .manager-hr-title {
-  color: #ffffff;
-  font-weight: 700;
-}
-
-.summary-card .manager-hr-total {
-  color: #ffffff;
+.owner-staff-title {
+  color: #ffffff !important;
 }
 
 .header-actions {
   display: flex;
   gap: 1rem;
   align-items: center;
+}
+
+.filter-select {
+  padding: 0.45rem 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 0.9rem;
 }
 
 .search-input {
@@ -566,6 +464,8 @@ onMounted(async () => {
 .btn-info {
   background: #17a2b8;
   color: #fff;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
 }
 
 .btn-info:hover {
@@ -575,6 +475,8 @@ onMounted(async () => {
 .btn-danger {
   background: #dc3545;
   color: #fff;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
 }
 
 .btn-danger:hover {
@@ -612,18 +514,26 @@ onMounted(async () => {
   color: #222;
 }
 
+.owner-staff-total {
+  color: #ffffff !important;
+}
+
+.branch-info {
+  margin: 0.5rem 0 0 0;
+  color: #ffffff;
+  font-size: 0.95rem;
+}
+
 .staff-table-wrapper {
   background: rgba(255,255,255,0.18);
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   overflow: hidden;
-  overflow-x: auto;
 }
 
 .staff-table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;
 }
 
 .staff-table thead {
@@ -632,23 +542,17 @@ onMounted(async () => {
 }
 
 .staff-table th {
-  padding: 1rem 0.5rem;
+  padding: 1rem;
   text-align: left;
   font-weight: 600;
   color: #222;
   font-size: 0.9rem;
-  width: 12.5%;
-  white-space: nowrap;
 }
 
 .staff-table td {
-  padding: 1rem 0.5rem;
+  padding: 1rem;
   border-bottom: 1px solid #dee2e6;
   color: #222;
-  width: 12.5%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .staff-table tbody tr:hover {
@@ -681,17 +585,6 @@ onMounted(async () => {
   font-weight: 600;
 }
 
-.badge-active {
-  background: #d4edda;
-  color: #155724;
-}
-
-.badge-inactive {
-  background: #f8d7da;
-  color: #721c24;
-}
-
-/* Online/Offline status badges */
 .badge-online {
   background: #28a745;
   color: #ffffff;
@@ -702,26 +595,9 @@ onMounted(async () => {
   color: #ffffff;
 }
 
-/* Ensure action buttons don't wrap or overflow */
-.staff-table td.actions {
-  overflow: visible !important;
-  white-space: nowrap;
-  min-width: 140px;
+.actions {
   display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.staff-table td.actions .btn-sm {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  white-space: nowrap;
-  padding: 0.4rem 0.75rem;
-  font-size: 0.8rem;
-  min-width: 60px;
-  min-height: 32px;
-  margin: 0 4px;
+  gap: 0.5rem;
 }
 
 .empty-state, .loading-state {
@@ -742,141 +618,6 @@ onMounted(async () => {
   background: #f8d7da;
   color: #721c24;
   border: 1px solid #f5c6cb;
-}
-
-/* Modal Styles */
-.modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal {
-  background: white;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 500px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem;
-  border-bottom: 1px solid #dee2e6;
-}
-
-.modal-header h2 {
-  margin: 0;
-  color: #333;
-}
-
-.close-button {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: #999;
-}
-
-.close-button:hover {
-  color: #333;
-}
-
-.modal-body {
-  padding: 1.5rem;
-}
-
-.modal-footer {
-  padding: 1rem 1.5rem;
-  border-top: 1px solid #dee2e6;
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-}
-
-.form-group {
-  margin-bottom: 1rem;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  color: #222;
-  font-weight: 500;
-  font-size: 0.9rem;
-}
-
-.form-input {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  font-family: inherit;
-  box-sizing: border-box;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #FF9A4A;
-  box-shadow: 0 0 0 3px rgba(255, 154, 74, 0.1);
-}
-
-.form-hint {
-  display: block;
-  margin-top: 0.25rem;
-  color: #666;
-  font-size: 0.8rem;
-}
-
-.error-message {
-  background: #f8d7da;
-  color: #721c24;
-  padding: 0.75rem;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  margin-top: 1rem;
-}
-
-.btn {
-  padding: 0.625rem 1.25rem;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-primary {
-  background: #ff9f43;
-  color: #fff;
-}
-
-.btn-secondary {
-  background: #6c757d;
-  color: #fff;
-}
-
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.fade-enter-from, .fade-leave-to {
-  opacity: 0;
 }
 
 @media (max-width: 768px) {

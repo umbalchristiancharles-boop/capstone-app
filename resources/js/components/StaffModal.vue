@@ -348,6 +348,10 @@ export default {
     show: Boolean,
     staff: Object,
     isEdit: Boolean,
+    preSelectedBranchId: {
+      type: [Number, String],
+      default: null
+    }
   },
   emits: ['close', 'success'],
   data() {
@@ -934,7 +938,7 @@ export default {
             phone_number: '',
             password: '',
             roleDepartment: '',
-            branch_id: '',
+            branch_id: this.preSelectedBranchId || '',
             address: '',
             province: '',
             city: '',

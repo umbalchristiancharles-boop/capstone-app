@@ -4,7 +4,7 @@
       <div class="modal-card">
         <form @submit.prevent="submitForm">
           <div class="modal-header">
-            <h2>{{ isEdit ? 'Edit Staff Member' : 'Add New Staff Member' }}</h2>
+            <h2>{{ isViewOnly ? 'View Staff Member' : (isEdit ? 'Edit Staff Member' : 'Add New Staff Member') }}</h2>
             <button type="button" @click="closeModal" class="close-button">&times;</button>
           </div>
 
@@ -18,10 +18,10 @@
                 v-model="form.username"
                 id="username"
                 class="form-input"
-                :class="{ 'read-only': isEdit }"
+                :class="{ 'read-only': isEdit || isViewOnly }"
                 :placeholder="!isEdit ? 'Enter username' : ''"
                 :required="!isEdit"
-                :disabled="isEdit"
+                :disabled="isEdit || isViewOnly"
               />
             </div>
 
@@ -33,8 +33,10 @@
                 type="email"
                 id="email"
                 class="form-input"
+                :class="{ 'read-only': isViewOnly }"
                 placeholder="Enter email address"
                 :required="!isEdit"
+                :disabled="isViewOnly"
               />
             </div>
 
@@ -45,8 +47,10 @@
                 v-model="form.full_name"
                 id="full_name"
                 class="form-input"
+                :class="{ 'read-only': isViewOnly }"
                 placeholder="Enter full name"
                 required
+                :disabled="isViewOnly"
               />
             </div>
 
@@ -59,10 +63,12 @@
                 id="phone_number"
                 type="tel"
                 class="form-input"
+                :class="{ 'read-only': isViewOnly }"
                 placeholder="Enter phone number"
+                :disabled="isViewOnly"
               />
             </div>
-            <div class="form-group password-group" v-if="!isEdit">
+            <div class="form-group password-group" v-if="!isEdit && !isViewOnly">
               <label for="password" class="form-label">Password <span style="font-weight:400">*</span></label>
 
               <div class="password-display-container">
@@ -96,13 +102,14 @@
               <div v-if="addressSaved" class="address-card">
                 <div class="address-card-header">
                   <strong>Current Address</strong>
-                  <button type="button" class="btn btn-secondary" @click="editSavedAddress">Edit</button>
+                  <button v-if="!isViewOnly" type="button" class="btn btn-secondary" @click="editSavedAddress">Edit</button>
                 </div>
                 <div class="address-card-body">{{ savedAddress }}</div>
               </div>
 
               <div v-else>
                 <textarea
+                  v-if="!isViewOnly"
                   v-model="form.address"
                   id="address"
                   rows="2"
@@ -112,7 +119,7 @@
                 ></textarea>
 
                 <!-- Address Cascader (Region → Province → City → Barangay) -->
-                <div style="margin-top:0.5rem;">
+                <div v-if="!isViewOnly" style="margin-top:0.5rem;">
                   <AddressCascader 
                     :initialAddress="{ province: form.province, city: form.city, barangay: form.barangay }" 
                     :showSaveButton="false" 
@@ -120,7 +127,7 @@
                   />
                 </div>
 
-                <div style="margin-top:0.5rem; display:flex; gap:0.5rem;">
+                <div v-if="!isViewOnly" style="margin-top:0.5rem; display:flex; gap:0.5rem;">
                   <button type="button" class="btn btn-primary" @click="saveAddress">Save Address</button>
                   <button type="button" class="btn btn-secondary" @click="clearAddress">Clear</button>
                 </div>
@@ -130,7 +137,7 @@
             <!-- Role/Department -->
             <div class="form-group">
               <label for="roleDepartment" class="form-label">Role / Department *</label>
-              <select v-model="form.roleDepartment" id="roleDepartment" class="form-input" :required="!isEdit">
+              <select v-model="form.roleDepartment" id="roleDepartment" class="form-input" :required="!isEdit" :disabled="isViewOnly">
                 <option value="">-- Select Role / Department --</option>
                 <optgroup label="Managers">
                   <option value="MANAGER hr">Manager HR</option>
@@ -149,23 +156,24 @@
             <!-- Branch Selection -->
             <div class="form-group">
               <label for="branch_id" class="form-label">Branch *</label>
-              <select v-model="form.branch_id" id="branch_id" class="form-input" :required="!isEdit">
+              <select v-model="form.branch_id" id="branch_id" class="form-input" :required="!isEdit" :disabled="isViewOnly">
                 <option value="">-- Select Branch --</option>
                 <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
               </select>
             </div>
 
             <!-- Password (Edit mode - optional) -->
-            <div class="form-group password-group" v-if="isEdit && !form.password">
+            <div class="form-group password-group" v-if="isEdit && !form.password && !isViewOnly">
               <label for="password" class="form-label">New Password (leave blank to keep current)</label>
               <div class="password-input-wrapper">
-                <input
-                  v-model="form.password"
-                  :type="showPassword ? 'text' : 'password'"
-                  id="password"
-                  class="form-input"
-                  placeholder="Enter new password (min 8 characters)"
-                />
+                  <input
+                    v-model="form.password"
+                    :type="showPassword ? 'text' : 'password'"
+                    id="password"
+                    class="form-input"
+                    placeholder="Enter new password (min 8 characters)"
+                    :disabled="isViewOnly"
+                  />
                 <button type="button" class="password-toggle" @click="toggleShowPassword" :aria-label="showPassword ? 'Hide password' : 'Show password'">
                   <span v-if="showPassword">
                     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24">
@@ -183,7 +191,7 @@
             </div>
 
             <!-- Reset Password to Default (Edit mode) -->
-            <div class="form-group full-span" v-if="isEdit">
+            <div class="form-group full-span" v-if="isEdit && !isViewOnly">
               <div class="reset-password-section">
                 <button type="button" class="btn btn-reset-default" @click="resetPasswordToDefault" :disabled="isResetting">
                   {{ isResetting ? 'Resetting...' : '🔑 Reset Password to Default' }}
@@ -196,7 +204,7 @@
           </div>
 
           <!-- Documents (Create Only) -->
-          <div v-if="!isEdit" class="documents-section">
+          <div v-if="!isEdit && !isViewOnly" class="documents-section">
             <h3 class="documents-title">Required Documents *</h3>
             <div class="documents-grid">
               <div class="form-group full-span">
@@ -319,15 +327,15 @@
 
           <!-- Modal Footer -->
           <div class="modal-footer">
-            <div style="flex:1; display:flex; align-items:center; gap:12px;">
+            <div v-if="!isViewOnly" style="flex:1; display:flex; align-items:center; gap:12px;">
               <div v-if="isEdit && changedFields.length > 0" class="changes-summary">
                 <strong>Changes:</strong> {{ changedFields.length }} — {{ changedFields.join(', ') }}
               </div>
             </div>
             <button type="button" @click="closeModal" class="btn btn-secondary" :disabled="isSubmitting">
-              Cancel
+              {{ isViewOnly ? 'Close' : 'Cancel' }}
             </button>
-            <button type="submit" class="btn btn-primary" :disabled="isSubmitting">
+            <button v-if="!isViewOnly" type="submit" class="btn btn-primary" :disabled="isSubmitting">
               {{ isSubmitting ? 'Saving...' : (isEdit ? 'Update Staff' : 'Add Staff') }}
             </button>
             
@@ -349,6 +357,7 @@ export default {
     show: Boolean,
     staff: Object,
     isEdit: Boolean,
+    isViewOnly: Boolean,
   },
   emits: ['close', 'success'],
   data() {

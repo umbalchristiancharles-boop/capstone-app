@@ -13,7 +13,7 @@
     <div class="staff-header">
       <h1 class="owner-staff-title">Staff Management</h1>
       <div class="header-actions">
-        <input
+        <input  
           v-model="searchQuery"
           type="text"
           placeholder="Search staff..."
@@ -101,11 +101,11 @@
                 <td>{{ formatDate(member.created_at) }}</td>
                 <td class="actions">
                   <button
-                    @click="editStaff(member)"
+                    @click="viewStaff(member)"
                     class="btn-sm btn-info"
-                    title="Edit"
+                    title="View"
                   >
-                    Edit
+                    View
                   </button>
                   
                 </td>
@@ -126,6 +126,7 @@
       :show="showAddStaffModal"
       :staff="isEditingStaff ? staff.find(s => s.id === editingStaffId) : null"
       :isEdit="isEditingStaff"
+      :isViewOnly="isViewOnly"
       @close="showAddStaffModal = false"
       @success="onStaffModalSuccess"
     />
@@ -175,6 +176,7 @@ const departmentFilter = ref('')
 // Form State
 const showAddStaffModal = ref(false)
 const isEditingStaff = ref(false)
+const isViewOnly = ref(false)
 const newStaff = ref({
   username: '',
   email: '',
@@ -427,6 +429,22 @@ function resetForm() {
 
 function editStaff(member) {
   isEditingStaff.value = true
+  isViewOnly.value = false
+  editingStaffId.value = member.id
+  newStaff.value = {
+    username: member.username,
+    email: member.email,
+    full_name: member.full_name,
+    phone_number: member.phone_number,
+    password: '',
+    department: member.department || '',
+  }
+  showAddStaffModal.value = true
+}
+
+function viewStaff(member) {
+  isEditingStaff.value = true
+  isViewOnly.value = true
   editingStaffId.value = member.id
   newStaff.value = {
     username: member.username,

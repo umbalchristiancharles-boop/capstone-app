@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 07, 2026 at 11:23 AM
+-- Generation Time: Mar 09, 2026 at 12:10 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -54,6 +54,13 @@ CREATE TABLE `attendance_settings` (
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `attendance_settings`
+--
+
+INSERT INTO `attendance_settings` (`id`, `branch_id`, `early_clockout_override`, `created_at`, `updated_at`) VALUES
+(12, 11, 0, '2026-03-09 06:05:07', '2026-03-09 06:05:07');
+
 -- --------------------------------------------------------
 
 --
@@ -75,7 +82,7 @@ CREATE TABLE `branches` (
 --
 
 INSERT INTO `branches` (`id`, `code`, `name`, `address`, `is_active`, `created_at`, `updated_at`) VALUES
-(9, 'BR590937', 'Dasma Branch', 'Dasma', 1, '2026-03-07 08:03:26', '2026-03-07 08:03:26');
+(11, 'BR886318', 'Tagaytay City Branch', 'Tagaytay', 1, '2026-03-09 06:01:42', '2026-03-09 06:01:42');
 
 -- --------------------------------------------------------
 
@@ -314,13 +321,6 @@ CREATE TABLE `order_items` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `order_items`
---
-
-INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `product_name`, `unit_price`, `quantity`, `subtotal`, `created_at`, `updated_at`) VALUES
-(9, 59, 10, 'Corndog', 150.00, 2, 300.00, '2026-03-07 08:05:06', '2026-03-07 08:05:06');
 
 -- --------------------------------------------------------
 
@@ -709,7 +709,19 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (348, 'App\\Models\\User', 28, 'auth-token', 'cc209504b9c3782df058834863676614e489891a7a8701ea78b526422d4a7968', '[\"*\"]', NULL, NULL, '2026-03-07 07:54:45', '2026-03-07 07:54:45'),
 (349, 'App\\Models\\User', 31, 'auth-token', '878c068e7f39067b4d75d3aacb0203d4949fa986d99e1a1f0f467facf6a5280b', '[\"*\"]', NULL, NULL, '2026-03-07 07:59:21', '2026-03-07 07:59:21'),
 (350, 'App\\Models\\User', 28, 'auth-token', 'fbadf33425db92cfc05d04bc1c48e0edbd9d5cd572bafbf1ec5de398e5f68529', '[\"*\"]', NULL, NULL, '2026-03-07 08:02:52', '2026-03-07 08:02:52'),
-(351, 'App\\Models\\User', 31, 'auth-token', 'c783132ee8a5d545214d73d7b90121bc39f0de080c386a9d19dc3a710e9cfe56', '[\"*\"]', NULL, NULL, '2026-03-07 08:23:46', '2026-03-07 08:23:46');
+(351, 'App\\Models\\User', 31, 'auth-token', 'c783132ee8a5d545214d73d7b90121bc39f0de080c386a9d19dc3a710e9cfe56', '[\"*\"]', NULL, NULL, '2026-03-07 08:23:46', '2026-03-07 08:23:46'),
+(352, 'App\\Models\\User', 28, 'auth-token', '57c8c447bde7624644bc3067cab123eee34d1f53c28a9ab95dceaef766188c3f', '[\"*\"]', NULL, NULL, '2026-03-09 04:58:16', '2026-03-09 04:58:16'),
+(353, 'App\\Models\\User', 28, 'auth-token', '8806446eec5b94a0c9350b7f0ffc618cd26fe752f691d59860f7dc9e73b881a7', '[\"*\"]', NULL, NULL, '2026-03-09 05:57:48', '2026-03-09 05:57:48'),
+(354, 'App\\Models\\User', 42, 'auth-token', 'e3c69e8a6faf1518a6886091e10c702a9b358c6cf103fe9743be368db7568051', '[\"*\"]', NULL, NULL, '2026-03-09 06:02:45', '2026-03-09 06:02:45'),
+(355, 'App\\Models\\User', 42, 'auth-token', 'd19f183bd6cf546eafa2c7e1e00bd7a829180a2f348eed098592ac0029351554', '[\"*\"]', NULL, NULL, '2026-03-09 06:05:05', '2026-03-09 06:05:05'),
+(356, 'App\\Models\\User', 28, 'auth-token', '656cc1c707fe277394b013c671f54f9dd0ce69444278a083054ca77a637bb403', '[\"*\"]', NULL, NULL, '2026-03-09 07:04:16', '2026-03-09 07:04:16'),
+(357, 'App\\Models\\User', 31, 'auth-token', 'e3a4d7d3a98aae07b08fe2f11cb4a4b35d2272cbf82ce2cb7fb37c909e9eece1', '[\"*\"]', NULL, NULL, '2026-03-09 07:04:35', '2026-03-09 07:04:35'),
+(358, 'App\\Models\\User', 28, 'auth-token', '4e7ad5801e059085f2d42386a219d714ef14f6daae8118134720212aa80efc8a', '[\"*\"]', NULL, NULL, '2026-03-09 07:14:17', '2026-03-09 07:14:17'),
+(359, 'App\\Models\\User', 31, 'auth-token', '4737f76593adb67a9bfcc5cc179c0156c18798fe2d7a52691311636ae2eb97fe', '[\"*\"]', NULL, NULL, '2026-03-09 07:15:04', '2026-03-09 07:15:04'),
+(360, 'App\\Models\\User', 43, 'auth-token', '6898ab8a1706e50d5741f978769f9adf19bd336e1d17cde9c437d59de8711884', '[\"*\"]', NULL, NULL, '2026-03-09 07:15:41', '2026-03-09 07:15:41'),
+(361, 'App\\Models\\User', 43, 'auth-token', 'f0592bc7383de5d2df2bf503b0199353358e4e04eb8b1a0ca03f57f7db654e51', '[\"*\"]', NULL, NULL, '2026-03-09 07:16:55', '2026-03-09 07:16:55'),
+(362, 'App\\Models\\User', 28, 'auth-token', 'da777e0bc6611ebd44e56f2c8abc7820693c96b27040fe480859c0619155aca7', '[\"*\"]', NULL, NULL, '2026-03-09 07:17:32', '2026-03-09 07:17:32'),
+(363, 'App\\Models\\User', 43, 'auth-token', '7c341743d19498255fa5c8ff7f6e46b13f378a37feed02b6546b0a27542a2142', '[\"*\"]', NULL, NULL, '2026-03-09 07:37:28', '2026-03-09 07:37:28');
 
 -- --------------------------------------------------------
 
@@ -730,13 +742,6 @@ CREATE TABLE `products` (
   `branch_id` bigint(20) UNSIGNED NOT NULL DEFAULT 1,
   `is_active` tinyint(1) NOT NULL DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `products`
---
-
-INSERT INTO `products` (`id`, `name`, `slug`, `created_at`, `updated_at`, `price`, `stock`, `min_stock`, `sku`, `branch_id`, `is_active`) VALUES
-(10, 'Corndog', 'corndog', '2026-03-07 08:04:46', '2026-03-07 08:05:06', 150.00, 34, 10, 'SKU-SRTO3Y', 9, 1);
 
 -- --------------------------------------------------------
 
@@ -777,7 +782,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('L6p35jov9mhxTyZ8eYzfsSLv8UAXX9xC1jvCQLsJ', 31, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiTGZVamZ3djdNcWxCM2dSWXgzcFRYTGNaS0M1dzY2VnpwQWMxNnAwRCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjMxO3M6NzoidXNlcl9pZCI7aTozMTtzOjk6InVzZXJfcm9sZSI7czo1OiJPV05FUiI7czo5OiJ1c2VyX25hbWUiO3M6ODoiTXIucGFya3MiO3M6MTM6InJlZGlyZWN0X3BhdGgiO3M6MTI6Ii9vd25lci1wYW5lbCI7fQ==', 1772871855);
+('sMwLqasTVTmtyzfDYsK8ebCxkzrbdWwUFrXIQHNY', 43, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiaHBVUHdsMzlvZFJxVWJKallUNVFqeTZWQVpEd2w2T3h1c0JZSWhwUyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6NDM7czo3OiJ1c2VyX2lkIjtpOjQzO3M6OToidXNlcl9yb2xlIjtzOjc6Ik1BTkFHRVIiO3M6OToidXNlcl9uYW1lIjtzOjMzOiJIUiBNYW5hZ2VyIC0gVGFnYXl0YXkgQ2l0eSBCcmFuY2giO3M6MTM6InJlZGlyZWN0X3BhdGgiO3M6MTE6Ii9tYW5hZ2VyL2hyIjt9', 1773041868);
 
 -- --------------------------------------------------------
 
@@ -840,8 +845,8 @@ INSERT INTO `users` (`id`, `email`, `username`, `full_name`, `name`, `password`,
 (28, 'superadmin@example.com', 'superadmin', 'Super Administrators', NULL, '$2y$12$f67akYY/xm/H9KJoqytmXeblCxSgZ786slMmHkmqzlMozGUn3Ew7G', '2026-03-05 15:03:55', 'SUPER_ADMIN', NULL, NULL, NULL, '2026-03-05 15:03:55', '2026-03-05 16:01:06', NULL, 0, 1, NULL, '/storage/avatars/hkt6q9sq1yYpnTGkMyayeLp3bmIjf5hPNM2LnCBo.png', NULL),
 (29, 'umbal.christiancharles@ncst.edu.ph', 'umballs', NULL, NULL, '$2y$12$05J2guUFR9PN1TuRwlF0WuRcRx2CyKeVChVKwIORgl.IMiK.fqsQC', '2026-03-05 20:00:52', 'customer', NULL, NULL, NULL, '2026-03-05 20:00:52', '2026-03-05 20:00:52', NULL, 1, 1, NULL, NULL, NULL),
 (31, 'admin@chikintayo.com', 'Parks', 'Mr.parks', NULL, '$2y$12$/jjxezfu4JAW55dvduVkVu7hpmk5CBXg2GWKtlT17A8jEMfJFpY8y', NULL, 'OWNER', NULL, NULL, NULL, '2026-03-07 04:30:58', '2026-03-07 04:30:58', NULL, 0, 1, NULL, NULL, 'admin'),
-(38, 'admin_br590937@chikintayo.com', 'admin_br590937', 'Admin - Dasma Branch', NULL, '$2y$12$edQYYPwx0u04YtfAn84hdeYX5B3t3AVUaWxkDXdyyJu4ubWuGly8m', NULL, 'ADMIN', 9, NULL, NULL, '2026-03-07 08:03:27', '2026-03-07 08:03:27', NULL, 1, 1, NULL, NULL, NULL),
-(39, 'hr_br590937@chikintayo.com', 'hr_br590937', 'HR Manager - Dasma Branch', NULL, '$2y$12$CYIEv9F0yXDqL4ilhCsQm.2MRxZ3gf4Tho0PmOMOqgEQP/3m4AW9W', NULL, 'MANAGER', 9, 'HR', NULL, '2026-03-07 08:03:27', '2026-03-07 08:03:27', NULL, 1, 1, NULL, NULL, NULL);
+(42, 'admin_br886318@chikintayo.com', 'admin_br886318', 'Admin - Tagaytay City Branch', NULL, '$2y$12$kFMyDbpWuvy7AC7vNHcBAuZxyhNLkAu6TiHcWxhGCfIPDyRfsSksS', NULL, 'ADMIN', 11, NULL, NULL, '2026-03-09 06:01:42', '2026-03-09 06:04:59', NULL, 0, 1, NULL, NULL, NULL),
+(43, 'hr_br886318@chikintayo.com', 'hr_br886318', 'HR Manager - Tagaytay City Branch', NULL, '$2y$12$rC8ZEB9LSmRKgk/GXbtNluExst.AbNmebrAgKaPW6vg2LeeHlYli.', NULL, 'MANAGER', 11, 'HR', NULL, '2026-03-09 06:01:42', '2026-03-09 07:16:51', NULL, 0, 1, NULL, NULL, NULL);
 
 --
 -- Indexes for dumped tables
@@ -1015,13 +1020,13 @@ ALTER TABLE `attendance`
 -- AUTO_INCREMENT for table `attendance_settings`
 --
 ALTER TABLE `attendance_settings`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- AUTO_INCREMENT for table `branches`
 --
 ALTER TABLE `branches`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `customer_accounts`
@@ -1069,7 +1074,7 @@ ALTER TABLE `order_items`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=352;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=364;
 
 --
 -- AUTO_INCREMENT for table `products`
@@ -1093,7 +1098,7 @@ ALTER TABLE `staff_documents`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=44;
 
 --
 -- Constraints for dumped tables

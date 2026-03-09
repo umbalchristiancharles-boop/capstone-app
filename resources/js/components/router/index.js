@@ -50,10 +50,10 @@ const routes = [
   {
     path: '/staff-management',
     name: 'StaffManagement',
-    component: StaffList,
+    component: () => import('../components/StaffManagement.vue'),
     meta: {
       requiresAuth: true,
-      role: 'OWNER'
+      role: 'admin'
     }
   },
   // Manager Panels
