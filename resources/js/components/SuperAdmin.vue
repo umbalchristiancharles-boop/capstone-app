@@ -94,7 +94,7 @@
                 <button class="staff-btn staff-btn--center" @click="openModule('finance')">Finance</button>
                 <button class="staff-btn staff-btn--center" @click="openModule('cashier')">Cashier</button>
               </div>
-              
+
               <div class="admin-actions-row">
                 <button class="staff-btn staff-btn--center" @click="openModule('logistics')">Logistics</button>
               </div>
@@ -535,24 +535,60 @@ async function onAvatarChange(event) {
   const file = event.target.files[0]
   if (!file) return
   if (!window.confirm('Are you sure you want to change your profile picture?')) return
+
   try {
+    // Get CSRF cookie first
     await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
-    await new Promise(resolve => setTimeout(resolve, 100))
-    function getCookie(name) { const m = document.cookie.match(new RegExp('(^|; )' + name + '=([^;]*)')); return m ? m[2] : null }
-    const xsrf = getCookie('XSRF-TOKEN')
+
+    // Wait a bit for cookie to be set
+    await new Promise(resolve => setTimeout(resolve, 200))
+
+    // Get CSRF token from cookie
+    function getCookie(name) {
+      const value = `; ${document.cookie}`
+      const parts = value.split(`; ${name}=`)
+      if (parts.length === 2) {
+        return parts.pop().split(';').shift()
+      }
+      return null
+    }
+    const xsrfToken = getCookie('XSRF-TOKEN')
+
+    // Prepare form data
     const formData = new FormData()
     formData.append('avatar', file)
-    if (xsrf) { try { formData.append('_token', decodeURIComponent(xsrf)) } catch (_) { formData.append('_token', xsrf) } }
-    const config = { headers: { 'Content-Type': 'multipart/form-data' }, withCredentials: true }
-    if (xsrf) { try { config.headers['X-XSRF-TOKEN'] = decodeURIComponent(xsrf) } catch (_) { config.headers['X-XSRF-TOKEN'] = xsrf } }
-    const res = await axios.post('/api/superadmin/avatar', formData, config)
+
+    // Upload avatar to superadmin endpoint
+    const res = await axios.post('/api/superadmin/avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'X-XSRF-TOKEN': xsrfToken || '',
+      },
+      withCredentials: true,
+    })
+
     if (res.data && res.data.ok) {
+      // Update local avatar immediately
       superAdminProfile.value.avatarUrl = res.data.avatarUrl + '?t=' + Date.now()
+
+      // Optionally refresh profile from server to ensure consistency
+      try {
+        const profileRes = await axios.get('/api/superadmin-profile', { withCredentials: true })
+        if (profileRes.data && profileRes.data.ok && profileRes.data.user) {
+          superAdminProfile.value.avatarUrl = profileRes.data.user.avatarUrl
+        }
+      } catch (profileError) {
+        console.log('Profile refresh skipped, using direct upload response')
+      }
+
       alert('Profile picture updated successfully!')
+    } else {
+      alert(res.data.message || 'Failed to upload profile picture.')
     }
   } catch (e) {
     console.error('Avatar upload failed:', e)
-    alert('Failed to upload profile picture. Please try again.')
+    const errorMessage = e?.response?.data?.message || e?.message || 'Failed to upload profile picture. Please try again.'
+    alert(errorMessage)
   }
 }
 

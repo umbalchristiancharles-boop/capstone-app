@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 09, 2026 at 12:10 PM
+-- Generation Time: Mar 09, 2026 at 06:12 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -721,7 +721,14 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (360, 'App\\Models\\User', 43, 'auth-token', '6898ab8a1706e50d5741f978769f9adf19bd336e1d17cde9c437d59de8711884', '[\"*\"]', NULL, NULL, '2026-03-09 07:15:41', '2026-03-09 07:15:41'),
 (361, 'App\\Models\\User', 43, 'auth-token', 'f0592bc7383de5d2df2bf503b0199353358e4e04eb8b1a0ca03f57f7db654e51', '[\"*\"]', NULL, NULL, '2026-03-09 07:16:55', '2026-03-09 07:16:55'),
 (362, 'App\\Models\\User', 28, 'auth-token', 'da777e0bc6611ebd44e56f2c8abc7820693c96b27040fe480859c0619155aca7', '[\"*\"]', NULL, NULL, '2026-03-09 07:17:32', '2026-03-09 07:17:32'),
-(363, 'App\\Models\\User', 43, 'auth-token', '7c341743d19498255fa5c8ff7f6e46b13f378a37feed02b6546b0a27542a2142', '[\"*\"]', NULL, NULL, '2026-03-09 07:37:28', '2026-03-09 07:37:28');
+(363, 'App\\Models\\User', 43, 'auth-token', '7c341743d19498255fa5c8ff7f6e46b13f378a37feed02b6546b0a27542a2142', '[\"*\"]', NULL, NULL, '2026-03-09 07:37:28', '2026-03-09 07:37:28'),
+(364, 'App\\Models\\User', 43, 'auth-token', 'a17660c97650fd5631401deeffb3fbda32fa9a3e6e8617b57dd61d6bc1ca3fee', '[\"*\"]', NULL, NULL, '2026-03-09 13:45:40', '2026-03-09 13:45:40'),
+(365, 'App\\Models\\User', 28, 'auth-token', '9dc41fe23326f772b0c2522d5d004d20f9829f93c7e1529ced0e3d73c0b5ae3f', '[\"*\"]', NULL, NULL, '2026-03-09 13:46:03', '2026-03-09 13:46:03'),
+(366, 'App\\Models\\User', 31, 'auth-token', 'c8cb6b48fd94642e87bf5dc24ce074a3b4ef44a5e01ac4204c455cda00de5974', '[\"*\"]', NULL, NULL, '2026-03-09 13:47:02', '2026-03-09 13:47:02'),
+(367, 'App\\Models\\User', 42, 'auth-token', '2ce1b26f0c3cc69778f57c5ab4d0787aabffada7aa79c2034e8e4ae6754ddbb2', '[\"*\"]', NULL, NULL, '2026-03-09 13:48:36', '2026-03-09 13:48:36'),
+(368, 'App\\Models\\User', 28, 'auth-token', '06dca951fec1a95ff091046de9c1e488b599b73f642a12e2514154dc4e5470e5', '[\"*\"]', NULL, NULL, '2026-03-09 14:55:54', '2026-03-09 14:55:54'),
+(369, 'App\\Models\\User', 42, 'auth-token', '2ec786c3a41c85c494c07984559a1d71b3ea15e85747faca0602cb5d22940f7b', '[\"*\"]', NULL, NULL, '2026-03-09 16:43:01', '2026-03-09 16:43:01'),
+(370, 'App\\Models\\User', 28, 'auth-token', 'c10afc29b39bef3b8835813d612e37db75efed1fa2dee2d5d263eb3136da0ded', '[\"*\"]', NULL, NULL, '2026-03-09 17:12:05', '2026-03-09 17:12:05');
 
 -- --------------------------------------------------------
 
@@ -782,7 +789,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('sMwLqasTVTmtyzfDYsK8ebCxkzrbdWwUFrXIQHNY', 43, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiaHBVUHdsMzlvZFJxVWJKallUNVFqeTZWQVpEd2w2T3h1c0JZSWhwUyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6NDM7czo3OiJ1c2VyX2lkIjtpOjQzO3M6OToidXNlcl9yb2xlIjtzOjc6Ik1BTkFHRVIiO3M6OToidXNlcl9uYW1lIjtzOjMzOiJIUiBNYW5hZ2VyIC0gVGFnYXl0YXkgQ2l0eSBCcmFuY2giO3M6MTM6InJlZGlyZWN0X3BhdGgiO3M6MTE6Ii9tYW5hZ2VyL2hyIjt9', 1773041868);
+('ewrikAtJVKaA3R47jGcDcInNY7p5YxLjmAG4OMpN', 28, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiWHVNY3BBME1YUUppUHRUZWtrcGRGbE9ZRU5valZIelhRM01iY3FnQyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjI4O3M6NzoidXNlcl9pZCI7aToyODtzOjk6InVzZXJfcm9sZSI7czoxMToiU1VQRVJfQURNSU4iO3M6OToidXNlcl9uYW1lIjtzOjIwOiJTdXBlciBBZG1pbmlzdHJhdG9ycyI7czoxMzoicmVkaXJlY3RfcGF0aCI7czoxODoiL3N1cGVyLWFkbWluLXBhbmVsIjt9', 1773076353),
+('gwKJiuBuSVSrSM9PrqF0R8VxhDr4pQoONeDU2nLd', 42, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiTUJUc2ZmbzE2dE5ocjg3eGd6Tk40cWdVbVo0NklXbUpNWWUzRU1OaSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6NDI7czo3OiJ1c2VyX2lkIjtpOjQyO3M6OToidXNlcl9yb2xlIjtzOjU6IkFETUlOIjtzOjk6InVzZXJfbmFtZSI7czoyODoiQWRtaW4gLSBUYWdheXRheSBDaXR5IEJyYW5jaCI7czoxMzoicmVkaXJlY3RfcGF0aCI7czoxMjoiL2FkbWluLXBhbmVsIjt9', 1773074592);
 
 -- --------------------------------------------------------
 
@@ -842,7 +850,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `email`, `username`, `full_name`, `name`, `password`, `email_verified_at`, `role`, `branch_id`, `department`, `remember_token`, `created_at`, `updated_at`, `deleted_at`, `must_change_password`, `is_active`, `address`, `avatar_url`, `phone_number`) VALUES
-(28, 'superadmin@example.com', 'superadmin', 'Super Administrators', NULL, '$2y$12$f67akYY/xm/H9KJoqytmXeblCxSgZ786slMmHkmqzlMozGUn3Ew7G', '2026-03-05 15:03:55', 'SUPER_ADMIN', NULL, NULL, NULL, '2026-03-05 15:03:55', '2026-03-05 16:01:06', NULL, 0, 1, NULL, '/storage/avatars/hkt6q9sq1yYpnTGkMyayeLp3bmIjf5hPNM2LnCBo.png', NULL),
+(28, 'superadmin@example.com', 'superadmin', 'Super Administrators', NULL, '$2y$12$f67akYY/xm/H9KJoqytmXeblCxSgZ786slMmHkmqzlMozGUn3Ew7G', '2026-03-05 15:03:55', 'SUPER_ADMIN', NULL, NULL, NULL, '2026-03-05 15:03:55', '2026-03-05 16:01:06', NULL, 0, 1, NULL, '/storage/avatars/avatar_28_1773076289.jpg', NULL),
 (29, 'umbal.christiancharles@ncst.edu.ph', 'umballs', NULL, NULL, '$2y$12$05J2guUFR9PN1TuRwlF0WuRcRx2CyKeVChVKwIORgl.IMiK.fqsQC', '2026-03-05 20:00:52', 'customer', NULL, NULL, NULL, '2026-03-05 20:00:52', '2026-03-05 20:00:52', NULL, 1, 1, NULL, NULL, NULL),
 (31, 'admin@chikintayo.com', 'Parks', 'Mr.parks', NULL, '$2y$12$/jjxezfu4JAW55dvduVkVu7hpmk5CBXg2GWKtlT17A8jEMfJFpY8y', NULL, 'OWNER', NULL, NULL, NULL, '2026-03-07 04:30:58', '2026-03-07 04:30:58', NULL, 0, 1, NULL, NULL, 'admin'),
 (42, 'admin_br886318@chikintayo.com', 'admin_br886318', 'Admin - Tagaytay City Branch', NULL, '$2y$12$kFMyDbpWuvy7AC7vNHcBAuZxyhNLkAu6TiHcWxhGCfIPDyRfsSksS', NULL, 'ADMIN', 11, NULL, NULL, '2026-03-09 06:01:42', '2026-03-09 06:04:59', NULL, 0, 1, NULL, NULL, NULL),
@@ -1020,7 +1028,7 @@ ALTER TABLE `attendance`
 -- AUTO_INCREMENT for table `attendance_settings`
 --
 ALTER TABLE `attendance_settings`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
 -- AUTO_INCREMENT for table `branches`
@@ -1074,7 +1082,7 @@ ALTER TABLE `order_items`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=364;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=371;
 
 --
 -- AUTO_INCREMENT for table `products`

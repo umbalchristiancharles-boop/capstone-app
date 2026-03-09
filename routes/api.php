@@ -76,7 +76,7 @@ Route::middleware('web')->group(function () {
     Route::get('/superadmin/all-staff', [\App\Http\Controllers\Api\SuperAdminController::class, 'allStaff']);
 Route::post('/superadmin/announce', [\App\Http\Controllers\Api\SuperAdminController::class, 'sendAnnouncement']);
     Route::post('/superadmin/terms', [\App\Http\Controllers\Api\SuperAdminController::class, 'updateTerms']);
-    
+
 // SuperAdmin Logistics - Product Management across all branches
     Route::get('/superadmin/logistics/products', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsProducts']);
     Route::post('/superadmin/logistics/products', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsStoreProduct']);
@@ -89,6 +89,38 @@ Route::post('/superadmin/announce', [\App\Http\Controllers\Api\SuperAdminControl
     Route::post('/superadmin/branches', [\App\Http\Controllers\Api\SuperAdminController::class, 'storeBranch']);
     // Delete a branch (soft-delete branch and associated user accounts)
     Route::delete('/superadmin/branches/{id}', [\App\Http\Controllers\Api\SuperAdminController::class, 'deleteBranch']);
+
+    // ==========================================
+    // SUPERADMIN FINANCE MODULE
+    // Financial monitoring, analytics, and reporting across all branches
+    // ==========================================
+    Route::prefix('superadmin/finance')->group(function () {
+        // Dashboard - Get financial KPIs
+        Route::get('/dashboard', [\App\Http\Controllers\SuperAdmin\Finance\SuperAdminFinanceController::class, 'dashboard']);
+
+        // Branch Financial Performance
+        Route::get('/branches', [\App\Http\Controllers\SuperAdmin\Finance\SuperAdminFinanceController::class, 'branches']);
+
+        // Transaction Monitoring
+        Route::get('/transactions', [\App\Http\Controllers\SuperAdmin\Finance\SuperAdminTransactionController::class, 'index']);
+        Route::get('/transactions/{id}', [\App\Http\Controllers\SuperAdmin\Finance\SuperAdminTransactionController::class, 'show']);
+
+        // Expense Monitoring (placeholder - no expenses table yet)
+        Route::get('/expenses', [\App\Http\Controllers\SuperAdmin\Finance\SuperAdminExpenseController::class, 'index']);
+        Route::get('/expenses/summary', [\App\Http\Controllers\SuperAdmin\Finance\SuperAdminExpenseController::class, 'summary']);
+
+        // Refund Monitoring
+        Route::get('/refunds', [\App\Http\Controllers\SuperAdmin\Finance\SuperAdminRefundController::class, 'index']);
+        Route::get('/refunds/summary', [\App\Http\Controllers\SuperAdmin\Finance\SuperAdminRefundController::class, 'summary']);
+
+        // Settlement Monitoring (placeholder - no settlements table yet)
+        Route::get('/settlements', [\App\Http\Controllers\SuperAdmin\Finance\SuperAdminSettlementController::class, 'index']);
+        Route::get('/settlements/summary', [\App\Http\Controllers\SuperAdmin\Finance\SuperAdminSettlementController::class, 'summary']);
+
+        // Finance Reports
+        Route::get('/reports', [\App\Http\Controllers\SuperAdmin\Finance\SuperAdminReportController::class, 'index']);
+        Route::get('/export', [\App\Http\Controllers\SuperAdmin\Finance\SuperAdminReportController::class, 'export']);
+    });
 
     // ==========================================
     // SUPERADMIN CASHIER

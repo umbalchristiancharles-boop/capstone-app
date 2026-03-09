@@ -36,6 +36,12 @@ const routes = [
     meta: { requiresAuth: true, role: 'superadmin' }
   },
   {
+    path: '/super-admin/finance',
+    name: 'SuperAdminFinance',
+    component: () => import('../components/SuperAdminFinance.vue'),
+    meta: { requiresAuth: true, role: 'superadmin' }
+  },
+  {
     path: '/owner-panel',
     name: 'OwnerPanel',
     component: () => import('../components/OwnerPanel.vue'),
