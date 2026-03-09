@@ -134,6 +134,9 @@ class ManagerDashboardController extends Controller
             ['item' => 'Gravy', 'qty' => 5],
         ];
 
+        // Format sales with peso sign and 2 decimal places
+        $salesFormatted = '₱' . number_format($stats['sales'], 2);
+
         return response()->json([
             'success' => true,
             'branch' => [
@@ -142,21 +145,30 @@ class ManagerDashboardController extends Controller
                 'code' => $branch->code,
                 'address' => $branch->address,
             ],
+            // Return both formats for compatibility:
+            // 1. Top-level fields (matching adminpanel.vue expectations)
+            'orders' => $stats['orders'],
+            'completed' => $stats['completed'],
+            'pending' => $stats['pending'],
+            'sales' => $salesFormatted,
+            'sales_raw' => $stats['sales'],
+            // 2. Stats object (original format)
             'stats' => [
                 'orders' => $stats['orders'],
                 'completed' => $stats['completed'],
                 'pending' => $stats['pending'],
-                'sales' => '₱' . number_format($stats['sales'], 2),
+                'sales' => $salesFormatted,
             ],
             'summary' => [
                 'totalEmployees' => $staffCount,
-                'activeStaff' => $staffCount, // Could be enhanced with clock-in data
+                'activeStaff' => $staffCount,
             ],
-            'recentOrders' => $recentOrders,
-            'productionQueue' => $productionQueue,
-            'staffActivity' => $staffActivity,
-            'topProducts' => $topProducts,
-            'lowStockItems' => $lowStockItems,
+            // Include recent orders for display
+            'recent_orders' => $recentOrders,
+            'production_queue' => $productionQueue,
+            'staff_activity' => $staffActivity,
+            'top_products' => $topProducts,
+            'low_stock_items' => $lowStockItems,
         ]);
     }
 

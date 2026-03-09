@@ -68,7 +68,11 @@ const extractArray = (response, key = null) => {
 }
 
 const userProfile = ref({})
-const dashboardTotals = ref({ totalSales: 0, pendingApprovals: 0, revenue: 0 })
+const dashboardTotals = ref({
+  totalSales: '₱0',
+  pendingApprovals: 0,
+  revenue: '₱0'
+})
 const financeReports = ref([])
 const transactions = ref([])
 
@@ -100,8 +104,15 @@ async function confirmLogout() {
 onMounted(async () => {
   const res = await axios.get('/api/manager/finance/profile', { withCredentials: true })
   userProfile.value = res.data.user
+
   const dash = await axios.get('/api/manager/finance/dashboard', { withCredentials: true })
-  dashboardTotals.value = dash.data
+  // Map API response to component's expected format
+  dashboardTotals.value = {
+    totalSales: dash.data.totalRevenue ? '₱' + Number(dash.data.totalRevenue).toLocaleString('en-PH', { minimumFractionDigits: 2 }) : '₱0',
+    pendingApprovals: dash.data.pendingApprovals || 0,
+    revenue: dash.data.netProfit ? '₱' + Number(dash.data.netProfit).toLocaleString('en-PH', { minimumFractionDigits: 2 }) : '₱0'
+  }
+
   const reports = await axios.get('/api/manager/finance/reports', { withCredentials: true })
   financeReports.value = extractArray(reports.data, 'reports')
   const tx = await axios.get('/api/manager/finance/transactions', { withCredentials: true })

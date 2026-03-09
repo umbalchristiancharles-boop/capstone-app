@@ -15,7 +15,6 @@ class DatabaseSeeder extends Seeder
             TestUserSeeder::class,
             AdminUserSeeder::class,
             SuperAdminSeeder::class,
-            OrdersTableSeeder::class,
             ProductSeeder::class,
         ]);
     }

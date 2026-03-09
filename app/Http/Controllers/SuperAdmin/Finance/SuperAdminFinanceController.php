@@ -96,30 +96,24 @@ class SuperAdminFinanceController extends Controller
         $dateRange = $this->getDateRange($range);
 
         // Build query with optional date filter
+        $completedQuery = Order::where('status', 'completed');
+        $cancelledQuery = Order::where('status', 'cancelled');
         $ordersQuery = Order::query();
-        $completedQuery = Order::query();
-        $cancelledQuery = Order::query();
 
         if ($dateRange[0] !== null && $dateRange[1] !== null) {
-            $ordersQuery->whereBetween('created_at', $dateRange);
             $completedQuery->whereBetween('created_at', $dateRange);
             $cancelledQuery->whereBetween('created_at', $dateRange);
+            $ordersQuery->whereBetween('created_at', $dateRange);
         }
 
         // Total Revenue - SUM of grand_total from completed orders
-        $totalRevenue = (float) $completedQuery->clone()
-            ->where('status', 'completed')
-            ->sum('grand_total');
+        $totalRevenue = (float) $completedQuery->sum('grand_total');
 
         // Total Orders - COUNT of completed orders only (for accurate financial reporting)
-        $totalOrders = (int) $ordersQuery->clone()
-            ->where('status', 'completed')
-            ->count();
+        $totalOrders = (int) $ordersQuery->where('status', 'completed')->count();
 
         // Total Refunds - SUM of grand_total from cancelled orders
-        $totalRefunds = (float) $cancelledQuery->clone()
-            ->where('status', 'cancelled')
-            ->sum('grand_total');
+        $totalRefunds = (float) $cancelledQuery->sum('grand_total');
 
         // Total Expenses - placeholder (0 for now)
         $totalExpenses = 0.0;
