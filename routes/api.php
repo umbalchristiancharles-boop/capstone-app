@@ -205,6 +205,16 @@ Route::post('/superadmin/announce', [\App\Http\Controllers\Api\SuperAdminControl
         Route::get('/logistics/deliveries', [\App\Http\Controllers\Api\ManagerProfileController::class, 'logisticsDeliveries']);
         Route::get('/logistics/suppliers', [\App\Http\Controllers\Api\ManagerProfileController::class, 'logisticsSuppliers']);
 
+        // Budget Request System - Logistics Manager (Read-only inventory + Budget requests)
+        Route::get('/logistics/inventory', [\App\Http\Controllers\Manager\BudgetRequestController::class, 'getInventory']);
+        Route::get('/logistics/budget/my-requests', [\App\Http\Controllers\Manager\BudgetRequestController::class, 'getMyRequests']);
+        Route::post('/logistics/budget/create', [\App\Http\Controllers\Manager\BudgetRequestController::class, 'createRequest']);
+
+        // Budget Request System - Finance Manager (Approval/Rejection)
+        Route::get('/finance/budget/all', [\App\Http\Controllers\Manager\BudgetRequestController::class, 'getAllRequests']);
+        Route::put('/finance/budget/{id}/approve', [\App\Http\Controllers\Manager\BudgetRequestController::class, 'approveRequest']);
+        Route::put('/finance/budget/{id}/reject', [\App\Http\Controllers\Manager\BudgetRequestController::class, 'rejectRequest']);
+
         Route::get('/inventory/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'invProfile']);
         Route::put('/inventory/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'updateInvProfile']);
         Route::get('/inventory/dashboard', [\App\Http\Controllers\Api\ManagerProfileController::class, 'invDashboard']);

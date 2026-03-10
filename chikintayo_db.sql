@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 10, 2026 at 10:38 AM
+-- Generation Time: Mar 10, 2026 at 05:29 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -83,6 +83,33 @@ CREATE TABLE `branches` (
 
 INSERT INTO `branches` (`id`, `code`, `name`, `address`, `is_active`, `created_at`, `updated_at`) VALUES
 (13, 'BR042835', 'Tagayatay Branch', 'Tagaytay', 1, '2026-03-10 08:07:36', '2026-03-10 08:07:36');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `budget_requests`
+--
+
+CREATE TABLE `budget_requests` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `branch_id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `purpose` varchar(500) NOT NULL,
+  `requested_amount` decimal(10,2) NOT NULL,
+  `status` enum('Pending','Approved','Rejected') NOT NULL DEFAULT 'Pending',
+  `date_requested` date NOT NULL,
+  `processed_by` bigint(20) UNSIGNED DEFAULT NULL,
+  `date_processed` date DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `budget_requests`
+--
+
+INSERT INTO `budget_requests` (`id`, `branch_id`, `user_id`, `purpose`, `requested_amount`, `status`, `date_requested`, `processed_by`, `date_processed`, `created_at`, `updated_at`) VALUES
+(1, 13, 51, 'For new budget', 1000.00, 'Approved', '2026-03-10', 50, '2026-03-11', '2026-03-10 15:42:44', '2026-03-10 16:26:46');
 
 -- --------------------------------------------------------
 
@@ -258,7 +285,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (37, '2026_03_06_043915_add_payment_fields_to_orders_table', 3),
 (38, '2026_03_06_043929_create_order_items_table', 3),
 (39, '2026_03_10_000000_add_is_active_to_products_table', 4),
-(40, '2026_03_15_000000_add_min_stock_to_products_table', 5);
+(40, '2026_03_15_000000_add_min_stock_to_products_table', 5),
+(41, '2026_03_20_000000_create_budget_requests_table', 6);
 
 -- --------------------------------------------------------
 
@@ -753,7 +781,16 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (388, 'App\\Models\\User', 49, 'auth-token', 'cbbef19ab393c6b92a45e49e729e651c6c82d1d87dd2f4ed4cff4fbdf6c72a28', '[\"*\"]', NULL, NULL, '2026-03-10 08:37:47', '2026-03-10 08:37:47'),
 (389, 'App\\Models\\User', 49, 'auth-token', 'a57293ef1c520af101e6ae063e6ff590fa5afe0f4eee82638d8f77b5e1f6e62b', '[\"*\"]', NULL, NULL, '2026-03-10 09:24:10', '2026-03-10 09:24:10'),
 (390, 'App\\Models\\User', 53, 'auth-token', 'a711883e2c5c2bb4298060f889ff2f85fcbce95b8059d549d6d346a0a03156cc', '[\"*\"]', NULL, NULL, '2026-03-10 09:36:47', '2026-03-10 09:36:47'),
-(391, 'App\\Models\\User', 28, 'auth-token', '640f356e88515ce05d5cb2d4c759cea28e5f5ea371cf45fee45f266d5d5a7c02', '[\"*\"]', NULL, NULL, '2026-03-10 09:37:10', '2026-03-10 09:37:10');
+(391, 'App\\Models\\User', 28, 'auth-token', '640f356e88515ce05d5cb2d4c759cea28e5f5ea371cf45fee45f266d5d5a7c02', '[\"*\"]', NULL, NULL, '2026-03-10 09:37:10', '2026-03-10 09:37:10'),
+(392, 'App\\Models\\User', 28, 'auth-token', '2ba4dbc04012a9cbb48be27b66b2540ece8fcf7593e9e6b95cd4897f632c0383', '[\"*\"]', NULL, NULL, '2026-03-10 14:08:14', '2026-03-10 14:08:14'),
+(393, 'App\\Models\\User', 49, 'auth-token', 'd788cad5b3bd4bd563b51f8a6715f4d4d3776e8b13a4eaae14a2fa2fb2805274', '[\"*\"]', NULL, NULL, '2026-03-10 15:38:54', '2026-03-10 15:38:54'),
+(394, 'App\\Models\\User', 51, 'auth-token', '7962409eeef4cc6fa9954475018193d95b1b8146b5f08b8dd741c5701bbcb734', '[\"*\"]', NULL, NULL, '2026-03-10 15:39:55', '2026-03-10 15:39:55'),
+(395, 'App\\Models\\User', 51, 'auth-token', '562ec0108d16f6f7b418b2877efa422984163a1d6b626786b620eb23fe9e98bd', '[\"*\"]', NULL, NULL, '2026-03-10 15:40:41', '2026-03-10 15:40:41'),
+(396, 'App\\Models\\User', 49, 'auth-token', '1499901edf84477d6454a1d1f3e1503b1a409b1ab9295894a99434f7f7339df7', '[\"*\"]', NULL, NULL, '2026-03-10 15:45:38', '2026-03-10 15:45:38'),
+(397, 'App\\Models\\User', 50, 'auth-token', 'c222cd5753f1dbfd197d24bd53f90b67a2b589600f29147afb8914721f10a53e', '[\"*\"]', NULL, NULL, '2026-03-10 15:47:26', '2026-03-10 15:47:26'),
+(398, 'App\\Models\\User', 50, 'auth-token', '06e0d0d241c222267275ae3f5bf4a71b786ef29c88efd7ebdbdc8218d0079675', '[\"*\"]', NULL, NULL, '2026-03-10 15:48:12', '2026-03-10 15:48:12'),
+(399, 'App\\Models\\User', 49, 'auth-token', '53a1f29a186a2d902379a84ad8743f8a71b0a0642ffe7e1daaa47c28b3b9677f', '[\"*\"]', NULL, NULL, '2026-03-10 16:26:59', '2026-03-10 16:26:59'),
+(400, 'App\\Models\\User', 51, 'auth-token', '14a9e72f2f2aae8efd0df6a603d459a20dbde00800c8728d03ba5036a712f2b0', '[\"*\"]', NULL, NULL, '2026-03-10 16:27:27', '2026-03-10 16:27:27');
 
 -- --------------------------------------------------------
 
@@ -821,7 +858,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('pqwOKk1RnCOTZKpMLXN75pmuwM64p80WYvDjoE0s', 28, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiVmhDUlFBNWRXVFU4Z1ZzeVZVT0ZEQUVTRkxaUjlQd3oxV3RsaGxQZCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NjM6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdG9yYWdlL2F2YXRhcnMvYXZhdGFyXzI4XzE3NzMxMTg4OTQud2VicCI7czo1OiJyb3V0ZSI7Tjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6Mjg7czo3OiJ1c2VyX2lkIjtpOjI4O3M6OToidXNlcl9yb2xlIjtzOjExOiJTVVBFUl9BRE1JTiI7czo5OiJ1c2VyX25hbWUiO3M6MjA6IlN1cGVyIEFkbWluaXN0cmF0b3JzIjtzOjEzOiJyZWRpcmVjdF9wYXRoIjtzOjE4OiIvc3VwZXItYWRtaW4tcGFuZWwiO30=', 1773135454);
+('5DSCA4lgmJdEdX3tJxF1EMWK8cTJg8G4sd23DtK1', 28, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiY0xqNUg1dzFZVURZSVBualJxRnl3ZnZMdWZmSllmRUR0a3h3ajVSYiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mzk6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdXBlci1hZG1pbi1wYW5lbCI7czo1OiJyb3V0ZSI7czoyMDoic3VwZXJhZG1pbi5kYXNoYm9hcmQiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToyODtzOjc6InVzZXJfaWQiO2k6Mjg7czo5OiJ1c2VyX3JvbGUiO3M6MTE6IlNVUEVSX0FETUlOIjtzOjk6InVzZXJfbmFtZSI7czoyMDoiU3VwZXIgQWRtaW5pc3RyYXRvcnMiO3M6MTM6InJlZGlyZWN0X3BhdGgiO3M6MTg6Ii9zdXBlci1hZG1pbi1wYW5lbCI7fQ==', 1773157479),
+('xNDMSpmkfOmt5VLfb4sXbFGDbgG29LP7nSSpZSRc', 51, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiWTY5YUM1b0ZCY0hMa3kydzhvS2VjVmgxajlNcE9BeFlYTjRzVVZqViI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjUxO3M6NzoidXNlcl9pZCI7aTo1MTtzOjk6InVzZXJfcm9sZSI7czo3OiJNQU5BR0VSIjtzOjk6InVzZXJfbmFtZSI7czozNjoiTG9naXN0aWNzIE1hbmFnZXIgLSBUYWdheWF0YXkgQnJhbmNoIjtzOjEzOiJyZWRpcmVjdF9wYXRoIjtzOjE4OiIvbWFuYWdlci9sb2dpc3RpY3MiO30=', 1773160049);
 
 -- --------------------------------------------------------
 
@@ -888,13 +926,13 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `email`, `username`, `full_name`, `name`, `password`, `email_verified_at`, `role`, `branch_id`, `department`, `remember_token`, `created_at`, `updated_at`, `deleted_at`, `must_change_password`, `is_active`, `address`, `avatar_url`, `phone_number`) VALUES
-(28, 'superadmin@example.com', 'superadmin', 'Super Administrators', NULL, '$2y$12$f67akYY/xm/H9KJoqytmXeblCxSgZ786slMmHkmqzlMozGUn3Ew7G', '2026-03-05 15:03:55', 'SUPER_ADMIN', NULL, NULL, NULL, '2026-03-05 15:03:55', '2026-03-05 16:01:06', NULL, 0, 1, NULL, '/storage/avatars/avatar_28_1773118894.webp', NULL),
+(28, 'superadmin@example.com', 'superadmin', 'Super Administrators', NULL, '$2y$12$f67akYY/xm/H9KJoqytmXeblCxSgZ786slMmHkmqzlMozGUn3Ew7G', '2026-03-05 15:03:55', 'SUPER_ADMIN', NULL, NULL, NULL, '2026-03-05 15:03:55', '2026-03-05 16:01:06', NULL, 0, 1, NULL, '/storage/avatars/avatar_28_1773151707.jpg', NULL),
 (29, 'umbal.christiancharles@ncst.edu.ph', 'umballs', NULL, NULL, '$2y$12$05J2guUFR9PN1TuRwlF0WuRcRx2CyKeVChVKwIORgl.IMiK.fqsQC', '2026-03-05 20:00:52', 'customer', NULL, NULL, NULL, '2026-03-05 20:00:52', '2026-03-05 20:00:52', NULL, 1, 1, NULL, NULL, NULL),
 (31, 'admin@chikintayo.com', 'Parks', 'Mr.parks', NULL, '$2y$12$/jjxezfu4JAW55dvduVkVu7hpmk5CBXg2GWKtlT17A8jEMfJFpY8y', NULL, 'OWNER', NULL, NULL, NULL, '2026-03-07 04:30:58', '2026-03-07 04:30:58', NULL, 0, 1, NULL, NULL, 'admin'),
 (48, 'admin_br042835@chikintayo.com', 'admin_br042835', 'Admin - Tagayatay Branch', NULL, '$2y$12$GLjAr8wb3iucYqZzdAvoQeCGFa49ZV9jVwUPYWay5Z9b7NFN.a2mK', NULL, 'ADMIN', 13, NULL, NULL, '2026-03-10 08:07:37', '2026-03-10 08:07:37', NULL, 1, 1, NULL, NULL, NULL),
 (49, 'hr_br042835@chikintayo.com', 'hr_br042835', 'HR Manager - Tagayatay Branch', NULL, '$2y$12$R.bmNfLo9vkiOSYAqxqf8eOLpvkhJkV0LXs9WrSCRInbny60V5OA6', NULL, 'MANAGER', 13, 'HR', NULL, '2026-03-10 08:07:37', '2026-03-10 08:17:13', NULL, 0, 1, NULL, NULL, NULL),
-(50, 'finance_br042835@chikintayo.com', 'finance_br042835', 'Finance Manager - Tagayatay Branch', NULL, '$2y$12$oHDJ39u5GXLU9EXGys.6I.q67PcvwEg/gxp7iC2fiNzj/B1XgWxcW', NULL, 'MANAGER', 13, 'FINANCE', NULL, '2026-03-10 08:07:37', '2026-03-10 08:07:37', NULL, 1, 1, NULL, NULL, NULL),
-(51, 'logistics_br042835@chikintayo.com', 'logistics_br042835', 'Logistics Manager - Tagayatay Branch', NULL, '$2y$12$fD3sl0X0VGeiRvOWVBA..ODpRNA8L8kQdHwqWAxNLMlnLhJWEOYUq', NULL, 'MANAGER', 13, 'LOGISTICS', NULL, '2026-03-10 08:07:37', '2026-03-10 08:07:37', NULL, 1, 1, NULL, NULL, NULL),
+(50, 'finance_br042835@chikintayo.com', 'finance_br042835', 'Finance Manager - Tagayatay Branch', NULL, '$2y$12$j.aEtfpQr6e/sbMRH5Zes.1Pfz8MnFy053223OC7pXx08UxHkbPzi', NULL, 'MANAGER', 13, 'FINANCE', NULL, '2026-03-10 08:07:37', '2026-03-10 15:47:44', NULL, 0, 1, NULL, NULL, NULL),
+(51, 'logistics_br042835@chikintayo.com', 'logistics_br042835', 'Logistics Manager - Tagayatay Branch', NULL, '$2y$12$qiVb2b/mULecM4QqXEevA.3a.z1I1W8AN5fSLegnYrLgnpDRioSiy', NULL, 'MANAGER', 13, 'LOGISTICS', NULL, '2026-03-10 08:07:37', '2026-03-10 15:40:28', NULL, 0, 1, NULL, NULL, NULL),
 (53, 'janne@gmail.com', 'janne', 'Janne De Guzman', NULL, '$2y$12$gJp.zUv6QW2XnVmYijyJC.sz2E8ctLpQP0FBdb.1QecPO7RBhGLTW', NULL, 'STAFF', 13, 'CASHIER', NULL, '2026-03-10 08:23:16', '2026-03-10 08:24:07', NULL, 0, 1, '2213', NULL, '09156818866');
 
 --
@@ -923,6 +961,15 @@ ALTER TABLE `attendance_settings`
 ALTER TABLE `branches`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `branches_code_unique` (`code`);
+
+--
+-- Indexes for table `budget_requests`
+--
+ALTER TABLE `budget_requests`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `budget_requests_branch_id_foreign` (`branch_id`),
+  ADD KEY `budget_requests_user_id_foreign` (`user_id`),
+  ADD KEY `budget_requests_processed_by_foreign` (`processed_by`);
 
 --
 -- Indexes for table `cache`
@@ -1078,6 +1125,12 @@ ALTER TABLE `branches`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
+-- AUTO_INCREMENT for table `budget_requests`
+--
+ALTER TABLE `budget_requests`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
 -- AUTO_INCREMENT for table `customer_accounts`
 --
 ALTER TABLE `customer_accounts`
@@ -1105,7 +1158,7 @@ ALTER TABLE `jobs`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=41;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
 
 --
 -- AUTO_INCREMENT for table `orders`
@@ -1123,7 +1176,7 @@ ALTER TABLE `order_items`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=392;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=401;
 
 --
 -- AUTO_INCREMENT for table `products`
@@ -1164,6 +1217,14 @@ ALTER TABLE `attendance`
 --
 ALTER TABLE `attendance_settings`
   ADD CONSTRAINT `attendance_settings_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `budget_requests`
+--
+ALTER TABLE `budget_requests`
+  ADD CONSTRAINT `budget_requests_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `budget_requests_processed_by_foreign` FOREIGN KEY (`processed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `budget_requests_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `customer_accounts`
