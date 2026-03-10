@@ -374,8 +374,12 @@ class StaffController extends Controller
             } elseif ($user->role === 'ADMIN') {
                 // ADMIN is per-branch, can create branch-level staff only
                 $allowedRoles = ['BRANCH_MANAGER', 'MANAGER', 'HR', 'STAFF'];
-            } elseif ($user->role === 'BRANCH_MANAGER') {
+            } elseif (in_array($user->role, ['BRANCH_MANAGER', 'MANAGER'])) {
+                // Branch managers and department managers (HR, Finance, etc.) can create HR and staff
                 $allowedRoles = ['HR', 'STAFF'];
+            } elseif ($user->role === 'HR') {
+                // HR can create staff accounts within their branch
+                $allowedRoles = ['STAFF'];
             } else {
                 return response()->json([
                     'success' => false,
@@ -664,7 +668,7 @@ class StaffController extends Controller
                 ], 422);
             }
 
-            if (in_array($user->role, ['HR', 'ADMIN']) && $user->branch_id && (int) $branchId !== (int) $user->branch_id) {
+            if (in_array($user->role, ['HR', 'ADMIN', 'MANAGER']) && $user->branch_id && (int) $branchId !== (int) $user->branch_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Forbidden'
@@ -689,7 +693,7 @@ class StaffController extends Controller
                 }
             }
 
-            if (in_array($user->role, ['HR', 'ADMIN']) && $user->branch_id && $staff->branch_id !== $user->branch_id) {
+            if (in_array($user->role, ['HR', 'ADMIN', 'MANAGER']) && $user->branch_id && $staff->branch_id !== $user->branch_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Forbidden'
@@ -776,7 +780,7 @@ class StaffController extends Controller
 
 
 
-            if (in_array($actor->role, ['HR', 'ADMIN']) && $actor->branch_id && $user->branch_id !== $actor->branch_id) {
+            if (in_array($actor->role, ['HR', 'ADMIN', 'MANAGER']) && $actor->branch_id && $user->branch_id !== $actor->branch_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Forbidden'

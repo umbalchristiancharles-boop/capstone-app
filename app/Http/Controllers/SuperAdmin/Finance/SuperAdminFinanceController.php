@@ -66,7 +66,7 @@ class SuperAdminFinanceController extends Controller
             case 'lastMonth':
                 return [$now->copy()->subMonth()->startOfMonth(), $now->copy()->subMonth()->endOfMonth()];
             case 'all':
-                return [null, null]; // No date filter
+                return [null, null]; // No date filter - return null dates
             default:
                 return [$now->copy()->startOfDay(), $now->copy()->endOfDay()];
         }
@@ -76,6 +76,10 @@ class SuperAdminFinanceController extends Controller
      * GET /api/superadmin/finance/dashboard
      *
      * Get financial dashboard with KPIs aggregated from all branches
+     *
+     * Optional filters:
+     * - range: Date range filter (today, yesterday, thisWeek, thisMonth, lastMonth, all)
+     * - branch_id: Filter by specific branch
      *
      * KPIs:
      * - total_revenue: SUM of grand_total from completed orders
@@ -93,17 +97,29 @@ class SuperAdminFinanceController extends Controller
         }
 
         $range = $request->query('range', 'today');
+        $branchId = $request->query('branch_id');
         $dateRange = $this->getDateRange($range);
 
-        // Build query with optional date filter
+        // Build base query conditions
+        $dateCondition = fn($query) => $query->whereBetween('created_at', $dateRange);
+        
+        // Build query with optional date and branch filters
         $completedQuery = Order::where('status', 'completed');
         $cancelledQuery = Order::where('status', 'cancelled');
         $ordersQuery = Order::query();
 
+        // Apply date filter
         if ($dateRange[0] !== null && $dateRange[1] !== null) {
             $completedQuery->whereBetween('created_at', $dateRange);
             $cancelledQuery->whereBetween('created_at', $dateRange);
             $ordersQuery->whereBetween('created_at', $dateRange);
+        }
+
+        // Apply branch filter if specified
+        if ($branchId) {
+            $completedQuery->where('branch_id', $branchId);
+            $cancelledQuery->where('branch_id', $branchId);
+            $ordersQuery->where('branch_id', $branchId);
         }
 
         // Total Revenue - SUM of grand_total from completed orders
@@ -121,13 +137,26 @@ class SuperAdminFinanceController extends Controller
         // Net Profit = total_revenue - total_expenses - total_refunds
         $netProfit = $totalRevenue - $totalExpenses - $totalRefunds;
 
-        // Get branch count
-        $totalBranches = Branch::count();
+        // Get branch count (filtered or all)
+        if ($branchId) {
+            $totalBranches = 1;
+        } else {
+            $totalBranches = Branch::count();
+        }
 
-        // Get recent transactions (last 10 completed orders within date range)
-        $recentTransactions = Order::with('branch')
-            ->where('status', 'completed')
-            ->when($dateRange[0] !== null, fn($q) => $q->whereBetween('created_at', $dateRange))
+        // Get recent transactions (last 10 completed orders within date range and branch)
+        $recentTransactionsQuery = Order::with('branch')
+            ->where('status', 'completed');
+        
+        if ($dateRange[0] !== null) {
+            $recentTransactionsQuery->whereBetween('created_at', $dateRange);
+        }
+        
+        if ($branchId) {
+            $recentTransactionsQuery->where('branch_id', $branchId);
+        }
+
+        $recentTransactions = $recentTransactionsQuery
             ->orderBy('created_at', 'desc')
             ->limit(10)
             ->get()
@@ -145,15 +174,19 @@ class SuperAdminFinanceController extends Controller
             });
 
         // Get order status breakdown
+        $orderStatusQuery = Order::query();
+        if ($dateRange[0] !== null) {
+            $orderStatusQuery->whereBetween('created_at', $dateRange);
+        }
+        if ($branchId) {
+            $orderStatusQuery->where('branch_id', $branchId);
+        }
+
         $orderStatusBreakdown = [
-            'completed' => (int) Order::when($dateRange[0] !== null, fn($q) => $q->whereBetween('created_at', $dateRange))
-                ->where('status', 'completed')->count(),
-            'pending' => (int) Order::when($dateRange[0] !== null, fn($q) => $q->whereBetween('created_at', $dateRange))
-                ->where('status', 'pending')->count(),
-            'in_kitchen' => (int) Order::when($dateRange[0] !== null, fn($q) => $q->whereBetween('created_at', $dateRange))
-                ->where('status', 'in_kitchen')->count(),
-            'cancelled' => (int) Order::when($dateRange[0] !== null, fn($q) => $q->whereBetween('created_at', $dateRange))
-                ->where('status', 'cancelled')->count(),
+            'completed' => (int) (clone $orderStatusQuery)->where('status', 'completed')->count(),
+            'pending' => (int) (clone $orderStatusQuery)->where('status', 'pending')->count(),
+            'in_kitchen' => (int) (clone $orderStatusQuery)->where('status', 'in_kitchen')->count(),
+            'cancelled' => (int) (clone $orderStatusQuery)->where('status', 'cancelled')->count(),
         ];
 
         return response()->json([
@@ -167,6 +200,7 @@ class SuperAdminFinanceController extends Controller
                 'total_branches' => $totalBranches,
                 'currency' => 'PHP',
                 'date_range' => $range,
+                'branch_id' => $branchId,
             ],
             'order_status_breakdown' => $orderStatusBreakdown,
             'recent_transactions' => $recentTransactions,
@@ -218,22 +252,29 @@ class SuperAdminFinanceController extends Controller
             $branchesQuery->where('id', $branchId);
         }
 
-        $branches = $branchesQuery->get()->map(function ($branch) use ($dateRange) {
+        $branches = $branchesQuery->get()->map(function ($branch) use ($dateRange, $range) {
+            // Build query base
+            $orderQuery = Order::where('branch_id', $branch->id);
+            
+            // Only apply date filter if range is not 'all' and dates are valid
+            $applyDateFilter = ($range !== 'all' && $dateRange[0] !== null && $dateRange[1] !== null);
+            
+            if ($applyDateFilter) {
+                $orderQuery->whereBetween('created_at', $dateRange);
+            }
+
             // Total Sales (completed orders)
-            $totalSales = Order::where('branch_id', $branch->id)
-                ->whereBetween('created_at', $dateRange)
+            $totalSales = (clone $orderQuery)
                 ->where('status', 'completed')
                 ->sum('grand_total');
 
             // Total Orders - count only completed orders (for accurate financial reporting)
-            $totalOrders = Order::where('branch_id', $branch->id)
-                ->whereBetween('created_at', $dateRange)
+            $totalOrders = (clone $orderQuery)
                 ->where('status', 'completed')
                 ->count();
 
             // Total Refunds (cancelled orders)
-            $totalRefunds = Order::where('branch_id', $branch->id)
-                ->whereBetween('created_at', $dateRange)
+            $totalRefunds = (clone $orderQuery)
                 ->where('status', 'cancelled')
                 ->sum('grand_total');
 

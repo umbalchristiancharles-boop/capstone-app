@@ -72,6 +72,30 @@
                     </span>
                   </div>
                 </div>
+                <div class="default-account-item">
+                  <span class="account-role-badge finance-badge">FINANCE MANAGER</span>
+                  <div class="account-details">
+                    <span>Username: <strong>finance_{{ branchForm.code ? branchForm.code.toLowerCase() : 'branchcode' }}</strong></span>
+                    <span>
+                      Password: <strong>{{ showPassword ? defaultPassword : maskedPassword }}</strong>
+                      <button type="button" class="btn btn-secondary" style="margin-left:8px; padding:4px 8px; font-size:0.78rem;" @click="toggleShowPassword">
+                        {{ showPassword ? 'Hide' : 'Show' }}
+                      </button>
+                    </span>
+                  </div>
+                </div>
+                <div class="default-account-item">
+                  <span class="account-role-badge logistics-badge">LOGISTICS MANAGER</span>
+                  <div class="account-details">
+                    <span>Username: <strong>logistics_{{ branchForm.code ? branchForm.code.toLowerCase() : 'branchcode' }}</strong></span>
+                    <span>
+                      Password: <strong>{{ showPassword ? defaultPassword : maskedPassword }}</strong>
+                      <button type="button" class="btn btn-secondary" style="margin-left:8px; padding:4px 8px; font-size:0.78rem;" @click="toggleShowPassword">
+                        {{ showPassword ? 'Hide' : 'Show' }}
+                      </button>
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -428,6 +452,8 @@ onMounted(async () => {
 .account-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
 .admin-chip { background: #e3f2fd; color: #1565c0; }
 .hr-chip { background: #e8f5e9; color: #2e7d32; }
+.finance-chip { background: #fef3c7; color: #b45309; }
+.logistics-chip { background: #e0e7ff; color: #4338ca; }
 .chip-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 .chip-dot.active { background: #28a745; }
 .chip-dot.inactive { background: #dc3545; }
@@ -462,6 +488,8 @@ textarea.form-input { resize: vertical; }
 .account-role-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
 .admin-badge { background: #dbeafe; color: #1d4ed8; }
 .hr-badge { background: #dcfce7; color: #166534; }
+.finance-badge { background: #fef3c7; color: #b45309; }
+.logistics-badge { background: #e0e7ff; color: #4338ca; }
 .account-details { display: flex; flex-direction: column; gap: 2px; font-size: 0.85rem; color: #4b5563; }
 
 .error-message { margin: 0 2rem 1rem; padding: 0.75rem 1rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; color: #dc2626; font-size: 0.9rem; }

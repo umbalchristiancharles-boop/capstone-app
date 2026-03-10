@@ -168,11 +168,11 @@ class ManagerProfileController extends Controller
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
-        // Filter by branch_id
+        // Filter by branch_id - get all staff in the branch (excluding OWNER and SUPER_ADMIN)
         $branchId = $user->branch_id;
         
         $staff = User::where('branch_id', $branchId)
-            ->where('role', 'STAFF')
+            ->whereNotIn('role', ['OWNER', 'SUPER_ADMIN'])
             ->whereNull('deleted_at')
             ->orderBy('full_name', 'asc')
             ->get()
@@ -183,6 +183,7 @@ class ManagerProfileController extends Controller
                     'full_name' => $s->full_name,
                     'email' => $s->email,
                     'phone_number' => $s->phone_number,
+                    'role' => $s->role,
                     'department' => $s->department,
                     'is_active' => $s->is_active,
                     'branch_id' => $s->branch_id,
@@ -270,10 +271,11 @@ class ManagerProfileController extends Controller
 
         $branchId = $user->branch_id;
         
-        // Find staff member - must be in same branch
+        // Find staff member - must be in same branch (and not the manager themselves)
         $staff = User::where('id', $id)
             ->where('branch_id', $branchId)
-            ->where('role', 'STAFF')
+            ->where('id', '!=', $user->id) // Can't edit themselves
+            ->whereNotIn('role', ['OWNER', 'SUPER_ADMIN']) // Can't edit owner/superadmin
             ->first();
 
         if (!$staff) {
@@ -344,10 +346,11 @@ class ManagerProfileController extends Controller
 
         $branchId = $user->branch_id;
         
-        // Find staff member - must be in same branch
+        // Find staff member - must be in same branch (and not the manager themselves)
         $staff = User::where('id', $id)
             ->where('branch_id', $branchId)
-            ->where('role', 'STAFF')
+            ->where('id', '!=', $user->id) // Can't delete themselves
+            ->whereNotIn('role', ['OWNER', 'SUPER_ADMIN']) // Can't delete owner/superadmin
             ->first();
 
         if (!$staff) {

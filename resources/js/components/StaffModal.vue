@@ -687,6 +687,9 @@ export default {
         await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
         let res
 
+        // Use the correct API endpoint based on user role
+        const apiBaseUrl = this.staffApiBaseUrl
+        
         if (this.isEdit) {
           // Edit mode
           const payload = {
@@ -715,14 +718,30 @@ export default {
             payload.password = this.form.password
           }
 
-          res = await axios.put(`/api/admin/staff/${this.staff.id}`, payload, { withCredentials: true })
+          res = await axios.put(`${apiBaseUrl}/staff/${this.staff.id}`, payload, { withCredentials: true })
         } else {
-          // Create mode
-          const formData = this.buildCreateFormData(parsedRole, parsedDepartment)
-          res = await axios.post('/api/admin/staff', formData, { 
-            withCredentials: true, 
-            headers: { 'Content-Type': 'multipart/form-data' } 
-          })
+          // Create mode - build form data based on user role
+          if (this.isManagerHrUser) {
+            // Manager/HR endpoint uses JSON format
+            res = await axios.post(`${apiBaseUrl}/staff`, {
+              username: this.form.username,
+              email: this.form.email,
+              fullName: this.form.full_name,
+              phone: this.form.phone_number || '',
+              department: parsedDepartment || 'Staff',
+              password: this.form.password || this.defaultPasswordValue,
+            }, { 
+              withCredentials: true, 
+              headers: { 'Content-Type': 'application/json' } 
+            })
+          } else {
+            // Admin endpoint uses FormData for full staff creation with documents
+            const formData = this.buildCreateFormData(parsedRole, parsedDepartment)
+            res = await axios.post(`${apiBaseUrl}/staff`, formData, { 
+              withCredentials: true, 
+              headers: { 'Content-Type': 'multipart/form-data' } 
+            })
+          }
         }
 
         if (res.data?.success !== false) {
@@ -833,6 +852,31 @@ export default {
   },
 
   computed: {
+    // Determine the correct API endpoint for staff management based on user role
+    // BRANCH_MANAGER, MANAGER, HR should use /api/manager/hr/staff
+    // OWNER, ADMIN, SUPER_ADMIN should use /api/admin/staff
+    staffApiBaseUrl() {
+      const userRole = window.userRole || ''
+      const role = userRole.toUpperCase()
+      
+      if (role === 'BRANCH_MANAGER' || role === 'MANAGER' || role === 'HR') {
+        return '/api/manager/hr'
+      }
+      return '/api/admin'
+    },
+    
+    // Check if user can use the manager HR endpoint for create/update
+    isManagerHrUser() {
+      const userRole = window.userRole || ''
+      const role = userRole.toUpperCase()
+      return role === 'BRANCH_MANAGER' || role === 'MANAGER' || role === 'HR'
+    },
+    
+    // Reset password always uses admin endpoint (only exists there)
+    resetPasswordApiUrl() {
+      return '/api/admin'
+    },
+    
     defaultPasswordValue() {
       return 'Chikintayo_123'
     },

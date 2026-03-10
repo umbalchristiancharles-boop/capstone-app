@@ -641,7 +641,7 @@ class SuperAdminController extends Controller
     }
 
     /**
-     * Get all branches with their default Admin and HR Manager accounts.
+     * Get all branches with their default Admin, HR Manager, Finance Manager, and Logistics Manager accounts.
      */
     public function branchesWithAccounts(Request $request)
     {
@@ -670,6 +670,18 @@ class SuperAdminController extends Controller
                 ->whereNull('deleted_at')
                 ->first();
 
+            $financeManager = User::where('branch_id', $branch->id)
+                ->where('role', 'MANAGER')
+                ->where('department', 'Finance')
+                ->whereNull('deleted_at')
+                ->first();
+
+            $logisticsManager = User::where('branch_id', $branch->id)
+                ->where('role', 'MANAGER')
+                ->where('department', 'Logistics')
+                ->whereNull('deleted_at')
+                ->first();
+
             $staffCount = User::where('branch_id', $branch->id)
                 ->whereNull('deleted_at')
                 ->count();
@@ -693,6 +705,18 @@ class SuperAdminController extends Controller
                     'email' => $hrManager->email,
                     'is_active' => (bool) $hrManager->is_active,
                 ] : null,
+                'finance_manager' => $financeManager ? [
+                    'id' => $financeManager->id,
+                    'username' => $financeManager->username,
+                    'email' => $financeManager->email,
+                    'is_active' => (bool) $financeManager->is_active,
+                ] : null,
+                'logistics_manager' => $logisticsManager ? [
+                    'id' => $logisticsManager->id,
+                    'username' => $logisticsManager->username,
+                    'email' => $logisticsManager->email,
+                    'is_active' => (bool) $logisticsManager->is_active,
+                ] : null,
             ];
         });
 
@@ -700,7 +724,7 @@ class SuperAdminController extends Controller
     }
 
     /**
-     * Create a new branch with default Admin and HR Manager accounts.
+     * Create a new branch with default Admin, HR Manager, Finance Manager, and Logistics Manager accounts.
      */
     public function storeBranch(Request $request)
     {
@@ -803,11 +827,57 @@ class SuperAdminController extends Controller
                 'must_change_password' => 1,
             ]);
 
+            // Create default Finance Manager account for this branch
+            $financeUsername = 'finance_' . $codeSlug;
+            $financeEmail = 'finance_' . $codeSlug . '@chikintayo.com';
+
+            if (User::where('username', $financeUsername)->exists()) {
+                $financeUsername = 'finance_' . $codeSlug . '_' . $branch->id;
+            }
+            if (User::where('email', $financeEmail)->exists()) {
+                $financeEmail = 'finance_' . $codeSlug . '_' . $branch->id . '@chikintayo.com';
+            }
+
+            User::create([
+                'username' => $financeUsername,
+                'email' => $financeEmail,
+                'password' => $defaultPassword, // Mutator will hash this automatically
+                'full_name' => 'Finance Manager - ' . $name,
+                'role' => 'MANAGER',
+                'department' => 'Finance',
+                'branch_id' => $branch->id,
+                'is_active' => 1,
+                'must_change_password' => 1,
+            ]);
+
+            // Create default Logistics Manager account for this branch
+            $logisticsUsername = 'logistics_' . $codeSlug;
+            $logisticsEmail = 'logistics_' . $codeSlug . '@chikintayo.com';
+
+            if (User::where('username', $logisticsUsername)->exists()) {
+                $logisticsUsername = 'logistics_' . $codeSlug . '_' . $branch->id;
+            }
+            if (User::where('email', $logisticsEmail)->exists()) {
+                $logisticsEmail = 'logistics_' . $codeSlug . '_' . $branch->id . '@chikintayo.com';
+            }
+
+            User::create([
+                'username' => $logisticsUsername,
+                'email' => $logisticsEmail,
+                'password' => $defaultPassword, // Mutator will hash this automatically
+                'full_name' => 'Logistics Manager - ' . $name,
+                'role' => 'MANAGER',
+                'department' => 'Logistics',
+                'branch_id' => $branch->id,
+                'is_active' => 1,
+                'must_change_password' => 1,
+            ]);
+
             DB::commit();
 
             return response()->json([
                 'ok' => true,
-                'message' => "Branch '{$name}' created with default Admin and HR Manager accounts.",
+                'message' => "Branch '{$name}' created with default Admin, HR Manager, Finance Manager, and Logistics Manager accounts.",
                 'branch_id' => $branch->id,
             ], 201);
 

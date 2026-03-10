@@ -28,6 +28,15 @@
           <option value="all">All Time</option>
         </select>
       </div>
+      <div class="filter-group">
+        <label>Branch:</label>
+        <select v-model="selectedBranch" @change="fetchDashboard">
+          <option :value="null">All Branches</option>
+          <option v-for="branch in branches" :key="branch.id" :value="branch.id">
+            {{ branch.name }}
+          </option>
+        </select>
+      </div>
       <button class="btn-refresh" @click="fetchDashboard">Refresh</button>
     </div>
 
@@ -188,6 +197,8 @@ const router = useRouter()
 const loading = ref(true)
 const error = ref(null)
 const selectedRange = ref('today')
+const selectedBranch = ref(null)
+const branches = ref([])
 const dashboard = ref({
   total_revenue: 0,
   total_orders: 0,
@@ -227,8 +238,14 @@ const fetchDashboard = async () => {
   error.value = null
 
   try {
+    // Build params with both range and branch
+    const params = { range: selectedRange.value }
+    if (selectedBranch.value) {
+      params.branch_id = selectedBranch.value
+    }
+
     const response = await axios.get('/api/superadmin/finance/dashboard', {
-      params: { range: selectedRange.value },
+      params,
       withCredentials: true
     })
 
@@ -236,9 +253,9 @@ const fetchDashboard = async () => {
       dashboard.value = response.data.dashboard
       recentTransactions.value = response.data.recent_transactions || []
 
-      // Fetch branch stats with the same date range
+      // Fetch branch stats with the same filters
       const branchResponse = await axios.get('/api/superadmin/finance/branches', {
-        params: { range: selectedRange.value },
+        params,
         withCredentials: true
       })
 
@@ -254,9 +271,35 @@ const fetchDashboard = async () => {
   }
 }
 
+const fetchBranches = async () => {
+  try {
+    const response = await axios.get('/api/superadmin/branches', {
+      withCredentials: true
+    })
+    if (response.data && response.data.ok && response.data.branches) {
+      branches.value = response.data.branches
+    }
+  } catch (err) {
+    console.error('Error fetching branches:', err)
+    // Fallback: try the finance branches endpoint
+    try {
+      const fallbackRes = await axios.get('/api/superadmin/finance/branches', {
+        params: { range: 'all' },
+        withCredentials: true
+      })
+      if (fallbackRes.data && fallbackRes.data.ok && fallbackRes.data.branches) {
+        branches.value = fallbackRes.data.branches
+      }
+    } catch (fallbackErr) {
+      console.error('Fallback also failed:', fallbackErr)
+    }
+  }
+}
+
 // Lifecycle
-onMounted(() => {
-  fetchDashboard()
+onMounted(async () => {
+  await fetchBranches()
+  await fetchDashboard()
 })
 </script>
 
