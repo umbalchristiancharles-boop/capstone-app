@@ -256,7 +256,7 @@ Route::post('/superadmin/announce', [\App\Http\Controllers\Api\SuperAdminControl
             // Staff Finance - Finance staff endpoints
             Route::get('/finance/profile', [\App\Http\Controllers\Staff\StaffProfileController::class, 'profile']);
             Route::put('/finance/profile', [\App\Http\Controllers\Staff\StaffProfileController::class, 'updateProfile']);
-            Route::get('/finance/logs', function() { return response()->json([]); });
+            Route::get('/finance/logs', [\App\Http\Controllers\Staff\StaffFinanceController::class, 'logs']);
 
             // Staff Cashier - Cashier staff endpoints
             Route::get('/cashier/profile', [\App\Http\Controllers\Staff\StaffProfileController::class, 'profile']);

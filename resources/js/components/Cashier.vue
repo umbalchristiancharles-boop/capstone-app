@@ -1,8 +1,16 @@
 <template>
   <div class="cashier-page">
+    <!-- Back to Dashboard Button - Same as Finance Panel -->
+    <button @click="router.push('/super-admin-panel')" class="btn-secondary back-to-dashboard-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="back-icon">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+      Back to Super Admin
+    </button>
+
     <!-- Header -->
     <header class="cashier-header">
-      <button class="back-btn" @click="goBack">← Back to Super Admin</button>
       <div class="header-title">
         <h1>Cashier</h1>
         <p>Process transactions and manage sales</p>
@@ -353,7 +361,34 @@ async function processCheckout() {
 .cashier-page {
   min-height: 100vh;
   background: linear-gradient(180deg, #FF9A4A 0%, #FF6A3D 100%);
-  padding: 20px;
+  padding: 24px;
+}
+
+/* Back to Dashboard Button - Same as Finance Panel */
+.btn-secondary {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  background: #6c757d;
+  color: #fff;
+}
+
+.btn-secondary:hover {
+  background: #5a6268;
+}
+
+.back-to-dashboard-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.back-icon {
+  flex-shrink: 0;
 }
 
 /* Header */

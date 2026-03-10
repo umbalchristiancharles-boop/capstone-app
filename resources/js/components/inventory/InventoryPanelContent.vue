@@ -1,3 +1,17 @@
+<!--
+  =============================================================================
+  DEPRECATED COMPONENT - NOT USED
+  =============================================================================
+  This component is deprecated and not used in the application.
+
+  The active implementation for Inventory functionality is:
+  - InventoryStaffPanel.vue (for staff inventory operations)
+  - ProductList.vue (reusable product list component)
+  - StaffInventoryController.php (backend API)
+
+  This file is kept for reference only and can be safely removed.
+  =============================================================================
+-->
 <template>
   <section>
     <h2>Product List</h2>

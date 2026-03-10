@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 10, 2026 at 05:29 PM
+-- Generation Time: Mar 10, 2026 at 07:20 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -109,7 +109,8 @@ CREATE TABLE `budget_requests` (
 --
 
 INSERT INTO `budget_requests` (`id`, `branch_id`, `user_id`, `purpose`, `requested_amount`, `status`, `date_requested`, `processed_by`, `date_processed`, `created_at`, `updated_at`) VALUES
-(1, 13, 51, 'For new budget', 1000.00, 'Approved', '2026-03-10', 50, '2026-03-11', '2026-03-10 15:42:44', '2026-03-10 16:26:46');
+(1, 13, 51, 'For new budget', 1000.00, 'Approved', '2026-03-10', 50, '2026-03-11', '2026-03-10 15:42:44', '2026-03-10 16:26:46'),
+(2, 13, 51, 'Pang mcdo', 5000.00, 'Approved', '2026-03-11', 50, '2026-03-11', '2026-03-10 18:03:54', '2026-03-10 18:05:33');
 
 -- --------------------------------------------------------
 
@@ -790,7 +791,11 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (397, 'App\\Models\\User', 50, 'auth-token', 'c222cd5753f1dbfd197d24bd53f90b67a2b589600f29147afb8914721f10a53e', '[\"*\"]', NULL, NULL, '2026-03-10 15:47:26', '2026-03-10 15:47:26'),
 (398, 'App\\Models\\User', 50, 'auth-token', '06e0d0d241c222267275ae3f5bf4a71b786ef29c88efd7ebdbdc8218d0079675', '[\"*\"]', NULL, NULL, '2026-03-10 15:48:12', '2026-03-10 15:48:12'),
 (399, 'App\\Models\\User', 49, 'auth-token', '53a1f29a186a2d902379a84ad8743f8a71b0a0642ffe7e1daaa47c28b3b9677f', '[\"*\"]', NULL, NULL, '2026-03-10 16:26:59', '2026-03-10 16:26:59'),
-(400, 'App\\Models\\User', 51, 'auth-token', '14a9e72f2f2aae8efd0df6a603d459a20dbde00800c8728d03ba5036a712f2b0', '[\"*\"]', NULL, NULL, '2026-03-10 16:27:27', '2026-03-10 16:27:27');
+(400, 'App\\Models\\User', 51, 'auth-token', '14a9e72f2f2aae8efd0df6a603d459a20dbde00800c8728d03ba5036a712f2b0', '[\"*\"]', NULL, NULL, '2026-03-10 16:27:27', '2026-03-10 16:27:27'),
+(401, 'App\\Models\\User', 28, 'auth-token', 'da126eae284f865678542db4dbdd6b8a69ff9ecf9d81ee4c5f2e7b9f2dbee051', '[\"*\"]', NULL, NULL, '2026-03-10 17:56:13', '2026-03-10 17:56:13'),
+(402, 'App\\Models\\User', 50, 'auth-token', '6a1868f09a0242ca71a40d800824d141615d112e48d360dca845b100b0f79b8d', '[\"*\"]', NULL, NULL, '2026-03-10 17:57:10', '2026-03-10 17:57:10'),
+(403, 'App\\Models\\User', 51, 'auth-token', '40757b26a8db333b717d3de897a6d938d60d1e724499200a2b8d16fbe6971764', '[\"*\"]', NULL, NULL, '2026-03-10 17:57:56', '2026-03-10 17:57:56'),
+(404, 'App\\Models\\User', 50, 'auth-token', 'df5c684c9632426b97431201c0676bfb6b0bb8dac7d5a85de01f34bdcd457ed9', '[\"*\"]', NULL, NULL, '2026-03-10 18:05:24', '2026-03-10 18:05:24');
 
 -- --------------------------------------------------------
 
@@ -817,7 +822,7 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`id`, `name`, `slug`, `created_at`, `updated_at`, `price`, `stock`, `min_stock`, `sku`, `branch_id`, `is_active`) VALUES
-(12, 'Durex', 'durex', '2026-03-10 08:36:38', '2026-03-10 09:36:59', 350.00, 35, 10, 'SKU-53RSUD', 13, 1);
+(12, 'Durex', 'durex', '2026-03-10 08:36:38', '2026-03-10 18:07:21', 250.00, 35, 10, 'SKU-53RSUD', 13, 1);
 
 -- --------------------------------------------------------
 
@@ -858,7 +863,9 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('5DSCA4lgmJdEdX3tJxF1EMWK8cTJg8G4sd23DtK1', 28, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiY0xqNUg1dzFZVURZSVBualJxRnl3ZnZMdWZmSllmRUR0a3h3ajVSYiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mzk6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdXBlci1hZG1pbi1wYW5lbCI7czo1OiJyb3V0ZSI7czoyMDoic3VwZXJhZG1pbi5kYXNoYm9hcmQiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToyODtzOjc6InVzZXJfaWQiO2k6Mjg7czo5OiJ1c2VyX3JvbGUiO3M6MTE6IlNVUEVSX0FETUlOIjtzOjk6InVzZXJfbmFtZSI7czoyMDoiU3VwZXIgQWRtaW5pc3RyYXRvcnMiO3M6MTM6InJlZGlyZWN0X3BhdGgiO3M6MTg6Ii9zdXBlci1hZG1pbi1wYW5lbCI7fQ==', 1773157479),
+('c1ZceUlQtaCkKNgIydhU0vdwzSOCC0hdemmHambf', 51, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiZVVpSGJ1cGhMbUlCUnl2ZWFGM25TSmFvcWZYSTlZQng3Y0VaMXppSyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mzk6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9tYW5hZ2VyL2xvZ2lzdGljcyI7czo1OiJyb3V0ZSI7Tjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6NTE7czo3OiJ1c2VyX2lkIjtpOjUxO3M6OToidXNlcl9yb2xlIjtzOjc6Ik1BTkFHRVIiO3M6OToidXNlcl9uYW1lIjtzOjM2OiJMb2dpc3RpY3MgTWFuYWdlciAtIFRhZ2F5YXRheSBCcmFuY2giO3M6MTM6InJlZGlyZWN0X3BhdGgiO3M6MTg6Ii9tYW5hZ2VyL2xvZ2lzdGljcyI7fQ==', 1773165943),
+('fteAlkeK4pTupQBIBKDMzOvmvDxvSoS7QFHo4Hpb', 28, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiRUh2UW1pbHFiQWxVbTBlYURCV25rRnVyU1BtTzIxMlc4Z0IyZm83ZCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjI4O3M6NzoidXNlcl9pZCI7aToyODtzOjk6InVzZXJfcm9sZSI7czoxMToiU1VQRVJfQURNSU4iO3M6OToidXNlcl9uYW1lIjtzOjIwOiJTdXBlciBBZG1pbmlzdHJhdG9ycyI7czoxMzoicmVkaXJlY3RfcGF0aCI7czoxODoiL3N1cGVyLWFkbWluLXBhbmVsIjt9', 1773166776),
+('mq6aaG9RPhtse4eWJu45gpRWLwmg2Ev0euoCgokr', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoiR3Q4Z1lXZnI1ZlpZZmw0MDF1WEJJcnNSYnhtTUlqOHpOeFd5d2RsUiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1773166829),
 ('xNDMSpmkfOmt5VLfb4sXbFGDbgG29LP7nSSpZSRc', 51, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiWTY5YUM1b0ZCY0hMa3kydzhvS2VjVmgxajlNcE9BeFlYTjRzVVZqViI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjUxO3M6NzoidXNlcl9pZCI7aTo1MTtzOjk6InVzZXJfcm9sZSI7czo3OiJNQU5BR0VSIjtzOjk6InVzZXJfbmFtZSI7czozNjoiTG9naXN0aWNzIE1hbmFnZXIgLSBUYWdheWF0YXkgQnJhbmNoIjtzOjEzOiJyZWRpcmVjdF9wYXRoIjtzOjE4OiIvbWFuYWdlci9sb2dpc3RpY3MiO30=', 1773160049);
 
 -- --------------------------------------------------------
@@ -1128,7 +1135,7 @@ ALTER TABLE `branches`
 -- AUTO_INCREMENT for table `budget_requests`
 --
 ALTER TABLE `budget_requests`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `customer_accounts`
@@ -1176,7 +1183,7 @@ ALTER TABLE `order_items`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=401;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=405;
 
 --
 -- AUTO_INCREMENT for table `products`

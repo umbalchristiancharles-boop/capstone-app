@@ -5,13 +5,11 @@ namespace App\Http\Controllers\SuperAdmin\Finance;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Settlement;
 
 /**
  * SuperAdmin Settlement Controller
  * Handles settlement/payout monitoring for Super Admin
- *
- * Since there's no settlements table yet, this returns placeholder data
- * for monitoring purposes
  */
 class SuperAdminSettlementController extends Controller
 {
@@ -48,18 +46,6 @@ class SuperAdminSettlementController extends Controller
      * GET /api/superadmin/finance/settlements
      *
      * Return settlement or payout records
-     *
-     * Since there's no settlements table yet, this returns empty array
-     * with appropriate message for monitoring purposes
-     *
-     * Fields (when settlements table exists):
-     * - settlement_id
-     * - branch_id
-     * - amount
-     * - method
-     * - status
-     * - approved_by
-     * - executed_at
      */
     public function index(Request $request)
     {
@@ -76,32 +62,61 @@ class SuperAdminSettlementController extends Controller
 
         $perPage = min(max($perPage, 1), 100);
 
-        // For now, return empty settlements since there's no settlements table
-        $settlements = [];
-        $total = 0;
+        // Build query with filters
+        $query = Settlement::with(['branch', 'processor']);
+
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        // Get total amount
+        $totalAmount = (float) $query->sum('amount');
+
+        // Paginate
+        $settlements = $query->orderBy('created_at', 'desc')
+            ->skip(($page - 1) * $perPage)
+            ->take($perPage)
+            ->get();
+
+        $total = $query->count();
 
         return response()->json([
             'ok' => true,
-            'settlements' => $settlements,
+            'settlements' => $settlements->map(function($settlement) {
+                return [
+                    'id' => $settlement->id,
+                    'branch_id' => $settlement->branch_id,
+                    'branch_name' => $settlement->branch ? $settlement->branch->name : null,
+                    'amount' => $settlement->amount,
+                    'description' => $settlement->description,
+                    'status' => $settlement->status,
+                    'processed_by' => $settlement->processed_by,
+                    'processor_name' => $settlement->processor ? $settlement->processor->full_name : null,
+                    'created_at' => $settlement->created_at,
+                ];
+            }),
             'pagination' => [
                 'current_page' => $page,
                 'per_page' => $perPage,
                 'total' => $total,
-                'total_pages' => 0,
+                'total_pages' => ceil($total / $perPage),
             ],
             'filters' => [
                 'branch_id' => $branchId,
                 'status' => $status,
             ],
-            'message' => 'Settlements tracking will be available once the settlements module is implemented.',
-            'total_amount' => 0.0,
+            'total_amount' => $totalAmount,
         ]);
     }
 
     /**
      * GET /api/superadmin/finance/settlements/summary
      *
-     * Get settlement summary (placeholder)
+     * Get settlement summary
      */
     public function summary(Request $request)
     {
@@ -111,15 +126,22 @@ class SuperAdminSettlementController extends Controller
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
+        $branchId = $request->query('branch_id');
+
+        $query = Settlement::query();
+
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+
         return response()->json([
             'ok' => true,
             'summary' => [
-                'total_settlements' => 0.0,
-                'pending' => 0,
-                'completed' => 0,
-                'rejected' => 0,
+                'total_settlements' => (float) $query->sum('amount'),
+                'pending' => (int) $query->where('status', 'pending')->count(),
+                'completed' => (int) $query->where('status', 'completed')->count(),
+                'cancelled' => (int) $query->where('status', 'cancelled')->count(),
             ],
-            'message' => 'Settlements tracking will be available once the settlements module is implemented.',
         ]);
     }
 }

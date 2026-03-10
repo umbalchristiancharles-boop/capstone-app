@@ -127,6 +127,12 @@ class InventoryController extends Controller
             'note' => 'nullable|string|max:255',
         ]);
 
+        // Additional protection: ensure quantity is never negative
+        $quantity = $request->quantity;
+        if ($quantity < 0) {
+            $quantity = 0;
+        }
+
         // TODO: Implement actual database update
         // For now, return success
         return response()->json([
@@ -134,7 +140,7 @@ class InventoryController extends Controller
             'message' => 'Stock updated successfully',
             'data' => [
                 'id' => $id,
-                'new_quantity' => $request->quantity,
+                'new_quantity' => $quantity,
                 'action' => $request->action,
                 'updated_at' => now()->format('M d, Y H:i'),
             ],
@@ -163,13 +169,19 @@ class InventoryController extends Controller
             'note' => 'nullable|string|max:500',
         ]);
 
+        // Additional protection: ensure quantity is never negative
+        $quantity = $request->quantity;
+        if ($quantity < 0) {
+            $quantity = 0;
+        }
+
         // TODO: Implement actual delivery record in database
         return response()->json([
             'success' => true,
             'message' => 'Delivery recorded successfully',
             'data' => [
                 'item_id' => $request->item_id,
-                'quantity' => $request->quantity,
+                'quantity' => $quantity,
                 'supplier' => $request->supplier,
                 'recorded_at' => now()->format('M d, Y H:i'),
             ],

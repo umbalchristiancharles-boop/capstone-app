@@ -126,6 +126,11 @@ class StaffInventoryController extends Controller
             'sku' => 'nullable|string|unique:products,sku',
         ]);
 
+        // Additional protection: ensure stock is never negative
+        if ($validated['stock'] < 0) {
+            $validated['stock'] = 0;
+        }
+
         /** @var \App\Models\User $user */
         $user = Auth::user();
         $branchId = $user->branch_id;
@@ -181,6 +186,11 @@ class StaffInventoryController extends Controller
             'stock' => 'sometimes|integer|min:0',
             'sku' => 'sometimes|string|unique:products,sku,' . $id,
         ]);
+
+        // Additional protection: ensure stock is never negative
+        if (isset($validated['stock']) && $validated['stock'] < 0) {
+            $validated['stock'] = 0;
+        }
 
         $product->update($validated);
 
