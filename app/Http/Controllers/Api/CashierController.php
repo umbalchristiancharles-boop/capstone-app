@@ -22,13 +22,30 @@ class CashierController extends Controller
 
     /**
      * List products for a given branch (with stock > 0).
+     * Uses authenticated user's branch_id to prevent cross-branch access.
      */
     public function products(Request $request)
     {
+        $user = $request->user();
+
+        // Determine branch_id - use authenticated user's branch, or allow OWNER/SUPER_ADMIN to view all
+        $branchId = null;
+
+        if ($user && in_array($user->role, ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN'])) {
+            // Owners and super admins can view all branches if they specify one
+            $branchId = $request->filled('branch_id') ? $request->branch_id : null;
+        } elseif ($user && $user->branch_id) {
+            // Regular users can only see their own branch
+            $branchId = $user->branch_id;
+        } else {
+            // No branch assigned - return empty
+            return response()->json([]);
+        }
+
         $query = Product::query();
 
-        if ($request->filled('branch_id')) {
-            $query->where('branch_id', $request->branch_id);
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
         }
 
         return response()->json(
@@ -126,14 +143,31 @@ class CashierController extends Controller
 
     /**
      * Recent transactions for the cashier view.
+     * Uses authenticated user's branch_id to prevent cross-branch access.
      */
     public function transactions(Request $request)
     {
+        $user = $request->user();
+
+        // Determine branch_id - use authenticated user's branch, or allow OWNER/SUPER_ADMIN to view all
+        $branchId = null;
+
+        if ($user && in_array($user->role, ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN'])) {
+            // Owners and super admins can view all branches if they specify one
+            $branchId = $request->filled('branch_id') ? $request->branch_id : null;
+        } elseif ($user && $user->branch_id) {
+            // Regular users can only see their own branch
+            $branchId = $user->branch_id;
+        } else {
+            // No branch assigned - return empty
+            return response()->json([]);
+        }
+
         $query = Order::with('items', 'branch')
             ->orderByDesc('ordered_at');
 
-        if ($request->filled('branch_id')) {
-            $query->where('branch_id', $request->branch_id);
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
         }
 
         return response()->json($query->limit(50)->get());

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 10, 2026 at 07:20 PM
+-- Generation Time: Mar 10, 2026 at 08:53 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -82,7 +82,8 @@ CREATE TABLE `branches` (
 --
 
 INSERT INTO `branches` (`id`, `code`, `name`, `address`, `is_active`, `created_at`, `updated_at`) VALUES
-(13, 'BR042835', 'Tagayatay Branch', 'Tagaytay', 1, '2026-03-10 08:07:36', '2026-03-10 08:07:36');
+(13, 'BR042835', 'Tagayatay Branch', 'Tagaytay', 1, '2026-03-10 08:07:36', '2026-03-10 08:07:36'),
+(14, 'BR070561', 'CHKIN TAYO DASMARINAS', 'Dasmarinas Cavite', 1, '2026-03-10 18:58:36', '2026-03-10 18:58:36');
 
 -- --------------------------------------------------------
 
@@ -123,6 +124,18 @@ CREATE TABLE `cache` (
   `value` mediumtext NOT NULL,
   `expiration` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `cache`
+--
+
+INSERT INTO `cache` (`key`, `value`, `expiration`) VALUES
+('laravel-cache-user_token_oeqItKJgv0Kwdb4s6oz00OzRBtT9aw730wgtPI0PscMNEyFthinKY8lT68TZ', 'i:29;', 1775761982),
+('laravel-cache-user_token_uxC7yqGOwyNBlULIEV7iHHiIZ5EYYP2zTc21FjJudqcNaiayHFa8Cbz0MXBu', 'i:58;', 1775762514),
+('laravel-cache-user_token_VNRlPC7iBeyFyndOSDJn3jSnMWEV026J8nBE6Eemnb8JZfragH3kOBcUKWvq', 'i:29;', 1775761774),
+('laravel-cache-user_token_ylRw6y9S2Piz62cYIqPIQpUlgSal0eF03QoCyDXOvdcMGqVKUPhOPj9wkpMJ', 'i:59;', 1775764328),
+('laravel-cache-verification_rate_limit_charlesumbal26@gmail.com', 'i:1;', 1773171070),
+('laravel-cache-verification_rate_limit_christianumbal12@gmail.com', 'i:1;', 1773172874);
 
 -- --------------------------------------------------------
 
@@ -165,7 +178,9 @@ CREATE TABLE `customer_accounts` (
 --
 
 INSERT INTO `customer_accounts` (`id`, `user_id`, `email`, `full_name`, `phone_number`, `address`, `city`, `province`, `postal_code`, `total_comments`, `total_ratings`, `last_activity_at`, `status`, `created_at`, `updated_at`) VALUES
-(2, 29, 'umbal.christiancharles@ncst.edu.ph', 'umballs', NULL, NULL, NULL, NULL, NULL, 0, 0, '2026-03-05 20:00:52', 'active', '2026-03-05 20:00:52', '2026-03-05 20:00:52');
+(2, 29, 'umbal.christiancharles@ncst.edu.ph', 'umballs', NULL, NULL, NULL, NULL, NULL, 0, 0, '2026-03-05 20:00:52', 'active', '2026-03-05 20:00:52', '2026-03-05 20:00:52'),
+(3, 58, 'charlesumbal26@gmail.com', 'rasssss', NULL, NULL, NULL, NULL, NULL, 0, 0, '2026-03-10 19:21:54', 'active', '2026-03-10 19:21:54', '2026-03-10 19:21:54'),
+(4, 59, 'christianumbal12@gmail.com', 'comment', NULL, NULL, NULL, NULL, NULL, 0, 0, '2026-03-10 19:52:08', 'active', '2026-03-10 19:52:08', '2026-03-10 19:52:08');
 
 -- --------------------------------------------------------
 
@@ -795,7 +810,10 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (401, 'App\\Models\\User', 28, 'auth-token', 'da126eae284f865678542db4dbdd6b8a69ff9ecf9d81ee4c5f2e7b9f2dbee051', '[\"*\"]', NULL, NULL, '2026-03-10 17:56:13', '2026-03-10 17:56:13'),
 (402, 'App\\Models\\User', 50, 'auth-token', '6a1868f09a0242ca71a40d800824d141615d112e48d360dca845b100b0f79b8d', '[\"*\"]', NULL, NULL, '2026-03-10 17:57:10', '2026-03-10 17:57:10'),
 (403, 'App\\Models\\User', 51, 'auth-token', '40757b26a8db333b717d3de897a6d938d60d1e724499200a2b8d16fbe6971764', '[\"*\"]', NULL, NULL, '2026-03-10 17:57:56', '2026-03-10 17:57:56'),
-(404, 'App\\Models\\User', 50, 'auth-token', 'df5c684c9632426b97431201c0676bfb6b0bb8dac7d5a85de01f34bdcd457ed9', '[\"*\"]', NULL, NULL, '2026-03-10 18:05:24', '2026-03-10 18:05:24');
+(404, 'App\\Models\\User', 50, 'auth-token', 'df5c684c9632426b97431201c0676bfb6b0bb8dac7d5a85de01f34bdcd457ed9', '[\"*\"]', NULL, NULL, '2026-03-10 18:05:24', '2026-03-10 18:05:24'),
+(405, 'App\\Models\\User', 50, 'auth-token', 'afa93f1a82b3f6e9fe7a4c7a491a5c9be7363209db5ee2d046b76aff2743472f', '[\"*\"]', NULL, NULL, '2026-03-10 18:42:40', '2026-03-10 18:42:40'),
+(406, 'App\\Models\\User', 31, 'auth-token', '6100c171bbacc9e0b3ed85cd254e6a07072254cec3d0f6aef591580a9c5d0438', '[\"*\"]', NULL, NULL, '2026-03-10 19:15:10', '2026-03-10 19:15:10'),
+(407, 'App\\Models\\User', 53, 'auth-token', '5c04ce54288524228379e1384153640211fc0bcbd8955bc7067e12e2a799d5a8', '[\"*\"]', NULL, NULL, '2026-03-10 19:20:36', '2026-03-10 19:20:36');
 
 -- --------------------------------------------------------
 
@@ -822,6 +840,12 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`id`, `name`, `slug`, `created_at`, `updated_at`, `price`, `stock`, `min_stock`, `sku`, `branch_id`, `is_active`) VALUES
+(1, 'Yangyeom', 'yangyeom', '2026-03-10 19:29:01', '2026-03-10 19:29:01', 150.00, 100, 10, 'YANG-001', 14, 1),
+(2, 'Snow Cheese', 'snowcheese', '2026-03-10 19:29:01', '2026-03-10 19:29:01', 180.00, 100, 10, 'SNOW-001', 14, 1),
+(3, 'Corndog', 'corndog', '2026-03-10 19:29:01', '2026-03-10 19:29:01', 120.00, 100, 10, 'CORN-001', 14, 1),
+(4, 'Pastries', 'pastries', '2026-03-10 19:29:01', '2026-03-10 19:29:01', 80.00, 100, 10, 'PAST-001', 14, 1),
+(5, 'Ramen', 'ramen', '2026-03-10 19:29:01', '2026-03-10 19:29:01', 200.00, 100, 10, 'RAMEN-001', 14, 1),
+(6, 'Ice Cream', 'icecream', '2026-03-10 19:29:01', '2026-03-10 19:29:01', 60.00, 100, 10, 'ICE-001', 14, 1),
 (12, 'Durex', 'durex', '2026-03-10 08:36:38', '2026-03-10 18:07:21', 250.00, 35, 10, 'SKU-53RSUD', 13, 1);
 
 -- --------------------------------------------------------
@@ -843,6 +867,17 @@ CREATE TABLE `product_comments` (
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `product_comments`
+--
+
+INSERT INTO `product_comments` (`id`, `product_id`, `user_id`, `parent_comment_id`, `author`, `text`, `rating`, `ip_address`, `created_at`, `updated_at`) VALUES
+(4, 1, NULL, NULL, 'charlesumbal26@gmail.com', 'masarap po sya', 5, '127.0.0.1', '2026-03-10 19:36:44', '2026-03-10 19:36:44'),
+(5, 1, NULL, NULL, 'charlesumbal26@gmail.com', 'ok masarap naman', 5, '127.0.0.1', '2026-03-10 19:48:34', '2026-03-10 19:48:34'),
+(6, 1, NULL, NULL, 'charlesumbal26@gmail.com', 'ok na ako', 5, '127.0.0.1', '2026-03-10 19:50:13', '2026-03-10 19:50:13'),
+(7, 1, NULL, NULL, 'charlesumbal26@gmail.com', 'masarap', 5, '127.0.0.1', '2026-03-10 19:50:48', '2026-03-10 19:50:48'),
+(8, 2, NULL, NULL, 'christianumbal12@gmail.com', 'oo masarap', 5, '127.0.0.1', '2026-03-10 19:52:17', '2026-03-10 19:52:17');
+
 -- --------------------------------------------------------
 
 --
@@ -863,10 +898,10 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('c1ZceUlQtaCkKNgIydhU0vdwzSOCC0hdemmHambf', 51, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiZVVpSGJ1cGhMbUlCUnl2ZWFGM25TSmFvcWZYSTlZQng3Y0VaMXppSyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mzk6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9tYW5hZ2VyL2xvZ2lzdGljcyI7czo1OiJyb3V0ZSI7Tjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6NTE7czo3OiJ1c2VyX2lkIjtpOjUxO3M6OToidXNlcl9yb2xlIjtzOjc6Ik1BTkFHRVIiO3M6OToidXNlcl9uYW1lIjtzOjM2OiJMb2dpc3RpY3MgTWFuYWdlciAtIFRhZ2F5YXRheSBCcmFuY2giO3M6MTM6InJlZGlyZWN0X3BhdGgiO3M6MTg6Ii9tYW5hZ2VyL2xvZ2lzdGljcyI7fQ==', 1773165943),
-('fteAlkeK4pTupQBIBKDMzOvmvDxvSoS7QFHo4Hpb', 28, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiRUh2UW1pbHFiQWxVbTBlYURCV25rRnVyU1BtTzIxMlc4Z0IyZm83ZCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjI4O3M6NzoidXNlcl9pZCI7aToyODtzOjk6InVzZXJfcm9sZSI7czoxMToiU1VQRVJfQURNSU4iO3M6OToidXNlcl9uYW1lIjtzOjIwOiJTdXBlciBBZG1pbmlzdHJhdG9ycyI7czoxMzoicmVkaXJlY3RfcGF0aCI7czoxODoiL3N1cGVyLWFkbWluLXBhbmVsIjt9', 1773166776),
-('mq6aaG9RPhtse4eWJu45gpRWLwmg2Ev0euoCgokr', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoiR3Q4Z1lXZnI1ZlpZZmw0MDF1WEJJcnNSYnhtTUlqOHpOeFd5d2RsUiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1773166829),
-('xNDMSpmkfOmt5VLfb4sXbFGDbgG29LP7nSSpZSRc', 51, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiWTY5YUM1b0ZCY0hMa3kydzhvS2VjVmgxajlNcE9BeFlYTjRzVVZqViI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjUxO3M6NzoidXNlcl9pZCI7aTo1MTtzOjk6InVzZXJfcm9sZSI7czo3OiJNQU5BR0VSIjtzOjk6InVzZXJfbmFtZSI7czozNjoiTG9naXN0aWNzIE1hbmFnZXIgLSBUYWdheWF0YXkgQnJhbmNoIjtzOjEzOiJyZWRpcmVjdF9wYXRoIjtzOjE4OiIvbWFuYWdlci9sb2dpc3RpY3MiO30=', 1773160049);
+('JUjmKfQGd3P6UTbWdq8SaYkidjqiAUkKWDA6Rvnw', 50, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiYXJJREpxTnBNdVVRN0tFaXBKczJrc3p3ZGdSQ1Z1bGdHSjkwNGFXaSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjUwO3M6NzoidXNlcl9pZCI7aTo1MDtzOjk6InVzZXJfcm9sZSI7czo3OiJNQU5BR0VSIjtzOjk6InVzZXJfbmFtZSI7czozNDoiRmluYW5jZSBNYW5hZ2VyIC0gVGFnYXlhdGF5IEJyYW5jaCI7czoxMzoicmVkaXJlY3RfcGF0aCI7czoxNjoiL21hbmFnZXIvZmluYW5jZSI7fQ==', 1773168175),
+('KOg6rD2dGY7RpmYsjFWDTY3HoVCbGLZ17VOUdff0', NULL, '127.0.0.1', '', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoiWDdnamZ4OXUwWExScGpxNWFScG5hM29xM2FreUt3Rkc5NTNyOVN4aSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1773171036),
+('Krx8VJWWmLfK0XFF14XUSiaRKyRPZXIzYchSkrsl', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiUGRHZm9SVTJjNGtzNFdpQTFSSlI5ZEk3dUpnNnRFdk5wTm1UME1VQSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fX0=', 1773172337),
+('mq6aaG9RPhtse4eWJu45gpRWLwmg2Ev0euoCgokr', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoiR3Q4Z1lXZnI1ZlpZZmw0MDF1WEJJcnNSYnhtTUlqOHpOeFd5d2RsUiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1773166829);
 
 -- --------------------------------------------------------
 
@@ -940,7 +975,13 @@ INSERT INTO `users` (`id`, `email`, `username`, `full_name`, `name`, `password`,
 (49, 'hr_br042835@chikintayo.com', 'hr_br042835', 'HR Manager - Tagayatay Branch', NULL, '$2y$12$R.bmNfLo9vkiOSYAqxqf8eOLpvkhJkV0LXs9WrSCRInbny60V5OA6', NULL, 'MANAGER', 13, 'HR', NULL, '2026-03-10 08:07:37', '2026-03-10 08:17:13', NULL, 0, 1, NULL, NULL, NULL),
 (50, 'finance_br042835@chikintayo.com', 'finance_br042835', 'Finance Manager - Tagayatay Branch', NULL, '$2y$12$j.aEtfpQr6e/sbMRH5Zes.1Pfz8MnFy053223OC7pXx08UxHkbPzi', NULL, 'MANAGER', 13, 'FINANCE', NULL, '2026-03-10 08:07:37', '2026-03-10 15:47:44', NULL, 0, 1, NULL, NULL, NULL),
 (51, 'logistics_br042835@chikintayo.com', 'logistics_br042835', 'Logistics Manager - Tagayatay Branch', NULL, '$2y$12$qiVb2b/mULecM4QqXEevA.3a.z1I1W8AN5fSLegnYrLgnpDRioSiy', NULL, 'MANAGER', 13, 'LOGISTICS', NULL, '2026-03-10 08:07:37', '2026-03-10 15:40:28', NULL, 0, 1, NULL, NULL, NULL),
-(53, 'janne@gmail.com', 'janne', 'Janne De Guzman', NULL, '$2y$12$gJp.zUv6QW2XnVmYijyJC.sz2E8ctLpQP0FBdb.1QecPO7RBhGLTW', NULL, 'STAFF', 13, 'CASHIER', NULL, '2026-03-10 08:23:16', '2026-03-10 08:24:07', NULL, 0, 1, '2213', NULL, '09156818866');
+(53, 'janne@gmail.com', 'janne', 'Janne De Guzman', NULL, '$2y$12$gJp.zUv6QW2XnVmYijyJC.sz2E8ctLpQP0FBdb.1QecPO7RBhGLTW', NULL, 'STAFF', 13, 'CASHIER', NULL, '2026-03-10 08:23:16', '2026-03-10 08:24:07', NULL, 0, 1, '2213', NULL, '09156818866'),
+(54, 'admin_br070561@chikintayo.com', 'admin_br070561', 'Admin - CHKIN TAYO DASMARINAS', NULL, '$2y$12$aAPcDV6YOqokggU7iAFWx.p/.XFvmFGeD1tY.Noxc/VEL.XoofJ6q', NULL, 'ADMIN', 14, NULL, NULL, '2026-03-10 18:58:36', '2026-03-10 18:58:36', NULL, 1, 1, NULL, NULL, NULL),
+(55, 'hr_br070561@chikintayo.com', 'hr_br070561', 'HR Manager - CHKIN TAYO DASMARINAS', NULL, '$2y$12$UHDDy4KaCv.s/zxV0C.tsuYA6cMy51Q8CaqESRzI0PJYc6fNRzhPG', NULL, 'MANAGER', 14, 'HR', NULL, '2026-03-10 18:58:36', '2026-03-10 18:58:36', NULL, 1, 1, NULL, NULL, NULL),
+(56, 'finance_br070561@chikintayo.com', 'finance_br070561', 'Finance Manager - CHKIN TAYO DASMARINAS', NULL, '$2y$12$iginx5EjRQSpLyByM09aFuhSvipq7a8YpOfEMT6/RzWRG30l/X81K', NULL, 'MANAGER', 14, 'FINANCE', NULL, '2026-03-10 18:58:36', '2026-03-10 18:58:36', NULL, 1, 1, NULL, NULL, NULL),
+(57, 'logistics_br070561@chikintayo.com', 'logistics_br070561', 'Logistics Manager - CHKIN TAYO DASMARINAS', NULL, '$2y$12$d94q/bAS6Al3uRpSh6JtgOG/4JE4pvVIyk0KLOdrQefeOHHOPYcNm', NULL, 'MANAGER', 14, 'LOGISTICS', NULL, '2026-03-10 18:58:37', '2026-03-10 18:58:37', NULL, 1, 1, NULL, NULL, NULL),
+(58, 'charlesumbal26@gmail.com', 'rasssss', NULL, NULL, '$2y$12$oIuNZ.R121vG0nGBPacTTevDiwUvDLOVWlrKogcVR3b51utxx7tSm', '2026-03-10 19:21:54', 'customer', NULL, NULL, NULL, '2026-03-10 19:21:54', '2026-03-10 19:21:54', NULL, 1, 1, NULL, NULL, NULL),
+(59, 'christianumbal12@gmail.com', 'comment', NULL, NULL, '$2y$12$hayEI20I97sOkprSrFOWNeitaUlW.3LhCbcy3/cxKpZ4xHeVVeO.a', '2026-03-10 19:52:08', 'customer', NULL, NULL, NULL, '2026-03-10 19:52:08', '2026-03-10 19:52:08', NULL, 1, 1, NULL, NULL, NULL);
 
 --
 -- Indexes for dumped tables
@@ -1123,13 +1164,13 @@ ALTER TABLE `attendance`
 -- AUTO_INCREMENT for table `attendance_settings`
 --
 ALTER TABLE `attendance_settings`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=35;
 
 --
 -- AUTO_INCREMENT for table `branches`
 --
 ALTER TABLE `branches`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `budget_requests`
@@ -1141,7 +1182,7 @@ ALTER TABLE `budget_requests`
 -- AUTO_INCREMENT for table `customer_accounts`
 --
 ALTER TABLE `customer_accounts`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `employee_timesheets`
@@ -1183,7 +1224,7 @@ ALTER TABLE `order_items`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=405;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=408;
 
 --
 -- AUTO_INCREMENT for table `products`
@@ -1195,7 +1236,7 @@ ALTER TABLE `products`
 -- AUTO_INCREMENT for table `product_comments`
 --
 ALTER TABLE `product_comments`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `staff_documents`
@@ -1207,7 +1248,7 @@ ALTER TABLE `staff_documents`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=54;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=60;
 
 --
 -- Constraints for dumped tables

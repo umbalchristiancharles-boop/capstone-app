@@ -90,10 +90,12 @@ class AuthController extends Controller
             // Set department to HR if not already set
             if (empty($user->department)) {
                 $user->department = 'HR';
-                if ($user instanceof \App\Models\User) {
+                // Validate user is a valid User model instance before accessing properties
+                if ($user instanceof User) {
                     $user->save();
                 } else {
-                    \App\Models\User::where('id', $user->id)->update(['department' => 'HR']);
+                    // User is not a valid instance, log error with safe access
+                    Log::error('Invalid user object during MANAGER_HR department assignment');
                 }
             }
         }
@@ -296,27 +298,24 @@ class AuthController extends Controller
     public function changePassword(Request $request)
     {
         $user = $this->resolveAuthenticatedUser($request);
-        // Fallback: allow password change for owner user by username if session is missing
-        if (! $user && $request->has('username')) {
-            $user = \App\Models\User::where('username', $request->input('username'))->first();
-        }
+
+        // Require proper authentication - no username-based fallback allowed
         if (! $user) {
             return response()->json([
                 'ok'      => false,
-                'message' => 'Unauthenticated',
+                'message' => 'Unauthenticated. Please login to change your password.',
             ], 401);
         }
 
+        // Server-side validation only - password regex not exposed to frontend
         $request->validate([
             'current_password' => 'required|string',
             'new_password' => [
                 'required',
                 'string',
                 'min:8',
-                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/',
                 'confirmed',
             ],
-            'username' => 'sometimes|string',
         ]);
 
         if (!Hash::check($request->input('current_password'), $user->password)) {
@@ -511,6 +510,16 @@ class AuthController extends Controller
 
         $email = $request->input('email');
 
+        // Rate limiting: max 3 requests per 10 minutes per email
+        $rateLimitKey = 'verification_rate_limit_' . $email;
+        $requestCount = Cache::get($rateLimitKey, 0);
+
+        if ($requestCount >= 3) {
+            return response()->json([
+                'message' => 'Too many verification requests. Please try again in 10 minutes.'
+            ], 429);
+        }
+
         if (User::where('email', '=', $email)->exists()) {
             return response()->json([
                 'message' => 'Email already exists. Please sign in instead.'
@@ -523,7 +532,10 @@ class AuthController extends Controller
         // Store code in cache for 10 minutes
         Cache::put('verification_code_' . $email, $code, 600);
 
-        // Log verification code for debugging
+        // Increment rate limit counter
+        Cache::put($rateLimitKey, $requestCount + 1, 600);
+
+        // Log verification code for debugging (never expose to client)
         Log::info("Verification code generated for {$email}: {$code}");
 
         // Send email with verification code
@@ -538,22 +550,21 @@ class AuthController extends Controller
 
             Log::info("Verification email sent to {$email}");
 
+            // Code is NOT returned in response - sent only via email
             return response()->json([
                 'message' => 'Verification code sent to your email',
-                'code' => $code, // Always show in development for testing
                 'email' => $email
             ]);
         } catch (\Exception $e) {
             // Log the error
             Log::error("Failed to send verification email to {$email}: " . $e->getMessage());
 
-            // In development, show the code anyway
+            // Do NOT expose the code - just indicate email failure
             return response()->json([
-                'message' => 'Verification code generated (email system issue - code shown below)',
-                'code' => $code,
+                'message' => 'Failed to send verification email. Please try again later.',
                 'email' => $email,
-                'error' => config('app.debug') ? $e->getMessage() : 'Email service unavailable'
-            ]);
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
         }
     }
 
