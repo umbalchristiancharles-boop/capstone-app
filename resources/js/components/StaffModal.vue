@@ -132,11 +132,6 @@
               <label for="roleDepartment" class="form-label">Role / Department *</label>
               <select v-model="form.roleDepartment" id="roleDepartment" class="form-input" :required="!isEdit">
                 <option value="">-- Select Role / Department --</option>
-                <optgroup label="Managers">
-                  <option value="MANAGER finance">Manager Finance</option>
-                  <option value="MANAGER inventory">Manager Inventory</option>
-                  <option value="MANAGER logistics">Manager Logistics</option>
-                </optgroup>
                 <optgroup label="Staff">
                   <option value="STAFF cashier">Staff Cashier</option>
                   <option value="STAFF finance">Staff Finance</option>

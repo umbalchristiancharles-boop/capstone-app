@@ -150,7 +150,7 @@ function toggleStaffManagement() {
 }
 
 function goToStaffManagement() {
-  router.push('/manager/hr/staff-management')
+  window.location.href = '/manager/hr/staff-management'
 }
 
 async function loadAttendanceSettings() {

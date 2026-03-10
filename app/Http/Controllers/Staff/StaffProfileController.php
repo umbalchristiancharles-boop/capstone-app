@@ -61,6 +61,15 @@ class StaffProfileController extends Controller
             ], 401);
         }
 
+        // Get branch name if branch_id exists
+        $branchName = null;
+        if ($user->branch_id) {
+            $branch = \App\Models\Branch::find($user->branch_id);
+            if ($branch) {
+                $branchName = $branch->name;
+            }
+        }
+
         return response()->json([
             'ok' => true,
             'user' => [
@@ -73,6 +82,7 @@ class StaffProfileController extends Controller
                 'role' => $user->role,
                 'department' => $user->department,
                 'branch_id' => $user->branch_id,
+                'branch_name' => $branchName,
                 'avatarUrl' => $this->getAvatarUrl($user),
                 'must_change_password' => (bool) $user->must_change_password,
             ]

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 10, 2026 at 09:05 AM
+-- Generation Time: Mar 10, 2026 at 10:38 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -54,6 +54,13 @@ CREATE TABLE `attendance_settings` (
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `attendance_settings`
+--
+
+INSERT INTO `attendance_settings` (`id`, `branch_id`, `early_clockout_override`, `created_at`, `updated_at`) VALUES
+(32, 13, 0, '2026-03-10 08:17:22', '2026-03-10 08:17:22');
+
 -- --------------------------------------------------------
 
 --
@@ -69,6 +76,13 @@ CREATE TABLE `branches` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `branches`
+--
+
+INSERT INTO `branches` (`id`, `code`, `name`, `address`, `is_active`, `created_at`, `updated_at`) VALUES
+(13, 'BR042835', 'Tagayatay Branch', 'Tagaytay', 1, '2026-03-10 08:07:36', '2026-03-10 08:07:36');
 
 -- --------------------------------------------------------
 
@@ -282,7 +296,9 @@ INSERT INTO `orders` (`id`, `order_code`, `owner_id`, `cashier_id`, `branch_id`,
 (57, 'CT-0007', 28, 28, 1, 'Walk-in', 'completed', 1000.00, 1200.00, 200.00, '2026-03-06 11:43:59', '2026-03-06 11:43:59', '2026-03-06 11:43:59'),
 (58, 'CT-0008', 28, 28, 3, 'Walk-in', 'completed', 3000.00, 3000.00, 0.00, '2026-03-06 11:45:16', '2026-03-06 11:45:16', '2026-03-06 11:45:16'),
 (59, 'CT-0009', 28, 28, 9, 'Walk-in', 'completed', 300.00, 500.00, 200.00, '2026-03-07 08:05:06', '2026-03-07 08:05:06', '2026-03-07 08:05:06'),
-(60, 'CT-0010', 28, 28, 11, 'Walk-in', 'completed', 200.00, 500.00, 300.00, '2026-03-10 05:42:42', '2026-03-10 05:42:42', '2026-03-10 05:42:42');
+(60, 'CT-0010', 28, 28, 11, 'Walk-in', 'completed', 200.00, 500.00, 300.00, '2026-03-10 05:42:42', '2026-03-10 05:42:42', '2026-03-10 05:42:42'),
+(61, 'CT-0011', 53, 53, 13, 'Walk-in', 'completed', 1050.00, 2000.00, 950.00, '2026-03-10 08:37:06', '2026-03-10 08:37:06', '2026-03-10 08:37:06'),
+(62, 'CT-0012', 53, 53, 13, 'Walk-in', 'completed', 700.00, 1000.00, 300.00, '2026-03-10 09:36:59', '2026-03-10 09:36:59', '2026-03-10 09:36:59');
 
 -- --------------------------------------------------------
 
@@ -301,6 +317,14 @@ CREATE TABLE `order_items` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `order_items`
+--
+
+INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `product_name`, `unit_price`, `quantity`, `subtotal`, `created_at`, `updated_at`) VALUES
+(11, 61, 12, 'Durex', 350.00, 3, 1050.00, '2026-03-10 08:37:06', '2026-03-10 08:37:06'),
+(12, 62, 12, 'Durex', 350.00, 2, 700.00, '2026-03-10 09:36:59', '2026-03-10 09:36:59');
 
 -- --------------------------------------------------------
 
@@ -714,7 +738,22 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (373, 'App\\Models\\User', 28, 'auth-token', 'ec8509e358fe6e1bce4ad2e2df8820fbcf9545307072d3d359ed0b7c476d6e61', '[\"*\"]', NULL, NULL, '2026-03-10 07:53:11', '2026-03-10 07:53:11'),
 (374, 'App\\Models\\User', 31, 'auth-token', '73efccbae60a830c91aa3642a50f86f03afe715028e6421aedfdc5ea67cb889c', '[\"*\"]', NULL, NULL, '2026-03-10 07:59:29', '2026-03-10 07:59:29'),
 (375, 'App\\Models\\User', 31, 'auth-token', 'dc29d11c60ad3c3965aa60d83d25d9457b35bd975619b65ac5c3d85d2f5700e3', '[\"*\"]', NULL, NULL, '2026-03-10 07:59:38', '2026-03-10 07:59:38'),
-(376, 'App\\Models\\User', 31, 'auth-token', '234ae705389c0f1fe8977351a7e0ff23471e2f81890578301db528f372370d20', '[\"*\"]', NULL, NULL, '2026-03-10 08:00:41', '2026-03-10 08:00:41');
+(376, 'App\\Models\\User', 31, 'auth-token', '234ae705389c0f1fe8977351a7e0ff23471e2f81890578301db528f372370d20', '[\"*\"]', NULL, NULL, '2026-03-10 08:00:41', '2026-03-10 08:00:41'),
+(377, 'App\\Models\\User', 31, 'auth-token', '786f3440dd08e7c641e5d661eea8d0ac5853c17626d697d344bbe9b8cc62e18e', '[\"*\"]', NULL, NULL, '2026-03-10 08:14:10', '2026-03-10 08:14:10'),
+(378, 'App\\Models\\User', 49, 'auth-token', '808690c6aaf62d10cfd85b80ace15c8c41742cc72c7ea197eea4c321d9405a30', '[\"*\"]', NULL, NULL, '2026-03-10 08:15:55', '2026-03-10 08:15:55'),
+(379, 'App\\Models\\User', 49, 'auth-token', 'a2083d8b3779241bf9160195701a55c9a90bbddf04c83bc9ec77381f0155c7ca', '[\"*\"]', NULL, NULL, '2026-03-10 08:17:18', '2026-03-10 08:17:18'),
+(380, 'App\\Models\\User', 49, 'auth-token', '2e7e5fb0ac75313a71a3fc5d6a1b3cfbeae05c7dd199bfb29a425427e910066c', '[\"*\"]', NULL, NULL, '2026-03-10 08:22:12', '2026-03-10 08:22:12'),
+(381, 'App\\Models\\User', 53, 'auth-token', 'c4543f670ed8dd78d9cd4eda677b69b59d70b2061bc2057cde0ca09356ff2146', '[\"*\"]', NULL, NULL, '2026-03-10 08:23:42', '2026-03-10 08:23:42'),
+(382, 'App\\Models\\User', 53, 'auth-token', '8f3617c4b51a4ae87264494ea845120e2ee755894a867d7af1488bd70666098d', '[\"*\"]', NULL, NULL, '2026-03-10 08:24:11', '2026-03-10 08:24:11'),
+(383, 'App\\Models\\User', 28, 'auth-token', '73d2e7ea8cec3536f9492f70e25062cdf593be210b10d047d0b8796cb184cc17', '[\"*\"]', NULL, NULL, '2026-03-10 08:25:02', '2026-03-10 08:25:02'),
+(384, 'App\\Models\\User', 53, 'auth-token', '40d710bc68dea6a4e91e9f61276aadebe6b6618c079d71ac7460821942f3ad9b', '[\"*\"]', NULL, NULL, '2026-03-10 08:35:40', '2026-03-10 08:35:40'),
+(385, 'App\\Models\\User', 28, 'auth-token', '52feaf6771050d6d12180ce373cff3000e7b49ba67d9b09232bb3980678435a5', '[\"*\"]', NULL, NULL, '2026-03-10 08:36:14', '2026-03-10 08:36:14'),
+(386, 'App\\Models\\User', 53, 'auth-token', '72bc080608562e8ae867bb29b2a7824106be72e2b3c9cb03e6a101d834b2db53', '[\"*\"]', NULL, NULL, '2026-03-10 08:36:55', '2026-03-10 08:36:55'),
+(387, 'App\\Models\\User', 53, 'auth-token', '952ef4e22697bfa3cc2d3dbb6745b064c17c58c49b138ec2ec9a7ca0a5a3d4b3', '[\"*\"]', NULL, NULL, '2026-03-10 08:37:29', '2026-03-10 08:37:29'),
+(388, 'App\\Models\\User', 49, 'auth-token', 'cbbef19ab393c6b92a45e49e729e651c6c82d1d87dd2f4ed4cff4fbdf6c72a28', '[\"*\"]', NULL, NULL, '2026-03-10 08:37:47', '2026-03-10 08:37:47'),
+(389, 'App\\Models\\User', 49, 'auth-token', 'a57293ef1c520af101e6ae063e6ff590fa5afe0f4eee82638d8f77b5e1f6e62b', '[\"*\"]', NULL, NULL, '2026-03-10 09:24:10', '2026-03-10 09:24:10'),
+(390, 'App\\Models\\User', 53, 'auth-token', 'a711883e2c5c2bb4298060f889ff2f85fcbce95b8059d549d6d346a0a03156cc', '[\"*\"]', NULL, NULL, '2026-03-10 09:36:47', '2026-03-10 09:36:47'),
+(391, 'App\\Models\\User', 28, 'auth-token', '640f356e88515ce05d5cb2d4c759cea28e5f5ea371cf45fee45f266d5d5a7c02', '[\"*\"]', NULL, NULL, '2026-03-10 09:37:10', '2026-03-10 09:37:10');
 
 -- --------------------------------------------------------
 
@@ -735,6 +774,13 @@ CREATE TABLE `products` (
   `branch_id` bigint(20) UNSIGNED NOT NULL DEFAULT 1,
   `is_active` tinyint(1) NOT NULL DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `products`
+--
+
+INSERT INTO `products` (`id`, `name`, `slug`, `created_at`, `updated_at`, `price`, `stock`, `min_stock`, `sku`, `branch_id`, `is_active`) VALUES
+(12, 'Durex', 'durex', '2026-03-10 08:36:38', '2026-03-10 09:36:59', 350.00, 35, 10, 'SKU-53RSUD', 13, 1);
 
 -- --------------------------------------------------------
 
@@ -775,8 +821,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('6jgqBPuXnkdMHCemFUwrzrF8oGJNNB14IvFfUigI', 43, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiSkVWSlpRV1ZDc3hNZ1VjMWhhb0VWUXNBUVNTcjNidzR6Uk1mbzl6RiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjQzO3M6NzoidXNlcl9pZCI7aTo0MztzOjk6InVzZXJfcm9sZSI7czo3OiJNQU5BR0VSIjtzOjk6InVzZXJfbmFtZSI7czozMzoiSFIgTWFuYWdlciAtIFRhZ2F5dGF5IENpdHkgQnJhbmNoIjtzOjEzOiJyZWRpcmVjdF9wYXRoIjtzOjExOiIvbWFuYWdlci9ociI7fQ==', 1773127776),
-('HdJdZ6JL095d8bODBLZhhJizjMGv1ZD00a5szGod', 31, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiU2RsS0lBdmVic0Z5Y2Nya0h0emRVbFdEQVJsZjQ0MWJEUmwxd1BkTSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjMxO3M6NzoidXNlcl9pZCI7aTozMTtzOjk6InVzZXJfcm9sZSI7czo1OiJPV05FUiI7czo5OiJ1c2VyX25hbWUiO3M6ODoiTXIucGFya3MiO3M6MTM6InJlZGlyZWN0X3BhdGgiO3M6MTI6Ii9vd25lci1wYW5lbCI7fQ==', 1773129744);
+('pqwOKk1RnCOTZKpMLXN75pmuwM64p80WYvDjoE0s', 28, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiVmhDUlFBNWRXVFU4Z1ZzeVZVT0ZEQUVTRkxaUjlQd3oxV3RsaGxQZCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NjM6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdG9yYWdlL2F2YXRhcnMvYXZhdGFyXzI4XzE3NzMxMTg4OTQud2VicCI7czo1OiJyb3V0ZSI7Tjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6Mjg7czo3OiJ1c2VyX2lkIjtpOjI4O3M6OToidXNlcl9yb2xlIjtzOjExOiJTVVBFUl9BRE1JTiI7czo5OiJ1c2VyX25hbWUiO3M6MjA6IlN1cGVyIEFkbWluaXN0cmF0b3JzIjtzOjEzOiJyZWRpcmVjdF9wYXRoIjtzOjE4OiIvc3VwZXItYWRtaW4tcGFuZWwiO30=', 1773135454);
 
 -- --------------------------------------------------------
 
@@ -802,6 +847,13 @@ CREATE TABLE `staff_documents` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `staff_documents`
+--
+
+INSERT INTO `staff_documents` (`id`, `user_id`, `resume_path`, `government_id_path`, `psa_birth_certificate_path`, `nbi_clearance_path`, `police_clearance_path`, `medical_certificate_path`, `drug_test_result_path`, `sss_id_path`, `philhealth_id_path`, `pagibig_mdf_path`, `tin_id_path`, `diploma_transcript_path`, `created_at`, `updated_at`) VALUES
+(20, 53, NULL, 'staff-documents/53/government_id.png', 'staff-documents/53/psa_birth_certificate.jpg', 'staff-documents/53/nbi_clearance.jpg', 'staff-documents/53/police_clearance.png', 'staff-documents/53/medical_certificate.jpg', 'staff-documents/53/drug_test_result.png', 'staff-documents/53/sss_id.jpg', 'staff-documents/53/philhealth_id.png', 'staff-documents/53/pagibig_mdf.jpg', 'staff-documents/53/tin_id.png', 'staff-documents/53/diploma_transcript.jpg', '2026-03-10 08:23:16', '2026-03-10 08:23:16');
 
 -- --------------------------------------------------------
 
@@ -838,7 +890,12 @@ CREATE TABLE `users` (
 INSERT INTO `users` (`id`, `email`, `username`, `full_name`, `name`, `password`, `email_verified_at`, `role`, `branch_id`, `department`, `remember_token`, `created_at`, `updated_at`, `deleted_at`, `must_change_password`, `is_active`, `address`, `avatar_url`, `phone_number`) VALUES
 (28, 'superadmin@example.com', 'superadmin', 'Super Administrators', NULL, '$2y$12$f67akYY/xm/H9KJoqytmXeblCxSgZ786slMmHkmqzlMozGUn3Ew7G', '2026-03-05 15:03:55', 'SUPER_ADMIN', NULL, NULL, NULL, '2026-03-05 15:03:55', '2026-03-05 16:01:06', NULL, 0, 1, NULL, '/storage/avatars/avatar_28_1773118894.webp', NULL),
 (29, 'umbal.christiancharles@ncst.edu.ph', 'umballs', NULL, NULL, '$2y$12$05J2guUFR9PN1TuRwlF0WuRcRx2CyKeVChVKwIORgl.IMiK.fqsQC', '2026-03-05 20:00:52', 'customer', NULL, NULL, NULL, '2026-03-05 20:00:52', '2026-03-05 20:00:52', NULL, 1, 1, NULL, NULL, NULL),
-(31, 'admin@chikintayo.com', 'Parks', 'Mr.parks', NULL, '$2y$12$/jjxezfu4JAW55dvduVkVu7hpmk5CBXg2GWKtlT17A8jEMfJFpY8y', NULL, 'OWNER', NULL, NULL, NULL, '2026-03-07 04:30:58', '2026-03-07 04:30:58', NULL, 0, 1, NULL, NULL, 'admin');
+(31, 'admin@chikintayo.com', 'Parks', 'Mr.parks', NULL, '$2y$12$/jjxezfu4JAW55dvduVkVu7hpmk5CBXg2GWKtlT17A8jEMfJFpY8y', NULL, 'OWNER', NULL, NULL, NULL, '2026-03-07 04:30:58', '2026-03-07 04:30:58', NULL, 0, 1, NULL, NULL, 'admin'),
+(48, 'admin_br042835@chikintayo.com', 'admin_br042835', 'Admin - Tagayatay Branch', NULL, '$2y$12$GLjAr8wb3iucYqZzdAvoQeCGFa49ZV9jVwUPYWay5Z9b7NFN.a2mK', NULL, 'ADMIN', 13, NULL, NULL, '2026-03-10 08:07:37', '2026-03-10 08:07:37', NULL, 1, 1, NULL, NULL, NULL),
+(49, 'hr_br042835@chikintayo.com', 'hr_br042835', 'HR Manager - Tagayatay Branch', NULL, '$2y$12$R.bmNfLo9vkiOSYAqxqf8eOLpvkhJkV0LXs9WrSCRInbny60V5OA6', NULL, 'MANAGER', 13, 'HR', NULL, '2026-03-10 08:07:37', '2026-03-10 08:17:13', NULL, 0, 1, NULL, NULL, NULL),
+(50, 'finance_br042835@chikintayo.com', 'finance_br042835', 'Finance Manager - Tagayatay Branch', NULL, '$2y$12$oHDJ39u5GXLU9EXGys.6I.q67PcvwEg/gxp7iC2fiNzj/B1XgWxcW', NULL, 'MANAGER', 13, 'FINANCE', NULL, '2026-03-10 08:07:37', '2026-03-10 08:07:37', NULL, 1, 1, NULL, NULL, NULL),
+(51, 'logistics_br042835@chikintayo.com', 'logistics_br042835', 'Logistics Manager - Tagayatay Branch', NULL, '$2y$12$fD3sl0X0VGeiRvOWVBA..ODpRNA8L8kQdHwqWAxNLMlnLhJWEOYUq', NULL, 'MANAGER', 13, 'LOGISTICS', NULL, '2026-03-10 08:07:37', '2026-03-10 08:07:37', NULL, 1, 1, NULL, NULL, NULL),
+(53, 'janne@gmail.com', 'janne', 'Janne De Guzman', NULL, '$2y$12$gJp.zUv6QW2XnVmYijyJC.sz2E8ctLpQP0FBdb.1QecPO7RBhGLTW', NULL, 'STAFF', 13, 'CASHIER', NULL, '2026-03-10 08:23:16', '2026-03-10 08:24:07', NULL, 0, 1, '2213', NULL, '09156818866');
 
 --
 -- Indexes for dumped tables
@@ -1012,13 +1069,13 @@ ALTER TABLE `attendance`
 -- AUTO_INCREMENT for table `attendance_settings`
 --
 ALTER TABLE `attendance_settings`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
 
 --
 -- AUTO_INCREMENT for table `branches`
 --
 ALTER TABLE `branches`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `customer_accounts`
@@ -1054,25 +1111,25 @@ ALTER TABLE `migrations`
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=63;
 
 --
 -- AUTO_INCREMENT for table `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=377;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=392;
 
 --
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `product_comments`
@@ -1084,13 +1141,13 @@ ALTER TABLE `product_comments`
 -- AUTO_INCREMENT for table `staff_documents`
 --
 ALTER TABLE `staff_documents`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=48;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=54;
 
 --
 -- Constraints for dumped tables

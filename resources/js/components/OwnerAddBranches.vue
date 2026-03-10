@@ -141,6 +141,8 @@
                 <th>Address</th>
                 <th>Admin Account</th>
                 <th>HR Manager Account</th>
+                <th>Finance Manager Account</th>
+                <th>Logistics Manager Account</th>
                 <th>Status</th>
                 <th>Staff Count</th>
                 <th>Actions</th>
@@ -163,6 +165,22 @@
                   <span v-if="branch.hr_manager" class="account-chip hr-chip">
                     {{ branch.hr_manager.username }}
                     <span v-if="branch.hr_manager.is_active" class="chip-dot active"></span>
+                    <span v-else class="chip-dot inactive"></span>
+                  </span>
+                  <span v-else class="text-muted">—</span>
+                </td>
+                <td>
+                  <span v-if="branch.finance_manager" class="account-chip finance-chip">
+                    {{ branch.finance_manager.username }}
+                    <span v-if="branch.finance_manager.is_active" class="chip-dot active"></span>
+                    <span v-else class="chip-dot inactive"></span>
+                  </span>
+                  <span v-else class="text-muted">—</span>
+                </td>
+                <td>
+                  <span v-if="branch.logistics_manager" class="account-chip logistics-chip">
+                    {{ branch.logistics_manager.username }}
+                    <span v-if="branch.logistics_manager.is_active" class="chip-dot active"></span>
                     <span v-else class="chip-dot inactive"></span>
                   </span>
                   <span v-else class="text-muted">—</span>
