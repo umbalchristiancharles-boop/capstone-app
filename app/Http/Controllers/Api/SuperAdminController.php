@@ -37,7 +37,7 @@ class SuperAdminController extends Controller
     public function profile(Request $request)
     {
         $user = $this->resolveAuthenticatedUser($request);
-        
+
         if (!$user) {
             return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
         }
@@ -79,7 +79,7 @@ class SuperAdminController extends Controller
     public function updateProfile(Request $request)
     {
         $user = $this->resolveAuthenticatedUser($request);
-        
+
         if (!$user) {
             return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
         }
@@ -155,7 +155,7 @@ class SuperAdminController extends Controller
     public function uploadAvatar(Request $request)
     {
         $user = $this->resolveAuthenticatedUser($request);
-        
+
         if (!$user) {
             return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
         }
@@ -200,7 +200,7 @@ class SuperAdminController extends Controller
     public function dashboard(Request $request)
     {
         $user = $this->resolveAuthenticatedUser($request);
-        
+
         if (!$user) {
             return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
         }
@@ -211,7 +211,7 @@ class SuperAdminController extends Controller
         }
 
         $range = $request->query('range', 'today');
-        
+
         // Calculate date range based on selection
         $dateRange = $this->getDateRange($range);
 
@@ -248,7 +248,7 @@ class SuperAdminController extends Controller
                 ->whereBetween('created_at', $dateRange)
                 ->where('status', 'completed')
                 ->sum('grand_total');
-            
+
             return [
                 'id' => $branch->id,
                 'name' => $branch->name,
@@ -331,11 +331,12 @@ class SuperAdminController extends Controller
 
     /**
      * Send announcement to all branches/staff
+     * Validates input, saves to database, and returns appropriate response
      */
     public function sendAnnouncement(Request $request)
     {
         $user = $this->resolveAuthenticatedUser($request);
-        
+
         if (!$user) {
             return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
         }
@@ -345,20 +346,71 @@ class SuperAdminController extends Controller
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
         }
 
+        // Validate incoming request data
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'message' => 'required|string',
             'target' => 'nullable|in:all,staff,managers',
         ]);
 
-        // In a real implementation, you would store this in a database
-        // and display it to the appropriate users
-        
-        // For now, we'll just return success
-        return response()->json([
-            'ok' => true,
-            'message' => 'Announcement sent successfully!',
-        ]);
+        // Set default target if not provided
+        $target = $validated['target'] ?? 'all';
+
+        try {
+            // Save announcement to database
+            $announcement = \App\Models\Announcement::create([
+                'title' => $validated['title'],
+                'message' => $validated['message'],
+                'target' => $target,
+                'sender_id' => $user->id,
+            ]);
+
+            // Get count of users who will receive this announcement (for logging purposes)
+            $targetCount = $this->getTargetUserCount($target);
+
+            // Log the announcement activity
+            \Log::info("Announcement sent by Super Admin ID {$user->id}: '{$validated['title']}' to target: {$target} ({$targetCount} users)");
+
+            return response()->json([
+                'ok' => true,
+                'message' => 'Announcement sent successfully!',
+                'announcement' => [
+                    'id' => $announcement->id,
+                    'title' => $announcement->title,
+                    'target' => $announcement->target,
+                    'created_at' => $announcement->created_at->toDateTimeString(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to send announcement: ' . $e->getMessage());
+            return response()->json([
+                'ok' => false,
+                'message' => 'Failed to send announcement. Please try again.',
+            ], 500);
+        }
+    }
+
+    /**
+     * Get the count of users matching the target audience
+     * Used for logging and notification purposes
+     */
+    private function getTargetUserCount(string $target): int
+    {
+        $query = User::whereNull('deleted_at')
+            ->where('is_active', true);
+
+        switch ($target) {
+            case 'managers':
+                // Only managers (role = MANAGER)
+                return $query->where('role', 'MANAGER')->count();
+            case 'staff':
+                // Staff members (not MANAGER, not ADMIN, not SUPER_ADMIN)
+                return $query->whereNotIn('role', ['MANAGER', 'ADMIN', 'SUPER_ADMIN', 'SUPERADMIN'])->count();
+            case 'all':
+            default:
+                // All active users except super admins
+                return $query->whereNotIn('role', ['SUPER_ADMIN', 'SUPERADMIN'])->count();
+        }
     }
 
     /**
@@ -367,7 +419,7 @@ class SuperAdminController extends Controller
     public function updateTerms(Request $request)
     {
         $user = $this->resolveAuthenticatedUser($request);
-        
+
         if (!$user) {
             return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
         }
@@ -395,7 +447,7 @@ class SuperAdminController extends Controller
     private function getDateRange($range)
     {
         $now = now();
-        
+
         switch ($range) {
             case 'today':
                 return [$now->copy()->startOfDay(), $now->copy()->endOfDay()];
@@ -416,7 +468,7 @@ class SuperAdminController extends Controller
     public function allStaff(Request $request)
     {
         $user = $this->resolveAuthenticatedUser($request);
-        
+
         if (!$user) {
             return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
         }
@@ -461,7 +513,7 @@ class SuperAdminController extends Controller
     public function logisticsProducts(Request $request)
     {
         $user = $this->resolveAuthenticatedUser($request);
-        
+
         if (!$user) {
             return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
         }
@@ -500,7 +552,7 @@ class SuperAdminController extends Controller
     public function logisticsStoreProduct(Request $request)
     {
         $user = $this->resolveAuthenticatedUser($request);
-        
+
         if (!$user) {
             return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
         }
@@ -521,7 +573,7 @@ class SuperAdminController extends Controller
 
         // Generate slug from name if not provided
         $slug = \Illuminate\Support\Str::slug($validated['name']);
-        
+
         // Make slug unique if it already exists
         $originalSlug = $slug;
         $counter = 1;
@@ -557,7 +609,7 @@ class SuperAdminController extends Controller
     public function logisticsUpdateProduct(Request $request, $id)
     {
         $user = $this->resolveAuthenticatedUser($request);
-        
+
         if (!$user) {
             return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
         }
@@ -596,7 +648,7 @@ class SuperAdminController extends Controller
     public function logisticsDestroyProduct(Request $request, $id)
     {
         $user = $this->resolveAuthenticatedUser($request);
-        
+
         if (!$user) {
             return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
         }
@@ -625,7 +677,7 @@ class SuperAdminController extends Controller
     public function logisticsBranches(Request $request)
     {
         $user = $this->resolveAuthenticatedUser($request);
-        
+
         if (!$user) {
             return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
         }

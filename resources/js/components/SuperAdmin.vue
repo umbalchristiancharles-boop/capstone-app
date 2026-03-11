@@ -103,7 +103,7 @@
                 <button class="staff-btn staff-btn--center" @click="ownerAddBranches">OwnerAddBranches</button>
               </div>
               <div class="admin-actions-row">
-                <button class="primary-action-btn" @click="showAnnouncement = true">📢 Send Announcement</button>
+                <button class="primary-action-btn" @click="showAnnouncement = true">Send Announcement</button>
                 <button class="secondary-action-btn" @click="showTerms = true">📄 Update Terms</button>
               </div>
 
@@ -220,36 +220,69 @@
 
       <!-- ANNOUNCEMENT MODAL -->
       <transition name="fade">
-        <div v-if="showAnnouncement" class="info-backdrop">
-          <div class="info-modal">
-            <h3>Send Announcement</h3>
-            <p class="info-sub">Broadcast a message to all branches.</p>
+        <div v-if="showAnnouncement" class="info-backdrop" @click.self="closeAnnouncementModal">
+          <div class="info-modal announcement-modal">
+            <div class="modal-header-custom">
+              <h3>📢 Send Announcement</h3>
+              <button class="modal-close-btn" @click="closeAnnouncementModal">✕</button>
+            </div>
 
-            <div class="info-grid">
-              <div class="info-row">
-                <span class="info-label">Title</span>
-                <input v-model="announcementTitle" class="info-input" type="text" placeholder="Announcement title" />
+            <div class="modal-body-custom">
+              <!-- Title Field -->
+              <div class="form-group-custom">
+                <label class="info-label">Title</label>
+                <input
+                  v-model="announcementTitle"
+                  class="info-input"
+                  type="text"
+                  placeholder="Enter announcement title"
+                  @keyup.enter="sendAnnouncement"
+                />
               </div>
-              <div class="info-row">
-                <span class="info-label">Message</span>
-                <textarea v-model="announcementText" class="info-input" rows="6" placeholder="Write your announcement..."></textarea>
+
+              <!-- Message Field -->
+              <div class="form-group-custom">
+                <label class="info-label">Message</label>
+                <textarea
+                  v-model="announcementText"
+                  class="info-input"
+                  rows="5"
+                  placeholder="Write your announcement message..."
+                ></textarea>
               </div>
-              <div class="info-row">
-                <span class="info-label">Target</span>
+
+              <!-- Target Selection -->
+              <div class="form-group-custom">
+                <label class="info-label">Send To</label>
                 <select v-model="announcementTarget" class="info-input">
-                  <option value="all">All Branches</option>
-                  <option value="staff">All Staff</option>
-                  <option value="managers">Managers Only</option>
+                  <option value="all">👥 All Branches (Everyone)</option>
+                  <option value="staff">👨‍🍳 All Staff</option>
+                  <option value="managers">👔 Managers Only</option>
                 </select>
+              </div>
+
+              <!-- Error/Success Messages -->
+              <div v-if="announcementError" class="alert-message alert-error">
+                ⚠️ {{ announcementError }}
+              </div>
+              <div v-if="announcementSuccess" class="alert-message alert-success">
+                ✅ {{ announcementSuccess }}
               </div>
             </div>
 
-            <div v-if="announcementError" class="info-error">{{ announcementError }}</div>
-            <div v-if="announcementSuccess" class="info-success">{{ announcementSuccess }}</div>
-
-            <div class="info-actions">
-              <button class="btn-outline" @click="showAnnouncement = false">Cancel</button>
-              <button class="btn-primary" @click="sendAnnouncement" :disabled="isSendingAnnouncement">
+            <div class="modal-footer-custom">
+              <button
+                class="btn-outline"
+                @click="closeAnnouncementModal"
+                :disabled="isSendingAnnouncement"
+              >
+                Cancel
+              </button>
+              <button
+                class="btn-primary"
+                @click="sendAnnouncement"
+                :disabled="isSendingAnnouncement"
+              >
                 {{ isSendingAnnouncement ? 'Sending...' : 'Send Announcement' }}
               </button>
             </div>
@@ -391,6 +424,17 @@ const announcementTarget = ref('all')
 const announcementError = ref('')
 const announcementSuccess = ref('')
 const isSendingAnnouncement = ref(false)
+
+// Close announcement modal and reset state
+function closeAnnouncementModal() {
+  showAnnouncement.value = false
+  // Reset form fields
+  announcementTitle.value = ''
+  announcementText.value = ''
+  announcementTarget.value = 'all'
+  announcementError.value = ''
+  announcementSuccess.value = ''
+}
 
 // Terms
 const termsText = ref('')
