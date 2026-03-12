@@ -90,7 +90,7 @@
 
               <!-- Module Navigation -->
               <div class="admin-actions-row">
-<button class="staff-btn staff-btn--center" @click="openModule('hr')">HR Staff Management</button>
+<button class="staff-btn staff-btn--center" @click="openModule('hr')">Staff Management</button>
                 <button class="staff-btn staff-btn--center" @click="openModule('finance')">Finance</button>
                 <button class="staff-btn staff-btn--center" @click="openModule('cashier')">Cashier</button>
               </div>
