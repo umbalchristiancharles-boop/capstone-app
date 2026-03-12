@@ -58,6 +58,21 @@
         </main>
         <!-- RIGHT: SIDE PANELS -->
         <aside class="admin-side">
+          <section class="panel-block announcements-panel">
+            <div class="panel-header"><h2>Announcements</h2></div>
+            <div class="panel-body">
+              <div v-if="loadingAnnouncements">Loading...</div>
+              <div v-else-if="announcements.length === 0">No announcements</div>
+              <ul v-else class="announcement-list">
+                <li v-for="a in announcements" :key="a.id" class="announcement-item">
+                  <div class="announcement-title">{{ a.title }}</div>
+                  <div class="announcement-meta">{{ new Date(a.created_at).toLocaleString() }} • {{ a.target }}</div>
+                  <div class="announcement-message">{{ a.message }}</div>
+                </li>
+              </ul>
+            </div>
+          </section>
+
           <slot name="side"></slot>
         </aside>
       </section>
@@ -177,7 +192,7 @@
 </template>
 
 <script setup>
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import axios from 'axios'
 
 const props = defineProps({
@@ -202,6 +217,22 @@ const isSavingProfile = ref(false)
 const profileError = ref('')
 const profileSuccess = ref('')
 
+// Announcements for the current user
+const announcements = ref([])
+const loadingAnnouncements = ref(false)
+
+async function fetchAnnouncements() {
+  loadingAnnouncements.value = true
+  try {
+    const res = await axios.get('/api/announcements', { withCredentials: true })
+    if (res.data && res.data.ok) announcements.value = res.data.announcements || []
+  } catch (e) {
+    // ignore - non-critical
+  } finally {
+    loadingAnnouncements.value = false
+  }
+}
+
 // Computed property to check if password change is allowed for the current user's role
 const canChangePasswordForRole = computed(() => {
   const role = (props.userProfile.role || '').toUpperCase()
@@ -218,6 +249,10 @@ watch(() => props.userProfile, (newVal) => {
     localProfile.value = { ...newVal }
   }
 }, { immediate: true })
+
+onMounted(() => {
+  fetchAnnouncements()
+})
 
 const getProfileEndpoint = () => {
   if (props.profileEndpoint) return props.profileEndpoint
@@ -450,6 +485,12 @@ async function onAvatarChange(event) {
 .admin-layout--wider .admin-main {
   width: 100%;
 }
+
+.announcements-panel .announcement-list { list-style: none; margin: 0; padding: 0; }
+.announcements-panel .announcement-item { padding: 0.5rem 0; border-bottom: 1px solid #f1f1f1; }
+.announcements-panel .announcement-title { font-weight: 600; color: #333; margin-bottom: 0.25rem; }
+.announcements-panel .announcement-meta { font-size: 0.8rem; color: #777; margin-bottom: 0.5rem; }
+.announcements-panel .announcement-message { font-size: 0.95rem; color: #444; }
 
 @media (min-width: 640px) {
   .admin-layout--wider {

@@ -54,17 +54,21 @@ class Announcement extends Model
      */
     public function scopeVisibleTo($query, string $userRole)
     {
-        switch ($userRole) {
-            case 'MANAGER':
-                // Managers see announcements targeted to 'managers' or 'all'
-                return $query->whereIn('target', ['managers', 'all']);
-            case 'ADMIN':
-                // Admins see all announcements
-                return $query->where('target', 'all');
-            default:
-                // Staff see announcements targeted to 'staff' or 'all'
-                return $query->whereIn('target', ['staff', 'all']);
+        // Normalize role string for case-insensitive matching
+        $role = strtoupper(trim($userRole ?? ''));
+
+        // Super admins, owners and admins should see everything
+        if (in_array($role, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER', 'ADMIN'])) {
+            return $query; // no filtering, show all announcements
         }
+
+        // Managers (any manager-like role) see manager-targeted and global announcements
+        if (str_contains($role, 'MANAGER')) {
+            return $query->whereIn('target', ['managers', 'all']);
+        }
+
+        // Staff and other regular roles see staff-targeted and global announcements
+        return $query->whereIn('target', ['staff', 'all']);
     }
 }
 

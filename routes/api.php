@@ -76,6 +76,8 @@ Route::middleware('web')->group(function () {
     Route::get('/superadmin/all-staff', [\App\Http\Controllers\Api\SuperAdminController::class, 'allStaff']);
 Route::post('/superadmin/announce', [\App\Http\Controllers\Api\SuperAdminController::class, 'sendAnnouncement']);
     Route::post('/superadmin/terms', [\App\Http\Controllers\Api\SuperAdminController::class, 'updateTerms']);
+    // Public announcements endpoint for authenticated users
+    Route::get('/announcements', [\App\Http\Controllers\Api\AnnouncementController::class, 'index']);
 
 // SuperAdmin Logistics - Product Management across all branches
     Route::get('/superadmin/logistics/products', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsProducts']);
