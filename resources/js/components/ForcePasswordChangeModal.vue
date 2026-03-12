@@ -21,26 +21,52 @@
 
         <div class="form-group">
           <label>New Password</label>
-          <input
-            v-model="newPassword"
-            type="password"
-            class="form-input"
-            placeholder="Enter a strong password"
-            @input="evaluateStrength"
-            autocomplete="new-password"
-          />
+          <div class="password-input-wrapper">
+            <input
+              v-model="newPassword"
+              :type="showNewPassword ? 'text' : 'password'"
+              class="form-input"
+              placeholder="Enter a strong password"
+              @input="evaluateStrength"
+              autocomplete="new-password"
+            />
+            <button type="button" class="password-toggle" @click="showNewPassword = !showNewPassword" title="Toggle password visibility">
+              <svg v-if="!showNewPassword" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m2.46 9.15-.83-1.16c-1.47-2.05-1.47-4.99 0-7.04a9.23 9.23 0 0 1 13.77 0l.83 1.16"/>
+                <circle cx="12" cy="12" r="3"/>
+                <path d="m21.54 14.85.83 1.16c1.47 2.05 1.47 4.99 0 7.04a9.23 9.23 0 0 1-13.77 0l-.83-1.16"/>
+              </svg>
+              <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div class="form-group">
           <label>Confirm New Password</label>
-          <input
-            v-model="confirmPassword"
-            type="password"
-            class="form-input"
-            placeholder="Re-enter new password"
-            @input="evaluateStrength"
-            autocomplete="new-password"
-          />
+          <div class="password-input-wrapper">
+            <input
+              v-model="confirmPassword"
+              :type="showConfirmPassword ? 'text' : 'password'"
+              class="form-input"
+              placeholder="Re-enter new password"
+              @input="evaluateStrength"
+              autocomplete="new-password"
+            />
+            <button type="button" class="password-toggle" @click="showConfirmPassword = !showConfirmPassword" title="Toggle password visibility">
+              <svg v-if="!showConfirmPassword" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m2.46 9.15-.83-1.16c-1.47-2.05-1.47-4.99 0-7.04a9.23 9.23 0 0 1 13.77 0l.83 1.16"/>
+                <circle cx="12" cy="12" r="3"/>
+                <path d="m21.54 14.85.83 1.16c1.47 2.05 1.47 4.99 0 7.04a9.23 9.23 0 0 1-13.77 0l-.83-1.16"/>
+              </svg>
+              <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div class="strength-meter">
@@ -60,6 +86,8 @@
 
         <div v-if="error" class="error-text">{{ error }}</div>
         <div v-if="success" class="success-text">{{ success }}</div>
+
+        <!-- Email verification is handled on a separate page after password change -->
       </div>
 
       <div class="force-modal-footer">
@@ -88,6 +116,8 @@ const emit = defineEmits(['completed', 'cancel'])
 
 const newPassword = ref('')
 const confirmPassword = ref('')
+const showNewPassword = ref(false)
+const showConfirmPassword = ref(false)
 const error = ref('')
 const success = ref('')
 const isSubmitting = ref(false)
@@ -204,10 +234,9 @@ async function submit() {
     }, { withCredentials: true })
 
     if (res.data.ok) {
-      success.value = 'Password updated! Redirecting...'
-      setTimeout(() => {
-        emit('completed')
-      }, 800)
+      success.value = 'Password updated!'
+      // Emit completion; ChangePasswordPage will redirect to verification page if needed
+      setTimeout(() => emit('completed'), 800)
     } else {
       error.value = res.data.message || 'Unable to update password.'
     }
@@ -218,6 +247,8 @@ async function submit() {
     isSubmitting.value = false
   }
 }
+
+// email verification handled on separate page
 </script>
 
 <style scoped>
@@ -274,11 +305,12 @@ async function submit() {
 
 .form-input {
   width: 100%;
-  padding: 0.7rem 0.85rem;
+  padding: 0.7rem 2.8rem 0.7rem 0.85rem;
   border-radius: 10px;
   border: 1px solid #f0c1a8;
   background: #fff;
   outline: none;
+  box-sizing: border-box;
 }
 
 .form-input:focus {
@@ -404,4 +436,39 @@ async function submit() {
   opacity: 0.7;
   cursor: not-allowed;
 }
-</style>
+
+/* Eye icon styles for password toggle */
+.password-input-wrapper {
+  position: relative;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.password-toggle:hover {
+  background: rgba(255, 154, 74, 0.2);
+  color: #ff6a3d;
+}
+
+.password-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+</style>  
+

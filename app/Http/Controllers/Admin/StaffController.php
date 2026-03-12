@@ -415,9 +415,9 @@ class StaffController extends Controller
             $branchId = $request->input('branchId') ?? $request->input('branch_id');
             $password = $request->input('password');
 
-            $rules = [
+$rules = [
                 'username' => 'required|string|max:50|unique:users,username',
-                'email' => 'required|email|max:120|unique:users,email',
+                'email' => 'nullable|email|max:120|unique:users,email',
                 'full_name' => 'nullable|string|max:150',
                 'fullName' => 'nullable|string|max:150',
                 'phone' => 'nullable|string|max:30',
@@ -613,7 +613,7 @@ class StaffController extends Controller
         try {
             $request->validate([
                 'username' => 'required|string|max:50|unique:users,username,' . $id,
-                'email' => 'required|email|max:120|unique:users,email,' .  $id,
+                'email' => 'nullable|email|max:120|unique:users,email,' .  $id,
                 'fullName' => 'required|string|max:150',
                 'phone' => 'nullable|string|max:30',
                 'address' => 'nullable|string|max:255',

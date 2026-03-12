@@ -192,6 +192,13 @@ const router = createRouter({
       component: () => import('./components/ChangePasswordPage.vue'),
       meta: { requiresAuth: false },
     },
+    // Verify email page after forced password change
+    {
+      path: '/verify-email',
+      name: 'VerifyEmail',
+      component: () => import('./components/VerifyEmailPage.vue'),
+      meta: { requiresAuth: true },
+    },
   ],
 })
 
@@ -436,125 +443,6 @@ axios
     }
     // FIXED: Removed problematic auto-reload on page load that was causing logout
     // CSRF token is handled by axios interceptor, no page reload needed
-
-    // Central interceptor: try to recover from HTML/index responses or auth failures
-    // by refreshing the Sanctum CSRF cookie and retrying the original request once.
-    function isHtmlResponse(res) {
-      try {
-        const ct = res && res.headers && res.headers['content-type']
-        if (typeof res.data === 'string' && res.data.trim().toLowerCase().startsWith('<!doctype')) return true
-        if (ct && ct.indexOf('text/html') !== -1) return true
-      } catch (e) {}
-      return false
-    }
-
-    async function refreshCsrf() {
-      try {
-        await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
-        const match = document.cookie.match(new RegExp('(^|; )' + 'XSRF-TOKEN' + '=([^;]*)'))
-        const token = match ? decodeURIComponent(match[2]) : null
-        if (token) axios.defaults.headers.common['X-XSRF-TOKEN'] = token
-        return true
-      } catch (e) {
-        return false
-      }
-    }
-
-    let htmlLogoutInProgress = false
-
-    axios.interceptors.response.use(async function (response) {
-      if (isHtmlResponse(response)) {
-        const req = response.config || {}
-
-        // If already retried for CSRF once, force logout
-        if (req._retriedForCsrf || htmlLogoutInProgress) {
-          console.warn('[AXIOS] HTML response after CSRF retry - forcing logout')
-          if (!htmlLogoutInProgress) {
-            htmlLogoutInProgress = true
-            localStorage.removeItem('user')
-            localStorage.removeItem('token')
-            delete axios.defaults.headers.common['Authorization']
-            router.replace('/admin-login').catch(() => { window.location.href = '/admin-login' })
-          }
-          return Promise.reject(new Error('Received HTML response from API'))
-        }
-
-        // First HTML response - try refreshing CSRF once
-        req._retriedForCsrf = true
-        const ok = await refreshCsrf()
-        if (!ok) {
-          console.warn('[AXIOS] Failed to refresh CSRF - forcing logout')
-          if (!htmlLogoutInProgress) {
-            htmlLogoutInProgress = true
-            localStorage.removeItem('user')
-            localStorage.removeItem('token')
-            delete axios.defaults.headers.common['Authorization']
-            router.replace('/admin-login').catch(() => { window.location.href = '/admin-login' })
-          }
-          return Promise.reject(new Error('Failed to refresh CSRF'))
-        }
-        return axios(req)
-      }
-      return response
-    }, async function (error) {
-      const resp = error && error.response
-      const req = error.config || {}
-      const status = resp && resp.status
-
-      // Handle 401 - force logout once
-      if (status === 401) {
-        console.warn('[AXIOS] 401 received:', { url: req.url, method: req.method })
-
-        // If already retried once or logout in progress, reject
-        if (req._retriedForAuth || htmlLogoutInProgress) {
-          return Promise.reject(error)
-        }
-
-        // Try once more with refreshed CSRF
-        req._retriedForAuth = true
-        const ok = await refreshCsrf()
-        if (ok) {
-          try { return axios(req) } catch (e) { return Promise.reject(e) }
-        }
-
-        // Failed - force logout
-        console.warn('[AXIOS] 401 after CSRF refresh - forcing logout')
-        if (!htmlLogoutInProgress) {
-          htmlLogoutInProgress = true
-          localStorage.removeItem('user')
-          localStorage.removeItem('token')
-          delete axios.defaults.headers.common['Authorization']
-          router.replace('/admin-login').catch(() => { window.location.href = '/admin-login' })
-        }
-        return Promise.reject(error)
-      }
-
-      // For 419 (CSRF), try to refresh
-      if (status === 419) {
-        console.warn('[AXIOS] 419 CSRF - trying refresh')
-        if (req._retriedForCsrf || htmlLogoutInProgress) return Promise.reject(error)
-        req._retriedForCsrf = true
-        const ok = await refreshCsrf()
-        if (!ok) return Promise.reject(error)
-        try { return axios(req) } catch (e) { return Promise.reject(e) }
-      }
-
-      // For 403, just reject - permission issue, not auth
-      if (status === 403) {
-        console.warn('[AXIOS] 403 Forbidden:', { url: req.url })
-      }
-
-      // For HTML responses in error
-      if (isHtmlResponse(resp || {})) {
-        if (req._retriedForCsrf || htmlLogoutInProgress) return Promise.reject(error)
-        req._retriedForCsrf = true
-        const ok = await refreshCsrf()
-        if (!ok) return Promise.reject(error)
-        try { return axios(req) } catch (e) { return Promise.reject(e) }
-      }
-
-      return Promise.reject(error)
-    })
 
     const app = createApp(App)
     app.use(router)

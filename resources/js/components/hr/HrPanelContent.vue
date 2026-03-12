@@ -115,16 +115,18 @@
               />
             </div>
 
-            <!-- Email -->
-            <div class="form-group">
-              <label>Email {{ !isEditing ? '*' : '' }}</label>
+            <!-- Email (optional - will be set after password change verification) -->
+            <div class="form-group" v-if="isEditing">
+              <label>Email</label>
               <input
                 v-model="formData.email"
                 type="email"
                 class="form-input"
                 placeholder="Enter email address"
-                :required="!isEditing"
               />
+            </div>
+            <div v-if="!isEditing" class="form-hint">
+              <small>📧 Email will be set after staff member completes password change and verification</small>
             </div>
 
             <!-- Full Name -->
@@ -337,10 +339,6 @@ async function submitStaffForm() {
   if (!isEditing.value) {
     if (!formData.value.username || formData.value.username.trim() === '') {
       formError.value = 'Username is required'
-      return
-    }
-    if (!formData.value.email || formData.value.email.trim() === '') {
-      formError.value = 'Email is required'
       return
     }
   }

@@ -210,7 +210,7 @@ class ManagerProfileController extends Controller
 
         $validated = $request->validate([
             'username' => 'required|string|unique:users,username',
-            'email' => 'required|email|unique:users,email',
+            'email' => 'nullable|email|unique:users,email',
             'fullName' => 'required|string|max:255',
             'phone' => 'nullable|string|max:20',
             'department' => 'nullable|string|max:100',

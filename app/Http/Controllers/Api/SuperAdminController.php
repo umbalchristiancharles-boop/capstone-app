@@ -832,21 +832,17 @@ class SuperAdminController extends Controller
                 'is_active' => 1,
             ]);
 
-            // Create default ADMIN account for this branch
+            // Create default ADMIN account for this branch (no email; user will add/verify later)
             $adminUsername = 'admin_' . $codeSlug;
-            $adminEmail = 'admin_' . $codeSlug . '@chikintayo.com';
 
-            // Check if username/email already exists
+            // Check if username already exists
             if (User::where('username', $adminUsername)->exists()) {
                 $adminUsername = 'admin_' . $codeSlug . '_' . $branch->id;
-            }
-            if (User::where('email', $adminEmail)->exists()) {
-                $adminEmail = 'admin_' . $codeSlug . '_' . $branch->id . '@chikintayo.com';
             }
 
             User::create([
                 'username' => $adminUsername,
-                'email' => $adminEmail,
+                'email' => null,
                 'password' => $defaultPassword, // Mutator will hash this automatically
                 'full_name' => 'Admin - ' . $name,
                 'role' => 'ADMIN',
@@ -858,18 +854,14 @@ class SuperAdminController extends Controller
 
             // Create default HR Manager account for this branch
             $hrUsername = 'hr_' . $codeSlug;
-            $hrEmail = 'hr_' . $codeSlug . '@chikintayo.com';
 
             if (User::where('username', $hrUsername)->exists()) {
                 $hrUsername = 'hr_' . $codeSlug . '_' . $branch->id;
             }
-            if (User::where('email', $hrEmail)->exists()) {
-                $hrEmail = 'hr_' . $codeSlug . '_' . $branch->id . '@chikintayo.com';
-            }
 
             User::create([
                 'username' => $hrUsername,
-                'email' => $hrEmail,
+                'email' => null,
                 'password' => $defaultPassword, // Mutator will hash this automatically
                 'full_name' => 'HR Manager - ' . $name,
                 'role' => 'MANAGER',
@@ -881,18 +873,14 @@ class SuperAdminController extends Controller
 
             // Create default Finance Manager account for this branch
             $financeUsername = 'finance_' . $codeSlug;
-            $financeEmail = 'finance_' . $codeSlug . '@chikintayo.com';
 
             if (User::where('username', $financeUsername)->exists()) {
                 $financeUsername = 'finance_' . $codeSlug . '_' . $branch->id;
             }
-            if (User::where('email', $financeEmail)->exists()) {
-                $financeEmail = 'finance_' . $codeSlug . '_' . $branch->id . '@chikintayo.com';
-            }
 
             User::create([
                 'username' => $financeUsername,
-                'email' => $financeEmail,
+                'email' => null,
                 'password' => $defaultPassword, // Mutator will hash this automatically
                 'full_name' => 'Finance Manager - ' . $name,
                 'role' => 'MANAGER',
@@ -904,18 +892,14 @@ class SuperAdminController extends Controller
 
             // Create default Logistics Manager account for this branch
             $logisticsUsername = 'logistics_' . $codeSlug;
-            $logisticsEmail = 'logistics_' . $codeSlug . '@chikintayo.com';
 
             if (User::where('username', $logisticsUsername)->exists()) {
                 $logisticsUsername = 'logistics_' . $codeSlug . '_' . $branch->id;
             }
-            if (User::where('email', $logisticsEmail)->exists()) {
-                $logisticsEmail = 'logistics_' . $codeSlug . '_' . $branch->id . '@chikintayo.com';
-            }
 
             User::create([
                 'username' => $logisticsUsername,
-                'email' => $logisticsEmail,
+                'email' => null,
                 'password' => $defaultPassword, // Mutator will hash this automatically
                 'full_name' => 'Logistics Manager - ' . $name,
                 'role' => 'MANAGER',

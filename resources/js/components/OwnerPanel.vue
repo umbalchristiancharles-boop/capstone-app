@@ -6,6 +6,7 @@
           :username="ownerProfile.username"
           :defaultPassword="''"
           @close="showForceModal = false"
+          @completed="handleForceCompleted"
         />
   <div class="min-h-screen bg-gradient-to-b from-[#FF9A4A] to-[#FF6A3D]">
     <div class="admin-page">
@@ -638,6 +639,24 @@ async function confirmLogout() {
 }
 
 function cancelLogout() { if (isLoggingOut.value) return; showLogoutConfirm.value = false }
+
+async function handleForceCompleted() {
+  // After forced password change inside Owner panel, check for email and redirect to verify if missing
+  showForceModal.value = false;
+  try {
+    const res = await axios.get('/api/me', { withCredentials: true })
+    const u = res.data.user
+    if (!u || !u.email) {
+      router.push('/verify-email')
+      return
+    }
+  } catch (e) {
+    // ignore
+  }
+  // default: reload owner profile/dashboard
+  showOverlay.value = true
+  setTimeout(() => { try { sessionStorage.setItem('skipRouteOverlay', '1') } catch (e) {} router.push('/owner-panel') }, 600)
+}
 
 // Staff management navigation removed from Owner panel (owners should not manage staff here)
 

@@ -290,6 +290,7 @@ Route::post('/superadmin/announce', [\App\Http\Controllers\Api\SuperAdminControl
 
     Route::post('/auth/send-verification', [AuthController::class, 'sendVerification']);
     Route::post('/auth/verify-code', [AuthController::class, 'verifyCode']);
+    Route::post('/auth/confirm-email', [AuthController::class, 'confirmEmail'])->middleware('auth');
     Route::post('/auth/register', [AuthController::class, 'registerPublic']);
     Route::post('/auth/login', [AuthController::class, 'loginPublic']);
 

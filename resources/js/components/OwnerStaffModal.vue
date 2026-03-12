@@ -25,9 +25,9 @@
               />
             </div>
 
-            <!-- Email -->
-            <div class="form-group">
-              <label for="email" class="form-label">Email {{ !isEdit ? '*' : '' }}</label>
+            <!-- Email (optional - will be set after password change verification) -->
+            <div class="form-group" v-if="isEdit">
+              <label for="email" class="form-label">Email</label>
               <input
                 v-model="form.email"
                 type="email"
@@ -35,9 +35,11 @@
                 class="form-input"
                 :class="{ 'read-only': isViewOnly }"
                 placeholder="Enter email address"
-                :required="!isEdit"
                 :disabled="isViewOnly"
               />
+            </div>
+            <div v-if="!isEdit" class="form-hint">
+              <small>📧 Email will be set after staff member completes password change and verification</small>
             </div>
 
             <!-- Full Name -->
@@ -652,10 +654,6 @@ export default {
         // Create mode validation
         if (!this.form.username || this.form.username.trim() === '') {
           this.errorMessage = 'Username is required'
-          return
-        }
-        if (!this.form.email || this.form.email.trim() === '') {
-          this.errorMessage = 'Email is required'
           return
         }
         if (!this.form.roleDepartment) {

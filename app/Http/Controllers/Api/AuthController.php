@@ -619,6 +619,52 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * Confirm verification for an authenticated user and attach the verified email
+     * POST /api/auth/confirm-email (requires auth middleware)
+     */
+    public function confirmEmail(Request $request)
+    {
+        $user = $this->resolveAuthenticatedUser($request);
+        if (! $user) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
+        $request->validate([
+            'email' => ['required', 'email'],
+            'code' => ['required', 'string', 'size:6'],
+        ]);
+
+        $email = $request->input('email');
+        $code = $request->input('code');
+
+        $storedCode = Cache::get('verification_code_' . $email);
+        if (! $storedCode) {
+            return response()->json(['message' => 'Verification code expired. Please request a new one.'], 400);
+        }
+
+        if ($storedCode !== $code) {
+            return response()->json(['message' => 'Invalid verification code.'], 400);
+        }
+
+        // Ensure email isn't used by another user
+        $existing = User::where('email', $email)->where('id', '!=', $user->id)->exists();
+        if ($existing) {
+            return response()->json(['message' => 'Email already in use by another account.'], 409);
+        }
+
+        // Update authenticated user's email and mark verified
+        $user->email = $email;
+        $user->email_verified_at = now();
+        $user->save();
+
+        // Clear caches
+        Cache::forget('verification_code_' . $email);
+        Cache::forget('email_verified_' . $email);
+
+        return response()->json(['message' => 'Email associated and verified successfully', 'email' => $email]);
+    }
+
     public function registerPublic(Request $request)
     {
         $request->validate([

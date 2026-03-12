@@ -212,7 +212,7 @@ async function submitStaffForm() {
   if (!formData.value.full_name || formData.value.full_name.trim() === '') { formError.value = 'Full name is required'; return }
   if (!isEditing.value) {
     if (!formData.value.username || formData.value.username.trim() === '') { formError.value = 'Username is required'; return }
-    if (!formData.value.email || formData.value.email.trim() === '') { formError.value = 'Email is required'; return }
+
   }
   isSubmitting.value = true
   try {

@@ -354,15 +354,26 @@ function resolveRedirectPath(role, department) {
     return "/login?error=invalid_role";
 }
 
-function handleForceCompleted() {
+async function handleForceCompleted() {
     showForceModal.value = false;
+    // After password change, check if user needs to verify email
+    try {
+        const res = await axios.get('/api/me', { withCredentials: true });
+        const u = res.data.user
+        if (!u || !u.email) {
+            router.push('/verify-email');
+            return;
+        }
+    } catch (e) {
+        // ignore
+    }
     overlayText.value = "Loading panel...";
     setTimeout(() => {
         showOverlay.value = true;
         setTimeout(() => {
             try { sessionStorage.setItem('skipRouteOverlay', '1'); } catch (e) {}
-            // Redirect to /change-password so the URL matches the modal
-            router.push('/change-password');
+            // Redirect to pending path
+            router.push(pendingRedirectPath.value || '/admin-panel');
         }, 600);
     }, 400);
 }

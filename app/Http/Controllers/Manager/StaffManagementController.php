@@ -65,9 +65,9 @@ class StaffManagementController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
-        $request->validate([
+$request->validate([
             'username' => 'required|string|max:255|unique:users,username',
-            'email' => 'required|email|unique:users,email',
+            'email' => 'nullable|email|unique:users,email',
             'full_name' => 'required|string|max:255',
             'phone_number' => 'nullable|string|max:20',
             'department' => 'nullable|string|max:100',

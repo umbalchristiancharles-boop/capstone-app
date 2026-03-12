@@ -638,7 +638,10 @@ async function onAvatarChange(event) {
 
 function openModule(name) {
   switch (name) {
-    case 'hr': return router.push('/super-admin/hr')
+    case 'hr': 
+      sessionStorage.setItem('forceHrReload', '1')
+      window.location.href = '/super-admin/hr'
+      return
     case 'finance': return router.push('/super-admin/finance')
     case 'cashier': return router.push('/super-admin/cashier')
     case 'logistics': return router.push('/super-admin/logistics')

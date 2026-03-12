@@ -305,7 +305,7 @@ const groupedStaff = computed(() => {
 })
 
 // Methods
-async function loadStaff() {
+async function loadStaff(retryCount = 0) {
   loading.value = true
   errorMessage.value = ''
 
@@ -321,7 +321,24 @@ async function loadStaff() {
     }
   } catch (error) {
     console.error('Staff load error:', error)
-    errorMessage.value = 'Error loading staff. Please try again.'
+    
+    // Handle auth errors gracefully
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      errorMessage.value = 'Session expired. Redirecting to login...'
+      setTimeout(() => {
+        localStorage.removeItem('user')
+        router.push('/admin-login')
+      }, 1500)
+      return
+    }
+    
+    if (retryCount < 1) {
+      console.log(`[HRStaffManagement] Retrying loadStaff (attempt ${retryCount + 2})`)
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      return loadStaff(retryCount + 1)
+    }
+    
+    errorMessage.value = 'Error loading staff. Please refresh the page.'
   } finally {
     loading.value = false
   }
@@ -377,6 +394,21 @@ async function toggleStatus(member) {
 }
 
 onMounted(async () => {
+  // Force page reload effect for HR Staff Management (user request)
+  if (sessionStorage.getItem('forceHrReload') === '1') {
+    console.log('[HRStaffManagement] Force reload flag detected - full refresh complete')
+    sessionStorage.removeItem('forceHrReload')
+    // Trigger immediate data load after hard reload
+  }
+  
+  // Pre-flight CSRF refresh to prevent 419 errors on initial load
+  try {
+    await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
+    console.log('[HRStaffManagement] CSRF refreshed successfully')
+  } catch (e) {
+    console.warn('[HRStaffManagement] CSRF refresh failed, proceeding anyway:', e)
+  }
+  
   await loadBranches()
   await loadStaff()
 })
