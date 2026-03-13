@@ -43,7 +43,9 @@
 </template>
 
 <script setup>
-defineProps({
+import { computed } from 'vue'
+
+const props = defineProps({
   show: Boolean,
   title: String,
   text: String,
@@ -53,7 +55,7 @@ defineProps({
   sending: Boolean
 })
 
-defineEmits(['close', 'send', 'update:title', 'update:text', 'update:target'])
+const emit = defineEmits(['close', 'send', 'update:title', 'update:text', 'update:target'])
 
 const localTitle = computed({
   get() { return props.title },

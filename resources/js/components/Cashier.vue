@@ -120,6 +120,22 @@
         <div v-if="checkoutError" class="error-msg">{{ checkoutError }}</div>
         <div v-if="checkoutSuccess" class="success-msg">{{ checkoutSuccess }}</div>
 
+        <!-- Announcements -->
+        <div class="announcements-card" style="margin:12px 0;padding:10px;border-radius:8px;background:#fff8f0;border:1px solid rgba(255,211,107,0.4)">
+          <h3 style="margin:0 0 8px;color:#7a2b00;font-size:0.95rem">Announcements</h3>
+          <div v-if="loadingAnnouncements" class="loading-text">Loading announcements...</div>
+          <div v-else>
+            <div v-if="announcements.length">
+              <div v-for="a in announcements" :key="a.id" style="margin-bottom:8px;padding:8px;border-radius:6px;background:#fff">
+                <div style="font-weight:700;color:#7a2b00">{{ a.title }}</div>
+                <div style="color:#8a4b1a">{{ a.message }}</div>
+                <div style="font-size:0.75rem;color:#a65a2a;margin-top:6px">{{ formatDate(a.created_at) }}</div>
+              </div>
+            </div>
+            <div v-else class="empty-text">No announcements</div>
+          </div>
+        </div>
+
         <div class="checkout-actions">
           <button class="btn-cancel" @click="clearCart" :disabled="isProcessing">Clear</button>
           <button
@@ -193,6 +209,28 @@ const checkoutError = ref('')
 const checkoutSuccess = ref('')
 const transactions = ref([])
 
+// Announcements state
+const announcements = ref([])
+const loadingAnnouncements = ref(false)
+
+async function fetchAnnouncements() {
+  loadingAnnouncements.value = true
+  try {
+    const res = await axios.get('/api/announcements', { withCredentials: true })
+    if (res.data) {
+      if (Array.isArray(res.data)) announcements.value = res.data
+      else if (Array.isArray(res.data.announcements)) announcements.value = res.data.announcements
+      else if (Array.isArray(res.data.data)) announcements.value = res.data.data
+      else announcements.value = []
+    }
+  } catch (e) {
+    console.error('Failed to load announcements:', e)
+    announcements.value = []
+  } finally {
+    loadingAnnouncements.value = false
+  }
+}
+
 // Helpers
 function fmt(n) {
   return Number(n || 0).toFixed(2)
@@ -226,6 +264,8 @@ onMounted(async () => {
   try {
     const res = await axios.get('/api/superadmin/cashier/branches')
     branches.value = res.data
+    // load announcements for cashier/staff
+    fetchAnnouncements()
   } catch (e) {
     console.error('Failed to load branches', e)
   }

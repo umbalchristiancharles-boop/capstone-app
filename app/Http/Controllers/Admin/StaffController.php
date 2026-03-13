@@ -89,13 +89,16 @@ class StaffController extends Controller
             $result = [];
 
             foreach ($branches as $branch) {
-                // Get branch manager for this branch
-                $branchManager = DB::table('users')
+                // Get all managers for this branch (may be multiple)
+                $managers = DB::table('users')
                     ->where('branch_id', $branch->id)
                     ->whereIn('role', ['BRANCH_MANAGER', 'MANAGER'])
                     ->where('is_active', 1)
                     ->whereNull('deleted_at') // Exclude soft deleted
-                    ->first();
+                    ->get();
+
+                // Keep a single representative as branch_manager (frontend still expects a single manager)
+                $branchManager = $managers->first();
 
                 // Get staff for this branch (STAFF only)
                 $staff = DB::table('users')
@@ -113,7 +116,7 @@ class StaffController extends Controller
                     ->whereNull('deleted_at')
                     ->get();
 
-                // Format branch manager data
+                // Format branch manager data (single representative)
                 $managerData = null;
                 if ($branchManager) {
                     $managerData = [
@@ -129,6 +132,22 @@ class StaffController extends Controller
                         'is_online' => $this->isUserOnline($branchManager->id),
                     ];
                 }
+
+                // Format managers data (all managers in branch)
+                $managersData = $managers->map(function($m) {
+                    return [
+                        'id' => $m->id,
+                        'username' => $m->username,
+                        'full_name' => $m->full_name,
+                        'email' => $m->email,
+                        'phone_number' => $m->phone_number,
+                        'department' => $m->department ?? '',
+                        'address' => $m->address,
+                        'role' => $m->role,
+                        'is_active' => $m->is_active,
+                        'is_online' => $this->isUserOnline($m->id),
+                    ];
+                })->toArray();
 
                 // Format staff data (preserve actual role: STAFF)
                 $staffData = $staff->map(function($s) {
@@ -146,6 +165,20 @@ class StaffController extends Controller
                     ];
                 })->toArray();
 
+                // Merge managers into staff list so frontend receives all managers + staff in the 'staff' array
+                // Avoid duplicating the representative branch_manager already shown separately
+                $otherManagers = [];
+                if ($managersData && $managerData) {
+                    foreach ($managersData as $md) {
+                        if ($md['id'] !== $managerData['id']) $otherManagers[] = $md;
+                    }
+                } else {
+                    $otherManagers = $managersData;
+                }
+
+                // Prepend other managers so managers appear before staff in the listing
+                $staffData = array_merge($otherManagers, $staffData);
+
                 // Format HR data
                 $hrData = $hrUsers->map(function($h) {
                     return [
@@ -162,8 +195,9 @@ class StaffController extends Controller
                     ];
                 })->toArray();
 
-                // Only include branches that have manager or staff
-                if ($branchManager || count($staffData) > 0 || count($hrData) > 0) {
+// Always include for branch users (ADMIN/HR/MGR), or populated for globals
+                $shouldInclude = $branchManager || count($staffData) > 0 || count($hrData) > 0;
+                if (in_array($user->role, ['BRANCH_MANAGER', 'MANAGER', 'HR', 'ADMIN']) || $shouldInclude) {
                     $result[] = [
                         'branch_id' => $branch->id,
                         'branch_name' => $branch->name,

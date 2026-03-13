@@ -33,6 +33,8 @@
                 </div>
               </div>
 
+
+
               <!-- hidden file input -->
               <input
                 id="avatar-input"
@@ -108,6 +110,8 @@
                   >
                     👥 Staff Management
                   </button>
+                  <!-- Announcement Button (Owner only) -->
+                  <button v-if="ownerProfile.role === 'OWNER'" class="primary-action-btn" @click="showAnnouncement = true">📣 Send Announcement</button>
                   <!-- Logout Button -->
                   <button
                     class="logout-btn logout-btn--center"
@@ -387,6 +391,22 @@
             </div>
           </section>
 
+          <!-- ANNOUNCEMENTS -->
+          <section class="panel-block announcements-panel">
+            <div class="panel-header"><h2>Announcements</h2></div>
+            <div class="panel-body panel-body--list">
+              <div v-if="loadingAnnouncements">Loading...</div>
+              <div v-else-if="announcements.length === 0">No announcements</div>
+              <ul v-else class="announcement-list">
+                <li v-for="a in announcements" :key="a.id" class="announcement-item">
+                  <div class="announcement-title">{{ a.title }}</div>
+                  <div class="announcement-meta">{{ new Date(a.created_at).toLocaleString() }} • {{ a.target }}</div>
+                  <div class="announcement-message">{{ a.message }}</div>
+                </li>
+              </ul>
+            </div>
+          </section>
+
             <!-- Attendance Monitoring (Admin) -->
             <section class="panel-block">
               <div class="panel-header" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
@@ -450,6 +470,78 @@
             </section>
         </aside>
       </section>
+
+      <!-- ANNOUNCEMENT MODAL (Owner) -->
+      <transition name="fade">
+        <div v-if="showAnnouncement" class="info-backdrop" @click.self="closeAnnouncementModal">
+          <div class="info-modal announcement-modal">
+            <div class="modal-header-custom">
+              <h3>📢 Send Announcement</h3>
+              <button class="modal-close-btn" @click="closeAnnouncementModal">✕</button>
+            </div>
+
+            <div class="modal-body-custom">
+              <!-- Title Field -->
+              <div class="form-group-custom">
+                <label class="info-label">Title</label>
+                <input
+                  v-model="announcementTitle"
+                  class="info-input"
+                  type="text"
+                  placeholder="Enter announcement title"
+                  @keyup.enter="sendAnnouncement"
+                />
+              </div>
+
+              <!-- Message Field -->
+              <div class="form-group-custom">
+                <label class="info-label">Message</label>
+                <textarea
+                  v-model="announcementText"
+                  class="info-input"
+                  rows="5"
+                  placeholder="Write your announcement message..."
+                ></textarea>
+              </div>
+
+              <!-- Target Selection -->
+              <div class="form-group-custom">
+                <label class="info-label">Send To</label>
+                <select v-model="announcementTarget" class="info-input">
+                  <option value="all">👥 All Branches (Everyone)</option>
+                  <option value="staff">👨‍🍳 All Staff</option>
+                  <option value="managers">👔 Managers Only</option>
+                </select>
+              </div>
+
+              <!-- Error/Success Messages -->
+              <div v-if="announcementError" class="alert-message alert-error">
+                ⚠️ {{ announcementError }}
+              </div>
+              <div v-if="announcementSuccess" class="alert-message alert-success">
+                ✅ {{ announcementSuccess }}
+              </div>
+            </div>
+
+            <div class="modal-footer-custom">
+              <button
+                class="btn-outline"
+                @click="closeAnnouncementModal"
+                :disabled="isSendingAnnouncement"
+              >
+                Cancel
+              </button>
+              <button
+                class="btn-primary"
+                @click="sendAnnouncement"
+                :disabled="isSendingAnnouncement"
+              >
+                {{ isSendingAnnouncement ? 'Sending...' : 'Send Announcement' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
 
       <!-- INFO MODAL -->
       <transition name="fade">
@@ -592,6 +684,8 @@ const topProducts = ref([])
 const lowStockItems = ref([])
 const staffActivity = ref([])
 const adminStaffActivity = ref([])
+const announcements = ref([])
+const loadingAnnouncements = ref(false)
 const branches = ref([])
 const selectedBranchId = ref(null)
 const adminAttendance = ref([])
@@ -697,6 +791,19 @@ async function loadBranches() {
   } catch (e) {
     console.error('Error loading branches:', e)
     branches.value = []
+  }
+}
+
+// Fetch announcements visible to the current user
+async function fetchAnnouncements() {
+  loadingAnnouncements.value = true
+  try {
+    const res = await axios.get('/api/announcements', { withCredentials: true })
+    if (res.data && res.data.ok) announcements.value = res.data.announcements || []
+  } catch (e) {
+    // ignore non-critical errors
+  } finally {
+    loadingAnnouncements.value = false
   }
 }
 
@@ -1028,6 +1135,56 @@ function cancelLogout() {
   showLogoutConfirm.value = false
 }
 
+// Announcement modal state (OWNER)
+const showAnnouncement = ref(false)
+const announcementTitle = ref('')
+const announcementText = ref('')
+const announcementTarget = ref('all')
+const announcementError = ref('')
+const announcementSuccess = ref('')
+const isSendingAnnouncement = ref(false)
+
+function closeAnnouncementModal() {
+  showAnnouncement.value = false
+  announcementTitle.value = ''
+  announcementText.value = ''
+  announcementTarget.value = 'all'
+  announcementError.value = ''
+  announcementSuccess.value = ''
+}
+
+async function sendAnnouncement() {
+  if (!announcementTitle.value.trim() || !announcementText.value.trim()) {
+    announcementError.value = 'Please enter a title and message.'
+    return
+  }
+  isSendingAnnouncement.value = true
+  announcementError.value = ''
+  announcementSuccess.value = ''
+  try {
+    // ensure CSRF cookie
+    try { await axios.get('/sanctum/csrf-cookie', { withCredentials: true }) } catch (e) {}
+
+    const res = await axios.post('/api/superadmin/announce', {
+      title: announcementTitle.value,
+      message: announcementText.value,
+      target: announcementTarget.value
+    }, { withCredentials: true })
+
+    if (res.data && res.data.ok) {
+      announcementSuccess.value = 'Announcement sent successfully!'
+      fetchAnnouncements()
+      setTimeout(() => closeAnnouncementModal(), 1200)
+    } else {
+      announcementError.value = res.data?.message || 'Failed to send announcement.'
+    }
+  } catch (e) {
+    announcementError.value = e?.response?.data?.message || e?.message || 'Failed to send announcement.'
+  } finally {
+    isSendingAnnouncement.value = false
+  }
+}
+
 // Only define goToStaffManagement for non-STAFF roles
 function goToStaffManagement() {
   if (ownerProfile.value.role === 'STAFF') return
@@ -1073,5 +1230,71 @@ onMounted(() => {
       }
     })
     .catch(() => {})
+  // load announcements for side panel
+  fetchAnnouncements()
 })
+
 </script>
+
+<style scoped>
+.primary-action-btn {
+  background: linear-gradient(135deg, #2b8aef, #1a6ed8);
+  color: white;
+  border: none;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  margin-bottom: 0.5rem;
+  transition: all 0.2s;
+}
+.primary-action-btn:hover {
+  background: linear-gradient(135deg, #1a6ed8, #1557b0);
+}
+
+.modal-header-custom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.modal-body-custom {
+  margin-bottom: 1.5rem;
+}
+
+.form-group-custom {
+  margin-bottom: 1.25rem;
+}
+
+.form-group-custom .info-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #495057;
+  font-size: 0.95rem;
+}
+
+.modal-footer-custom {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  padding-top: 1rem;
+  border-top: 1px solid #e9ecef;
+}
+
+.modal-footer-custom .btn-outline,
+.modal-footer-custom .btn-primary {
+  flex: 1;
+  min-width: 100px;
+}
+
+@media (max-width: 640px) {
+  .modal-footer-custom {
+    flex-direction: column;
+  }
+}
+</style>

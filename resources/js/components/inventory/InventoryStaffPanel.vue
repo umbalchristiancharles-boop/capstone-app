@@ -128,6 +128,21 @@
               <div class="stat-value">{{ outOfStockCount }}</div>
             </div>
           </div>
+          <!-- Announcements (Staff) -->
+          <div class="announcements-card" style="margin-top:12px;">
+            <h3 style="margin:0 0 8px;color:#7a2b00;font-size:0.95rem">Announcements</h3>
+            <div v-if="loadingAnnouncements" class="loading-text">Loading announcements...</div>
+            <div v-else>
+              <div v-if="announcements.length">
+                <div v-for="a in announcements" :key="a.id" class="announcement-item" style="padding:8px;border-radius:8px;background:#fff8f0;margin-bottom:8px;border:1px solid rgba(255,211,107,0.4)">
+                  <div style="font-weight:700;color:#7a2b00">{{ a.title }}</div>
+                  <div style="margin-top:6px;color:#8a4b1a">{{ a.message }}</div>
+                  <div style="margin-top:8px;font-size:0.75rem;color:#a65a2a">{{ formatDate(a.created_at) }}</div>
+                </div>
+              </div>
+              <div v-else class="empty-text">No announcements</div>
+            </div>
+          </div>
         </template>
 
         <!-- Stats Slot (for non-STAFF roles) -->
@@ -454,6 +469,34 @@ const totalProducts = ref(0)
 const lowStockCount = ref(0)
 const outOfStockCount = ref(0)
 
+// Announcements state for staff panels
+const announcements = ref([])
+const loadingAnnouncements = ref(false)
+
+async function fetchAnnouncements() {
+  loadingAnnouncements.value = true
+  try {
+    const res = await axios.get('/api/announcements', { withCredentials: true })
+    if (res.data) {
+      // API may return { announcements: [...] } or data array directly
+      if (Array.isArray(res.data)) announcements.value = res.data
+      else if (Array.isArray(res.data.announcements)) announcements.value = res.data.announcements
+      else if (Array.isArray(res.data.data)) announcements.value = res.data.data
+      else announcements.value = []
+    }
+  } catch (e) {
+    console.error('Failed to load announcements:', e)
+    announcements.value = []
+  } finally {
+    loadingAnnouncements.value = false
+  }
+}
+
+function formatDate(d) {
+  if (!d) return ''
+  try { return new Date(d).toLocaleString() } catch (e) { return d }
+}
+
 function onSearchInput() {
   if (productListRef.value && typeof productListRef.value.setQuery === 'function') {
     productListRef.value.setQuery(searchQuery.value)
@@ -504,6 +547,7 @@ onMounted(async () => {
   // ProductList will handle fetching when given a fetchUrl; if a parent passed products prop, ProductList will display them.
   // initial stats update after mount
   setTimeout(() => updateStats(), 300)
+  fetchAnnouncements()
 });
 
 // Note: ProductList can fetch products itself via `fetchUrl`. Parent mutating actions will call `refreshList()` after success.

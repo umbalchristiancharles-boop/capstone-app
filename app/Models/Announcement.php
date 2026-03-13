@@ -52,23 +52,66 @@ class Announcement extends Model
      * Scope to get all announcements for a specific user role.
      * This handles the logic of determining which announcements a user should see.
      */
-    public function scopeVisibleTo($query, string $userRole)
+    public function scopeVisibleTo($query, $userOrRole)
     {
-        // Normalize role string for case-insensitive matching
-        $role = strtoupper(trim($userRole ?? ''));
+        // Accept either a User instance or a role string
+        if (is_string($userOrRole)) {
+            $role = strtoupper(trim($userOrRole ?? ''));
 
-        // Super admins, owners and admins should see everything
+            if (in_array($role, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER', 'ADMIN'])) {
+                return $query; // show all
+            }
+
+            if (str_contains($role, 'MANAGER')) {
+                return $query->whereIn('target', ['managers', 'all']);
+            }
+
+            return $query->whereIn('target', ['staff', 'all']);
+        }
+
+        // If a User object was provided, build more granular rules including branch/account targets
+        $user = $userOrRole;
+        if (! $user) return $query->where('id', 0); // no user, no announcements
+
+        $role = strtoupper($user->role ?? '');
+
+        // Owners, admins, and superadmins see everything
         if (in_array($role, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER', 'ADMIN'])) {
-            return $query; // no filtering, show all announcements
+            return $query;
         }
 
-        // Managers (any manager-like role) see manager-targeted and global announcements
-        if (str_contains($role, 'MANAGER')) {
-            return $query->whereIn('target', ['managers', 'all']);
-        }
+        // Build conditional visibility: global + role-specific + account + branch-scoped
+        return $query->where(function ($q) use ($user, $role) {
+            // global announcements
+            $q->where('target', 'all');
 
-        // Staff and other regular roles see staff-targeted and global announcements
-        return $query->whereIn('target', ['staff', 'all']);
+            // account-specific
+            $q->orWhere('target', 'account:' . intval($user->id));
+
+            // global role targets
+            if (str_contains($role, 'MANAGER')) {
+                $q->orWhere('target', 'managers');
+            }
+            // Staff and other regular roles
+            if (! str_contains($role, 'MANAGER') && ! in_array($role, ['ADMIN', 'OWNER', 'SUPER_ADMIN', 'SUPERADMIN'])) {
+                $q->orWhere('target', 'staff');
+            }
+
+            // branch-scoped targets (if user has a branch)
+            if ($user->branch_id) {
+                $branchId = intval($user->branch_id);
+                // branch-wide
+                $q->orWhere('target', 'branch:' . $branchId . ':all');
+                // branch-managers
+                if (str_contains($role, 'MANAGER')) {
+                    $q->orWhere('target', 'branch:' . $branchId . ':managers');
+                }
+                // branch-staff
+                if (! str_contains($role, 'MANAGER') && ! in_array($role, ['ADMIN', 'OWNER', 'SUPER_ADMIN', 'SUPERADMIN'])) {
+                    $q->orWhere('target', 'branch:' . $branchId . ':staff');
+                }
+            }
+        });
     }
 }
 

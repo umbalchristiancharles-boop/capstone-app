@@ -155,6 +155,22 @@
         </table>
       </div>
     </section>
+
+    <!-- ANNOUNCEMENTS -->
+    <section class="panel-block announcements-panel" style="margin-top:18px;">
+      <div class="panel-header"><h2>Announcements</h2></div>
+      <div class="panel-body panel-body--list">
+        <div v-if="loadingAnnouncements">Loading...</div>
+        <div v-else-if="announcements.length === 0">No announcements</div>
+        <ul v-else class="announcement-list">
+          <li v-for="a in announcements" :key="a.id" class="announcement-item">
+            <div class="announcement-title">{{ a.title }}</div>
+            <div class="announcement-meta">{{ new Date(a.created_at).toLocaleString() }} • {{ a.target }}</div>
+            <div class="announcement-message">{{ a.message }}</div>
+          </li>
+        </ul>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -176,6 +192,22 @@ const isProcessing = ref(false)
 const checkoutError = ref('')
 const checkoutSuccess = ref('')
 const transactions = ref([])
+
+// Announcements
+const announcements = ref([])
+const loadingAnnouncements = ref(false)
+
+async function fetchAnnouncements() {
+  loadingAnnouncements.value = true
+  try {
+    const res = await axios.get('/api/announcements', { withCredentials: true })
+    if (res.data && res.data.ok) announcements.value = res.data.announcements || []
+  } catch (e) {
+    console.error('Failed to load announcements:', e)
+  } finally {
+    loadingAnnouncements.value = false
+  }
+}
 
 // Logout state
 const showLogoutConfirm = ref(false)
@@ -353,6 +385,7 @@ async function processCheckout() {
 // Initialize on mount
 onMounted(async () => {
   await loadStaffProfile()
+  fetchAnnouncements()
 })
 
 // Logout functions

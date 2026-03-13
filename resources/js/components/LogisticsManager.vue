@@ -17,6 +17,22 @@
       </div>
     </header>
 
+    <!-- ANNOUNCEMENTS -->
+    <section class="panel-block announcements-panel" style="margin:12px 0">
+      <div class="panel-header"><h2>Announcements</h2></div>
+      <div class="panel-body panel-body--list">
+        <div v-if="loadingAnnouncements">Loading...</div>
+        <div v-else-if="announcements.length === 0">No announcements</div>
+        <ul v-else class="announcement-list">
+          <li v-for="a in announcements" :key="a.id" class="announcement-item">
+            <div class="announcement-title">{{ a.title }}</div>
+            <div class="announcement-meta">{{ new Date(a.created_at).toLocaleString() }} • {{ a.target }}</div>
+            <div class="announcement-message">{{ a.message }}</div>
+          </li>
+        </ul>
+      </div>
+    </section>
+
     <!-- Branch Filter -->
     <div class="branch-filter">
       <label>Select Branch:</label>
