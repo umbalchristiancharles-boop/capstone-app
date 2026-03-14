@@ -110,6 +110,14 @@
                   >
                     👥 Staff Management
                   </button>
+                  <!-- Add Branch Button (Owner only) -->
+                  <button
+                    v-if="ownerProfile.role === 'OWNER'"
+                    class="primary-action-btn"
+                    @click="goToAddBranches"
+                  >
+                    ➕ Add Branch
+                  </button>
                   <!-- Announcement Button (Owner only) -->
                   <button v-if="ownerProfile.role === 'OWNER'" class="primary-action-btn" @click="showAnnouncement = true">📣 Send Announcement</button>
                   <!-- Logout Button -->
@@ -1213,6 +1221,15 @@ function goToStaffManagement() {
     }, 220)
   } catch (e) {
     try { router.push('/staff-management') } catch (err) {}
+  }
+}
+
+function goToAddBranches() {
+  if (ownerProfile.value.role !== 'OWNER') return
+  try {
+    router.push('/owner/add-branches')
+  } catch (e) {
+    window.location.href = '/owner/add-branches'
   }
 }
 

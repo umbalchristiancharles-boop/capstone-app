@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Models\User;
 use App\Models\Branch;
 use App\Models\Order;
@@ -44,7 +45,8 @@ class SuperAdminController extends Controller
 
         // Check if user is super admin
         $roleUpper = strtoupper($user->role ?? '');
-        if ($roleUpper !== 'SUPER_ADMIN' && $roleUpper !== 'SUPERADMIN') {
+        // Allow Super Admins and Owners to send announcements
+        if (!in_array($roleUpper, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER'])) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -338,11 +340,22 @@ class SuperAdminController extends Controller
         $user = $this->resolveAuthenticatedUser($request);
 
         if (!$user) {
+            Log::warning('Announcement send attempt without authentication', [
+                'ip' => $request->ip(),
+                'path' => $request->path(),
+            ]);
             return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
         }
 
         $roleUpper = strtoupper($user->role ?? '');
-        if ($roleUpper !== 'SUPER_ADMIN' && $roleUpper !== 'SUPERADMIN') {
+        // Allow Super Admins and Owners to send announcements
+        if (!in_array($roleUpper, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER'])) {
+            Log::warning('Unauthorized announcement attempt', [
+                'user_id' => $user->id ?? null,
+                'role' => $user->role ?? null,
+                'ip' => $request->ip(),
+                'path' => $request->path(),
+            ]);
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -369,7 +382,7 @@ class SuperAdminController extends Controller
             $targetCount = $this->getTargetUserCount($target);
 
             // Log the announcement activity
-            \Log::info("Announcement sent by Super Admin ID {$user->id}: '{$validated['title']}' to target: {$target} ({$targetCount} users)");
+            \Log::info("Announcement sent by user ID {$user->id}: '{$validated['title']}' to target: {$target} ({$targetCount} users)");
 
             return response()->json([
                 'ok' => true,
@@ -724,7 +737,13 @@ class SuperAdminController extends Controller
 
             $financeManager = User::where('branch_id', $branch->id)
                 ->where('role', 'MANAGER')
-                ->where('department', 'Finance')
+                ->where('department', 'FINANCE')
+                ->whereNull('deleted_at')
+                ->first();
+
+            $procurementManager = User::where('branch_id', $branch->id)
+                ->where('role', 'MANAGER')
+                ->where('department', 'PROCUREMENT')
                 ->whereNull('deleted_at')
                 ->first();
 
@@ -762,6 +781,12 @@ class SuperAdminController extends Controller
                     'username' => $financeManager->username,
                     'email' => $financeManager->email,
                     'is_active' => (bool) $financeManager->is_active,
+                ] : null,
+                'procurement_manager' => $procurementManager ? [
+                    'id' => $procurementManager->id,
+                    'username' => $procurementManager->username,
+                    'email' => $procurementManager->email,
+                    'is_active' => (bool) $procurementManager->is_active,
                 ] : null,
                 'logistics_manager' => $logisticsManager ? [
                     'id' => $logisticsManager->id,
@@ -885,6 +910,25 @@ class SuperAdminController extends Controller
                 'full_name' => 'Finance Manager - ' . $name,
                 'role' => 'MANAGER',
                 'department' => 'Finance',
+                'branch_id' => $branch->id,
+                'is_active' => 1,
+                'must_change_password' => 1,
+            ]);
+
+            // Create default Procurement Manager account for this branch
+            $procurementUsername = 'procurement_' . $codeSlug;
+
+            if (User::where('username', $procurementUsername)->exists()) {
+                $procurementUsername = 'procurement_' . $codeSlug . '_' . $branch->id;
+            }
+
+            User::create([
+                'username' => $procurementUsername,
+                'email' => null,
+                'password' => $defaultPassword, // Mutator will hash this automatically
+                'full_name' => 'Procurement Manager - ' . $name,
+                'role' => 'MANAGER',
+                'department' => 'PROCUREMENT',
                 'branch_id' => $branch->id,
                 'is_active' => 1,
                 'must_change_password' => 1,

@@ -414,9 +414,9 @@ const endpoints = computed(() => {
   }
   return {
     products: '/api/staff/inventory/products',
-    store: '/api/staff/inventory/store',
-    update: (id) => `/api/staff/inventory/update/${id}`,
-    destroy: (id) => `/api/staff/inventory/destroy/${id}`
+    store: '/api/staff/inventory/products',
+    update: (id) => `/api/staff/inventory/products/${id}`,
+    destroy: (id) => `/api/staff/inventory/products/${id}`
   }
 })
 

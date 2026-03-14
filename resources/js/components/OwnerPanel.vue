@@ -43,17 +43,19 @@
 </template>
 
 <script setup>
-defineProps({
-  show: Boolean,
-  title: String,
-  text: String,
-  target: String,
-  error: String,
-  success: String,
-  sending: Boolean
+import { computed } from 'vue'
+
+const props = defineProps({
+  show: { type: Boolean, default: true },
+  title: { type: String, default: '' },
+  text: { type: String, default: '' },
+  target: { type: String, default: 'all' },
+  error: { type: String, default: '' },
+  success: { type: String, default: '' },
+  sending: { type: Boolean, default: false },
 })
 
-defineEmits(['close', 'send', 'update:title', 'update:text', 'update:target'])
+const emit = defineEmits(['close', 'send', 'update:title', 'update:text', 'update:target'])
 
 const localTitle = computed({
   get() { return props.title },

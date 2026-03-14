@@ -207,6 +207,11 @@ Route::post('/superadmin/announce', [\App\Http\Controllers\Api\SuperAdminControl
         Route::get('/logistics/deliveries', [\App\Http\Controllers\Api\ManagerProfileController::class, 'logisticsDeliveries']);
         Route::get('/logistics/suppliers', [\App\Http\Controllers\Api\ManagerProfileController::class, 'logisticsSuppliers']);
 
+        // Procurement Manager endpoints
+        Route::get('/procurement/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'procurementProfile']);
+        Route::put('/procurement/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'updateProcurementProfile']);
+        Route::get('/procurement/dashboard', [\App\Http\Controllers\Api\ManagerProfileController::class, 'procurementDashboard']);
+
         // Budget Request System - Logistics Manager (Read-only inventory + Budget requests)
         Route::get('/logistics/inventory', [\App\Http\Controllers\Manager\BudgetRequestController::class, 'getInventory']);
         Route::get('/logistics/budget/my-requests', [\App\Http\Controllers\Manager\BudgetRequestController::class, 'getMyRequests']);
@@ -244,6 +249,11 @@ Route::post('/superadmin/announce', [\App\Http\Controllers\Api\SuperAdminControl
             Route::post('/inventory/products', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'store']);
             Route::put('/inventory/products/{id}', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'update']);
             Route::delete('/inventory/products/{id}', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'destroy']);
+
+            // Backwards-compatible aliases (old frontend used these paths)
+            Route::post('/inventory/store', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'store']);
+            Route::put('/inventory/update/{id}', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'update']);
+            Route::delete('/inventory/destroy/{id}', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'destroy']);
 
             // Staff Inventory - Profile
             Route::get('/inventory/profile', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'profile']);

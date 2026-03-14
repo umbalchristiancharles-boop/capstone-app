@@ -210,6 +210,9 @@ class AuthController extends Controller
             if ($department === 'FINANCE') {
                 return '/manager/finance';
             }
+            if ($department === 'PROCUREMENT') {
+                return '/manager/procurement';
+            }
             if ($department === 'LOGISTICS') {
                 return '/manager/logistics';
             }

@@ -597,6 +597,93 @@ class ManagerProfileController extends Controller
     }
 
     // ==========================================
+    // Procurement Manager Profile Endpoints
+    // ==========================================
+    public function procurementProfile(Request $request)
+    {
+        $user = $this->getAuthenticatedManager($request);
+
+        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'procurement')) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Unauthorized'
+            ], 401);
+        }
+
+        return response()->json([
+            'ok' => true,
+            'user' => [
+                'id' => $user->id,
+                'username' => $user->username,
+                'full_name' => $user->full_name,
+                'email' => $user->email,
+                'role' => $user->role,
+                'department' => $user->department,
+                'branch_id' => $user->branch_id,
+                'must_change_password' => (bool) $user->must_change_password,
+            ]
+        ]);
+    }
+
+    public function updateProcurementProfile(Request $request)
+    {
+        $user = $this->getAuthenticatedManager($request);
+
+        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'procurement')) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Unauthorized'
+            ], 401);
+        }
+
+        $validated = $request->validate([
+            'full_name' => 'nullable|string|max:255',
+            'email' => 'nullable|email|max:255',
+            'phone_number' => 'nullable|string|max:20',
+        ]);
+
+        $user->update($validated);
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'Profile updated successfully',
+            'user' => [
+                'id' => $user->id,
+                'username' => $user->username,
+                'full_name' => $user->full_name,
+                'email' => $user->email,
+                'phone_number' => $user->phone_number,
+            ]
+        ]);
+    }
+
+    public function procurementDashboard(Request $request)
+    {
+        $user = $this->getAuthenticatedManager($request);
+
+        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'procurement')) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $branchId = $user->branch_id;
+
+        $totalStaff = User::where('role', 'STAFF')
+            ->where('branch_id', $branchId)
+            ->where('is_active', 1)
+            ->whereNull('deleted_at')
+            ->count();
+
+        $activeStaff = $totalStaff;
+
+        return response()->json([
+            'ok' => true,
+            'totalStaff' => $totalStaff,
+            'activeStaff' => $activeStaff,
+            'pendingRequests' => 0,
+        ]);
+    }
+
+    // ==========================================
     // Inventory Manager Profile Endpoints
     // ==========================================
     

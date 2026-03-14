@@ -3,7 +3,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 import App from './app.vue'
 import Index from './components/index.vue'
 import AdminPanel from './components/adminpanel.vue'
-import OwnerPanel from './components/OwnerPanel.vue'
 import adminlogin from './components/adminlogin.vue'
 import StaffList from './components/StaffList.vue'
 import OwnerStaffManagement from './components/OwnerStaffManagement.vue'
@@ -13,6 +12,7 @@ import ManagerFinancePanel from './components/ManagerFinancePanel.vue'
 import ManagerLogisticsPanel from './components/ManagerLogisticsPanel.vue'
 import ManagerHRPanel from './components/ManagerHRPanel.vue'
 import ManagerHRStaffManagement from './components/ManagerHRStaffManagement.vue'
+import ManagerProcurementPanel from './components/ProcurementManagerPanel.vue'
 import StaffCashierPanel from './components/StaffCashierPanel.vue'
 import SuperAdmin from './components/SuperAdmin.vue'
 import axios from 'axios'
@@ -138,12 +138,13 @@ const router = createRouter({
     { path: '/manager/finance', component: ManagerFinancePanel, meta: { requiresAuth: true } },
     { path: '/manager/logistics', component: ManagerLogisticsPanel, meta: { requiresAuth: true } },
 { path: '/manager/hr', component: ManagerHRPanel, meta: { requiresAuth: true } },
+  { path: '/manager/procurement', component: ManagerProcurementPanel, meta: { requiresAuth: true } },
     { path: '/manager/hr/staff-management', component: ManagerHRStaffManagement, meta: { requiresAuth: true } },
     { path: '/staff-panel', component: StaffList },
     { path: '/staff/cashier', component: StaffCashierPanel, meta: { requiresAuth: true } },
     { path: '/staff/finance', component: () => import('./components/StaffFinancePanel.vue'), meta: { requiresAuth: true } },
     { path: '/staff/inventory', component: () => import('./components/inventory/InventoryStaffPanel.vue'), meta: { requiresAuth: true } },
-    { path: '/owner-panel', component: OwnerPanel },
+    { path: '/owner-panel', component: AdminPanel },
     { path: '/hr-panel', component: DeletedStaffList},
     {
       path: '/staff-management',
@@ -364,6 +365,12 @@ router.beforeEach(async (to, from, next) => {
       }
       // Allow navigation to staff-management sub-route
       return next();
+    }
+
+    if (to.path.startsWith('/manager/procurement')) {
+      if (user.role !== 'manager' || user.department !== 'procurement') {
+        return next('/unauthorized');
+      }
     }
 
     // Staff Inventory should only access /staff/inventory

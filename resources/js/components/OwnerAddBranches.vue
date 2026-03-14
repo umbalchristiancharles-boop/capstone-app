@@ -85,6 +85,18 @@
                   </div>
                 </div>
                 <div class="default-account-item">
+                  <span class="account-role-badge procurement-badge">PROCUREMENT MANAGER</span>
+                  <div class="account-details">
+                    <span>Username: <strong>procurement_{{ branchForm.code ? branchForm.code.toLowerCase() : 'branchcode' }}</strong></span>
+                    <span>
+                      Password: <strong>{{ showPassword ? defaultPassword : maskedPassword }}</strong>
+                      <button type="button" class="btn btn-secondary" style="margin-left:8px; padding:4px 8px; font-size:0.78rem;" @click="toggleShowPassword">
+                        {{ showPassword ? 'Hide' : 'Show' }}
+                      </button>
+                    </span>
+                  </div>
+                </div>
+                <div class="default-account-item">
                   <span class="account-role-badge logistics-badge">LOGISTICS MANAGER</span>
                   <div class="account-details">
                     <span>Username: <strong>logistics_{{ branchForm.code ? branchForm.code.toLowerCase() : 'branchcode' }}</strong></span>
@@ -142,6 +154,7 @@
                 <th>Admin Account</th>
                 <th>HR Manager Account</th>
                 <th>Finance Manager Account</th>
+                <th>Procurement Manager Account</th>
                 <th>Logistics Manager Account</th>
                 <th>Status</th>
                 <th>Staff Count</th>
@@ -173,6 +186,14 @@
                   <span v-if="branch.finance_manager" class="account-chip finance-chip">
                     {{ branch.finance_manager.username }}
                     <span v-if="branch.finance_manager.is_active" class="chip-dot active"></span>
+                    <span v-else class="chip-dot inactive"></span>
+                  </span>
+                  <span v-else class="text-muted">—</span>
+                </td>
+                <td>
+                  <span v-if="branch.procurement_manager" class="account-chip procurement-chip">
+                    {{ branch.procurement_manager.username }}
+                    <span v-if="branch.procurement_manager.is_active" class="chip-dot active"></span>
                     <span v-else class="chip-dot inactive"></span>
                   </span>
                   <span v-else class="text-muted">—</span>
@@ -472,6 +493,7 @@ onMounted(async () => {
 .hr-chip { background: #e8f5e9; color: #2e7d32; }
 .finance-chip { background: #fef3c7; color: #b45309; }
 .logistics-chip { background: #e0e7ff; color: #4338ca; }
+.procurement-chip { background: #fff7ed; color: #92400e; }
 .chip-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 .chip-dot.active { background: #28a745; }
 .chip-dot.inactive { background: #dc3545; }
@@ -508,6 +530,7 @@ textarea.form-input { resize: vertical; }
 .hr-badge { background: #dcfce7; color: #166534; }
 .finance-badge { background: #fef3c7; color: #b45309; }
 .logistics-badge { background: #e0e7ff; color: #4338ca; }
+.procurement-badge { background: #fff7ed; color: #92400e; }
 .account-details { display: flex; flex-direction: column; gap: 2px; font-size: 0.85rem; color: #4b5563; }
 
 .error-message { margin: 0 2rem 1rem; padding: 0.75rem 1rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; color: #dc2626; font-size: 0.9rem; }

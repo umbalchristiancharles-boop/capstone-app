@@ -155,6 +155,8 @@ const products = ref([])
 const internalProducts = ref([])
 const allProducts = ref([])
 const branches = ref([])
+const announcements = ref([])
+const loadingAnnouncements = ref(false)
 const fetchUrl = '/api/superadmin/logistics/products'
 const selectedBranch = ref('')
 
@@ -211,6 +213,19 @@ async function fetchBranches() {
   }
 }
 
+// Fetch announcements visible to the current user
+async function fetchAnnouncements() {
+  loadingAnnouncements.value = true
+  try {
+    const res = await axios.get('/api/announcements', { withCredentials: true })
+    if (res.data && res.data.ok) announcements.value = res.data.announcements || []
+  } catch (e) {
+    // ignore non-critical errors
+  } finally {
+    loadingAnnouncements.value = false
+  }
+}
+
 function refreshList() {
   fetchProducts()
 }
@@ -218,6 +233,7 @@ function refreshList() {
 onMounted(async () => {
   await fetchProducts()
   await fetchBranches()
+  await fetchAnnouncements()
 })
 
 function openCountModal(prod) {

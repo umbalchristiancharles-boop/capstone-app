@@ -50,7 +50,7 @@ const routes = [
   {
     path: '/owner-panel',
     name: 'OwnerPanel',
-    component: () => import('../components/OwnerPanel.vue'),
+    component: () => import('../components/AdminPanel.vue'),
     meta: { requiresAuth: true, role: 'OWNER' }
   },
   {
