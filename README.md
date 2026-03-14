@@ -1,2 +1,0 @@
-# Capstone App
-Capstone Project
