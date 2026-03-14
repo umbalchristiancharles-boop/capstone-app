@@ -301,7 +301,7 @@ function handleBack() {
 
     setTimeout(() => {
         try { sessionStorage.setItem('skipRouteOverlay', '1'); } catch (e) {}
-        router.push("/");
+        router.push('/staff-landing');
     }, 2000);
 }
 

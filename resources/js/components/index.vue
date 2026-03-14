@@ -33,19 +33,7 @@
         </p>
 
         <div class="cta-row">
-          <!-- ADMIN LOGIN ONLY -->
-          <RouterLink
-            to=""
-            class="btn-login"
-            @click.prevent="goToAdminLogin"
-          >
-            <span class="icon">🔑</span>
-            <span>Login (Authorized Personnel Only)</span>
-          </RouterLink>
-
-          <span class="note">
-            No sign up. Credentials are provided by the system administrator.
-          </span>
+          <!-- Login moved to Staff area; intentionally left blank -->
         </div>
 
       </div>
@@ -542,6 +530,7 @@ const router = useRouter()
 const showLoginLoader = ref(false)
 const loaderText = ref('Loading admin login...')
 const showScrollTop = ref(false)
+const hideAdminLogin = ref(false)
 
 const chikintayoImg = new URL('../assets/chikintayo.jpg', import.meta.url).href
 const mrLoaderImg   = new URL('../assets/chikinlogo.png', import.meta.url).href
@@ -613,6 +602,10 @@ function handleScroll() {
 }
 
 onMounted(() => {
+  // allow wrapper to request hiding the admin login via sessionStorage
+  try {
+    hideAdminLogin.value = sessionStorage.getItem('hideAdminLogin') === '1'
+  } catch (e) {}
   // Clear any stale user session on landing page
   try {
     localStorage.removeItem('user');

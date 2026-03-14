@@ -100,6 +100,14 @@
               </div>
 
               <div class="admin-actions-row">
+                <button class="staff-btn staff-btn--center" @click="openModule('logistics')">Supplier Management</button>
+              </div>
+
+              <div class="admin-actions-row">
+                <button class="staff-btn staff-btn--center" @click="openModule('procurement')">Procurement</button>
+              </div>
+
+              <div class="admin-actions-row">
                 <button class="staff-btn staff-btn--center" @click="ownerAddBranches">OwnerAddBranches</button>
               </div>
               <div class="admin-actions-row">
@@ -645,6 +653,7 @@ function openModule(name) {
     case 'finance': return router.push('/super-admin/finance')
     case 'cashier': return router.push('/super-admin/cashier')
     case 'logistics': return router.push('/super-admin/logistics')
+    case 'procurement': return router.push('/super-admin/procurement')
     default: return
   }
 }

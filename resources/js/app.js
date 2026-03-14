@@ -1,7 +1,8 @@
 import { createApp } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import App from './app.vue'
-import Index from './components/index.vue'
+import CustomerIndex from './components/CustomerIndex.vue'
+import StaffIndex from './components/StaffIndex.vue'
 import AdminPanel from './components/adminpanel.vue'
 import adminlogin from './components/adminlogin.vue'
 import StaffList from './components/StaffList.vue'
@@ -123,7 +124,8 @@ const ResetPassword = () => import('./components/ResetPassword.vue');
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: '/', component: Index },
+    { path: '/', component: CustomerIndex },
+    { path: '/staff-landing', component: StaffIndex },
     { path: '/login', component: adminlogin },
     { path: '/admin-login', component: adminlogin },
     { path: '/admin-panel', component: AdminPanel },

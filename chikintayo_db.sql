@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 14, 2026 at 05:54 AM
+-- Generation Time: Mar 14, 2026 at 07:19 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -146,7 +146,8 @@ CREATE TABLE `cache` (
 --
 
 INSERT INTO `cache` (`key`, `value`, `expiration`) VALUES
-('laravel-cache-verification_rate_limit_lexela9765@devlug.com', 'i:1;', 1773463755);
+('laravel-cache-verification_rate_limit_lexela9765@devlug.com', 'i:1;', 1773463755),
+('laravel-cache-verification_rate_limit_yowidi6284@devlug.com', 'i:1;', 1773465735);
 
 -- --------------------------------------------------------
 
@@ -987,7 +988,14 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (560, 'App\\Models\\User', 126, 'auth-token', '30faa75e3f102d3e9a1b82080c7d42074ba051dd69eeb8f315508fe9aa24f78f', '[\"*\"]', NULL, NULL, '2026-03-14 04:38:21', '2026-03-14 04:38:21'),
 (561, 'App\\Models\\User', 126, 'auth-token', '16e6f8930f67ca3310cfb04df354a063a6a18f78b8680d7f2dfff047844fcb84', '[\"*\"]', NULL, NULL, '2026-03-14 04:40:04', '2026-03-14 04:40:04'),
 (562, 'App\\Models\\User', 126, 'auth-token', '5e3210810957de8be989c0e95076171d7789b9ee977edb4da183ee2e88941837', '[\"*\"]', NULL, NULL, '2026-03-14 04:48:22', '2026-03-14 04:48:22'),
-(563, 'App\\Models\\User', 126, 'auth-token', '43ca8690715c7d575794c4fd5023661636c58d7df7ab0107168984a9a8f7b017', '[\"*\"]', NULL, NULL, '2026-03-14 04:48:53', '2026-03-14 04:48:53');
+(563, 'App\\Models\\User', 126, 'auth-token', '43ca8690715c7d575794c4fd5023661636c58d7df7ab0107168984a9a8f7b017', '[\"*\"]', NULL, NULL, '2026-03-14 04:48:53', '2026-03-14 04:48:53'),
+(564, 'App\\Models\\User', 126, 'auth-token', '9495e9918f957a844a93d6e247d84f799276e1b9b512eb35502e99ee7b47b3a3', '[\"*\"]', NULL, NULL, '2026-03-14 04:57:40', '2026-03-14 04:57:40'),
+(565, 'App\\Models\\User', 28, 'auth-token', '41e7a4c5298c24a2b06d6d7d15aaa65e3fe673d3b477551cbb45a30cff8bf6b2', '[\"*\"]', NULL, NULL, '2026-03-14 04:58:20', '2026-03-14 04:58:20'),
+(566, 'App\\Models\\User', 31, 'auth-token', '65008446c2c554513838b0f47b601c2088e33610416ada0d4803e28ed25a32fd', '[\"*\"]', NULL, NULL, '2026-03-14 05:10:43', '2026-03-14 05:10:43'),
+(567, 'App\\Models\\User', 127, 'auth-token', '0c8696f670f3aaf8c835906849b946e080f91a678d5b0846301da262133aa81a', '[\"*\"]', NULL, NULL, '2026-03-14 05:11:27', '2026-03-14 05:11:27'),
+(568, 'App\\Models\\User', 127, 'auth-token', '0587757ae64425ccc7097cf92de1907b67a58bc7752a1a187c5bdc049fe52894', '[\"*\"]', NULL, NULL, '2026-03-14 05:12:42', '2026-03-14 05:12:42'),
+(569, 'App\\Models\\User', 28, 'auth-token', 'a05f8b285607ef09119ace16764872848bca8586ce13c4d094f6a53da38a47e5', '[\"*\"]', NULL, NULL, '2026-03-14 05:14:04', '2026-03-14 05:14:04'),
+(570, 'App\\Models\\User', 126, 'auth-token', 'dcc93fd359307a02c583fa8344f14377fd9ac50e137e062b6bbf0a92792f33e5', '[\"*\"]', NULL, NULL, '2026-03-14 05:25:15', '2026-03-14 05:25:15');
 
 -- --------------------------------------------------------
 
@@ -1048,7 +1056,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('BvtmBocsxms0N6SrEcBUe5V8rrqEbnnCdSDuOM0A', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiSlljSmJacGVEYVRNSXhRb3RIWEdPS2Fmd09qY2h2Y0U2MU0zWnJqWiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9fQ==', 1773463989);
+('80YZcsHHxd63mU3BmGJ1byx8yLvQ0oU4Kc0uVHvr', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoibU93b3NwWjFhQWVuU2NYWTlLaHB1VmdVS29TR1puV1NicFlBckFseSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9fQ==', 1773469068);
 
 -- --------------------------------------------------------
 
@@ -1131,7 +1139,7 @@ INSERT INTO `users` (`id`, `email`, `username`, `full_name`, `name`, `password`,
 (124, NULL, 'hr_br001467', 'HR Manager - Dasma Branch', NULL, '$2y$12$IwNcJQQjfZ33WqhAdO/pw.ib/7fuvWAvobSeE1lfvqWhmIY9InefS', NULL, 'MANAGER', 28, 'HR', NULL, '2026-03-14 04:37:05', '2026-03-14 04:37:05', NULL, 1, 1, NULL, NULL, NULL),
 (125, NULL, 'finance_br001467', 'Finance Manager - Dasma Branch', NULL, '$2y$12$m6kM6Y2eN4FE4f1AneuQT.KSHiykyYiiqXJ1sK3OKms47EZg70Opm', NULL, 'MANAGER', 28, 'FINANCE', NULL, '2026-03-14 04:37:05', '2026-03-14 04:37:05', NULL, 1, 1, NULL, NULL, NULL),
 (126, 'lexela9765@devlug.com', 'procurement_br001467', 'Procurement Manager - Dasma Branch', NULL, '$2y$12$.dCaFo6rYRgD4O.CNjWeLu1cbKjkIyEm/zkGQKGQ/SFobdSMi2VOG', '2026-03-14 04:40:00', 'MANAGER', 28, 'PROCUREMENT', NULL, '2026-03-14 04:37:06', '2026-03-14 04:40:00', NULL, 0, 1, NULL, NULL, NULL),
-(127, NULL, 'logistics_br001467', 'Logistics Manager - Dasma Branch', NULL, '$2y$12$tS3C91GOJQ7qYUhAl8igJOZ1vH3wLn37z7DMXUJHs1p5UtfQKoGoO', NULL, 'MANAGER', 28, 'LOGISTICS', NULL, '2026-03-14 04:37:06', '2026-03-14 04:37:06', NULL, 1, 1, NULL, NULL, NULL);
+(127, 'yowidi6284@devlug.com', 'logistics_br001467', 'Logistics Manager - Dasma Branch', NULL, '$2y$12$FkZblCbNezEH0k53YCYJv.fGDApnEGNfPdvrxSL4VcOjyiDJ4nk9S', '2026-03-14 05:12:39', 'MANAGER', 28, 'LOGISTICS', NULL, '2026-03-14 04:37:06', '2026-03-14 05:12:39', NULL, 0, 1, NULL, NULL, NULL);
 
 --
 -- Indexes for dumped tables
@@ -1345,7 +1353,7 @@ ALTER TABLE `attendance`
 -- AUTO_INCREMENT for table `attendance_settings`
 --
 ALTER TABLE `attendance_settings`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=95;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=97;
 
 --
 -- AUTO_INCREMENT for table `branches`
@@ -1411,7 +1419,7 @@ ALTER TABLE `order_items`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=564;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=571;
 
 --
 -- AUTO_INCREMENT for table `products`
