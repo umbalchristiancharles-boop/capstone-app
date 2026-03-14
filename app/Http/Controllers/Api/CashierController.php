@@ -65,6 +65,8 @@ class CashierController extends Controller
             'items.*.product_id'  => 'required|exists:products,id',
             'items.*.quantity'    => 'required|integer|min:1',
             'amount_paid'         => 'required|numeric|min:0',
+            'discount_type'       => 'nullable|string|in:none,discount,pwd,senior',
+            'discount_percent'    => 'nullable|numeric|min:0|max:100',
         ]);
 
         return DB::transaction(function () use ($request) {
@@ -100,13 +102,36 @@ class CashierController extends Controller
                 $product->decrement('stock', $item['quantity']);
             }
 
-            $amountPaid = (float) $request->amount_paid;
+            // compute discount and VAT
+            $subtotalAll = $grandTotal;
 
-            if ($amountPaid < $grandTotal) {
-                abort(422, 'Insufficient payment. Total is ₱' . number_format($grandTotal, 2));
+            $discountType = $request->input('discount_type', 'none');
+            $discountPercent = 0;
+            if ($discountType === 'pwd') {
+                $discountPercent = config('chikintayo.pwd_discount_percent', 0.20) * 100;
+            } elseif ($discountType === 'senior') {
+                $discountPercent = config('chikintayo.senior_discount_percent', 0.20) * 100;
+            } elseif ($discountType === 'discount') {
+                $discountPercent = (float) $request->input('discount_percent', 0);
             }
 
-            $changeAmount = $amountPaid - $grandTotal;
+            $discountPercent = max(0, min(100, (float) $discountPercent));
+            $discountAmount = ($subtotalAll * $discountPercent) / 100.0;
+
+            // taxable amount after discount
+            $taxable = max(0, $subtotalAll - $discountAmount);
+            $vatPercent = (float) config('chikintayo.vat_percent', 0.12);
+            $vatAmount = $taxable * $vatPercent;
+
+            $finalGrandTotal = $taxable + $vatAmount;
+
+            $amountPaid = (float) $request->amount_paid;
+
+            if ($amountPaid < $finalGrandTotal) {
+                abort(422, 'Insufficient payment. Total is ₱' . number_format($finalGrandTotal, 2));
+            }
+
+            $changeAmount = $amountPaid - $finalGrandTotal;
 
             // Generate order code
             $lastOrder = Order::orderByDesc('id')->first();
@@ -120,7 +145,7 @@ class CashierController extends Controller
                 'branch_id'     => $request->branch_id,
                 'customer_name' => $request->customer_name ?? 'Walk-in',
                 'status'        => 'completed',
-                'grand_total'   => $grandTotal,
+                'grand_total'   => $finalGrandTotal,
                 'amount_paid'   => $amountPaid,
                 'change_amount' => $changeAmount,
                 'ordered_at'    => now(),
@@ -132,11 +157,20 @@ class CashierController extends Controller
 
             $order->load('items', 'branch');
 
+            // include computed VAT and discount details in response (not persisted)
+            $order->subtotal = $subtotalAll;
+            $order->discount_type = $discountType;
+            $order->discount_percent = $discountPercent;
+            $order->discount_amount = round($discountAmount, 2);
+            $order->vat_percent = $vatPercent * 100;
+            $order->vat_amount = round($vatAmount, 2);
+            $order->grand_total = round($finalGrandTotal, 2);
+
             return response()->json([
                 'ok'      => true,
                 'message' => 'Transaction completed!',
                 'order'   => $order,
-                'change'  => $changeAmount,
+                'change'  => round($changeAmount, 2),
             ]);
         });
     }

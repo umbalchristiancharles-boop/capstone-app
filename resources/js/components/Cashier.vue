@@ -87,6 +87,22 @@
             <span>Items:</span>
             <span>{{ totalItems }}</span>
           </div>
+          <div class="total-row">
+            <span>Subtotal:</span>
+            <span>₱{{ fmt(subtotal) }}</span>
+          </div>
+          <div class="total-row">
+            <span>Discount:</span>
+            <span>-₱{{ fmt(discountAmount) }}</span>
+          </div>
+          <div class="total-row">
+            <span>Taxable:</span>
+            <span>₱{{ fmt(taxable) }}</span>
+          </div>
+          <div class="total-row">
+            <span>VAT ({{ vatPercent * 100 }}%):</span>
+            <span>₱{{ fmt(vatAmount) }}</span>
+          </div>
           <div class="total-row total-grand">
             <span>Grand Total:</span>
             <span>₱{{ fmt(grandTotal) }}</span>
@@ -95,6 +111,18 @@
 
         <!-- Customer & Payment -->
         <div class="payment-section">
+          <div class="form-group">
+            <label>Discount / Concession</label>
+            <select v-model="discountType">
+              <option value="none">None</option>
+              <option value="discount">Discount (custom %)</option>
+              <option value="pwd">PWD</option>
+              <option value="senior">Senior</option>
+            </select>
+            <div v-if="discountType === 'discount'" style="margin-top:8px;">
+              <input v-model.number="discountPercent" type="number" min="0" max="100" step="0.1" /> %
+            </div>
+          </div>
           <div class="form-group">
             <label>Customer Name (optional)</label>
             <input v-model="customerName" type="text" placeholder="Walk-in" />
@@ -249,7 +277,29 @@ const filteredProducts = computed(() => {
 })
 
 const totalItems = computed(() => cart.value.reduce((s, i) => s + i.quantity, 0))
-const grandTotal = computed(() => cart.value.reduce((s, i) => s + i.subtotal, 0))
+const subtotal = computed(() => cart.value.reduce((s, i) => s + i.subtotal, 0))
+
+// Defaults (frontend fallback) - VAT and concession percentages
+const FRONTEND_VAT = 0.12
+const FRONTEND_PWD = 20
+const FRONTEND_SENIOR = 20
+
+const discountType = ref('none')
+const discountPercent = ref(0)
+
+const computedDiscountPercent = computed(() => {
+  if (discountType.value === 'pwd') return FRONTEND_PWD
+  if (discountType.value === 'senior') return FRONTEND_SENIOR
+  if (discountType.value === 'discount') return Number(discountPercent.value) || 0
+  return 0
+})
+
+const discountAmount = computed(() => (subtotal.value * (computedDiscountPercent.value || 0)) / 100)
+const taxable = computed(() => Math.max(0, subtotal.value - discountAmount.value))
+const vatPercent = FRONTEND_VAT
+const vatAmount = computed(() => taxable.value * vatPercent)
+const grandTotal = computed(() => Number((taxable.value + vatAmount.value).toFixed(2)))
+
 const canCheckout = computed(() =>
   cart.value.length > 0 && amountPaid.value >= grandTotal.value && grandTotal.value > 0
 )
@@ -372,6 +422,8 @@ async function processCheckout() {
       branch_id: selectedBranch.value,
       customer_name: customerName.value || 'Walk-in',
       amount_paid: amountPaid.value,
+      discount_type: discountType.value || 'none',
+      discount_percent: computedDiscountPercent.value || 0,
       items: cart.value.map(i => ({
         product_id: i.product_id,
         quantity: i.quantity,
