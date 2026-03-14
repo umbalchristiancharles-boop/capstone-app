@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 14, 2026 at 08:07 AM
+-- Generation Time: Mar 14, 2026 at 04:51 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -331,7 +331,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (43, '2026_03_25_000000_create_expenses_table', 7),
 (44, '2026_03_25_000001_create_settlements_table', 7),
 (45, '2026_04_01_000000_create_announcements_table', 7),
-(46, '2026_03_14_000001_add_vat_discount_to_orders_table', 8);
+(46, '2026_03_14_000001_add_vat_discount_to_orders_table', 8),
+(47, '2026_12_01_120000_create_purchase_requests_table', 9);
 
 -- --------------------------------------------------------
 
@@ -1026,7 +1027,20 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (579, 'App\\Models\\User', 129, 'auth-token', '3232a0d35165f370d98d2f14f6fa3011deea765f69d246ead7f3254e6460edb3', '[\"*\"]', NULL, NULL, '2026-03-14 06:59:45', '2026-03-14 06:59:45'),
 (580, 'App\\Models\\User', 128, 'auth-token', '80d082e4dff7e4253f5f5554cf72e1019372fea0edb4250e49040c376073c3ec', '[\"*\"]', NULL, NULL, '2026-03-14 07:01:01', '2026-03-14 07:01:01'),
 (581, 'App\\Models\\User', 129, 'auth-token', '56888be584705efc9d342092e3b11d9899b6be3afa8b0b95fd9c4e4a0f5fadf9', '[\"*\"]', NULL, NULL, '2026-03-14 07:02:24', '2026-03-14 07:02:24'),
-(582, 'App\\Models\\User', 128, 'auth-token', '9338d17599f3685e0d5238074bf5ea6416754c6d79dc62bff755ebf9d0787d6b', '[\"*\"]', NULL, NULL, '2026-03-14 07:03:48', '2026-03-14 07:03:48');
+(582, 'App\\Models\\User', 128, 'auth-token', '9338d17599f3685e0d5238074bf5ea6416754c6d79dc62bff755ebf9d0787d6b', '[\"*\"]', NULL, NULL, '2026-03-14 07:03:48', '2026-03-14 07:03:48'),
+(583, 'App\\Models\\User', 28, 'auth-token', 'c348518911a3db986389cd226aa020adb2449371cda213cb9dbf626a2eb52e55', '[\"*\"]', NULL, NULL, '2026-03-14 13:23:01', '2026-03-14 13:23:01'),
+(584, 'App\\Models\\User', 28, 'auth-token', 'ef997a59a432763faf889ca79dbc24ab16c21e602c17ba4f50f687eb70bfe937', '[\"*\"]', NULL, NULL, '2026-03-14 13:50:55', '2026-03-14 13:50:55'),
+(585, 'App\\Models\\User', 28, 'auth-token', '95053e33d4867a24ee22e83a8aca7f487862f70e6a093092b44385befb8d7cb9', '[\"*\"]', NULL, NULL, '2026-03-14 14:07:01', '2026-03-14 14:07:01'),
+(586, 'App\\Models\\User', 28, 'auth-token', '2631ba0706c50e0fd6f1ae0f22c47cbd03c4c8c118579c6920861b3d94b3ffcd', '[\"*\"]', NULL, NULL, '2026-03-14 14:07:13', '2026-03-14 14:07:13'),
+(587, 'App\\Models\\User', 28, 'auth-token', '45e3f9df64d7f6fd96215d4fa7dda3f65ee396be3a7789f668e5e3393320fa77', '[\"*\"]', NULL, NULL, '2026-03-14 14:11:09', '2026-03-14 14:11:09'),
+(588, 'App\\Models\\User', 28, 'auth-token', '0351a502c865d6dc26018ceaeb10dfffad7c8ffc978117f894e293fddfbf02b2', '[\"*\"]', NULL, NULL, '2026-03-14 14:16:26', '2026-03-14 14:16:26'),
+(589, 'App\\Models\\User', 28, 'auth-token', '7789487a550a72042d86621d14855a3fbf0950d1d547e5ba47ca5732db107598', '[\"*\"]', NULL, NULL, '2026-03-14 14:20:39', '2026-03-14 14:20:39'),
+(590, 'App\\Models\\User', 28, 'auth-token', 'b52b6076315fa8e4503a363553c24b3abcfc04986f3aba9382d9d7f7d9d5ea60', '[\"*\"]', NULL, NULL, '2026-03-14 14:35:26', '2026-03-14 14:35:26'),
+(591, 'App\\Models\\User', 28, 'auth-token', '770866bb4f6f3b6abf0d79bf6e3e3d2a2fec0f5b5f36bb03ee89b8a203c8ab63', '[\"*\"]', NULL, NULL, '2026-03-14 14:49:24', '2026-03-14 14:49:24'),
+(592, 'App\\Models\\User', 28, 'auth-token', '3ac2243b66ba48712383e4caabe1b87d20263a2ec5d5c57247e5fb3017c715a7', '[\"*\"]', NULL, NULL, '2026-03-14 14:54:36', '2026-03-14 14:54:36'),
+(593, 'App\\Models\\User', 28, 'auth-token', 'f841f8fadfeab850554dadb77ea021fc89b80f73f2b5b4b0891b9c224c340df0', '[\"*\"]', NULL, NULL, '2026-03-14 15:29:41', '2026-03-14 15:29:41'),
+(594, 'App\\Models\\User', 28, 'auth-token', '650c16017096acc9a9925c9176a493a7c018c6ec65fe5652e3c954c7aa053dfe', '[\"*\"]', NULL, NULL, '2026-03-14 15:37:46', '2026-03-14 15:37:46'),
+(595, 'App\\Models\\User', 28, 'auth-token', 'b2fb89d698f43f5804e629002e83795f96c3508fc250cf6047e4fc6b162850a9', '[\"*\"]', NULL, NULL, '2026-03-14 15:48:55', '2026-03-14 15:48:55');
 
 -- --------------------------------------------------------
 
@@ -1078,6 +1092,45 @@ CREATE TABLE `product_comments` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `purchase_orders`
+--
+
+CREATE TABLE `purchase_orders` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `purchase_request_id` bigint(20) UNSIGNED NOT NULL,
+  `supplier_id` bigint(20) UNSIGNED NOT NULL,
+  `po_number` varchar(255) NOT NULL,
+  `total_amount` decimal(10,2) NOT NULL,
+  `status` enum('pending','sent','delivered','completed','cancelled') NOT NULL DEFAULT 'pending',
+  `supplier_details` text DEFAULT NULL,
+  `expected_delivery` date DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `purchase_requests`
+--
+
+CREATE TABLE `purchase_requests` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `branch_id` bigint(20) UNSIGNED NOT NULL,
+  `requester_id` bigint(20) UNSIGNED NOT NULL,
+  `pr_number` varchar(255) NOT NULL,
+  `description` text NOT NULL,
+  `estimated_cost` decimal(10,2) NOT NULL,
+  `status` enum('pending','approved','rejected','hold') NOT NULL DEFAULT 'pending',
+  `notes` text DEFAULT NULL,
+  `attachment` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `sessions`
 --
 
@@ -1095,7 +1148,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('3VH4FZRzn02Hit1kfueIO9X7Hx4XhoYcYdB6nSI7', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiN2xCUjlhOUUzVDVMVmVvSUtFdW1maUxjOFBaV1luV29UVjJYeVZHciI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9fQ==', 1773471930);
+('bDg5PtWTx2WOxRvfScsW2PiEAzo2eFBBE5LBOmE1', 28, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiTWlmZEQ5b2ZuR3Nkd3RIOFRQV2M1UUJxTEQwZDlMWEhaQ0dmTlhGUyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjI4O3M6NzoidXNlcl9pZCI7aToyODtzOjk6InVzZXJfcm9sZSI7czoxMToiU1VQRVJfQURNSU4iO3M6OToidXNlcl9uYW1lIjtzOjIwOiJTdXBlciBBZG1pbmlzdHJhdG9ycyI7czoxMzoicmVkaXJlY3RfcGF0aCI7czoxODoiL3N1cGVyLWFkbWluLXBhbmVsIjt9', 1773503348),
+('UfjXlmVa6lWjS0EADY1qV4N4vu3tOoKFPQPXSmm1', 28, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiODdIQlYwWnd1WndNQzg2S09qSWJZRXNKRHlZaWxkeTBzZzR2WklCcSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6Mjg7czo3OiJ1c2VyX2lkIjtpOjI4O3M6OToidXNlcl9yb2xlIjtzOjExOiJTVVBFUl9BRE1JTiI7czo5OiJ1c2VyX25hbWUiO3M6MjA6IlN1cGVyIEFkbWluaXN0cmF0b3JzIjtzOjEzOiJyZWRpcmVjdF9wYXRoIjtzOjE4OiIvc3VwZXItYWRtaW4tcGFuZWwiO30=', 1773497221);
 
 -- --------------------------------------------------------
 
@@ -1347,6 +1401,22 @@ ALTER TABLE `product_comments`
   ADD KEY `product_comments_parent_comment_id_foreign` (`parent_comment_id`);
 
 --
+-- Indexes for table `purchase_orders`
+--
+ALTER TABLE `purchase_orders`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `purchase_orders_purchase_request_id_foreign` (`purchase_request_id`);
+
+--
+-- Indexes for table `purchase_requests`
+--
+ALTER TABLE `purchase_requests`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `purchase_requests_pr_number_unique` (`pr_number`),
+  ADD KEY `purchase_requests_branch_id_foreign` (`branch_id`),
+  ADD KEY `purchase_requests_requester_id_foreign` (`requester_id`);
+
+--
 -- Indexes for table `sessions`
 --
 ALTER TABLE `sessions`
@@ -1450,7 +1520,7 @@ ALTER TABLE `jobs`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=47;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=48;
 
 --
 -- AUTO_INCREMENT for table `orders`
@@ -1468,7 +1538,7 @@ ALTER TABLE `order_items`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=583;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=596;
 
 --
 -- AUTO_INCREMENT for table `products`
@@ -1481,6 +1551,18 @@ ALTER TABLE `products`
 --
 ALTER TABLE `product_comments`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
+-- AUTO_INCREMENT for table `purchase_orders`
+--
+ALTER TABLE `purchase_orders`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `purchase_requests`
+--
+ALTER TABLE `purchase_requests`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `settlements`
@@ -1563,6 +1645,19 @@ ALTER TABLE `product_comments`
   ADD CONSTRAINT `product_comments_parent_comment_id_foreign` FOREIGN KEY (`parent_comment_id`) REFERENCES `product_comments` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `product_comments_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `product_comments_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `purchase_orders`
+--
+ALTER TABLE `purchase_orders`
+  ADD CONSTRAINT `purchase_orders_purchase_request_id_foreign` FOREIGN KEY (`purchase_request_id`) REFERENCES `purchase_requests` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `purchase_requests`
+--
+ALTER TABLE `purchase_requests`
+  ADD CONSTRAINT `purchase_requests_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `purchase_requests_requester_id_foreign` FOREIGN KEY (`requester_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `settlements`
