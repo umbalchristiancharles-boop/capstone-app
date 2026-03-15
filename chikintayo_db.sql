@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 14, 2026 at 04:51 PM
+-- Generation Time: Mar 15, 2026 at 11:42 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -98,6 +98,7 @@ CREATE TABLE `branches` (
   `name` varchar(150) NOT NULL,
   `address` varchar(255) DEFAULT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `budget` bigint(20) NOT NULL DEFAULT 100000,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -106,8 +107,8 @@ CREATE TABLE `branches` (
 -- Dumping data for table `branches`
 --
 
-INSERT INTO `branches` (`id`, `code`, `name`, `address`, `is_active`, `created_at`, `updated_at`) VALUES
-(28, 'BR001467', 'Dasma Branch', 'Dasma', 1, '2026-03-14 04:37:05', '2026-03-14 04:37:05');
+INSERT INTO `branches` (`id`, `code`, `name`, `address`, `is_active`, `budget`, `created_at`, `updated_at`) VALUES
+(28, 'BR001467', 'Dasma Branch', 'Dasma', 1, 100000, '2026-03-14 04:37:05', '2026-03-14 04:37:05');
 
 -- --------------------------------------------------------
 
@@ -332,7 +333,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (44, '2026_03_25_000001_create_settlements_table', 7),
 (45, '2026_04_01_000000_create_announcements_table', 7),
 (46, '2026_03_14_000001_add_vat_discount_to_orders_table', 8),
-(47, '2026_12_01_120000_create_purchase_requests_table', 9);
+(47, '2026_12_01_120000_create_purchase_requests_table', 9),
+(48, '2026_03_15_000001_add_budget_to_branches_table', 10);
 
 -- --------------------------------------------------------
 
@@ -1040,7 +1042,13 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (592, 'App\\Models\\User', 28, 'auth-token', '3ac2243b66ba48712383e4caabe1b87d20263a2ec5d5c57247e5fb3017c715a7', '[\"*\"]', NULL, NULL, '2026-03-14 14:54:36', '2026-03-14 14:54:36'),
 (593, 'App\\Models\\User', 28, 'auth-token', 'f841f8fadfeab850554dadb77ea021fc89b80f73f2b5b4b0891b9c224c340df0', '[\"*\"]', NULL, NULL, '2026-03-14 15:29:41', '2026-03-14 15:29:41'),
 (594, 'App\\Models\\User', 28, 'auth-token', '650c16017096acc9a9925c9176a493a7c018c6ec65fe5652e3c954c7aa053dfe', '[\"*\"]', NULL, NULL, '2026-03-14 15:37:46', '2026-03-14 15:37:46'),
-(595, 'App\\Models\\User', 28, 'auth-token', 'b2fb89d698f43f5804e629002e83795f96c3508fc250cf6047e4fc6b162850a9', '[\"*\"]', NULL, NULL, '2026-03-14 15:48:55', '2026-03-14 15:48:55');
+(595, 'App\\Models\\User', 28, 'auth-token', 'b2fb89d698f43f5804e629002e83795f96c3508fc250cf6047e4fc6b162850a9', '[\"*\"]', NULL, NULL, '2026-03-14 15:48:55', '2026-03-14 15:48:55'),
+(596, 'App\\Models\\User', 28, 'auth-token', '36f486b45300fb445b98aacd41d4b7a8c922043669d2cd8921a33397c5bd07bb', '[\"*\"]', NULL, NULL, '2026-03-15 09:19:25', '2026-03-15 09:19:25'),
+(597, 'App\\Models\\User', 28, 'auth-token', '46741d95b9a158294b875b3b395ee418f43b24a7244745807374ecebad0f26c7', '[\"*\"]', NULL, NULL, '2026-03-15 09:31:36', '2026-03-15 09:31:36'),
+(598, 'App\\Models\\User', 31, 'auth-token', 'a9245d4b42418b4ccce68a60c6739ceaa152880f5ea62b62d560f57e79072fe0', '[\"*\"]', NULL, NULL, '2026-03-15 09:33:22', '2026-03-15 09:33:22'),
+(599, 'App\\Models\\User', 126, 'auth-token', '0b648f4c97da572ba087c4d150a18fec81cdac6ef437dab3c41a33cc0bf2ccc5', '[\"*\"]', NULL, NULL, '2026-03-15 09:56:08', '2026-03-15 09:56:08'),
+(600, 'App\\Models\\User', 31, 'auth-token', 'e184a8b60d571cf7488895bc6214992f53eb56c3f68f01236eda8c8b3322dd55', '[\"*\"]', NULL, NULL, '2026-03-15 10:25:07', '2026-03-15 10:25:07'),
+(601, 'App\\Models\\User', 28, 'auth-token', 'e74ea01a823aea88c2c7e2b3e3b9a747870961d48b8079c147cb770e8b7094d0', '[\"*\"]', NULL, NULL, '2026-03-15 10:33:20', '2026-03-15 10:33:20');
 
 -- --------------------------------------------------------
 
@@ -1148,8 +1156,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('bDg5PtWTx2WOxRvfScsW2PiEAzo2eFBBE5LBOmE1', 28, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiTWlmZEQ5b2ZuR3Nkd3RIOFRQV2M1UUJxTEQwZDlMWEhaQ0dmTlhGUyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjI4O3M6NzoidXNlcl9pZCI7aToyODtzOjk6InVzZXJfcm9sZSI7czoxMToiU1VQRVJfQURNSU4iO3M6OToidXNlcl9uYW1lIjtzOjIwOiJTdXBlciBBZG1pbmlzdHJhdG9ycyI7czoxMzoicmVkaXJlY3RfcGF0aCI7czoxODoiL3N1cGVyLWFkbWluLXBhbmVsIjt9', 1773503348),
-('UfjXlmVa6lWjS0EADY1qV4N4vu3tOoKFPQPXSmm1', 28, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiODdIQlYwWnd1WndNQzg2S09qSWJZRXNKRHlZaWxkeTBzZzR2WklCcSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6Mjg7czo3OiJ1c2VyX2lkIjtpOjI4O3M6OToidXNlcl9yb2xlIjtzOjExOiJTVVBFUl9BRE1JTiI7czo5OiJ1c2VyX25hbWUiO3M6MjA6IlN1cGVyIEFkbWluaXN0cmF0b3JzIjtzOjEzOiJyZWRpcmVjdF9wYXRoIjtzOjE4OiIvc3VwZXItYWRtaW4tcGFuZWwiO30=', 1773497221);
+('X60vVguqyOKDRZin3EA2PW4ZCRM1bBd9lggVFRl6', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiSTFZdGNTUFYxeDkyaGJkMDNVTlYwMTI0UzdVQnpPemZNVExseTFWciI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO319', 1773570937);
 
 -- --------------------------------------------------------
 
@@ -1472,13 +1479,13 @@ ALTER TABLE `attendance`
 -- AUTO_INCREMENT for table `attendance_settings`
 --
 ALTER TABLE `attendance_settings`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=103;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=107;
 
 --
 -- AUTO_INCREMENT for table `branches`
 --
 ALTER TABLE `branches`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
 
 --
 -- AUTO_INCREMENT for table `budget_requests`
@@ -1520,7 +1527,7 @@ ALTER TABLE `jobs`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=48;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=49;
 
 --
 -- AUTO_INCREMENT for table `orders`
@@ -1538,7 +1545,7 @@ ALTER TABLE `order_items`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=596;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=602;
 
 --
 -- AUTO_INCREMENT for table `products`
@@ -1580,7 +1587,7 @@ ALTER TABLE `staff_documents`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=130;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=135;
 
 --
 -- Constraints for dumped tables

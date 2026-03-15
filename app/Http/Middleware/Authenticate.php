@@ -96,6 +96,6 @@ class Authenticate
             ], 401);
         }
 
-        return redirect('/admin-login')->with('error', 'Please login first.');
+        return redirect('/staff-landing')->with('error', 'Please login first.');
     }
 }

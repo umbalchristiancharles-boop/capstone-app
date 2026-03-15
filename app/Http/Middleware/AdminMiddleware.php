@@ -17,13 +17,13 @@ class AdminMiddleware
     {
         // Check if user is logged in
         if (!session('user_id')) {
-            return redirect('/login')->with('error', 'Please login first.');
+            return redirect('/staff-landing')->with('error', 'Please login first.');
         }
 
         // Check if user role is admin (case-insensitive check for 'ADMIN')
         $userRole = strtoupper(session('user_role'));
         if ($userRole !== 'ADMIN') {
-            return redirect('/login')->with('error', 'Unauthorized access. Admin only.');
+            return redirect('/staff-landing')->with('error', 'Unauthorized access. Admin only.');
         }
 
         return $next($request);

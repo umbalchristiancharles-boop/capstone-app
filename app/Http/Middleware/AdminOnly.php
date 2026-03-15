@@ -11,12 +11,12 @@ class AdminOnly
     public function handle(Request $request, Closure $next)
     {
         if (! Session::has('user_id')) {
-            return redirect()->route('login')->with('error', 'Please login first.');
+            return redirect('/staff-landing')->with('error', 'Please login first.');
         }
 
         $userRole = strtoupper(Session::get('user_role', ''));
         if ($userRole !== 'ADMIN' && $userRole !== 'OWNER') {
-            return redirect()->route('login')->with('error', 'Access denied. Admin only.');
+            return redirect('/staff-landing')->with('error', 'Access denied. Admin only.');
         }
 
         return $next($request);

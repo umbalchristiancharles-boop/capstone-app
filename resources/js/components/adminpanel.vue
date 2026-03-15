@@ -929,7 +929,7 @@ async function loadDashboard(range) {
   } catch (e) {
     // If 401, user session expired - redirect to login
     if (e.response?.status === 401) {
-      router.push('/admin-login')
+      router.push('/staff-landing')
       return
     }
     dashboardError.value = 'Error loading dashboard.'
@@ -1082,7 +1082,7 @@ onMounted(async () => {
   } catch (e) {
     // If 401, user session expired - redirect to login
     if (e.response?.status === 401) {
-      router.push('/admin-login')
+      router.push('/staff-landing')
       return
     }
     isProfileLoading.value = false
@@ -1130,10 +1130,10 @@ async function confirmLogout() {
       // Use full-page navigation so the browser requests the server (which has invalidated session)
       // and receives no-cache headers. Use replace to avoid adding a new history entry.
       try {
-        window.location.replace('/')
+        window.location.replace('/staff-landing')
       } catch (e) {
         // fallback to router navigation if replace fails
-        router.push('/').catch(() => {})
+        router.push('/staff-landing').catch(() => {})
       }
     }, 600)
 }

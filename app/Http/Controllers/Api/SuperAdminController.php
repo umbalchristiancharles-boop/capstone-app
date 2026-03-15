@@ -762,6 +762,7 @@ class SuperAdminController extends Controller
                 'code' => $branch->code,
                 'name' => $branch->name,
                 'address' => $branch->address,
+                'budget' => isset($branch->budget) ? (int) $branch->budget : 0,
                 'is_active' => (bool) $branch->is_active,
                 'staff_count' => $staffCount,
                 'admin_user' => $adminUser ? [
@@ -820,6 +821,7 @@ class SuperAdminController extends Controller
             'code' => 'nullable|string|max:20',
             'name' => 'required|string|max:100',
             'address' => 'nullable|string|max:255',
+            'budget' => 'nullable|numeric|min:0',
         ]);
 
         $code = $request->input('code');
@@ -855,6 +857,8 @@ class SuperAdminController extends Controller
                 'name' => $name,
                 'address' => $address,
                 'is_active' => 1,
+                // Use provided budget or default to 100000
+                'budget' => (int) ($request->input('budget', 100000)),
             ]);
 
             // Create default ADMIN account for this branch (no email; user will add/verify later)

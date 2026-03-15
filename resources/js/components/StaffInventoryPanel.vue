@@ -78,9 +78,9 @@ async function confirmLogout() {
   try { if (window.pageBlur && typeof window.pageBlur.show === 'function') window.pageBlur.show() } catch (e) {}
   showOverlay.value = true
   showLogoutConfirm.value = false
-  setTimeout(() => {
+    setTimeout(() => {
     try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
-    try { window.location.replace('/') ; window.location.reload(); } catch (e) { router.push('/').catch(() => {}) }
+    try { window.location.replace('/staff-landing') ; window.location.reload(); } catch (e) { router.push('/staff-landing').catch(() => {}) }
   }, 600)
 }
 

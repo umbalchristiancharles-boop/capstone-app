@@ -198,7 +198,7 @@ router.beforeEach((to, from, next) => {
   });
 
   // === PUBLIC ROUTES - Allow always ===
-  const publicRoutes = ['/', '/login', '/admin-login', '/unauthorized', '/admin/forgot-password', '/admin/reset-password'];
+  const publicRoutes = ['/', '/login', '/admin-login', '/staff-landing', '/unauthorized', '/admin/forgot-password', '/admin/reset-password'];
   if (publicRoutes.includes(to.path) || to.path.startsWith('/admin/reset-password/')) {
     console.log('[ROUTER] Public route - allowing');
     return next();
@@ -224,14 +224,14 @@ router.beforeEach((to, from, next) => {
       return next('/admin-panel');
     }
     if (to.path === '/') {
-      return next('/admin-login');
+      return next('/staff-landing');
     }
   }
 
   // === CHECK: If NO user (not authenticated) → redirect to /admin-login ===
   if (!user) {
-    console.log('[ROUTER] NO USER - Redirecting to /admin-login');
-    return next('/admin-login');
+    console.log('[ROUTER] NO USER - Redirecting to /staff-landing');
+    return next('/staff-landing');
   }
 
   // === User is authenticated - normalize role to lowercase ===
@@ -309,7 +309,7 @@ router.beforeEach((to, from, next) => {
 
 // Helper: get correct panel route for user
 function getPanelRoute(user) {
-  if (!user) return '/admin-login';
+  if (!user) return '/staff-landing';
   const userRole = (user.role || '').toLowerCase();
   if (userRole === 'owner') return '/owner-panel';
   if (userRole === 'admin') return '/admin-panel';

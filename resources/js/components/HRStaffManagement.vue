@@ -327,7 +327,7 @@ async function loadStaff(retryCount = 0) {
       errorMessage.value = 'Session expired. Redirecting to login...'
       setTimeout(() => {
         localStorage.removeItem('user')
-        router.push('/admin-login')
+        router.push('/staff-landing')
       }, 1500)
       return
     }

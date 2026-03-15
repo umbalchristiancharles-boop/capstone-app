@@ -76,7 +76,7 @@ const goToDashboard = () => {
     }
   }
   // Default fallback
-  router.push('/admin-login');
+  router.push('/staff-landing');
 };
 
 onMounted(() => {

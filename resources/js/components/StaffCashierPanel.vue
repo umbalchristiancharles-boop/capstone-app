@@ -456,7 +456,7 @@ async function performLogout() {
   try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
   setTimeout(() => {
     try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
-    try { window.location.replace('/') } catch (e) {}
+    try { window.location.replace('/staff-landing') } catch (e) {}
   }, 500)
 }
 </script>

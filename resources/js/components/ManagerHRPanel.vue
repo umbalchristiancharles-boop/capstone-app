@@ -257,7 +257,7 @@ onMounted(async () => {
   try {
     const res = await axios.get('/api/manager/hr/profile', { withCredentials: true })
     userProfile.value = res.data.user
-  } catch (err) { if (err.response && err.response.status === 401) { router.push('/login'); return } }
+  } catch (err) { if (err.response && err.response.status === 401) { router.push('/staff-landing'); return } }
   await refreshAllData()
   loadAttendanceSettings()
 })
@@ -270,7 +270,7 @@ async function confirmLogout() {
   isLoggingOut.value = true; overlayText.value = 'Logging out...'; showOverlay.value = true
   try { await axios.post('/api/logout', {}, { withCredentials: true }) } catch (e) {}
   try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
-  setTimeout(() => { try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}; try { window.location.replace('/') } catch (e) {} }, 600)
+  setTimeout(() => { try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}; try { window.location.replace('/staff-landing') } catch (e) {} }, 600)
 }
 
 defineExpose({ refreshAllData, onProfileUpdated })

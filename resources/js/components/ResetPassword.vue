@@ -80,7 +80,7 @@ async function submitForm() {
     if (response.ok) {
       success.value = 'Password reset successful! Redirecting to login...';
       setTimeout(() => {
-        router.push('/admin-login');
+        router.push('/staff-landing');
       }, 2000);
     } else {
       error.value = data.message || 'Reset failed. Please check your input.';

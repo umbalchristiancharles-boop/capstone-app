@@ -487,7 +487,7 @@ async function loadProfile() {
     }
     isProfileLoading.value = false
   } catch (e) {
-    if (e.response?.status === 401) { router.push('/admin-login'); return }
+    if (e.response?.status === 401) { router.push('/staff-landing'); return }
     isProfileLoading.value = false
   }
 }
@@ -524,7 +524,7 @@ async function loadDashboard(range) {
       adminAttendance.value = res.data.attendance || []
     }
   } catch (e) {
-    if (e.response?.status === 401) { router.push('/admin-login'); return }
+    if (e.response?.status === 401) { router.push('/staff-landing'); return }
     dashboardError.value = 'Error loading dashboard.'
   } finally {
     isLoadingDashboard.value = false
@@ -732,7 +732,7 @@ async function confirmLogout() {
   } catch (e) {
     localStorage.clear()
     sessionStorage.clear()
-    window.location.replace('/')
+    window.location.replace('/staff-landing')
   }
 }
 

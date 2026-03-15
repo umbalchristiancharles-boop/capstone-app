@@ -16,6 +16,7 @@ class Branch extends Model
         'name',
         'address',
         'is_active',
+        'budget',
     ];
 
     protected function casts(): array

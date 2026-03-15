@@ -316,8 +316,8 @@ router.onError(() => {
 
 // === GLOBAL GUARD PARA PROTECTED ANG /admin-panel ===
 router.beforeEach(async (to, from, next) => {
-  // Public routes - allow always (including unauthorized page)
-  if (to.path === '/' || to.path === '/admin-login' || to.path === '/login' || to.path === '/unauthorized') {
+  // Public routes - allow always (including unauthorized and staff landing)
+  if (to.path === '/' || to.path === '/admin-login' || to.path === '/login' || to.path === '/staff-landing' || to.path === '/unauthorized') {
     return next()
   }
 
@@ -340,8 +340,8 @@ router.beforeEach(async (to, from, next) => {
   if (isProtectedRoute) {
     // If no user in localStorage, redirect to login
     if (!user) {
-      console.warn('[ROUTER] No user in localStorage, redirecting to login');
-      return next('/admin-login');
+      console.warn('[ROUTER] No user in localStorage, redirecting to staff landing');
+      return next('/staff-landing');
     }
 
     // STRICT ROLE CHECK - Manager Inventory should only access /manager/inventory

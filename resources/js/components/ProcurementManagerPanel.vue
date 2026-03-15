@@ -9,13 +9,6 @@
     @logout="showLogoutConfirm = true"
     @profile-updated="onProfileUpdated"
   >
-    <template #profileFooter>
-      <div class="admin-actions-row">
-        <button class="staff-btn staff-btn--center" @click="goToStaffManagement()">
-          Staff Management
-        </button>
-      </div>
-    </template>
     <template #main>
       <div class="hr-stats-grid">
         <div class="hr-stat-card hr-stat-card--total">
@@ -109,7 +102,7 @@ onMounted(async () => {
 })
 
 function cancelLogout() { showLogoutConfirm.value = false }
-async function confirmLogout() { try { await axios.post('/api/logout', {}, { withCredentials: true }) } catch (e) {} finally { localStorage.clear(); sessionStorage.clear(); window.location.replace('/') } }
+async function confirmLogout() { try { await axios.post('/api/logout', {}, { withCredentials: true }) } catch (e) {} finally { localStorage.clear(); sessionStorage.clear(); window.location.replace('/staff-landing') } }
 
 function onProfileUpdated(updatedProfile) { userProfile.value = { ...userProfile.value, ...updatedProfile } }
 

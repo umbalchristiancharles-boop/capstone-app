@@ -762,9 +762,9 @@ async function logout() {
   try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
   // Optional: show overlay (if you have one)
   showLogoutConfirm.value = false;
-  setTimeout(() => {
+    setTimeout(() => {
     try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
-    try { window.location.replace('/') } catch (e) { router.push('/').catch(() => {}) }
+    try { window.location.replace('/staff-landing') } catch (e) { router.push('/staff-landing').catch(() => {}) }
   }, 600);
 }
 

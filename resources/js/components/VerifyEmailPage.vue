@@ -58,7 +58,7 @@ onMounted(async () => {
 })
 
 function backToLogin() {
-  router.push('/admin-login')
+  router.push('/staff-landing')
 }
 
 async function sendCode() {
@@ -95,7 +95,7 @@ async function confirm() {
   try {
     await axios.post('/api/auth/confirm-email', { email: email.value, code: code.value }, { withCredentials: true })
     success.value = 'Email verified and attached to your account. Redirecting...'
-    setTimeout(() => router.push('/admin-login'), 900)
+    setTimeout(() => router.push('/staff-landing'), 900)
   } catch (e) {
     error.value = e.response?.data?.message || 'Failed to verify email.'
   } finally {

@@ -786,7 +786,7 @@ function goToAdminLogin() {
   try { sessionStorage.setItem('skipRouteOverlay', '1') } catch (e) {}
 
   setTimeout(() => {
-    router.push('/admin-login')
+    router.push('/staff-landing')
   }, 1000)
 }
 

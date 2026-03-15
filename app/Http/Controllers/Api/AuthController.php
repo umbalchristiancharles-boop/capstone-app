@@ -242,7 +242,7 @@ class AuthController extends Controller
         }
 
         // Fallback
-        return '/login?error=unknown_role';
+        return '/staff-landing?error=unknown_role';
     }
 
 

@@ -42,6 +42,11 @@
                 <label class="form-label">Address</label>
                 <textarea v-model="branchForm.address" rows="2" class="form-input" placeholder="Branch address"></textarea>
               </div>
+
+              <div class="form-group">
+                <label class="form-label">Initial Budget (PHP)</label>
+                <input v-model.number="branchForm.budget" type="number" min="0" step="1000" class="form-input" />
+              </div>
             </div>
 
             <div class="default-accounts-info">
@@ -150,6 +155,7 @@
               <tr>
                 <th>Code</th>
                 <th>Branch Name</th>
+                  <th>Budget</th>
                 <th>Address</th>
                 <th>Admin Account</th>
                 <th>HR Manager Account</th>
@@ -165,6 +171,7 @@
               <tr v-for="branch in branches" :key="branch.id">
                 <td><strong>{{ branch.code }}</strong></td>
                 <td>{{ branch.name }}</td>
+                <td>{{ formatCurrency(branch.budget || 0) }}</td>
                 <td>{{ branch.address || '-' }}</td>
                 <td>
                   <span v-if="branch.admin_user" class="account-chip admin-chip">
@@ -293,7 +300,8 @@ const formSuccess = ref('')
 const branchForm = ref({
   code: '',
   name: '',
-  address: ''
+  address: '',
+  budget: 100000,
 })
 
 const isDeleting = ref(false)
@@ -341,7 +349,7 @@ async function loadBranches() {
       errorMessage.value = res.data?.message || 'Failed to load branches'
     }
   } catch (e) {
-    if (e.response?.status === 401) { router.push('/admin-login'); return }
+    if (e.response?.status === 401) { router.push('/staff-landing'); return }
     errorMessage.value = 'Error loading branches.'
   } finally {
     loading.value = false
@@ -375,7 +383,7 @@ function closeAddBranch() {
   showAddBranchForm.value = false
   formError.value = ''
   formSuccess.value = ''
-  branchForm.value = { code: '', name: '', address: '' }
+  branchForm.value = { code: '', name: '', address: '', budget: 100000 }
 }
 
 function suggestBranchCode(name) {
@@ -391,6 +399,7 @@ function suggestBranchCode(name) {
 function openAddBranchForm() {
   // Prefill suggested code based on current name (if any) or timestamp
   branchForm.value.code = suggestBranchCode(branchForm.value.name)
+  branchForm.value.budget = 100000
   formError.value = ''
   formSuccess.value = ''
   showAddBranchForm.value = true
@@ -411,7 +420,8 @@ async function submitBranch() {
     const res = await axios.post('/api/superadmin/branches', {
       code: branchForm.value.code.trim(),
       name: branchForm.value.name.trim(),
-      address: branchForm.value.address.trim()
+      address: branchForm.value.address.trim(),
+      budget: Number(branchForm.value.budget) || 0,
     }, { withCredentials: true })
 
     if (res.data && res.data.ok) {
@@ -437,6 +447,15 @@ async function submitBranch() {
 onMounted(async () => {
   await Promise.all([loadBranches(), loadDefaultPassword()])
 })
+
+function formatCurrency(amount) {
+  try {
+    const val = Number(amount) || 0
+    return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 }).format(val)
+  } catch (e) {
+    return 'PHP ' + (amount || 0)
+  }
+}
 </script>
 
 <style scoped>

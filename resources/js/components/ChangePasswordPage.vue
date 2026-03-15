@@ -14,7 +14,6 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import ForcePasswordChangeModal from './ForcePasswordChangeModal.vue'
-import axios from 'axios'
 
 const router = useRouter()
 const route = useRoute()
@@ -35,23 +34,13 @@ onMounted(() => {
   }
 })
 
-async function handleCompleted() {
-  // After password change, check whether user has an email; if not, go to verification flow
-  try {
-    const res = await axios.get('/api/me', { withCredentials: true })
-    const u = res.data.user
-    if (!u || !u.email) {
-      router.push('/verify-email')
-      return
-    }
-  } catch (e) {
-    // ignore and fall through
-  }
-  router.push('/admin-login')
+function handleCompleted() {
+  // Redirect to login or dashboard after password change
+  router.push('/staff-landing')
 }
 
 function handleCancel() {
-  router.push('/admin-login')
+  router.push('/staff-landing')
 }
 </script>
 

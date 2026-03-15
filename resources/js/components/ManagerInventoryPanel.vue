@@ -79,7 +79,7 @@ onMounted(async () => {
       if (typeof prods.data === 'string' && prods.data.trim().toLowerCase().startsWith('<!doctype html')) {
         console.warn('Products API returned HTML — likely unauthorized or wrong route, redirecting to login')
         try { sessionStorage.setItem('skipRouteOverlay', '1') } catch (e) {}
-        window.location.replace('/admin-login')
+        window.location.replace('/staff-landing')
         return
       }
       if (Array.isArray(prods.data)) {
@@ -99,7 +99,7 @@ onMounted(async () => {
       if (typeof reports.data === 'string' && reports.data.trim().toLowerCase().startsWith('<!doctype html')) {
         console.warn('Reports API returned HTML — likely unauthorized or wrong route, redirecting to login')
         try { sessionStorage.setItem('skipRouteOverlay', '1') } catch (e) {}
-        window.location.replace('/admin-login')
+        window.location.replace('/staff-landing')
         return
       }
       if (Array.isArray(reports.data)) {
@@ -128,9 +128,9 @@ async function confirmLogout() {
     await axios.post('/api/logout', {}, { withCredentials: true })
   } catch (e) {}
   try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
-  setTimeout(() => {
+    setTimeout(() => {
     try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
-    try { window.location.replace('/') } catch (e) { /* ignore */ }
+    try { window.location.replace('/staff-landing') } catch (e) { /* ignore */ }
   }, 600)
 }
 
