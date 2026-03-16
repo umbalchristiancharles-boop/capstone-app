@@ -646,7 +646,7 @@ async function onAvatarChange(event) {
 
 function openModule(name) {
   switch (name) {
-    case 'hr': 
+    case 'hr':
       sessionStorage.setItem('forceHrReload', '1')
       window.location.href = '/super-admin/hr'
       return
@@ -812,6 +812,14 @@ watch(() => route.path, (p) => {
 textarea.info-input {
   resize: vertical;
   min-height: 80px;
+}
+
+.admin-main-header h1 {
+  color: #0066FF;
+  font-weight: 800;
+  font-family: 'Inter', 'Poppins', sans-serif;
+  letter-spacing: -0.5px;
+  margin-bottom: 8px;
 }
 </style>
 
