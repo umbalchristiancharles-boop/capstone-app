@@ -11,6 +11,7 @@ import DeletedStaffList from './components/DeletedStaffList.vue'
 import ManagerInventoryPanel from './components/ManagerInventoryPanel.vue'
 import ManagerFinancePanel from './components/ManagerFinancePanel.vue'
 import ManagerLogisticsPanel from './components/ManagerLogisticsPanel.vue'
+import SupplierPanel from './components/SupplierPanel.vue'
 import ManagerHRPanel from './components/ManagerHRPanel.vue'
 import ManagerHRStaffManagement from './components/ManagerHRStaffManagement.vue'
 import ManagerProcurementPanel from './components/ProcurementManagerPanel.vue'
@@ -139,6 +140,7 @@ const router = createRouter({
     { path: '/manager/inventory', component: ManagerInventoryPanel, meta: { requiresAuth: true } },
     { path: '/manager/finance', component: ManagerFinancePanel, meta: { requiresAuth: true } },
     { path: '/manager/logistics', component: ManagerLogisticsPanel, meta: { requiresAuth: true } },
+    { path: '/manager/logistics/suppliers', component: SupplierPanel, meta: { requiresAuth: true } },
 { path: '/manager/hr', component: ManagerHRPanel, meta: { requiresAuth: true } },
   { path: '/manager/procurement', component: ManagerProcurementPanel, meta: { requiresAuth: true } },
     { path: '/manager/hr/staff-management', component: ManagerHRStaffManagement, meta: { requiresAuth: true } },
@@ -146,6 +148,7 @@ const router = createRouter({
     { path: '/staff/cashier', component: StaffCashierPanel, meta: { requiresAuth: true } },
     { path: '/staff/finance', component: () => import('./components/StaffFinancePanel.vue'), meta: { requiresAuth: true } },
     { path: '/staff/inventory', component: () => import('./components/inventory/InventoryStaffPanel.vue'), meta: { requiresAuth: true } },
+    { path: '/supplier-panel', component: SupplierPanel, meta: { requiresAuth: true } },
     { path: '/owner-panel', component: AdminPanel },
     { path: '/hr-panel', component: DeletedStaffList},
     {
@@ -334,7 +337,7 @@ router.beforeEach(async (to, from, next) => {
   }
 
   // Protected panel routes - require authentication
-  const protectedRoutes = ['/admin-panel', '/manager-panel', '/staff-panel', '/hr-panel', '/staff-management', '/owner/staff-management', '/admin/deleted-staff', '/manager/staff', '/super-admin']
+  const protectedRoutes = ['/admin-panel', '/manager-panel', '/staff-panel', '/hr-panel', '/staff-management', '/owner/staff-management', '/admin/deleted-staff', '/manager/staff', '/super-admin', '/supplier-panel']
   const isProtectedRoute = protectedRoutes.some(route => to.path.startsWith(route)) || to.meta.requiresAuth
 
   if (isProtectedRoute) {
@@ -376,6 +379,13 @@ router.beforeEach(async (to, from, next) => {
     }
 
     // Staff Inventory should only access /staff/inventory
+    // Supplier panel access
+    if (to.path.startsWith('/supplier-panel')) {
+      if (user.role !== 'supplier') {
+        console.warn('[ROUTER] Supplier panel - wrong role:', user);
+        return next('/unauthorized');
+      }
+    }
     if (to.path.startsWith('/staff/inventory')) {
       if (user.role !== 'staff' || user.department !== 'inventory') {
         console.warn('[ROUTER] Staff Inventory - wrong role/department:', user);

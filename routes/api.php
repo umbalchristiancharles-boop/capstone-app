@@ -211,6 +211,8 @@ Route::post('/superadmin/announce', [\App\Http\Controllers\Api\SuperAdminControl
         Route::get('/procurement/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'procurementProfile']);
         Route::put('/procurement/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'updateProcurementProfile']);
         Route::get('/procurement/dashboard', [\App\Http\Controllers\Api\ManagerProfileController::class, 'procurementDashboard']);
+        // Procurement supplier management
+        Route::post('/procurement/suppliers', [\App\Http\Controllers\Api\ManagerProfileController::class, 'createProcurementSupplier']);
 
         // Budget Request System - Logistics Manager (Read-only inventory + Budget requests)
         Route::get('/logistics/inventory', [\App\Http\Controllers\Manager\BudgetRequestController::class, 'getInventory']);

@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class ManagerProfileController extends Controller
@@ -139,6 +140,7 @@ class ManagerProfileController extends Controller
         }
 
         // Get HR-specific dashboard data - filtered by branch
+        // Get HR-specific dashboard data - filtered by branch
         $branchId = $user->branch_id;
         
         $totalStaff = User::where('role', 'STAFF')
@@ -213,7 +215,6 @@ class ManagerProfileController extends Controller
             'email' => 'nullable|email|unique:users,email',
             'fullName' => 'required|string|max:255',
             'phone' => 'nullable|string|max:20',
-            'department' => 'nullable|string|max:100',
             'password' => 'nullable|string|min:8',
         ]);
 
@@ -667,20 +668,103 @@ class ManagerProfileController extends Controller
 
         $branchId = $user->branch_id;
 
-        $totalStaff = User::where('role', 'STAFF')
+        $totalSuppliers = User::where('role', 'SUPPLIER')
+            ->where('branch_id', $branchId)
+            ->whereNull('deleted_at')
+            ->count();
+
+        $activeSuppliers = User::where('role', 'SUPPLIER')
             ->where('branch_id', $branchId)
             ->where('is_active', 1)
             ->whereNull('deleted_at')
             ->count();
 
-        $activeStaff = $totalStaff;
-
         return response()->json([
             'ok' => true,
-            'totalStaff' => $totalStaff,
-            'activeStaff' => $activeStaff,
+            'totalSuppliers' => $totalSuppliers,
+            'activeSuppliers' => $activeSuppliers,
             'pendingRequests' => 0,
         ]);
+    }
+
+    /**
+     * Create a supplier account (Procurement Manager)
+     * POST /api/manager/procurement/suppliers
+     */
+    public function createProcurementSupplier(Request $request)
+    {
+        $user = $this->getAuthenticatedManager($request);
+
+        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'procurement')) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        // Follow HR create staff params: username, email, fullName, phone, department, password
+        $validated = $request->validate([
+            'username' => 'required|string|unique:users,username',
+            'email' => 'nullable|email|unique:users,email',
+            'fullName' => 'required|string|max:255',
+            'phone' => 'nullable|string|max:20',
+            'department' => 'nullable|string|max:100',
+            'password' => 'nullable|string|min:8',
+        ]);
+
+        $branchId = $user->branch_id;
+        if (!$branchId) {
+            return response()->json(['ok' => false, 'message' => 'Manager has no branch assigned'], 400);
+        }
+
+        // Use default password if not provided (same as HR flow)
+        $password = $validated['password'] ?? 'Chikintayo_123';
+
+        try {
+            $supplier = new User();
+            $supplier->username = $validated['username'];
+            $supplier->email = $validated['email'] ?? null;
+            $supplier->password = 'Chikintayo_123';  // Fixed: Use model mutator, default password
+            $supplier->full_name = $validated['fullName'];
+            $supplier->phone_number = $validated['phone'] ?? '';
+            $supplier->role = 'SUPPLIER';
+            $supplier->branch_id = $branchId;
+            $supplier->is_active = 1;
+            $supplier->must_change_password = true;
+            $supplier->save();
+
+
+            // Try to send email with account details if email provided
+            if (!empty($supplier->email)) {
+                $body = "Hello {$supplier->full_name},\n\n" .
+                    "An account has been created for you on CHIKIN TAYO.\n\n" .
+                    "Username: {$supplier->username}\n" .
+                    "Default Password: {$password}\n\n" .
+                    "Please login and change your password as soon as possible.\n\n" .
+                    "Regards,\nCHIKIN TAYO Procurement Team";
+
+                try {
+                    Mail::raw($body, function ($message) use ($supplier) {
+                        $message->to($supplier->email)
+                                ->subject('CHIKIN TAYO - Account Details');
+                    });
+                } catch (\Exception $e) {
+                    Log::error('Failed to send supplier account email: ' . $e->getMessage());
+                    // continue — account created regardless of email success
+                }
+            }
+
+            return response()->json([
+                'ok' => true,
+                'message' => 'Supplier created successfully',
+                'supplier' => [
+                    'id' => $supplier->id,
+                    'username' => $supplier->username,
+                    'email' => $supplier->email,
+                    'full_name' => $supplier->full_name,
+                ]
+            ], 201);
+        } catch (\Exception $ex) {
+            Log::error('createProcurementSupplier error: ' . $ex->getMessage());
+            return response()->json(['ok' => false, 'message' => 'Failed to create supplier account'], 500);
+        }
     }
 
     // ==========================================

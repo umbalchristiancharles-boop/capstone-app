@@ -81,7 +81,7 @@ class AuthController extends Controller
 
         // Validate role exists and is valid
         // Include all expected roles: SUPER_ADMIN, ADMIN, OWNER, MANAGER, MANAGER_HR, HR, STAFF
-        $validRoles = ['SUPER_ADMIN', 'ADMIN', 'OWNER', 'MANAGER', 'MANAGER_HR', 'HR', 'STAFF'];
+$validRoles = ['SUPER_ADMIN', 'ADMIN', 'OWNER', 'MANAGER', 'MANAGER_HR', 'HR', 'STAFF', 'SUPPLIER'];
         $roleUpper = strtoupper(trim($user->role ?? ''));
 
         // Handle MANAGER_HR role specially - treat as MANAGER with HR department
@@ -239,6 +239,11 @@ class AuthController extends Controller
             }
             // Default staff panel
             return '/staff-panel';
+        }
+
+        // SUPPLIER
+        if ($role === 'SUPPLIER') {
+            return '/supplier-panel';
         }
 
         // Fallback

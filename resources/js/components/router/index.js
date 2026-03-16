@@ -124,6 +124,12 @@ const routes = [
     component: () => import('../components/StaffInventoryPanel.vue'),
     meta: { requiresAuth: true, role: 'staff', department: 'inventory' }
   },
+  {
+    path: '/supplier-panel',
+    name: 'SupplierPanel',
+    component: () => import('../components/SupplierPanel.vue'),
+    meta: { requiresAuth: true, role: 'supplier' }
+  },
   // Forgot Password Route (guest only)
   {
     path: '/admin/forgot-password',
@@ -216,6 +222,7 @@ router.beforeEach((to, from, next) => {
         if (user.department === 'inventory') return next('/manager/inventory');
         if (user.department === 'logistics') return next('/manager/logistics');
       }
+      if (userRole === 'supplier') return next('/supplier-panel');
       if (userRole === 'staff') {
         if (user.department === 'cashier') return next('/staff/cashier');
         if (user.department === 'finance') return next('/staff/finance');
@@ -286,6 +293,15 @@ router.beforeEach((to, from, next) => {
 
     // Generic role check for roles not explicitly handled above (admin, superadmin, etc.)
     // If requiredRole equals the current user's role, allow; otherwise deny.
+    if (requiredRole === 'supplier') {
+      if (userRole === 'supplier') {
+        console.log('[ROUTER] Supplier check PASSED - allowing access');
+        return next();
+      }
+      console.log('[ROUTER] Supplier check FAILED - redirecting to /unauthorized');
+      return next('/unauthorized');
+    }
+
     if (requiredRole && requiredRole !== 'owner' && requiredRole !== 'manager' && requiredRole !== 'staff') {
       if (userRole === requiredRole) {
         console.log('[ROUTER] Generic role check PASSED - allowing access');

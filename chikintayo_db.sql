@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 15, 2026 at 11:42 AM
+-- Generation Time: Mar 16, 2026 at 04:11 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -1048,7 +1048,19 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (598, 'App\\Models\\User', 31, 'auth-token', 'a9245d4b42418b4ccce68a60c6739ceaa152880f5ea62b62d560f57e79072fe0', '[\"*\"]', NULL, NULL, '2026-03-15 09:33:22', '2026-03-15 09:33:22'),
 (599, 'App\\Models\\User', 126, 'auth-token', '0b648f4c97da572ba087c4d150a18fec81cdac6ef437dab3c41a33cc0bf2ccc5', '[\"*\"]', NULL, NULL, '2026-03-15 09:56:08', '2026-03-15 09:56:08'),
 (600, 'App\\Models\\User', 31, 'auth-token', 'e184a8b60d571cf7488895bc6214992f53eb56c3f68f01236eda8c8b3322dd55', '[\"*\"]', NULL, NULL, '2026-03-15 10:25:07', '2026-03-15 10:25:07'),
-(601, 'App\\Models\\User', 28, 'auth-token', 'e74ea01a823aea88c2c7e2b3e3b9a747870961d48b8079c147cb770e8b7094d0', '[\"*\"]', NULL, NULL, '2026-03-15 10:33:20', '2026-03-15 10:33:20');
+(601, 'App\\Models\\User', 28, 'auth-token', 'e74ea01a823aea88c2c7e2b3e3b9a747870961d48b8079c147cb770e8b7094d0', '[\"*\"]', NULL, NULL, '2026-03-15 10:33:20', '2026-03-15 10:33:20'),
+(602, 'App\\Models\\User', 126, 'auth-token', '1c72832953cf1f9a0837fa4d95a65ef32afcb9d5a379261edc35c9b1e1e3aa10', '[\"*\"]', NULL, NULL, '2026-03-16 12:17:14', '2026-03-16 12:17:14'),
+(603, 'App\\Models\\User', 127, 'auth-token', 'ea75f326271f8a70b0613d832ac9a4496d5297d6ab89bf5cd2d10af478554c1a', '[\"*\"]', NULL, NULL, '2026-03-16 12:24:15', '2026-03-16 12:24:15'),
+(604, 'App\\Models\\User', 126, 'auth-token', 'd35520d1ad4c43f9b9ba1b614ee8bba76f59d5ef45dbc8395499465c24115604', '[\"*\"]', NULL, NULL, '2026-03-16 12:38:09', '2026-03-16 12:38:09'),
+(605, 'App\\Models\\User', 126, 'auth-token', '517910485b67ea9ad32e52b00f8de158b1956622cd0355946dee31ca4ebd8d85', '[\"*\"]', NULL, NULL, '2026-03-16 13:10:26', '2026-03-16 13:10:26'),
+(606, 'App\\Models\\User', 136, 'auth-token', '61881bd61c92cefe4ac1e86ecf1572a5c46f753a37fe40edf95035307fc10c9d', '[\"*\"]', NULL, NULL, '2026-03-16 13:30:10', '2026-03-16 13:30:10'),
+(607, 'App\\Models\\User', 126, 'auth-token', '1665b3ef87ceb32076b9e7db9c73aec533f8858e7fc59fccdd9f1fd33cf81149', '[\"*\"]', NULL, NULL, '2026-03-16 13:31:40', '2026-03-16 13:31:40'),
+(608, 'App\\Models\\User', 137, 'auth-token', '9e85761e6599ee7b6b5f2b55844d93baa487988a41ee910c6343f9566b3cdf53', '[\"*\"]', NULL, NULL, '2026-03-16 13:33:16', '2026-03-16 13:33:16'),
+(609, 'App\\Models\\User', 137, 'auth-token', '5dea321bb65a37eb2ee81707b0c26996efe7cdbe547bedb54fe174e8a511c175', '[\"*\"]', NULL, NULL, '2026-03-16 13:33:41', '2026-03-16 13:33:41'),
+(610, 'App\\Models\\User', 126, 'auth-token', '45131c1ab9ca3eb298c4e909d7d75faef80fdf7757f020fd755d0ca967f189ec', '[\"*\"]', NULL, NULL, '2026-03-16 14:46:02', '2026-03-16 14:46:02'),
+(611, 'App\\Models\\User', 137, 'auth-token', '0e3fda99a1cd7a567e8f1dedaa68ab076774789be663886344f07f5bde828346', '[\"*\"]', NULL, NULL, '2026-03-16 15:09:32', '2026-03-16 15:09:32'),
+(612, 'App\\Models\\User', 127, 'auth-token', '5d1cebf733cb922acaa610078914d73c0deef23568ad738511b84afd85465db1', '[\"*\"]', NULL, NULL, '2026-03-16 15:09:49', '2026-03-16 15:09:49'),
+(613, 'App\\Models\\User', 137, 'auth-token', 'f13a96fe6f10519f243a36b5e0bb0b268f7a59e4ee9189174c0d0870e01a2c60', '[\"*\"]', NULL, NULL, '2026-03-16 15:11:01', '2026-03-16 15:11:01');
 
 -- --------------------------------------------------------
 
@@ -1156,7 +1168,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('X60vVguqyOKDRZin3EA2PW4ZCRM1bBd9lggVFRl6', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiSTFZdGNTUFYxeDkyaGJkMDNVTlYwMTI0UzdVQnpPemZNVExseTFWciI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO319', 1773570937);
+('JAQU87PcDg2QOQ6nOLTH36s8QkaLCjvjGYccCwBw', 137, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoia2didEJUR3VjTEZMWDY4OW8wSHBCY3ZFN1lBempQUjdKVGU1R3pKdSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxMzc7czo3OiJ1c2VyX2lkIjtpOjEzNztzOjk6InVzZXJfcm9sZSI7czo4OiJTVVBQTElFUiI7czo5OiJ1c2VyX25hbWUiO3M6MTQ6IlVtYmVydG8gVGltYmFnIjtzOjEzOiJyZWRpcmVjdF9wYXRoIjtzOjE1OiIvc3VwcGxpZXItcGFuZWwiO30=', 1773673864);
 
 -- --------------------------------------------------------
 
@@ -1249,7 +1261,8 @@ INSERT INTO `users` (`id`, `email`, `username`, `full_name`, `name`, `password`,
 (126, 'lexela9765@devlug.com', 'procurement_br001467', 'Procurement Manager - Dasma Branch', NULL, '$2y$12$.dCaFo6rYRgD4O.CNjWeLu1cbKjkIyEm/zkGQKGQ/SFobdSMi2VOG', '2026-03-14 04:40:00', 'MANAGER', 28, 'PROCUREMENT', NULL, '2026-03-14 04:37:06', '2026-03-14 04:40:00', NULL, 0, 1, NULL, NULL, NULL),
 (127, 'yowidi6284@devlug.com', 'logistics_br001467', 'Logistics Manager - Dasma Branch', NULL, '$2y$12$FkZblCbNezEH0k53YCYJv.fGDApnEGNfPdvrxSL4VcOjyiDJ4nk9S', '2026-03-14 05:12:39', 'MANAGER', 28, 'LOGISTICS', NULL, '2026-03-14 04:37:06', '2026-03-14 05:12:39', NULL, 0, 1, NULL, NULL, NULL),
 (128, 'rikoye4561@faxzu.com', 'janne', 'Janne De Guzman', NULL, '$2y$12$H3wbjWAzCc6qpMAaWbRUuOpT/Q9TYoVaNwxQ6e63hmZeCFF77PIwu', '2026-03-14 07:02:18', 'STAFF', 28, 'CASHIER', NULL, '2026-03-14 06:57:30', '2026-03-14 07:02:18', NULL, 0, 1, '213', NULL, '09156818859'),
-(129, 'kepemah629@faxzu.com', 'vince', 'Vince Hannibal Bido', NULL, '$2y$12$9vHfwhfbvVqApBWreMkjkuDB/gUHlQqfN5AGzkKQ6kttnI3kTFibu', '2026-03-14 07:00:46', 'STAFF', 28, 'INVENTORY', NULL, '2026-03-14 06:58:54', '2026-03-14 07:00:46', NULL, 0, 1, '213', NULL, '09156818851');
+(129, 'kepemah629@faxzu.com', 'vince', 'Vince Hannibal Bido', NULL, '$2y$12$9vHfwhfbvVqApBWreMkjkuDB/gUHlQqfN5AGzkKQ6kttnI3kTFibu', '2026-03-14 07:00:46', 'STAFF', 28, 'INVENTORY', NULL, '2026-03-14 06:58:54', '2026-03-14 07:00:46', NULL, 0, 1, '213', NULL, '09156818851'),
+(137, 'onggab54@gmail.com', 'Umberto', 'Umberto Timbag', NULL, '$2y$12$EbJoF1LoMvUJAJYZ8DOxH.hWs0Q7fQBppZHyqa/B9Q75etYXRXVt2', NULL, 'SUPPLIER', 28, NULL, NULL, '2026-03-16 13:32:20', '2026-03-16 13:33:34', NULL, 0, 1, NULL, NULL, '');
 
 --
 -- Indexes for dumped tables
@@ -1545,7 +1558,7 @@ ALTER TABLE `order_items`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=602;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=614;
 
 --
 -- AUTO_INCREMENT for table `products`
@@ -1587,7 +1600,7 @@ ALTER TABLE `staff_documents`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=135;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=140;
 
 --
 -- Constraints for dumped tables
