@@ -149,7 +149,10 @@
           <header class="admin-main-header">
             <div class="admin-main-header-top">
               <div>
-                <h1>{{ panelTitle }}</h1>
+                <h1>
+                  <span class="brand-text">{{ brandTitle }}</span>
+                  <span class="panel-text">{{ panelText }}</span>
+                </h1>
                 <p>{{ panelDescription }}</p>
                 <p v-if="isLoadingDashboard && !isInitialMount" class="small-hint">
                   Loading dashboard…
@@ -765,11 +768,13 @@ async function toggleEarlyClockout() {
   }
 }
 
-const panelTitle = computed(() => {
+const brandTitle = computed(() => 'Chikin Tayo')
+const panelText = computed(() => {
   const role = ownerProfile.value.role || 'OWNER'
-  if (role === 'BRANCH_MANAGER') return 'Chikin Tayo Branch Manager Panel'
-  return 'Chikin Tayo Admin Panel'
+  if (role === 'BRANCH_MANAGER') return 'Branch Manager Panel'
+  return 'Admin Panel'
 })
+const panelTitle = computed(() => `${brandTitle.value} ${panelText.value}`)
 
 const panelDescription = computed(() => {
   const role = ownerProfile.value.role || 'OWNER'
@@ -1313,5 +1318,21 @@ onMounted(() => {
   .modal-footer-custom {
     flex-direction: column;
   }
+}
+
+.brand-text {
+  color: #0066FF;
+  font-weight: 800;
+}
+
+.panel-text {
+  color: #64748B;
+  font-weight: 800;
+}
+
+.admin-main-header h1 {
+  font-family: 'Inter', 'Poppins', sans-serif;
+  letter-spacing: -0.5px;
+  margin-bottom: 8px;
 }
 </style>
