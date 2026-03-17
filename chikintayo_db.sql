@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 17, 2026 at 06:37 AM
+-- Generation Time: Mar 17, 2026 at 07:13 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -392,13 +392,6 @@ CREATE TABLE `order_items` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `order_items`
---
-
-INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `product_name`, `unit_price`, `quantity`, `subtotal`, `created_at`, `updated_at`) VALUES
-(15, 65, 16, 'Peppero', 120.00, 4, 480.00, '2026-03-14 07:04:14', '2026-03-14 07:04:14');
 
 -- --------------------------------------------------------
 
@@ -1061,7 +1054,13 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (621, 'App\\Models\\User', 127, 'auth-token', '67d78afee28a43c8e362ce60437074a60fcc56bae50f9021db5725e8fe9d330c', '[\"*\"]', NULL, NULL, '2026-03-17 05:23:41', '2026-03-17 05:23:41'),
 (622, 'App\\Models\\User', 137, 'auth-token', '5fe61e6cb86b8edf8ee5ea896464d36e35dea5d48b885760a0bf64ef905ce81c', '[\"*\"]', NULL, NULL, '2026-03-17 05:24:53', '2026-03-17 05:24:53'),
 (623, 'App\\Models\\User', 137, 'auth-token', 'ba08a8cc50bb0373277ad0b05551391e75f81a1c9edfcc500b90acbd8ceb1418', '[\"*\"]', NULL, NULL, '2026-03-17 05:29:01', '2026-03-17 05:29:01'),
-(624, 'App\\Models\\User', 137, 'auth-token', '345b7c24bef11598a89443b2b58f1938da707e7ec9c4a8d48ef5e3a3244b0df6', '[\"*\"]', NULL, NULL, '2026-03-17 05:32:26', '2026-03-17 05:32:26');
+(624, 'App\\Models\\User', 137, 'auth-token', '345b7c24bef11598a89443b2b58f1938da707e7ec9c4a8d48ef5e3a3244b0df6', '[\"*\"]', NULL, NULL, '2026-03-17 05:32:26', '2026-03-17 05:32:26'),
+(625, 'App\\Models\\User', 126, 'auth-token', 'e7ad627ae6eb4dfefd2546b087ac7202c600b8b4542cf3af1484233599692f33', '[\"*\"]', NULL, NULL, '2026-03-17 05:42:54', '2026-03-17 05:42:54'),
+(626, 'App\\Models\\User', 137, 'auth-token', 'c87de8f30bb8bf086cef9e4ff46512aeb4a02c1a056b53a5cf310223611b9e35', '[\"*\"]', NULL, NULL, '2026-03-17 05:45:08', '2026-03-17 05:45:08'),
+(627, 'App\\Models\\User', 127, 'auth-token', 'e582984e071801dfe2acad73d301e403a93aa86eb134584da286d2f5d3210e3b', '[\"*\"]', NULL, NULL, '2026-03-17 05:52:37', '2026-03-17 05:52:37'),
+(628, 'App\\Models\\User', 137, 'auth-token', 'a28f3f1dbff2ec9b97845ef210d9d2c60a3c37c5b96d5747fcbbd9ff2f579105', '[\"*\"]', NULL, NULL, '2026-03-17 05:57:08', '2026-03-17 05:57:08'),
+(629, 'App\\Models\\User', 129, 'auth-token', '7091fbb6725ebff76f4c9c70c027f7d9a6c99c38481c67750d91cce5a2ce6d15', '[\"*\"]', NULL, NULL, '2026-03-17 06:08:25', '2026-03-17 06:08:25'),
+(630, 'App\\Models\\User', 137, 'auth-token', 'ad9b867e2bcf1fb6587f365bc693a6c724a351eae5d8dee6e2771804e44e3a09', '[\"*\"]', NULL, NULL, '2026-03-17 06:11:58', '2026-03-17 06:11:58');
 
 -- --------------------------------------------------------
 
@@ -1090,8 +1089,6 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`id`, `name`, `slug`, `created_at`, `updated_at`, `price`, `stock`, `min_stock`, `sku`, `branch_id`, `is_active`, `supplier_name`, `supplier_id`) VALUES
-(15, 'Noodlles', 'noodlles', '2026-03-14 07:02:47', '2026-03-14 07:02:47', 135.00, 20, 10, 'PRD-PCNO', 28, 1, NULL, NULL),
-(16, 'Peppero', 'peppero', '2026-03-14 07:03:00', '2026-03-14 07:04:14', 120.00, 17, 10, 'PRD-VXGC', 28, 1, NULL, NULL),
 (17, 'Jasmine', 'jasmine', '2026-03-17 05:36:50', '2026-03-17 05:36:50', 45.00, 0, 10, 'JASMIN-XRWG', 28, 1, 'Umberto Timbag', NULL);
 
 -- --------------------------------------------------------
@@ -1173,7 +1170,7 @@ CREATE TABLE `sessions` (
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
 ('5IdO1XGNt5qxN9wZqs0wUQNLMI6NNp7v98L1Kxm3', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiTTBoM0VKSUZrWW91VXN5ZFhic0FpNFVhYTJDNzlSaEZDTVUxTUprSSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1773722819),
-('Wqs0DOLDgyoe4HRHsDAf5DLXokg0nWaMduDaKtsM', 137, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoib3dMaXJGbFMzc3pSV1gycm9hWWp1MnoxQVAza0tmOFZBc05aQ09JdSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjEzNztzOjc6InVzZXJfaWQiO2k6MTM3O3M6OToidXNlcl9yb2xlIjtzOjg6IlNVUFBMSUVSIjtzOjk6InVzZXJfbmFtZSI7czoxNDoiVW1iZXJ0byBUaW1iYWciO3M6MTM6InJlZGlyZWN0X3BhdGgiO3M6MTU6Ii9zdXBwbGllci1wYW5lbCI7fQ==', 1773725815);
+('V9Njdg6IS0eMJ0FAIUJtWCbmjJYUWR67CZNwc04k', 137, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiUU1ib1BEVmdpbGJUUlZYTjE5MTFOYnF4YVozd0FBeWpNQ01YcGRZQSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxMzc7czo3OiJ1c2VyX2lkIjtpOjEzNztzOjk6InVzZXJfcm9sZSI7czo4OiJTVVBQTElFUiI7czo5OiJ1c2VyX25hbWUiO3M6MTQ6IlVtYmVydG8gVGltYmFnIjtzOjEzOiJyZWRpcmVjdF9wYXRoIjtzOjE1OiIvc3VwcGxpZXItcGFuZWwiO30=', 1773727920);
 
 -- --------------------------------------------------------
 
@@ -1564,7 +1561,7 @@ ALTER TABLE `order_items`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=625;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=631;
 
 --
 -- AUTO_INCREMENT for table `products`
