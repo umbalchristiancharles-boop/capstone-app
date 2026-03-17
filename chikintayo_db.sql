@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 16, 2026 at 04:11 PM
+-- Generation Time: Mar 17, 2026 at 06:37 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -141,18 +141,6 @@ CREATE TABLE `cache` (
   `value` mediumtext NOT NULL,
   `expiration` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `cache`
---
-
-INSERT INTO `cache` (`key`, `value`, `expiration`) VALUES
-('laravel-cache-verification_rate_limit_bebejo2534@devlug.com', 'i:1;', 1773471832),
-('laravel-cache-verification_rate_limit_fimoweg317@devlug.com', 'i:1;', 1773471967),
-('laravel-cache-verification_rate_limit_kepemah629@faxzu.com', 'i:1;', 1773472228),
-('laravel-cache-verification_rate_limit_lexela9765@devlug.com', 'i:1;', 1773463755),
-('laravel-cache-verification_rate_limit_rikoye4561@faxzu.com', 'i:1;', 1773472313),
-('laravel-cache-verification_rate_limit_yowidi6284@devlug.com', 'i:1;', 1773465735);
 
 -- --------------------------------------------------------
 
@@ -334,7 +322,9 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (45, '2026_04_01_000000_create_announcements_table', 7),
 (46, '2026_03_14_000001_add_vat_discount_to_orders_table', 8),
 (47, '2026_12_01_120000_create_purchase_requests_table', 9),
-(48, '2026_03_15_000001_add_budget_to_branches_table', 10);
+(48, '2026_03_15_000001_add_budget_to_branches_table', 10),
+(49, '2026_10_20_000000_add_supplier_id_to_products_table', 11),
+(50, '2026_03_17_000001_add_supplier_name_to_products_table', 12);
 
 -- --------------------------------------------------------
 
@@ -1060,7 +1050,18 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (610, 'App\\Models\\User', 126, 'auth-token', '45131c1ab9ca3eb298c4e909d7d75faef80fdf7757f020fd755d0ca967f189ec', '[\"*\"]', NULL, NULL, '2026-03-16 14:46:02', '2026-03-16 14:46:02'),
 (611, 'App\\Models\\User', 137, 'auth-token', '0e3fda99a1cd7a567e8f1dedaa68ab076774789be663886344f07f5bde828346', '[\"*\"]', NULL, NULL, '2026-03-16 15:09:32', '2026-03-16 15:09:32'),
 (612, 'App\\Models\\User', 127, 'auth-token', '5d1cebf733cb922acaa610078914d73c0deef23568ad738511b84afd85465db1', '[\"*\"]', NULL, NULL, '2026-03-16 15:09:49', '2026-03-16 15:09:49'),
-(613, 'App\\Models\\User', 137, 'auth-token', 'f13a96fe6f10519f243a36b5e0bb0b268f7a59e4ee9189174c0d0870e01a2c60', '[\"*\"]', NULL, NULL, '2026-03-16 15:11:01', '2026-03-16 15:11:01');
+(613, 'App\\Models\\User', 137, 'auth-token', 'f13a96fe6f10519f243a36b5e0bb0b268f7a59e4ee9189174c0d0870e01a2c60', '[\"*\"]', NULL, NULL, '2026-03-16 15:11:01', '2026-03-16 15:11:01'),
+(614, 'App\\Models\\User', 137, 'auth-token', 'f78ee8bdbab6f1fd74d5ea64bfe6786e6f8c3df70aecb07c6887748cdfc71727', '[\"*\"]', NULL, NULL, '2026-03-16 15:31:40', '2026-03-16 15:31:40'),
+(615, 'App\\Models\\User', 137, 'auth-token', '2e6a568f540c1d515b00b0dac5211d95563a9f4a8a4a99ec17688cd144fa6dfa', '[\"*\"]', NULL, NULL, '2026-03-16 15:33:41', '2026-03-16 15:33:41'),
+(616, 'App\\Models\\User', 137, 'auth-token', '1feae6a16da534da03af70f5fdc6596569d6f065bf4775a6ec5cc024462b82f5', '[\"*\"]', NULL, NULL, '2026-03-16 15:43:08', '2026-03-16 15:43:08'),
+(617, 'App\\Models\\User', 28, 'auth-token', 'b00c68a8b34c6c7160918399253d2e1be12396f24995628173eb19494261a4a3', '[\"*\"]', NULL, NULL, '2026-03-17 04:47:46', '2026-03-17 04:47:46'),
+(618, 'App\\Models\\User', 28, 'auth-token', 'a058c3eee0a360f6eee1a72d8372cea7debc3dbaec82a99129ecfaa543eb1b1d', '[\"*\"]', NULL, NULL, '2026-03-17 05:11:19', '2026-03-17 05:11:19'),
+(619, 'App\\Models\\User', 123, 'auth-token', '57d2bf2914ea677321491c21dcb38989ee70043b87bbde738bd5af459f9b2608', '[\"*\"]', NULL, NULL, '2026-03-17 05:11:32', '2026-03-17 05:11:32'),
+(620, 'App\\Models\\User', 137, 'auth-token', '649222e2f036cafed6ac854f4c7a54b1fc1efcd99ad114141ac2f1aec289a94c', '[\"*\"]', NULL, NULL, '2026-03-17 05:12:08', '2026-03-17 05:12:08'),
+(621, 'App\\Models\\User', 127, 'auth-token', '67d78afee28a43c8e362ce60437074a60fcc56bae50f9021db5725e8fe9d330c', '[\"*\"]', NULL, NULL, '2026-03-17 05:23:41', '2026-03-17 05:23:41'),
+(622, 'App\\Models\\User', 137, 'auth-token', '5fe61e6cb86b8edf8ee5ea896464d36e35dea5d48b885760a0bf64ef905ce81c', '[\"*\"]', NULL, NULL, '2026-03-17 05:24:53', '2026-03-17 05:24:53'),
+(623, 'App\\Models\\User', 137, 'auth-token', 'ba08a8cc50bb0373277ad0b05551391e75f81a1c9edfcc500b90acbd8ceb1418', '[\"*\"]', NULL, NULL, '2026-03-17 05:29:01', '2026-03-17 05:29:01'),
+(624, 'App\\Models\\User', 137, 'auth-token', '345b7c24bef11598a89443b2b58f1938da707e7ec9c4a8d48ef5e3a3244b0df6', '[\"*\"]', NULL, NULL, '2026-03-17 05:32:26', '2026-03-17 05:32:26');
 
 -- --------------------------------------------------------
 
@@ -1079,16 +1080,19 @@ CREATE TABLE `products` (
   `min_stock` int(11) NOT NULL DEFAULT 10,
   `sku` varchar(255) NOT NULL DEFAULT 'SKU-DEFAULT',
   `branch_id` bigint(20) UNSIGNED NOT NULL DEFAULT 1,
-  `is_active` tinyint(1) NOT NULL DEFAULT 1
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `supplier_name` varchar(255) DEFAULT NULL,
+  `supplier_id` bigint(20) UNSIGNED DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `products`
 --
 
-INSERT INTO `products` (`id`, `name`, `slug`, `created_at`, `updated_at`, `price`, `stock`, `min_stock`, `sku`, `branch_id`, `is_active`) VALUES
-(15, 'Noodlles', 'noodlles', '2026-03-14 07:02:47', '2026-03-14 07:02:47', 135.00, 20, 10, 'PRD-PCNO', 28, 1),
-(16, 'Peppero', 'peppero', '2026-03-14 07:03:00', '2026-03-14 07:04:14', 120.00, 17, 10, 'PRD-VXGC', 28, 1);
+INSERT INTO `products` (`id`, `name`, `slug`, `created_at`, `updated_at`, `price`, `stock`, `min_stock`, `sku`, `branch_id`, `is_active`, `supplier_name`, `supplier_id`) VALUES
+(15, 'Noodlles', 'noodlles', '2026-03-14 07:02:47', '2026-03-14 07:02:47', 135.00, 20, 10, 'PRD-PCNO', 28, 1, NULL, NULL),
+(16, 'Peppero', 'peppero', '2026-03-14 07:03:00', '2026-03-14 07:04:14', 120.00, 17, 10, 'PRD-VXGC', 28, 1, NULL, NULL),
+(17, 'Jasmine', 'jasmine', '2026-03-17 05:36:50', '2026-03-17 05:36:50', 45.00, 0, 10, 'JASMIN-XRWG', 28, 1, 'Umberto Timbag', NULL);
 
 -- --------------------------------------------------------
 
@@ -1168,7 +1172,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('JAQU87PcDg2QOQ6nOLTH36s8QkaLCjvjGYccCwBw', 137, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoia2didEJUR3VjTEZMWDY4OW8wSHBCY3ZFN1lBempQUjdKVGU1R3pKdSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxMzc7czo3OiJ1c2VyX2lkIjtpOjEzNztzOjk6InVzZXJfcm9sZSI7czo4OiJTVVBQTElFUiI7czo5OiJ1c2VyX25hbWUiO3M6MTQ6IlVtYmVydG8gVGltYmFnIjtzOjEzOiJyZWRpcmVjdF9wYXRoIjtzOjE1OiIvc3VwcGxpZXItcGFuZWwiO30=', 1773673864);
+('5IdO1XGNt5qxN9wZqs0wUQNLMI6NNp7v98L1Kxm3', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiTTBoM0VKSUZrWW91VXN5ZFhic0FpNFVhYTJDNzlSaEZDTVUxTUprSSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1773722819),
+('Wqs0DOLDgyoe4HRHsDAf5DLXokg0nWaMduDaKtsM', 137, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoib3dMaXJGbFMzc3pSV1gycm9hWWp1MnoxQVAza0tmOFZBc05aQ09JdSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjEzNztzOjc6InVzZXJfaWQiO2k6MTM3O3M6OToidXNlcl9yb2xlIjtzOjg6IlNVUFBMSUVSIjtzOjk6InVzZXJfbmFtZSI7czoxNDoiVW1iZXJ0byBUaW1iYWciO3M6MTM6InJlZGlyZWN0X3BhdGgiO3M6MTU6Ii9zdXBwbGllci1wYW5lbCI7fQ==', 1773725815);
 
 -- --------------------------------------------------------
 
@@ -1253,7 +1258,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `email`, `username`, `full_name`, `name`, `password`, `email_verified_at`, `role`, `branch_id`, `department`, `remember_token`, `created_at`, `updated_at`, `deleted_at`, `must_change_password`, `is_active`, `address`, `avatar_url`, `phone_number`) VALUES
-(28, 'superadmin@example.com', 'superadmin', 'Super Administrators', NULL, '$2y$12$f67akYY/xm/H9KJoqytmXeblCxSgZ786slMmHkmqzlMozGUn3Ew7G', '2026-03-05 15:03:55', 'SUPER_ADMIN', NULL, NULL, NULL, '2026-03-05 15:03:55', '2026-03-05 16:01:06', NULL, 0, 1, NULL, '/storage/avatars/avatar_28_1773151707.jpg', NULL),
+(28, 'superadmin@example.com', 'superadmin', 'Super Administrators', NULL, '$2y$12$f67akYY/xm/H9KJoqytmXeblCxSgZ786slMmHkmqzlMozGUn3Ew7G', '2026-03-05 15:03:55', 'SUPER_ADMIN', NULL, NULL, NULL, '2026-03-05 15:03:55', '2026-03-05 16:01:06', NULL, 0, 1, NULL, '/storage/avatars/avatar_28_1773722875.webp', NULL),
 (31, 'admin@chikintayo.com', 'Parks', 'Mr.parks', NULL, '$2y$12$/jjxezfu4JAW55dvduVkVu7hpmk5CBXg2GWKtlT17A8jEMfJFpY8y', NULL, 'OWNER', NULL, NULL, NULL, '2026-03-07 04:30:58', '2026-03-07 04:30:58', NULL, 0, 1, NULL, NULL, 'admin'),
 (123, 'bebejo2534@devlug.com', 'admin_br001467', 'Admin - Dasma Branch', NULL, '$2y$12$/CmffQZogixFqmDck9qRSOyAmgLj6uT2JneRIICRzpSmYR7eAmLF.', '2026-03-14 06:54:20', 'ADMIN', 28, NULL, NULL, '2026-03-14 04:37:05', '2026-03-14 06:54:20', NULL, 0, 1, NULL, NULL, NULL),
 (124, 'fimoweg317@devlug.com', 'hr_br001467', 'HR Manager - Dasma Branch', NULL, '$2y$12$utvv9ZptDNgjDJr6V8SZfOhCsObZ/8T18Okl39HIEVVWPVSX3f0uu', '2026-03-14 06:56:31', 'MANAGER', 28, 'HR', NULL, '2026-03-14 04:37:05', '2026-03-14 06:56:31', NULL, 0, 1, NULL, NULL, NULL),
@@ -1409,7 +1414,8 @@ ALTER TABLE `products`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `products_slug_unique` (`slug`),
   ADD UNIQUE KEY `products_sku_unique` (`sku`),
-  ADD KEY `products_branch_id_foreign` (`branch_id`);
+  ADD KEY `products_branch_id_foreign` (`branch_id`),
+  ADD KEY `1` (`supplier_id`);
 
 --
 -- Indexes for table `product_comments`
@@ -1540,7 +1546,7 @@ ALTER TABLE `jobs`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=49;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=51;
 
 --
 -- AUTO_INCREMENT for table `orders`
@@ -1558,13 +1564,13 @@ ALTER TABLE `order_items`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=614;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=625;
 
 --
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT for table `product_comments`
@@ -1656,6 +1662,7 @@ ALTER TABLE `order_items`
 -- Constraints for table `products`
 --
 ALTER TABLE `products`
+  ADD CONSTRAINT `1` FOREIGN KEY (`supplier_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `products_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE;
 
 --

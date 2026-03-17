@@ -17,6 +17,7 @@ class Product extends Model
         'sku',
         'branch_id',
         'is_active',
+        'supplier_name',
     ];
 
     public function comments(): HasMany

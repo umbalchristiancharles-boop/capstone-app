@@ -150,6 +150,12 @@ class StaffInventoryController extends Controller
             $sku = $validated['sku'];
         }
 
+        // Derive supplier name from authenticated user (supplier account)
+        $supplierName = null;
+        if ($user) {
+            $supplierName = $user->full_name ?? $user->username ?? $user->email ?? null;
+        }
+
         $product = Product::create([
             'name' => $validated['name'],
             'slug' => Str::slug($validated['name']),
@@ -157,6 +163,7 @@ class StaffInventoryController extends Controller
             'stock' => $validated['stock'],
             'sku' => $sku,
             'branch_id' => $branchId,
+            'supplier_name' => $supplierName,
         ]);
 
         return response()->json([

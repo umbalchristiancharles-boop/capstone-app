@@ -64,36 +64,84 @@ const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
 
 onMounted(async () => {
   try {
-    const res = await axios.get('/api/manager/logistics/profile', { withCredentials: true })
-    userProfile.value = res.data.user
-  } catch (e) {}
+    // Try /api/me then /api/profile then manager profile as last resort
+    let res = null
+    try {
+      res = await axios.get('/api/me', { withCredentials: true })
+    } catch (e) {
+      try {
+        res = await axios.get('/api/profile', { withCredentials: true })
+      } catch (e2) {
+        try {
+          res = await axios.get('/api/manager/logistics/profile', { withCredentials: true })
+        } catch (e3) {
+          res = null
+        }
+      }
+    }
 
-  try {
-    const dash = await axios.get('/api/manager/logistics/dashboard', { withCredentials: true })
-    if (dash && dash.data && typeof dash.data === 'object') dashboardTotals.value = {
-      totalSuppliers: dash.data.totalSuppliers || dash.data.total_suppliers || 0,
-      activeDeliveries: dash.data.activeDeliveries || dash.data.active_deliveries || 0,
-      pendingOrders: dash.data.pendingOrders || dash.data.pending_orders || 0
+    if (res && res.data) {
+      // Debug: log raw profile response to help diagnose missing fields
+      try { console.debug('profile response', res.data) } catch (e) {}
+
+      const raw = res.data.user || res.data || {}
+
+      // Normalize user profile fields to what OwnerPanelLayout expects
+      const normalized = {
+        id: raw.id,
+        username: raw.username || raw.user_name || raw.user || null,
+        fullName: raw.fullName || raw.full_name || raw.name || raw.username || null,
+        full_name: raw.fullName || raw.full_name || raw.name || raw.username || null,
+        role: (raw.role || raw.user_role || raw.type || '') ? String(raw.role || raw.user_role || raw.type) : null,
+        email: raw.email || null,
+        contact: raw.contact || raw.phone_number || raw.phone || null,
+        branch_id: raw.branch_id || raw.branch || null,
+        accountId: raw.accountId || raw.account_id || (raw.id ? 'kk' + String(raw.id).padStart(5, '0') : null),
+        avatarUrl: (raw.avatarUrl || raw.avatar_url) ? (raw.avatarUrl || raw.avatar_url) : null,
+      }
+
+      userProfile.value = normalized
     }
   } catch (e) {}
 
   try {
-    const sres = await axios.get('/api/logistics/suppliers', { withCredentials: true })
-    if (sres && sres.data) {
-      if (Array.isArray(sres.data)) suppliers.value = sres.data
-      else if (Array.isArray(sres.data.data)) suppliers.value = sres.data.data
-      else suppliers.value = []
+    // Only request manager/logistics dashboard if user has a manager/admin role
+    const roleUpper = (userProfile.value.role || '').toString().toUpperCase()
+    const managerRoles = ['MANAGER', 'MANAGER_HR', 'OWNER', 'ADMIN', 'SUPER_ADMIN']
+    if (managerRoles.includes(roleUpper)) {
+      const dash = await axios.get('/api/manager/logistics/dashboard', { withCredentials: true })
+      if (dash && dash.data && typeof dash.data === 'object') dashboardTotals.value = {
+        totalSuppliers: dash.data.totalSuppliers || dash.data.total_suppliers || 0,
+        activeDeliveries: dash.data.activeDeliveries || dash.data.active_deliveries || 0,
+        pendingOrders: dash.data.pendingOrders || dash.data.pending_orders || 0
+      }
     }
-  } catch (e) { console.warn('Failed to load suppliers', e) }
+  } catch (e) {}
 
   try {
-    const dres = await axios.get('/api/logistics/deliveries', { withCredentials: true })
-    if (dres && dres.data) {
-      if (Array.isArray(dres.data)) deliveries.value = dres.data
-      else if (Array.isArray(dres.data.data)) deliveries.value = dres.data.data
-      else deliveries.value = []
+    // Only load suppliers/deliveries when manager/admin role
+    const roleUpper = (userProfile.value.role || '').toString().toUpperCase()
+    const managerRoles = ['MANAGER', 'MANAGER_HR', 'OWNER', 'ADMIN', 'SUPER_ADMIN']
+    if (managerRoles.includes(roleUpper)) {
+      try {
+        const sres = await axios.get('/api/logistics/suppliers', { withCredentials: true })
+        if (sres && sres.data) {
+          if (Array.isArray(sres.data)) suppliers.value = sres.data
+          else if (Array.isArray(sres.data.data)) suppliers.value = sres.data.data
+          else suppliers.value = []
+        }
+      } catch (e) { console.warn('Failed to load suppliers', e) }
+
+      try {
+        const dres = await axios.get('/api/logistics/deliveries', { withCredentials: true })
+        if (dres && dres.data) {
+          if (Array.isArray(dres.data)) deliveries.value = dres.data
+          else if (Array.isArray(dres.data.data)) deliveries.value = dres.data.data
+          else deliveries.value = []
+        }
+      } catch (e) { console.warn('Failed to load deliveries', e) }
     }
-  } catch (e) { console.warn('Failed to load deliveries', e) }
+  } catch (e) { console.warn('Failed to determine role for loading logistics data', e) }
 })
 
 function cancelLogout() {

@@ -10,16 +10,6 @@ use App\Http\Controllers\Admin\DeletedStaffController;
 // ==========================================
 // AUTHENTICATION ROUTES (Login/Logout)
 // ==========================================
-// Helper to return views with no-cache headers (prevents back-button cached pages)
-if (! function_exists('no_cache_view')) {
-    function no_cache_view($view)
-    {
-        return response()->view($view)
-            ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
-            ->header('Pragma', 'no-cache')
-            ->header('Expires', '0');
-    }
-}
 
 Route::get('/login', function () {
     return no_cache_view('dashboard'); // Vue SPA entry for admin login

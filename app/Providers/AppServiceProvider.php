@@ -11,7 +11,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $helpers = app_path('Helpers/helpers.php');
+
+        if (file_exists($helpers)) {
+            require_once $helpers; // Load global helper functions once
+        }
     }
 
     /**
@@ -23,14 +27,5 @@ class AppServiceProvider extends ServiceProvider
         // Laravel's CSRF middleware expects to decrypt the X-XSRF-TOKEN header.
         // The encrypted cookie value is readable by JS and sent in the header,
         // then decrypted server-side for comparison.
-
-        // Define no_cache_view helper globally so serialized route closures
-        // that call it won't fail after route caching or serialization.
-        if (! function_exists('no_cache_view')) {
-            function no_cache_view($view)
-            {
-                return view($view);
-            }
-        }
     }
 }
