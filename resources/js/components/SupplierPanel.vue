@@ -15,7 +15,16 @@
         <div class="overview-card"><span class="overview-label">Pending Orders:</span><span class="overview-value">{{ dashboardTotals.pendingOrders }}</span></div>
       </div>
 
-      <logistics-panel-content :deliveries="deliveries" :suppliers="suppliers" />
+          <logistics-panel-content :deliveries="deliveries" :suppliers="suppliers" @product-added="onProductAdded" />
+
+          <section class="supplier-products">
+            <h2>Your Products</h2>
+            <div v-if="loadingProducts">Loading products...</div>
+            <div v-else-if="!products.length">No products yet.</div>
+            <ul v-else>
+              <li v-for="p in products" :key="p.id">{{ p.name }} — ₱{{ p.price }}</li>
+            </ul>
+          </section>
     </template>
   </OwnerPanelLayout>
 
@@ -52,8 +61,9 @@ import axios from 'axios'
 
 const userProfile = ref({})
 const dashboardTotals = ref({ totalSuppliers: 0, activeDeliveries: 0, pendingOrders: 0 })
-const suppliers = ref([])
 const deliveries = ref([])
+const products = ref([])
+const loadingProducts = ref(false)
 
 // UI / modal state
 const showLogoutConfirm = ref(false)
@@ -123,14 +133,7 @@ onMounted(async () => {
     const roleUpper = (userProfile.value.role || '').toString().toUpperCase()
     const managerRoles = ['MANAGER', 'MANAGER_HR', 'OWNER', 'ADMIN', 'SUPER_ADMIN']
     if (managerRoles.includes(roleUpper)) {
-      try {
-        const sres = await axios.get('/api/logistics/suppliers', { withCredentials: true })
-        if (sres && sres.data) {
-          if (Array.isArray(sres.data)) suppliers.value = sres.data
-          else if (Array.isArray(sres.data.data)) suppliers.value = sres.data.data
-          else suppliers.value = []
-        }
-      } catch (e) { console.warn('Failed to load suppliers', e) }
+        // suppliers list removed from supplier panel UI
 
       try {
         const dres = await axios.get('/api/logistics/deliveries', { withCredentials: true })
@@ -142,7 +145,45 @@ onMounted(async () => {
       } catch (e) { console.warn('Failed to load deliveries', e) }
     }
   } catch (e) { console.warn('Failed to determine role for loading logistics data', e) }
+
+  // Load products for the current user's branch (show supplier products)
+  try {
+    if (userProfile.value && (userProfile.value.branch_id || userProfile.value.id)) {
+      console.debug('Loading products for user', userProfile.value)
+      await loadProducts()
+    }
+  } catch (e) { console.warn('Failed to load supplier products', e) }
 })
+
+async function loadProducts() {
+  loadingProducts.value = true
+  try {
+    const pres = await axios.get('/api/staff/inventory/products', { withCredentials: true })
+    if (pres && pres.data) {
+      if (Array.isArray(pres.data)) products.value = pres.data
+      else if (Array.isArray(pres.data.data)) products.value = pres.data.data
+      else products.value = []
+    }
+  } catch (e) {
+    console.warn('Failed to load products', e)
+    products.value = []
+  } finally {
+    loadingProducts.value = false
+  }
+}
+
+function onProductAdded(newProduct) {
+  // If we already have products loaded, add the new one at top; otherwise try reloading
+  try {
+    if (products.value && Array.isArray(products.value)) {
+      products.value.unshift(newProduct)
+    } else {
+      loadProducts()
+    }
+  } catch (e) {
+    loadProducts()
+  }
+}
 
 function cancelLogout() {
   if (isLoggingOut.value) return
