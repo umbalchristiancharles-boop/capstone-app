@@ -24,12 +24,8 @@
         </h1>
 
         <p class="subheading">
-          <b>CHIKIN TAYO</b> serves chicken, ramen, corndogs, ice cream, and more all in a cozy, Instagram-worthy space. 
+          <b>CHIKIN TAYO</b> serves chicken, ramen, corndogs, ice cream, and more all in a cozy, Instagram-worthy space.
           Fun food, warm vibes, happy tummies!
-        </p>
-
-        <p class="admin-tagline">
-          For <strong>authorized staff</strong> access only.
         </p>
 
         <div class="cta-row">
@@ -264,7 +260,7 @@
     <section class="scaffold scaffold-white scaffold-4">
       <div class="scaffold-content about-section">
         <h2>About CHIKIN TAYO</h2>
-        
+
         <div class="about-content">
           <p>
             <b>CHIKIN TAYO</b> in Dasmariñas, Cavite aims to bring fun, trendy, and comforting Korean-inspired food and snacks to local consumers. It serves as a one-stop Korean food stop where customers can enjoy fried chicken, ramen, corn dogs, ice cream, and other popular Korean treats in a cozy and Instagrammable space. The brand focuses on creating a warm, casual, and enjoyable dining experience for friends, families, and food lovers.
@@ -303,12 +299,12 @@
       <div v-if="showAuthModal" class="modal-overlay" @click.self="closeAuthModal">
         <div class="auth-modal">
           <button class="modal-close" @click="closeAuthModal">✕</button>
-          
+
           <!-- Step 1: Enter Email -->
           <div v-if="authStep === 1" class="auth-step">
             <h2>Sign In / Sign Up</h2>
             <p class="auth-subtitle">Enter your email address to get started</p>
-            
+
             <input
               v-model="authEmail"
               type="email"
@@ -316,16 +312,16 @@
               class="auth-input"
               @keyup.enter="sendVerificationCode"
             />
-            
-            <button 
-              type="button" 
+
+            <button
+              type="button"
               class="btn-auth-primary"
               @click="sendVerificationCode"
               :disabled="authLoading"
             >
               {{ authLoading ? 'Sending...' : 'Continue' }}
             </button>
-            
+
             <div class="auth-toggle">
               <p>Already have an account? <button type="button" class="link-btn" @click="switchToLogin">Sign In</button></p>
             </div>
@@ -349,17 +345,17 @@
               <div class="otp-progress-fill" :style="{ width: otpResendPercent + '%' }"></div>
               <span class="otp-progress-text">Resend available in {{ otpResendCooldown }}s</span>
             </div>
-            <button 
-              type="button" 
+            <button
+              type="button"
               class="btn-auth-primary"
               @click="verifyCode"
               :disabled="authLoading"
             >
               {{ authLoading ? 'Verifying...' : 'Verify Code' }}
             </button>
-            <button 
-              type="button" 
-              class="btn-resend" 
+            <button
+              type="button"
+              class="btn-resend"
               @click="sendVerificationCode"
               :disabled="otpResendCooldown > 0 || authLoading"
             >
@@ -371,14 +367,14 @@
           <div v-if="authStep === 3" class="auth-step">
             <h2>Create Your Account</h2>
             <p class="auth-subtitle">Choose a username and password</p>
-            
+
             <input
               v-model="authUsername"
               type="text"
               placeholder="Username"
               class="auth-input"
             />
-            
+
             <div class="password-field-group">
               <input
                 v-model="authPassword"
@@ -391,7 +387,7 @@
                 {{ showPassword ? '👁️' : '👁️‍🗨️' }}
               </button>
             </div>
-            
+
             <!-- Password Strength Indicator -->
             <div v-if="authPassword" class="password-strength">
               <div class="strength-bar">
@@ -399,7 +395,7 @@
               </div>
               <p class="strength-text" :class="passwordStrength.class">{{ passwordStrength.text }}</p>
             </div>
-            
+
             <!-- Password Requirements -->
             <div class="password-requirements">
               <p class="req-title">Password must contain:</p>
@@ -410,7 +406,7 @@
                 <li :class="{ met: passwordChecks.number }">✓ One number</li>
               </ul>
             </div>
-            
+
             <div class="password-field-group">
               <input
                 v-model="authPasswordConfirm"
@@ -423,16 +419,16 @@
                 {{ showPasswordConfirm ? '👁️' : '👁️‍🗨️' }}
               </button>
             </div>
-            
-            <button 
-              type="button" 
+
+            <button
+              type="button"
               class="btn-auth-primary"
               @click="createAccount"
               :disabled="authLoading || !isPasswordValid"
             >
               {{ authLoading ? 'Creating Account...' : 'Create Account' }}
             </button>
-            
+
             <div class="auth-toggle">
               <p>Already have an account? <button type="button" class="link-btn" @click="switchToDirectLogin">Sign In</button></p>
             </div>
@@ -442,14 +438,14 @@
           <div v-if="authStep === 4" class="auth-step">
             <h2>Welcome Back!</h2>
             <p class="auth-subtitle">Sign in to continue</p>
-            
+
             <input
               v-model="authUsername"
               type="text"
               placeholder="Username or Email"
               class="auth-input"
             />
-            
+
             <div class="password-field-group">
               <input
                 v-model="authPassword"
@@ -462,33 +458,33 @@
                 {{ showPassword ? '👁️' : '👁️‍🗨️' }}
               </button>
             </div>
-            
-            <button 
-              type="button" 
+
+            <button
+              type="button"
               class="btn-auth-primary"
               @click="loginUser"
               :disabled="authLoading"
             >
               {{ authLoading ? 'Signing In...' : 'Sign In' }}
             </button>
-            
+
             <div class="auth-toggle">
               <p>Don't have an account? <button type="button" class="link-btn" @click="switchToSignUp">Sign Up</button></p>
             </div>
           </div>
-          
+
           <!-- Step 5: Direct Login (without email verification) -->
           <div v-if="authStep === 5" class="auth-step">
             <h2>Sign In</h2>
             <p class="auth-subtitle">Enter your credentials</p>
-            
+
             <input
               v-model="authUsername"
               type="text"
               placeholder="Username"
               class="auth-input"
             />
-            
+
             <div class="password-field-group">
               <input
                 v-model="authPassword"
@@ -501,16 +497,16 @@
                 {{ showPassword ? '👁️' : '👁️‍🗨️' }}
               </button>
             </div>
-            
-            <button 
-              type="button" 
+
+            <button
+              type="button"
               class="btn-auth-primary"
               @click="loginUser"
               :disabled="authLoading"
             >
               {{ authLoading ? 'Signing In...' : 'Sign In' }}
             </button>
-            
+
             <div class="auth-toggle">
               <p>Don't have an account? <button type="button" class="link-btn" @click="switchToSignUp">Sign Up</button></p>
             </div>
@@ -806,7 +802,7 @@ function closeAuthModal() {
 
 function checkPasswordStrength() {
   const password = authPassword.value
-  
+
   // Check requirements
   passwordChecks.value = {
     length: password.length >= 8,
@@ -814,13 +810,13 @@ function checkPasswordStrength() {
     lowercase: /[a-z]/.test(password),
     number: /[0-9]/.test(password)
   }
-  
+
   // Calculate strength
   const checks = Object.values(passwordChecks.value)
   const metCount = checks.filter(Boolean).length
-  
+
   isPasswordValid.value = metCount === 4
-  
+
   if (metCount === 0) {
     passwordStrength.value = { text: '', class: '', width: '0%' }
   } else if (metCount === 1) {
@@ -970,19 +966,19 @@ async function createAccount() {
     alert('Please enter a username')
     return
   }
-  
+
   if (!isPasswordValid.value) {
     alert('Password must be at least 8 characters and contain uppercase, lowercase, and numbers')
     return
   }
-  
+
   if (authPassword.value !== authPasswordConfirm.value) {
     alert('Passwords do not match')
     return
   }
-  
+
   authLoading.value = true
-  
+
   try {
     const { data } = await axios.post('/api/auth/register', {
       email: authEmail.value,
@@ -990,7 +986,7 @@ async function createAccount() {
       password: authPassword.value,
       verification_code: verificationCode.value
     })
-    
+
     // Set user data
     googleUser.value = {
       email: data.user.email,
@@ -998,15 +994,15 @@ async function createAccount() {
       picture: null,
       id: data.user.id
     }
-    
+
     localStorage.setItem('googleUser', JSON.stringify(googleUser.value))
     localStorage.setItem('authToken', data.token)
-    
+
     // Update comment forms
     products.value.forEach(product => {
       newComments.value[product.id].author = googleUser.value.email
     })
-    
+
     closeAuthModal()
     alert('Account created successfully! You can now comment.')
   } catch (error) {
@@ -1022,15 +1018,15 @@ async function loginUser() {
     alert('Please enter username and password')
     return
   }
-  
+
   authLoading.value = true
-  
+
   try {
     const { data } = await axios.post('/api/auth/login', {
       username: authUsername.value.trim(),
       password: authPassword.value
     })
-    
+
     // Set user data
     googleUser.value = {
       email: data.user.email,
@@ -1038,15 +1034,15 @@ async function loginUser() {
       picture: null,
       id: data.user.id
     }
-    
+
     localStorage.setItem('googleUser', JSON.stringify(googleUser.value))
     localStorage.setItem('authToken', data.token)
-    
+
     // Update comment forms
     products.value.forEach(product => {
       newComments.value[product.id].author = googleUser.value.email
     })
-    
+
     closeAuthModal()
     alert('Welcome back!')
   } catch (error) {

@@ -508,17 +508,45 @@ function formatDate(dateString) {
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
+h1, h2 {
+  color: #0066FF !important;
+  font-weight: 800 !important;
+  font-family: 'Inter', 'Poppins', sans-serif !important;
+  letter-spacing: -0.5px !important;
+  margin-bottom: 8px !important;
+}
+
+.admin-label, .metric-label, .overview-label, .branch-count {
+  color: #64748B !important;
+}
+
+.avatar-change-text {
+  color: #0066FF !important;
+}
+
+.btn-primary {
+  background: #0066FF !important;
+  color: white !important;
+}
+
+.btn-primary:hover {
+  background: #0057e6 !important;
+}
+
+.btn-secondary, .btn-outline {
+  background: #64748B !important;
+  color: white !important;
+}
+
+.btn-secondary:hover, .btn-outline:hover {
+  background: #525c6a !important;
+}
+
 .staff-header h1 {
   margin: 0;
-  color: #000;
   font-size: 2.5rem;
   font-weight: 700;
   letter-spacing: -1px;
-}
-
-/* Override h1 color for owner-staff-title */
-.owner-staff-title {
-  color: #ffffff !important;
 }
 
 .header-actions {
