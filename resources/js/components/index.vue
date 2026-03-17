@@ -1080,4 +1080,4 @@ function signOut() {
 }
 </script>
 
-<style src="../css/index.css"></style>
+<style src="../css/adminpanel.css"></style>
