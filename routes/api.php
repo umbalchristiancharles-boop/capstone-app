@@ -211,6 +211,7 @@ Route::post('/superadmin/announce', [\App\Http\Controllers\Api\SuperAdminControl
         Route::get('/procurement/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'procurementProfile']);
         Route::put('/procurement/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'updateProcurementProfile']);
         Route::get('/procurement/dashboard', [\App\Http\Controllers\Api\ManagerProfileController::class, 'procurementDashboard']);
+        Route::get('/procurement/products', [\App\Http\Controllers\Api\ManagerProfileController::class, 'procurementProducts']);
         // Procurement supplier management
         Route::post('/procurement/suppliers', [\App\Http\Controllers\Api\ManagerProfileController::class, 'createProcurementSupplier']);
 

@@ -43,6 +43,14 @@
       <div class="panel-actions" style="margin-top:1rem">
         <button class="btn-primary" @click="openAddSupplier">Add Supplier</button>
       </div>
+      <section class="supplier-products" style="margin-top:1rem">
+        <h2>Supplier Products (this branch)</h2>
+        <div v-if="loadingProducts">Loading products...</div>
+        <div v-else-if="!products.length">No products available in your branch.</div>
+        <ul v-else>
+          <li v-for="p in products" :key="p.id">{{ p.name }} — ₱{{ p.price }} — {{ p.supplier_name || 'Unknown Supplier' }}</li>
+        </ul>
+      </section>
       <transition name="fade">
         <div v-if="showAddModal" class="modal-backdrop" @click.self="closeAddSupplier">
           <div class="modal">
@@ -152,6 +160,10 @@ const dashboardTotals = ref({ totalSuppliers: 0, activeSuppliers: 0, pendingRequ
 const showLogoutConfirm = ref(false)
 const isLoggingOut = ref(false)
 
+// Products for procurement manager (branch-scoped)
+const products = ref([])
+const loadingProducts = ref(false)
+
 // Add Supplier modal state
 const showAddModal = ref(false)
 const isSubmitting = ref(false)
@@ -191,6 +203,9 @@ onMounted(async () => {
     // ignore
   }
   await refreshAllData()
+  try {
+    await loadProducts()
+  } catch (e) {}
 })
 
 function cancelLogout() { showLogoutConfirm.value = false }
@@ -294,6 +309,24 @@ async function submitAddSupplier() {
     alert(msg)
   } finally {
     isSubmitting.value = false
+  }
+}
+
+async function loadProducts() {
+  loadingProducts.value = true
+  try {
+    const pres = await axios.get('/api/manager/procurement/products', { withCredentials: true })
+    if (pres && pres.data) {
+      // supports both {data: [...] } and direct array
+      if (Array.isArray(pres.data)) products.value = pres.data
+      else if (Array.isArray(pres.data.data)) products.value = pres.data.data
+      else products.value = []
+    }
+  } catch (e) {
+    console.warn('Failed to load procurement products', e)
+    products.value = []
+  } finally {
+    loadingProducts.value = false
   }
 }
 </script>

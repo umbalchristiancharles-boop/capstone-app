@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use App\Models\Product;
 
 class ManagerProfileController extends Controller
 {
@@ -684,6 +685,37 @@ class ManagerProfileController extends Controller
             'totalSuppliers' => $totalSuppliers,
             'activeSuppliers' => $activeSuppliers,
             'pendingRequests' => 0,
+        ]);
+    }
+
+    /**
+     * Return products available in the procurement manager's branch
+     * GET /api/manager/procurement/products
+     */
+    public function procurementProducts(Request $request)
+    {
+        $user = $this->getAuthenticatedManager($request);
+
+        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'procurement')) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $branchId = $user->branch_id;
+
+        if (!$branchId) {
+            return response()->json(['ok' => false, 'message' => 'Manager has no branch assigned'], 400);
+        }
+
+        // Fetch products that belong to the manager's branch. This returns products
+        // supplied/registered under that branch (including supplier-added products).
+        $products = Product::where('branch_id', $branchId)
+            ->select('id', 'name', 'slug', 'price', 'stock', 'sku', 'branch_id', 'supplier_name', 'created_at', 'updated_at')
+            ->orderBy('name', 'asc')
+            ->get();
+
+        return response()->json([
+            'ok' => true,
+            'data' => $products,
         ]);
     }
 

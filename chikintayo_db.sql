@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 17, 2026 at 07:13 AM
+-- Generation Time: Mar 17, 2026 at 09:09 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -1060,7 +1060,12 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (627, 'App\\Models\\User', 127, 'auth-token', 'e582984e071801dfe2acad73d301e403a93aa86eb134584da286d2f5d3210e3b', '[\"*\"]', NULL, NULL, '2026-03-17 05:52:37', '2026-03-17 05:52:37'),
 (628, 'App\\Models\\User', 137, 'auth-token', 'a28f3f1dbff2ec9b97845ef210d9d2c60a3c37c5b96d5747fcbbd9ff2f579105', '[\"*\"]', NULL, NULL, '2026-03-17 05:57:08', '2026-03-17 05:57:08'),
 (629, 'App\\Models\\User', 129, 'auth-token', '7091fbb6725ebff76f4c9c70c027f7d9a6c99c38481c67750d91cce5a2ce6d15', '[\"*\"]', NULL, NULL, '2026-03-17 06:08:25', '2026-03-17 06:08:25'),
-(630, 'App\\Models\\User', 137, 'auth-token', 'ad9b867e2bcf1fb6587f365bc693a6c724a351eae5d8dee6e2771804e44e3a09', '[\"*\"]', NULL, NULL, '2026-03-17 06:11:58', '2026-03-17 06:11:58');
+(630, 'App\\Models\\User', 137, 'auth-token', 'ad9b867e2bcf1fb6587f365bc693a6c724a351eae5d8dee6e2771804e44e3a09', '[\"*\"]', NULL, NULL, '2026-03-17 06:11:58', '2026-03-17 06:11:58'),
+(631, 'App\\Models\\User', 126, 'auth-token', '343e50bd8d81e042a7c65c33bee05ece91c636bf27b1021c55407bd4d685e1c3', '[\"*\"]', NULL, NULL, '2026-03-17 07:53:04', '2026-03-17 07:53:04'),
+(632, 'App\\Models\\User', 137, 'auth-token', 'baaaa39f164c149389eef4022f7dfbbba1a927a3687907e4073a776933db26d8', '[\"*\"]', NULL, NULL, '2026-03-17 08:03:01', '2026-03-17 08:03:01'),
+(633, 'App\\Models\\User', 126, 'auth-token', 'bd7415c39d19c84c3fb6b3efdc97f048c1c914482282dd30a52b118be8cfe8a9', '[\"*\"]', NULL, NULL, '2026-03-17 08:03:27', '2026-03-17 08:03:27'),
+(634, 'App\\Models\\User', 129, 'auth-token', '9d839f8af1dab6dae7f68d3e8297d444e151a5ad58290f3ad6be9480232bb67b', '[\"*\"]', NULL, NULL, '2026-03-17 08:06:14', '2026-03-17 08:06:14'),
+(635, 'App\\Models\\User', 137, 'auth-token', 'af76525e0c6e2d38123b99a352ef1b72b41ff2b5fab054b87ca3eb16e0eb7a69', '[\"*\"]', NULL, NULL, '2026-03-17 08:06:36', '2026-03-17 08:06:36');
 
 -- --------------------------------------------------------
 
@@ -1089,7 +1094,8 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`id`, `name`, `slug`, `created_at`, `updated_at`, `price`, `stock`, `min_stock`, `sku`, `branch_id`, `is_active`, `supplier_name`, `supplier_id`) VALUES
-(17, 'Jasmine', 'jasmine', '2026-03-17 05:36:50', '2026-03-17 05:36:50', 45.00, 0, 10, 'JASMIN-XRWG', 28, 1, 'Umberto Timbag', NULL);
+(17, 'Jasmine', 'jasmine', '2026-03-17 05:36:50', '2026-03-17 05:36:50', 45.00, 0, 10, 'JASMIN-XRWG', 28, 1, 'Umberto Timbag', NULL),
+(18, 'Shabu', 'shabu', '2026-03-17 08:03:15', '2026-03-17 08:03:15', 500.00, 0, 10, 'SHABU-XISZ', 28, 1, 'Umberto Timbag', NULL);
 
 -- --------------------------------------------------------
 
@@ -1169,8 +1175,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('5IdO1XGNt5qxN9wZqs0wUQNLMI6NNp7v98L1Kxm3', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiTTBoM0VKSUZrWW91VXN5ZFhic0FpNFVhYTJDNzlSaEZDTVUxTUprSSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1773722819),
-('V9Njdg6IS0eMJ0FAIUJtWCbmjJYUWR67CZNwc04k', 137, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiUU1ib1BEVmdpbGJUUlZYTjE5MTFOYnF4YVozd0FBeWpNQ01YcGRZQSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxMzc7czo3OiJ1c2VyX2lkIjtpOjEzNztzOjk6InVzZXJfcm9sZSI7czo4OiJTVVBQTElFUiI7czo5OiJ1c2VyX25hbWUiO3M6MTQ6IlVtYmVydG8gVGltYmFnIjtzOjEzOiJyZWRpcmVjdF9wYXRoIjtzOjE1OiIvc3VwcGxpZXItcGFuZWwiO30=', 1773727920);
+('NQNNQSdpWeAo1wRoVK07LgUxeqSuqkFjtq7Ybula', 137, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoieGY4WTNMTkoxZ2RPRTZ6Y1pMbGVaNktET2lkYzBNOTE5eUVWVERmbyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxMzc7czo3OiJ1c2VyX2lkIjtpOjEzNztzOjk6InVzZXJfcm9sZSI7czo4OiJTVVBQTElFUiI7czo5OiJ1c2VyX25hbWUiO3M6MTQ6IlVtYmVydG8gVGltYmFnIjtzOjEzOiJyZWRpcmVjdF9wYXRoIjtzOjE1OiIvc3VwcGxpZXItcGFuZWwiO30=', 1773734798);
 
 -- --------------------------------------------------------
 
@@ -1561,13 +1566,13 @@ ALTER TABLE `order_items`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=631;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=636;
 
 --
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
 -- AUTO_INCREMENT for table `product_comments`
