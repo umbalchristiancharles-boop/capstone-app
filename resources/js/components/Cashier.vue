@@ -165,7 +165,9 @@
         </div>
 
         <div class="checkout-actions">
-          <button class="btn-cancel" @click="clearCart" :disabled="isProcessing">Clear</button>
+  <button class="btn-cancel" @click="clearCart" :disabled="isProcessing || !!pendingOrderCode">
+    {{ pendingOrderCode ? 'Cancel Pending' : 'Clear' }}
+  </button>
           <button
             class="btn-confirm"
             :disabled="!canCheckout || isProcessing"
@@ -233,6 +235,7 @@ const cart = ref([])
 const customerName = ref('')
 const amountPaid = ref(null)
 const isProcessing = ref(false)
+const pendingOrderCode = ref(null)  // Track latest pending order for cancel
 const checkoutError = ref('')
 const checkoutSuccess = ref('')
 const transactions = ref([])
@@ -402,12 +405,28 @@ function removeItem(idx) {
   cart.value.splice(idx, 1)
 }
 
-function clearCart() {
+async function clearCart() {
+  if (pendingOrderCode.value && cart.value.length === 0) {
+    // Cancel pending order if exists and cart empty (user cancelled after checkout)
+    try {
+      await axios.post('/api/superadmin/cashier/cancel-pending', {
+        order_code: pendingOrderCode.value,
+        branch_id: selectedBranch.value
+      })
+      checkoutSuccess.value = 'Pending order cancelled.'
+      pendingOrderCode.value = null
+    } catch (e) {
+      console.warn('Cancel pending failed:', e)
+    }
+  }
+  
   cart.value = []
   customerName.value = ''
   amountPaid.value = null
   checkoutError.value = ''
   checkoutSuccess.value = ''
+  discountType.value = 'none'
+  discountPercent.value = 0
 }
 
 // Checkout
@@ -433,13 +452,11 @@ async function processCheckout() {
     const res = await axios.post('/api/superadmin/cashier/checkout', payload)
     checkoutSuccess.value = `${res.data.message} Order: ${res.data.order.order_code} | Change: ₱${fmt(res.data.change)}`
 
-    // Reset cart
-    cart.value = []
-    customerName.value = ''
-    amountPaid.value = null
+    // Clear the cart and reset the form — cashier transactions complete immediately
+    clearCart()
 
-    // Refresh products & transactions
-    await loadProducts()
+    // Refresh transactions to show the completed order
+    await loadTransactions()
   } catch (e) {
     const msg = e.response?.data?.message || e.response?.data?.error || e.message || 'Checkout failed'
     checkoutError.value = msg

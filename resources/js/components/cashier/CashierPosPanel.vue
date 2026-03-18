@@ -21,6 +21,10 @@
     <button class="btn-primary">Create New Transaction</button>
   </section>
 </template>
-<script setup>
-defineProps({ transactions: Array })
+<script setup lang="ts">
+const props = withDefaults(defineProps<{
+  transactions?: Array<any>
+}>(), {
+  transactions: () => []
+})
 </script>

@@ -47,9 +47,36 @@
         <h2>Supplier Products (this branch)</h2>
         <div v-if="loadingProducts">Loading products...</div>
         <div v-else-if="!products.length">No products available in your branch.</div>
-        <ul v-else>
-          <li v-for="p in products" :key="p.id">{{ p.name }} — ₱{{ p.price }} — {{ p.supplier_name || 'Unknown Supplier' }}</li>
-        </ul>
+        <div v-else>
+          <div v-if="pendingProducts.length" style="margin-bottom:0.5rem">
+            <h3 style="margin:0 0 8px 0">Pending Supplier Products</h3>
+            <div class="product-grid">
+              <div v-for="p in pendingProducts" :key="'pending-'+p.id" class="product-card">
+                <div class="product-name">{{ p.name }}</div>
+                <div class="product-meta">
+                  <div class="product-price">{{ formatPrice(p.price) }}</div>
+                  <div>
+                    <button class="btn-primary" @click="placeOrder(p)" style="padding:6px 10px; border-radius:8px">Place Order</button>
+                  </div>
+                </div>
+                <div class="supplier-badge" style="margin-top:6px">{{ p.supplier_name || 'Unknown Supplier' }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 style="margin:0 0 8px 0">Published Products</h3>
+            <div class="product-grid">
+              <div v-for="p in publishedProducts" :key="p.id" class="product-card">
+                <div class="product-name">{{ p.name }}</div>
+                <div class="product-meta">
+                  <div class="product-price">{{ formatPrice(p.price) }}</div>
+                  <div class="supplier-badge">{{ p.supplier_name || 'Unknown Supplier' }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
       <transition name="fade">
         <div v-if="showAddModal" class="modal-backdrop" @click.self="closeAddSupplier">
@@ -149,7 +176,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import axios from 'axios'
@@ -163,6 +190,9 @@ const isLoggingOut = ref(false)
 // Products for procurement manager (branch-scoped)
 const products = ref([])
 const loadingProducts = ref(false)
+
+const pendingProducts = computed(() => (products.value || []).filter(p => !p.is_published))
+const publishedProducts = computed(() => (products.value || []).filter(p => p.is_published))
 
 // Add Supplier modal state
 const showAddModal = ref(false)
@@ -329,6 +359,40 @@ async function loadProducts() {
     loadingProducts.value = false
   }
 }
+
+// Helper to format price nicely for display
+function formatPrice(val) {
+  if (val === null || val === undefined) return '₱0.00'
+  const n = Number(val)
+  if (Number.isNaN(n)) return '₱0.00'
+  return '₱' + n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+async function placeOrder(product) {
+  if (!product || !product.id) return
+  // Prompt for quantity (optional)
+  const qtyInput = prompt('Enter quantity to add into inventory (leave blank to accept existing stock):', '0')
+  let qty = null
+  if (qtyInput !== null && qtyInput !== '') {
+    qty = parseInt(qtyInput, 10)
+    if (Number.isNaN(qty) || qty < 0) {
+      alert('Invalid quantity')
+      return
+    }
+  }
+
+  try {
+    const payload = {}
+    if (qty !== null) payload.quantity = qty
+    const res = await axios.post(`/api/manager/procurement/products/${product.id}/place-order`, payload, { withCredentials: true })
+    alert(res.data.message || 'Product placed into inventory')
+    await loadProducts()
+    await refreshAllData()
+  } catch (e) {
+    console.warn('Failed to place order', e)
+    alert('Failed to place order')
+  }
+}
 </script>
 
 <style scoped>
@@ -444,4 +508,28 @@ async function loadProducts() {
 
 /* Ensure backdrop has high z-index inside component scope */
 .modal-backdrop { z-index: 2000; }
+
+/* Product grid styles for supplier products */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.product-card {
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 0.9rem;
+  box-shadow: 0 6px 18px rgba(15,23,42,0.06);
+  border: 1px solid #eef2f6;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.product-name { font-weight: 700; color: #111827; }
+.product-meta { display:flex; justify-content:space-between; align-items:center; gap:0.5rem }
+.product-price { color: #0b6e3a; font-weight:700 }
+.supplier-badge { background: #f3f4f6; color: #374151; padding: 4px 8px; border-radius: 12px; font-size: 0.85rem }
 </style>

@@ -104,8 +104,8 @@ class SuperAdminFinanceController extends Controller
         $dateCondition = fn($query) => $query->whereBetween('created_at', $dateRange);
         
         // Build query with optional date and branch filters
-        $completedQuery = Order::where('status', 'completed');
-        $cancelledQuery = Order::where('status', 'cancelled');
+$completedQuery = Order::whereIn('status', ['completed', 'approved']);
+$cancelledQuery = Order::whereIn('status', ['cancelled', 'pending']);
         $ordersQuery = Order::query();
 
         // Apply date filter

@@ -7,8 +7,12 @@
     </ul>
   </section>
 </template>
-<script setup>
-defineProps({ logs: Array })
+<script setup lang="ts">
+const props = withDefaults(defineProps<{
+  logs?: Array<any>
+}>(), {
+  logs: () => []
+})
 </script>
 
 <style scoped>

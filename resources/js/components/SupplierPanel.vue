@@ -15,15 +15,63 @@
         <div class="overview-card"><span class="overview-label">Pending Orders:</span><span class="overview-value">{{ dashboardTotals.pendingOrders }}</span></div>
       </div>
 
-          <logistics-panel-content :deliveries="deliveries" :suppliers="suppliers" @product-added="onProductAdded" />
+      <!-- Orders Section (merged) -->
+      <div class="panel-section">
+        <h2 class="section-title">Your Orders</h2>
+        <div v-if="ordersLoading" class="loading-container">
+          <div class="loading-spinner"></div>
+          <p>Loading orders...</p>
+        </div>
+        <div v-else class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Branch</th>
+                <th>Qty</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="order in orders" :key="order.id">
+                <td>{{ order.product?.name }}</td>
+                <td>{{ order.branch?.name || order.branch_id }}</td>
+                <td>{{ order.quantity }}</td>
+                <td>{{ formatPrice(order.product?.price * order.quantity) }}</td>
+                <td>
+                  <span :class="['status-badge', getStatusClass(order.status)]">
+                    {{ order.status }}
+                  </span>
+                </td>
+                <td>
+                  <button v-if="order.status === 'pending'" class="btn-primary btn-small" @click="fulfillOrder(order.id)">Fulfill</button>
+                  <button v-else-if="order.status === 'fulfilled'" class="btn-secondary btn-small" disabled>Fulfilled</button>
+                </td>
+              </tr>
+              <tr v-if="orders.length === 0">
+                <td colspan="6" class="empty-message">No orders yet.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <logistics-panel-content :deliveries="deliveries" :suppliers="suppliers" @product-added="onProductAdded" />
 
           <section class="supplier-products">
             <h2>Your Products</h2>
             <div v-if="loadingProducts">Loading products...</div>
             <div v-else-if="!products.length">No products yet.</div>
-            <ul v-else>
-              <li v-for="p in products" :key="p.id">{{ p.name }} — ₱{{ p.price }}</li>
-            </ul>
+            <div v-else class="product-grid">
+              <div v-for="p in products" :key="p.id" class="product-card">
+                <div class="product-name">{{ p.name }}</div>
+                <div class="product-meta">
+                  <div class="product-price">{{ formatPrice(p.price) }}</div>
+                </div>
+              </div>
+            </div>
           </section>
     </template>
   </OwnerPanelLayout>
@@ -64,6 +112,8 @@ const dashboardTotals = ref({ totalSuppliers: 0, activeDeliveries: 0, pendingOrd
 const deliveries = ref([])
 const products = ref([])
 const loadingProducts = ref(false)
+const orders = ref([])
+const ordersLoading = ref(false)
 
 // UI / modal state
 const showLogoutConfirm = ref(false)
@@ -146,6 +196,11 @@ onMounted(async () => {
     }
   } catch (e) { console.warn('Failed to determine role for loading logistics data', e) }
 
+  // load supplier orders for supplier user
+  try {
+    await loadOrders()
+  } catch (e) { console.warn('Failed to load supplier orders', e) }
+
   // Load products for the current user's branch (show supplier products)
   try {
     if (userProfile.value && (userProfile.value.branch_id || userProfile.value.id)) {
@@ -170,6 +225,46 @@ async function loadProducts() {
   } finally {
     loadingProducts.value = false
   }
+}
+
+// Orders for supplier
+async function loadOrders() {
+  ordersLoading.value = true
+  try {
+    const res = await axios.get('/api/supplier-orders', { withCredentials: true })
+    orders.value = res.data.data || res.data || []
+    dashboardTotals.value.pendingOrders = orders.value.filter(o => o.status === 'pending').length
+    // fulfilled count could be used elsewhere
+  } catch (e) {
+    console.error('Failed to load orders', e)
+  } finally {
+    ordersLoading.value = false
+  }
+}
+
+async function fulfillOrder(id) {
+  if (!confirm('Mark as fulfilled?')) return
+  try {
+    await axios.put(`/api/supplier-orders/${id}/status`, { status: 'fulfilled' }, { withCredentials: true })
+    await loadOrders()
+  } catch (e) {
+    alert('Failed to update order')
+  }
+}
+
+function getStatusClass(status) {
+  switch (status) {
+    case 'fulfilled': return 'status-approved'
+    case 'cancelled': return 'status-rejected'
+    default: return 'status-pending'
+  }
+}
+
+function formatPrice(val) {
+  if (val === null || val === undefined) return '₱0.00'
+  const n = Number(val)
+  if (Number.isNaN(n)) return '₱0.00'
+  return '₱' + n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
 function onProductAdded(newProduct) {
@@ -212,4 +307,18 @@ function onProfileUpdated(newData) {
 
 <style scoped>
 @import '../css/adminpanel.css';
+/* Supplier panel product grid */
+.overview-grid { display:flex; gap:0.75rem; margin-bottom:0.75rem }
+.overview-card { background:#fff; border-radius:10px; padding:0.75rem 1rem; box-shadow:0 6px 18px rgba(15,23,42,0.04); border:1px solid #eef2f6; display:flex; gap:0.5rem; align-items:center }
+.overview-label { color:#6b7280; font-weight:600 }
+.overview-value { font-weight:700; color:#111827; margin-left:6px }
+
+.supplier-products { margin-top:1rem }
+.product-grid { display:grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap:0.75rem; margin-top:0.5rem }
+.product-card { background:#fff; border-radius:10px; padding:0.75rem; box-shadow:0 8px 24px rgba(15,23,42,0.06); border:1px solid #eef2f6 }
+.product-name { font-weight:700; color:#0f172a }
+.product-meta { display:flex; justify-content:space-between; align-items:center; margin-top:6px }
+.product-price { color:#0b6e3a; font-weight:700 }
+.product-stock { color:#6b7280 }
+
 </style>

@@ -136,7 +136,9 @@
         <div v-if="checkoutSuccess" class="success-msg">{{ checkoutSuccess }}</div>
 
         <div class="checkout-actions">
-          <button class="btn-cancel" @click="clearCart" :disabled="isProcessing">Clear</button>
+          <button class="btn-cancel" @click="clearCart" :disabled="isProcessing || !!pendingOrderCode">
+            {{ pendingOrderCode ? 'Cancel Pending' : 'Clear' }}
+          </button>
           <button
             class="btn-confirm"
             :disabled="!canCheckout || isProcessing"
@@ -217,6 +219,7 @@ const cart = ref([])
 const customerName = ref('')
 const amountPaid = ref(null)
 const isProcessing = ref(false)
+const pendingOrderCode = ref(null)
 const checkoutError = ref('')
 const checkoutSuccess = ref('')
 const transactions = ref([])
@@ -387,12 +390,27 @@ function removeItem(idx) {
   cart.value.splice(idx, 1)
 }
 
-function clearCart() {
+async function clearCart() {
+  if (pendingOrderCode.value && cart.value.length === 0) {
+    try {
+      await axios.post('/api/superadmin/cashier/cancel-pending', {
+        order_code: pendingOrderCode.value,
+        branch_id: branchId.value
+      })
+      checkoutSuccess.value = 'Pending order cancelled.'
+      pendingOrderCode.value = null
+    } catch (e) {
+      console.warn('Cancel pending failed:', e)
+    }
+  }
+  
   cart.value = []
   customerName.value = ''
   amountPaid.value = null
   checkoutError.value = ''
   checkoutSuccess.value = ''
+  discountType.value = 'none'
+  discountPercent.value = 0
 }
 
 // Checkout
@@ -416,15 +434,14 @@ async function processCheckout() {
     }
 
     const res = await axios.post('/api/superadmin/cashier/checkout', payload)
-    checkoutSuccess.value = `${res.data.message} Order: ${res.data.order.order_code} | Change: ₱${fmt(res.data.change)}`
+    checkoutSuccess.value = `${res.data.message} Order: ${res.data.order.order_code} (PENDING) | Change: ₱${fmt(res.data.change)}`
+    pendingOrderCode.value = res.data.order.order_code
 
-    // Reset cart
-    cart.value = []
     customerName.value = ''
     amountPaid.value = null
+    discountType.value = 'none'
+    discountPercent.value = 0
 
-    // Refresh products & transactions
-    await loadProducts()
     await loadTransactions()
   } catch (e) {
     const msg = e.response?.data?.message || e.response?.data?.error || e.message || 'Checkout failed'

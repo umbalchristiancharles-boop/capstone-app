@@ -598,6 +598,35 @@ class ManagerProfileController extends Controller
         ]);
     }
 
+    /**
+     * Return products for logistics manager (same as procurementProducts but for logistics dept)
+     * GET /api/manager/logistics/products
+     */
+    public function logisticsProducts(Request $request)
+    {
+        $user = $this->getAuthenticatedManager($request);
+
+        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'logistics')) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $branchId = $user->branch_id;
+
+        if (!$branchId) {
+            return response()->json(['ok' => false, 'message' => 'Manager has no branch assigned'], 400);
+        }
+
+        $products = Product::where('branch_id', $branchId)
+            ->select('id', 'name', 'slug', 'price', 'stock', 'sku', 'branch_id', 'supplier_name', 'is_published', 'created_at', 'updated_at')
+            ->orderBy('name', 'asc')
+            ->get();
+
+        return response()->json([
+            'ok' => true,
+            'data' => $products,
+        ]);
+    }
+
     // ==========================================
     // Procurement Manager Profile Endpoints
     // ==========================================
@@ -709,7 +738,7 @@ class ManagerProfileController extends Controller
         // Fetch products that belong to the manager's branch. This returns products
         // supplied/registered under that branch (including supplier-added products).
         $products = Product::where('branch_id', $branchId)
-            ->select('id', 'name', 'slug', 'price', 'stock', 'sku', 'branch_id', 'supplier_name', 'created_at', 'updated_at')
+            ->select('id', 'name', 'slug', 'price', 'stock', 'sku', 'branch_id', 'supplier_name', 'is_published', 'created_at', 'updated_at')
             ->orderBy('name', 'asc')
             ->get();
 
@@ -717,6 +746,39 @@ class ManagerProfileController extends Controller
             'ok' => true,
             'data' => $products,
         ]);
+    }
+
+    /**
+     * Place an order / accept a supplier product into inventory (mark as published)
+     * POST /api/manager/procurement/products/{id}/place-order
+     */
+    public function placeOrderProduct(Request $request, $id)
+    {
+        $user = $this->getAuthenticatedManager($request);
+
+        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'procurement')) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $branchId = $user->branch_id;
+
+        $product = Product::where('id', $id)->where('branch_id', $branchId)->first();
+        if (!$product) {
+            return response()->json(['ok' => false, 'message' => 'Product not found'], 404);
+        }
+
+        $validated = $request->validate([
+            'quantity' => 'nullable|integer|min:0'
+        ]);
+
+        if (isset($validated['quantity'])) {
+            $product->stock = max(0, $product->stock + (int)$validated['quantity']);
+        }
+
+        $product->is_published = 1;
+        $product->save();
+
+        return response()->json(['ok' => true, 'message' => 'Product placed into inventory', 'product' => $product]);
     }
 
     /**
@@ -799,9 +861,44 @@ class ManagerProfileController extends Controller
         }
     }
 
-    // ==========================================
-    // Inventory Manager Profile Endpoints
-    // ==========================================
+// ==========================================
+// Logistics Manager - Inventory Endpoint (for procurement requests)
+// ==========================================
+/**
+ * Return branch inventory for logistics manager with stock status
+ * GET /api/manager/logistics/inventory
+ */
+public function logisticsInventory(Request $request)
+{
+    $user = $this->getAuthenticatedManager($request);
+
+    if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'logistics')) {
+        return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
+    }
+
+    $branchId = $user->branch_id;
+    if (!$branchId) {
+        return response()->json(['ok' => false, 'message' => 'No branch assigned'], 400);
+    }
+
+    $products = Product::where('branch_id', $branchId)
+        ->select('id', 'name', 'price', 'stock', 'min_stock')
+        ->get()
+        ->map(function ($p) {
+            $status = ($p->stock <= ($p->min_stock ?? 10)) ? 'LOW STOCK' : 'OK';
+            $p->status = $status;
+            return $p;
+        });
+
+    return response()->json([
+        'ok' => true, 
+        'data' => $products,
+    ]);
+}
+
+// ==========================================
+// Inventory Manager Profile Endpoints
+// ==========================================
     
     public function inventoryProfile(Request $request)
     {

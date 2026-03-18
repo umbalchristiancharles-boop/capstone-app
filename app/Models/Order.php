@@ -31,12 +31,18 @@ class Order extends Model
         'amount_paid',
         'change_amount',
         'ordered_at',
+        'is_cancelled',
+        'cancelled_at',
+        'approved_at',
+        'approved_by',
     ];
 
     protected function casts(): array
     {
         return [
             'ordered_at'    => 'datetime',
+            'cancelled_at'  => 'datetime',
+            'approved_at'   => 'datetime',
             'created_at'    => 'datetime',
             'updated_at'    => 'datetime',
             'subtotal'      => 'decimal:2',

@@ -102,8 +102,14 @@ class StaffInventoryController extends Controller
         $user = Auth::user();
         $branchId = $user->branch_id;
 
-        $products = Product::where('branch_id', $branchId)
-            ->select('id', 'name', 'slug', 'price', 'stock', 'sku', 'branch_id', 'created_at', 'updated_at')
+$query = Product::where('branch_id', $branchId)->where('is_published', 1);
+
+        // Show supplier-submitted products as well so staff and logistics
+        // can view newly added supplier products that have not yet
+        // been accepted/placed into inventory by procurement.
+        // (Procurement will still mark products as published when placed.)
+
+        $products = $query->select('id', 'name', 'slug', 'price', 'stock', 'sku', 'branch_id', 'is_published', 'created_at', 'updated_at')
             ->orderBy('name')
             ->get();
 
@@ -156,6 +162,12 @@ class StaffInventoryController extends Controller
             $supplierName = $user->full_name ?? $user->username ?? $user->email ?? null;
         }
 
+        $isPublished = 1;
+        if ($user && strtoupper($user->role) === 'SUPPLIER') {
+            // Supplier-submitted products stay unpublished until procurement places order
+            $isPublished = 0;
+        }
+
         $product = Product::create([
             'name' => $validated['name'],
             'slug' => Str::slug($validated['name']),
@@ -164,6 +176,7 @@ class StaffInventoryController extends Controller
             'sku' => $sku,
             'branch_id' => $branchId,
             'supplier_name' => $supplierName,
+            'is_published' => $isPublished,
         ]);
 
         return response()->json([
