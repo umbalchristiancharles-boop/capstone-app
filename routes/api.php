@@ -236,6 +236,10 @@ Route::prefix('manager')->middleware('auth')->group(function () {
         Route::get('/logistics/budget/my-requests', [\App\Http\Controllers\Manager\BudgetRequestController::class, 'getMyRequests']);
         Route::post('/logistics/budget/create', [\App\Http\Controllers\Manager\BudgetRequestController::class, 'createRequest']);
 
+        // Also expose procurement endpoints for budget requests (procurement managers)
+        Route::get('/procurement/budget/my-requests', [\App\Http\Controllers\Manager\BudgetRequestController::class, 'getMyRequests']);
+        Route::post('/procurement/budget/create', [\App\Http\Controllers\Manager\BudgetRequestController::class, 'createRequest']);
+
         // Budget Request System - Finance Manager (Approval/Rejection)
         Route::get('/finance/budget/all', [\App\Http\Controllers\Manager\BudgetRequestController::class, 'getAllRequests']);
         Route::put('/finance/budget/{id}/approve', [\App\Http\Controllers\Manager\BudgetRequestController::class, 'approveRequest']);

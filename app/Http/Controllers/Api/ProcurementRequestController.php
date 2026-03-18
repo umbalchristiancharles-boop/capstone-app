@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Models\ProcurementRequest;
 use App\Models\SupplierOrder;
 use App\Models\Product;
+use App\Models\BudgetRequest;
 use Illuminate\Support\Facades\Log;
 
 class ProcurementRequestController extends Controller
@@ -23,12 +25,15 @@ class ProcurementRequestController extends Controller
             // Logistics sees own requests
             $query->where('logistics_user_id', $user->id);
         } elseif ($role === 'PROCUREMENT_MANAGER') {
-            // Procurement sees pending/approved for branch
+            // Procurement sees pending/approved/budget/cash-in-transit/delivery states for branch
             $query->where('branch_id', $user->branch_id ?? 1)
-                  ->whereIn('status', ['pending', 'approved', 'budget_pending']);
+                  ->whereIn('status', ['pending', 'approved', 'budget_pending', 'cash_in_transit', 'delivery_pending']);
         } elseif (in_array($role, ['FINANCE_MANAGER', 'MANAGER_FINANCE'])) {
-            // Finance sees pending budget approvals
-            $query->where('budget_approved', false);
+            // Finance sees pending budget approvals and items they need to confirm (cash in transit)
+            $query->where(function($q) {
+                $q->where('budget_approved', false)
+                  ->orWhere('status', 'cash_in_transit');
+            });
         } else {
             // Default branch filter
             $query->where('branch_id', $user->branch_id ?? 1);
@@ -111,7 +116,7 @@ class ProcurementRequestController extends Controller
         }
 
         try {
-            $product->update(['logistics_request_available' => true]);
+            $product->update(['logistics_request_available' => true, 'has_been_ordered' => true]);
             Log::info('Product updated');
         } catch (\Exception $e) {
             Log::error('PRODUCT UPDATE FAILED', ['error' => $e->getMessage()]);
@@ -168,6 +173,15 @@ public function requestedProducts(Request $request)
             Log::info('Products fetched', ['count' => $products->count()]);
             Log::info('=== REQUESTED PRODUCTS SUCCESS ===');
 
+            // Attach the procurement request id to each product so the frontend
+            // can reference the correct procurement_request when acting on it.
+            $requestsByProduct = $requests->keyBy('product_id');
+            $products = $products->map(function ($p) use ($requestsByProduct) {
+                $req = $requestsByProduct->get($p->id);
+                $p->procurement_request_id = $req ? $req->id : null;
+                return $p;
+            });
+
             return response()->json($products);
         } catch (\Exception $e) {
             Log::error('REQUESTED PRODUCTS ERROR', [
@@ -182,26 +196,91 @@ public function requestedProducts(Request $request)
 
     public function updateStatus(Request $request, $id)
     {
+        // Try request user first, then fall back to common API guards (sanctum/api)
         $user = $request->user();
+        if (!$user) {
+            $user = auth('sanctum')->user() ?: auth('api')->user();
+        }
+
+        Log::info('updateStatus called', [
+            'user_id' => $user?->id ?? null,
+            'role' => $user?->role ?? null,
+            'auth_header' => $request->header('authorization')
+        ]);
+
+        if (!$user) {
+            Log::warning('updateStatus unauthenticated request', ['id' => $id]);
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
         $role = strtoupper($user->role ?? '');
+        $dept = strtoupper($user->department ?? '');
 
-        $procRequest = ProcurementRequest::findOrFail($id);
+        $procRequest = ProcurementRequest::with('product')->findOrFail($id);
 
-        if ($role === 'PROCUREMENT_MANAGER' && $procRequest->status === 'pending') {
-            $procRequest->update([
-                'procurement_user_id' => $user->id,
-                'status' => 'budget_pending'  // Wait for finance
-            ]);
-        } elseif (in_array($role, ['FINANCE_MANAGER', 'MANAGER_FINANCE']) && !$procRequest->budget_approved) {
-            $validated = $request->validate(['budget_amount' => 'required|numeric|min:0']);
-            if ($validated['budget_amount'] < $procRequest->total_amount) {
-                return response()->json(['error' => 'Budget must cover total amount'], 400);
+        // Allow either explicit PROCUREMENT_MANAGER role or a branch Manager in PROCUREMENT
+        if (( $role === 'PROCUREMENT_MANAGER' || ($role === 'MANAGER' && $dept === 'PROCUREMENT') )
+            && $procRequest->status === 'pending') {
+            try {
+                // Procurement acknowledges and auto-creates BudgetRequest for Finance panel
+                DB::transaction(function () use ($procRequest, $user) {
+                    $procRequest->update([
+                        'procurement_user_id' => $user->id,
+                        'status' => 'budget_pending'
+                    ]);
+
+                    // Check if BudgetRequest already exists for this procurement request
+                    $existingBudget = BudgetRequest::where('branch_id', $procRequest->branch_id)
+                        ->where('purpose', 'LIKE', "%Procurement Request #{$procRequest->id}%")
+                        ->first();
+
+                    if (!$existingBudget) {
+                        BudgetRequest::create([
+                            'branch_id' => $procRequest->branch_id,
+                            'user_id' => $user->id, // procurement manager as requester
+                            'purpose' => "Procurement Request #{$procRequest->id}: {$procRequest->product->name} x{$procRequest->quantity}",
+                            'requested_amount' => $procRequest->total_amount,
+                            'status' => 'Pending',
+                            'date_requested' => now()->toDateString(),
+                        ]);
+                        
+                        Log::info('Auto-created BudgetRequest from ProcurementRequest', [
+                            'proc_req_id' => $procRequest->id,
+                            'budget_user_id' => $user->id,
+                            'branch_id' => $procRequest->branch_id
+                        ]);
+                    }
+                });
+                Log::info('Procurement acknowledgment successful', ['proc_req_id' => $procRequest->id]);
+            } catch (\Exception $e) {
+                Log::error('Procurement acknowledgment failed', [
+                    'proc_req_id' => $procRequest->id,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                return response()->json(['error' => 'Failed to acknowledge: ' . $e->getMessage()], 500);
             }
-            $procRequest->update([
-                'finance_user_id' => $user->id,
-                'budget_amount' => $validated['budget_amount'],
-                'budget_approved' => true,
-            ]);
+        } elseif (in_array($role, ['FINANCE_MANAGER', 'MANAGER_FINANCE']) || ($role === 'MANAGER' && $dept === 'FINANCE')) {
+            // Finance first approval: provide budget_amount -> mark budget_approved and cash in transit
+            if (!$procRequest->budget_approved) {
+                $validated = $request->validate(['budget_amount' => 'required|numeric|min:0']);
+                if ($validated['budget_amount'] < $procRequest->total_amount) {
+                    return response()->json(['error' => 'Budget must cover total amount'], 400);
+                }
+                $procRequest->update([
+                    'finance_user_id' => $user->id,
+                    'budget_amount' => $validated['budget_amount'],
+                    'budget_approved' => true,
+                    'status' => 'cash_in_transit', // funds are on their way
+                ]);
+            } elseif ($procRequest->budget_approved && $procRequest->status === 'cash_in_transit') {
+                // Finance confirms cash was given physically -> move to delivery pending
+                $procRequest->update([
+                    'status' => 'delivery_pending'
+                ]);
+            } else {
+                return response()->json(['error' => 'No action available for this request'], 400);
+            }
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -221,8 +300,9 @@ public function requestedProducts(Request $request)
 
         $procRequest = ProcurementRequest::with('product')->findOrFail($id);
 
-        // Check prerequisites
-        if ($procRequest->status !== 'budget_pending' || !$procRequest->budget_approved) {
+        // Check prerequisites: budget must be approved and in an appropriate state
+        $allowedStatuses = ['budget_pending', 'cash_in_transit', 'delivery_pending'];
+        if (!$procRequest->budget_approved || !in_array($procRequest->status, $allowedStatuses)) {
             return response()->json(['error' => 'Budget must be approved first'], 400);
         }
         if ($user->branch_id && $procRequest->branch_id != $user->branch_id) {
@@ -231,6 +311,13 @@ public function requestedProducts(Request $request)
 
         // Update stock
         $procRequest->product->increment('stock', $procRequest->quantity);
+        // mark that this product has been ordered at least once
+        try {
+            $procRequest->product->update(['has_been_ordered' => true, 'logistics_request_available' => false]);
+        } catch (\Exception $e) {
+            Log::error('PRODUCT FLAG UPDATE FAILED', ['error' => $e->getMessage()]);
+        }
+
         $procRequest->update(['status' => 'completed', 'procurement_user_id' => $user->id]);
 
         // Create supplier order

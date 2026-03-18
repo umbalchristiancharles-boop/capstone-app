@@ -35,7 +35,9 @@ class BudgetRequestController extends Controller
     {
         $user = Auth::user();
 
-        if (!$this->isAuthorizedUser($user, 'logistics')) {
+        // Allow Logistics and Procurement managers to view their own requests
+        $dept = strtoupper($user->department ?? '');
+        if (!in_array($dept, ['LOGISTICS', 'PROCUREMENT']) || !$user->is_active || !in_array(strtoupper($user->role ?? ''), ['MANAGER','MANAGER_HR','BRANCH_MANAGER'])) {
             return response()->json([
                 'ok' => false,
                 'message' => 'Unauthorized'
@@ -83,7 +85,9 @@ class BudgetRequestController extends Controller
     {
         $user = Auth::user();
 
-        if (!$this->isAuthorizedUser($user, 'logistics')) {
+        // Allow Logistics and Procurement managers to create budget requests
+        $dept = strtoupper($user->department ?? '');
+        if (!in_array($dept, ['LOGISTICS', 'PROCUREMENT']) || !$user->is_active || !in_array(strtoupper($user->role ?? ''), ['MANAGER','MANAGER_HR','BRANCH_MANAGER'])) {
             return response()->json([
                 'ok' => false,
                 'message' => 'Unauthorized'
@@ -157,7 +161,7 @@ class BudgetRequestController extends Controller
                 ]);
             });
 
-            Log::info('Budget request created', ['id' => $budgetRequest->id, 'user_id' => $user->id]);
+            Log::info('Budget request created', ['id' => $budgetRequest->id, 'user_id' => $user->id, 'branch_id' => $branchId]);
 
             return response()->json([
                 'ok' => true,
@@ -205,8 +209,11 @@ class BudgetRequestController extends Controller
         $requests = BudgetRequest::where('branch_id', $branchId)
             ->with(['user:id,full_name', 'processor:id,full_name'])
             ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function ($req) {
+            ->get();
+
+        Log::info('Finance getAllRequests', ['finance_user_id' => $user->id, 'branch_id' => $branchId, 'count' => $requests->count()]);
+
+        $requests = $requests->map(function ($req) {
                 return [
                     'id' => $req->id,
                     'branch_id' => $req->branch_id,

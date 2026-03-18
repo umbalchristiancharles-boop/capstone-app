@@ -86,6 +86,75 @@
           </div>
         </div>
       </section>
+      <section class="budget-requests" style="margin-top:1rem">
+        <h2>Budget Requests</h2>
+        <p class="section-description">Create and view your branch budget requests.</p>
+
+        <div style="margin-bottom:0.5rem">
+          <button class="btn-primary" v-if="!showBudgetForm" @click="showBudgetForm = true">+ New Budget Request</button>
+          <button class="btn-outline" v-else @click="showBudgetForm = false">Cancel</button>
+        </div>
+
+        <div v-if="showBudgetForm" class="budget-form" style="margin-top:0.75rem; max-width:520px">
+          <div class="form-group full-span">
+            <label>Purpose</label>
+            <textarea v-model="budgetForm.purpose" rows="3" placeholder="Describe the purpose of the budget"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Requested Amount</label>
+            <input v-model="budgetForm.requested_amount" type="number" step="0.01" placeholder="0.00" />
+          </div>
+          <div style="margin-top:8px">
+            <button class="btn-primary" @click="submitBudgetRequest" :disabled="budgetSubmitting">{{ budgetSubmitting ? 'Submitting...' : 'Submit Request' }}</button>
+          </div>
+          <div v-if="budgetError" class="error-msg" style="margin-top:8px">{{ budgetError }}</div>
+        </div>
+
+        <div style="margin-top:1rem">
+          <h3>My Budget Requests</h3>
+          <div v-if="budgetLoading">Loading...</div>
+          <div v-else-if="!budgetRequests.length">No budget requests.</div>
+          <table v-else class="data-table" style="width:100%">
+            <thead>
+              <tr><th>Date</th><th>Purpose</th><th>Amount</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              <tr v-for="r in budgetRequests" :key="r.id">
+                <td>{{ formatDate(r.date_requested) }}</td>
+                <td>{{ r.purpose }}</td>
+                <td>₱{{ r.requested_amount }}</td>
+                <td>{{ r.status }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section class="requested-products" style="margin-top:1rem">
+        <h2>Requests From Logistics</h2>
+        <p class="section-description">Inventory requests sent by Logistics Managers in your branch.</p>
+
+        <div v-if="requestedProductsLoading">Loading requests...</div>
+        <div v-else-if="!requestedProducts.length">No requests from logistics.</div>
+        <div v-else>
+          <div style="display:flex; gap:0.5rem; align-items:center; margin-bottom:1rem">
+            <h3 style="margin:0">Pending Logistics Requests ({{ requestedProducts.length }})</h3>
+            <button class="btn-primary" @click="loadRequestedProducts" style="padding:6px 12px; font-size:0.85rem">🔄 Refresh</button>
+          </div>
+          <div class="product-grid">
+            <div v-for="p in requestedProducts" :key="'req-'+p.id" class="product-card">
+              <div class="product-name">{{ p.name }}</div>
+              <div class="product-meta">
+                <div class="product-price">{{ formatPrice(p.price) }}</div>
+                <div>
+                  <button class="btn-primary" @click="acknowledgeRequest(p)" style="padding:6px 10px; border-radius:8px">Acknowledge</button>
+                  <button class="btn-outline" @click="placeOrder(p)" style="padding:6px 10px; margin-left:8px; border-radius:8px">Place Order</button>
+                </div>
+              </div>
+              <div class="supplier-badge" style="margin-top:6px">{{ p.supplier_name || (p.supplier?.full_name || 'Unknown Supplier') }}</div>
+            </div>
+          </div>
+        </div>
+      </section>
       <transition name="fade">
         <div v-if="showAddModal" class="modal-backdrop" @click.self="closeAddSupplier">
           <div class="modal">
@@ -194,6 +263,14 @@ const userProfile = ref({})
 const dashboardTotals = ref({ totalSuppliers: 0, activeSuppliers: 0, pendingRequests: 0 })
 const showLogoutConfirm = ref(false)
 const isLoggingOut = ref(false)
+
+// Budget request state
+const budgetRequests = ref([])
+const budgetLoading = ref(false)
+const showBudgetForm = ref(false)
+const budgetForm = ref({ purpose: '', requested_amount: '' })
+const budgetSubmitting = ref(false)
+const budgetError = ref('')
 
 // Products for procurement manager (branch-scoped)
 const products = ref([])
@@ -388,7 +465,8 @@ async function loadRequestedProducts() {
 async function acknowledgeRequest(product) {
   if (!confirm(`Acknowledge logistics request for ${product.name}? (Sends to finance for budget)`)) return
   try {
-    const res = await axios.post(`/api/procurement-requests/${product.id}/status`, { }, { withCredentials: true })
+    const requestId = product.procurement_request_id || product.id
+    const res = await axios.post(`/api/procurement-requests/${requestId}/status`, { }, { withCredentials: true })
     alert('Request acknowledged and sent to finance')
     await loadRequestedProducts()
     await loadProducts()
@@ -407,7 +485,56 @@ onMounted(async () => {
   await refreshAllData()
   await loadProducts()
   await loadRequestedProducts()
+  await fetchBudgetRequests()
 })
+
+async function fetchBudgetRequests() {
+  budgetLoading.value = true
+  try {
+    const res = await axios.get('/api/procurement/budget/my-requests', { withCredentials: true })
+    if (res.data && res.data.ok) {
+      budgetRequests.value = res.data.requests || []
+    } else {
+      budgetRequests.value = []
+    }
+  } catch (e) {
+    console.error('Failed to load budget requests', e)
+    budgetRequests.value = []
+  } finally {
+    budgetLoading.value = false
+  }
+}
+
+async function submitBudgetRequest() {
+  if (budgetSubmitting.value) return
+  budgetError.value = ''
+  if (!budgetForm.value.purpose || !budgetForm.value.requested_amount) {
+    budgetError.value = 'Please fill purpose and amount.'
+    return
+  }
+  budgetSubmitting.value = true
+  try {
+    const payload = {
+      purpose: budgetForm.value.purpose,
+      requested_amount: budgetForm.value.requested_amount
+    }
+    const res = await axios.post('/api/procurement/budget/create', payload, { withCredentials: true })
+    if (res.data && res.data.ok) {
+      alert('Budget request created')
+      showBudgetForm.value = false
+      budgetForm.value.purpose = ''
+      budgetForm.value.requested_amount = ''
+      await fetchBudgetRequests()
+    } else {
+      budgetError.value = res.data?.message || 'Failed to create request'
+    }
+  } catch (e) {
+    console.error('Create budget request failed', e)
+    budgetError.value = e.response?.data?.message || 'Failed to create request'
+  } finally {
+    budgetSubmitting.value = false
+  }
+}
 
 // Helper to format price nicely for display
 function formatPrice(val) {
