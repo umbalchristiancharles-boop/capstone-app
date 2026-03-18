@@ -1,9 +1,11 @@
 :root {
-  --orange: #ff6b1c;
-  --dirty-white: #fff4e6;
-  --accent-yellow: #ffd66b;
-  --accent-pink: #ff9fbf;
-  --text-dark: #42210b;
+--primary-blue: #0066FF;
+  --primary-blue-mid: #3B82F6;
+  --accent-yellow: #FACC15;
+  --glass-bg: rgba(255,255,255,0.1);
+  --glass-border: rgba(255,255,255,0.2);
+  --text-light: rgba(255,255,255,0.9);
+  --text-primary: white;
 }
 
 /* GLOBAL RESET */
@@ -77,8 +79,8 @@ body {
 /* PAGE WRAPPER (index.vue) */
 .page {
   min-height: 100vh;
-  background: var(--orange);
-  color: var(--dirty-white);
+  background: linear-gradient(135deg, #0066FF 0%, #3B82F6 55%, #FACC15 100%);
+  color: white;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -90,7 +92,7 @@ body {
 .hero {
   min-height: 100vh;
   width: 100%;
-  background: transparent;
+  background: linear-gradient(135deg, #0066FF 0%, #3B82F6 55%, #FACC15 100%);
   border-radius: 0;
   padding: 0;
   display: grid;
@@ -139,8 +141,10 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  background: var(--dirty-white);
-  color: var(--text-dark);
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: black;
   padding: 6px 16px;
   border-radius: 999px;
   font-size: 12px;
@@ -159,7 +163,10 @@ body {
 h1 {
   font-size: clamp(2.8rem, 4vw, 3.6rem);
   line-height: 1.1;
-  color: var(--dirty-white);
+  font-family: 'Inter', 'Poppins', sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: white;
   padding-bottom: 16px;
 }
 
@@ -177,7 +184,7 @@ h1 span {
 .subheading {
   font-size: 1.2rem;
   max-width: 440px;
-  color: rgba(255, 244, 230, 0.9);
+  color: rgba(255,255,255,0.9);
   padding-bottom: 12px;
 }
 
@@ -204,24 +211,15 @@ h1 span {
 }
 
 .btn-login {
-  background: var(--dirty-white);
-  color: var(--text-dark);
-  border-radius: 999px;
-  padding: 12px 28px;
-  font-size: 0.98rem;
+  background: white;
+  color: #0066FF;
+  padding: 12px 22px;
+  border-radius: 8px;
   font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 10px;
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2),
-              0 0 20px rgba(255, 165, 0, 0.4),
-              0 0 40px rgba(255, 140, 0, 0.2);
-  text-decoration: none;
-  transition: transform 0.15s ease, box-shadow 0.15s ease,
-    background 0.15s ease, filter 0.15s ease;
-  filter: drop-shadow(0 0 15px rgba(255, 140, 0, 0.3));
-  position: relative;
+  gap: 8px;
+  transition: all 0.25s ease;
 }
 
 .btn-login::before {
@@ -245,11 +243,7 @@ h1 span {
 
 .btn-login:hover {
   transform: translateY(-2px);
-  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.26),
-              0 0 30px rgba(255, 165, 0, 0.6),
-              0 0 50px rgba(255, 140, 0, 0.35);
-  background: #ffffff;
-  filter: drop-shadow(0 0 25px rgba(255, 140, 0, 0.5));
+  box-shadow: 0 10px 20px rgba(0,0,0,0.15);
 }
 
 .btn-login:hover::before {
@@ -504,14 +498,15 @@ h1 span {
 }
 
 .scaffold-white {
-  background: var(--dirty-white);
-  color: var(--text-dark);
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(20px);
+  color: white;
 }
 
 
 .scaffold-orange {
-  background: var(--orange);
-  color: var(--dirty-white);
+  background: linear-gradient(135deg, rgba(0,102,255,0.8) 0%, rgba(59,130,246,0.8) 55%, rgba(250,204,21,0.8) 100%);
+  color: white;
 }
 
 .scaffold-content {
@@ -1950,3 +1945,4 @@ h1 span {
     font-size: 0.85rem;
   }
 }
+
