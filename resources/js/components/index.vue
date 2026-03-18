@@ -1080,4 +1080,11 @@ function signOut() {
 }
 </script>
 
+<style scoped>
+.hero {
+  background: linear-gradient(135deg, #0066FF 0%, #3B82F6 55%, #FACC15 100%);
+}
+</style>
+
 <style src="../css/adminpanel.css"></style>
+
