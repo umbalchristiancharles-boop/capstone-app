@@ -26,6 +26,12 @@
     </ul>
   </section>
 </template>
-<script setup>
-defineProps({ products: Array, reports: Array })
+<script setup lang="ts">
+const props = withDefaults(defineProps<{
+  products?: Array<any>
+  reports?: Array<any>
+}>(), {
+  products: () => [],
+  reports: () => []
+})
 </script>

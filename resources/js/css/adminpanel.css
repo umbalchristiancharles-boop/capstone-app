@@ -11,6 +11,9 @@
   --text-secondary: #666666;
 }
 
+/* Import required fonts (moved to file top for PostCSS/Vite) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@800&family=Poppins:wght@800&display=swap');
+
 /* PAGE BACKGROUND */
 .admin-page {
   min-height: 100vh;
@@ -1341,8 +1344,7 @@
    Applied to all Admin Panel / Super Admin Panel headers
    =========================================== */
 
-/* Import required fonts */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@800&family=Poppins:wght@800&display=swap');
+/* Import required fonts (already at file top) */
 
 /* Global admin panel headers */
 h1[class*="admin"],

@@ -12,8 +12,14 @@
     </ul>
   </section>
 </template>
-<script setup>
-defineProps({ reports: Array, transactions: Array })
+<script setup lang="ts">
+const props = withDefaults(defineProps<{
+  reports?: Array<any>
+  transactions?: Array<any>
+}>(), {
+  reports: () => [],
+  transactions: () => []
+})
 </script>
 
 <style scoped>

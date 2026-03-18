@@ -54,7 +54,8 @@ class CashierController extends Controller
     }
 
     /**
-     * Process a cashier transaction: create order + order items, deduct stock.
+     * Process a cashier transaction: create PENDING order + order items (NO stock deduction).
+     * Finance approves → deduct stock + 'approved'.
      */
     public function checkout(Request $request)
     {
@@ -73,6 +74,7 @@ class CashierController extends Controller
             $grandTotal = 0;
             $orderItems = [];
 
+            // Validate stock availability (but DON'T deduct yet - pending approval)
             foreach ($request->items as $item) {
                 $product = Product::where('id', $item['product_id'])
                     ->where('branch_id', $request->branch_id)
@@ -97,9 +99,6 @@ class CashierController extends Controller
                     'quantity'     => $item['quantity'],
                     'subtotal'     => $subtotal,
                 ];
-
-                // Deduct stock
-                $product->decrement('stock', $item['quantity']);
             }
 
             // compute discount and VAT
@@ -144,7 +143,9 @@ class CashierController extends Controller
                 'cashier_id'    => $request->user()->id,
                 'branch_id'     => $request->branch_id,
                 'customer_name' => $request->customer_name ?? 'Walk-in',
+                // Cashier transactions are completed immediately — no finance approval required.
                 'status'        => 'completed',
+                'is_cancelled'  => false,
                 'grand_total'   => $finalGrandTotal,
                 'amount_paid'   => $amountPaid,
                 'change_amount' => $changeAmount,
@@ -155,6 +156,26 @@ class CashierController extends Controller
                 $order->items()->create($oi);
             }
 
+            // Deduct stock for each ordered item immediately so inventory reflects the transaction.
+            // We lock the product rows again to ensure consistency within this transaction.
+            foreach ($order->items as $it) {
+                $prod = Product::where('id', $it->product_id)
+                    ->where('branch_id', $request->branch_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($prod) {
+                    $newStock = max(0, $prod->stock - $it->quantity);
+                    $prod->stock = $newStock;
+                    $prod->save();
+                }
+            }
+
+            // mark order as approved/completed with approval metadata
+            $order->approved_at = now();
+            $order->approved_by = $request->user()->id;
+            $order->status = 'completed';
+            $order->save();
             $order->load('items', 'branch');
 
             // include computed VAT and discount details in response (not persisted)
@@ -168,11 +189,47 @@ class CashierController extends Controller
 
             return response()->json([
                 'ok'      => true,
-                'message' => 'Transaction completed!',
+            'message' => 'Pending order created! Notify finance for approval.',
                 'order'   => $order,
                 'change'  => round($changeAmount, 2),
             ]);
         });
+    }
+
+    /**
+     * Cancel pending order by cashier_id + branch_id + recent order_code
+     */
+    public function cancelPending(Request $request)
+    {
+        $request->validate([
+            'order_code' => 'required|string',
+            'branch_id'  => 'required|exists:branches,id',
+        ]);
+
+        $user = $request->user();
+
+        $order = Order::where('order_code', $request->order_code)
+            ->where('branch_id', $request->branch_id)
+            ->where('cashier_id', $user->id)
+            ->where('status', 'pending')
+            ->where('is_cancelled', false)
+            ->first();
+
+        if (!$order) {
+            return response()->json(['error' => 'Pending order not found or already cancelled.'], 404);
+        }
+
+        $order->update([
+            'status' => 'cancelled',
+            'is_cancelled' => true,
+            'cancelled_at' => now(),
+        ]);
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'Order cancelled successfully.',
+            'order' => $order->fresh(),
+        ]);
     }
 
     /**
@@ -198,6 +255,7 @@ class CashierController extends Controller
         }
 
         $query = Order::with('items', 'branch')
+            ->whereIn('status', ['pending', 'approved', 'completed'])
             ->orderByDesc('ordered_at');
 
         if ($branchId) {

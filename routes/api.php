@@ -130,6 +130,7 @@ Route::post('/superadmin/announce', [\App\Http\Controllers\Api\SuperAdminControl
     Route::get('/superadmin/cashier/branches',    [\App\Http\Controllers\Api\CashierController::class, 'branches']);
     Route::get('/superadmin/cashier/products',    [\App\Http\Controllers\Api\CashierController::class, 'products']);
     Route::post('/superadmin/cashier/checkout',   [\App\Http\Controllers\Api\CashierController::class, 'checkout']);
+    Route::post('/superadmin/cashier/cancel-pending', [\App\Http\Controllers\Api\CashierController::class, 'cancelPending']);
     Route::get('/superadmin/cashier/transactions',[\App\Http\Controllers\Api\CashierController::class, 'transactions']);
 
     Route::get('/owner-dashboard', [OwnerDashboardController::class, 'index']);
@@ -157,7 +158,16 @@ Route::post('/superadmin/announce', [\App\Http\Controllers\Api\SuperAdminControl
     // All manager routes require authentication
     // Using 'auth' middleware (web guard) which works with both session and token
     // ==========================================
-    Route::prefix('manager')->middleware('auth')->group(function () {
+Route::middleware('auth')->group(function () {
+    Route::apiResource('procurement-requests', \App\Http\Controllers\Api\ProcurementRequestController::class);
+    Route::post('procurement-requests/{id}/status', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'updateStatus']);
+    Route::post('procurement-requests/{id}/complete', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'completeOrder']);
+
+    Route::apiResource('supplier-orders', \App\Http\Controllers\Api\SupplierOrderController::class)->only(['index']);
+    Route::put('supplier-orders/{id}/status', [\App\Http\Controllers\Api\SupplierOrderController::class, 'updateStatus']);
+});
+
+Route::prefix('manager')->middleware('auth')->group(function () {
         // Dashboard
         Route::get('/dashboard',        [ManagerDashboardController::class, 'index']);
 
@@ -205,6 +215,7 @@ Route::post('/superadmin/announce', [\App\Http\Controllers\Api\SuperAdminControl
         Route::put('/logistics/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'updateLogisticsProfile']);
         Route::get('/logistics/dashboard', [\App\Http\Controllers\Api\ManagerProfileController::class, 'logisticsDashboard']);
         Route::get('/logistics/deliveries', [\App\Http\Controllers\Api\ManagerProfileController::class, 'logisticsDeliveries']);
+        Route::get('/logistics/products', [\App\Http\Controllers\Api\ManagerProfileController::class, 'logisticsProducts']);
         Route::get('/logistics/suppliers', [\App\Http\Controllers\Api\ManagerProfileController::class, 'logisticsSuppliers']);
 
         // Procurement Manager endpoints
@@ -212,11 +223,12 @@ Route::post('/superadmin/announce', [\App\Http\Controllers\Api\SuperAdminControl
         Route::put('/procurement/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'updateProcurementProfile']);
         Route::get('/procurement/dashboard', [\App\Http\Controllers\Api\ManagerProfileController::class, 'procurementDashboard']);
         Route::get('/procurement/products', [\App\Http\Controllers\Api\ManagerProfileController::class, 'procurementProducts']);
+        Route::post('/procurement/products/{id}/place-order', [\App\Http\Controllers\Api\ManagerProfileController::class, 'placeOrderProduct']);
         // Procurement supplier management
         Route::post('/procurement/suppliers', [\App\Http\Controllers\Api\ManagerProfileController::class, 'createProcurementSupplier']);
 
         // Budget Request System - Logistics Manager (Read-only inventory + Budget requests)
-        Route::get('/logistics/inventory', [\App\Http\Controllers\Manager\BudgetRequestController::class, 'getInventory']);
+        Route::get('/logistics/inventory', [\App\Http\Controllers\Api\ManagerProfileController::class, 'logisticsInventory']);
         Route::get('/logistics/budget/my-requests', [\App\Http\Controllers\Manager\BudgetRequestController::class, 'getMyRequests']);
         Route::post('/logistics/budget/create', [\App\Http\Controllers\Manager\BudgetRequestController::class, 'createRequest']);
 
