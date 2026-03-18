@@ -48,8 +48,11 @@
         <div v-if="loadingProducts">Loading products...</div>
         <div v-else-if="!products.length">No products available in your branch.</div>
         <div v-else>
-          <div v-if="pendingProducts.length" style="margin-bottom:0.5rem">
-            <h3 style="margin:0 0 8px 0">Pending Supplier Products</h3>
+          <div style="display:flex; gap:0.5rem; align-items:center; margin-bottom:1rem">
+            <h3 style="margin:0">Pending Supplier Products ({{ pendingProducts.length }})</h3>
+            <button class="btn-primary" @click="loadProducts" style="padding:6px 12px; font-size:0.85rem">🔄 Refresh</button>
+          </div>
+          <div v-if="pendingProducts.length" style="margin-bottom:1rem">
             <div class="product-grid">
               <div v-for="p in pendingProducts" :key="'pending-'+p.id" class="product-card">
                 <div class="product-name">{{ p.name }}</div>
@@ -63,9 +66,14 @@
               </div>
             </div>
           </div>
+          <div v-else>
+            <p style="color:#6b7280; padding:1rem; text-align:center; border:1px dashed #d1d5db; border-radius:8px">
+              No pending supplier products. Add from Supplier Panel or refresh.
+            </p>
+          </div>
 
           <div>
-            <h3 style="margin:0 0 8px 0">Published Products</h3>
+            <h3 style="margin:0 0 8px 0">Published Products ({{ publishedProducts.length }})</h3>
             <div class="product-grid">
               <div v-for="p in publishedProducts" :key="p.id" class="product-card">
                 <div class="product-name">{{ p.name }}</div>
@@ -193,6 +201,10 @@ const loadingProducts = ref(false)
 
 const pendingProducts = computed(() => (products.value || []).filter(p => !p.is_published))
 const publishedProducts = computed(() => (products.value || []).filter(p => p.is_published))
+
+// Requested products (logistics requests)
+const requestedProducts = ref([])
+const requestedProductsLoading = ref(false)
 
 // Add Supplier modal state
 const showAddModal = ref(false)
@@ -359,6 +371,43 @@ async function loadProducts() {
     loadingProducts.value = false
   }
 }
+
+async function loadRequestedProducts() {
+  requestedProductsLoading.value = true
+  try {
+    const res = await axios.get('/api/procurement-requests/requested-products', { withCredentials: true })
+    requestedProducts.value = res.data || []
+  } catch (e) {
+    console.warn('Failed to load requested products', e)
+    requestedProducts.value = []
+  } finally {
+    requestedProductsLoading.value = false
+  }
+}
+
+async function acknowledgeRequest(product) {
+  if (!confirm(`Acknowledge logistics request for ${product.name}? (Sends to finance for budget)`)) return
+  try {
+    const res = await axios.post(`/api/procurement-requests/${product.id}/status`, { }, { withCredentials: true })
+    alert('Request acknowledged and sent to finance')
+    await loadRequestedProducts()
+    await loadProducts()
+  } catch (e) {
+    alert('Failed to acknowledge request')
+  }
+}
+
+onMounted(async () => {
+  try {
+    const res = await axios.get('/api/manager/procurement/profile', { withCredentials: true })
+    userProfile.value = res.data.user || {}
+  } catch (e) {
+    // ignore
+  }
+  await refreshAllData()
+  await loadProducts()
+  await loadRequestedProducts()
+})
 
 // Helper to format price nicely for display
 function formatPrice(val) {
