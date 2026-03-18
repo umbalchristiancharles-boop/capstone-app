@@ -23,7 +23,8 @@ class Product extends Model
         'supplier_id',
         'is_published',
         'is_active',
-        'has_been_ordered',
+'has_been_ordered',
+        'logistics_request_available',
     ];
 
     protected $casts = [
@@ -33,6 +34,7 @@ class Product extends Model
         'is_published' => 'boolean',
         'is_active' => 'boolean',
         'has_been_ordered' => 'boolean',
+        'logistics_request_available' => 'boolean',
     ];
 
     public function supplier(): BelongsTo

@@ -102,7 +102,10 @@ class StaffInventoryController extends Controller
         $user = Auth::user();
         $branchId = $user->branch_id;
 
-$query = Product::where('branch_id', $branchId)->where('is_published', 1);
+$query = Product::where('branch_id', $branchId)->where('is_active', 1);
+        if (strtoupper($user->role ?? '') !== 'SUPPLIER') {
+            $query->where('is_published', 1);
+        }
 
         // Show supplier-submitted products as well so staff and logistics
         // can view newly added supplier products that have not yet
@@ -175,8 +178,10 @@ $query = Product::where('branch_id', $branchId)->where('is_published', 1);
             'stock' => $validated['stock'],
             'sku' => $sku,
             'branch_id' => $branchId,
+            'supplier_id' => $user->id,
             'supplier_name' => $supplierName,
             'is_published' => $isPublished,
+            'is_active' => true,
         ]);
 
         return response()->json([
