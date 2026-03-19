@@ -46,10 +46,8 @@
                   </span>
                 </td>
                 <td>
-                  <button v-if="order.status === 'pending'" class="btn-primary btn-small" @click="fulfillOrder(order.id)">Fulfill</button>
-                  <div v-else-if="order.status === 'fulfilled'">
-                    <button class="btn-secondary btn-small" @click="doneTransaction(order.id)">Done transaction</button>
-                  </div>
+<button v-if="order.status === 'pending'" class="btn-primary btn-small" @click="completeTransaction(order.id)">Transaction complete</button>
+                  <button v-else-if="order.status === 'fulfilled'" class="btn-disabled btn-small" disabled>Completed</button>
                   <button v-else-if="order.status === 'on_delivery'" class="btn-disabled btn-small" disabled>On delivery</button>
                   <button v-else-if="order.status === 'cancelled'" class="btn-muted btn-small" disabled>Cancelled</button>
                 </td>
@@ -81,6 +79,30 @@
   </OwnerPanelLayout>
 
   <!-- LOGOUT CONFIRM -->
+  <!-- RECEIPT MODAL -->
+  <transition name="fade">
+    <div v-if="showReceiptModal" class="modal-backdrop">
+      <div class="receipt-box">
+        <h3>Transaction Receipt</h3>
+        <div class="receipt-body">
+          <p><strong>Order ID:</strong> {{ receiptData.id }}</p>
+          <p><strong>Product:</strong> {{ receiptData.product?.name }}</p>
+          <p><strong>Branch:</strong> {{ receiptData.branch?.name || receiptData.branch_id }}</p>
+          <p><strong>Quantity:</strong> {{ receiptData.quantity }}</p>
+          <p><strong>Total:</strong> {{ formatPrice(receiptData.product?.price * receiptData.quantity) }}</p>
+          <p><strong>Status:</strong> <span :class="['status-badge', getStatusClass(receiptData.status)]">{{ receiptData.status }}</span></p>
+          <div v-if="receiptData.procurementRequest">
+            <p><strong>Procurement Request ID:</strong> {{ receiptData.procurementRequest.id }}</p>
+            <p><strong>Procurement Status:</strong> {{ receiptData.procurementRequest.status }}</p>
+          </div>
+        </div>
+        <div class="receipt-actions">
+          <button class="btn-secondary" @click="closeReceipt">Close</button>
+          <button class="btn-primary" @click="printReceipt">Print</button>
+        </div>
+      </div>
+    </div>
+  </transition>
   <transition name="fade">
     <div v-if="showLogoutConfirm" class="logout-confirm-backdrop">
       <div class="logout-confirm-box">
@@ -118,12 +140,16 @@ const products = ref([])
 const loadingProducts = ref(false)
 const orders = ref([])
 const ordersLoading = ref(false)
+const suppliers = ref([])
 
 // UI / modal state
 const showLogoutConfirm = ref(false)
 const isLoggingOut = ref(false)
 const showOverlay = ref(false)
 const overlayText = ref('Logging out...')
+// Receipt modal state
+const showReceiptModal = ref(false)
+const receiptData = ref({})
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
 
 onMounted(async () => {
@@ -247,22 +273,53 @@ async function loadOrders() {
 }
 
 async function fulfillOrder(id) {
-  if (!confirm('Mark as fulfilled?')) return
+  // kept for backward compatibility but unused in the new flow
+  return
+}
+
+async function completeTransaction(id) {
+  if (!confirm('Complete this transaction and show receipt?')) return
   try {
-    await axios.put(`/api/supplier-orders/${id}/status`, { status: 'fulfilled' }, { withCredentials: true })
+    // Mark the supplier order as on_delivery so the backend finalizes procurement
+    const res = await axios.put(`/api/supplier-orders/${id}/status`, { status: 'on_delivery' }, { withCredentials: true })
+    if (res && res.data) {
+      receiptData.value = res.data
+      showReceiptModal.value = true
+    }
     await loadOrders()
   } catch (e) {
-    alert('Failed to update order')
+    alert('Failed to complete transaction')
   }
 }
 
-async function doneTransaction(id) {
-  if (!confirm('Mark transaction as done and set status to On Delivery?')) return
+function closeReceipt() {
+  showReceiptModal.value = false
+  receiptData.value = {}
+}
+
+function printReceipt() {
   try {
-    await axios.put(`/api/supplier-orders/${id}/status`, { status: 'on_delivery' }, { withCredentials: true })
-    await loadOrders()
+    const html = document.createElement('div')
+    html.innerHTML = `
+      <h3>Transaction Receipt</h3>
+      <p>Order ID: ${receiptData.value.id || ''}</p>
+      <p>Product: ${receiptData.value.product?.name || ''}</p>
+      <p>Branch: ${receiptData.value.branch?.name || receiptData.value.branch_id || ''}</p>
+      <p>Quantity: ${receiptData.value.quantity || ''}</p>
+      <p>Total: ${receiptData.value.product ? (Number(receiptData.value.product.price || 0) * Number(receiptData.value.quantity || 0)).toFixed(2) : ''}</p>
+    `
+    const w = window.open('', '_blank')
+    if (!w) return alert('Unable to open print window')
+    w.document.write('<html><head><title>Receipt</title></head><body>')
+    w.document.write(html.innerHTML)
+    w.document.write('</body></html>')
+    w.document.close()
+    w.focus()
+    w.print()
+    w.close()
   } catch (e) {
-    alert('Failed to update order')
+    console.warn('Print failed', e)
+    alert('Failed to print receipt')
   }
 }
 
@@ -335,5 +392,14 @@ function onProfileUpdated(newData) {
 .product-meta { display:flex; justify-content:space-between; align-items:center; margin-top:6px }
 .product-price { color:#0b6e3a; font-weight:700 }
 .product-stock { color:#6b7280 }
+
+/* Receipt modal styles */
+.modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; z-index:1200 }
+.receipt-box { background:#fff; padding:1rem 1.25rem; border-radius:10px; width:420px; box-shadow:0 12px 36px rgba(15,23,42,0.18); border:1px solid #eef2f6 }
+.receipt-box h3 { margin:0 0 0.6rem 0 }
+.receipt-body p { margin:6px 0 }
+.receipt-actions { display:flex; justify-content:flex-end; gap:0.5rem; margin-top:0.75rem }
+.receipt-actions .btn-secondary { background:#f3f4f6; border:1px solid #e5e7eb; padding:6px 10px; border-radius:6px }
+.receipt-actions .btn-primary { background:#0b6e3a; color:#fff; padding:6px 10px; border-radius:6px; border:none }
 
 </style>

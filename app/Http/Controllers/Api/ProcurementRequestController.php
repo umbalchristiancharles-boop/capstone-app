@@ -153,7 +153,7 @@ public function requestedProducts(Request $request)
         try {
             $requests = ProcurementRequest::with(['product:id,name,price,sku,branch_id,supplier_id,logistics_request_available'])
                 ->where('branch_id', $branchId)
-                ->whereIn('status', ['pending', 'budget_pending', 'pending_order_to_supplier', 'delivery_pending'])
+                    ->whereIn('status', ['pending', 'budget_pending', 'pending_order_to_supplier', 'delivery_pending', 'ongoing_delivery'])
                 ->get(['id', 'product_id', 'branch_id', 'status', 'budget_approved']);
             Log::info('Requests fetched', ['count' => $requests->count()]);
 
@@ -301,43 +301,45 @@ public function requestedProducts(Request $request)
         }
 
         $procRequest = ProcurementRequest::with('product')->findOrFail($id);
+        // Allow procurement manager to mark a procurement request as completed
+        // (delivery received) when appropriate. Acceptable current statuses
+        // include orders that were sent to supplier or are on delivery.
+        $allowedForComplete = ['pending_order_to_supplier', 'delivery_pending', 'on_delivery', 'ongoing_delivery'];
 
-        // Check prerequisites: budget must be approved and finance must have
-        // confirmed physical handover (status `delivery_pending`). Only then
-        // procurement can place the order to supplier.
-            $allowedStatuses = ['pending_order_to_supplier'];
-        if (!$procRequest->budget_approved || !in_array($procRequest->status, $allowedStatuses)) {
-            return response()->json(['error' => 'Budget must be handed over by finance before ordering'], 400);
-        }
         if ($user->branch_id && $procRequest->branch_id != $user->branch_id) {
             return response()->json(['error' => 'Not your branch'], 403);
         }
 
-        // Update stock
-        $procRequest->product->increment('stock', $procRequest->quantity);
-        // mark that this product has been ordered at least once
-        try {
-            $procRequest->product->update(['has_been_ordered' => true, 'logistics_request_available' => false]);
-        } catch (\Exception $e) {
-            Log::error('PRODUCT FLAG UPDATE FAILED', ['error' => $e->getMessage()]);
+        if (!in_array($procRequest->status, $allowedForComplete, true)) {
+            return response()->json(['error' => 'Request not in a state that can be completed'], 400);
         }
 
-        $procRequest->update(['status' => 'completed', 'procurement_user_id' => $user->id]);
+        try {
+            DB::transaction(function () use ($procRequest, $user) {
+                // Update procurement request status to completed
+                $procRequest->update([
+                    'status' => 'completed',
+                    'procurement_user_id' => $user->id
+                ]);
 
-        // Create supplier order
-        SupplierOrder::create([
-            'procurement_request_id' => $procRequest->id,
-            'product_id' => $procRequest->product_id,
-            'supplier_id' => $procRequest->product->supplier_id,
-            'quantity' => $procRequest->quantity,
-            'status' => 'pending',
-            'branch_id' => $procRequest->branch_id,
-        ]);
+                // Try to increment stock for the product (if present)
+                if ($procRequest->product) {
+                    $procRequest->product->increment('stock', $procRequest->quantity);
+                    $procRequest->product->update(['has_been_ordered' => true, 'logistics_request_available' => false]);
+                }
 
-        return response()->json([
-            'message' => 'Order completed successfully. Stock updated and supplier notified.',
-            'request' => $procRequest->fresh()->load('product')
-        ]);
+                // If there's a linked SupplierOrder, mark it fulfilled as well
+                $supplierOrder = SupplierOrder::where('procurement_request_id', $procRequest->id)->first();
+                if ($supplierOrder && $supplierOrder->status !== 'fulfilled') {
+                    $supplierOrder->update(['status' => 'fulfilled', 'fulfilled_at' => now()]);
+                }
+            });
+        } catch (\Exception $e) {
+            Log::error('Failed to mark procurement request completed', ['error' => $e->getMessage(), 'proc_req_id' => $procRequest->id]);
+            return response()->json(['error' => 'Failed to mark as completed'], 500);
+        }
+
+        return response()->json(['ok' => true, 'message' => 'Procurement request marked as completed', 'request' => $procRequest->fresh()->load('product')]);
     }
 }
 

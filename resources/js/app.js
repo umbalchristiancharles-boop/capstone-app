@@ -72,6 +72,14 @@ axios.interceptors.request.use(config => {
       config.headers['X-CSRF-TOKEN'] = csrfToken
     }
   }
+  // If there is no laravel session cookie, avoid sending any stored Authorization header
+  // This prevents sending a stale Bearer token for endpoints expecting session (web) auth
+  try {
+    const laravelSession = getCookie('laravel_session')
+    if (!laravelSession && config && config.headers && config.headers['Authorization']) {
+      delete config.headers['Authorization']
+    }
+  } catch (e) {}
   try {
     console.debug('[AXIOS] Request ->', (config.method || '').toUpperCase(), config.url, 'cookies:', document.cookie, 'headers:', config.headers)
   } catch (e) {}

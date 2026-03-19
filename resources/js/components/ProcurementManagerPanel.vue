@@ -59,7 +59,21 @@
                 <div class="product-meta">
                   <div class="product-price">{{ formatPrice(p.price) }}</div>
                   <div>
-                    <button v-if="p.procurement_status === 'pending_order_to_supplier' || p.status === 'pending_order_to_supplier'" class="btn-primary" @click="placeOrder(p)" style="padding:6px 10px; border-radius:8px">Place Order</button>
+<div v-if="p.procurement_status === 'pending_order_to_supplier' || p.status === 'pending_order_to_supplier'">
+  <div v-if="p.existingOrder" class="status-badge" style="display:inline-block; margin-left:0; background:#fbbf24; color:#92400e; padding:6px 10px; border-radius:8px; font-size:0.9rem; font-weight:600;">
+    Transaction Pending (ID: {{ p.existingOrder.id }})
+  </div>
+  <div v-else>
+    <button 
+      class="btn-primary" 
+      @click="placeOrder(p)" 
+      :disabled="isPlacingOrder"
+      style="padding:6px 10px; border-radius:8px">
+      {{ isPlacingOrder ? 'Placing...' : 'Place Order' }}
+    </button>
+  </div>
+</div>
+
                   </div>
                 </div>
                 <div class="supplier-badge" style="margin-top:6px">{{ p.supplier_name || 'Unknown Supplier' }}</div>
@@ -152,8 +166,26 @@
                   <template v-else-if="p.procurement_status === 'budget_pending' || p.status === 'budget_pending'">
                     <button class="btn-outline" disabled style="padding:6px 10px; border-radius:8px">Budget to be received</button>
                   </template>
-                  <template v-else-if="p.procurement_status === 'pending_order_to_supplier' || p.status === 'pending_order_to_supplier'">
-                    <button class="btn-primary" @click="placeOrder(p)" style="padding:6px 10px; border-radius:8px">Place Order</button>
+                  <template v-else-if="p.procurement_status === 'pending_order_to_supplier' || p.status === 'pending_order_to_supplier' || p.procurement_status === 'ongoing_delivery' || p.status === 'ongoing_delivery'">
+                    <div v-if="p.existingOrder" style="display:flex; gap:0.5rem; align-items:center">
+                      <div class="status-badge" style="background:#fbbf24; color:#92400e; padding:6px 10px; border-radius:8px; font-size:0.9rem; font-weight:600;">
+                        Transaction Pending (ID: {{ p.existingOrder.id }})
+                      </div>
+                      <div v-if="(p.existingOrder && (p.existingOrder.status === 'on_delivery' || p.existingOrder.status === 'ongoing_delivery' || p.existingOrder.status === 'fulfilled')) || p.procurement_status === 'delivery_pending' || p.procurement_status === 'ongoing_delivery'">
+                        <button class="btn-primary" @click="markDeliveryComplete(p)" :disabled="isCompletingDelivery" style="padding:6px 10px; border-radius:8px">{{ isCompletingDelivery ? 'Submitting...' : 'Delivery complete' }}</button>
+                      </div>
+                    </div>
+                    <div v-else-if="p.procurement_status === 'ongoing_delivery' || p.status === 'ongoing_delivery'">
+                      <button class="btn-primary" @click="markDeliveryComplete(p)" :disabled="isCompletingDelivery" style="padding:6px 10px; border-radius:8px">{{ isCompletingDelivery ? 'Submitting...' : 'Delivery complete' }}</button>
+                    </div>
+                    <div v-else>
+                      <button class="btn-primary" 
+                        @click="placeOrder(p)" 
+                        :disabled="isPlacingOrder"
+                        style="padding:6px 10px; border-radius:8px">
+                        {{ isPlacingOrder ? 'Placing...' : 'Place Order' }}
+                      </button>
+                    </div>
                   </template>
                   <template v-else>
                     <button class="btn-outline" disabled style="padding:6px 10px; border-radius:8px">Unavailable</button>
@@ -292,9 +324,12 @@ const publishedProducts = computed(() => (products.value || []).filter(p => p.is
 // Requested products (logistics requests)
 const requestedProducts = ref([])
 const requestedProductsLoading = ref(false)
+const isPlacingOrder = ref(false)
+const isCompletingDelivery = ref(false)
 
 // Add Supplier modal state
 const showAddModal = ref(false)
+
 const isSubmitting = ref(false)
 const supplierForm = ref({ 
   username: '', 
@@ -555,30 +590,93 @@ function formatPrice(val) {
 }
 
 async function placeOrder(product) {
-  if (!product || !product.id) return
-  // Prompt for quantity (optional)
-  const qtyInput = prompt('Enter quantity to add into inventory (leave blank to accept existing stock):', '0')
-  let qty = null
-  if (qtyInput !== null && qtyInput !== '') {
-    qty = parseInt(qtyInput, 10)
-    if (Number.isNaN(qty) || qty < 0) {
-      alert('Invalid quantity')
-      return
-    }
-  }
-
+  if (!product || !product.id || isPlacingOrder.value) return
+  
+  isPlacingOrder.value = true
+  
   try {
+    // Prompt for quantity (optional)
+    const qtyInput = prompt('Enter quantity to order from supplier (leave blank to accept request quantity):', '')
+    let qty = null
+    if (qtyInput !== null && qtyInput !== '') {
+      qty = parseInt(qtyInput, 10)
+      if (Number.isNaN(qty) || qty < 1) {
+        alert('Invalid quantity (must be 1+)')
+        return
+      }
+    }
+
     const payload = {}
     if (qty !== null) payload.quantity = qty
-    const res = await axios.post(`/api/manager/procurement/products/${product.id}/place-order`, payload, { withCredentials: true })
-    alert(res.data.message || 'Product placed into inventory')
+    
+    // Use procurement endpoint which creates the SupplierOrder record
+    const res = await axios.post(`/api/procurement.products/${product.id}/place-order`, payload, { withCredentials: true })
+    
+    // Handle response and update local UI immediately
+    const supplierOrder = res.data.supplier_order
+    const procReq = res.data.procurement_request
+
+    if (res.data.message?.includes('already placed')) {
+      alert(res.data.message)
+    } else {
+      alert(res.data.message || 'Order placed successfully')
+    }
+
+    // Optimistically update local product entries so the Place Order button hides
+    try {
+      // Update products list
+      const idx = products.value.findIndex(p => p.id === product.id)
+      if (idx > -1) {
+        if (supplierOrder) products.value[idx].existingOrder = supplierOrder
+        if (procReq && procReq.status) {
+          products.value[idx].procurement_status = procReq.status
+          products.value[idx].status = procReq.status
+        }
+      }
+
+      // Update requestedProducts list (if present)
+      const ridx = requestedProducts.value.findIndex(p => p.id === product.id)
+      if (ridx > -1) {
+        if (supplierOrder) requestedProducts.value[ridx].existingOrder = supplierOrder
+        if (procReq && procReq.status) {
+          requestedProducts.value[ridx].procurement_status = procReq.status
+          requestedProducts.value[ridx].status = procReq.status
+        }
+      }
+    } catch (e) {
+      // ignore local update failures
+    }
+
+    // Refresh lists to ensure server canonical state (non-blocking)
+    await loadProducts()
+    await loadRequestedProducts()
+    await refreshAllData()
+  } catch (e) {
+    console.error('Place order failed', e)
+    alert(e.response?.data?.error || e.response?.data?.message || 'Failed to place order')
+  } finally {
+    isPlacingOrder.value = false
+  }
+}
+
+async function markDeliveryComplete(product) {
+  if (!product || !product.procurement_request_id) return
+  if (!confirm(`Mark delivery complete for ${product.name}? This will set the request as completed.`)) return
+  isCompletingDelivery.value = true
+  try {
+    const res = await axios.post(`/api/procurement-requests/${product.procurement_request_id}/complete`, {}, { withCredentials: true })
+    alert(res.data?.message || 'Procurement request marked completed')
+    await loadRequestedProducts()
     await loadProducts()
     await refreshAllData()
   } catch (e) {
-    console.warn('Failed to place order', e)
-    alert('Failed to place order')
+    console.error('Mark delivery complete failed', e)
+    alert(e.response?.data?.error || e.response?.data?.message || 'Failed to mark delivery complete')
+  } finally {
+    isCompletingDelivery.value = false
   }
 }
+
 </script>
 
 <style scoped>
