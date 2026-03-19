@@ -312,12 +312,38 @@
 
 /* MAIN COLUMN */
 .admin-main-header-top {
+  display: flex;
+  justify-content: space-between;
   align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap; /* allow items to wrap to next line when needed */
+}
+
+/* Ensure the left header block is left-aligned so brand and panel text share the same left edge */
+.admin-main-header-top > div {
+  text-align: left;
 }
 
 .admin-main-header h1 {
   font-size: 1.7rem;
   margin-bottom: 4px;
+  text-align: left;
+}
+
+/* Make the brand and panel parts sit on the same line and align left */
+.admin-main-header h1 .brand-text {
+  color: #0066FF !important;
+  display: inline-block !important;
+  margin-right: 10px;
+  vertical-align: baseline;
+  font-weight: 900;
+}
+
+.admin-main-header h1 .panel-text {
+  color: var(--text-primary) !important;
+  display: inline-block !important;
+  vertical-align: baseline;
+  font-weight: 800;
 }
 
 .admin-main-header p {
@@ -332,6 +358,15 @@
   border-radius: 999px;
   overflow: hidden;
   padding: 2px;
+}
+
+/* Place range tabs full-width below the header title when inside the header top */
+.admin-main-header-top .range-tabs {
+  order: 2;             /* move after the title block */
+  width: 100%;
+  margin-top: 12px;
+  justify-content: flex-start; /* align tabs to the left under the title */
+  gap: 8px;
 }
 
 .range-tab {
