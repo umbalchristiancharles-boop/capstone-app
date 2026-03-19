@@ -305,8 +305,8 @@ onMounted(async () => {
 
 <style scoped>
 .superadmin-finance {
-  padding: 24px;
-  background: linear-gradient(135deg, #FF9A4A 0%, #FF6A3D 100%);
+  background-color: #F8FAFC;
+  padding: 30px;
   min-height: 100vh;
 }
 
@@ -334,12 +334,17 @@ onMounted(async () => {
 }
 
 .btn-secondary {
-  background: #6c757d;
-  color: #fff;
+  background: #0066FF;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 600;
+  transition: background 0.3s ease;
 }
 
 .btn-secondary:hover {
-  background: #5a6268;
+  background: #3B82F6;
 }
 
 /* Back to Dashboard Button */
@@ -348,7 +353,7 @@ onMounted(async () => {
   align-items: center;
   gap: 0.5rem;
   margin-bottom: 1rem;
-  padding: 0.5rem 1rem;
+  padding: 8px 16px;
   font-size: 0.9rem;
 }
 
@@ -398,7 +403,7 @@ h1, h2 {
 }
 
 .page-subtitle {
-  color: rgba(255, 244, 230, 0.88);
+  color: #6B7280;
   margin: 0;
   font-size: 14px;
 }
@@ -408,12 +413,11 @@ h1, h2 {
   gap: 16px;
   align-items: center;
   margin-bottom: 24px;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.18);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  padding: 20px;
+  background: white;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid #E5E7EB;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .filter-group {
@@ -424,40 +428,39 @@ h1, h2 {
 
 .filter-group label {
   font-weight: 500;
-  color: #fff4e6;
+  color: #374151;
 }
 
 .filter-group select {
   padding: 8px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid #D1D5DB;
   border-radius: 8px;
   font-size: 14px;
-  background: rgba(255, 255, 255, 0.9);
-  color: #5a2c0a;
+  background: white;
+  color: #111827;
   cursor: pointer;
 }
 
 .filter-group select:focus {
   outline: none;
-  border-color: #ff9f43;
-  box-shadow: 0 0 0 3px rgba(255, 159, 67, 0.25);
+  border-color: #0066FF;
+  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
 }
 
 .btn-refresh {
-  padding: 8px 16px;
-  background: #ff9f43;
-  color: #5a2c0a;
+  background: #0066FF;
+  color: white;
   border: none;
   border-radius: 8px;
+  padding: 8px 16px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s, transform 0.2s;
+  transition: background 0.3s ease;
 }
 
 .btn-refresh:hover {
-  background: #ffb366;
-  transform: translateY(-1px);
+  background: #3B82F6;
 }
 
 .loading-container,
@@ -467,18 +470,17 @@ h1, h2 {
   align-items: center;
   justify-content: center;
   padding: 60px 20px;
-  background: rgba(255, 255, 255, 0.18);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #E5E7EB;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid rgba(255, 255, 255, 0.3);
-  border-top: 3px solid #ff9f43;
+  border: 3px solid #E5E7EB;
+  border-top: 3px solid #0066FF;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -489,22 +491,23 @@ h1, h2 {
 }
 
 .error-message {
-  color: #ffcccc;
+  color: #EF4444;
   margin-bottom: 16px;
 }
 
 .btn-retry {
-  padding: 8px 20px;
-  background: #ff6b6b;
+  background: #0066FF;
   color: white;
   border: none;
   border-radius: 8px;
+  padding: 8px 20px;
+  font-weight: 600;
   cursor: pointer;
-  font-weight: 500;
+  transition: background 0.3s ease;
 }
 
 .btn-retry:hover {
-  background: #ff5252;
+  background: #3B82F6;
 }
 
 .kpi-grid {
@@ -519,29 +522,21 @@ h1, h2 {
   align-items: center;
   gap: 16px;
   padding: 20px;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border: 1px solid #E5E7EB;
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .kpi-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
 }
 
 .kpi-card.highlight {
-  background: linear-gradient(135deg, #ff9f43 0%, #ff6b1c 100%);
-}
-
-.kpi-card.highlight .kpi-label,
-.kpi-card.highlight .kpi-value {
-  color: white;
-}
-
-.kpi-card.highlight .kpi-icon {
-  background: rgba(255, 255, 255, 0.25);
-  color: white;
+  border-left: 4px solid #FACC15;
+  background: white;
 }
 
 .kpi-icon {
@@ -551,28 +546,15 @@ h1, h2 {
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  color: white;
+  background: #EFF6FF;
+  color: #1E40AF;
 }
 
-.revenue-icon {
-  background: linear-gradient(135deg, #28a745 0%, #34ce57 100%);
-}
-
-.orders-icon {
-  background: linear-gradient(135deg, #ff9f43 0%, #ff6b1c 100%);
-}
-
-.expenses-icon {
-  background: linear-gradient(135deg, #ffc107 0%, #ffcd39 100%);
-}
-
-.refunds-icon {
-  background: linear-gradient(135deg, #dc3545 0%, #e4606d 100%);
-}
-
-.profit-icon {
-  background: linear-gradient(135deg, #17a2b8 0%, #20c997 100%);
-}
+.revenue-icon { }
+.orders-icon { }
+.expenses-icon { }
+.refunds-icon { }
+.profit-icon { }
 
 .kpi-content {
   display: flex;
@@ -581,31 +563,30 @@ h1, h2 {
 
 .kpi-label {
   font-size: 13px;
-  color: #5a2c0a;
+  color: #6B7280;
   margin-bottom: 4px;
 }
 
 .kpi-value {
   font-size: 22px;
   font-weight: 700;
-  color: #4b2a06;
+  color: #0066FF;
 }
 
 .section-title {
   font-size: 18px;
   font-weight: 600;
-  color: #fff4e6;
+  color: #1F2937;
   margin: 0 0 16px 0;
 }
 
 .branch-stats,
 .recent-transactions {
-  background: rgba(255, 255, 255, 0.18);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  padding: 24px;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #E5E7EB;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   margin-bottom: 24px;
 }
 
@@ -626,23 +607,22 @@ h1, h2 {
 .transactions-table td {
   padding: 12px 16px;
   text-align: left;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .branch-table th,
 .transactions-table th {
-  background: rgba(255, 159, 67, 0.2);
+  background: #EFF6FF;
+  color: #1E3A8A;
   font-weight: 600;
-  color: #5a2c0a;
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  padding: 12px 16px;
+  font-size: 14px;
 }
 
 .branch-table td,
 .transactions-table td {
-  color: #fff4e6;
+  color: #374151;
   font-size: 14px;
+  border-bottom: 1px solid #E5E7EB;
 }
 
 .profit-positive {
@@ -656,32 +636,13 @@ h1, h2 {
 }
 
 .status-badge {
-  display: inline-block;
+  background: #FACC15;
+  color: #1F2937;
+  border-radius: 6px;
   padding: 4px 10px;
-  border-radius: 12px;
   font-size: 12px;
   font-weight: 500;
   text-transform: capitalize;
-}
-
-.status-completed {
-  background: rgba(46, 204, 113, 0.2);
-  color: #2ecc71;
-}
-
-.status-pending {
-  background: rgba(241, 196, 15, 0.2);
-  color: #f1c40f;
-}
-
-.status-cancelled {
-  background: rgba(231, 76, 60, 0.2);
-  color: #e74c3c;
-}
-
-.status-in_kitchen {
-  background: rgba(52, 152, 219, 0.2);
-  color: #3498db;
 }
 </style>
 
