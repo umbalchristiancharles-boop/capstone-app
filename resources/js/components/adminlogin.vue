@@ -67,17 +67,10 @@
                 </a>
             </div>
 
-                    <div class="cookie-debug">
-                        <button type="button" class="cookie-debug-toggle" @click="showCookieDebug = !showCookieDebug">{{ showCookieDebug ? 'Hide' : 'Show' }} Cookie Info</button>
-                        <div v-if="showCookieDebug" class="cookie-debug-box">
-                            <p><strong>document.cookie</strong>: {{ cookieString }}</p>
-                            <p><strong>XSRF-TOKEN</strong>: {{ cookieMap['XSRF-TOKEN'] || '(missing)' }}</p>
-                            <p><strong>laravel_session</strong>: {{ cookieMap['laravel_session'] || '(missing)' }}</p>
-                        </div>
-                    </div>
+
 
             <p class="login-hint">
-                For demo only. Real authentication will be connected soon.
+
             </p>
 
             <p v-if="errorMsg" class="error-text">{{ errorMsg }}</p>
@@ -128,32 +121,6 @@ const loggedInUsername = ref("");
 const defaultPassword = ref("");
 
 const logoImg = new URL("../assets/chikinlogo.png", import.meta.url).href;
-const showCookieDebug = ref(false)
-const cookieString = ref('')
-const cookieMap = ref({})
-
-function parseCookies() {
-    try {
-        cookieString.value = document.cookie || ''
-        const map = {}
-        cookieString.value.split(';').map(s => s.trim()).forEach(pair => {
-            if (!pair) return
-            const idx = pair.indexOf('=')
-            if (idx === -1) return
-            const k = pair.substring(0, idx).trim()
-            const v = decodeURIComponent(pair.substring(idx + 1))
-            map[k] = v
-        })
-        cookieMap.value = map
-    } catch (e) {
-        cookieString.value = ''
-        cookieMap.value = {}
-    }
-}
-
-watchEffect(() => {
-    if (showCookieDebug.value) parseCookies()
-})
 
 async function handleLogin() {
     if (isLoading.value) return;
@@ -164,7 +131,7 @@ async function handleLogin() {
         // Ensure the XSRF cookie is set for stateful authentication
         try {
             await axios.get("/sanctum/csrf-cookie", { withCredentials: true });
-            
+
             // Get the XSRF token from cookie and set it as header
             function getCookie(name) {
                 const match = document.cookie.match(new RegExp('(^|; )' + name + '=([^;]*)'));
