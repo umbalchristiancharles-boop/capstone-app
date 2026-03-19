@@ -244,6 +244,8 @@ Route::prefix('manager')->middleware('auth')->group(function () {
         Route::get('/finance/budget/all', [\App\Http\Controllers\Manager\BudgetRequestController::class, 'getAllRequests']);
         Route::put('/finance/budget/{id}/approve', [\App\Http\Controllers\Manager\BudgetRequestController::class, 'approveRequest']);
         Route::put('/finance/budget/{id}/reject', [\App\Http\Controllers\Manager\BudgetRequestController::class, 'rejectRequest']);
+        // Mark budget as handed to procurement (finance confirms physical handover)
+        Route::put('/finance/budget/{id}/given', [\App\Http\Controllers\Manager\BudgetRequestController::class, 'markGiven']);
 
         Route::get('/inventory/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'invProfile']);
         Route::put('/inventory/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'updateInvProfile']);

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use App\Models\ProcurementRequest;
 
 class BudgetRequestController extends Controller
 {
@@ -264,6 +265,23 @@ class BudgetRequestController extends Controller
                 'date_processed' => now()->toDateString(),
             ]);
 
+            // If this budget request was created for a procurement request, update
+            // the linked procurement request status so procurement knows the
+            // budget has been approved and is to be received.
+            try {
+                if (preg_match('/Procurement Request #(\d+)/i', $budgetRequest->purpose, $matches)) {
+                    $procId = intval($matches[1] ?? 0);
+                    if ($procId > 0) {
+                        $proc = ProcurementRequest::find($procId);
+                        if ($proc && $proc->status !== 'budget_pending') {
+                            $proc->update(['status' => 'budget_pending']);
+                            Log::info('BudgetRequest approved -> set ProcurementRequest to budget_pending', ['budget_request_id' => $budgetRequest->id, 'procurement_request_id' => $procId]);
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::warning('Failed to link BudgetRequest approval to ProcurementRequest', ['budget_request_id' => $budgetRequest->id, 'error' => $e->getMessage()]);
+            }
             Log::info('Budget request approved', ['id' => $id, 'processor_id' => $user->id]);
 
             return response()->json([
@@ -345,6 +363,72 @@ class BudgetRequestController extends Controller
                 'ok' => false,
                 'message' => 'Failed to reject budget request'
             ], 500);
+        }
+    }
+
+    /**
+     * Finance confirms budget was physically given to procurement/logistics.
+     * This will update the linked ProcurementRequest to allow ordering (pending order to supplier).
+     */
+    public function markGiven(Request $request, $id)
+    {
+        $user = Auth::user();
+
+        if (!$this->isAuthorizedUser($user, 'finance')) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Unauthorized'
+            ], 401);
+        }
+
+        $branchId = $user->branch_id;
+
+        try {
+            $budgetRequest = BudgetRequest::where('id', $id)
+                ->where('branch_id', $branchId)
+                ->where('status', 'Approved')
+                ->firstOrFail();
+
+            // Find linked procurement request from purpose text
+            if (preg_match('/Procurement Request #(\d+)/i', $budgetRequest->purpose, $matches)) {
+                $procId = intval($matches[1] ?? 0);
+                if ($procId > 0) {
+                    $proc = ProcurementRequest::find($procId);
+                    if (!$proc) {
+                        return response()->json(['ok' => false, 'message' => 'Linked procurement request not found'], 404);
+                    }
+
+                    // Mark as budget given: set finance user, mark budget approved and move status
+                    try {
+                        $proc->update([
+                            'finance_user_id' => $user->id,
+                            'budget_amount' => $budgetRequest->requested_amount,
+                            'budget_approved' => true,
+                            'status' => 'pending_order_to_supplier',
+                        ]);
+                    } catch (\Exception $e) {
+                        // Fallback for DBs that haven't run the enum migration yet
+                        Log::warning('Failed to set pending_order_to_supplier, falling back to delivery_pending', ['error' => $e->getMessage(), 'procurement_request_id' => $proc->id]);
+                        $proc->update([
+                            'finance_user_id' => $user->id,
+                            'budget_amount' => $budgetRequest->requested_amount,
+                            'budget_approved' => true,
+                            'status' => 'delivery_pending',
+                        ]);
+                    }
+
+                    Log::info('Finance marked budget as given', ['budget_request_id' => $budgetRequest->id, 'procurement_request_id' => $proc->id, 'finance_user' => $user->id]);
+
+                    return response()->json(['ok' => true, 'message' => 'Budget marked as given', 'procurement_request' => $proc->fresh()]);
+                }
+            }
+
+            return response()->json(['ok' => false, 'message' => 'No linked procurement request found in purpose'], 400);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['ok' => false, 'message' => 'Budget request not found or not approved'], 404);
+        } catch (\Exception $e) {
+            Log::error('markGiven failed', ['id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['ok' => false, 'message' => 'Failed to mark budget as given'], 500);
         }
     }
 }

@@ -30,7 +30,7 @@ class ProcurementProductController extends Controller
         ]);
 
         $query = Product::with(['supplier:id,username,full_name', 'procurementRequests' => function ($q) {
-            $q->where('status', 'pending')->latest();
+            $q->whereIn('status', ['pending','budget_pending','cash_in_transit','pending_order_to_supplier'])->latest();
         }])
         ->where('is_active', 1);
 
@@ -83,7 +83,7 @@ class ProcurementProductController extends Controller
         $products = Product::with(['supplier:id,username,full_name'])
             ->where('is_active', 1)
             ->whereHas('procurementRequests', function ($q) use ($branchId) {
-                $q->where('status', 'pending');
+                $q->whereIn('status', ['pending','budget_pending','cash_in_transit','pending_order_to_supplier']);
                 if ($branchId) {
                     $q->where('branch_id', $branchId);
                 }
@@ -121,8 +121,10 @@ class ProcurementProductController extends Controller
         $quantity = $validated['quantity'] ?? 1;
 
         // Find pending procurement request or create new logic if needed
+        // Only allow placing order when finance has confirmed handover
+        // and the procurement request is in `delivery_pending` state.
         $procRequest = ProcurementRequest::where('product_id', $productId)
-            ->where('status', 'pending')
+            ->where('status', 'pending_order_to_supplier')
             ->where('branch_id', $user->branch_id ?? 1)
             ->first();
 

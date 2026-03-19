@@ -47,7 +47,11 @@
                 </td>
                 <td>
                   <button v-if="order.status === 'pending'" class="btn-primary btn-small" @click="fulfillOrder(order.id)">Fulfill</button>
-                  <button v-else-if="order.status === 'fulfilled'" class="btn-secondary btn-small" disabled>Fulfilled</button>
+                  <div v-else-if="order.status === 'fulfilled'">
+                    <button class="btn-secondary btn-small" @click="doneTransaction(order.id)">Done transaction</button>
+                  </div>
+                  <button v-else-if="order.status === 'on_delivery'" class="btn-disabled btn-small" disabled>On delivery</button>
+                  <button v-else-if="order.status === 'cancelled'" class="btn-muted btn-small" disabled>Cancelled</button>
                 </td>
               </tr>
               <tr v-if="orders.length === 0">
@@ -252,10 +256,21 @@ async function fulfillOrder(id) {
   }
 }
 
+async function doneTransaction(id) {
+  if (!confirm('Mark transaction as done and set status to On Delivery?')) return
+  try {
+    await axios.put(`/api/supplier-orders/${id}/status`, { status: 'on_delivery' }, { withCredentials: true })
+    await loadOrders()
+  } catch (e) {
+    alert('Failed to update order')
+  }
+}
+
 function getStatusClass(status) {
   switch (status) {
     case 'fulfilled': return 'status-approved'
     case 'cancelled': return 'status-rejected'
+    case 'on_delivery': return 'status-on-delivery'
     default: return 'status-pending'
   }
 }

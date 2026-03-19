@@ -37,13 +37,20 @@ class SupplierOrderController extends Controller
             return response()->json(['error' => 'Not your order'], 403);
         }
 
+
         $validated = $request->validate([
-            'status' => 'required|in:pending,fulfilled,cancelled'
+            'status' => 'required|in:pending,fulfilled,cancelled,on_delivery'
         ]);
 
+        // Map client-friendly 'on_delivery' to stored status and set timestamp
         if ($validated['status'] === 'fulfilled') {
             $order->update([
                 'status' => 'fulfilled',
+                'fulfilled_at' => now(),
+            ]);
+        } elseif ($validated['status'] === 'on_delivery') {
+            $order->update([
+                'status' => 'on_delivery',
                 'fulfilled_at' => now(),
             ]);
         } else {

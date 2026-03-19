@@ -59,7 +59,7 @@
                 <div class="product-meta">
                   <div class="product-price">{{ formatPrice(p.price) }}</div>
                   <div>
-                    <button class="btn-primary" @click="placeOrder(p)" style="padding:6px 10px; border-radius:8px">Place Order</button>
+                    <button v-if="p.procurement_status === 'pending_order_to_supplier' || p.status === 'pending_order_to_supplier'" class="btn-primary" @click="placeOrder(p)" style="padding:6px 10px; border-radius:8px">Place Order</button>
                   </div>
                 </div>
                 <div class="supplier-badge" style="margin-top:6px">{{ p.supplier_name || 'Unknown Supplier' }}</div>
@@ -146,8 +146,18 @@
               <div class="product-meta">
                 <div class="product-price">{{ formatPrice(p.price) }}</div>
                 <div>
-                  <button class="btn-primary" @click="acknowledgeRequest(p)" style="padding:6px 10px; border-radius:8px">Acknowledge</button>
-                  <button class="btn-outline" @click="placeOrder(p)" style="padding:6px 10px; margin-left:8px; border-radius:8px">Place Order</button>
+                  <template v-if="p.procurement_status === 'pending' || p.status === 'pending'">
+                    <button class="btn-primary" @click="acknowledgeRequest(p)" style="padding:6px 10px; border-radius:8px">Acknowledge</button>
+                  </template>
+                  <template v-else-if="p.procurement_status === 'budget_pending' || p.status === 'budget_pending'">
+                    <button class="btn-outline" disabled style="padding:6px 10px; border-radius:8px">Budget to be received</button>
+                  </template>
+                  <template v-else-if="p.procurement_status === 'pending_order_to_supplier' || p.status === 'pending_order_to_supplier'">
+                    <button class="btn-primary" @click="placeOrder(p)" style="padding:6px 10px; border-radius:8px">Place Order</button>
+                  </template>
+                  <template v-else>
+                    <button class="btn-outline" disabled style="padding:6px 10px; border-radius:8px">Unavailable</button>
+                  </template>
                 </div>
               </div>
               <div class="supplier-badge" style="margin-top:6px">{{ p.supplier_name || (p.supplier?.full_name || 'Unknown Supplier') }}</div>

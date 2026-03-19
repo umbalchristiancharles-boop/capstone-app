@@ -76,6 +76,16 @@
                       {{ processingId === req.id ? 'Processing...' : 'Reject' }}
                     </button>
                   </div>
+                  <div v-else-if="req.status === 'Approved' && req.purpose && /Procurement Request #\d+/i.test(req.purpose)">
+                    <button
+                      class="btn-approve"
+                      @click="markBudgetGiven(req.id)"
+                      :disabled="processingId === req.id"
+                    >
+                      {{ processingId === req.id ? 'Processing...' : 'Budget Given' }}
+                    </button>
+                    <span style="margin-left:8px; color:#666">Approved</span>
+                  </div>
                   <span v-else class="processed-info">
                     {{ req.status }} by {{ req.processed_by || 'Unknown' }}
                     <br>
@@ -310,6 +320,32 @@ onMounted(async () => {
     console.error('Error loading data:', err)
   }
 })
+
+// Mark budget as given by finance (handed to procurement)
+async function markBudgetGiven(id) {
+  if (processingId.value) return
+  if (!confirm('Confirm you have handed the budget to procurement?')) return
+  processingId.value = id
+  try {
+    const response = await axios.put(`/api/manager/finance/budget/${id}/given`, {}, { withCredentials: true })
+    if (response.data && response.data.ok) {
+      // update local list
+      const idx = budgetRequests.value.findIndex(r => r.id === id)
+      if (idx !== -1) {
+        budgetRequests.value[idx].status = 'Approved'
+        budgetRequests.value[idx].processed_by = response.data.procurement_request?.finance_user_id || budgetRequests.value[idx].processed_by
+      }
+      alert('Budget marked as given. Procurement can now place orders.')
+    } else {
+      alert(response.data?.message || 'Failed to mark budget as given')
+    }
+  } catch (err) {
+    console.error('Failed to mark budget given:', err)
+    alert(err.response?.data?.message || 'Failed to mark budget as given')
+  } finally {
+    processingId.value = null
+  }
+}
 </script>
 
 <style scoped>

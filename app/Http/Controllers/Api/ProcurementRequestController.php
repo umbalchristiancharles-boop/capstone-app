@@ -27,7 +27,7 @@ class ProcurementRequestController extends Controller
         } elseif ($role === 'PROCUREMENT_MANAGER') {
             // Procurement sees pending/approved/budget/cash-in-transit/delivery states for branch
             $query->where('branch_id', $user->branch_id ?? 1)
-                  ->whereIn('status', ['pending', 'approved', 'budget_pending', 'cash_in_transit', 'delivery_pending']);
+                  ->whereIn('status', ['pending', 'approved', 'budget_pending', 'cash_in_transit', 'pending_order_to_supplier']);
         } elseif (in_array($role, ['FINANCE_MANAGER', 'MANAGER_FINANCE'])) {
             // Finance sees pending budget approvals and items they need to confirm (cash in transit)
             $query->where(function($q) {
@@ -153,8 +153,8 @@ public function requestedProducts(Request $request)
         try {
             $requests = ProcurementRequest::with(['product:id,name,price,sku,branch_id,supplier_id,logistics_request_available'])
                 ->where('branch_id', $branchId)
-                ->where('status', 'pending')
-                ->get(['id', 'product_id', 'branch_id']);
+                ->whereIn('status', ['pending', 'budget_pending', 'pending_order_to_supplier', 'delivery_pending'])
+                ->get(['id', 'product_id', 'branch_id', 'status', 'budget_approved']);
             Log::info('Requests fetched', ['count' => $requests->count()]);
 
             if ($requests->isEmpty()) {
@@ -179,6 +179,8 @@ public function requestedProducts(Request $request)
             $products = $products->map(function ($p) use ($requestsByProduct) {
                 $req = $requestsByProduct->get($p->id);
                 $p->procurement_request_id = $req ? $req->id : null;
+                $p->procurement_status = $req ? $req->status : null;
+                $p->procurement_budget_approved = $req ? (bool)$req->budget_approved : false;
                 return $p;
             });
 
@@ -275,9 +277,9 @@ public function requestedProducts(Request $request)
                 ]);
             } elseif ($procRequest->budget_approved && $procRequest->status === 'cash_in_transit') {
                 // Finance confirms cash was given physically -> move to delivery pending
-                $procRequest->update([
-                    'status' => 'delivery_pending'
-                ]);
+                        $procRequest->update([
+                            'status' => 'pending_order_to_supplier'
+                        ]);
             } else {
                 return response()->json(['error' => 'No action available for this request'], 400);
             }
@@ -300,10 +302,12 @@ public function requestedProducts(Request $request)
 
         $procRequest = ProcurementRequest::with('product')->findOrFail($id);
 
-        // Check prerequisites: budget must be approved and in an appropriate state
-        $allowedStatuses = ['budget_pending', 'cash_in_transit', 'delivery_pending'];
+        // Check prerequisites: budget must be approved and finance must have
+        // confirmed physical handover (status `delivery_pending`). Only then
+        // procurement can place the order to supplier.
+            $allowedStatuses = ['pending_order_to_supplier'];
         if (!$procRequest->budget_approved || !in_array($procRequest->status, $allowedStatuses)) {
-            return response()->json(['error' => 'Budget must be approved first'], 400);
+            return response()->json(['error' => 'Budget must be handed over by finance before ordering'], 400);
         }
         if ($user->branch_id && $procRequest->branch_id != $user->branch_id) {
             return response()->json(['error' => 'Not your branch'], 403);
