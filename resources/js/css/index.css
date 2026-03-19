@@ -90,9 +90,10 @@ body {
 .hero {
   min-height: 100vh;
   width: 100%;
-  background: transparent;
+  background: linear-gradient(135deg, #0066FF 0%, #3B82F6 55%, #FACC15 100%);
   border-radius: 0;
   padding: 0;
+
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0;
