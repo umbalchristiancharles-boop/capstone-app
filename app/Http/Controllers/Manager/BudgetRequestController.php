@@ -419,7 +419,29 @@ class BudgetRequestController extends Controller
 
                     Log::info('Finance marked budget as given', ['budget_request_id' => $budgetRequest->id, 'procurement_request_id' => $proc->id, 'finance_user' => $user->id]);
 
-                    return response()->json(['ok' => true, 'message' => 'Budget marked as given', 'procurement_request' => $proc->fresh()]);
+                    // Mark the budget request itself as 'Budget Given' so the UI
+                    // and subsequent calls won't allow re-confirming the same budget.
+                    try {
+                        $budgetRequest->update([
+                            'status' => 'Budget Given',
+                            'processed_by' => $user->id,
+                            'date_processed' => now()->toDateString(),
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::warning('Failed to update BudgetRequest after marking given', ['error' => $e->getMessage(), 'budget_request_id' => $budgetRequest->id]);
+                    }
+
+                    return response()->json([
+                        'ok' => true,
+                        'message' => 'Budget marked as given',
+                        'procurement_request' => $proc->fresh(),
+                        'budget_request' => [
+                            'id' => $budgetRequest->id,
+                            'status' => $budgetRequest->status,
+                            'processed_by' => $budgetRequest->processor?->full_name ?? $user->full_name,
+                            'date_processed' => $budgetRequest->date_processed,
+                        ]
+                    ]);
                 }
             }
 

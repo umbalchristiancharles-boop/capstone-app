@@ -187,9 +187,9 @@ $validRoles = ['SUPER_ADMIN', 'ADMIN', 'OWNER', 'MANAGER', 'MANAGER_HR', 'HR', '
             return '/owner-panel';
         }
 
-        // SUPER_ADMIN - full system access
+        // SUPER_ADMIN - direct to super-admin dashboard
         if ($role === 'SUPER_ADMIN') {
-            return '/super-admin-panel';
+            return '/super-admin/dashboard';
         }
 
         // ADMIN

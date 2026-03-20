@@ -332,8 +332,17 @@ async function markBudgetGiven(id) {
       // update local list
       const idx = budgetRequests.value.findIndex(r => r.id === id)
       if (idx !== -1) {
-        budgetRequests.value[idx].status = 'Approved'
-        budgetRequests.value[idx].processed_by = response.data.procurement_request?.finance_user_id || budgetRequests.value[idx].processed_by
+        // Use the returned budget_request payload to update the local item
+        const br = response.data.budget_request || null
+        if (br) {
+          budgetRequests.value[idx].status = br.status || budgetRequests.value[idx].status
+          budgetRequests.value[idx].processed_by = br.processed_by || budgetRequests.value[idx].processed_by
+          budgetRequests.value[idx].date_processed = br.date_processed || budgetRequests.value[idx].date_processed
+        } else {
+          // fallback: mark as Budget Given
+          budgetRequests.value[idx].status = 'Budget Given'
+          budgetRequests.value[idx].processed_by = response.data.procurement_request?.finance_user_id || budgetRequests.value[idx].processed_by
+        }
       }
       alert('Budget marked as given. Procurement can now place orders.')
     } else {

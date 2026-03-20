@@ -30,9 +30,13 @@ const routes = [
     meta: { requiresAuth: true, role: 'superadmin' }
   },
   {
+    path: '/super-admin/dashboard',
+    redirect: '/super-admin-panel'
+  },
+  {
     path: '/super-admin/logistics',
     name: 'SuperAdminLogistics',
-    component: () => import('../components/LogisticsManager.vue'),
+    component: () => import('../components/SuperAdminLogisticsPanel.vue'),
     meta: { requiresAuth: true, role: 'superadmin' }
   },
   {

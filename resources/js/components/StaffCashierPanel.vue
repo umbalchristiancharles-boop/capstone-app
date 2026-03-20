@@ -434,8 +434,17 @@ async function processCheckout() {
     }
 
     const res = await axios.post('/api/superadmin/cashier/checkout', payload)
-    checkoutSuccess.value = `${res.data.message} Order: ${res.data.order.order_code} (PENDING) | Change: ₱${fmt(res.data.change)}`
-    pendingOrderCode.value = res.data.order.order_code
+    const order = res.data.order || {}
+    // If backend created a pending order, keep pending flow. Otherwise treat as completed.
+    if (order.status && order.status === 'pending') {
+      checkoutSuccess.value = `${res.data.message} Order: ${order.order_code} (PENDING) | Change: ₱${fmt(res.data.change)}`
+      pendingOrderCode.value = order.order_code
+    } else {
+      checkoutSuccess.value = `${res.data.message} Order: ${order.order_code || ''} | Change: ₱${fmt(res.data.change)}`
+      pendingOrderCode.value = null
+      // clear cart on completed orders
+      cart.value = []
+    }
 
     customerName.value = ''
     amountPaid.value = null

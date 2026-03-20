@@ -251,7 +251,7 @@ const backTarget = computed(() => {
     const u = JSON.parse(localStorage.getItem('user') || 'null')
     const role = (u && u.role) ? String(u.role).toLowerCase() : ''
     if (role === 'owner') return '/owner-panel'
-    if (role === 'super_admin' || role === 'superadmin') return '/super-admin-panel'
+    if (role === 'super_admin' || role === 'superadmin') return '/super-admin/procurement'
   } catch (e) {}
   return '/owner-panel'
 })

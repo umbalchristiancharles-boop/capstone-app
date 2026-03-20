@@ -21,7 +21,13 @@ class ProcurementRequestController extends Controller
         $query = ProcurementRequest::with(['product', 'logisticsUser', 'procurementUser', 'financeUser'])
             ->orderBy('created_at', 'desc');
 
-        if (in_array($role, ['LOGISTICS_MANAGER', 'MANAGER_LOGISTICS'])) {
+        // Allow Super Admin to view requests across branches (optionally filtered by branch_id)
+        if ($role === 'SUPER_ADMIN') {
+            $branchFilter = $request->query('branch_id');
+            if ($branchFilter) {
+                $query->where('branch_id', $branchFilter);
+            }
+        } elseif (in_array($role, ['LOGISTICS_MANAGER', 'MANAGER_LOGISTICS'])) {
             // Logistics sees own requests
             $query->where('logistics_user_id', $user->id);
         } elseif ($role === 'PROCUREMENT_MANAGER') {
@@ -62,7 +68,8 @@ class ProcurementRequestController extends Controller
 
         if (!(
             $role === 'LOGISTICS_MANAGER' || $role === 'MANAGER_LOGISTICS' ||
-            ($role === 'MANAGER' && $dept === 'LOGISTICS')
+            ($role === 'MANAGER' && $dept === 'LOGISTICS') ||
+            $role === 'SUPER_ADMIN'
         )) {
             Log::error('UNAUTHORIZED ROLE', ['role' => $role, 'dept' => $dept]);
             return response()->json(['error' => 'Unauthorized role'], 401);
@@ -87,12 +94,16 @@ class ProcurementRequestController extends Controller
             throw $e;
         }
 
-        if ($user->branch_id && $product->branch_id != $user->branch_id) {
+        if ($role !== 'SUPER_ADMIN' && $user->branch_id && $product->branch_id != $user->branch_id) {
             Log::error('BRANCH MISMATCH', ['user_branch' => $user->branch_id, 'product_branch' => $product->branch_id]);
             return response()->json(['error' => 'Product not in your branch'], 403);
         }
 
-        $branchId = $user->branch_id ?: 1;
+        if ($role === 'SUPER_ADMIN') {
+            $branchId = $request->input('branch_id') ?? $product->branch_id ?? 1;
+        } else {
+            $branchId = $user->branch_id ?: 1;
+        }
         Log::info('Using branch_id', ['branch_id' => $branchId]);
 
         $data = [
@@ -142,12 +153,13 @@ public function requestedProducts(Request $request)
 
         $isProcurementManager = $role === 'PROCUREMENT_MANAGER';
         $isManagerProcurement = ($role === 'MANAGER' && $dept === 'PROCUREMENT');
-        if (!($isProcurementManager || $isManagerProcurement)) {
+        $isSuperAdmin = $role === 'SUPER_ADMIN';
+        if (!($isProcurementManager || $isManagerProcurement || $isSuperAdmin)) {
             Log::warning('UNAUTHORIZED ROLE', ['role' => $role, 'dept' => $dept]);
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        $branchId = $user->branch_id ?? 1;
+        $branchId = $isSuperAdmin ? ($request->query('branch_id') ?? 1) : ($user->branch_id ?? 1);
         Log::info('Querying pending requests', ['branch_id' => $branchId]);
 
         try {

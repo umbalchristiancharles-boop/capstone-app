@@ -693,11 +693,21 @@ $products = Product::where('branch_id', $branchId)
     {
         $user = $this->getAuthenticatedManager($request);
 
-        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'procurement')) {
+        if (!$user) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
-        $branchId = $user->branch_id;
+        $role = strtoupper($user->role ?? '');
+
+        // Allow Super Admin to query any branch by passing `branch_id` param.
+        if ($role === 'SUPER_ADMIN') {
+            $branchId = $request->query('branch_id') ?? 1;
+        } else {
+            if (!$this->isManager($user) || !$this->hasDepartmentAccess($user, 'procurement')) {
+                return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
+            }
+            $branchId = $user->branch_id;
+        }
 
         $totalSuppliers = User::where('role', 'SUPPLIER')
             ->where('branch_id', $branchId)

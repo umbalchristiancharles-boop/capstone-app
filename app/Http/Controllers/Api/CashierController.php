@@ -189,7 +189,7 @@ class CashierController extends Controller
 
             return response()->json([
                 'ok'      => true,
-            'message' => 'Pending order created! Notify finance for approval.',
+                'message' => 'Order completed successfully.',
                 'order'   => $order,
                 'change'  => round($changeAmount, 2),
             ]);

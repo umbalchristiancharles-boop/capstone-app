@@ -1,7 +1,7 @@
 <template>
   <div id="app">
-    <router-view v-slot="{ Component }">
-      <transition :name="transitionName" mode="out-in">
+    <router-view v-slot="{ Component, route }">
+      <transition :name="transitionName" mode="out-in" :key="route ? route.fullPath : ''">
         <div class="route-view">
           <component :is="Component" />
         </div>
@@ -20,6 +20,15 @@ export default {
     }
   },
   mounted() {
+    // Global error handlers
+    window.onerror = (msg, url, line, col, error) => {
+      console.error('Global error:', { msg, url, line, col, error })
+    }
+    window.addEventListener('unhandledrejection', (event) => {
+      console.error('Unhandled promise rejection:', event.reason)
+      event.preventDefault()
+    })
+
     try {
       if (sessionStorage.getItem('suppressRouteTransition') === '1') {
         sessionStorage.removeItem('suppressRouteTransition')

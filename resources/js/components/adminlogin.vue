@@ -314,7 +314,7 @@ function resolveRedirectPath(role, department) {
     if (r === "HR") return "/hr-panel";
     if (r === "OWNER") return "/owner-panel";
     if (r === "ADMIN") return "/admin-panel";
-    if (r === "SUPER_ADMIN" || r === "SUPERADMIN") return "/super-admin-panel";
+    if (r === "SUPER_ADMIN" || r === "SUPERADMIN") return "/super-admin/procurement";
 
     // Invalid role - return to login with error
     console.error('Invalid role detected in redirect:', role);

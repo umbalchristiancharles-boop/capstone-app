@@ -48,43 +48,7 @@
         <div v-if="loadingProducts">Loading products...</div>
         <div v-else-if="!products.length">No products available in your branch.</div>
         <div v-else>
-          <div style="display:flex; gap:0.5rem; align-items:center; margin-bottom:1rem">
-            <h3 style="margin:0">Pending Supplier Products ({{ pendingProducts.length }})</h3>
-            <button class="btn-primary" @click="loadProducts" style="padding:6px 12px; font-size:0.85rem">🔄 Refresh</button>
-          </div>
-          <div v-if="pendingProducts.length" style="margin-bottom:1rem">
-            <div class="product-grid">
-              <div v-for="p in pendingProducts" :key="'pending-'+p.id" class="product-card">
-                <div class="product-name">{{ p.name }}</div>
-                <div class="product-meta">
-                  <div class="product-price">{{ formatPrice(p.price) }}</div>
-                  <div>
-<div v-if="p.procurement_status === 'pending_order_to_supplier' || p.status === 'pending_order_to_supplier'">
-  <div v-if="p.existingOrder" class="status-badge" style="display:inline-block; margin-left:0; background:#fbbf24; color:#92400e; padding:6px 10px; border-radius:8px; font-size:0.9rem; font-weight:600;">
-    Transaction Pending (ID: {{ p.existingOrder.id }})
-  </div>
-  <div v-else>
-    <button 
-      class="btn-primary" 
-      @click="placeOrder(p)" 
-      :disabled="isPlacingOrder"
-      style="padding:6px 10px; border-radius:8px">
-      {{ isPlacingOrder ? 'Placing...' : 'Place Order' }}
-    </button>
-  </div>
-</div>
-
-                  </div>
-                </div>
-                <div class="supplier-badge" style="margin-top:6px">{{ p.supplier_name || 'Unknown Supplier' }}</div>
-              </div>
-            </div>
-          </div>
-          <div v-else>
-            <p style="color:#6b7280; padding:1rem; text-align:center; border:1px dashed #d1d5db; border-radius:8px">
-              No pending supplier products. Add from Supplier Panel or refresh.
-            </p>
-          </div>
+          <!-- Pending Supplier Products UI removed per request -->
 
           <div>
             <h3 style="margin:0 0 8px 0">Published Products ({{ publishedProducts.length }})</h3>

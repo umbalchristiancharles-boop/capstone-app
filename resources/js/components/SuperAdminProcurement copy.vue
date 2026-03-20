@@ -1,6 +1,6 @@
 <template>
   <OwnerPanelLayout
-    :userProfile="null"
+    :userProfile="userProfile"
     :panelTitle="'Super Admin Procurement Panel'"
     :panelDescription="'Monitor and manage procurement across all branches. Select branch to view scoped data.'"
     :enableProfileUpdate="false"
@@ -9,11 +9,6 @@
     @logout="showLogoutConfirm = true"
     @profile-updated="onProfileUpdated"
   >
-    <template #headerActions>
-      <div style="display:flex; gap:0.5rem; align-items:center">
-        <button class="btn-outline" @click="router.back()" style="padding:0.5rem 0.85rem; font-size:0.95rem">← Back</button>
-      </div>
-    </template>
     <template #main>
       <!-- Branch Selector -->
       <div class="branch-selector-section" style="margin-bottom: 1.5rem; padding: 1rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
@@ -475,7 +470,7 @@ watch(selectedBranch, onBranchChange)
 </script>
 
 <style scoped>
-/* Exact copy from ProcurementManagerPanel.vue with superadmin enhancements */
+/* Exact copy from ProcurementManagerPanel.vue */
 .hr-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
 .hr-stat-card { background: white; border-radius: 8px; padding: 1rem; display:flex; gap:0.75rem; align-items:center; color: #1b1b1f; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 .hr-stat-card:hover { transform: translateY(-1px); transition: all 0.2s; }

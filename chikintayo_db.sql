@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 19, 2026 at 02:28 PM
+-- Generation Time: Mar 20, 2026 at 07:05 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -135,8 +135,8 @@ CREATE TABLE `budget_requests` (
 --
 
 INSERT INTO `budget_requests` (`id`, `branch_id`, `user_id`, `purpose`, `requested_amount`, `status`, `date_requested`, `processed_by`, `date_processed`, `created_at`, `updated_at`) VALUES
-(19, 28, 126, 'Procurement Request #22: asd x10', 230.00, 'Approved', '2026-03-19', 125, '2026-03-19', '2026-03-19 12:46:38', '2026-03-19 12:46:51'),
-(20, 28, 126, 'Procurement Request #23: asd x30', 690.00, 'Approved', '2026-03-19', 125, '2026-03-19', '2026-03-19 13:16:14', '2026-03-19 13:16:30');
+(21, 28, 126, 'Procurement Request #24: Samnjang x10', 2500.00, 'Approved', '2026-03-20', 125, '2026-03-20', '2026-03-19 19:53:31', '2026-03-19 19:54:35'),
+(22, 28, 126, 'Procurement Request #25: Samnjang x10', 2500.00, 'Approved', '2026-03-20', 125, '2026-03-20', '2026-03-20 05:15:56', '2026-03-20 05:16:15');
 
 -- --------------------------------------------------------
 
@@ -400,7 +400,9 @@ INSERT INTO `orders` (`id`, `order_code`, `owner_id`, `cashier_id`, `branch_id`,
 (66, 'CT-0016', 128, 128, 28, 'Walk-in', 'pending', 0, NULL, NULL, 8809.92, 10000.00, 1190.08, 'none', 0.00, 0.00, 12.00, 0.00, 0.00, '2026-03-18 07:21:39', '2026-03-18 07:21:39', '2026-03-18 07:21:39', NULL),
 (67, 'CT-0017', 128, 128, 28, 'Walk-in', 'pending', 0, NULL, NULL, 7047.94, 10000.00, 2952.06, 'none', 0.00, 0.00, 12.00, 0.00, 0.00, '2026-03-18 07:26:42', '2026-03-18 07:26:42', '2026-03-18 07:26:42', NULL),
 (68, 'CT-0018', 128, 128, 28, 'Walk-in', 'completed', 0, NULL, '2026-03-19 12:18:06', 515.20, 1000.00, 484.80, 'none', 0.00, 0.00, 12.00, 0.00, 0.00, '2026-03-19 12:18:06', '2026-03-19 12:18:06', '2026-03-19 12:18:06', 128),
-(69, 'CT-0019', 128, 128, 28, 'Walk-in', 'completed', 0, NULL, '2026-03-19 12:22:00', 137.76, 200.00, 62.24, 'none', 0.00, 0.00, 12.00, 0.00, 0.00, '2026-03-19 12:22:00', '2026-03-19 12:22:00', '2026-03-19 12:22:00', 128);
+(69, 'CT-0019', 128, 128, 28, 'Walk-in', 'completed', 0, NULL, '2026-03-19 12:22:00', 137.76, 200.00, 62.24, 'none', 0.00, 0.00, 12.00, 0.00, 0.00, '2026-03-19 12:22:00', '2026-03-19 12:22:00', '2026-03-19 12:22:00', 128),
+(70, 'CT-0020', 128, 128, 28, 'Walk-in', 'completed', 0, NULL, '2026-03-19 18:49:40', 137.76, 200.00, 62.24, 'none', 0.00, 0.00, 12.00, 0.00, 0.00, '2026-03-19 18:49:40', '2026-03-19 18:49:40', '2026-03-19 18:49:40', 128),
+(71, 'CT-0021', 128, 128, 28, 'Walk-in', 'completed', 0, NULL, '2026-03-19 18:53:59', 137.76, 200.00, 62.24, 'none', 0.00, 0.00, 12.00, 0.00, 0.00, '2026-03-19 18:53:59', '2026-03-19 18:53:59', '2026-03-19 18:53:59', 128);
 
 -- --------------------------------------------------------
 
@@ -419,14 +421,6 @@ CREATE TABLE `order_items` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `order_items`
---
-
-INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `product_name`, `unit_price`, `quantity`, `subtotal`, `created_at`, `updated_at`) VALUES
-(18, 68, 25, 'asd', 23.00, 20, 460.00, '2026-03-19 12:18:06', '2026-03-19 12:18:06'),
-(19, 69, 26, 'test', 123.00, 1, 123.00, '2026-03-19 12:22:00', '2026-03-19 12:22:00');
 
 -- --------------------------------------------------------
 
@@ -1312,7 +1306,42 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (843, 'App\\Models\\User', 126, 'auth-token', 'c3280d2549bface89d34567292010c11ac9888f18573ea57287432c8aaa0709d', '[\"*\"]', NULL, NULL, '2026-03-19 13:17:02', '2026-03-19 13:17:02'),
 (844, 'App\\Models\\User', 137, 'auth-token', '3dc732202cb9275c4c6b2f1e7c1ff4103c5447bb6706072676fe64f4ae50bb39', '[\"*\"]', NULL, NULL, '2026-03-19 13:17:22', '2026-03-19 13:17:22'),
 (845, 'App\\Models\\User', 126, 'auth-token', '37a5bddd7673e7b8887d1c34dde13a20b235d618611189bdbe593a5fb6a6ff55', '[\"*\"]', NULL, NULL, '2026-03-19 13:17:56', '2026-03-19 13:17:56'),
-(846, 'App\\Models\\User', 127, 'auth-token', '1e7d3ee93778c5938a2279a7752fca73bb8072faa5e5d37a3f6cb02a4dcad83a', '[\"*\"]', NULL, NULL, '2026-03-19 13:18:20', '2026-03-19 13:18:20');
+(846, 'App\\Models\\User', 127, 'auth-token', '1e7d3ee93778c5938a2279a7752fca73bb8072faa5e5d37a3f6cb02a4dcad83a', '[\"*\"]', NULL, NULL, '2026-03-19 13:18:20', '2026-03-19 13:18:20'),
+(847, 'App\\Models\\User', 28, 'auth-token', 'b2556b81ecb025aea1943f90d620e4ff466d529f0a61e8ff43a9785f6d1ee738', '[\"*\"]', NULL, NULL, '2026-03-19 18:48:52', '2026-03-19 18:48:52'),
+(848, 'App\\Models\\User', 128, 'auth-token', 'e5b303ccac682117e59034d795d23a9f9ddd23ddbb2f9a4bfe2d3a402d90e9de', '[\"*\"]', NULL, NULL, '2026-03-19 18:49:28', '2026-03-19 18:49:28'),
+(849, 'App\\Models\\User', 125, 'auth-token', '2440bfadd7baf5203daf5fdaa195094369ab47052727cb51547ecfecc0cfd259', '[\"*\"]', NULL, NULL, '2026-03-19 19:11:06', '2026-03-19 19:11:06'),
+(850, 'App\\Models\\User', 126, 'auth-token', '1a7d7c7d82b9dddd74d0f551a1fe0bbf9798ad1e706296816e746aa14382caba', '[\"*\"]', NULL, NULL, '2026-03-19 19:11:45', '2026-03-19 19:11:45'),
+(851, 'App\\Models\\User', 125, 'auth-token', '3e27297cc138156373f7bf6f14937ade4be9c077a94c03d09bb4cd1369fa7713', '[\"*\"]', NULL, NULL, '2026-03-19 19:12:31', '2026-03-19 19:12:31'),
+(852, 'App\\Models\\User', 137, 'auth-token', 'a20be4fd9f56c8e9f98a4f6190f97df15ee652ec5895505390b87c286cd1be02', '[\"*\"]', NULL, NULL, '2026-03-19 19:43:02', '2026-03-19 19:43:02'),
+(853, 'App\\Models\\User', 126, 'auth-token', 'dcc4f9a3f644ae87b40f483f82ae603708757a1423560dc3b201675984489971', '[\"*\"]', NULL, NULL, '2026-03-19 19:49:48', '2026-03-19 19:49:48'),
+(854, 'App\\Models\\User', 127, 'auth-token', '6499a5a92dc60bb50ac46b4b7bdaaa3a06ad18da2bbec3e09525136ca40678b3', '[\"*\"]', NULL, NULL, '2026-03-19 19:50:05', '2026-03-19 19:50:05'),
+(855, 'App\\Models\\User', 126, 'auth-token', '150fbe2efdeac42c6eab585604fd7ab89b8d214a983895f9f04957769eec6241', '[\"*\"]', NULL, NULL, '2026-03-19 19:53:18', '2026-03-19 19:53:18'),
+(856, 'App\\Models\\User', 125, 'auth-token', '3f41a4affb883eb88dbd2e51afb107dd17b69f7603a2bac100d26cc87b96c9d5', '[\"*\"]', NULL, NULL, '2026-03-19 19:54:08', '2026-03-19 19:54:08'),
+(857, 'App\\Models\\User', 126, 'auth-token', '2f56efe71d280626ff0a832bd370788bcb764de7beae6eeb31f221cb9a62f33a', '[\"*\"]', NULL, NULL, '2026-03-19 19:55:01', '2026-03-19 19:55:01'),
+(858, 'App\\Models\\User', 137, 'auth-token', '1f82945a670af02a44ac6d67c1c679768f37a668098517815c1e027a2862ee3b', '[\"*\"]', NULL, NULL, '2026-03-19 19:55:19', '2026-03-19 19:55:19'),
+(859, 'App\\Models\\User', 126, 'auth-token', '4a291b569856864fcf60f18f80bddd058bf59204b935e8e541a58430bbf8f78d', '[\"*\"]', NULL, NULL, '2026-03-19 19:56:20', '2026-03-19 19:56:20'),
+(860, 'App\\Models\\User', 126, 'auth-token', '738d0e6f051f0791e001ae4a053cf91053a2bec64e9f256f2cbf210d8c2f6e34', '[\"*\"]', NULL, NULL, '2026-03-19 19:57:01', '2026-03-19 19:57:01'),
+(861, 'App\\Models\\User', 31, 'auth-token', 'b11017e2681612147aa7b4852c5334c4435a25af88da85e042015ab0f640c31b', '[\"*\"]', NULL, NULL, '2026-03-20 03:56:02', '2026-03-20 03:56:02'),
+(862, 'App\\Models\\User', 124, 'auth-token', '490793d5694a7c3b5c565a207f313ca0ffb4a1142c786c79bce21f55aa464f03', '[\"*\"]', NULL, NULL, '2026-03-20 03:56:29', '2026-03-20 03:56:29'),
+(863, 'App\\Models\\User', 31, 'auth-token', '580e000974dd1ac9163e9a5be04760385e961df14741a4109a81ee71ec1c5a92', '[\"*\"]', NULL, NULL, '2026-03-20 03:57:14', '2026-03-20 03:57:14'),
+(864, 'App\\Models\\User', 28, 'auth-token', 'cfb67c6f8c6dceafca12bcae338c5406acc63785734441c816895cbcacc6f9ed', '[\"*\"]', NULL, NULL, '2026-03-20 03:57:37', '2026-03-20 03:57:37'),
+(865, 'App\\Models\\User', 126, 'auth-token', '98b886ba4bfa27d7b439e72f3e7b7df3240c9dd4536099f4df443f45cce13ea1', '[\"*\"]', NULL, NULL, '2026-03-20 04:11:18', '2026-03-20 04:11:18'),
+(866, 'App\\Models\\User', 28, 'auth-token', '7d3307268a2181ad577c63d38221048be384afcb41cd9e2e38649c75abfe9098', '[\"*\"]', NULL, NULL, '2026-03-20 04:11:38', '2026-03-20 04:11:38'),
+(867, 'App\\Models\\User', 126, 'auth-token', '000cd5d12ba9263a55aa3e7190b6f0a0c7d7b35f6463be20d815526d90b6e627', '[\"*\"]', NULL, NULL, '2026-03-20 04:25:32', '2026-03-20 04:25:32'),
+(868, 'App\\Models\\User', 126, 'auth-token', 'b8065f0a928bb781f6d0493ee9d91ffa91c63c5dc3fb3255f49bbff15fa56a65', '[\"*\"]', NULL, NULL, '2026-03-20 04:26:43', '2026-03-20 04:26:43'),
+(869, 'App\\Models\\User', 28, 'auth-token', 'bd393060ad59f1c7454eb6538fbc71f4660b4677b0c66f7c8a87b6cfaf7353f5', '[\"*\"]', NULL, NULL, '2026-03-20 04:27:11', '2026-03-20 04:27:11'),
+(870, 'App\\Models\\User', 28, 'auth-token', '011e510d3f0d84a7d3e8c6889445fd606c6e6a7cadaee19cfb7c9ed675f69850', '[\"*\"]', NULL, NULL, '2026-03-20 04:27:44', '2026-03-20 04:27:44'),
+(871, 'App\\Models\\User', 28, 'auth-token', 'f15af6adda02113560c61ae74b628a1980653208b93709eaf0cef4dee3081d23', '[\"*\"]', NULL, NULL, '2026-03-20 04:49:48', '2026-03-20 04:49:48'),
+(872, 'App\\Models\\User', 28, 'auth-token', 'f6d54ced553b17ede1170db5212ac327ccf14a3451fd7a2bef33dba22a843c56', '[\"*\"]', NULL, NULL, '2026-03-20 04:58:45', '2026-03-20 04:58:45'),
+(873, 'App\\Models\\User', 126, 'auth-token', 'cf4caf01fa23b3dad61cd9575af75296d735cf6ac470d3b216a7b6d22666b1d8', '[\"*\"]', NULL, NULL, '2026-03-20 05:15:47', '2026-03-20 05:15:47'),
+(874, 'App\\Models\\User', 125, 'auth-token', '520a448e803fe5a20fd5087f109fed2b6bae2978a6bc9fc67fffd196a4fcb43f', '[\"*\"]', NULL, NULL, '2026-03-20 05:16:05', '2026-03-20 05:16:05'),
+(875, 'App\\Models\\User', 28, 'auth-token', '90d9c1d31905495d99aff7e1ee0dac55401c0c9c235b586af525c27f50e8ba5a', '[\"*\"]', NULL, NULL, '2026-03-20 05:16:36', '2026-03-20 05:16:36'),
+(876, 'App\\Models\\User', 28, 'auth-token', '05a25df5d43e0d3e3776a880c48dbbddcb9b5d1f6cfa85ebe469c87d7f51ce84', '[\"*\"]', NULL, NULL, '2026-03-20 05:16:45', '2026-03-20 05:16:45'),
+(877, 'App\\Models\\User', 28, 'auth-token', '6363e1ec517b01a2dbbc820f58c435a5636b0b59ce9f7a64787d17c023b24c39', '[\"*\"]', NULL, NULL, '2026-03-20 05:16:52', '2026-03-20 05:16:52'),
+(878, 'App\\Models\\User', 28, 'auth-token', 'b734ed981748f490f4d9ec4729bcc263a786f1abdcaaafbccc8f3e3b091677ea', '[\"*\"]', NULL, NULL, '2026-03-20 05:22:11', '2026-03-20 05:22:11'),
+(879, 'App\\Models\\User', 28, 'auth-token', '0c87eef5c286228ce05cf22e64ef11dc8a47087076f913935ea74e1eecd8fb23', '[\"*\"]', NULL, NULL, '2026-03-20 05:24:14', '2026-03-20 05:24:14'),
+(880, 'App\\Models\\User', 126, 'auth-token', '3c7ec517d2d0a28478903ac17664cd6e55e9407947c117876452cf9bb8f85dca', '[\"*\"]', NULL, NULL, '2026-03-20 05:53:28', '2026-03-20 05:53:28'),
+(881, 'App\\Models\\User', 123, 'auth-token', '86c53edf77e3014715eb922e2a6c1762567d3bbe212c8505c23fbc341dd19b95', '[\"*\"]', NULL, NULL, '2026-03-20 05:54:15', '2026-03-20 05:54:15');
 
 -- --------------------------------------------------------
 
@@ -1342,8 +1371,8 @@ CREATE TABLE `procurement_requests` (
 --
 
 INSERT INTO `procurement_requests` (`id`, `product_id`, `logistics_user_id`, `procurement_user_id`, `finance_user_id`, `quantity`, `price`, `total_amount`, `status`, `budget_approved`, `budget_amount`, `created_at`, `updated_at`, `branch_id`) VALUES
-(22, 25, 127, 126, 125, 10, 23.00, 230.00, 'completed', 1, 230.00, '2026-03-19 12:46:21', '2026-03-19 13:14:58', 28),
-(23, 25, 127, 126, 125, 30, 23.00, 690.00, 'completed', 1, 690.00, '2026-03-19 13:15:38', '2026-03-19 13:18:05', 28);
+(24, 27, 127, 126, 125, 10, 250.00, 2500.00, 'pending_order_to_supplier', 1, 2500.00, '2026-03-19 19:53:06', '2026-03-20 05:16:25', 28),
+(25, 27, 28, 126, 125, 10, 250.00, 2500.00, 'pending_order_to_supplier', 1, 2500.00, '2026-03-20 05:15:28', '2026-03-20 05:16:18', 28);
 
 -- --------------------------------------------------------
 
@@ -1375,8 +1404,7 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`id`, `name`, `slug`, `created_at`, `updated_at`, `price`, `stock`, `min_stock`, `sku`, `branch_id`, `is_published`, `has_been_ordered`, `is_active`, `supplier_name`, `supplier_id`, `logistics_request_available`) VALUES
-(25, 'asd', 'asd', '2026-03-18 09:25:34', '2026-03-19 13:18:05', 23.00, 40, 10, 'ASD-LUVA', 28, 1, 1, 1, 'Umberto Timbag', 137, 0),
-(26, 'test', 'test', '2026-03-18 09:40:31', '2026-03-19 12:22:00', 123.00, 132, 10, 'TEST-V4S8', 28, 1, 1, 1, 'Umberto Timbag', 137, 1);
+(27, 'Samnjang', 'samnjang', '2026-03-19 19:49:34', '2026-03-20 05:15:28', 250.00, 10, 10, 'SAMNJA-OR8A', 28, 0, 1, 1, 'Umberto Timbag', 137, 1);
 
 -- --------------------------------------------------------
 
@@ -1456,10 +1484,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('2YkEeIsPROucff59AlClmCV6wudZc3L4OF2AUslf', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoic3FlSnEyMjBoSGtXNlhNSzM2RlV0bHFURU5VcnNyc3B3VEhVOHhiTSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1773921474),
-('JcVHHrTn8iXDuy8tmDB8eQPSBGPIZzYXPrSDXGNq', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoicHZhWG9oREtpZzRZc3A3MmFZVjNYdEt4d3MzcFA3QU1BM00xYVdKSSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1773919863),
-('lPHHwBh4gWZNujP5YevAqunJ2PJnqyypSiUzWgpF', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoiNjM0SjhZSjNKNWdCTEQyeWhsalNHd0hSaHYwNDE0RDEwY0E3eURIRSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1773923080),
-('nDATVXw77r5HrcaV51mVjF1Elo0tHKwaJ2KdAclq', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiME1iOTZxQTFuTFBPelJCdlpqYXJacEdsS3NBSmpmNjNMWGVKa2UyMCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO319', 1773926546);
+('HOu2OTDPfBcbL5u98oTLOcRef8EdsSltrJ4VrjOP', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiYmZxQXVOcTZtNjloaXNTZUxQVDVBbGE3ZjRQc1pkOFFucmZsWllvViI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO319', 1773986114);
 
 -- --------------------------------------------------------
 
@@ -1535,8 +1560,7 @@ CREATE TABLE `supplier_orders` (
 --
 
 INSERT INTO `supplier_orders` (`id`, `procurement_request_id`, `product_id`, `supplier_id`, `quantity`, `status`, `fulfilled_at`, `branch_id`, `created_at`, `updated_at`) VALUES
-(11, 22, 25, 137, 10, 'fulfilled', '2026-03-19 13:14:58', 28, '2026-03-19 12:47:18', '2026-03-19 13:14:58'),
-(12, 23, 25, 137, 30, 'fulfilled', '2026-03-19 13:18:05', 28, '2026-03-19 13:17:10', '2026-03-19 13:18:05');
+(13, 24, 27, 137, 10, 'fulfilled', '2026-03-19 19:56:27', 28, '2026-03-19 19:55:08', '2026-03-19 19:56:27');
 
 -- --------------------------------------------------------
 
@@ -1832,7 +1856,7 @@ ALTER TABLE `attendance`
 -- AUTO_INCREMENT for table `attendance_settings`
 --
 ALTER TABLE `attendance_settings`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=110;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=113;
 
 --
 -- AUTO_INCREMENT for table `branches`
@@ -1844,7 +1868,7 @@ ALTER TABLE `branches`
 -- AUTO_INCREMENT for table `budget_requests`
 --
 ALTER TABLE `budget_requests`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
 -- AUTO_INCREMENT for table `customer_accounts`
@@ -1886,31 +1910,31 @@ ALTER TABLE `migrations`
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=70;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=72;
 
 --
 -- AUTO_INCREMENT for table `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=847;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=882;
 
 --
 -- AUTO_INCREMENT for table `procurement_requests`
 --
 ALTER TABLE `procurement_requests`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
 
 --
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
 
 --
 -- AUTO_INCREMENT for table `product_comments`
@@ -1946,7 +1970,7 @@ ALTER TABLE `staff_documents`
 -- AUTO_INCREMENT for table `supplier_orders`
 --
 ALTER TABLE `supplier_orders`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `users`

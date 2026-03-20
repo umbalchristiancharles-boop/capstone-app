@@ -536,11 +536,14 @@ class SuperAdminController extends Controller
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
         }
 
-        // Get all products with branch information
-        $products = \App\Models\Product::with('branch')
-            ->orderBy('name', 'asc')
-            ->get()
-            ->map(function ($product) {
+        // Get all products with branch information (optionally filter by branch_id)
+        $branchFilter = $request->query('branch_id');
+        $prodQuery = \App\Models\Product::with('branch')->orderBy('name', 'asc');
+        if ($branchFilter) {
+            $prodQuery->where('branch_id', $branchFilter);
+        }
+
+        $products = $prodQuery->get()->map(function ($product) {
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
