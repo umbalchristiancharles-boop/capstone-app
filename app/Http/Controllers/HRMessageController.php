@@ -42,7 +42,7 @@ class HRMessageController extends Controller
                 'from_user_id' => $m->from_user_id,
                 'from_user' => $m->fromUser ? ['id' => $m->fromUser->id, 'name' => $m->fromUser->full_name ?? $m->fromUser->username, 'role' => $m->fromUser->role ?? null] : null,
                 'to_user_id' => $m->to_user_id,
-                'to_user' => $m->toUser ? ['id' => $m->toUser->id, 'name' => $m->toUser->full_name ?? $m->toUser->username] : null,
+                'to_user' => $m->toUser ? ['id' => $m->toUser->id, 'name' => $m->toUser->full_name ?? $m->toUser->username, 'role' => $m->toUser->role ?? null] : null,
                 'created_at' => $m->created_at,
             ];
         });
@@ -89,13 +89,18 @@ class HRMessageController extends Controller
 
     private function resolveChatUsersFor(User $user)
     {
-        $role = strtoupper($user->role ?? '');
-
         // For HR users: surface people in their branch plus anyone they already have messages with.
-        if ($this->isHrRole($role)) {
-            $partnerIds = Message::where(function ($q) use ($user) {
-                $q->where('from_user_id', $user->id)->orWhere('to_user_id', $user->id);
-            })->pluck('from_user_id', 'to_user_id')->flatten()->unique()->reject(fn ($id) => (int) $id === (int) $user->id);
+        if ($this->isHrUser($user)) {
+            $partnerIds = Message::where('from_user_id', $user->id)
+                ->orWhere('to_user_id', $user->id)
+                ->get(['from_user_id', 'to_user_id'])
+                ->flatMap(function ($m) {
+                    return [$m->from_user_id, $m->to_user_id];
+                })
+                ->filter()
+                ->unique()
+                ->reject(fn ($id) => (int) $id === (int) $user->id)
+                ->values();
 
             $query = User::query()->where('id', '!=', $user->id);
 
@@ -116,20 +121,35 @@ class HRMessageController extends Controller
                 ->orderBy('name')->distinct()->get();
         }
 
-        // For staff/manager: return HR contacts (prefer same branch or global HR).
-        $hrQuery = User::query()->whereRaw("UPPER(role) LIKE '%HR%'");
-
+        // For staff/manager: prefer HR in same branch; fallback to global HR.
         if ($user->branch_id) {
-            $hrQuery->where(function ($q) use ($user) {
-                $q->whereNull('branch_id')->orWhere('branch_id', $user->branch_id);
-            });
+            $sameBranchHr = User::query()
+                ->where(function ($q) {
+                    $q->whereRaw("UPPER(role) LIKE '%HR%'")
+                        ->orWhereRaw("UPPER(COALESCE(department, '')) = 'HR'");
+                })
+                ->where('branch_id', $user->branch_id)
+                ->selectRaw("id, COALESCE(full_name, username, CONCAT('User #', id)) as name, role, branch_id")
+                ->orderBy('name')
+                ->get();
+
+            if ($sameBranchHr->isNotEmpty()) {
+                return $sameBranchHr;
+            }
         }
 
-        $hrUsers = $hrQuery->selectRaw("id, COALESCE(full_name, username, CONCAT('User #', id)) as name, role, branch_id")
-            ->orderBy('name')->get();
+        $globalHr = User::query()
+            ->where(function ($q) {
+                $q->whereRaw("UPPER(role) LIKE '%HR%'")
+                    ->orWhereRaw("UPPER(COALESCE(department, '')) = 'HR'");
+            })
+            ->whereNull('branch_id')
+            ->selectRaw("id, COALESCE(full_name, username, CONCAT('User #', id)) as name, role, branch_id")
+            ->orderBy('name')
+            ->get();
 
-        if ($hrUsers->isNotEmpty()) {
-            return $hrUsers;
+        if ($globalHr->isNotEmpty()) {
+            return $globalHr;
         }
 
         // Fallback so the widget never shows an empty list: pick admins/owners in same branch.
@@ -147,19 +167,32 @@ class HRMessageController extends Controller
 
     private function canChatWith(User $me, User $other): bool
     {
-        $meRole = strtoupper($me->role ?? '');
-        $otherRole = strtoupper($other->role ?? '');
+        $meBranch = $me->branch_id ?? null;
+        $otherBranch = $other->branch_id ?? null;
 
-        if ($this->isHrRole($meRole) || $this->isHrRole($otherRole)) {
-            return true;
+        if ($this->isHrUser($me) || $this->isHrUser($other)) {
+            // HR chats are branch-scoped unless one side is global (no branch).
+            if ($meBranch === null || $otherBranch === null) {
+                return true;
+            }
+
+            return (int) $meBranch === (int) $otherBranch;
         }
 
-        return ($me->branch_id ?? null) === ($other->branch_id ?? null);
+        return $meBranch === $otherBranch;
     }
 
     private function isHrRole(string $role): bool
     {
         return $role === 'HR' || str_contains($role, 'HR');
+    }
+
+    private function isHrUser(User $user): bool
+    {
+        $role = strtoupper($user->role ?? '');
+        $department = strtoupper($user->department ?? '');
+
+        return $this->isHrRole($role) || $department === 'HR';
     }
 
     private function currentUser(): User

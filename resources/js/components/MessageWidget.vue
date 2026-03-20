@@ -10,21 +10,22 @@
           <div class="msg-left-header">Branch Users</div>
           <div class="msg-users">
             <div v-for="u in users" :key="u.id" :class="['msg-user', selected && selected.id === u.id ? 'active' : '']" @click="selectUser(u)">
-              {{ u.name }}
+              <div class="msg-user-name">{{ u.name }}</div>
+              <div class="msg-user-role">{{ roleLabel(u.role) }}</div>
             </div>
           </div>
         </div>
         <div class="msg-right">
           <div class="msg-right-header">
-            <div>{{ selected ? ('Conversation with ' + selected.name) : 'Select a user' }}</div>
+            <div>{{ selected ? ('Conversation with ' + selected.name + ' (' + roleLabel(selected.role) + ')') : 'Select a user' }}</div>
             <button class="close-btn" @click="open = false">Close</button>
           </div>
 
           <div class="msg-messages" ref="messagesPane">
             <div v-if="!selected" class="msg-empty">Choose a user to start</div>
-            <div v-else>
+            <div v-else class="msg-thread">
               <div v-for="m in messages" :key="m.id" :class="['msg-bubble', m.from_user_id === meId ? 'mine' : 'theirs']">
-                  <div v-if="m.from_user && m.from_user.name && m.from_user_id !== meId" class="msg-sender">{{ m.from_user.name }}</div>
+                  <div v-if="m.from_user && m.from_user.name && m.from_user_id !== meId" class="msg-sender">{{ m.from_user.name }} ({{ roleLabel(m.from_user.role) }})</div>
                 <div class="msg-body" v-html="escapeHtml(m.body)"></div>
                 <div class="msg-ts">{{ formatDate(m.created_at) }}</div>
               </div>
@@ -62,6 +63,7 @@ export default {
         csrfRetriedOnce: false,
         fetchUsersInProgress: false,
         stoppedUnauthenticated: false,
+      pollTimer: null,
     }
   },
   computed: {
@@ -72,52 +74,104 @@ export default {
         if (!user || !user.role) return false
 
         const role = String(user.role).toUpperCase()
-        const allowedRoles = ['STAFF', 'MANAGER', 'BRANCH_MANAGER', 'BRANCH MANAGER', 'BRANCH-MANAGER']
-        const isAllowedRole = allowedRoles.includes(role) || role.includes('STAFF')
+        const allowedRoles = ['STAFF', 'MANAGER', 'HR', 'BRANCH_MANAGER', 'BRANCH MANAGER', 'BRANCH-MANAGER']
+        const isAllowedRole = allowedRoles.includes(role) || role.includes('STAFF') || role.includes('HR')
 
-        const isPanelPath = p.startsWith('/staff') || p.startsWith('/manager') || p.includes('staff-panel') || p.includes('manager-panel')
+        const isPanelPath = p.startsWith('/staff') ||
+          p.startsWith('/manager') ||
+          p.startsWith('/hr') ||
+          p.includes('staff-panel') ||
+          p.includes('manager-panel') ||
+          p.includes('hr-panel')
         return isAllowedRole && isPanelPath && this.hasSession
       } catch (e) {
         return false
       }
     }
   },
-    async mounted() {
-      try {
-        const user = JSON.parse(localStorage.getItem('user') || 'null')
-        if (user && user.id) {
-          this.meId = user.id
-          this.clientHasUser = true
-        }
-      } catch (e) {}
-
-      // If the frontend doesn't have a cached user, avoid calling the
-      // backend for session checks. This prevents unauthenticated public
-      // pages (login/landing) from triggering 401s from the widget.
-      if (!this.clientHasUser) {
-        this.hasSession = false
-        return
-      }
-
-      // Check backend auth before messaging
-      try {
-        await axios.get('/me')
-        this.hasSession = true
+  watch: {
+    open(isOpen) {
+      if (isOpen) {
         this.fetchUsers()
-      } catch (err) {
-        console.error('MessageWidget: Authentication failed - clearing stale session and redirecting to login')
-        try {
-          localStorage.removeItem('user')
-          localStorage.removeItem('token')
-          this.$router.push('/staff-landing')
-        } catch (e) {
-          window.location.href = '/staff-landing'
-        }
-        this.hasSession = false
+        this.startPolling()
+      } else {
+        this.stopPolling()
       }
+    },
+    '$route.path'() {
+      this.bootstrapAuthState()
+    }
+  },
+  async mounted() {
+      await this.bootstrapAuthState()
+      window.addEventListener('storage', this.onStorageChange)
+      window.addEventListener('focus', this.onWindowFocus)
+  },
+  beforeUnmount() {
+      this.stopPolling()
+      window.removeEventListener('storage', this.onStorageChange)
+      window.removeEventListener('focus', this.onWindowFocus)
     },
 
   methods: {
+    async bootstrapAuthState(){
+      let user = null
+      try {
+        user = JSON.parse(localStorage.getItem('user') || 'null')
+      } catch (e) {
+        user = null
+      }
+
+      this.clientHasUser = !!(user && user.id)
+      this.meId = this.clientHasUser ? user.id : null
+
+      if (!this.clientHasUser) {
+        this.hasSession = false
+        this.stopPolling()
+        return
+      }
+
+      try {
+        await axios.get('/api/me')
+        const becameAuthenticated = this.hasSession !== true
+        this.hasSession = true
+        this.stoppedUnauthenticated = false
+
+        if (becameAuthenticated || this.open) {
+          this.fetchUsers()
+        }
+      } catch (err) {
+        this.hasSession = false
+        this.stopPolling()
+      }
+    },
+    onStorageChange(){
+      this.bootstrapAuthState()
+    },
+    onWindowFocus(){
+      this.bootstrapAuthState()
+    },
+    roleLabel(role){
+      const value = String(role || '').trim()
+      if (!value) return 'User'
+      return value.replace(/_/g, ' ')
+    },
+    startPolling(){
+      this.stopPolling()
+      this.pollTimer = setInterval(() => {
+        if (!this.hasSession) return
+        this.fetchUsers()
+        if (this.selected && this.selected.id) {
+          this.loadConversation(this.selected.id)
+        }
+      }, 3000)
+    },
+    stopPolling(){
+      if (this.pollTimer) {
+        clearInterval(this.pollTimer)
+        this.pollTimer = null
+      }
+    },
     ensureCsrfOnce(){
       if (this.csrfRetriedOnce) return Promise.resolve()
       return axios.get('/sanctum/csrf-cookie').then(() => { this.csrfRetriedOnce = true }).catch(() => {})
@@ -137,6 +191,11 @@ export default {
 
       axios.get('/api/hr/messages/users').then(resp => {
         this.users = resp.data.users || []
+
+        if (this.selected && this.users.length) {
+          const nextSelected = this.users.find(u => String(u.id) === String(this.selected.id)) || null
+          this.selected = nextSelected
+        }
 
         if (!this.selected && this.users.length) {
           this.selectUser(this.users[0])
@@ -208,13 +267,17 @@ export default {
 .msg-users{overflow:auto;padding:8px}
 .msg-user{padding:10px;border-radius:6px;margin-bottom:6px;cursor:pointer}
 .msg-user.active{background:#eef8ff}
+.msg-user-name{font-weight:600;color:#0f172a}
+.msg-user-role{font-size:12px;color:#64748b;margin-top:2px}
 .msg-right{flex:1;display:flex;flex-direction:column}
 .msg-right-header{display:flex;justify-content:space-between;padding:12px;border-bottom:1px solid #f2f5f8}
 .close-btn{background:#ef4444;color:#fff;border:none;padding:6px 8px;border-radius:6px}
 .msg-messages{flex:1;padding:12px;overflow:auto;background:#f7fbff}
-.msg-bubble{max-width:72%;padding:10px;border-radius:8px;margin-bottom:10px;display:inline-block}
-.msg-bubble.mine{background:#dcfce7;align-self:flex-end}
-.msg-bubble.theirs{background:#fff}
+.msg-thread{display:flex;flex-direction:column;gap:10px}
+.msg-bubble{max-width:72%;padding:10px;border-radius:8px;display:block;word-break:break-word}
+.msg-bubble.mine{background:#dcfce7;align-self:flex-end;margin-left:auto}
+.msg-bubble.theirs{background:#fff;align-self:flex-start;margin-right:auto}
+.msg-sender{font-size:12px;color:#334155;font-weight:600;margin-bottom:6px}
 .msg-ts{font-size:11px;color:#666;margin-top:6px}
 .msg-composer{padding:10px;border-top:1px solid #f0f3f6;background:#fff}
 .msg-composer textarea{width:100%;height:72px;padding:8px;border:1px solid #e2e8f0;border-radius:6px}
