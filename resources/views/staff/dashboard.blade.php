@@ -8,5 +8,6 @@
 </head>
 <body>
     <div id="app"></div>
+    @include('partials.messaging_button')
 </body>
 </html>

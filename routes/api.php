@@ -135,6 +135,13 @@ Route::post('/superadmin/announce', [\App\Http\Controllers\Api\SuperAdminControl
 
     Route::get('/owner-dashboard', [OwnerDashboardController::class, 'index']);
 
+    // HR Messaging routes
+    Route::prefix('hr')->middleware('auth')->group(function () {
+        Route::get('/messages/users', [\App\Http\Controllers\HRMessageController::class, 'users']);
+        Route::get('/messages/conversation/{userId}', [\App\Http\Controllers\HRMessageController::class, 'conversation']);
+        Route::post('/messages/send', [\App\Http\Controllers\HRMessageController::class, 'send']);
+    });
+
     // ==========================================
     // STAFF MANAGEMENT API
     // ==========================================

@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\AdminPasswordResetController;
 use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Admin\DeletedStaffController;
+use App\Http\Controllers\HRMessageController;
 
 // ==========================================
 // AUTHENTICATION ROUTES (Login/Logout)
@@ -220,6 +221,8 @@ Route::prefix('test')->group(function () {
         ]);
     });
 });
+
+/* HR messaging routes removed - use /api/hr/* instead */
 
 // ==========================================
 // SPA CATCH-ALL (MUST BE LAST!)

@@ -1,30 +1,25 @@
-# Fix SuperAdmin Logistics Button Vue Error
+# Messaging 401 Fix - Steps
 
-## Plan Implementation Steps
+## 1. Create TODO.md [DONE]
 
-### 1. [x] Enhance Error Handling in SuperAdminLogisticsPanel.vue
-- Wrap onMounted Promise.all in try-catch
-- Add .catch() to all individual axios calls
-- Log errors to console for debugging
+## 2. Edit MessageWidget.vue [DONE]
+- Add redirect to /staff-landing + localStorage.clear() on /me 401 ✓
+- Disable retries/polling after unauth ✓
+- 401 handling on fetch/load/send ✓
+- Ensure sender account shows correctly [user request] ✓ (already m.from_user.name)
 
-### 2. [x] Update App.vue for Better Route Handling
-- Add key="$route.fullPath" to RouterView for clean remounts
-- Add global window.onerror and unhandledrejection handlers
+## 3. Verify/create HR test user
+- Check `create_hr_user.php` or seed DB
+- Ensure is_active=1
 
-### 3. [ ] Test Navigation
-- Navigate SuperAdminPanel → Logistics button
-- Check browser console for logged errors
-- Verify no Vue warnings during transition
+## 4. Clear caches
+- php artisan route:clear config:clear
 
-### 4. [ ] Validate API Endpoints (if errors persist)
-- Test /api/superadmin/logistics/branches
-- Test /api/superadmin/logistics/products  
-- Test /api/procurement-requests
-- Check server logs (XAMPP error_log)
+## 5. Test
+- Login → /manager/hr → no 401 errors
+- Send message → shows sender account name
+- Logout → redirect, no lingering errors
+- Navigate back → proper login flow
 
-### 5. [ ] Completion
-- attempt_completion once navigation works smoothly
-- Remove/update this TODO.md
-
-**Progress: 2/5 complete**
+## 6. [ ] Complete & attempt_completion
 

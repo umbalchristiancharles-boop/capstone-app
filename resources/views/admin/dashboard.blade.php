@@ -61,5 +61,6 @@
             </div>
         </div>
     </div>
+    @include('partials.messaging_button')
 </body>
 </html>

@@ -8,12 +8,15 @@
       </transition>
     </router-view>
     <div id="page-blur" aria-hidden="true"></div>
+    <message-widget />
   </div>
 </template>
 
 <script>
+import MessageWidget from './components/MessageWidget.vue'
 export default {
   name: 'App',
+  components: { MessageWidget },
   data() {
     return {
       transitionName: 'route-fade'

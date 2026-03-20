@@ -76,7 +76,12 @@ axios.interceptors.request.use(config => {
   // This prevents sending a stale Bearer token for endpoints expecting session (web) auth
   try {
     const laravelSession = getCookie('laravel_session')
-    if (!laravelSession && config && config.headers && config.headers['Authorization']) {
+    // Preserve Authorization header for API requests (Sanctum token auth).
+    // Only remove the Authorization header for non-API requests when there is
+    // no session cookie to avoid accidentally stripping Bearer tokens used
+    // for stateless API endpoints.
+    const isApiRequest = config && (String(config.url || '').startsWith('/api') || String(config.url || '').startsWith('http')) && String(config.url || '').includes('/api/')
+    if (!laravelSession && config && config.headers && config.headers['Authorization'] && !isApiRequest) {
       delete config.headers['Authorization']
     }
   } catch (e) {}
