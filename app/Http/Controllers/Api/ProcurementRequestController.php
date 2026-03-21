@@ -345,6 +345,25 @@ public function requestedProducts(Request $request)
                 if ($supplierOrder && $supplierOrder->status !== 'fulfilled') {
                     $supplierOrder->update(['status' => 'fulfilled', 'fulfilled_at' => now()]);
                 }
+
+                // If there's a linked BudgetRequest created for this procurement,
+                // mark it as completed so the finance panel reflects the fulfilled request.
+                try {
+                    $budgetReq = BudgetRequest::where('branch_id', $procRequest->branch_id)
+                        ->where('purpose', 'LIKE', "%Procurement Request #{$procRequest->id}%")
+                        ->first();
+
+                    if ($budgetReq) {
+                        $budgetReq->update([
+                            'status' => 'Completed',
+                            'processed_by' => $procRequest->procurement_user_id ?? $user->id,
+                            'date_processed' => now()->toDateString(),
+                        ]);
+                        Log::info('Linked BudgetRequest marked Completed', ['budget_request_id' => $budgetReq->id, 'proc_req_id' => $procRequest->id]);
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('Failed to update linked BudgetRequest after procurement completion', ['error' => $e->getMessage(), 'proc_req_id' => $procRequest->id]);
+                }
             });
         } catch (\Exception $e) {
             Log::error('Failed to mark procurement request completed', ['error' => $e->getMessage(), 'proc_req_id' => $procRequest->id]);

@@ -12,6 +12,9 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use App\Models\Product;
+use App\Models\Order;
+use App\Models\BudgetRequest;
+use Carbon\Carbon;
 
 class ManagerProfileController extends Controller
 {
@@ -456,11 +459,71 @@ class ManagerProfileController extends Controller
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
+        // Determine date range
+        $range = $request->get('range', 'today');
+        $now = Carbon::now();
+        switch ($range) {
+            case 'today':
+                $start = $now->copy()->startOfDay();
+                $end = $now->copy()->endOfDay();
+                break;
+            case 'yesterday':
+                $start = $now->copy()->subDay()->startOfDay();
+                $end = $now->copy()->subDay()->endOfDay();
+                break;
+            case 'thisWeek':
+                $start = $now->copy()->startOfWeek();
+                $end = $now->copy()->endOfWeek();
+                break;
+            case 'thisMonth':
+                $start = $now->copy()->startOfMonth();
+                $end = $now->copy()->endOfMonth();
+                break;
+            case 'lastMonth':
+                $start = $now->copy()->subMonth()->startOfMonth();
+                $end = $now->copy()->subMonth()->endOfMonth();
+                break;
+            case 'all':
+                $start = null;
+                $end = null;
+                break;
+            default:
+                $start = $now->copy()->startOfDay();
+                $end = $now->copy()->endOfDay();
+        }
+
+        $branchId = $user->branch_id;
+
+        // Base query for orders in this branch and date range
+        $ordersQuery = Order::where('branch_id', $branchId);
+        if ($start && $end) {
+            $ordersQuery->whereBetween('created_at', [$start, $end]);
+        }
+
+        // Consider completed/approved statuses as revenue-contributing
+        $revenueStatuses = ['completed', 'approved'];
+
+        // Total sales: sum of revenue-contributing orders' grand_total
+        $totalSales = (clone $ordersQuery)->whereIn('status', $revenueStatuses)->sum('grand_total');
+
+        // Total orders in range
+        $totalOrders = (clone $ordersQuery)->count();
+
+        // Pending approvals: count of budget requests with status Pending for this branch
+        $pendingApprovals = BudgetRequest::where('branch_id', $branchId)->where('status', 'Pending')->count();
+
+        // No expenses table yet; set totalExpenses to 0 for now
+        $totalExpenses = 0;
+
+        $netProfit = $totalSales - $totalExpenses;
+
         return response()->json([
             'ok' => true,
-            'totalRevenue' => 0,
-            'totalExpenses' => 0,
-            'netProfit' => 0,
+            'totalRevenue' => $totalSales,
+            'totalExpenses' => $totalExpenses,
+            'netProfit' => $netProfit,
+            'pendingApprovals' => $pendingApprovals,
+            'totalOrders' => $totalOrders,
         ]);
     }
 
@@ -486,9 +549,60 @@ class ManagerProfileController extends Controller
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
+        $branchId = $user->branch_id;
+
+        // Return recent transactions (orders) for this branch
+        $transactions = Order::where('branch_id', $branchId)
+            ->orderBy('ordered_at', 'desc')
+            ->limit(10)
+            ->get()
+            ->map(function ($order) {
+                return [
+                    'id' => $order->id,
+                    'order_code' => $order->order_code ?? ('CT-' . str_pad($order->id, 4, '0', STR_PAD_LEFT)),
+                    'branch_id' => $order->branch_id,
+                    'cashier_id' => $order->cashier_id,
+                    'customer' => $order->customer_name ?? 'Walk-in',
+                    // Detailed items array for finance to inspect line items
+                    'items' => $order->items->map(function ($i) {
+                        return [
+                            'product_id' => $i->product_id,
+                            'product_name' => $i->product_name,
+                            'unit_price' => (float) $i->unit_price,
+                            'quantity' => (int) $i->quantity,
+                            'subtotal' => (float) $i->subtotal,
+                        ];
+                    })->values(),
+                    'items_bought' => $order->items->map(fn($i)=>($i->quantity . 'x ' . $i->product_name))->join(', '),
+                    // Financial breakdown
+                    'subtotal' => (float) $order->subtotal,
+                    'discount_type' => $order->discount_type ?? 'none',
+                    'discount_percent' => (float) $order->discount_percent,
+                    'discount_amount' => (float) $order->discount_amount,
+                    'vat_percent' => (float) $order->vat_percent,
+                    'vat_amount' => (float) $order->vat_amount,
+                    // keep formatted keys for frontend compatibility
+                    'total' => number_format($order->grand_total, 2),
+                    'paid' => number_format($order->amount_paid, 2),
+                    // keep numeric versions as well
+                    'amount_paid' => (float) $order->amount_paid,
+                    'change' => (float) ($order->change_amount ?? 0),
+                    // Approval / status metadata
+                    'status' => $order->status,
+                    'approved_by' => $order->approved_by,
+                    'approved_at' => $order->approved_at ? $order->approved_at->toDateTimeString() : null,
+                    'ordered_at' => $order->ordered_at ? $order->ordered_at->format('M d, Y H:i:s') : null,
+                    'created_at' => $order->created_at ? $order->created_at->toDateTimeString() : null,
+                    'updated_at' => $order->updated_at ? $order->updated_at->toDateTimeString() : null,
+                ];
+            });
+
+        $totalOrders = Order::where('branch_id', $branchId)->count();
+
         return response()->json([
             'ok' => true,
-            'transactions' => []
+            'transactions' => $transactions,
+            'totalOrders' => $totalOrders,
         ]);
     }
 

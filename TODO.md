@@ -1,25 +1,37 @@
-# Messaging 401 Fix - Steps
+# Manager Finance Panel Fix - Implementation Plan
 
-## 1. Create TODO.md [DONE]
+## Status: 4/7 Complete
 
-## 2. Edit MessageWidget.vue [DONE]
-- Add redirect to /staff-landing + localStorage.clear() on /me 401 ✓
-- Disable retries/polling after unauth ✓
-- 401 handling on fetch/load/send ✓
-- Ensure sender account shows correctly [user request] ✓ (already m.from_user.name)
+### 1. ✅ Create TODO.md [DONE]
 
-## 3. Verify/create HR test user
-- Check `create_hr_user.php` or seed DB
-- Ensure is_active=1
+### 2. ✅ Update FinancePanelContent.vue → Professional transactions table [DONE]
 
-## 4. Clear caches
-- php artisan route:clear config:clear
+### 3. ✅ Add auto-refresh polling (30s) + optimize fetches with Promise.all() [DONE]
 
-## 5. Test
-- Login → /manager/hr → no 401 errors
-- Send message → shows sender account name
-- Logout → redirect, no lingering errors
-- Navigate back → proper login flow
+### 2. Verify backend data via CLI queries
+```
+# Find finance manager
+SELECT id, username, branch_id FROM users WHERE department='finance' AND role IN ('MANAGER','BRANCH_MANAGER');
 
-## 6. [ ] Complete & attempt_completion
+# Check orders for branch
+SELECT COUNT(*), SUM(grand_total) FROM orders WHERE branch_id=? AND status IN ('completed','approved');
+
+# Check pending budgets  
+SELECT COUNT(*) FROM budget_requests WHERE branch_id=? AND status='Pending';
+```
+
+### 3. Update FinancePanelContent.vue - Replace placeholder with real transactions/reports table
+
+### 4. Add auto-refresh polling (30s) to ManagerFinancePanel.vue onMounted()
+
+### 5. Polish KPI cards - Add loading/error states, better formatting
+
+### 6. Test status updates - Approve budget → verify ProcurementRequest status change
+
+### 7. Final test & attempt_completion
+
+**Notes:**
+- Backend logic correct (branch-filtered, date-range aware)
+- Status linkage works via BudgetRequestController::markGiven()
+- No duplicate code/files needed
 

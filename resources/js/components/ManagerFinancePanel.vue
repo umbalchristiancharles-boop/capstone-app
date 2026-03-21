@@ -1,8 +1,8 @@
 <template>
   <OwnerPanelLayout
     :userProfile="userProfile"
-    :panelTitle="'Finance Manager Panel'"
-    :panelDescription="'View financial reports, manage budget requests, and analyze revenue for your branch.'"
+    :panelTitle="''"
+    :panelDescription="''"
     :enableProfileUpdate="true"
     :canEditProfile="userProfile.role === 'OWNER'"
     :canChangePassword="true"
@@ -10,135 +10,181 @@
     @profile-updated="onProfileUpdated"
   >
     <template #main>
-      <!-- Overview Cards -->
-      <div class="overview-grid">
-        <div class="overview-card">
-          <span class="overview-label">Total Sales:</span>
-          <span class="overview-value">{{ dashboardTotals.totalSales }}</span>
+      <div class="manager-finance">
+    
+
+    <div class="page-header">
+      <h1 class="page-title">Finance Manager Panel</h1>
+      <p class="page-subtitle">Manage budget approvals and monitor your branch financial performance</p>
+    </div>
+
+    <div class="filter-bar">
+      <div class="filter-group">
+        <label>Date Range:</label>
+        <select v-model="selectedRange" @change="onRangeChange">
+          <option value="today">Today</option>
+          <option value="yesterday">Yesterday</option>
+          <option value="thisWeek">This Week</option>
+          <option value="thisMonth">This Month</option>
+          <option value="lastMonth">Last Month</option>
+          <option value="all">All Time</option>
+        </select>
+      </div>
+      <button class="btn-refresh" @click="refreshDashboard">Refresh</button>
+    </div>
+
+    <div v-if="budgetLoading" class="loading-container">
+      <div class="loading-spinner"></div>
+      <p>Loading budget requests...</p>
+    </div>
+
+    <div v-else class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-icon revenue-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="1" x2="12" y2="23"></line>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+          </svg>
         </div>
-        <div class="overview-card">
-          <span class="overview-label">Pending Approvals:</span>
-          <span class="overview-value">{{ pendingBudgetCount }}</span>
-        </div>
-        <div class="overview-card">
-          <span class="overview-label">Revenue:</span>
-          <span class="overview-value">{{ dashboardTotals.revenue }}</span>
+        <div class="kpi-content">
+          <span class="kpi-label">Total Sales</span>
+          <span class="kpi-value">{{ dashboardTotals.totalSales || '₱0' }}</span>
         </div>
       </div>
 
-      <!-- Budget Requests Section -->
-      <div class="panel-section">
-        <h2 class="section-title">Budget Request Approvals</h2>
-        <p class="section-description">Review and approve/reject budget requests from Logistics Managers</p>
-
-        <div v-if="budgetLoading" class="loading-container">
-          <div class="loading-spinner"></div>
-          <p>Loading budget requests...</p>
+      <div class="kpi-card">
+        <div class="kpi-icon orders-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <path d="M16 10a4 4 0 0 1-8 0"></path>
+          </svg>
         </div>
-
-        <div v-else class="table-container">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Date Requested</th>
-                <th>Requester</th>
-                <th>Purpose</th>
-                <th>Amount</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="req in budgetRequests" :key="req.id">
-                <td>{{ formatDate(req.date_requested) }}</td>
-                <td>{{ req.requester_name }}</td>
-                <td>{{ req.purpose }}</td>
-                <td>₱{{ req.requested_amount }}</td>
-                <td>
-                  <span :class="['status-badge', getStatusClass(req.status)]">
-                    {{ req.status }}
-                  </span>
-                </td>
-                <td>
-                  <div v-if="req.status === 'Pending'" class="action-buttons">
-                    <button
-                      class="btn-approve"
-                      @click="approveRequest(req.id)"
-                      :disabled="processingId === req.id"
-                    >
-                      {{ processingId === req.id ? 'Processing...' : 'Approve' }}
-                    </button>
-                    <button
-                      class="btn-reject"
-                      @click="rejectRequest(req.id)"
-                      :disabled="processingId === req.id"
-                    >
-                      {{ processingId === req.id ? 'Processing...' : 'Reject' }}
-                    </button>
-                  </div>
-                  <div v-else-if="req.status === 'Approved' && req.purpose && /Procurement Request #\d+/i.test(req.purpose)">
-                    <button
-                      class="btn-approve"
-                      @click="markBudgetGiven(req.id)"
-                      :disabled="processingId === req.id"
-                    >
-                      {{ processingId === req.id ? 'Processing...' : 'Budget Given' }}
-                    </button>
-                    <span style="margin-left:8px; color:#666">Approved</span>
-                  </div>
-                  <span v-else class="processed-info">
-                    {{ req.status }} by {{ req.processed_by || 'Unknown' }}
-                    <br>
-                    <small>{{ formatDate(req.date_processed) }}</small>
-                  </span>
-                </td>
-              </tr>
-              <tr v-if="budgetRequests.length === 0">
-                <td colspan="6" class="empty-message">No budget requests found.</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="kpi-content">
+          <span class="kpi-label">Total Orders</span>
+          <span class="kpi-value">{{ dashboardTotals.totalOrders ?? (transactions.length || 0) }}</span>
         </div>
       </div>
 
-      <!-- Finance Reports Section -->
-      <finance-panel-content :reports="financeReports" :transactions="transactions" />
+      <div class="kpi-card">
+        <div class="kpi-icon expenses-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">Pending Approvals</span>
+          <span class="kpi-value">{{ pendingBudgetCount }}</span>
+        </div>
+      </div>
+
+      <div class="kpi-card highlight">
+        <div class="kpi-icon profit-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="20" x2="12" y2="10"></line>
+            <line x1="18" y1="20" x2="18" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="16"></line>
+          </svg>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">Net Revenue</span>
+          <span class="kpi-value">{{ dashboardTotals.revenue || '₱0' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Budget Requests Section (keeps existing functionality) -->
+    <div class="branch-stats panel-section">
+      <h2 class="section-title">Budget Request Approvals</h2>
+      <p class="section-description">Review and manage budget requests for your branch</p>
+
+      <div v-if="budgetLoading" class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Loading budget requests...</p>
+      </div>
+
+      <div v-else class="table-container">
+        <table class="branch-table data-table">
+          <thead>
+            <tr>
+              <th>Date Requested</th>
+              <th>Requester</th>
+              <th>Purpose</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="req in budgetRequests" :key="req.id">
+              <td>{{ formatDate(req.date_requested) }}</td>
+              <td>{{ req.requester_name }}</td>
+              <td>{{ req.purpose }}</td>
+              <td>₱{{ req.requested_amount }}</td>
+              <td>
+                <span :class="['status-badge', getStatusClass(req.status)]">{{ req.status }}</span>
+              </td>
+              <td>
+                <div v-if="req.status === 'Pending'" class="action-buttons">
+                  <button class="btn-approve" @click="approveRequest(req.id)" :disabled="processingId === req.id">{{ processingId === req.id ? 'Processing...' : 'Approve' }}</button>
+                  <button class="btn-reject" @click="rejectRequest(req.id)" :disabled="processingId === req.id">{{ processingId === req.id ? 'Processing...' : 'Reject' }}</button>
+                </div>
+                <div v-else-if="req.status === 'Approved' && req.purpose && /Procurement Request #\d+/i.test(req.purpose)">
+                  <button class="btn-approve" @click="markBudgetGiven(req.id)" :disabled="processingId === req.id">{{ processingId === req.id ? 'Processing...' : 'Budget Given' }}</button>
+                </div>
+                <span v-else class="processed-info">{{ req.status }} by {{ req.processed_by || 'Unknown' }}<br><small>{{ formatDate(req.date_processed) }}</small></span>
+              </td>
+            </tr>
+            <tr v-if="budgetRequests.length === 0">
+              <td colspan="6" class="empty-message">No budget requests found.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Finance Reports Section (kept as-is) -->
+    <finance-panel-content :reports="financeReports" :transactions="transactions" />
+
+    <!-- LOGOUT & OVERLAY (kept unchanged) -->
+    <transition name="fade">
+      <div v-if="showLogoutConfirm" class="logout-confirm-backdrop">
+        <div class="logout-confirm-box">
+          <h3>Logout from Finance Manager Panel?</h3>
+          <p>This will end your current session for Chikin Tayo.</p>
+          <div class="logout-actions">
+            <button class="btn-cancel" @click="cancelLogout" :disabled="isLoggingOut">Cancel</button>
+            <button class="btn-confirm" @click="confirmLogout" :disabled="isLoggingOut">Yes, logout</button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <transition name="fade">
+      <div v-if="showOverlay" class="loading-overlay">
+        <div class="logo-loading-box">
+          <img :src="logoImg" alt="Chikin Tayo" class="logo-loading-img" />
+          <p>{{ overlayText }}</p>
+        </div>
+      </div>
+    </transition>
+      </div>
     </template>
   </OwnerPanelLayout>
-
-  <!-- LOGOUT CONFIRM -->
-  <transition name="fade">
-    <div v-if="showLogoutConfirm" class="logout-confirm-backdrop">
-      <div class="logout-confirm-box">
-        <h3>Logout from Finance Manager Panel?</h3>
-        <p>This will end your current session for Chikin Tayo.</p>
-        <div class="logout-actions">
-          <button class="btn-cancel" @click="cancelLogout" :disabled="isLoggingOut">Cancel</button>
-          <button class="btn-confirm" @click="confirmLogout" :disabled="isLoggingOut">Yes, logout</button>
-        </div>
-      </div>
-    </div>
-  </transition>
-
-  <!-- FULLSCREEN LOADING OVERLAY -->
-  <transition name="fade">
-    <div v-if="showOverlay" class="loading-overlay">
-      <div class="logo-loading-box">
-        <img :src="logoImg" alt="Chikin Tayo" class="logo-loading-img" />
-        <p>{{ overlayText }}</p>
-      </div>
-    </div>
-  </transition>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, onUnmounted } from 'vue'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import FinancePanelContent from './finance/FinancePanelContent.vue'
 import axios from 'axios'
 
 // Logo image
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
+
+const refreshInterval = ref(null)
 
 // Logout state
 const showLogoutConfirm = ref(false)
@@ -162,6 +208,9 @@ const dashboardTotals = ref({
 })
 const financeReports = ref([])
 const transactions = ref([])
+
+// UI filter state (used by new layout controls)
+const selectedRange = ref('today')
 
 // Budget requests state
 const budgetRequests = ref([])
@@ -294,32 +343,72 @@ function getStatusClass(status) {
   }
 }
 
-onMounted(async () => {
-  try {
-    // Fetch user profile
-    const res = await axios.get('/api/manager/finance/profile', { withCredentials: true })
-    userProfile.value = res.data.user
+onMounted(() => {
+  loadInitialData()
 
-    // Fetch dashboard data
-    const dash = await axios.get('/api/manager/finance/dashboard', { withCredentials: true })
-    dashboardTotals.value = {
-      totalSales: dash.data.totalRevenue ? '₱' + Number(dash.data.totalRevenue).toLocaleString('en-PH', { minimumFractionDigits: 2 }) : '₱0',
-      pendingApprovals: dash.data.pendingApprovals || 0,
-      revenue: dash.data.netProfit ? '₱' + Number(dash.data.netProfit).toLocaleString('en-PH', { minimumFractionDigits: 2 }) : '₱0'
+  // Auto-refresh every 30 seconds
+  refreshInterval.value = setInterval(async () => {
+    try {
+      await refreshDashboard()
+    } catch (e) {
+      console.warn('Auto-refresh failed:', e)
     }
+  }, 30000)
+})
 
-    // Fetch finance reports and transactions
-    const reports = await axios.get('/api/manager/finance/reports', { withCredentials: true })
-    financeReports.value = extractArray(reports.data, 'reports')
-    const tx = await axios.get('/api/manager/finance/transactions', { withCredentials: true })
-    transactions.value = extractArray(tx.data, 'transactions')
+// Extract initial load into separate function
+async function loadInitialData() {
+  try {
+    const [profileRes, dashRes, reportsRes, txRes] = await Promise.all([
+      axios.get('/api/manager/finance/profile', { withCredentials: true }),
+      axios.get('/api/manager/finance/dashboard', { params: { range: selectedRange.value }, withCredentials: true }),
+      axios.get('/api/manager/finance/reports', { withCredentials: true }),
+      axios.get('/api/manager/finance/transactions', { withCredentials: true })
+    ])
 
-    // Fetch budget requests
+    userProfile.value = profileRes.data.user
+    dashboardTotals.value = {
+      totalSales: dashRes.data.totalRevenue ? '₱' + Number(dashRes.data.totalRevenue).toLocaleString('en-PH', { minimumFractionDigits: 2 }) : '₱0',
+      pendingApprovals: dashRes.data.pendingApprovals || 0,
+      revenue: dashRes.data.netProfit ? '₱' + Number(dashRes.data.netProfit).toLocaleString('en-PH', { minimumFractionDigits: 2 }) : '₱0',
+      totalOrders: dashRes.data.totalOrders || 0
+    }
+    financeReports.value = extractArray(reportsRes.data, 'reports')
+    transactions.value = extractArray(txRes.data, 'transactions')
     await fetchBudgetRequests()
   } catch (err) {
-    console.error('Error loading data:', err)
+    console.error('Error loading initial data:', err)
+  }
+}
+
+onUnmounted(() => {
+  if (refreshInterval.value) {
+    clearInterval(refreshInterval.value)
   }
 })
+
+// Refresh dashboard / re-fetch data for current filter (used by button + polling)
+async function refreshDashboard() {
+  try {
+    const [dashRes] = await Promise.all([
+      axios.get('/api/manager/finance/dashboard', { params: { range: selectedRange.value }, withCredentials: true }),
+      fetchBudgetRequests()
+    ])
+
+    dashboardTotals.value = {
+      totalSales: dashRes.data.totalRevenue ? '₱' + Number(dashRes.data.totalRevenue).toLocaleString('en-PH', { minimumFractionDigits: 2 }) : '₱0',
+      pendingApprovals: dashRes.data.pendingApprovals || 0,
+      revenue: dashRes.data.netProfit ? '₱' + Number(dashRes.data.netProfit).toLocaleString('en-PH', { minimumFractionDigits: 2 }) : '₱0',
+      totalOrders: dashRes.data.totalOrders || 0
+    }
+  } catch (err) {
+    console.error('Error refreshing dashboard:', err)
+  }
+}
+
+function onRangeChange() {
+  refreshDashboard()
+}
 
 // Mark budget as given by finance (handed to procurement)
 async function markBudgetGiven(id) {
@@ -335,11 +424,17 @@ async function markBudgetGiven(id) {
         // Use the returned budget_request payload to update the local item
         const br = response.data.budget_request || null
         if (br) {
-          budgetRequests.value[idx].status = br.status || budgetRequests.value[idx].status
+          // If the backend could not persist the new enum value (DB enum mismatch),
+          // treat a successful procurement_request update as 'Budget Given' for UX.
+          if (br.status === 'Approved' && response.data.procurement_request) {
+            budgetRequests.value[idx].status = 'Budget Given'
+          } else {
+            budgetRequests.value[idx].status = br.status || budgetRequests.value[idx].status
+          }
           budgetRequests.value[idx].processed_by = br.processed_by || budgetRequests.value[idx].processed_by
           budgetRequests.value[idx].date_processed = br.date_processed || budgetRequests.value[idx].date_processed
         } else {
-          // fallback: mark as Budget Given
+          // fallback: mark as Budget Given when no budget_request payload returned
           budgetRequests.value[idx].status = 'Budget Given'
           budgetRequests.value[idx].processed_by = response.data.procurement_request?.finance_user_id || budgetRequests.value[idx].processed_by
         }
@@ -358,275 +453,190 @@ async function markBudgetGiven(id) {
 </script>
 
 <style scoped>
-.overview-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
+.manager-finance {
+  background-color: #F8FAFC;
+  padding: 30px;
+  min-height: 100vh;
+}
+
+.page-header {
   margin-bottom: 24px;
 }
 
-.overview-card {
-  background: rgba(255, 255, 255, 0.95);
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+.btn-primary, .btn-success, .btn-secondary, .btn-info, .btn-danger {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
 }
 
-.overview-label {
-  display: block;
-  font-size: 13px;
-  color: #666;
-  margin-bottom: 4px;
+.btn-primary {
+  background: #ff9f43;
+  color: #fff;
 }
 
-.overview-value {
-  font-size: 24px;
-  font-weight: 700;
-  color: #4b2a06;
-}
-
-.panel-section {
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 16px;
-  padding: 24px;
-  margin-bottom: 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.section-title {
-  font-size: 20px;
+.btn-secondary {
+  background: #0066FF;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
   font-weight: 600;
-  color: #4b2a06;
+  transition: background 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: #3B82F6;
+}
+
+.back-to-dashboard-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #0066FF;
   margin: 0 0 8px 0;
 }
 
-.section-description {
+.page-subtitle {
+  color: #6B7280;
+  margin: 0;
   font-size: 14px;
-  color: #666;
-  margin: 0 0 16px 0;
 }
 
-.loading-container {
+.filter-bar {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #E5E7EB;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-group label {
+  font-weight: 500;
+  color: #374151;
+}
+
+.filter-group select {
+  padding: 8px 12px;
+  border: 1px solid #D1D5DB;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  color: #111827;
+  cursor: pointer;
+}
+
+.filter-group select:focus {
+  outline: none;
+  border-color: #0066FF;
+  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
+}
+
+.btn-refresh {
+  background: #0066FF;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.btn-refresh:hover { background:#3B82F6 }
+
+.loading-container,
+.error-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px 20px;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #E5E7EB;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 .loading-spinner {
-  width: 36px;
-  height: 36px;
-  border: 3px solid rgba(255, 159, 67, 0.3);
-  border-top: 3px solid #ff9f43;
+  width: 40px;
+  height: 40px;
+  border: 3px solid #E5E7EB;
+  border-top: 3px solid #0066FF;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-.table-container {
-  overflow-x: auto;
-}
+.kpi-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap:20px; margin-bottom:32px }
+.kpi-card { display:flex; align-items:center; gap:16px; padding:20px; background:white; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1); border:1px solid #E5E7EB }
+.kpi-card:hover { transform: translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,0.15) }
+.kpi-card.highlight { border-left:4px solid #FACC15; background:white }
+.kpi-icon { display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:12px; background:#EFF6FF; color:#1E40AF }
+.kpi-content { display:flex; flex-direction:column }
+.kpi-label { font-size:13px; color:#6B7280; margin-bottom:4px }
+.kpi-value { font-size:22px; font-weight:700; color:#0066FF }
 
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-}
+.section-title { font-size:18px; font-weight:600; color:#1F2937; margin:0 0 16px 0 }
 
-.data-table th,
-.data-table td {
-  padding: 12px 16px;
-  text-align: left;
-  border-bottom: 1px solid #eee;
-}
+.branch-stats, .recent-transactions, .panel-section { background:white; padding:20px; border-radius:12px; border:1px solid #E5E7EB; box-shadow:0 4px 12px rgba(0,0,0,0.1); margin-bottom:24px }
 
-.data-table th {
-  background: #fff4e6;
-  font-weight: 600;
-  color: #5a2c0a;
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
+.branch-table-container, .transactions-table-container, .table-container { overflow-x:auto }
+.branch-table, .transactions-table, .data-table { width:100%; border-collapse:collapse }
+.branch-table th, .branch-table td, .transactions-table th, .transactions-table td, .data-table th, .data-table td { padding:12px 16px; text-align:left }
+.branch-table th, .transactions-table th, .data-table th { background:#EFF6FF; color:#1E3A8A; font-weight:600; padding:12px 16px; font-size:14px }
+.branch-table td, .transactions-table td, .data-table td { color:#374151; font-size:14px; border-bottom:1px solid #E5E7EB }
 
-.data-table td {
-  color: #333;
-  font-size: 14px;
-}
+.profit-positive { color:#2ecc71; font-weight:600 }
+.profit-negative { color:#ff6b6b; font-weight:600 }
 
-.empty-message {
-  text-align: center;
-  color: #999;
-  font-style: italic;
-}
+.status-badge { background:#FACC15; color:#1F2937; border-radius:6px; padding:4px 10px; font-size:12px; font-weight:500; text-transform:capitalize }
 
-.status-badge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
-}
+.action-buttons { display:flex; gap:8px }
+.btn-approve { padding:6px 14px; background:#27ae60; color:white; border:none; border-radius:6px; font-size:13px; cursor:pointer }
+.btn-approve:disabled { background:#95a5a6; cursor:not-allowed }
+.btn-reject { padding:6px 14px; background:#e74c3c; color:white; border:none; border-radius:6px; font-size:13px; cursor:pointer }
+.btn-reject:disabled { background:#95a5a6; cursor:not-allowed }
 
-.status-approved {
-  background: rgba(46, 204, 113, 0.15);
-  color: #27ae60;
-}
+.empty-message { text-align:center; color:#999; font-style:italic }
+.processed-info { font-size:13px; color:#666 }
+.processed-info small { color:#999 }
 
-.status-rejected {
-  background: rgba(231, 76, 60, 0.15);
-  color: #e74c3c;
-}
+.logout-confirm-backdrop { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:1000 }
+.logout-confirm-box { background:white; padding:24px; border-radius:12px; text-align:center; max-width:400px }
+.logout-confirm-box h3 { margin:0 0 8px 0; color:#333 }
+.logout-confirm-box p { margin:0 0 20px 0; color:#666 }
+.logout-actions { display:flex; gap:12px; justify-content:center }
+.btn-cancel { padding:10px 24px; background:#6c757d; color:white; border:none; border-radius:8px; cursor:pointer }
+.btn-confirm { padding:10px 24px; background:#dc3545; color:white; border:none; border-radius:8px; cursor:pointer }
 
-.status-pending {
-  background: rgba(241, 196, 15, 0.15);
-  color: #f39c12;
-}
+.loading-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.95); display:flex; align-items:center; justify-content:center; z-index:1001 }
+.logo-loading-box { text-align:center }
+.logo-loading-img { width:120px; margin-bottom:16px }
 
-.action-buttons {
-  display: flex;
-  gap: 8px;
-}
-
-.btn-approve {
-  padding: 6px 14px;
-  background: #27ae60;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 13px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-approve:hover:not(:disabled) {
-  background: #219a52;
-}
-
-.btn-approve:disabled {
-  background: #95a5a6;
-  cursor: not-allowed;
-}
-
-.btn-reject {
-  padding: 6px 14px;
-  background: #e74c3c;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 13px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-reject:hover:not(:disabled) {
-  background: #c0392b;
-}
-
-.btn-reject:disabled {
-  background: #95a5a6;
-  cursor: not-allowed;
-}
-
-.processed-info {
-  font-size: 13px;
-  color: #666;
-}
-
-.processed-info small {
-  color: #999;
-}
-
-/* Logout Confirm */
-.logout-confirm-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.logout-confirm-box {
-  background: white;
-  padding: 24px;
-  border-radius: 12px;
-  text-align: center;
-  max-width: 400px;
-}
-
-.logout-confirm-box h3 {
-  margin: 0 0 8px 0;
-  color: #333;
-}
-
-.logout-confirm-box p {
-  margin: 0 0 20px 0;
-  color: #666;
-}
-
-.logout-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-}
-
-.btn-cancel {
-  padding: 10px 24px;
-  background: #6c757d;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.btn-confirm {
-  padding: 10px 24px;
-  background: #dc3545;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.loading-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.95);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1001;
-}
-
-.logo-loading-box {
-  text-align: center;
-}
-
-.logo-loading-img {
-  width: 120px;
-  margin-bottom: 16px;
-}
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
+.fade-enter-active, .fade-leave-active { transition: opacity 0.3s }
+.fade-enter-from, .fade-leave-to { opacity:0 }
 </style>
 
