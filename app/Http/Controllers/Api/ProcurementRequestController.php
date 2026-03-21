@@ -335,10 +335,61 @@ public function requestedProducts(Request $request)
                 ]);
 
                 // Try to increment stock for the product (if present)
-                if ($procRequest->product) {
-                    $procRequest->product->increment('stock', $procRequest->quantity);
-                    $procRequest->product->update(['has_been_ordered' => true, 'logistics_request_available' => false]);
-                }
+                    if ($procRequest->product) {
+                        // Lock product row and increment stock
+                        $prod = \App\Models\Product::where('id', $procRequest->product->id)->lockForUpdate()->first();
+                        if ($prod) {
+                            $prod->increment('stock', $procRequest->quantity);
+                            $prod->has_been_ordered = true;
+                            $prod->logistics_request_available = false;
+
+                            // Determine supplier cost per unit. Prefer budget_amount (if set),
+                            // otherwise fall back to procurement request price.
+                            try {
+                                $costPerUnit = null;
+                                if (!empty($procRequest->budget_amount) && !empty($procRequest->quantity)) {
+                                    $costPerUnit = (float) $procRequest->budget_amount / max(1, (int)$procRequest->quantity);
+                                } elseif (!empty($procRequest->price)) {
+                                    $costPerUnit = (float) $procRequest->price;
+                                }
+
+                                    if (!is_null($costPerUnit)) {
+                                        // Prepare audit data
+                                        $oldCost = $prod->cost_price;
+                                        $oldPrice = $prod->price;
+
+                                        // Save cost_price and set selling price = cost_price * 1.10 (non-compounding)
+                                        $prod->cost_price = round($costPerUnit, 2);
+                                        $prod->price = round($prod->cost_price * 1.10, 2);
+
+                                        // Record audit if values changed
+                                        $newCost = $prod->cost_price;
+                                        $newPrice = $prod->price;
+                                        if ($oldCost != $newCost || $oldPrice != $newPrice) {
+                                            try {
+                                                \Illuminate\Support\Facades\DB::table('price_audits')->insert([
+                                                    'product_id' => $prod->id,
+                                                    'old_cost_price' => $oldCost,
+                                                    'new_cost_price' => $newCost,
+                                                    'old_price' => $oldPrice,
+                                                    'new_price' => $newPrice,
+                                                    'user_id' => $user->id ?? null,
+                                                    'reason' => 'procurement_complete',
+                                                    'created_at' => now(),
+                                                    'updated_at' => now(),
+                                                ]);
+                                            } catch (\Exception $e) {
+                                                \Illuminate\Support\Facades\Log::warning('Failed to insert price_audit', ['product_id' => $prod->id, 'error' => $e->getMessage()]);
+                                            }
+                                        }
+                                    }
+                            } catch (\Exception $e) {
+                                \Illuminate\Support\Facades\Log::warning('Failed to set cost/selling price on procurement completion', ['product_id' => $prod->id, 'error' => $e->getMessage()]);
+                            }
+
+                            $prod->save();
+                        }
+                    }
 
                 // If there's a linked SupplierOrder, mark it fulfilled as well
                 $supplierOrder = SupplierOrder::where('procurement_request_id', $procRequest->id)->first();

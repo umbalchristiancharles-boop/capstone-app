@@ -110,7 +110,7 @@ class SuperAdminTransactionController extends Controller
         $dateRange = $this->getDateRange($fromDate, $toDate);
 
         // Build query
-        $query = Order::with('branch')->whereBetween('created_at', $dateRange);
+        $query = Order::with(['branch', 'cancelledBy'])->whereBetween('created_at', $dateRange);
 
         // Apply filters
         if ($branchId) {
@@ -161,6 +161,11 @@ class SuperAdminTransactionController extends Controller
                     'change_amount' => (float) $order->change_amount,
                     'created_at' => $order->created_at->toISOString(),
                     'updated_at' => $order->updated_at->toISOString(),
+                    // Refund / cancellation metadata
+                    'cancelled_at' => $order->cancelled_at ? $order->cancelled_at->toISOString() : null,
+                    'cancelled_by' => $order->cancelled_by,
+                    'cancelled_by_name' => $order->cancelledBy ? ($order->cancelledBy->name ?? null) : null,
+                    'refund_reason' => $order->refund_reason ?? null,
                 ];
             });
 
@@ -227,6 +232,10 @@ class SuperAdminTransactionController extends Controller
                 'change_amount' => (float) $order->change_amount,
                 'created_at' => $order->created_at->toISOString(),
                 'updated_at' => $order->updated_at->toISOString(),
+                'cancelled_at' => $order->cancelled_at ? $order->cancelled_at->toISOString() : null,
+                'cancelled_by' => $order->cancelled_by,
+                'cancelled_by_name' => $order->cancelledBy ? ($order->cancelledBy->name ?? null) : null,
+                'refund_reason' => $order->refund_reason ?? null,
             ],
         ]);
     }

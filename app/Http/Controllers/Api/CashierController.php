@@ -178,6 +178,14 @@ class CashierController extends Controller
             $order->save();
             $order->load('items', 'branch');
 
+            // Update branch budget to reflect this cashier transaction (credit sales to budget)
+            $branch = Branch::where('id', $request->branch_id)->lockForUpdate()->first();
+            if ($branch) {
+                $amount = round($finalGrandTotal, 2);
+                $branch->budget = is_null($branch->budget) ? (float) $amount : ($branch->budget + (float) $amount);
+                $branch->save();
+            }
+
             // include computed VAT and discount details in response (not persisted)
             $order->subtotal = $subtotalAll;
             $order->discount_type = $discountType;
@@ -233,6 +241,63 @@ class CashierController extends Controller
     }
 
     /**
+     * Refund a completed order from cashier UI.
+     * This marks the order as cancelled/refunded, records a refund reason,
+     * updates the branch budget (subtracts the order amount), and does NOT
+     * restock inventory (items are treated as disposed).
+     */
+    public function refund(Request $request)
+    {
+        $request->validate([
+            'order_code' => 'required|string',
+            'branch_id'  => 'required|exists:branches,id',
+            'reason'     => 'required|string|max:1000',
+        ]);
+
+        $user = $request->user();
+
+        return DB::transaction(function () use ($request, $user) {
+            $order = Order::where('order_code', $request->order_code)
+                ->where('branch_id', $request->branch_id)
+                ->where('is_cancelled', false)
+                ->whereIn('status', ['completed', 'approved'])
+                ->with('items')
+                ->first();
+
+            if (!$order) {
+                return response()->json(['error' => 'Order not found or already refunded/cancelled.'], 404);
+            }
+
+            // Allow OWNER / SUPER_ADMIN to refund any order; otherwise only the cashier who created it
+            if (!in_array($user->role, ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN']) && $order->cashier_id !== $user->id) {
+                return response()->json(['error' => 'Not authorized to refund this order.'], 403);
+            }
+
+            // Mark as cancelled/refunded and save reason. Do NOT restock products.
+            $order->status = 'cancelled';
+            $order->is_cancelled = true;
+            $order->cancelled_at = now();
+            $order->cancelled_by = $user->id;
+            $order->refund_reason = $request->reason;
+            $order->save();
+
+            // Update branch budget: subtract the refunded amount.
+            $branch = Branch::where('id', $request->branch_id)->lockForUpdate()->first();
+            if ($branch) {
+                $amount = (float) $order->grand_total;
+                $branch->budget = is_null($branch->budget) ? -$amount : ($branch->budget - $amount);
+                $branch->save();
+            }
+
+            return response()->json([
+                'ok' => true,
+                'message' => 'Order refunded successfully.',
+                'order' => $order->fresh(),
+            ]);
+        });
+    }
+
+    /**
      * Recent transactions for the cashier view.
      * Uses authenticated user's branch_id to prevent cross-branch access.
      */
@@ -255,7 +320,7 @@ class CashierController extends Controller
         }
 
         $query = Order::with('items', 'branch')
-            ->whereIn('status', ['pending', 'approved', 'completed'])
+            ->whereIn('status', ['pending', 'approved', 'completed', 'cancelled'])
             ->orderByDesc('ordered_at');
 
         if ($branchId) {

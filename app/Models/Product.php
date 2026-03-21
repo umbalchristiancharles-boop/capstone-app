@@ -15,6 +15,7 @@ class Product extends Model
         'name',
         'slug',
         'price',
+        'cost_price',
         'stock',
         'min_stock',
         'sku',
@@ -29,6 +30,7 @@ class Product extends Model
 
     protected $casts = [
         'price' => 'decimal:2',
+        'cost_price' => 'decimal:2',
         'stock' => 'integer',
         'min_stock' => 'integer',
         'is_published' => 'boolean',

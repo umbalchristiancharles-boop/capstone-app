@@ -33,28 +33,27 @@ class Order extends Model
         'ordered_at',
         'is_cancelled',
         'cancelled_at',
+        'cancelled_by',
+        'refund_reason',
         'approved_at',
         'approved_by',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'ordered_at'    => 'datetime',
-            'cancelled_at'  => 'datetime',
-            'approved_at'   => 'datetime',
-            'created_at'    => 'datetime',
-            'updated_at'    => 'datetime',
-            'subtotal'      => 'decimal:2',
-            'discount_percent' => 'decimal:2',
-            'discount_amount' => 'decimal:2',
-            'vat_percent'   => 'decimal:2',
-            'vat_amount'    => 'decimal:2',
-            'grand_total'   => 'decimal:2',
-            'amount_paid'   => 'decimal:2',
-            'change_amount' => 'decimal:2',
-        ];
-    }
+    protected $casts = [
+        'ordered_at'    => 'datetime',
+        'cancelled_at'  => 'datetime',
+        'approved_at'   => 'datetime',
+        'created_at'    => 'datetime',
+        'updated_at'    => 'datetime',
+        'subtotal'      => 'decimal:2',
+        'discount_percent' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
+        'vat_percent'   => 'decimal:2',
+        'vat_amount'    => 'decimal:2',
+        'grand_total'   => 'decimal:2',
+        'amount_paid'   => 'decimal:2',
+        'change_amount' => 'decimal:2',
+    ];
 
     public function owner(): BelongsTo
     {
@@ -74,5 +73,10 @@ class Order extends Model
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function cancelledBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cancelled_by');
     }
 }

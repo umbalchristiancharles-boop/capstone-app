@@ -12,7 +12,6 @@
     <div v-if="!branchId" class="loading-text">
       Loading branch information...
     </div>
-
     <div v-else class="cashier-body">
       <!-- LEFT: Product catalogue -->
       <section class="product-catalogue">
@@ -179,6 +178,13 @@
               <td>₱{{ fmt(tx.grand_total) }}</td>
               <td>₱{{ fmt(tx.amount_paid) }}</td>
               <td>₱{{ fmt(tx.change_amount) }}</td>
+              <td>
+                <span :class="['status-badge', tx.status === 'cancelled' ? 'status-rejected' : (tx.status === 'completed' ? 'status-approved' : 'status-pending')]">{{ tx.status }}</span>
+              </td>
+              <td>
+                <button v-if="tx.status !== 'cancelled' && (tx.status === 'completed' || tx.status === 'approved')" class="refund-btn" @click="refundOrder(tx)" :disabled="tx.isRefunding">Refund</button>
+                <span v-else class="small-muted">—</span>
+              </td>
               <td>{{ formatDate(tx.ordered_at) }}</td>
             </tr>
           </tbody>
@@ -223,6 +229,8 @@ const pendingOrderCode = ref(null)
 const checkoutError = ref('')
 const checkoutSuccess = ref('')
 const transactions = ref([])
+// track refunding state per transaction
+// we will set `tx.isRefunding = true` temporarily when refund is in progress
 
 // Announcements
 const announcements = ref([])
@@ -338,6 +346,31 @@ async function loadTransactions() {
     transactions.value = res.data
   } catch (e) {
     console.error('Failed to load transactions', e)
+  }
+}
+
+async function refundOrder(tx) {
+  if (!confirm(`Refund order ${tx.order_code}? You will be asked for a reason.`)) return
+  const reason = prompt('Enter refund reason (required):')
+  if (!reason || !reason.trim()) {
+    alert('Refund cancelled: reason is required.')
+    return
+  }
+
+  tx.isRefunding = true
+  try {
+    const res = await axios.post('/api/superadmin/cashier/refund', {
+      order_code: tx.order_code,
+      branch_id: branchId.value,
+      reason: reason.trim(),
+    })
+    alert(res.data?.message || 'Order refunded')
+    await loadTransactions()
+  } catch (e) {
+    const msg = e.response?.data?.error || e.response?.data?.message || e.message || 'Refund failed'
+    alert(msg)
+  } finally {
+    tx.isRefunding = false
   }
 }
 
@@ -804,6 +837,18 @@ async function performLogout() {
   color: #333;
 }
 .tx-table tbody tr:hover { background: #fff8f0; }
+
+.refund-btn {
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #fff3f3;
+  color: #a71d2a;
+  border: 1px solid #f5c2c2;
+  cursor: pointer;
+  font-weight: 600;
+}
+.refund-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.small-muted { color: #888; font-size: 0.9rem; }
 
 /* Items cell in transactions */
 .items-cell {

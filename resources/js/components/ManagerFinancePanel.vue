@@ -145,6 +145,56 @@
       </div>
     </div>
 
+    <!-- Branch Budgets (new) -->
+    <div class="branch-stats panel-section">
+      <h2 class="section-title">Branch Budgets</h2>
+      <p class="section-description">View and edit branch budgets. Changes are applied immediately.</p>
+
+      <div v-if="branchesLoading" class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Loading branches...</p>
+      </div>
+
+      <div v-else class="table-container">
+        <table class="branch-table data-table">
+          <thead>
+            <tr>
+              <th>Branch</th>
+              <th>Code</th>
+              <th>Budget</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="b in branches" :key="b.id">
+              <td>{{ b.name }}</td>
+              <td>{{ b.code }}</td>
+              <td>
+                <div v-if="editingBudgetId === b.id">
+                  <input type="number" v-model="editBudgetValue" step="0.01" />
+                </div>
+                <div v-else>
+                  ₱{{ Number(b.budget || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }}
+                </div>
+              </td>
+              <td>
+                <div v-if="editingBudgetId === b.id">
+                  <button class="btn-approve" @click="saveBudget(b.id)">Save</button>
+                  <button class="btn-reject" @click="cancelEditBudget">Cancel</button>
+                </div>
+                <div v-else>
+                  <button class="btn-secondary" @click="startEditBudget(b.id, b.budget)">Edit</button>
+                </div>
+              </td>
+            </tr>
+            <tr v-if="branches.length === 0">
+              <td colspan="4" class="empty-message">No branches found.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- Finance Reports Section (kept as-is) -->
     <finance-panel-content :reports="financeReports" :transactions="transactions" />
 
@@ -196,7 +246,10 @@ const overlayText = ref('Logging out...')
 const extractArray = (response, key = null) => {
   if (Array.isArray(response)) return response
   if (response?.data && Array.isArray(response.data)) return response.data
+  if (key && Array.isArray(response?.[key])) return response[key]
+  if (key && Array.isArray(response?.data?.[key])) return response.data[key]
   if (key && response?.[key]?.data) return response[key].data
+  if (key && response?.data?.[key]?.data) return response.data[key].data
   return []
 }
 
@@ -206,11 +259,16 @@ const dashboardTotals = ref({
   pendingApprovals: 0,
   revenue: '₱0'
 })
+// Branch budgets
+const branches = ref([])
+const branchesLoading = ref(true)
+const editingBudgetId = ref(null)
+const editBudgetValue = ref(null)
 const financeReports = ref([])
 const transactions = ref([])
 
 // UI filter state (used by new layout controls)
-const selectedRange = ref('today')
+const selectedRange = ref('all')
 
 // Budget requests state
 const budgetRequests = ref([])
@@ -260,6 +318,49 @@ async function fetchBudgetRequests() {
     console.error('Error fetching budget requests:', err)
   } finally {
     budgetLoading.value = false
+  }
+}
+
+// Fetch branches and budgets
+async function fetchBranches() {
+  branchesLoading.value = true
+  try {
+    const res = await axios.get('/api/manager/finance/branches', { withCredentials: true })
+    if (res.data && res.data.ok) {
+      branches.value = res.data.branches || []
+    }
+  } catch (err) {
+    console.error('Error fetching branches:', err)
+  } finally {
+    branchesLoading.value = false
+  }
+}
+
+function startEditBudget(id, current) {
+  editingBudgetId.value = id
+  editBudgetValue.value = Number(current || 0).toFixed(2)
+}
+
+function cancelEditBudget() {
+  editingBudgetId.value = null
+  editBudgetValue.value = null
+}
+
+async function saveBudget(id) {
+  if (editingBudgetId.value !== id) return
+  const val = parseFloat(editBudgetValue.value)
+  if (Number.isNaN(val)) { alert('Invalid budget amount'); return }
+  try {
+    const res = await axios.put(`/api/manager/finance/branches/${id}/budget`, { budget: val }, { withCredentials: true })
+    if (res.data && res.data.ok) {
+      const idx = branches.value.findIndex(b => b.id === id)
+      if (idx !== -1) branches.value[idx] = res.data.branch
+      cancelEditBudget()
+      alert('Budget updated')
+    }
+  } catch (err) {
+    console.error('Failed to save budget:', err)
+    alert(err.response?.data?.message || 'Failed to update budget')
   }
 }
 
@@ -376,6 +477,7 @@ async function loadInitialData() {
     financeReports.value = extractArray(reportsRes.data, 'reports')
     transactions.value = extractArray(txRes.data, 'transactions')
     await fetchBudgetRequests()
+    await fetchBranches()
   } catch (err) {
     console.error('Error loading initial data:', err)
   }
@@ -390,9 +492,11 @@ onUnmounted(() => {
 // Refresh dashboard / re-fetch data for current filter (used by button + polling)
 async function refreshDashboard() {
   try {
-    const [dashRes] = await Promise.all([
+    const [dashRes, txRes] = await Promise.all([
       axios.get('/api/manager/finance/dashboard', { params: { range: selectedRange.value }, withCredentials: true }),
-      fetchBudgetRequests()
+      axios.get('/api/manager/finance/transactions', { withCredentials: true }),
+      fetchBudgetRequests(),
+      fetchBranches()
     ])
 
     dashboardTotals.value = {
@@ -401,6 +505,7 @@ async function refreshDashboard() {
       revenue: dashRes.data.netProfit ? '₱' + Number(dashRes.data.netProfit).toLocaleString('en-PH', { minimumFractionDigits: 2 }) : '₱0',
       totalOrders: dashRes.data.totalOrders || 0
     }
+    transactions.value = extractArray(txRes.data, 'transactions')
   } catch (err) {
     console.error('Error refreshing dashboard:', err)
   }

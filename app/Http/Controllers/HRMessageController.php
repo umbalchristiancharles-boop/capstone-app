@@ -167,6 +167,13 @@ class HRMessageController extends Controller
 
     private function canChatWith(User $me, User $other): bool
     {
+        // Allow admins/owners/super-admins to view any conversation
+        $meRole = strtoupper($me->role ?? '');
+        $otherRole = strtoupper($other->role ?? '');
+        $adminRoles = ['SUPER_ADMIN', 'ADMIN', 'OWNER'];
+        if (in_array($meRole, $adminRoles) || in_array($otherRole, $adminRoles)) {
+            return true;
+        }
         $meBranch = $me->branch_id ?? null;
         $otherBranch = $other->branch_id ?? null;
 

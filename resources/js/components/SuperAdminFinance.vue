@@ -196,7 +196,7 @@ const router = useRouter()
 // State
 const loading = ref(true)
 const error = ref(null)
-const selectedRange = ref('today')
+const selectedRange = ref('all')
 const selectedBranch = ref(null)
 const branches = ref([])
 const dashboard = ref({
@@ -250,8 +250,9 @@ const fetchDashboard = async () => {
     })
 
     if (response.data.ok) {
-      dashboard.value = response.data.dashboard
-      recentTransactions.value = response.data.recent_transactions || []
+      dashboard.value = response.data.dashboard || {}
+      // tolerate both snake_case and camelCase keys for transactions
+      recentTransactions.value = response.data.recent_transactions || response.data.recentTransactions || []
 
       // Fetch branch stats with the same filters
       const branchResponse = await axios.get('/api/superadmin/finance/branches', {
@@ -260,7 +261,16 @@ const fetchDashboard = async () => {
       })
 
       if (branchResponse.data.ok) {
-        branchStats.value = branchResponse.data.branches || []
+        // Normalize branches to { id, name } shape expected by the select control
+        const raw = branchResponse.data.branches || []
+        branchStats.value = raw
+        branches.value = raw.map(b => {
+          // support both shapes: { id, name } and { branch_id, branch_name }
+          if (b.id && b.name) return { id: b.id, name: b.name }
+          if (b.branch_id && b.branch_name) return { id: b.branch_id, name: b.branch_name }
+          // fallback: try common keys
+          return { id: b.branch_id || b.id || null, name: b.branch_name || b.name || b.code || 'Unknown' }
+        }).filter(b => b.id !== null)
       }
     }
   } catch (err) {

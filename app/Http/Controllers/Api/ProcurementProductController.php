@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\ProcurementRequest;
 use App\Models\SupplierOrder;
+use App\Models\Branch;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 
@@ -187,6 +188,20 @@ public function placeOrder(Request $request, $productId)
                 // Clear product logistics flag
                 if ($procRequest->product) {
                     $procRequest->product->update(['logistics_request_available' => false]);
+                }
+
+                // Deduct branch budget for this procurement order (use budget_amount when available)
+                try {
+                    $branch = Branch::where('id', $procRequest->branch_id)->lockForUpdate()->first();
+                    $deductAmount = $procRequest->budget_amount ?? $procRequest->total_amount ?? ($procRequest->price * $quantity);
+                    if ($branch && $deductAmount) {
+                        $branch->budget = is_null($branch->budget) ? 0 : ($branch->budget - (float) $deductAmount);
+                        $branch->save();
+                    }
+                } catch (\Exception $e) {
+                    // If budget update fails, log but allow order creation to continue - transaction will rollback this whole closure
+                    // Let exception bubble to trigger rollback
+                    throw $e;
                 }
 
                 return $order;

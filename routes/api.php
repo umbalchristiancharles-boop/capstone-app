@@ -131,6 +131,7 @@ Route::post('/superadmin/announce', [\App\Http\Controllers\Api\SuperAdminControl
     Route::get('/superadmin/cashier/products',    [\App\Http\Controllers\Api\CashierController::class, 'products']);
     Route::post('/superadmin/cashier/checkout',   [\App\Http\Controllers\Api\CashierController::class, 'checkout']);
     Route::post('/superadmin/cashier/cancel-pending', [\App\Http\Controllers\Api\CashierController::class, 'cancelPending']);
+    Route::post('/superadmin/cashier/refund',   [\App\Http\Controllers\Api\CashierController::class, 'refund']);
     Route::get('/superadmin/cashier/transactions',[\App\Http\Controllers\Api\CashierController::class, 'transactions']);
 
     Route::get('/owner-dashboard', [OwnerDashboardController::class, 'index']);
@@ -253,6 +254,10 @@ Route::prefix('manager')->middleware('auth')->group(function () {
         Route::put('/finance/budget/{id}/reject', [\App\Http\Controllers\Manager\BudgetRequestController::class, 'rejectRequest']);
         // Mark budget as handed to procurement (finance confirms physical handover)
         Route::put('/finance/budget/{id}/given', [\App\Http\Controllers\Manager\BudgetRequestController::class, 'markGiven']);
+
+        // Branch budget management (Finance Manager) - list and update branch budgets
+        Route::get('/finance/branches', [\App\Http\Controllers\Api\ManagerFinanceController::class, 'branches']);
+        Route::put('/finance/branches/{id}/budget', [\App\Http\Controllers\Api\ManagerFinanceController::class, 'updateBranchBudget']);
 
         Route::get('/inventory/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'invProfile']);
         Route::put('/inventory/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'updateInvProfile']);

@@ -494,23 +494,37 @@ class ManagerProfileController extends Controller
 
         $branchId = $user->branch_id;
 
-        // Base query for orders in this branch and date range
-        $ordersQuery = Order::where('branch_id', $branchId);
-        if ($start && $end) {
-            $ordersQuery->whereBetween('created_at', [$start, $end]);
+        // Base query for orders; if manager has no branch assigned, query across all branches
+        $ordersQuery = Order::query();
+        if ($branchId) {
+            $ordersQuery->where('branch_id', $branchId);
         }
 
-        // Consider completed/approved statuses as revenue-contributing
+        // If a date range is provided, filter by either ordered_at or created_at
+        if ($start && $end) {
+            $ordersQuery->where(function ($q) use ($start, $end) {
+                $q->whereBetween('ordered_at', [$start, $end])
+                  ->orWhereBetween('created_at', [$start, $end]);
+            });
+        }
+
+        // Consider completed/approved statuses as revenue-contributing (case-insensitive)
         $revenueStatuses = ['completed', 'approved'];
 
-        // Total sales: sum of revenue-contributing orders' grand_total
-        $totalSales = (clone $ordersQuery)->whereIn('status', $revenueStatuses)->sum('grand_total');
+        // Total sales: sum of revenue-contributing orders' grand_total (case-insensitive status match)
+        $totalSales = (clone $ordersQuery)
+            ->whereIn(DB::raw('LOWER(status)'), $revenueStatuses)
+            ->sum('grand_total');
 
         // Total orders in range
         $totalOrders = (clone $ordersQuery)->count();
 
-        // Pending approvals: count of budget requests with status Pending for this branch
-        $pendingApprovals = BudgetRequest::where('branch_id', $branchId)->where('status', 'Pending')->count();
+        // Pending approvals: count of budget requests with status Pending (filter by branch if available)
+        $pendingApprovalsQuery = BudgetRequest::where('status', 'Pending');
+        if ($branchId) {
+            $pendingApprovalsQuery->where('branch_id', $branchId);
+        }
+        $pendingApprovals = $pendingApprovalsQuery->count();
 
         // No expenses table yet; set totalExpenses to 0 for now
         $totalExpenses = 0;
@@ -551,8 +565,13 @@ class ManagerProfileController extends Controller
 
         $branchId = $user->branch_id;
 
-        // Return recent transactions (orders) for this branch
-        $transactions = Order::where('branch_id', $branchId)
+        // Return recent transactions for this branch; if unassigned, return across all branches.
+        $transactionsQuery = Order::query();
+        if ($branchId) {
+            $transactionsQuery->where('branch_id', $branchId);
+        }
+
+        $transactions = $transactionsQuery
             ->orderBy('ordered_at', 'desc')
             ->limit(10)
             ->get()
@@ -597,7 +616,11 @@ class ManagerProfileController extends Controller
                 ];
             });
 
-        $totalOrders = Order::where('branch_id', $branchId)->count();
+        $totalOrdersQuery = Order::query();
+        if ($branchId) {
+            $totalOrdersQuery->where('branch_id', $branchId);
+        }
+        $totalOrders = $totalOrdersQuery->count();
 
         return response()->json([
             'ok' => true,

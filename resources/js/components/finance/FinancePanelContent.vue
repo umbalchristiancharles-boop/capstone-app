@@ -31,29 +31,35 @@
               <td><span :class="['status-badge', getStatusClass(tx.status)]">{{ tx.status }}</span></td>
               <td>{{ tx.ordered_at || 'N/A' }}</td>
             </tr>
-            <tr v-for="tx in transactions" :key="tx.id + '-details'" v-if="isOpen(tx.id)" class="tx-details-row">
-              <td colspan="6">
-                <div class="tx-details">
-                  <div class="items">
-                    <strong>Items:</strong>
-                    <ul>
-                      <li v-for="item in tx.items || []" :key="item.product_id">
-                        {{ item.quantity }}x {{ item.product_name }} — ₱{{ Number(item.subtotal || 0).toFixed(2) }}
-                      </li>
-                    </ul>
+            <template v-for="tx in transactions" :key="tx.id + '-details'">
+              <tr v-if="isOpen(tx.id)" class="tx-details-row">
+                <td colspan="6">
+                  <div class="tx-details">
+                    <div class="items">
+                      <strong>Items:</strong>
+                      <ul>
+                        <li v-for="item in tx.items || []" :key="item.product_id">
+                          {{ item.quantity }}x {{ item.product_name }} — ₱{{ Number(item.subtotal || 0).toFixed(2) }}
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="breakdown">
+                      <div>Subtotal: ₱{{ Number(tx.subtotal || 0).toFixed(2) }}</div>
+                      <div>Discount ({{ tx.discount_type || 'none' }}): ₱{{ Number(tx.discount_amount || 0).toFixed(2) }}</div>
+                      <div>VAT ({{ tx.vat_percent || 0 }}%): ₱{{ Number(tx.vat_amount || 0).toFixed(2) }}</div>
+                      <div><strong>Total: ₱{{ tx.total }}</strong></div>
+                      <div>Paid: ₱{{ tx.paid }}</div>
+                      <div>Change: ₱{{ Number(tx.change || 0).toFixed(2) }}</div>
+                      <div v-if="tx.approved_by">Approved by: {{ tx.approved_by }} at {{ tx.approved_at }}</div>
+                      <div v-if="tx.status === 'cancelled'">
+                        <div>Refunded by: {{ tx.cancelled_by || 'N/A' }} at {{ tx.cancelled_at || 'N/A' }}</div>
+                        <div v-if="tx.refund_reason">Refund reason: {{ tx.refund_reason }}</div>
+                      </div>
+                    </div>
                   </div>
-                  <div class="breakdown">
-                    <div>Subtotal: ₱{{ Number(tx.subtotal || 0).toFixed(2) }}</div>
-                    <div>Discount ({{ tx.discount_type || 'none' }}): ₱{{ Number(tx.discount_amount || 0).toFixed(2) }}</div>
-                    <div>VAT ({{ tx.vat_percent || 0 }}%): ₱{{ Number(tx.vat_amount || 0).toFixed(2) }}</div>
-                    <div><strong>Total: ₱{{ tx.total }}</strong></div>
-                    <div>Paid: ₱{{ tx.paid }}</div>
-                    <div>Change: ₱{{ Number(tx.change || 0).toFixed(2) }}</div>
-                    <div v-if="tx.approved_by">Approved by: {{ tx.approved_by }} at {{ tx.approved_at }}</div>
-                  </div>
-                </div>
-              </td>
-            </tr>
+                </td>
+              </tr>
+            </template>
             <tr v-if="transactions.length === 0">
               <td colspan="6" class="empty-message">No recent transactions found.</td>
             </tr>
