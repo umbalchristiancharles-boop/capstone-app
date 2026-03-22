@@ -102,8 +102,12 @@ class StaffInventoryController extends Controller
         $user = Auth::user();
         $branchId = $user->branch_id;
 
-$query = Product::where('branch_id', $branchId)->where('is_active', 1);
-        if (strtoupper($user->role ?? '') !== 'SUPPLIER') {
+        $query = Product::where('branch_id', $branchId)->where('is_active', 1);
+
+        // Suppliers should only see products they own; other roles see published products.
+        if (strtoupper($user->role ?? '') === 'SUPPLIER') {
+            $query->where('supplier_id', $user->id);
+        } else {
             $query->where('is_published', 1);
         }
 

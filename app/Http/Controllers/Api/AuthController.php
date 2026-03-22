@@ -338,9 +338,52 @@ $validRoles = ['SUPER_ADMIN', 'ADMIN', 'OWNER', 'MANAGER', 'MANAGER_HR', 'HR', '
             'must_change_password' => false,
         ]);
 
+        // If user has an email and it's not verified, either send a one-time verification code
+        // or auto-verify for supplier accounts (created via procurement panel).
+        $verificationSent = false;
+
+        $roleUpper = strtoupper(trim($user->role ?? ''));
+        $isBsupplierUser = isset($user->username) && Str::startsWith(strtolower($user->username), 'bsupplier');
+        $skipVerification = ($roleUpper === 'SUPPLIER' || $isBsupplierUser);
+
+        if (!empty($user->email) && is_null($user->email_verified_at)) {
+            if ($skipVerification) {
+                // Auto-verify supplier emails because procurement panel already emailed credentials
+                try {
+                    $user->email_verified_at = now();
+                    $user->save();
+                    Cache::forget('verification_code_' . $user->email);
+                    Log::info('Auto-verified supplier email after password change for user id ' . $user->id);
+                } catch (\Exception $e) {
+                    Log::error('Failed to auto-verify supplier email after password change: ' . $e->getMessage());
+                }
+            } else {
+                try {
+                    $email = $user->email;
+                    $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+                    Cache::put('verification_code_' . $email, $code, 600); // 10 minutes
+
+                    Mail::raw(
+                        "Your CHIKIN TAYO verification code is: {$code}\n\nThis code will expire in 10 minutes.",
+                        function ($message) use ($email) {
+                            $message->to($email)
+                                    ->subject('CHIKIN TAYO - Email Verification Code');
+                        }
+                    );
+
+                    Log::info("Verification email sent to {$email} after password change");
+                    $verificationSent = true;
+                } catch (\Exception $e) {
+                    Log::error('Failed to send verification email after password change: ' . $e->getMessage());
+                    // Do not fail the password change if email sending fails
+                }
+            }
+        }
+
         return response()->json([
             'ok' => true,
             'message' => 'Password updated successfully',
+            'verification_sent' => $verificationSent,
         ]);
     }
 
@@ -434,6 +477,23 @@ $validRoles = ['SUPER_ADMIN', 'ADMIN', 'OWNER', 'MANAGER', 'MANAGER_HR', 'HR', '
 
         // Fetch and return updated user data
         $updatedUser = User::find($userId);
+
+        // If password was updated and the account is a supplier (or bsupplier username),
+        // auto-verify the email because procurement panel already sent credentials.
+        if (!empty($validated['password']) && !empty($updatedUser->email) && is_null($updatedUser->email_verified_at)) {
+            $roleUpper = strtoupper(trim($updatedUser->role ?? ''));
+            $isBsupplierUser = isset($updatedUser->username) && Str::startsWith(strtolower($updatedUser->username), 'bsupplier');
+            if ($roleUpper === 'SUPPLIER' || $isBsupplierUser) {
+                try {
+                    $updatedUser->email_verified_at = now();
+                    $updatedUser->save();
+                    Cache::forget('verification_code_' . $updatedUser->email);
+                    Log::info('Auto-verified supplier email after profile password update for user id ' . $updatedUser->id);
+                } catch (\Exception $e) {
+                    Log::error('Failed to auto-verify supplier email after profile update: ' . $e->getMessage());
+                }
+            }
+        }
 
         // Generate full absolute URL for avatar if it exists
         $avatarUrl = null;

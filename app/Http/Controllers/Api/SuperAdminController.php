@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 use App\Models\User;
 use App\Models\Branch;
 use App\Models\Order;
+    use Illuminate\Support\Facades\Schema;
 
 class SuperAdminController extends Controller
 {
@@ -382,7 +383,7 @@ class SuperAdminController extends Controller
             $targetCount = $this->getTargetUserCount($target);
 
             // Log the announcement activity
-            \Log::info("Announcement sent by user ID {$user->id}: '{$validated['title']}' to target: {$target} ({$targetCount} users)");
+            Log::info("Announcement sent by user ID {$user->id}: '{$validated['title']}' to target: {$target} ({$targetCount} users)");
 
             return response()->json([
                 'ok' => true,
@@ -395,7 +396,7 @@ class SuperAdminController extends Controller
                 ],
             ]);
         } catch (\Exception $e) {
-            \Log::error('Failed to send announcement: ' . $e->getMessage());
+            Log::error('Failed to send announcement: ' . $e->getMessage());
             return response()->json([
                 'ok' => false,
                 'message' => 'Failed to send announcement. Please try again.',
@@ -970,7 +971,7 @@ class SuperAdminController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('storeBranch error: ' . $e->getMessage());
+            Log::error('storeBranch error: ' . $e->getMessage());
             return response()->json([
                 'ok' => false,
                 'message' => 'Failed to create branch: ' . $e->getMessage(),
@@ -1001,22 +1002,122 @@ class SuperAdminController extends Controller
 
         DB::beginTransaction();
         try {
-            // Permanently delete all users belonging to this branch (admins, hr managers, staff)
-            // Include already soft-deleted users and force delete them from the database
+            // Collect all user IDs belonging to this branch (including soft-deleted)
+            $userIds = User::withTrashed()->where('branch_id', $branch->id)->pluck('id')->toArray();
+
+            // First, delete records tied to the branch to avoid FK constraint errors
+            $branchTables = [
+                'orders',
+                'procurement_requests',
+                'purchase_requests',
+                'purchase_orders',
+                'settlements',
+                'expenses',
+                'supplier_orders',
+                'products',
+                'attendance',
+                'attendance_settings',
+                'budget_requests',
+                'staff_documents',
+                'messages',
+                'announcements',
+                'customer_accounts'
+            ];
+
+            foreach ($branchTables as $table) {
+                try {
+                    if (Schema::hasColumn($table, 'branch_id')) {
+                        DB::table($table)->where('branch_id', $branch->id)->delete();
+                        continue;
+                    }
+
+                    // Some tables (like purchase_orders) don't have branch_id but can be linked
+                    if ($table === 'purchase_orders') {
+                        if (Schema::hasColumn('purchase_orders', 'purchase_request_id') && Schema::hasColumn('purchase_requests', 'branch_id')) {
+                            $prIds = DB::table('purchase_requests')->where('branch_id', $branch->id)->pluck('id')->toArray();
+                            if (!empty($prIds)) {
+                                DB::table('purchase_orders')->whereIn('purchase_request_id', $prIds)->delete();
+                            }
+                        }
+                    }
+                } catch (\Exception $e) {
+                    // Log and continue — we don't want missing columns to abort the whole delete
+                    Log::warning("deleteBranch: skipping table {$table} cleanup: " . $e->getMessage());
+                    continue;
+                }
+            }
+
+            // Delete orders that reference these users in approval fields (if any remain)
+            if (!empty($userIds)) {
+                DB::table('orders')->whereIn('approved_by', $userIds)->delete();
+            }
+
+            // Delete records that reference users by user-specific columns
+            if (!empty($userIds)) {
+                if (Schema::hasColumn('messages', 'from_user_id') && Schema::hasColumn('messages', 'to_user_id')) {
+                    DB::table('messages')->whereIn('from_user_id', $userIds)->orWhereIn('to_user_id', $userIds)->delete();
+                }
+
+                if (Schema::hasColumn('settlements', 'processed_by')) {
+                    DB::table('settlements')->whereIn('processed_by', $userIds)->delete();
+                }
+
+                if (Schema::hasColumn('purchase_requests', 'requester_id')) {
+                    DB::table('purchase_requests')->whereIn('requester_id', $userIds)->delete();
+                }
+
+                if (Schema::hasColumn('procurement_requests', 'logistics_user_id') || Schema::hasColumn('procurement_requests', 'procurement_user_id') || Schema::hasColumn('procurement_requests', 'finance_user_id')) {
+                    $q = DB::table('procurement_requests');
+                    if (Schema::hasColumn('procurement_requests', 'logistics_user_id')) $q->whereIn('logistics_user_id', $userIds);
+                    if (Schema::hasColumn('procurement_requests', 'procurement_user_id')) $q->orWhereIn('procurement_user_id', $userIds);
+                    if (Schema::hasColumn('procurement_requests', 'finance_user_id')) $q->orWhereIn('finance_user_id', $userIds);
+                    $q->delete();
+                }
+
+                if (Schema::hasColumn('expenses', 'created_by')) {
+                    DB::table('expenses')->whereIn('created_by', $userIds)->delete();
+                }
+
+                if (Schema::hasColumn('announcements', 'sender_id')) {
+                    DB::table('announcements')->whereIn('sender_id', $userIds)->delete();
+                }
+
+                if (Schema::hasColumn('attendance', 'user_id')) {
+                    DB::table('attendance')->whereIn('user_id', $userIds)->delete();
+                }
+
+                if (Schema::hasColumn('staff_documents', 'user_id')) {
+                    DB::table('staff_documents')->whereIn('user_id', $userIds)->delete();
+                }
+
+                if (Schema::hasColumn('product_comments', 'user_id')) {
+                    DB::table('product_comments')->whereIn('user_id', $userIds)->delete();
+                }
+
+                if (Schema::hasColumn('customer_accounts', 'user_id')) {
+                    DB::table('customer_accounts')->whereIn('user_id', $userIds)->delete();
+                }
+
+                if (Schema::hasColumn('purchase_orders', 'supplier_id')) {
+                    DB::table('purchase_orders')->whereIn('supplier_id', $userIds)->delete();
+                }
+            }
+
+            // Permanently delete all users belonging to this branch
             User::withTrashed()->where('branch_id', $branch->id)->forceDelete();
 
-            // Soft-delete the branch itself
-            $branch->delete();
+            // Permanently delete the branch itself
+            $branch->forceDelete();
 
             DB::commit();
 
             return response()->json([
                 'ok' => true,
-                'message' => "Branch '{$branch->name}' and its accounts were permanently deleted.",
+                'message' => "Branch '{$branch->name}' and all connected data were permanently deleted.",
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('deleteBranch error: ' . $e->getMessage());
+            Log::error('deleteBranch error: ' . $e->getMessage());
             return response()->json(['ok' => false, 'message' => 'Failed to delete branch: ' . $e->getMessage()], 500);
         }
     }

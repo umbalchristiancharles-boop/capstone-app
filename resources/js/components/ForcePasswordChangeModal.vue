@@ -235,8 +235,8 @@ async function submit() {
 
     if (res.data.ok) {
       success.value = 'Password updated!'
-      // Emit completion; ChangePasswordPage will redirect to verification page if needed
-      setTimeout(() => emit('completed'), 800)
+      // Emit completion with server response so parent can decide next step
+      setTimeout(() => emit('completed', { verification_sent: res.data.verification_sent ?? false }), 800)
     } else {
       error.value = res.data.message || 'Unable to update password.'
     }

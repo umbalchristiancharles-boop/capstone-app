@@ -221,6 +221,19 @@ async function handleLogin() {
                                 return;
             }
 
+            // After login, ensure the user has an email attached. If not, send them
+            // to the verify-email flow so they can attach and confirm an email.
+            try {
+                const meRes = await axios.get('/api/me', { withCredentials: true });
+                const u = meRes.data.user;
+                if (!u || !u.email) {
+                    router.push('/verify-email');
+                    return;
+                }
+            } catch (e) {
+                // ignore errors from /api/me - fall back to normal redirect
+            }
+
             setTimeout(() => {
                 showOverlay.value = true;
                 setTimeout(() => {

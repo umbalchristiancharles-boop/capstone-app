@@ -34,8 +34,14 @@ onMounted(() => {
   }
 })
 
-function handleCompleted() {
-  // Redirect to login or dashboard after password change
+function handleCompleted(payload) {
+  // If server sent verification code, send user to verify page first
+  if (payload && payload.verification_sent) {
+    router.push('/verify-email')
+    return
+  }
+
+  // Otherwise redirect to dashboard
   router.push('/staff-landing')
 }
 
