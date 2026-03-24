@@ -108,7 +108,7 @@
                     class="staff-btn staff-btn--center"
                     @click="goToStaffManagement"
                   >
-                    👥 Staff Management
+                    Staff Management
                   </button>
                   <!-- Add Branch Button (Owner only) -->
                   <button
@@ -116,10 +116,10 @@
                     class="primary-action-btn"
                     @click="goToAddBranches"
                   >
-                    ➕ Add Branch
+                    Add Branch
                   </button>
                   <!-- Announcement Button (Owner only) -->
-                  <button v-if="ownerProfile.role === 'OWNER'" class="primary-action-btn" @click="showAnnouncement = true">📣 Send Announcement</button>
+                  <button v-if="ownerProfile.role === 'OWNER'" class="primary-action-btn" @click="showAnnouncement = true">Send Announcement</button>
                   <!-- Logout Button -->
                   <button
                     class="logout-btn logout-btn--center"
@@ -1321,7 +1321,7 @@ onMounted(() => {
 }
 
 h1, h2 {
-  color: #0066FF !important;
+  color: var(--text-dark) !important;
   font-weight: 800 !important;
   font-family: 'Inter', 'Poppins', sans-serif !important;
   letter-spacing: -0.5px !important;
@@ -1333,7 +1333,7 @@ h1, h2 {
 }
 
 .avatar-change-text {
-  color: #0066FF !important;
+  color: var(--text-dark) !important;
 }
 
 .btn-primary {
@@ -1355,7 +1355,7 @@ h1, h2 {
 }
 
 .brand-text {
-  color: #0066FF;
+  color: var(--text-dark);
   font-weight: 800;
 }
 

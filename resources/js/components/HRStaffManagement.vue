@@ -459,7 +459,7 @@ function formatDate(dateString) {
 .staff-management-page h2 {
   font-family: 'Inter', 'Poppins', sans-serif;
   font-weight: 800;
-  color: #0066FF;
+  color: var(--text-dark);
 }
 
 .admin-label, .metric-label, .overview-label, .branch-count {
@@ -467,7 +467,7 @@ function formatDate(dateString) {
 }
 
 .avatar-change-text {
-  color: #0066FF !important;
+  color: var(--text-dark) !important;
 }
 
 .btn-primary {
@@ -493,6 +493,12 @@ function formatDate(dateString) {
   font-size: 2.5rem;
   font-weight: 700;
   letter-spacing: -1px;
+}
+
+.owner-staff-title {
+  font-family: 'Inter', 'Poppins', sans-serif !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.5px !important;
 }
 
 .header-actions {

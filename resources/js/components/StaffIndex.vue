@@ -40,27 +40,28 @@ function goToCustomerLanding() {
     width: 100%;
     height: 100%;
     min-height: 100vh;
-background: linear-gradient(135deg, #0066FF 0%, #3B82F6 55%, #FACC15 100%);
-  color: white;
-}
+    /* Use transparent so the global radial background on `.page` shows through */
+    background: transparent;
+    color: var(--text-dark);
+  }
 
 .hero-left h1 {
-  color: white;
+  color: var(--text-dark);
   font-weight: 800;
   font-family: 'Inter', 'Poppins', sans-serif;
   letter-spacing: -0.5px;
 }
 
 .hero-left p {
-  color: rgba(255,255,255,0.9);
+  color: rgba(66, 33, 11, 0.9);
   font-size: 15px;
   line-height: 1.6;
   opacity: 0.9;
 }
 
 .btn-login {
-  background: white;
-  color: #0066FF;
+  background: var(--dirty-white);
+  color: var(--text-dark);
   padding: 12px 22px;
   border-radius: 8px;
   font-weight: 600;
@@ -77,8 +78,8 @@ background: linear-gradient(135deg, #0066FF 0%, #3B82F6 55%, #FACC15 100%);
 
 .btn-back {
   background: transparent;
-  border: 1px solid rgba(255,255,255,0.4);
-  color: white;
+  border: 1px solid rgba(66, 33, 11, 0.12);
+  color: var(--text-dark);
   padding: 10px 18px;
   border-radius: 8px;
   font-weight: 600;

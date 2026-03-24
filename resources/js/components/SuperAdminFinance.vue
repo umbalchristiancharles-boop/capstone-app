@@ -315,9 +315,11 @@ onMounted(async () => {
 
 <style scoped>
 .superadmin-finance {
-  background-color: #F8FAFC;
+  background: var(--bg-main);
   padding: 30px;
   min-height: 100vh;
+  color: var(--text-dark);
+  font-family: Poppins, Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 .page-header {
@@ -335,17 +337,17 @@ onMounted(async () => {
 }
 
 .btn-primary {
-  background: #ff9f43;
+  background: #0066FF;
   color: #fff;
 }
 
 .btn-primary:hover {
-  background: #fabd83;
+  background: #3B82F6;
 }
 
 .btn-secondary {
-  background: #0066FF;
-  color: white;
+  background: var(--surface-card);
+  color: var(--text-dark);
   border: none;
   border-radius: 8px;
   padding: 8px 16px;
@@ -354,7 +356,7 @@ onMounted(async () => {
 }
 
 .btn-secondary:hover {
-  background: #3B82F6;
+  filter: brightness(0.98);
 }
 
 /* Back to Dashboard Button */
@@ -372,7 +374,7 @@ onMounted(async () => {
 }
 
 h1, h2 {
-  color: #0066FF !important;
+  color: var(--text-dark) !important;
   font-weight: 800 !important;
   font-family: 'Inter', 'Poppins', sans-serif !important;
   letter-spacing: -0.5px !important;
@@ -380,7 +382,7 @@ h1, h2 {
 }
 
 .admin-label, .metric-label, .overview-label, .branch-count, .kpi-label, .section-title {
-  color: #64748B !important;
+  color: rgba(66, 33, 11, 0.9) !important;
 }
 
 .avatar-change-text {
@@ -393,27 +395,28 @@ h1, h2 {
 }
 
 .btn-primary:hover {
-  background: #0057e6 !important;
+  background: #3B82F6 !important;
 }
 
 .btn-secondary, .btn-outline {
-  background: #64748B !important;
-  color: white !important;
+  background: var(--surface-card);
+  color: var(--text-dark);
+  border: 1px solid var(--border-stroke);
 }
 
 .btn-secondary:hover, .btn-outline:hover {
-  background: #525c6a !important;
+  filter: brightness(0.98);
 }
 
 .page-title {
   font-size: 28px;
   font-weight: 700;
-  color: #0066FF;
+  color: var(--text-dark);
   margin: 0 0 8px 0;
 }
 
 .page-subtitle {
-  color: #6B7280;
+  color: rgba(66, 33, 11, 0.9);
   margin: 0;
   font-size: 14px;
 }
@@ -424,10 +427,10 @@ h1, h2 {
   align-items: center;
   margin-bottom: 24px;
   padding: 20px;
-  background: white;
+  background: var(--surface-card);
   border-radius: 12px;
-  border: 1px solid #E5E7EB;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  border: 1px solid var(--border-stroke);
+  box-shadow: 0 4px 12px rgba(16,24,40,0.04);
 }
 
 .filter-group {
@@ -438,23 +441,23 @@ h1, h2 {
 
 .filter-group label {
   font-weight: 500;
-  color: #374151;
+  color: var(--text-dark);
 }
 
 .filter-group select {
   padding: 8px 12px;
-  border: 1px solid #D1D5DB;
+  border: 1px solid var(--border-stroke);
   border-radius: 8px;
   font-size: 14px;
-  background: white;
-  color: #111827;
+  background: var(--surface-card);
+  color: var(--text-dark);
   cursor: pointer;
 }
 
 .filter-group select:focus {
   outline: none;
   border-color: #0066FF;
-  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
+  box-shadow: 0 0 0 3px rgba(3,37,65,0.06);
 }
 
 .btn-refresh {
@@ -470,7 +473,7 @@ h1, h2 {
 }
 
 .btn-refresh:hover {
-  background: #3B82F6;
+  filter: brightness(0.97);
 }
 
 .loading-container,
@@ -480,16 +483,16 @@ h1, h2 {
   align-items: center;
   justify-content: center;
   padding: 60px 20px;
-  background: white;
+  background: var(--surface-card);
   border-radius: 12px;
-  border: 1px solid #E5E7EB;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border: 1px solid var(--border-stroke);
+  box-shadow: 0 8px 24px rgba(16,24,40,0.04);
 }
 
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #E5E7EB;
+  border: 3px solid var(--border-stroke);
   border-top: 3px solid #0066FF;
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -501,7 +504,7 @@ h1, h2 {
 }
 
 .error-message {
-  color: #EF4444;
+  color: var(--alert);
   margin-bottom: 16px;
 }
 
@@ -517,7 +520,7 @@ h1, h2 {
 }
 
 .btn-retry:hover {
-  background: #3B82F6;
+  filter: brightness(0.97);
 }
 
 .kpi-grid {
@@ -532,21 +535,21 @@ h1, h2 {
   align-items: center;
   gap: 16px;
   padding: 20px;
-  background: white;
+  background: var(--surface-card);
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  border: 1px solid #E5E7EB;
+  box-shadow: 0 8px 24px rgba(16,24,40,0.04);
+  border: 1px solid var(--border-stroke);
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .kpi-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  box-shadow: 0 6px 20px rgba(16,24,40,0.08);
 }
 
 .kpi-card.highlight {
-  border-left: 4px solid #FACC15;
-  background: white;
+  border-left: 4px solid var(--color-golden-yellow);
+  background: var(--surface-card);
 }
 
 .kpi-icon {
@@ -556,15 +559,11 @@ h1, h2 {
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  background: #EFF6FF;
-  color: #1E40AF;
+  background: rgba(3,37,65,0.04);
+  color: #0066FF;
 }
 
-.revenue-icon { }
-.orders-icon { }
-.expenses-icon { }
-.refunds-icon { }
-.profit-icon { }
+
 
 .kpi-content {
   display: flex;
@@ -573,30 +572,30 @@ h1, h2 {
 
 .kpi-label {
   font-size: 13px;
-  color: #6B7280;
+  color: rgba(66, 33, 11, 0.9);
   margin-bottom: 4px;
 }
 
 .kpi-value {
   font-size: 22px;
   font-weight: 700;
-  color: #0066FF;
+  color: var(--text-dark);
 }
 
 .section-title {
   font-size: 18px;
   font-weight: 600;
-  color: #1F2937;
+  color: var(--text-dark);
   margin: 0 0 16px 0;
 }
 
 .branch-stats,
 .recent-transactions {
-  background: white;
+  background: var(--surface-card);
   padding: 20px;
   border-radius: 12px;
-  border: 1px solid #E5E7EB;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border: 1px solid var(--border-stroke);
+  box-shadow: 0 8px 24px rgba(16,24,40,0.04);
   margin-bottom: 24px;
 }
 
@@ -621,8 +620,8 @@ h1, h2 {
 
 .branch-table th,
 .transactions-table th {
-  background: #EFF6FF;
-  color: #1E3A8A;
+  background: rgba(3,37,65,0.04);
+  color: var(--text-dark);
   font-weight: 600;
   padding: 12px 16px;
   font-size: 14px;
@@ -630,13 +629,13 @@ h1, h2 {
 
 .branch-table td,
 .transactions-table td {
-  color: #374151;
+  color: var(--text-dark);
   font-size: 14px;
-  border-bottom: 1px solid #E5E7EB;
+  border-bottom: 1px solid var(--border-stroke);
 }
 
 .profit-positive {
-  color: #2ecc71;
+  color: var(--success);
   font-weight: 600;
 }
 
@@ -646,8 +645,8 @@ h1, h2 {
 }
 
 .status-badge {
-  background: #FACC15;
-  color: #1F2937;
+  background: var(--color-golden-yellow);
+  color: var(--text-dark);
   border-radius: 6px;
   padding: 4px 10px;
   font-size: 12px;

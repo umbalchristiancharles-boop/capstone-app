@@ -19,7 +19,7 @@
           placeholder="Search staff..."
           class="search-input"
         >
-        
+
         <select v-model="roleFilter" class="filter-select">
           <option value="">All Roles</option>
           <option v-for="r in availableRoles" :key="r" :value="r">{{ r }}</option>
@@ -394,7 +394,10 @@ function formatDate(dateString) {
 }
 
 .owner-staff-title {
-  color: #ffffff !important;
+  color: var(--text-dark) !important;
+  font-family: 'Inter', 'Poppins', sans-serif !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.5px !important;
 }
 
 .header-actions {

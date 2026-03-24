@@ -408,7 +408,7 @@ function formatDate(dateString) {
 /* styles copied unchanged from original component */
 .staff-management-page {
   padding: 2rem;
-  background: linear-gradient(180deg, #ff8c42 0%, #ff6b1c 100%);
+  background: linear-gradient(180deg, #FF9A4A 0%, #FF6A3D 100%);
   min-height: 100vh;
 }
 
@@ -424,7 +424,7 @@ function formatDate(dateString) {
 }
 
 h1, h2 {
-  color: #0066FF !important;
+  color: var(--text-dark) !important;
   font-weight: 800 !important;
   font-family: 'Inter', 'Poppins', sans-serif !important;
   letter-spacing: -0.5px !important;
@@ -436,7 +436,7 @@ h1, h2 {
 }
 
 .avatar-change-text {
-  color: #0066FF !important;
+  color: var(--text-dark) !important;
 }
 
 .btn-primary {
@@ -462,6 +462,12 @@ h1, h2 {
   font-size: 2.5rem;
   font-weight: 700;
   letter-spacing: -1px;
+}
+
+.owner-staff-title {
+  font-family: 'Inter', 'Poppins', sans-serif !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.5px !important;
 }
 
 .header-actions {
@@ -501,13 +507,13 @@ h1, h2 {
   transition: all 0.3s ease;
 }
 
-.btn-primary {
-  background: #ff9f43;
+.btn-success {
+  background: #28a745;
   color: #fff;
 }
 
-.btn-primary:hover {
-  background: #fabd83;
+.btn-success:hover {
+  background: #218838;
 }
 
 .btn-success {

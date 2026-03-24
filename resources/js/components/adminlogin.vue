@@ -8,7 +8,7 @@
             <div class="login-brand">
                 <div class="brand-logo">CT</div>
                 <div class="brand-text">
-                    <h1>Chikin Tayo Admin</h1>
+                    <h1 style="color: var(--text-dark) !important">Chikin Tayo Admin</h1>
                     <p>Secure access to your store dashboard.</p>
                 </div>
             </div>

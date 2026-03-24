@@ -1,14 +1,15 @@
 :root {
-  --color-royal-blue: #0066FF;
-  --color-golden-yellow: #FFB800;
-  --color-deep-navy: #003366;
-  --bg-main: #F0F4F8;
+  /* Map admin panel colors to the public site (index) color tokens */
+  --color-royal-blue: var(--orange, #ff6b1c); /* primary accent now uses index orange */
+  --color-golden-yellow: var(--accent-yellow, #ffd66b);
+  --color-deep-navy: var(--text-dark, #42210b);
+  --bg-main: radial-gradient(circle at center, #FFFFFF 0%, #FCFCFC 40%, #EFEFEF 100%);
   --surface-card: #FFFFFF;
-  --border-stroke: #DDE2E5;
+  --border-stroke: #F0E9E0;
   --success: #4CAF50;
   --alert: #FF9800;
-  --text-primary: #1A1A1A;
-  --text-secondary: #666666;
+  --text-primary: var(--text-dark, #42210b);
+  --text-secondary: rgba(66,33,11,0.6);
 }
 
 /* Import required fonts (moved to file top for PostCSS/Vite) */
@@ -149,7 +150,7 @@
 }
 
 .avatar-change-text {
-  color: #0066FF !important;
+  color: var(--text-dark) !important;
   font-size: 0.7rem;
   font-weight: 500;
   text-transform: uppercase;
@@ -332,7 +333,7 @@
 
 /* Make the brand and panel parts sit on the same line and align left */
 .admin-main-header h1 .brand-text {
-  color: #0066FF !important;
+  color: var(--text-dark) !important;
   display: inline-block !important;
   margin-right: 10px;
   vertical-align: baseline;
@@ -731,23 +732,23 @@
 }
 
 .btn-primary, .primary-action-btn {
-  background: #0066FF !important;
+  background: var(--color-royal-blue) !important;
   color: #ffffff !important;
   border-radius: 999px;
   border: none;
   padding: 6px 16px;
   font-size: 0.8rem;
   cursor: pointer;
-  transition: background 0.18s ease, transform 0.12s ease, box-shadow 0.18s ease;
+  transition: background 0.16s ease, transform 0.12s ease, box-shadow 0.16s ease;
 }
 .btn-primary:hover, .primary-action-btn:hover {
-  background: #0057e6 !important;
+  background: #e05818 !important;
 }
 
 .btn-primary:hover {
-  background: #0057e6;
+  background: #e05818;
   transform: translateY(-1px);
-  box-shadow: 0 8px 24px rgba(0, 102, 255, 0.12);
+  box-shadow: 0 8px 24px rgba(224, 88, 24, 0.12);
 }
 
 .info-input {
@@ -933,23 +934,24 @@
 /* Staff Management Button */
 .staff-btn {
   width: 100%;
-  padding:  0.875rem 1.5rem;
-  background:  linear-gradient(180deg, #4D94FF 0%, var(--color-royal-blue) 100%);
-  color: white;
+  padding: 0.875rem 1.5rem;
+  background: linear-gradient(180deg, var(--accent-yellow, #ffd66b) 0%, var(--color-royal-blue) 100%);
+  color: var(--text-dark, #42210b);
   border: none;
   border-radius: 12px;
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 6px 18px rgba(0,102,255,0.12);
+  transition: all 0.22s ease;
+  box-shadow: 0 6px 18px rgba(255, 140, 0, 0.08);
   margin-bottom: 0.75rem;
 }
 
 .staff-btn:hover {
-  background: linear-gradient(180deg, #3a84ff 0%, #0057e6 100%);
+  background: linear-gradient(180deg, var(--color-royal-blue) 0%, #e05818 100%);
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0,102,255,0.16);
+  box-shadow: 0 10px 26px rgba(224,88,24,0.12);
+  color: #ffffff;
 }
 
 .staff-btn--center {
@@ -1394,7 +1396,7 @@ h2[class*="Admin"],
 h1:contains("Admin Panel"),
 h1:contains("Super Admin"),
 h2:contains("Super Admin Panel") {
-  color: #0066FF !important;
+  color: var(--text-dark) !important;
   font-weight: 800 !important;
   font-family: 'Inter', 'Poppins', sans-serif !important;
   letter-spacing: -0.5px !important;
@@ -1405,13 +1407,13 @@ h2:contains("Super Admin Panel") {
 /* Override inline styles safely */
 h1[style*="text-orange-700"],
 h1[style*="orange"] {
-  color: #0066FF !important;
+  color: var(--text-dark) !important;
 }
 
 /* Specific component overrides */
 .logistics-header .header-title h1,
 .SuperAdminProcurement h1 {
-  color: #0066FF;
+  color: var(--text-dark);
   font-weight: 800;
   font-family: 'Inter', 'Poppins', sans-serif;
   letter-spacing: -0.5px;
@@ -1434,7 +1436,7 @@ h1[style*="orange"] {
 :global(.header-title h1),
 :global(.header-title h2),
 :global(.login-brand h1) {
-  color: #0066FF !important;
+  color: var(--text-dark) !important;
   font-weight: 800 !important;
   font-family: 'Inter', 'Poppins', sans-serif !important;
 }

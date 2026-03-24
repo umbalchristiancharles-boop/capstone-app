@@ -153,15 +153,15 @@
         <div v-if="checkoutSuccess" class="success-msg">{{ checkoutSuccess }}</div>
 
         <!-- Announcements -->
-        <div class="announcements-card" style="margin:12px 0;padding:10px;border-radius:8px;background:#fff8f0;border:1px solid rgba(255,211,107,0.4)">
-          <h3 style="margin:0 0 8px;color:#7a2b00;font-size:0.95rem">Announcements</h3>
+            <div class="announcements-card" style="margin:12px 0;padding:10px;border-radius:8px;background:var(--surface-card);border:1px solid rgba(255,211,107,0.4)">
+              <h3 style="margin:0 0 8px;color:var(--text-dark);font-size:0.95rem">Announcements</h3>
           <div v-if="loadingAnnouncements" class="loading-text">Loading announcements...</div>
           <div v-else>
             <div v-if="announcements.length">
-              <div v-for="a in announcements" :key="a.id" style="margin-bottom:8px;padding:8px;border-radius:6px;background:#fff">
-                <div style="font-weight:700;color:#7a2b00">{{ a.title }}</div>
-                <div style="color:#8a4b1a">{{ a.message }}</div>
-                <div style="font-size:0.75rem;color:#a65a2a;margin-top:6px">{{ formatDate(a.created_at) }}</div>
+              <div v-for="a in announcements" :key="a.id" style="margin-bottom:8px;padding:8px;border-radius:6px;background:var(--surface-card)">
+                <div style="font-weight:700;color:var(--text-dark)">{{ a.title }}</div>
+                <div style="color:rgba(66,33,11,0.9)">{{ a.message }}</div>
+                <div style="font-size:0.75rem;color:rgba(66,33,11,0.7);margin-top:6px">{{ formatDate(a.created_at) }}</div>
               </div>
             </div>
             <div v-else class="empty-text">No announcements</div>
@@ -488,8 +488,14 @@ async function processCheckout() {
 .cashier-page h2 {
   font-family: 'Inter', 'Poppins', sans-serif;
   font-weight: 800;
-  color: #0066FF;
+  color: var(--text-dark);
   margin: 0 0 8px;
+}
+
+/* Larger responsive H1 like StaffIndex */
+.cashier-page h1 {
+  font-size: clamp(2.4rem, 3.2vw, 3.0rem);
+  line-height: 1.1;
 }
 
 /* Global button styles (visual only) */
@@ -575,7 +581,7 @@ textarea:focus {
 .back-icon { width:16px; height:16px; }
 
 .branch-filter { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
-.branch-filter label { font-weight:600; color:#0f172a; }
+.branch-filter label { font-weight:600; color:var(--text-dark); }
 
 .cashier-body { display:grid; grid-template-columns: 1fr 420px; gap:20px; margin-bottom:20px; }
 
@@ -595,19 +601,19 @@ textarea:focus {
 .product-card:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(2,6,23,0.06); border-color: rgba(59,130,246,0.18); }
 .product-card.out-of-stock { opacity:0.6; cursor:not-allowed; }
 
-.product-name { font-weight:700; color:#0f172a; margin-bottom:6px; }
-.product-price { color:#0066FF; font-weight:800; font-size:1.05rem; }
-.product-stock { color:#6b7280; font-size:0.85rem; }
+.product-name { font-weight:700; color:var(--text-dark); margin-bottom:6px; }
+.product-price { color:var(--text-dark); font-weight:800; font-size:1.05rem; }
+.product-stock { color:rgba(66,33,11,0.6); font-size:0.85rem; }
 
 /* Cart */
 .cart-list { max-height:32vh; overflow-y:auto; margin-bottom:12px; }
 .cart-item { padding:10px 0; border-bottom:1px solid rgba(2,6,23,0.04); display:flex; flex-direction:column; gap:6px; }
 .cart-item-info { display:flex; justify-content:space-between; }
-.cart-item-name { font-weight:700; color:#0f172a; }
-.cart-item-price { color:#374151; }
+.cart-item-name { font-weight:700; color:var(--text-dark); }
+.cart-item-price { color:rgba(66,33,11,0.8); }
 
 .cart-item-controls { display:flex; align-items:center; gap:8px; }
-.qty-btn { width:32px; height:32px; border-radius:8px; border:1px solid #E5E7EB; background:#fff; color:#0f172a; }
+.qty-btn { width:32px; height:32px; border-radius:8px; border:1px solid var(--border-stroke); background:#fff; color:var(--text-dark); }
 .qty-btn:hover { background: #F1F5F9; }
 .qty-input { width:60px; text-align:center; border-radius:8px; border:1px solid #E5E7EB; }
 

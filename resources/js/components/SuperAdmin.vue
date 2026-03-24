@@ -815,7 +815,7 @@ textarea.info-input {
 }
 
 .admin-main-header h1 {
-  color: #0066FF;
+  color: var(--text-dark);
   font-weight: 800;
   font-family: 'Inter', 'Poppins', sans-serif;
   letter-spacing: -0.5px;
