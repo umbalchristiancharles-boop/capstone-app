@@ -62,7 +62,16 @@ class ProcurementProductController extends Controller
 
         Log::info('PROCUREMENT PRODUCTS FINAL COUNT', ['count' => $products->count()]);
 
-        return response()->json($products);
+            // Attach a flag for UI: whether supplier input is needed for each product
+            $products = $products->map(function ($p) {
+                $p->needs_supplier = true;
+                if (!empty($p->supplier_id) && (float)($p->price ?? 0) > 0) {
+                    $p->needs_supplier = false;
+                }
+                return $p;
+            });
+
+            return response()->json($products);
     }
 
     public function requestedProducts(Request $request)
@@ -99,7 +108,16 @@ class ProcurementProductController extends Controller
 
         $products = $products->get();
 
-        return response()->json($products);
+            // Mark whether this product needs supplier submission
+            $products = $products->map(function ($p) {
+                $p->needs_supplier = true;
+                if (!empty($p->supplier_id) && (float)($p->price ?? 0) > 0) {
+                    $p->needs_supplier = false;
+                }
+                return $p;
+            });
+
+            return response()->json($products);
     }
 
 public function placeOrder(Request $request, $productId)
@@ -114,7 +132,8 @@ public function placeOrder(Request $request, $productId)
         }
 
         $validated = $request->validate([
-            'quantity' => 'integer|min:1'
+            'quantity' => 'integer|min:1',
+            'supplier_id' => 'nullable|exists:users,id'
         ]);
 
         $product = Product::findOrFail($productId);
@@ -134,11 +153,22 @@ public function placeOrder(Request $request, $productId)
             return response()->json(['error' => 'No pending logistics request for this product'], 400);
         }
 
-        // Check if SupplierOrder already exists for this request (prevent duplicates)
-        $existingOrder = \App\Models\SupplierOrder::where('procurement_request_id', $procRequest->id)->first();
+        // Ensure supplier has confirmed availability before allowing procurement manager to place an order.
+        if (empty($procRequest->supplier_confirmed) || !$procRequest->supplier_confirmed) {
+            return response()->json(['error' => 'Supplier has not confirmed product availability yet'], 400);
+        }
+
+        // Determine the supplier for this product early so we can check duplicates.
+        $supplierId = $product->supplier_id;
+
+        // Check if SupplierOrder already exists for this request for the intended supplier (prevent duplicates).
+        // Broadcast-created orders for other suppliers should not block placing an order for the selected supplier.
+        $existingOrder = \App\Models\SupplierOrder::where('procurement_request_id', $procRequest->id)
+            ->where('supplier_id', $supplierId)
+            ->first();
         if ($existingOrder) {
             return response()->json([
-                'message' => 'Supplier order already placed (ID: ' . $existingOrder->id . '). Quantity: ' . $existingOrder->quantity,
+                'message' => 'Supplier order already placed for this supplier (ID: ' . $existingOrder->id . '). Quantity: ' . $existingOrder->quantity,
                 'supplier_order' => $existingOrder->load(['product', 'procurementRequest']),
                 'procurement_request' => $procRequest->fresh()->load('product')
             ]);
@@ -166,6 +196,79 @@ public function placeOrder(Request $request, $productId)
         ]);
 
 
+        // If supplier_id provided but product has no supplier, allow creating supplier order for this supplier
+        if (!empty($validated['supplier_id'])) {
+            $supplierId = $validated['supplier_id'];
+
+            // Ensure budget approved before ordering
+            if (!$procRequest->budget_approved) {
+                return response()->json(['error' => 'Budget must be approved before ordering'], 400);
+            }
+
+            $quantity = $customQuantity ?? $procRequest->quantity;
+
+            try {
+                $supplierOrder = DB::transaction(function () use ($procRequest, $supplierId, $quantity, $user) {
+                    $order = SupplierOrder::create([
+                        'procurement_request_id' => $procRequest->id,
+                        'product_id' => $procRequest->product_id,
+                        'supplier_id' => $supplierId,
+                        'quantity' => $quantity,
+                        'status' => 'pending',
+                        'is_broadcast' => false,
+                        'branch_id' => $procRequest->branch_id,
+                    ]);
+
+                        // Update procurement request status. Some DBs may not have the
+                        // 'pending_order_to_supplier' enum yet; try it first and fall back
+                        // to 'delivery_pending' if the update fails due to enum mismatch.
+                        try {
+                            $procRequest->update([
+                                'procurement_user_id' => $user->id,
+                                'status' => 'pending_order_to_supplier'
+                            ]);
+                        } catch (\Exception $e) {
+                            Log::warning('Failed to set pending_order_to_supplier, falling back to delivery_pending', ['error' => $e->getMessage(), 'procurement_request_id' => $procRequest->id]);
+                            $procRequest->update([
+                                'procurement_user_id' => $user->id,
+                                'status' => 'delivery_pending',
+                            ]);
+                        }
+
+                    // Deduct branch budget
+                    $branch = Branch::where('id', $procRequest->branch_id)->lockForUpdate()->first();
+                    $deductAmount = $procRequest->budget_amount ?? $procRequest->total_amount ?? ($procRequest->price * $quantity);
+                    if ($branch && $deductAmount) {
+                        $branch->budget = is_null($branch->budget) ? 0 : ($branch->budget - (float) $deductAmount);
+                        $branch->save();
+                    }
+
+                    return $order;
+                });
+            } catch (\Exception $e) {
+                Log::error('SUPPLIER ORDER TRANSACTION FAILED', [
+                    'error' => $e->getMessage(),
+                    'proc_req_id' => $procRequest->id,
+                    'user_id' => $user->id
+                ]);
+                return response()->json(['error' => 'Failed to place supplier order'], 500);
+            }
+
+            Log::info('SupplierOrder created (explicit supplier_id provided)', [
+                'supplier_order_id' => $supplierOrder->id ?? null,
+                'supplier_id' => $supplierOrder->supplier_id ?? null,
+                'procurement_request_id' => $supplierOrder->procurement_request_id ?? null,
+            ]);
+
+            return response()->json([
+                'message' => 'Order placed with supplier successfully. Quantity: ' . $quantity,
+                'supplier_order' => $supplierOrder,
+                'procurement_request' => $procRequest->fresh()->load('product')
+            ]);
+            
+        
+        }
+
         // Create supplier order atomically
         try {
             $supplierOrder = DB::transaction(function () use ($procRequest, $supplierId, $quantity, $user) {
@@ -175,15 +278,25 @@ public function placeOrder(Request $request, $productId)
                     'supplier_id' => $supplierId,
                     'quantity' => $quantity,
                     'status' => 'pending',
+                    'is_broadcast' => false,
                     'branch_id' => $procRequest->branch_id,
                 ]);
 
                 // Update procurement request status to pending_order_to_supplier and clear flags
-                // Use 'pending_order_to_supplier' to match current enum values and queries
-                $procRequest->update([
-                    'procurement_user_id' => $user->id,
-                    'status' => 'pending_order_to_supplier'  // Prevents re-showing in procurement lists
-                ]);
+                // Use 'pending_order_to_supplier' to match current enum values and queries.
+                // If the DB doesn't accept that enum value, fall back to 'delivery_pending'.
+                try {
+                    $procRequest->update([
+                        'procurement_user_id' => $user->id,
+                        'status' => 'pending_order_to_supplier'  // Prevents re-showing in procurement lists
+                    ]);
+                } catch (\Exception $e) {
+                    Log::warning('Failed to set pending_order_to_supplier, falling back to delivery_pending', ['error' => $e->getMessage(), 'procurement_request_id' => $procRequest->id]);
+                    $procRequest->update([
+                        'procurement_user_id' => $user->id,
+                        'status' => 'delivery_pending',
+                    ]);
+                }
 
                 // Clear product logistics flag
                 if ($procRequest->product) {
@@ -215,6 +328,12 @@ public function placeOrder(Request $request, $productId)
             return response()->json(['error' => 'Failed to place supplier order'], 500);
         }
 
+
+        Log::info('SupplierOrder created', [
+            'supplier_order_id' => $supplierOrder->id ?? null,
+            'supplier_id' => $supplierOrder->supplier_id ?? null,
+            'procurement_request_id' => $supplierOrder->procurement_request_id ?? null,
+        ]);
 
         return response()->json([
             'message' => 'Order placed with supplier successfully. Quantity: ' . $quantity,

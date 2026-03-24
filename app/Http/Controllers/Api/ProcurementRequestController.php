@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\ProcurementRequest;
 use App\Models\SupplierOrder;
 use App\Models\Product;
+use App\Models\User;
 use App\Models\BudgetRequest;
 use Illuminate\Support\Facades\Log;
 
@@ -48,6 +49,71 @@ class ProcurementRequestController extends Controller
         $requests = $query->paginate(20);
 
         return response()->json($requests);
+    }
+
+    /**
+     * Broadcast a procurement request to suppliers so they can submit product/price.
+     * Optional payload: supplier_ids => [1,2,3]
+     */
+    public function broadcastToSuppliers(Request $request, $id)
+    {
+        $user = $request->user();
+        if (!$user) return response()->json(['error' => 'Unauthenticated'], 401);
+
+        $role = strtoupper($user->role ?? '');
+        $dept = strtoupper($user->department ?? '');
+        if (!($role === 'PROCUREMENT_MANAGER' || ($role === 'MANAGER' && $dept === 'PROCUREMENT') || $role === 'SUPER_ADMIN')) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $procRequest = ProcurementRequest::with('product')->findOrFail($id);
+
+        // If product already has supplier and price, broadcasting is unnecessary
+        if ($procRequest->product && !empty($procRequest->product->supplier_id) && (float)($procRequest->product->price ?? 0) > 0) {
+            return response()->json(['error' => 'Product already has supplier and price'], 400);
+        }
+
+        $validated = $request->validate([
+            'supplier_ids' => 'nullable|array',
+            'supplier_ids.*' => 'integer|exists:users,id'
+        ]);
+
+        // Determine target suppliers
+        if (!empty($validated['supplier_ids'])) {
+            $suppliers = User::whereIn('id', $validated['supplier_ids'])->where('role', 'SUPPLIER')->get();
+        } else {
+            // Default: all active suppliers (optionally filter by branch if desired)
+            $suppliers = User::where('role', 'SUPPLIER')->where(function($q) use ($procRequest) {
+                $q->whereNull('branch_id')->orWhere('branch_id', $procRequest->branch_id);
+            })->get();
+        }
+
+        if ($suppliers->isEmpty()) {
+            return response()->json(['error' => 'No suppliers found to broadcast to'], 400);
+        }
+
+        $created = [];
+        foreach ($suppliers as $s) {
+            // Skip if an order for this procurement_request and supplier already exists
+            $exists = SupplierOrder::where('procurement_request_id', $procRequest->id)
+                ->where('supplier_id', $s->id)
+                ->first();
+            if ($exists) continue;
+
+            $order = SupplierOrder::create([
+                'procurement_request_id' => $procRequest->id,
+                'product_id' => $procRequest->product_id ?? null,
+                'supplier_id' => $s->id,
+                'quantity' => $procRequest->quantity ?? 1,
+                'status' => 'pending',
+                'is_broadcast' => true,
+                'branch_id' => $procRequest->branch_id,
+            ]);
+
+            $created[] = $order;
+        }
+
+        return response()->json(['ok' => true, 'created' => count($created), 'orders' => $created]);
     }
 
     public function store(Request $request)
@@ -166,7 +232,7 @@ public function requestedProducts(Request $request)
             $requests = ProcurementRequest::with(['product:id,name,price,sku,branch_id,supplier_id,logistics_request_available'])
                 ->where('branch_id', $branchId)
                     ->whereIn('status', ['pending', 'budget_pending', 'pending_order_to_supplier', 'delivery_pending', 'ongoing_delivery'])
-                ->get(['id', 'product_id', 'branch_id', 'status', 'budget_approved']);
+                ->get(['id', 'product_id', 'branch_id', 'status', 'budget_approved', 'supplier_confirmed']);
             Log::info('Requests fetched', ['count' => $requests->count()]);
 
             if ($requests->isEmpty()) {
@@ -193,6 +259,16 @@ public function requestedProducts(Request $request)
                 $p->procurement_request_id = $req ? $req->id : null;
                 $p->procurement_status = $req ? $req->status : null;
                 $p->procurement_budget_approved = $req ? (bool)$req->budget_approved : false;
+                $p->supplier_confirmed = $req ? (bool)$req->supplier_confirmed : false;
+
+                // Determine if procurement can acknowledge this request. If the product
+                // has no supplier or a non-positive price, procurement should NOT
+                // acknowledge and must request supplier input first.
+                $p->needs_supplier = true;
+                if (!empty($p->supplier_id) && (float)($p->price ?? 0) > 0) {
+                    $p->needs_supplier = false;
+                }
+
                 return $p;
             });
 
@@ -235,6 +311,14 @@ public function requestedProducts(Request $request)
         // Allow either explicit PROCUREMENT_MANAGER role or a branch Manager in PROCUREMENT
         if (( $role === 'PROCUREMENT_MANAGER' || ($role === 'MANAGER' && $dept === 'PROCUREMENT') )
             && $procRequest->status === 'pending') {
+            // Prevent procurement from acknowledging if there's no supplier price
+            // Supplier must submit product/price first so Finance can approve a budget.
+            $product = $procRequest->product;
+            if (!$product || empty($product->supplier_id) || (float)($product->price ?? 0) <= 0) {
+                Log::info('Procurement acknowledge blocked: missing supplier or price', ['proc_id' => $procRequest->id, 'product_id' => $product?->id ?? null, 'supplier_id' => $product->supplier_id ?? null, 'price' => $product->price ?? null]);
+                return response()->json(['error' => 'Cannot acknowledge procurement: product has no supplier or price. Request suppliers to submit product and set price first.'], 400);
+            }
+
             try {
                 // Procurement acknowledges and auto-creates BudgetRequest for Finance panel
                 DB::transaction(function () use ($procRequest, $user) {
@@ -288,10 +372,18 @@ public function requestedProducts(Request $request)
                     'status' => 'cash_in_transit', // funds are on their way
                 ]);
             } elseif ($procRequest->budget_approved && $procRequest->status === 'cash_in_transit') {
-                // Finance confirms cash was given physically -> move to delivery pending
+                // Finance confirms cash was given physically -> move to pending order to supplier.
+                // Procurement still performs the explicit place-order action.
+                try {
+                    DB::transaction(function () use ($procRequest, $user) {
                         $procRequest->update([
                             'status' => 'pending_order_to_supplier'
                         ]);
+                    });
+                } catch (\Exception $e) {
+                    Log::error('Transaction failed while setting pending_order_to_supplier', ['error' => $e->getMessage(), 'proc_id' => $procRequest->id]);
+                    return response()->json(['error' => 'Failed to process procurement order to supplier'], 500);
+                }
             } else {
                 return response()->json(['error' => 'No action available for this request'], 400);
             }

@@ -129,6 +129,12 @@ const routes = [
     meta: { requiresAuth: true, role: 'staff', department: 'inventory' }
   },
   {
+    path: '/staff/kitchen',
+    name: 'StaffKitchenPanel',
+    component: () => import('../components/KitchenStaffPanel.vue'),
+    meta: { requiresAuth: true, role: 'staff', department: 'kitchen' }
+  },
+  {
     path: '/supplier-panel',
     name: 'SupplierPanel',
     component: () => import('../components/SupplierPanel.vue'),
@@ -231,6 +237,7 @@ router.beforeEach((to, from, next) => {
         if (user.department === 'cashier') return next('/staff/cashier');
         if (user.department === 'finance') return next('/staff/finance');
         if (user.department === 'inventory') return next('/staff/inventory');
+        if (user.department === 'kitchen') return next('/staff/kitchen');
       }
       return next('/admin-panel');
     }

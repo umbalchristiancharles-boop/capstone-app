@@ -64,6 +64,10 @@ class LoginController extends Controller
                 } elseif ($user->department === 'INVENTORY') {
                     return redirect()->route('staff.inventory.dashboard')
                         ->with('success', 'Welcome back, Inventory Staff!');
+                } elseif ($user->department === 'KITCHEN') {
+                    // Kitchen staff use the SPA client route
+                    return redirect('/staff/kitchen')
+                        ->with('success', 'Welcome back, Kitchen Staff!');
                 } else {
                     return redirect()->route('staff.dashboard')
                         ->with('success', 'Welcome back, Staff!');

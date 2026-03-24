@@ -602,6 +602,10 @@ class SuperAdminController extends Controller
         // Generate SKU if not provided
         $sku = $validated['sku'] ?? 'SKU-' . strtoupper(\Illuminate\Support\Str::random(6));
 
+        $isDish = \App\Models\Dish::whereRaw('TRIM(UPPER(name)) = ?', [trim(strtoupper($validated['name']))])
+            ->where('branch_id', $validated['branch_id'])
+            ->exists();
+
         $product = \App\Models\Product::create([
             'name' => $validated['name'],
             'slug' => $slug,
@@ -611,6 +615,7 @@ class SuperAdminController extends Controller
             'min_stock' => $validated['min_stock'] ?? 10,
             'branch_id' => $validated['branch_id'],
             'is_active' => true,
+            'is_kitchen_dish' => $isDish,
         ]);
 
         return response()->json([

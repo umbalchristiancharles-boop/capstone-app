@@ -535,7 +535,7 @@ $rules = [
             if (is_string($departmentValue) && $departmentValue !== '') {
                 $departmentValue = strtoupper($departmentValue);
             }
-            if ($role === 'OWNER' || $departmentValue === null || $departmentValue === '' || !in_array($departmentValue, ['HR', 'FINANCE', 'INVENTORY', 'LOGISTICS', 'CASHIER'])) {
+            if ($role === 'OWNER' || $departmentValue === null || $departmentValue === '' || !in_array($departmentValue, ['HR', 'FINANCE', 'INVENTORY', 'LOGISTICS', 'CASHIER', 'KITCHEN'])) {
                 $departmentValue = null;
             }
             $insertData = [

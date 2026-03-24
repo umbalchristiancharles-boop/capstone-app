@@ -225,6 +225,9 @@ $validRoles = ['SUPER_ADMIN', 'ADMIN', 'OWNER', 'MANAGER', 'MANAGER_HR', 'HR', '
 
         // STAFF - check department for specific panel
         if ($role === 'STAFF') {
+            if ($department === 'KITCHEN') {
+                return '/staff/kitchen';
+            }
             if ($department === 'INVENTORY') {
                 return '/staff/inventory';
             }

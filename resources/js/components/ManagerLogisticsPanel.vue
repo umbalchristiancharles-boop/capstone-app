@@ -237,7 +237,10 @@ async function fetchInventory() {
     const rawData = res.data?.products ?? res.data?.data ?? res.data ?? []
     inventory.value = (Array.isArray(rawData) ? rawData : []).map(p => ({
       ...p,
-      status: (p.stock <= (p.min_stock ?? 0)) ? 'LOW STOCK' : 'OK'
+      // Treat min_stock <= 0 as "unset" and use a sensible default (10)
+      min_stock: (Number(p.min_stock) > 0) ? Number(p.min_stock) : 10,
+      stock: Number(p.stock ?? 0),
+      status: (Number(p.stock ?? 0) < ((Number(p.min_stock) > 0) ? Number(p.min_stock) : 10)) ? 'LOW STOCK' : 'OK'
     }))
   } catch (e) {
     console.error('Inventory fetch error:', e)
@@ -304,9 +307,12 @@ async function requestProcurement(product) {
 
   requesting.value = { ...requesting.value, [product.id]: true }
 
-  const minStock = Number(product.min_stock ?? 10)
-  const currentStock = Number(product.stock ?? 0)
-  const qty = Math.max(minStock - currentStock, minStock)
+  // Ensure we treat a min_stock of 0 as "unset" and use default (10).
+  const minStock = Number(product.min_stock) > 0 ? Number(product.min_stock) : 10
+  const currentStock = Number(product.stock ?? 0) || 0
+  // Order enough to reach minStock (at least 1). This avoids sending 0 or NaN quantities.
+  const diff = Math.ceil(minStock - currentStock)
+  const qty = Math.max(diff, 1)
 
   try {
     await axios.post('/api/procurement-requests', { product_id: product.id, quantity: qty }, { withCredentials: true })

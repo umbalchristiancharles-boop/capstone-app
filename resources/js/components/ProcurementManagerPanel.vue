@@ -124,8 +124,11 @@
               <div class="product-meta">
                 <div class="product-price">{{ formatPrice(p.price) }}</div>
                 <div>
-                  <template v-if="p.procurement_status === 'pending' || p.status === 'pending'">
+                  <template v-if="(p.procurement_status === 'pending' || p.status === 'pending') && !p.needs_supplier && (p.acknowledge_allowed === undefined ? true : p.acknowledge_allowed)">
                     <button class="btn-primary" @click="acknowledgeRequest(p)" style="padding:6px 10px; border-radius:8px">Acknowledge</button>
+                  </template>
+                  <template v-else-if="(p.procurement_status === 'pending' || p.status === 'pending') && p.needs_supplier">
+                    <button class="btn-primary" @click="requestSupplier(p)" style="padding:6px 10px; border-radius:8px; background:#f59e0b;">Request Supplier for Product</button>
                   </template>
                   <template v-else-if="p.procurement_status === 'budget_pending' || p.status === 'budget_pending'">
                     <button class="btn-outline" disabled style="padding:6px 10px; border-radius:8px">Budget to be received</button>
@@ -142,13 +145,16 @@
                     <div v-else-if="p.procurement_status === 'ongoing_delivery' || p.status === 'ongoing_delivery'">
                       <button class="btn-primary" @click="markDeliveryComplete(p)" :disabled="isCompletingDelivery" style="padding:6px 10px; border-radius:8px">{{ isCompletingDelivery ? 'Submitting...' : 'Delivery complete' }}</button>
                     </div>
-                    <div v-else>
+                      <div v-else>
                       <button class="btn-primary" 
                         @click="placeOrder(p)" 
-                        :disabled="isPlacingOrder"
+                        :disabled="isPlacingOrder || (p.procurementRequest && !p.procurementRequest.supplier_confirmed) || (p.supplier_confirmed === false)"
                         style="padding:6px 10px; border-radius:8px">
                         {{ isPlacingOrder ? 'Placing...' : 'Place Order' }}
                       </button>
+                      <div v-if="(p.procurementRequest && !p.procurementRequest.supplier_confirmed) || (p.supplier_confirmed === false)" style="margin-top:6px; color:#92400e; font-weight:600; font-size:0.9rem">
+                        Waiting for supplier confirmation
+                      </div>
                     </div>
                   </template>
                   <template v-else>
@@ -252,6 +258,41 @@
         <div class="logout-actions">
           <button class="btn-cancel" @click="cancelLogout" :disabled="isLoggingOut">Cancel</button>
           <button class="btn-confirm" @click="confirmLogout" :disabled="isLoggingOut">Yes, logout</button>
+        </div>
+      </div>
+    </div>
+  </transition>
+  <!-- Supplier selection modal -->
+  <transition name="fade">
+    <div v-if="supplierModalVisible" class="modal-backdrop" @click.self="closeSupplierModal">
+      <div class="modal">
+        <div class="modal-card">
+          <div class="modal-header">
+            <h3>Select Supplier</h3>
+          </div>
+          <div class="modal-body">
+            <div class="form-group full-span">
+              <label>Choose a supplier to fulfill: <strong>{{ pendingOrderProduct?.name || '' }}</strong></label>
+            </div>
+            <div class="form-group full-span">
+              <div v-if="supplierLoading">Loading suppliers...</div>
+              <div v-else-if="!supplierList.length">No suppliers available.</div>
+              <div v-else style="max-height:260px; overflow:auto">
+                <div v-for="s in supplierList" :key="s.id" style="display:flex; align-items:center; gap:0.5rem; padding:6px 0">
+                  <input type="radio" :id="'sup-'+s.id" :value="s.id" v-model="selectedSupplierId" />
+                  <label :for="'sup-'+s.id">{{ s.full_name || s.username }} ({{ s.email || 'no-email' }})</label>
+                </div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Quantity (optional)</label>
+              <input type="number" v-model.number="pendingOrderQty" min="1" />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-outline" @click="closeSupplierModal">Cancel</button>
+            <button class="btn-primary" @click="confirmSupplierSelection">Confirm</button>
+          </div>
         </div>
       </div>
     </div>
@@ -484,6 +525,21 @@ async function acknowledgeRequest(product) {
   }
 }
 
+async function requestSupplier(product) {
+  if (!confirm(`Request suppliers to provide ${product.name}?`)) return
+  try {
+    const requestId = product.procurement_request_id || product.id
+    const res = await axios.post(`/api/procurement-requests/${requestId}/broadcast`, {}, { withCredentials: true })
+    alert(res.data?.message || 'Supplier request broadcasted')
+    await loadRequestedProducts()
+    await loadProducts()
+    await refreshAllData()
+  } catch (e) {
+    console.error('requestSupplier failed', e)
+    alert(e.response?.data?.message || 'Failed to request supplier')
+  }
+}
+
 onMounted(async () => {
   try {
     const res = await axios.get('/api/manager/procurement/profile', { withCredentials: true })
@@ -496,6 +552,59 @@ onMounted(async () => {
   await loadRequestedProducts()
   await fetchBudgetRequests()
 })
+
+// Supplier selection modal state
+const supplierModalVisible = ref(false)
+const supplierList = ref([])
+const supplierLoading = ref(false)
+const selectedSupplierId = ref(null)
+const pendingOrderProduct = ref(null)
+const pendingOrderQty = ref(null)
+
+function openSupplierModal(product, qty) {
+  pendingOrderProduct.value = product
+  pendingOrderQty.value = qty ?? null
+  selectedSupplierId.value = null
+  supplierModalVisible.value = true
+  supplierLoading.value = true
+  axios.get('/api/manager/logistics/suppliers', { withCredentials: true })
+    .then(res => {
+      supplierList.value = (res.data && res.data.suppliers) || []
+    }).catch(() => {
+      supplierList.value = []
+    }).finally(() => { supplierLoading.value = false })
+}
+
+function closeSupplierModal() {
+  supplierModalVisible.value = false
+  pendingOrderProduct.value = null
+  pendingOrderQty.value = null
+  selectedSupplierId.value = null
+}
+
+async function confirmSupplierSelection() {
+  if (!pendingOrderProduct.value) return
+  if (!selectedSupplierId.value) { alert('Please select a supplier'); return }
+  isPlacingOrder.value = true
+  try {
+    const payload = { supplier_id: selectedSupplierId.value }
+    if (pendingOrderQty.value) payload.quantity = pendingOrderQty.value
+    const res = await axios.post(`/api/procurement.products/${pendingOrderProduct.value.id}/place-order`, payload, { withCredentials: true })
+    const supplierOrder = res.data.supplier_order
+    const procReq = res.data.procurement_request
+    alert(res.data.message || 'Order placed successfully')
+    // update local lists
+    await loadProducts()
+    await loadRequestedProducts()
+    await refreshAllData()
+  } catch (e) {
+    console.error('confirmSupplierSelection failed', e)
+    alert(e.response?.data?.error || e.response?.data?.message || 'Failed to place order')
+  } finally {
+    isPlacingOrder.value = false
+    closeSupplierModal()
+  }
+}
 
 async function fetchBudgetRequests() {
   budgetLoading.value = true
@@ -572,7 +681,12 @@ async function placeOrder(product) {
 
     const payload = {}
     if (qty !== null) payload.quantity = qty
-    
+    // If product has no assigned supplier, open modal to select one
+    if (!product.supplier_id) {
+      openSupplierModal(product, qty)
+      return
+    }
+
     // Use procurement endpoint which creates the SupplierOrder record
     const res = await axios.post(`/api/procurement.products/${product.id}/place-order`, payload, { withCredentials: true })
     

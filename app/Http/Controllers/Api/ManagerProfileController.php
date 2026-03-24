@@ -14,6 +14,9 @@ use Illuminate\Support\Str;
 use App\Models\Product;
 use App\Models\Order;
 use App\Models\BudgetRequest;
+use App\Models\ProcurementRequest;
+use App\Models\SupplierOrder;
+use App\Models\Branch;
 use Carbon\Carbon;
 
 class ManagerProfileController extends Controller
@@ -729,9 +732,17 @@ class ManagerProfileController extends Controller
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
+        $branchId = $user->branch_id;
+        $suppliers = \App\Models\User::where('role', 'SUPPLIER')
+            ->when($branchId, function ($q) use ($branchId) { return $q->where('branch_id', $branchId); })
+            ->whereNull('deleted_at')
+            ->select('id', 'username', 'full_name', 'email', 'phone_number')
+            ->orderBy('full_name')
+            ->get();
+
         return response()->json([
             'ok' => true,
-            'suppliers' => []
+            'suppliers' => $suppliers
         ]);
     }
 
@@ -753,8 +764,12 @@ class ManagerProfileController extends Controller
             return response()->json(['ok' => false, 'message' => 'Manager has no branch assigned'], 400);
         }
 
-$products = Product::where('branch_id', $branchId)
+        $products = Product::where('branch_id', $branchId)
             ->where('is_active', 1)
+            ->where(function($q) {
+                $q->whereNull('is_kitchen_dish')
+                  ->orWhere('is_kitchen_dish', false);
+            })
             ->select('id', 'name', 'slug', 'price', 'stock', 'sku', 'branch_id', 'supplier_name', 'is_published', 'created_at', 'updated_at')
             ->orderBy('name', 'asc')
             ->get();
@@ -885,11 +900,35 @@ $products = Product::where('branch_id', $branchId)
 
         // Fetch products that belong to the manager's branch. This returns products
         // supplied/registered under that branch (including supplier-added products).
-$products = Product::where('branch_id', $branchId)
+        $products = Product::where('branch_id', $branchId)
         ->where('is_active', 1)
-        ->select('id', 'name', 'slug', 'price', 'stock', 'sku', 'branch_id', 'supplier_name', 'is_published', 'created_at', 'updated_at')
+        ->select('id', 'name', 'slug', 'price', 'stock', 'sku', 'branch_id', 'supplier_name', 'supplier_id', 'is_published', 'created_at', 'updated_at')
         ->orderBy('name', 'asc')
         ->get();
+
+        // For each product, determine if procurement can acknowledge any pending request
+        $products = $products->map(function ($p) use ($branchId) {
+            // default: needs supplier input until supplier+price present
+            $p->needs_supplier = true;
+            if (!empty($p->supplier_id) && (float)($p->price ?? 0) > 0) {
+                $p->needs_supplier = false;
+            }
+
+            // find a pending procurement request for this product in this branch
+            $proc = \App\Models\ProcurementRequest::where('product_id', $p->id)
+                ->where('branch_id', $branchId)
+                ->where('status', 'pending')
+                ->first(['id', 'status', 'budget_approved']);
+
+            $p->procurement_request_id = $proc?->id ?? null;
+            $p->procurement_status = $proc?->status ?? null;
+            $p->procurement_budget_approved = $proc?->budget_approved ? true : false;
+
+            // Acknowledge should be allowed only when a pending request exists AND supplier/price present
+            $p->acknowledge_allowed = $p->procurement_request_id && !$p->needs_supplier;
+
+            return $p;
+        });
 
         return response()->json([
             'ok' => true,
@@ -917,9 +956,70 @@ $products = Product::where('branch_id', $branchId)
         }
 
         $validated = $request->validate([
-            'quantity' => 'nullable|integer|min:0'
+            'quantity' => 'nullable|integer|min:0',
+            'supplier_id' => 'nullable|exists:users,id'
         ]);
 
+        // If supplier_id is provided, create a SupplierOrder to request this product from that supplier
+        if (!empty($validated['supplier_id'])) {
+            $supplierId = $validated['supplier_id'];
+
+            // Find pending procurement request for this product (branch-scoped)
+            $procReq = ProcurementRequest::where('product_id', $product->id)
+                ->where('branch_id', $branchId)
+                ->whereIn('status', ['pending_order_to_supplier'])
+                ->first();
+
+            if (!$procReq) {
+                return response()->json(['ok' => false, 'message' => 'No pending procurement request found for this product'], 400);
+            }
+
+            // Ensure budget approved before ordering
+            if (!$procReq->budget_approved) {
+                return response()->json(['ok' => false, 'message' => 'Budget must be approved before ordering'], 400);
+            }
+
+            $quantity = $validated['quantity'] ?? $procReq->quantity;
+
+            try {
+                $supplierOrder = \DB::transaction(function () use ($procReq, $supplierId, $quantity, $user) {
+                    $order = SupplierOrder::create([
+                        'procurement_request_id' => $procReq->id,
+                        'product_id' => $procReq->product_id,
+                        'supplier_id' => $supplierId,
+                        'quantity' => $quantity,
+                        'status' => 'pending',
+                        'branch_id' => $procReq->branch_id,
+                    ]);
+
+                    $procReq->update([
+                        'procurement_user_id' => $user->id,
+                        'status' => 'pending_order_to_supplier'
+                    ]);
+
+                    // Deduct branch budget if applicable
+                    try {
+                        $branch = Branch::where('id', $procReq->branch_id)->lockForUpdate()->first();
+                        $deductAmount = $procReq->budget_amount ?? $procReq->total_amount ?? ($procReq->price * $quantity);
+                        if ($branch && $deductAmount) {
+                            $branch->budget = is_null($branch->budget) ? 0 : ($branch->budget - (float) $deductAmount);
+                            $branch->save();
+                        }
+                    } catch (\Exception $e) {
+                        throw $e;
+                    }
+
+                    return $order;
+                });
+            } catch (\Exception $e) {
+                \Log::error('Manager placeOrderProduct supplier-order failed', ['error' => $e->getMessage()]);
+                return response()->json(['ok' => false, 'message' => 'Failed to place supplier order'], 500);
+            }
+
+            return response()->json(['ok' => true, 'message' => 'Supplier order created', 'supplier_order' => $supplierOrder, 'procurement_request' => $procReq->fresh()->load('product')]);
+        }
+
+        // Default behaviour: mark product as published and optionally increase stock
         if (isset($validated['quantity'])) {
             $product->stock = max(0, $product->stock + (int)$validated['quantity']);
         }
@@ -1031,6 +1131,11 @@ public function logisticsInventory(Request $request)
     }
 
     $products = Product::where('branch_id', $branchId)
+        ->where('is_active', 1)
+        ->where(function($q) {
+            $q->whereNull('is_kitchen_dish')
+              ->orWhere('is_kitchen_dish', false);
+        })
         ->select('id', 'name', 'price', 'stock', 'min_stock')
         ->get()
         ->map(function ($p) {

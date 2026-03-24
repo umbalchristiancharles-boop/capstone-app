@@ -42,6 +42,120 @@ class SupplierOrderController extends Controller
         }
     }
 
+    /**
+     * Supplier can submit product details to fulfill an order.
+     * POST /api/supplier-orders/{id}/submit-product
+     */
+    public function submitProduct(Request $request, $id)
+    {
+        $user = $request->user();
+        if (!$user) return response()->json(['error' => 'Unauthorized'], 401);
+        if (!in_array(strtoupper($user->role ?? ''), ['SUPPLIER', 'SUPPLIER_MANAGER'])) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $order = SupplierOrder::findOrFail($id);
+        if ($order->supplier_id != $user->id) return response()->json(['error' => 'Not your order'], 403);
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'price' => 'required|numeric|min:0',
+            'stock' => 'nullable|integer|min:0',
+            'sku' => 'nullable|string|max:255'
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // Create or update product for supplier to fulfill the order
+            $isDish = \App\Models\Dish::whereRaw('TRIM(UPPER(name)) = ?', [trim(strtoupper($validated['name']))])
+                ->where('branch_id', $order->branch_id)
+                ->exists();
+            // Ensure SKU is not null — some databases enforce NOT NULL on sku.
+            $generatedSku = $validated['sku'] ?? ('sku-' . time() . '-' . rand(1000, 9999));
+            $ProductModel = \App\Models\Product::class;
+
+            // Prefer updating the product already attached to the order
+            $existingProduct = null;
+            if (!empty($order->product_id)) {
+                $existingProduct = $ProductModel::find($order->product_id);
+            }
+
+            // If no product attached, try to find by SKU if provided
+            if (!$existingProduct && !empty($validated['sku'])) {
+                $existingProduct = $ProductModel::where('sku', $validated['sku'])->first();
+            }
+
+            // If still not found, try matching by name + supplier + branch (avoid duplicates)
+            if (!$existingProduct) {
+                $existingProduct = $ProductModel::whereRaw('TRIM(UPPER(name)) = ?', [trim(strtoupper($validated['name']))])
+                    ->where('branch_id', $order->branch_id)
+                    ->where('supplier_id', $user->id)
+                    ->first();
+            }
+
+            if ($existingProduct) {
+                // Update existing product fields
+                $existingProduct->update([
+                    'name' => $validated['name'],
+                    'slug' => \Illuminate\Support\Str::slug($validated['name']),
+                    'price' => $validated['price'],
+                    'cost_price' => $validated['price'],
+                    'stock' => $validated['stock'] ?? $existingProduct->stock ?? 0,
+                    'sku' => $validated['sku'] ?? $existingProduct->sku ?? $generatedSku,
+                    'branch_id' => $order->branch_id,
+                    'supplier_id' => $user->id,
+                    'supplier_name' => $user->full_name ?? $user->username,
+                    'is_published' => 1,
+                    'is_active' => 1,
+                    'is_kitchen_dish' => $isDish,
+                ]);
+
+                $product = $existingProduct;
+            } else {
+                // Create new product
+                $product = $ProductModel::create([
+                    'name' => $validated['name'],
+                    'slug' => \Illuminate\Support\Str::slug($validated['name']),
+                    'price' => $validated['price'],
+                    'cost_price' => $validated['price'],
+                    'stock' => $validated['stock'] ?? 0,
+                    'sku' => $generatedSku,
+                    'branch_id' => $order->branch_id,
+                    'supplier_id' => $user->id,
+                    'supplier_name' => $user->full_name ?? $user->username,
+                    'is_published' => 1,
+                    'is_active' => 1,
+                    'is_kitchen_dish' => $isDish,
+                ]);
+            }
+
+            // Attach product to supplier order
+            $order->update(['product_id' => $product->id]);
+
+            // Update linked procurement request to point to this product and set price/total
+            if ($order->procurement_request_id) {
+                $proc = $order->procurementRequest;
+                if ($proc) {
+                    $proc->update([
+                        'product_id' => $product->id,
+                        'price' => $validated['price'],
+                        'total_amount' => ($validated['price'] * max(1, $order->quantity)),
+                        'supplier_confirmed' => true,
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            return response()->json(['ok' => true, 'message' => 'Product submitted and linked to order', 'product' => $product, 'order' => $order->fresh()->load(['product', 'procurementRequest'])]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('submitProduct failed', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to submit product', 'details' => config('app.debug') ? $e->getMessage() : null], 500);
+        }
+    }
+
     public function updateStatus(Request $request, $id)
     {
         try {
@@ -66,7 +180,6 @@ class SupplierOrderController extends Controller
             if ($order->supplier_id != $user->id) {
                 return response()->json(['error' => 'Not your order'], 403);
             }
-
 
             $validated = $request->validate([
                 'status' => 'required|in:pending,fulfilled,cancelled,on_delivery'
@@ -129,7 +242,7 @@ class SupplierOrderController extends Controller
                     DB::commit();
                 } catch (\Exception $e) {
                     DB::rollBack();
-                    \Log::error('SupplierOrderController::updateStatus FAILED', [
+                    Log::error('SupplierOrderController::updateStatus FAILED', [
                         'order_id' => $order->id ?? 'unknown',
                         'status' => $newStatus ?? 'unknown',
                         'error' => $e->getMessage(),

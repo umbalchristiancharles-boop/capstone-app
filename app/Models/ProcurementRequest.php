@@ -21,12 +21,14 @@ class ProcurementRequest extends Model
         'total_amount',
         'status',
         'budget_approved',
+        'supplier_confirmed',
         'budget_amount',
         'branch_id',
     ];
 
     protected $casts = [
         'budget_approved' => 'boolean',
+        'supplier_confirmed' => 'boolean',
         'budget_amount' => 'decimal:2',
         'price' => 'decimal:2',
         'total_amount' => 'decimal:2',

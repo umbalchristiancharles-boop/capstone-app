@@ -63,40 +63,40 @@ Route::middleware('web')->group(function () {
             : response()->json(['error' => 'Token invalid or expired'], 400);
     });
 
-    Route::get('/me',               [AuthController::class, 'me']);
-    Route::get('/owner-profile',    [AuthController::class, 'ownerProfile']);
-    Route::put('/owner-profile',    [AuthController::class, 'updateOwnerProfile']);
-    Route::post('/upload-avatar',   [AuthController::class, 'uploadAvatar']);
+    Route::get('/me',               [AuthController::class, 'me'])->middleware('auth');
+    Route::get('/owner-profile',    [AuthController::class, 'ownerProfile'])->middleware('auth');
+    Route::put('/owner-profile',    [AuthController::class, 'updateOwnerProfile'])->middleware('auth');
+    Route::post('/upload-avatar',   [AuthController::class, 'uploadAvatar'])->middleware('auth');
 
     // Super Admin Profile endpoints
-    Route::get('/superadmin-profile', [\App\Http\Controllers\Api\SuperAdminController::class, 'profile']);
-    Route::put('/superadmin-profile', [\App\Http\Controllers\Api\SuperAdminController::class, 'updateProfile']);
-    Route::post('/superadmin/avatar', [\App\Http\Controllers\Api\SuperAdminController::class, 'uploadAvatar']);
-    Route::get('/superadmin/dashboard', [\App\Http\Controllers\Api\SuperAdminController::class, 'dashboard']);
-    Route::get('/superadmin/all-staff', [\App\Http\Controllers\Api\SuperAdminController::class, 'allStaff']);
-Route::post('/superadmin/announce', [\App\Http\Controllers\Api\SuperAdminController::class, 'sendAnnouncement']);
-    Route::post('/superadmin/terms', [\App\Http\Controllers\Api\SuperAdminController::class, 'updateTerms']);
+    Route::get('/superadmin-profile', [\App\Http\Controllers\Api\SuperAdminController::class, 'profile'])->middleware('auth');
+    Route::put('/superadmin-profile', [\App\Http\Controllers\Api\SuperAdminController::class, 'updateProfile'])->middleware('auth');
+    Route::post('/superadmin/avatar', [\App\Http\Controllers\Api\SuperAdminController::class, 'uploadAvatar'])->middleware('auth');
+    Route::get('/superadmin/dashboard', [\App\Http\Controllers\Api\SuperAdminController::class, 'dashboard'])->middleware('auth');
+    Route::get('/superadmin/all-staff', [\App\Http\Controllers\Api\SuperAdminController::class, 'allStaff'])->middleware('auth');
+    Route::post('/superadmin/announce', [\App\Http\Controllers\Api\SuperAdminController::class, 'sendAnnouncement'])->middleware('auth');
+    Route::post('/superadmin/terms', [\App\Http\Controllers\Api\SuperAdminController::class, 'updateTerms'])->middleware('auth');
     // Public announcements endpoint for authenticated users
-    Route::get('/announcements', [\App\Http\Controllers\Api\AnnouncementController::class, 'index']);
+    Route::get('/announcements', [\App\Http\Controllers\Api\AnnouncementController::class, 'index'])->middleware('auth');
 
 // SuperAdmin Logistics - Product Management across all branches
-    Route::get('/superadmin/logistics/products', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsProducts']);
-    Route::post('/superadmin/logistics/products', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsStoreProduct']);
-    Route::put('/superadmin/logistics/products/{id}', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsUpdateProduct']);
-    Route::delete('/superadmin/logistics/products/{id}', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsDestroyProduct']);
-    Route::get('/superadmin/logistics/branches', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsBranches']);
+    Route::get('/superadmin/logistics/products', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsProducts'])->middleware('auth');
+    Route::post('/superadmin/logistics/products', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsStoreProduct'])->middleware('auth');
+    Route::put('/superadmin/logistics/products/{id}', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsUpdateProduct'])->middleware('auth');
+    Route::delete('/superadmin/logistics/products/{id}', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsDestroyProduct'])->middleware('auth');
+    Route::get('/superadmin/logistics/branches', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsBranches'])->middleware('auth');
 
     // SuperAdmin Branch Management
-    Route::get('/superadmin/branches', [\App\Http\Controllers\Api\SuperAdminController::class, 'branchesWithAccounts']);
-    Route::post('/superadmin/branches', [\App\Http\Controllers\Api\SuperAdminController::class, 'storeBranch']);
+    Route::get('/superadmin/branches', [\App\Http\Controllers\Api\SuperAdminController::class, 'branchesWithAccounts'])->middleware('auth');
+    Route::post('/superadmin/branches', [\App\Http\Controllers\Api\SuperAdminController::class, 'storeBranch'])->middleware('auth');
     // Delete a branch (soft-delete branch and associated user accounts)
-    Route::delete('/superadmin/branches/{id}', [\App\Http\Controllers\Api\SuperAdminController::class, 'deleteBranch']);
+    Route::delete('/superadmin/branches/{id}', [\App\Http\Controllers\Api\SuperAdminController::class, 'deleteBranch'])->middleware('auth');
 
     // ==========================================
     // SUPERADMIN FINANCE MODULE
     // Financial monitoring, analytics, and reporting across all branches
     // ==========================================
-    Route::prefix('superadmin/finance')->group(function () {
+    Route::prefix('superadmin/finance')->middleware('auth')->group(function () {
         // Dashboard - Get financial KPIs
         Route::get('/dashboard', [\App\Http\Controllers\SuperAdmin\Finance\SuperAdminFinanceController::class, 'dashboard']);
 
@@ -171,12 +171,14 @@ Route::middleware('auth')->group(function () {
     Route::get('procurement-requests/requested-products', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'requestedProducts']);
     Route::post('procurement-requests/{id}/status', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'updateStatus']);
     Route::post('procurement-requests/{id}/complete', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'completeOrder']);
+    Route::post('procurement-requests/{id}/broadcast', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'broadcastToSuppliers']);
 
     Route::apiResource('procurement.products', \App\Http\Controllers\Api\ProcurementProductController::class)->only(['index']);
     Route::post('procurement.products/{productId}/place-order', [\App\Http\Controllers\Api\ProcurementProductController::class, 'placeOrder']);
 
     Route::apiResource('supplier-orders', \App\Http\Controllers\Api\SupplierOrderController::class)->only(['index']);
     Route::put('supplier-orders/{id}/status', [\App\Http\Controllers\Api\SupplierOrderController::class, 'updateStatus']);
+    Route::post('supplier-orders/{id}/submit-product', [\App\Http\Controllers\Api\SupplierOrderController::class, 'submitProduct']);
 });
 
 Route::prefix('manager')->middleware('auth')->group(function () {
@@ -316,6 +318,12 @@ Route::prefix('manager')->middleware('auth')->group(function () {
             Route::get('/logistics/profile', [\App\Http\Controllers\Staff\StaffProfileController::class, 'profile']);
             Route::put('/logistics/profile', [\App\Http\Controllers\Staff\StaffProfileController::class, 'updateProfile']);
             Route::get('/logistics/deliveries', function() { return response()->json([]); });
+
+            // Kitchen - Dish creation and ingredient submission
+            Route::get('/kitchen/dishes', [\App\Http\Controllers\Staff\KitchenDishController::class, 'index']);
+            Route::post('/kitchen/dishes', [\App\Http\Controllers\Staff\KitchenDishController::class, 'store']);
+            Route::post('/kitchen/dishes/{id}/produce', [\App\Http\Controllers\Staff\KitchenDishController::class, 'produce']);
+            Route::post('/kitchen/ingredients/{id}/low-stock', [\App\Http\Controllers\Staff\KitchenDishController::class, 'markLowStock']);
         });
     });
 

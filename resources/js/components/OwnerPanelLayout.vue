@@ -77,6 +77,7 @@
         </aside>
       </section>
     </div>
+      <Toast />
 
     <!-- PROFILE INFO MODAL -->
     <transition name="fade">
@@ -194,6 +195,7 @@
 <script setup>
 import { ref, watch, computed, onMounted } from 'vue'
 import axios from 'axios'
+import Toast from './Toast.vue'
 
 const props = defineProps({
   userProfile: { type: Object, default: () => ({}) },
@@ -253,6 +255,8 @@ watch(() => props.userProfile, (newVal) => {
 onMounted(() => {
   fetchAnnouncements()
 })
+
+// Register Toast component for global toasts
 
 const getProfileEndpoint = () => {
   if (props.profileEndpoint) return props.profileEndpoint

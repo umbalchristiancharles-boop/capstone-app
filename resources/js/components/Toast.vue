@@ -1,0 +1,36 @@
+<template>
+  <div class="toast-viewport" v-if="state.toasts.length">
+    <div v-for="t in state.toasts" :key="t.id" class="toast" :class="t.type">
+      <div class="toast-message">{{ t.message }}</div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { toastState as state } from './toastStore'
+</script>
+
+<style scoped>
+.toast-viewport {
+  position: fixed;
+  right: 16px;
+  top: 16px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.toast {
+  min-width: 220px;
+  max-width: 420px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+  font-weight: 600;
+}
+.toast.success { background: #16a34a; }
+.toast.error { background: #dc2626; }
+.toast.info { background: #2563eb; }
+.toast .toast-message { font-size: 0.95rem; }
+</style>

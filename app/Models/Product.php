@@ -24,7 +24,8 @@ class Product extends Model
         'supplier_id',
         'is_published',
         'is_active',
-'has_been_ordered',
+        'is_kitchen_dish',
+    'has_been_ordered',
         'logistics_request_available',
     ];
 
@@ -35,6 +36,7 @@ class Product extends Model
         'min_stock' => 'integer',
         'is_published' => 'boolean',
         'is_active' => 'boolean',
+        'is_kitchen_dish' => 'boolean',
         'has_been_ordered' => 'boolean',
         'logistics_request_available' => 'boolean',
     ];

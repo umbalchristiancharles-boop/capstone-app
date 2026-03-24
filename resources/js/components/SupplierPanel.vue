@@ -46,7 +46,21 @@
                   </span>
                 </td>
                 <td>
-<button v-if="order.status === 'pending'" class="btn-primary btn-small" @click="completeTransaction(order.id)">Transaction complete</button>
+                  <template v-if="order.status === 'pending'">
+                    <div v-if="canSubmitProduct(order)">
+                      <button class="btn-primary btn-small" @click="openSupplierSubmitModal(order)">Product available</button>
+                    </div>
+                    <div v-else>
+                      <div v-if="canCompleteTransaction(order)">
+                        <button class="btn-primary btn-small" @click="completeTransaction(order.id)">Transaction complete</button>
+                      </div>
+                      <div v-else-if="order.product && order.product.id">
+                        <button class="btn-disabled btn-small" disabled>Product submitted</button>
+                        <div class="muted small-text" v-if="order.product.created_at" style="margin-top:4px">Submitted: {{ formatDate(order.product.created_at) }}</div>
+                      </div>
+                      <button v-else class="btn-disabled btn-small" disabled>Waiting for procurement order</button>
+                    </div>
+                  </template>
                   <button v-else-if="order.status === 'fulfilled'" class="btn-disabled btn-small" disabled>Completed</button>
                   <button v-else-if="order.status === 'on_delivery'" class="btn-disabled btn-small" disabled>On delivery</button>
                   <button v-else-if="order.status === 'cancelled'" class="btn-muted btn-small" disabled>Cancelled</button>
@@ -103,6 +117,33 @@
       </div>
     </div>
   </transition>
+  <!-- Submit product modal for supplier to add product and price -->
+  <transition name="fade">
+    <div v-if="supplierSubmitModalVisible" class="modal-backdrop" @click.self="closeSupplierSubmitModal">
+      <div class="modal">
+        <div class="modal-card">
+          <div class="modal-header">
+            <h3>Product Request - Add Product</h3>
+          </div>
+          <div class="modal-body">
+            <div class="form-group full-span">
+              <label>Product Name</label>
+              <input v-model="submitForm.name" type="text" placeholder="Product name" readonly />
+            </div>
+            <div class="form-group">
+              <label>Unit Price (PHP)</label>
+              <input v-model.number="submitForm.price" type="number" step="0.01" placeholder="0.00" />
+            </div>
+            <div v-if="submitError" class="error-msg">{{ submitError }}</div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-outline" @click="closeSupplierSubmitModal">Cancel</button>
+            <button class="btn-primary" @click="submitProductForm" :disabled="submitSubmitting">{{ submitSubmitting ? 'Submitting...' : 'Submit Product' }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </transition>
   <transition name="fade">
     <div v-if="showLogoutConfirm" class="logout-confirm-backdrop">
       <div class="logout-confirm-box">
@@ -128,10 +169,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import LogisticsPanelContent from './logistics/LogisticsPanelContent.vue'
 import axios from 'axios'
+import { showToast } from './toastStore'
 
 const userProfile = ref({})
 const dashboardTotals = ref({ totalSuppliers: 0, activeDeliveries: 0, pendingOrders: 0 })
@@ -151,6 +193,13 @@ const overlayText = ref('Logging out...')
 const showReceiptModal = ref(false)
 const receiptData = ref({})
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
+// Supplier submit modal state
+const supplierSubmitModalVisible = ref(false)
+const submitForm = ref({ name: '', price: null })
+const submitSubmitting = ref(false)
+const submitError = ref('')
+const currentSubmitOrderId = ref(null)
+const lastOrderCheck = ref(new Date().toISOString())
 
 onMounted(async () => {
   try {
@@ -229,6 +278,14 @@ onMounted(async () => {
   // load supplier orders for supplier user
   try {
     await loadOrders()
+    // initialize lastOrderCheck to latest returned order created_at
+    try {
+      const maxCreated = orders.value.reduce((max, o) => {
+        const t = o.created_at || o.createdAt || o.createdAt;
+        return t && new Date(t) > new Date(max) ? t : max
+      }, lastOrderCheck.value)
+      lastOrderCheck.value = maxCreated || lastOrderCheck.value
+    } catch (e) {}
   } catch (e) { console.warn('Failed to load supplier orders', e) }
 
   // Load products for the current user's branch (show supplier products)
@@ -257,12 +314,58 @@ async function loadProducts() {
   }
 }
 
+// Poll for new real (non-broadcast) supplier orders and notify supplier
+let _ordersPollTimer = null
+
+function normalizeSupplierOrder(order) {
+  if (!order || typeof order !== 'object') return order
+  return {
+    ...order,
+    procurementRequest: order.procurementRequest || order.procurement_request || null,
+    branch: order.branch || null,
+    product: order.product || null,
+  }
+}
+
+function startOrdersPolling() {
+  stopOrdersPolling()
+  _ordersPollTimer = setInterval(async () => {
+    try {
+      const res = await axios.get('/api/supplier-orders', { withCredentials: true })
+      const rawList = res.data.data || res.data || []
+      const list = Array.isArray(rawList) ? rawList.map(normalizeSupplierOrder) : []
+      // find any non-broadcast orders created after lastOrderCheck
+      const newReal = list.filter(o => !o.is_broadcast && o.created_at && new Date(o.created_at) > new Date(lastOrderCheck.value))
+      if (newReal && newReal.length > 0) {
+        showToast('New order placed for your products', 'info')
+        // update orders list and last check
+        orders.value = list
+        const maxCreated = list.reduce((max, o) => {
+          const t = o.created_at || max
+          return t && new Date(t) > new Date(max) ? t : max
+        }, lastOrderCheck.value)
+        lastOrderCheck.value = maxCreated
+      }
+    } catch (e) {
+      // ignore polling errors
+    }
+  }, 15000)
+}
+
+function stopOrdersPolling() {
+  if (_ordersPollTimer) {
+    clearInterval(_ordersPollTimer)
+    _ordersPollTimer = null
+  }
+}
+
 // Orders for supplier
 async function loadOrders() {
   ordersLoading.value = true
   try {
     const res = await axios.get('/api/supplier-orders', { withCredentials: true })
-    orders.value = res.data.data || res.data || []
+    const rawList = res.data.data || res.data || []
+    orders.value = Array.isArray(rawList) ? rawList.map(normalizeSupplierOrder) : []
     dashboardTotals.value.pendingOrders = orders.value.filter(o => o.status === 'pending').length
     // fulfilled count could be used elsewhere
   } catch (e) {
@@ -283,12 +386,62 @@ async function completeTransaction(id) {
     // Mark the supplier order as on_delivery so the backend finalizes procurement
     const res = await axios.put(`/api/supplier-orders/${id}/status`, { status: 'on_delivery' }, { withCredentials: true })
     if (res && res.data) {
-      receiptData.value = res.data
+      receiptData.value = normalizeSupplierOrder(res.data)
       showReceiptModal.value = true
     }
     await loadOrders()
   } catch (e) {
-    alert('Failed to complete transaction')
+    showToast('Failed to complete transaction', 'error')
+  }
+}
+
+function openSupplierSubmitModal(order) {
+  // Prefill product name if procurement request provides it
+  submitError.value = ''
+  submitForm.value = { name: '', price: null }
+  currentSubmitOrderId.value = null
+  if (!order) return
+  currentSubmitOrderId.value = order.id
+  // Try to prefill from procurementRequest or product name
+  const suggested = order.procurementRequest?.product?.name || order.product?.name || ''
+  submitForm.value.name = suggested
+  supplierSubmitModalVisible.value = true
+}
+
+function closeSupplierSubmitModal() {
+  if (submitSubmitting.value) return
+  supplierSubmitModalVisible.value = false
+  submitError.value = ''
+  submitForm.value = { name: '', price: null }
+  currentSubmitOrderId.value = null
+}
+
+async function submitProductForm() {
+  if (!currentSubmitOrderId.value) return
+  if (!submitForm.value.name) { submitError.value = 'Product name is required'; return }
+  if (submitForm.value.price === null || submitForm.value.price === undefined) { submitError.value = 'Price is required'; return }
+  submitSubmitting.value = true
+  submitError.value = ''
+  try {
+  const payload = { name: submitForm.value.name, price: submitForm.value.price }
+    const res = await axios.post(`/api/supplier-orders/${currentSubmitOrderId.value}/submit-product`, payload, { withCredentials: true })
+    if (res && res.data && res.data.ok) {
+      showToast('Product submitted and linked to order', 'success')
+      await loadOrders()
+      await loadProducts()
+      closeSupplierSubmitModal()
+    } else {
+      const msg = res.data?.error || res.data?.message || 'Failed to submit product'
+      submitError.value = msg
+      showToast(msg, 'error')
+    }
+  } catch (e) {
+    console.error('submitProductForm failed', e)
+    const msg = e.response?.data?.error || e.response?.data?.message || 'Failed to submit product'
+    submitError.value = msg
+    showToast(msg, 'error')
+  } finally {
+    submitSubmitting.value = false
   }
 }
 
@@ -317,9 +470,9 @@ function printReceipt() {
     w.focus()
     w.print()
     w.close()
-  } catch (e) {
+    } catch (e) {
     console.warn('Print failed', e)
-    alert('Failed to print receipt')
+    showToast('Failed to print receipt', 'error')
   }
 }
 
@@ -332,11 +485,58 @@ function getStatusClass(status) {
   }
 }
 
+function canSubmitProduct(order) {
+  // Allow supplier to submit a product when:
+  // - There's no linked product yet
+  // - OR the linked product is not from this supplier
+  // - OR the linked product has no positive price
+  try {
+    const myId = userProfile.value?.id
+    const prod = order.product
+    if (!prod) return true
+    // If product has no price or price <= 0 -> supplier should supply price
+    const price = Number(prod.price || 0)
+    if (isNaN(price) || price <= 0) return true
+    // If product.supplier_id is different from the current supplier (order.supplier_id), allow submission
+    // order.supplier_id should equal current user's id for supplier orders
+    if (prod.supplier_id && Number(prod.supplier_id) !== Number(order.supplier_id)) return true
+    // Otherwise product already provided by this supplier with price > 0 -> no need to submit
+    return false
+  } catch (e) {
+    return true
+  }
+}
+
+function canCompleteTransaction(order) {
+  try {
+    if (!order || order.status !== 'pending') return false
+    if (!order.product || !order.product.id) return false
+
+    // Supplier can complete transaction only after procurement/finance flow has
+    // reached order-ready or delivery states for the linked request.
+    const reqStatus = order.procurementRequest?.status || ''
+    const allowed = ['pending_order_to_supplier', 'delivery_pending', 'ongoing_delivery', 'on_delivery']
+    return allowed.includes(reqStatus)
+  } catch (e) {
+    return false
+  }
+}
+
 function formatPrice(val) {
   if (val === null || val === undefined) return '₱0.00'
   const n = Number(val)
   if (Number.isNaN(n)) return '₱0.00'
   return '₱' + n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function formatDate(dt) {
+  try {
+    const d = new Date(dt)
+    if (isNaN(d.getTime())) return ''
+    return d.toLocaleString()
+  } catch (e) {
+    return ''
+  }
 }
 
 function onProductAdded(newProduct) {

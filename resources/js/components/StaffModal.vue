@@ -126,8 +126,9 @@
                 <option value="">-- Select Role / Department --</option>
                 <optgroup label="Staff">
                   <option value="STAFF cashier">Staff Cashier</option>
-                  <option value="STAFF finance">Staff Finance</option>
+                  <option v-if="!isHrUser" value="STAFF finance">Staff Finance</option>
                   <option value="STAFF inventory">Staff Inventory</option>
+                  <option value="STAFF kitchen">Staff Kitchen</option>
                 </optgroup>
               </select>
             </div>
@@ -853,6 +854,10 @@ export default {
       const userRole = window.userRole || ''
       const role = userRole.toUpperCase()
       return role === 'BRANCH_MANAGER' || role === 'MANAGER' || role === 'HR'
+    },
+    isHrUser() {
+      const userRole = window.userRole || ''
+      return String(userRole).toUpperCase() === 'HR'
     },
     
     // Reset password always uses admin endpoint (only exists there)

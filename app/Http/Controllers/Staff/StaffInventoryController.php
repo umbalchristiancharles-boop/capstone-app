@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Staff;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Product;
+use App\Models\Dish;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -186,6 +187,7 @@ class StaffInventoryController extends Controller
             'supplier_name' => $supplierName,
             'is_published' => $isPublished,
             'is_active' => true,
+            'is_kitchen_dish' => Dish::whereRaw('TRIM(UPPER(name)) = ?', [trim(strtoupper($validated['name']))])->where('branch_id', $branchId)->exists(),
         ]);
 
         return response()->json([

@@ -130,8 +130,11 @@
               <div class="product-meta">
                 <div class="product-price">{{ formatPrice(p.price) }}</div>
                 <div>
-                  <template v-if="p.procurement_status === 'pending' || p.status === 'pending'">
+                  <template v-if="(p.procurement_status === 'pending' || p.status === 'pending') && !p.needs_supplier && (p.acknowledge_allowed === undefined ? true : p.acknowledge_allowed)">
                     <button class="btn-primary" @click="acknowledgeRequest(p)" style="padding:6px 10px; border-radius:8px">Acknowledge</button>
+                  </template>
+                  <template v-else-if="(p.procurement_status === 'pending' || p.status === 'pending') && p.needs_supplier">
+                    <button class="btn-primary" @click="requestSupplier(p)" style="padding:6px 10px; border-radius:8px; background:#f59e0b;">Request Supplier for Product</button>
                   </template>
                   <template v-else-if="p.procurement_status === 'budget_pending' || p.status === 'budget_pending'">
                     <button class="btn-outline" disabled style="padding:6px 10px; border-radius:8px">Budget Pending</button>
@@ -320,6 +323,22 @@ async function acknowledgeRequest(product) {
     await loadProducts()
   } catch (e) {
     alert('Failed to acknowledge request')
+  }
+}
+
+async function requestSupplier(product) {
+  if (!confirm(`Request suppliers to provide ${product.name} for branch ${branchName.value}?`)) return
+  try {
+    const requestId = product.procurement_request_id || product.id
+    const payload = { branch_id: selectedBranch.value }
+    const res = await axios.post(`/api/procurement-requests/${requestId}/broadcast`, payload, { withCredentials: true })
+    alert(res.data?.message || 'Supplier request broadcasted')
+    await loadRequestedProducts()
+    await loadProducts()
+    await refreshAllData()
+  } catch (e) {
+    console.error('requestSupplier failed', e)
+    alert(e.response?.data?.message || 'Failed to request supplier')
   }
 }
 

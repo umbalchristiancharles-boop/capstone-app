@@ -80,9 +80,22 @@ axios.interceptors.request.use(config => {
     // Only remove the Authorization header for non-API requests when there is
     // no session cookie to avoid accidentally stripping Bearer tokens used
     // for stateless API endpoints.
-    const isApiRequest = config && (String(config.url || '').startsWith('/api') || String(config.url || '').startsWith('http')) && String(config.url || '').includes('/api/')
+    // Check if URL is an API request (starts with /api or includes /api/)
+    const url = String(config.url || '')
+    const isApiRequest = url.startsWith('/api') || url.includes('/api/')
     if (!laravelSession && config && config.headers && config.headers['Authorization'] && !isApiRequest) {
       delete config.headers['Authorization']
+    }
+  } catch (e) {}
+  
+  // Also ensure Bearer token is always sent for API requests
+  try {
+    const url = String(config.url || '')
+    if ((url.startsWith('/api') || url.includes('/api/')) && !config.headers['Authorization']) {
+      const token = localStorage.getItem('token')
+      if (token) {
+        config.headers['Authorization'] = `Bearer ${token}`
+      }
     }
   } catch (e) {}
   try {
@@ -163,6 +176,7 @@ const router = createRouter({
     { path: '/staff/cashier', component: StaffCashierPanel, meta: { requiresAuth: true } },
     { path: '/staff/finance', component: () => import('./components/StaffFinancePanel.vue'), meta: { requiresAuth: true } },
     { path: '/staff/inventory', component: () => import('./components/inventory/InventoryStaffPanel.vue'), meta: { requiresAuth: true } },
+    { path: '/staff/kitchen', component: () => import('./components/KitchenStaffPanel.vue'), meta: { requiresAuth: true } },
     { path: '/supplier-panel', component: SupplierPanel, meta: { requiresAuth: true } },
     { path: '/owner-panel', component: AdminPanel },
     { path: '/hr-panel', component: DeletedStaffList},

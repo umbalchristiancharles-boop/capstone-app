@@ -15,13 +15,16 @@ class SupplierOrder extends Model
         'product_id',
         'supplier_id',
         'quantity',
+        'price',
         'status',
         'fulfilled_at',
         'branch_id',
+        'is_broadcast',
     ];
 
     protected $casts = [
         'fulfilled_at' => 'datetime',
+        'is_broadcast' => 'boolean',
     ];
 
     public function procurementRequest(): BelongsTo

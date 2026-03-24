@@ -320,6 +320,7 @@ function resolveRedirectPath(role, department) {
         if (dept === "INVENTORY") return "/staff/inventory";
         if (dept === "CASHIER") return "/staff/cashier";
         if (dept === "FINANCE") return "/staff/finance";
+        if (dept === "KITCHEN") return "/staff/kitchen";
         if (dept === "LOGISTICS") return "/staff/logistics";
         // Add more departments as needed
         return "/staff-panel";
