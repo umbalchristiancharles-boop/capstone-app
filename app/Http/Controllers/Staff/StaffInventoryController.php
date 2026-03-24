@@ -105,11 +105,16 @@ class StaffInventoryController extends Controller
 
         $query = Product::where('branch_id', $branchId)->where('is_active', 1);
 
+        // Allow callers to request unpublished products as well (useful for internal staff views)
+        $includeUnpublished = $request->boolean('include_unpublished', false);
+
         // Suppliers should only see products they own; other roles see published products.
         if (strtoupper($user->role ?? '') === 'SUPPLIER') {
             $query->where('supplier_id', $user->id);
         } else {
-            $query->where('is_published', 1);
+            if (!$includeUnpublished) {
+                $query->where('is_published', 1);
+            }
         }
 
         // Show supplier-submitted products as well so staff and logistics

@@ -7,8 +7,11 @@ use App\Models\Branch;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\Dish;
+use App\Models\DishIngredient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class CashierController extends Controller
 {
@@ -42,15 +45,120 @@ class CashierController extends Controller
             return response()->json([]);
         }
 
-        $query = Product::query();
+        // Product IDs used as ingredients for this branch (exclude from cashier as raw items)
+        $ingredientIds = DishIngredient::whereNotNull('product_id')
+            ->whereHas('dish', function ($q) use ($branchId) {
+                $q->where('branch_id', $branchId);
+            })
+            ->pluck('product_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
 
-        if ($branchId) {
-            $query->where('branch_id', $branchId);
+        // 1) Regular sellable products (non-dish, not ingredient, stock > 0)
+        $regularProductsQuery = Product::query()
+            ->where('is_active', 1)
+            ->where('branch_id', $branchId)
+            ->where('stock', '>', 0)
+            ->where(function ($q) {
+                $q->whereNull('is_kitchen_dish')->orWhere('is_kitchen_dish', false);
+            });
+
+        if (!empty($ingredientIds)) {
+            $regularProductsQuery->whereNotIn('id', $ingredientIds);
         }
 
-        return response()->json(
-            $query->orderBy('name')->get()
-        );
+        $out = $regularProductsQuery->orderBy('name')->get()->toArray();
+
+        // 2) Dishes from dishes table with computed price/cost and computed available servings
+        $dishes = Dish::where('branch_id', $branchId)
+            ->where('status', 'active')
+            ->with(['ingredients.product'])
+            ->orderBy('name')
+            ->get();
+
+        foreach ($dishes as $dish) {
+            $costSum = 0.0;
+            $maxServings = null;
+            $available = true;
+
+            foreach ($dish->ingredients as $ing) {
+                $perServing = (float) ($ing->per_serving ?? 0);
+                $ingProd = $ing->product;
+
+                if (!$ingProd || $perServing <= 0) {
+                    $available = false;
+                    break;
+                }
+
+                $possibleByIng = (int) floor(((float) $ingProd->stock) / $perServing);
+                $maxServings = is_null($maxServings) ? $possibleByIng : min($maxServings, $possibleByIng);
+
+                $unitCost = (float) ($ingProd->cost_price ?? $ingProd->price ?? 0);
+                $costSum += ($unitCost * $perServing);
+            }
+
+            $maxServings = (int) ($maxServings ?? 0);
+            if (!$available || $maxServings <= 0 || $costSum <= 0) {
+                continue;
+            }
+
+            $sellingPrice = round($costSum * 1.20, 2);
+
+            // Ensure a dish product exists so checkout can keep using product_id
+            $dishProduct = Product::where('branch_id', $branchId)
+                ->whereRaw('TRIM(UPPER(name)) = ?', [trim(strtoupper($dish->name))])
+                ->first();
+
+            if (!$dishProduct) {
+                $skuBase = strtoupper(substr(preg_replace('/[^A-Z0-9]+/i', '', $dish->name), 0, 8));
+                if ($skuBase === '') {
+                    $skuBase = 'DISH';
+                }
+                do {
+                    $sku = $skuBase . '-' . strtoupper(Str::random(4));
+                } while (Product::where('sku', $sku)->exists());
+
+                $dishProduct = Product::create([
+                    'name' => $dish->name,
+                    'slug' => Str::slug($dish->name),
+                    'price' => $sellingPrice,
+                    'cost_price' => round($costSum, 2),
+                    'stock' => $maxServings,
+                    'min_stock' => 0,
+                    'sku' => $sku,
+                    'branch_id' => $branchId,
+                    'is_published' => 1,
+                    'has_been_ordered' => 0,
+                    'is_active' => 1,
+                    'is_kitchen_dish' => true,
+                    'supplier_name' => null,
+                    'supplier_id' => null,
+                    'logistics_request_available' => false,
+                ]);
+            } else {
+                $dishProduct->is_kitchen_dish = true;
+                $dishProduct->is_active = true;
+                $dishProduct->stock = $maxServings;
+                $dishProduct->price = $sellingPrice;
+                $dishProduct->cost_price = round($costSum, 2);
+                $dishProduct->save();
+            }
+
+            $row = $dishProduct->toArray();
+            $row['price'] = $sellingPrice;
+            $row['computed_cost'] = round($costSum, 2);
+            $row['stock'] = $maxServings;
+            $row['is_kitchen_dish'] = true;
+            $out[] = $row;
+        }
+
+        usort($out, function ($a, $b) {
+            return strcasecmp((string) ($a['name'] ?? ''), (string) ($b['name'] ?? ''));
+        });
+
+        return response()->json($out);
     }
 
     /**
@@ -85,17 +193,71 @@ class CashierController extends Controller
                     abort(422, "Product #{$item['product_id']} not found in this branch.");
                 }
 
-                if ($product->stock < $item['quantity']) {
-                    abort(422, "Insufficient stock for {$product->name}. Available: {$product->stock}");
-                }
+                $unitPrice = (float) $product->price;
 
-                $subtotal = $product->price * $item['quantity'];
+                // If this is a kitchen dish, validate ingredient stocks and compute price from ingredients
+                if ($product->is_kitchen_dish) {
+                    $dish = Dish::whereRaw('TRIM(UPPER(name)) = ?', [trim(strtoupper($product->name))])
+                        ->where('branch_id', $request->branch_id)
+                        ->with(['ingredients.product'])
+                        ->first();
+
+                    if (!$dish) {
+                        $possible = Dish::where('branch_id', $request->branch_id)->with(['ingredients.product'])->get();
+                        $pn = trim(strtoupper($product->name));
+                        foreach ($possible as $pd) {
+                            $dn = trim(strtoupper($pd->name));
+                            if ($dn !== '' && (strpos($pn, $dn) !== false || strpos($dn, $pn) !== false)) {
+                                $dish = $pd;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!$dish) {
+                        abort(422, "Dish definition for {$product->name} not found.");
+                    }
+
+                    $costSum = 0.0;
+                    foreach ($dish->ingredients as $ing) {
+                        if (!$ing->product) {
+                            abort(422, "Ingredient {$ing->name} for {$product->name} is not linked to a product.");
+                        }
+
+                        $ingProd = Product::where('id', $ing->product->id)
+                            ->where('branch_id', $request->branch_id)
+                            ->lockForUpdate()
+                            ->first();
+
+                        if (!$ingProd) {
+                            abort(422, "Ingredient product {$ing->name} not available in this branch.");
+                        }
+
+                        $required = ($ing->per_serving ?? 0) * $item['quantity'];
+                        if ($ingProd->stock < $required) {
+                            abort(422, "Insufficient stock for ingredient {$ingProd->name} (required: {$required}, available: {$ingProd->stock}).");
+                        }
+
+                        $unitCost = $ingProd->cost_price ?? $ingProd->price ?? 0;
+                        $costSum += ($unitCost * ($ing->per_serving ?? 0));
+                    }
+
+                    $sellingPrice = round($costSum * 1.20, 2);
+                    $unitPrice = $sellingPrice;
+                    $subtotal = $sellingPrice * $item['quantity'];
+                } else {
+                    if ($product->stock < $item['quantity']) {
+                        abort(422, "Insufficient stock for {$product->name}. Available: {$product->stock}");
+                    }
+
+                    $subtotal = $product->price * $item['quantity'];
+                }
                 $grandTotal += $subtotal;
 
                 $orderItems[] = [
                     'product_id'   => $product->id,
                     'product_name' => $product->name,
-                    'unit_price'   => $product->price,
+                    'unit_price'   => $unitPrice,
                     'quantity'     => $item['quantity'],
                     'subtotal'     => $subtotal,
                 ];
@@ -164,7 +326,57 @@ class CashierController extends Controller
                     ->lockForUpdate()
                     ->first();
 
-                if ($prod) {
+                if (!$prod) {
+                    continue;
+                }
+
+                if ($prod->is_kitchen_dish) {
+                    // decrement each ingredient according to per_serving * quantity
+                    $dish = Dish::whereRaw('TRIM(UPPER(name)) = ?', [trim(strtoupper($prod->name))])
+                        ->where('branch_id', $request->branch_id)
+                        ->with('ingredients')
+                        ->first();
+
+                    if (!$dish) {
+                        $possible = Dish::where('branch_id', $request->branch_id)->with('ingredients')->get();
+                        $pn = trim(strtoupper($prod->name));
+                        foreach ($possible as $pd) {
+                            $dn = trim(strtoupper($pd->name));
+                            if ($dn !== '' && (strpos($pn, $dn) !== false || strpos($dn, $pn) !== false)) {
+                                $dish = $pd;
+                                break;
+                            }
+                        }
+                    }
+
+                    if ($dish) {
+                        foreach ($dish->ingredients as $ing) {
+                            if (!$ing->product_id) {
+                                continue;
+                            }
+
+                            $ingProd = Product::where('id', $ing->product_id)
+                                ->where('branch_id', $request->branch_id)
+                                ->lockForUpdate()
+                                ->first();
+
+                            if (!$ingProd) {
+                                continue;
+                            }
+
+                            $required = ($ing->per_serving ?? 0) * $it->quantity;
+                            $newStock = max(0, $ingProd->stock - $required);
+                            $ingProd->stock = $newStock;
+                            $ingProd->save();
+                        }
+                    }
+
+                    // Optionally decrement the dish product stock if tracked
+                    if (!is_null($prod->stock)) {
+                        $prod->stock = max(0, $prod->stock - $it->quantity);
+                        $prod->save();
+                    }
+                } else {
                     $newStock = max(0, $prod->stock - $it->quantity);
                     $prod->stock = $newStock;
                     $prod->save();

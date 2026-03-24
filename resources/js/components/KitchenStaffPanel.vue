@@ -25,7 +25,14 @@
                   <label>Ingredients</label>
                   <div class="ingredients">
                     <div v-for="(ing, idx) in form.ingredients" :key="idx" class="ingredient-row">
-                      <input v-model="ing.name" placeholder="Ingredient name" required />
+                      <select v-model="ing.product_id" @change="onProductSelect(idx)">
+                        <option value="">-- choose from stock (or leave blank to type new) --</option>
+                        <option v-for="p in products" :key="p.id" :value="p.id">{{ p.name }} ({{ p.stock }} in stock)</option>
+                      </select>
+
+                      <input v-if="!ing.product_id" v-model="ing.name" placeholder="Ingredient name" required />
+                      <input v-else v-model="ing.name" placeholder="Ingredient name" readonly />
+
                       <input v-model="ing.per_serving" placeholder="Per serving (optional)" class="small" />
                       <select v-model="ing.unit">
                         <option value="">unspecified</option>
@@ -98,14 +105,15 @@ const userProfile = ref({})
 const dishes = ref([])
 const loading = ref(false)
 const message = ref('')
+const products = ref([])
 
 const form = ref({
   name: '',
-  ingredients: [ { name: '', unit: 'pcs', per_serving: 0 } ]
+  ingredients: [ { name: '', product_id: '', unit: 'pcs', per_serving: 0 } ]
 })
 
 function addIngredient() {
-  form.value.ingredients.push({ name: '', unit: 'pcs', per_serving: 0 })
+  form.value.ingredients.push({ name: '', product_id: '', unit: 'pcs', per_serving: 0 })
 }
 
 function removeIngredient(idx) {
@@ -129,16 +137,44 @@ async function submitDish() {
   try {
       const payload = {
         name: form.value.name,
-        ingredients: form.value.ingredients.map(i => ({ name: i.name, unit: i.unit, per_serving: i.per_serving }))
+        ingredients: form.value.ingredients.map(i => ({ name: i.name, unit: i.unit, per_serving: i.per_serving, product_id: i.product_id || null }))
       }
     const res = await axios.post('/api/staff/kitchen/dishes', payload)
     message.value = 'Dish created'
     form.value.name = ''
-    form.value.ingredients = [ { name: '', quantity: 1, unit: 'pcs', per_serving: 0 } ]
+    form.value.ingredients = [ { name: '', product_id: '', unit: 'pcs', per_serving: 0 } ]
     await loadDishes()
   } catch (e) {
     console.error('Failed to create dish', e)
     message.value = e?.response?.data?.error || 'Failed to create dish'
+  }
+}
+
+async function loadProducts() {
+  try {
+    const res = await axios.get('/api/staff/inventory/products?include_unpublished=1')
+    products.value = res.data || []
+  } catch (e) {
+    console.error('Failed to load products for kitchen form', e)
+    products.value = []
+  }
+}
+
+function onProductSelect(idx) {
+  const ing = form.value.ingredients[idx]
+  if (!ing) return
+  // if a product was selected, set the name to that product and prevent duplicates
+  if (ing.product_id) {
+    const already = form.value.ingredients.find((it, i) => i !== idx && it.product_id && String(it.product_id) === String(ing.product_id))
+    if (already) {
+      alert('This ingredient is already selected in another row.');
+      ing.product_id = ''
+      return
+    }
+    const p = products.value.find(p => String(p.id) === String(ing.product_id))
+    if (p) {
+      ing.name = p.name
+    }
   }
 }
 
@@ -180,7 +216,7 @@ onMounted(async () => {
   } catch (e) {
     console.error('Failed to load staff profile for kitchen panel', e)
   }
-  loadDishes()
+  await Promise.all([loadDishes(), loadProducts()])
 })
 
 // Logout state and handlers (consistent with other staff panels)

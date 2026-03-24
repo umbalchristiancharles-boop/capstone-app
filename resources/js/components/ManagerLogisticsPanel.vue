@@ -125,9 +125,11 @@
               </thead>
               <tbody>
                 <tr v-for="req in procurementRequests" :key="req.id">
-                  <td>{{ req.product?.name }}</td>
+                  <td>
+                    <div class="product-name">{{ req.product?.name || '(no product)' }}</div>
+                  </td>
                   <td>{{ req.quantity }}</td>
-                  <td>₱{{ formatPrice(req.total_amount) }}</td>
+                  <td class="amount">{{ formatPrice(req.total_amount) }}</td>
                   <td>
                     <span :class="['status-badge', getProcStatusClass(req.status)]">
                       {{ formatProcStatus(req.status, req.budget_approved) }}
@@ -207,7 +209,9 @@ const showRequestForm = ref(false)
 const requesting = ref({})
 
 function formatPrice(n) {
-  return (Number(n || 0)).toFixed(2)
+  const num = Number(n || 0)
+  if (Number.isNaN(num)) return '₱0.00'
+  return '₱' + num.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
 function formatDate(d) {
@@ -490,6 +494,18 @@ async function confirmLogout() {
   padding: 12px 16px;
   text-align: left;
   border-bottom: 1px solid #eee;
+}
+
+.data-table td.amount {
+  text-align: right;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.product-name {
+  white-space: normal;
+  word-break: break-word;
+  max-width: 380px;
 }
 
 .data-table th {

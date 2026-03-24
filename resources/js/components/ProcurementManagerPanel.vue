@@ -64,6 +64,34 @@
           </div>
         </div>
       </section>
+      <section class="requests-history" style="margin-top:1rem">
+        <h2>Requests History</h2>
+        <p class="section-description">All procurement requests for this branch (most recent first).</p>
+
+        <div v-if="procurementHistoryLoading">Loading history...</div>
+        <div v-else-if="!procurementHistory.length">No procurement requests found.</div>
+        <div v-else>
+          <table class="data-table" style="width:100%">
+            <thead>
+              <tr><th>Date</th><th>Product</th><th>Qty</th><th>Total</th><th>Status</th><th>Updated</th></tr>
+            </thead>
+            <tbody>
+              <tr v-for="r in procurementHistory" :key="'ph-'+r.id">
+                <td>{{ formatDate(r.created_at) }}</td>
+                <td><div class="product-name">{{ r.product?.name || r.purpose || '(no product)' }}</div></td>
+                <td>{{ r.quantity }}</td>
+                <td class="amount">{{ formatPrice(r.total_amount || r.price || 0) }}</td>
+                <td>
+                  <span :class="['status-badge', getProcStatusClass(r.status)]">
+                    {{ formatProcStatus(r.status, r.budget_approved) }}
+                  </span>
+                </td>
+                <td>{{ formatDate(r.updated_at) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
       <section class="budget-requests" style="margin-top:1rem">
         <h2>Budget Requests</h2>
         <p class="section-description">Create and view your branch budget requests.</p>
@@ -332,6 +360,10 @@ const requestedProductsLoading = ref(false)
 const isPlacingOrder = ref(false)
 const isCompletingDelivery = ref(false)
 
+// Procurement requests history
+const procurementHistory = ref([])
+const procurementHistoryLoading = ref(false)
+
 // Add Supplier modal state
 const showAddModal = ref(false)
 
@@ -551,7 +583,22 @@ onMounted(async () => {
   await loadProducts()
   await loadRequestedProducts()
   await fetchBudgetRequests()
+  await loadProcurementHistory()
 })
+
+async function loadProcurementHistory() {
+  procurementHistoryLoading.value = true
+  try {
+    const res = await axios.get('/api/procurement-requests', { withCredentials: true })
+    const data = res.data?.data ?? res.data ?? (res.data ? [res.data] : [])
+    procurementHistory.value = Array.isArray(data) ? data : []
+  } catch (e) {
+    console.warn('Failed to load procurement history', e)
+    procurementHistory.value = []
+  } finally {
+    procurementHistoryLoading.value = false
+  }
+}
 
 // Supplier selection modal state
 const supplierModalVisible = ref(false)
@@ -660,6 +707,25 @@ function formatPrice(val) {
   const n = Number(val)
   if (Number.isNaN(n)) return '₱0.00'
   return '₱' + n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function formatDate(d) {
+  if (!d) return ''
+  try { return new Date(d).toLocaleString() } catch (e) { return d }
+}
+
+function getProcStatusClass(status) {
+  switch ((status || '').toLowerCase()) {
+    case 'completed': return 'status-approved'
+    case 'approved': return 'status-approved'
+    case 'pending': return 'status-pending'
+    default: return 'status-pending'
+  }
+}
+
+function formatProcStatus(status, budgetApproved) {
+  if (budgetApproved) return 'BUDGET APPROVED'
+  return (status || '').toUpperCase()
 }
 
 async function placeOrder(product) {
@@ -798,6 +864,12 @@ async function markDeliveryComplete(product) {
 
 .modal-footer { padding: 10px 14px; display:flex; justify-content:flex-end; gap:0.5rem; background: #fafafa; }
 .modal-footer .btn-outline { background: transparent; border: 1px solid #ccc; color: #333; }
+
+/* Requests history table tweaks */
+.requests-history .data-table th,
+.requests-history .data-table td { padding: 10px 12px; }
+.requests-history .data-table td.amount { text-align: right; white-space: nowrap; font-weight:600 }
+.requests-history .product-name { white-space: normal; word-break: break-word; max-width: 420px }
 .modal-footer .btn-primary { background: #4b1ddf; color: #fff; }
 
 /* Password Display Styles */

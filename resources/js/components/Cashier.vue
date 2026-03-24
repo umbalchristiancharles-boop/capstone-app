@@ -45,6 +45,7 @@
           >
             <div class="product-name">{{ p.name }}</div>
             <div class="product-price">₱{{ fmt(p.price) }}</div>
+            <div v-if="p.computed_cost" class="product-cost">Cost: ₱{{ fmt(p.computed_cost) }}</div>
             <div class="product-stock" :class="{ 'stock-zero': p.stock <= 0 }">
               {{ p.stock > 0 ? 'Stock: ' + p.stock : 'Out of stock' }}
             </div>
@@ -62,7 +63,10 @@
           <div v-for="(item, idx) in cart" :key="item.product_id" class="cart-item">
             <div class="cart-item-info">
               <span class="cart-item-name">{{ item.name }}</span>
-              <span class="cart-item-price">₱{{ fmt(item.unit_price) }}</span>
+              <div style="text-align:right">
+                <span class="cart-item-price">₱{{ fmt(item.unit_price) }}</span>
+                <div v-if="item.computed_cost" class="cart-item-cost">Cost: ₱{{ fmt(item.computed_cost) }}</div>
+              </div>
             </div>
             <div class="cart-item-controls">
               <button class="qty-btn" @click="decrementQty(idx)">−</button>
@@ -369,6 +373,7 @@ function addToCart(product) {
       product_id: product.id,
       name: product.name,
       unit_price: Number(product.price),
+      computed_cost: product.computed_cost ? Number(product.computed_cost) : null,
       quantity: 1,
       subtotal: Number(product.price),
       max_stock: product.stock,
@@ -457,6 +462,9 @@ async function processCheckout() {
 
     // Refresh transactions to show the completed order
     await loadTransactions()
+
+    // Refresh products so updated stocks are reflected immediately in the UI
+    await loadProducts()
   } catch (e) {
     const msg = e.response?.data?.message || e.response?.data?.error || e.message || 'Checkout failed'
     checkoutError.value = msg
