@@ -641,4 +641,15 @@ async function onAvatarChange(event) {
     padding: 1.5rem 2.5rem;
   }
 }
+
+/* Header profile dropdown styles (shared) */
+.header-profile-wrapper { position:relative; display:flex; align-items:center }
+.header-profile-btn { display:flex; gap:8px; align-items:center; background:transparent; border:none; cursor:pointer; padding:6px 8px; border-radius:8px }
+.header-avatar { width:36px; height:36px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; background:#f3f4f6 }
+.header-avatar-img { width:100%; height:100%; background-size:cover; background-position:center }
+.header-avatar-initials { font-weight:700; color:#374151 }
+.header-name { font-weight:700; color:#333; font-size:0.86rem }
+.header-profile-dropdown { position:absolute; right:0; top:46px; background:#fff; border-radius:8px; box-shadow:0 8px 24px rgba(16,24,40,0.12); padding:6px; min-width:160px; z-index:100200 }
+.dropdown-item { display:block; width:100%; text-align:left; padding:8px 12px; background:transparent; border:none; color:#374151; cursor:pointer }
+.dropdown-item:hover { background:#f7f7f8 }
 </style>

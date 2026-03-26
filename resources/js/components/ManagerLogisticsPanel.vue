@@ -1,15 +1,46 @@
 <template>
   <OwnerPanelLayout
+    ref="ownerLayout"
     :userProfile="userProfile"
     :panelTitle="'Logistics Manager Panel'"
     :panelDescription="'Monitor inventory, procurement requests, and manage budgets for your branch.'"
     :enableProfileUpdate="true"
     :canEditProfile="userProfile.role === 'OWNER'"
     :canChangePassword="true"
+    :showProfileColumn="false"
     @logout="showLogoutConfirm = true"
     @profile-updated="onProfileUpdated"
   >
     <template #main>
+        <div class="hr-stats-grid">
+          <div class="hr-stat-card hr-stat-card--total">
+            <div class="hr-stat-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            </div>
+            <div class="hr-stat-content">
+              <span class="hr-stat-label">Total Products</span>
+              <span class="hr-stat-value">{{ dashboardTotals.totalProducts }}</span>
+            </div>
+          </div>
+          <div class="hr-stat-card hr-stat-card--active">
+            <div class="hr-stat-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <div class="hr-stat-content">
+              <span class="hr-stat-label">Low Stock</span>
+              <span class="hr-stat-value">{{ dashboardTotals.lowStock }}</span>
+            </div>
+          </div>
+          <div class="hr-stat-card hr-stat-card--leave">
+            <div class="hr-stat-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            </div>
+            <div class="hr-stat-content">
+              <span class="hr-stat-label">Pending Requests</span>
+              <span class="hr-stat-value">{{ dashboardTotals.pendingRequests }}</span>
+            </div>
+          </div>
+        </div>
       <!-- Inventory Section -->
       <div class="panel-section">
         <h2 class="section-title">Inventory Monitor</h2>
@@ -36,7 +67,7 @@
           <button class="btn-retry" @click="fetchInventory">Retry</button>
         </div>
 
-        <div v-else class="table-container">
+        <div v-else class="table-container inventory-table-container">
           <table class="data-table">
             <thead>
               <tr>
@@ -170,8 +201,27 @@
         <!-- ... rest of existing budget code ... -->
       </div>
     </template>
+
+    <template #headerActions>
+      <div class="header-profile-wrapper" @click.stop>
+        <button class="header-profile-btn" @click="toggleProfileDropdown">
+          <div class="header-avatar">
+            <div v-if="userProfile.avatarUrl" class="header-avatar-img" :style="{ backgroundImage: 'url('+userProfile.avatarUrl+')' }"></div>
+            <div v-else class="header-avatar-initials">{{ (userProfile.fullName || userProfile.full_name || 'U').charAt(0) }}</div>
+          </div>
+          <div class="header-name">{{ ((userProfile.fullName || userProfile.full_name) || ((userProfile.role || 'Manager') + (userProfile.branch_name ? ' - ' + userProfile.branch_name : (userProfile.branch ? ' - ' + userProfile.branch : '')) )).toUpperCase() }}</div>
+        </button>
+        <div v-if="profileDropdownVisible" class="header-profile-dropdown" @click.stop>
+          <button class="dropdown-item" @click="openInfoFromHeader">Info</button>
+          <button class="dropdown-item" @click="triggerLogoutFromHeader">Logout</button>
+        </div>
+
+      </div>
+    </template>
+
+    <!-- Side panel removed as requested -->
   </OwnerPanelLayout>
-  
+
   <!-- LOGOUT CONFIRM -->
   <transition name="fade">
     <div v-if="showLogoutConfirm" class="logout-confirm-backdrop">
@@ -204,6 +254,7 @@ import OwnerPanelLayout from './OwnerPanelLayout.vue'
 
 // basic state
 const userProfile = ref({})
+const dashboardTotals = ref({ totalProducts: 0, lowStock: 0, pendingRequests: 0 })
 
 const inventory = ref([])
 const inventoryLoading = ref(false)
@@ -216,6 +267,7 @@ const branches = ref([])
 const selectedBranch = ref(null)
 const branchesLoading = ref(false)
 const branchesError = ref('')
+// announcements removed
 
 const products = ref([])
 const procurementRequests = ref([])
@@ -255,6 +307,8 @@ function formatProcStatus(status, budgetApproved) {
   return (status || '').toUpperCase()
 }
 
+// fetchAnnouncements removed
+
 async function fetchInventory() {
   inventoryLoading.value = true
   inventoryError.value = ''
@@ -276,6 +330,7 @@ async function fetchInventory() {
     inventory.value = []
   } finally {
     inventoryLoading.value = false
+    try { updateDashboardTotals() } catch (e) { /* ignore */ }
   }
 }
 
@@ -309,7 +364,16 @@ async function fetchProcRequests() {
     procurementRequests.value = []
   } finally {
     procRequestsLoading.value = false
+    try { updateDashboardTotals() } catch (e) { /* ignore */ }
   }
+}
+
+function updateDashboardTotals() {
+  const inv = inventory.value || []
+  const procs = procurementRequests.value || []
+  dashboardTotals.value.totalProducts = inv.length
+  dashboardTotals.value.lowStock = inv.filter(i => (i.status || '').toString().toLowerCase() !== 'ok').length
+  dashboardTotals.value.pendingRequests = procs.filter(r => (r.status || '').toString().toLowerCase() === 'pending').length
 }
 
 async function fetchBranches() {
@@ -451,6 +515,52 @@ function onProfileUpdated(updatedProfile) {
 // Expose handler so parent/layout can call or reference it if needed
 defineExpose({ fetchInventory, onProfileUpdated })
 
+// Header profile dropdown (match Procurement panel behavior)
+const profileDropdownVisible = ref(false)
+const ownerLayout = ref(null)
+
+function toggleProfileDropdown() {
+  profileDropdownVisible.value = !profileDropdownVisible.value
+}
+
+function closeProfileDropdown() { profileDropdownVisible.value = false }
+
+function openInfoFromHeader() {
+  closeProfileDropdown()
+  try {
+    if (ownerLayout.value && typeof ownerLayout.value.openInfoModal === 'function') {
+      ownerLayout.value.openInfoModal()
+      return
+    }
+  } catch (e) {}
+  try { window.dispatchEvent(new Event('open-owner-info')); return } catch (e) {}
+  const infoBtn = document.querySelector('.admin-info-btn')
+  if (infoBtn) infoBtn.click()
+}
+
+function openEditProfileFromHeader() {
+  closeProfileDropdown()
+  try {
+    if (ownerLayout.value && typeof ownerLayout.value.openAvatarPicker === 'function') {
+      ownerLayout.value.openAvatarPicker()
+      return
+    }
+  } catch (e) {}
+  try { window.dispatchEvent(new Event('open-owner-edit-profile')); return } catch (e) {}
+  const fileInput = document.querySelector('#avatar-input') || document.querySelector('#avatar-input-modal') || document.querySelector('#global-avatar-input')
+  if (fileInput) fileInput.click()
+}
+
+function triggerLogoutFromHeader() {
+  closeProfileDropdown()
+  showLogoutConfirm.value = true
+}
+
+// Close dropdown when clicking outside
+window.addEventListener('click', (e) => {
+  try { if (profileDropdownVisible.value) closeProfileDropdown() } catch (e) {}
+})
+
 // Logout modal state and handlers (keeps behavior consistent with other manager panels)
 const showLogoutConfirm = ref(false)
 const isLoggingOut = ref(false)
@@ -490,6 +600,16 @@ async function confirmLogout() {
   margin-bottom: 24px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
+
+/* When profile column is hidden, lay out main + side as two columns so
+   announcements (in the side) stay on the right and do not overlap main */
+:deep(.admin-layout.no-profile-column) {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 1rem;
+}
+:deep(.admin-layout.no-profile-column) .admin-main { width: 100%; }
+:deep(.admin-layout.no-profile-column) .admin-side { width: 360px; }
 
 .section-title {
   font-size: 20px;
@@ -587,6 +707,18 @@ async function confirmLogout() {
 
 .table-container {
   overflow-x: auto;
+}
+
+.inventory-table-container {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.inventory-table-container table thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #fff4e6;
 }
 
 .data-table {
@@ -772,57 +904,59 @@ async function confirmLogout() {
 
 .logout-confirm-backdrop {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 45;
 }
 
 .logout-confirm-box {
-  background: white;
-  padding: 24px;
+  background: var(--surface-card);
+  color: var(--text-primary);
+  padding: 18px 20px 16px;
   border-radius: 12px;
-  text-align: center;
-  max-width: 400px;
+  max-width: 360px;
+  width: 100%;
+  box-shadow: 0 12px 30px rgba(16,24,40,0.08);
+  border: 1px solid var(--border-stroke);
 }
 
 .logout-confirm-box h3 {
-  margin: 0 0 8px 0;
-  color: #333;
+  margin-bottom: 6px;
+  font-size: 0.98rem;
 }
 
 .logout-confirm-box p {
-  margin: 0 0 20px 0;
-  color: #666;
+  font-size: 0.8rem;
+  opacity: 0.9;
 }
 
 .logout-actions {
+  margin-top: 12px;
   display: flex;
-  gap: 12px;
-  justify-content: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.btn-cancel,
+.btn-confirm {
+  border-radius: 999px;
+  border: none;
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  cursor: pointer;
 }
 
 .btn-cancel {
-  padding: 10px 24px;
-  background: #6c757d;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
+  background: rgba(16,24,40,0.04);
+  color: var(--text-primary);
 }
 
 .btn-confirm {
-  padding: 10px 24px;
-  background: #dc3545;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
+  background: var(--alert);
+  color: #ffffff;
 }
 
 .loading-overlay {
@@ -856,4 +990,18 @@ async function confirmLogout() {
 .fade-leave-to {
   opacity: 0;
 }
+
+/* Panel-specific header profile appearance to match procurement layout badge */
+.header-profile-btn {
+  border: 1px solid rgba(0,0,0,0.08);
+  background: #fff;
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+.header-name { font-size: 0.8rem; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; max-width: 320px }
+
+/* Avatar styles (initials / image) */
+.header-avatar { width:36px; height:36px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; background:#f3f4f6; margin-right:8px }
+.header-avatar-img { width:100%; height:100%; background-size:cover; background-position:center }
+.header-avatar-initials { font-weight:700; color:#374151 }
 </style>
