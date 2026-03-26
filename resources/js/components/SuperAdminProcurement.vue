@@ -6,25 +6,32 @@
     :enableProfileUpdate="false"
     :canEditProfile="false"
     :canChangePassword="true"
+    :showProfileColumn="false"
+    :showAnnouncements="selectedBranch"
+    :showBackButton="true"
+    @back="() => router.back()"
     @logout="showLogoutConfirm = true"
     @profile-updated="onProfileUpdated"
   >
-    <template #headerActions>
-      <div style="display:flex; gap:0.5rem; align-items:center">
-        <button class="btn-outline" @click="router.back()" style="padding:0.5rem 0.85rem; font-size:0.95rem">← Back</button>
-      </div>
+    <template #headerLeft>
+      <button @click="router.push('/super-admin-panel')" class="btn-secondary back-to-dashboard-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="back-icon"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        Back to Super Admin
+      </button>
     </template>
+
+
+
     <template #main>
-      <!-- Branch Selector -->
-      <div class="branch-selector-section" style="margin-bottom: 1.5rem; padding: 1rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+
+      <div class="branch-selector-section" style="margin-bottom:1rem; display:flex; align-items:center;">
         <label style="font-weight: 600; color: #1e293b; margin-right: 0.75rem; font-size: 0.95rem;">Select Branch:</label>
-        <select v-model="selectedBranch" @change="onBranchChange" style="padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; background: white; font-size: 0.9rem; min-width: 220px;">
+        <select v-model="selectedBranch" @change="onBranchChange" style="padding: 0.45rem 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; background: white; font-size: 0.9rem; min-width: 220px;">
           <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }} (ID: {{ b.id }})</option>
         </select>
-        <span v-if="branchName" style="margin-left: 1rem; color: #64748b; font-size: 0.9rem;">Viewing: <strong>{{ branchName }}</strong></span>
       </div>
 
-      <div class="hr-stats-grid">
+      <div class="hr-stats-grid" v-if="selectedBranch">
         <div class="hr-stat-card hr-stat-card--total">
           <div class="hr-stat-icon">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
@@ -54,7 +61,7 @@
         </div>
       </div>
 
-      <section class="supplier-products" style="margin-top:1rem">
+      <section class="supplier-products" v-if="selectedBranch" style="margin-top:1rem">
         <h2>Supplier Products ({{ branchName }})</h2>
         <div v-if="loadingProducts">Loading products...</div>
         <div v-else-if="!products.length">No products available for this branch.</div>
@@ -74,7 +81,8 @@
         </div>
       </section>
 
-      <section class="budget-requests" style="margin-top:1rem">
+
+      <section class="budget-requests" v-if="selectedBranch" style="margin-top:1rem">
         <h2>Budget Requests ({{ branchName }})</h2>
         <p class="section-description">View and manage budget requests for the selected branch.</p>
 
@@ -118,7 +126,38 @@
         </div>
       </section>
 
-      <section class="requested-products" style="margin-top:1rem">
+        <section class="requests-history" v-if="selectedBranch" style="margin-top:1rem">
+          <h2>Requests History ({{ branchName }})</h2>
+          <p class="section-description">All procurement requests for the selected branch (most recent first).</p>
+
+          <div v-if="procurementHistoryLoading">Loading history...</div>
+          <div v-else-if="!procurementHistory.length">No procurement requests found.</div>
+          <div v-else>
+            <div class="requests-container">
+              <div class="requests-scroll">
+                <table class="data-table">
+                  <thead>
+                    <tr><th>Date</th><th>Product</th><th>Qty</th><th>Total</th><th>Status</th><th>Updated</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="r in procurementHistory" :key="'ph-'+r.id">
+                      <td>{{ formatDate(r.created_at || r.date_requested) }}</td>
+                      <td><div class="product-name">{{ r.product?.name || r.purpose || '(no product)' }}</div></td>
+                      <td>{{ r.quantity }}</td>
+                      <td class="amount">{{ formatPrice(r.total_amount || r.price || 0) }}</td>
+                      <td>
+                        <span class="status-badge" style="text-transform:capitalize">{{ r.status }}</span>
+                      </td>
+                      <td>{{ formatDate(r.updated_at) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      <section class="requested-products" v-if="selectedBranch" style="margin-top:1rem">
         <h2>Procurement Requests ({{ branchName }})</h2>
         <p class="section-description">Manage logistics requests and supplier orders for the selected branch.</p>
 
@@ -127,7 +166,7 @@
         <div v-else>
           <div style="display:flex; gap:0.5rem; align-items:center; margin-bottom:1rem">
             <h3 style="margin:0">Pending Requests ({{ requestedProducts.length }})</h3>
-            <button class="btn-primary" @click="loadRequestedProducts" style="padding:6px 12px; font-size:0.85rem">🔄 Refresh</button>
+            <button class="btn-primary" @click="loadRequestedProducts" style="padding:6px 12px; font-size:0.85rem">Refresh</button>
           </div>
           <div class="product-grid">
             <div v-for="p in requestedProducts" :key="'req-'+p.id" class="product-card">
@@ -154,8 +193,8 @@
                       </div>
                     </div>
                     <div v-else>
-                      <button class="btn-primary" 
-                        @click="placeOrder(p)" 
+                      <button class="btn-primary"
+                        @click="placeOrder(p)"
                         :disabled="isPlacingOrder"
                         style="padding:6px 10px; border-radius:8px">
                         {{ isPlacingOrder ? 'Placing...' : 'Place Order to Supplier' }}
@@ -174,7 +213,7 @@
       </section>
     </template>
 
-    <template #side>
+    <template v-if="selectedBranch" #side>
       <section class="panel-block hr-settings-panel">
         <div class="panel-header"><h2>Procurement Settings</h2></div>
         <div class="panel-body panel-body--list">
@@ -182,7 +221,7 @@
         </div>
       </section>
     </template>
-  
+
   </OwnerPanelLayout>
 
   <transition name="fade">
@@ -238,6 +277,10 @@ const requestedProductsLoading = ref(false)
 const isPlacingOrder = ref(false)
 const isCompletingDelivery = ref(false)
 
+// Procurement requests history (branch-scoped)
+const procurementHistory = ref([])
+const procurementHistoryLoading = ref(false)
+
 // Default password utilities (kept but unused since no supplier modal)
 const fetchedDefaultPassword = ref('Chikintayo_123')
 
@@ -245,9 +288,7 @@ async function loadBranches() {
   try {
     const res = await axios.get('/api/superadmin/logistics/branches', { withCredentials: true })
     branches.value = res.data || []
-    if (branches.value.length && !selectedBranch.value) {
-      selectedBranch.value = branches.value[0].id
-    }
+    // Do not auto-select a branch for super-admin; require explicit selection
   } catch (e) {
     console.error('Failed loading branches', e)
     branches.value = []
@@ -270,21 +311,21 @@ function goToStaffManagement() {
   router.push(`/super-admin/staff?role=procurement_manager&branch=${selectedBranch.value}`)
 }
 
-function onProfileUpdated(updatedProfile) { 
-  userProfile.value = { ...userProfile.value, ...updatedProfile } 
+function onProfileUpdated(updatedProfile) {
+  userProfile.value = { ...userProfile.value, ...updatedProfile }
 }
 
 function cancelLogout() { showLogoutConfirm.value = false }
-async function confirmLogout() { 
-  try { await axios.post('/api/logout', {}, { withCredentials: true }) } catch (e) {} finally { 
-    localStorage.clear(); 
-    sessionStorage.clear(); 
-    router.push('/super-admin') 
-  } 
+async function confirmLogout() {
+  try { await axios.post('/api/logout', {}, { withCredentials: true }) } catch (e) {} finally {
+    localStorage.clear();
+    sessionStorage.clear();
+    router.push('/super-admin')
+  }
 }
 
 async function onBranchChange() {
-  await Promise.all([loadProducts(), loadRequestedProducts(), refreshAllData(), fetchBudgetRequests()])
+  await Promise.all([loadProducts(), loadRequestedProducts(), refreshAllData(), fetchBudgetRequests(), loadProcurementHistory()])
 }
 
 async function loadProducts() {
@@ -308,7 +349,14 @@ async function loadRequestedProducts() {
   try {
     const params = { branch_id: selectedBranch.value }
     const res = await axios.get('/api/procurement-requests', { params, withCredentials: true })
-    requestedProducts.value = res.data?.data ?? res.data ?? []
+    // Filter out already completed/fulfilled requests so they don't show in Pending Requests
+    const raw = res.data?.data ?? res.data ?? []
+    const excluded = ['completed', 'fulfilled', 'done', 'delivered']
+    requestedProducts.value = (Array.isArray(raw) ? raw : []).filter(item => {
+      const status = (item.procurement_status || item.status || '').toString().toLowerCase()
+      if (!status) return true
+      return !excluded.includes(status)
+    })
   } catch (e) {
     console.warn('Failed to load requested products', e)
     requestedProducts.value = []
@@ -411,9 +459,9 @@ function formatDate(dateStr) {
 
 async function placeOrder(product) {
   if (!product || !product.id || isPlacingOrder.value) return
-  
+
   isPlacingOrder.value = true
-  
+
   try {
     const qtyInput = prompt('Enter quantity to order from supplier (leave blank to accept request quantity):', '')
     let qty = null
@@ -425,13 +473,13 @@ async function placeOrder(product) {
       }
     }
 
-    const payload = { 
+    const payload = {
       branch_id: selectedBranch.value,
-      quantity: qty 
+      quantity: qty
     }
-    
+
     const res = await axios.post(`/api/procurement.products/${product.id}/place-order`, payload, { withCredentials: true })
-    
+
     alert(res.data.message || 'Order placed successfully')
 
     await loadProducts()
@@ -465,12 +513,12 @@ async function markDeliveryComplete(product) {
 }
 
 onMounted(async () => {
-  try { 
-    await axios.get('/sanctum/csrf-cookie', { withCredentials: true }) 
+  try {
+    await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
   } catch (e) {}
-  
+
   await loadBranches()
-  
+
   if (selectedBranch.value) {
     try {
       const res = await axios.get('/api/superadmin/profile', { withCredentials: true })
@@ -479,15 +527,36 @@ onMounted(async () => {
       // Fallback to generic superadmin profile
       userProfile.value = { role: 'SUPER_ADMIN', full_name: 'Super Admin' }
     }
-    
+
     await Promise.all([
       refreshAllData(),
       loadProducts(),
       loadRequestedProducts(),
-      fetchBudgetRequests()
+      fetchBudgetRequests(),
+      loadProcurementHistory()
     ])
   }
 })
+
+async function loadProcurementHistory() {
+  if (!selectedBranch.value) {
+    procurementHistory.value = []
+    procurementHistoryLoading.value = false
+    return
+  }
+  procurementHistoryLoading.value = true
+  try {
+    const params = { branch_id: selectedBranch.value }
+    const res = await axios.get('/api/procurement-requests', { params, withCredentials: true })
+    const data = res.data?.data ?? res.data ?? (res.data ? [res.data] : [])
+    procurementHistory.value = Array.isArray(data) ? data : []
+  } catch (e) {
+    console.warn('Failed to load procurement history', e)
+    procurementHistory.value = []
+  } finally {
+    procurementHistoryLoading.value = false
+  }
+}
 
 defineExpose({ refreshAllData, onProfileUpdated })
 watch(selectedBranch, onBranchChange)
@@ -527,27 +596,27 @@ watch(selectedBranch, onBranchChange)
   box-shadow: 0 12px 40px rgba(0,0,0,0.15);
 }
 
-.product-name { 
-  font-weight: 700; 
-  color: #111827; 
-  font-size: 1.05rem; 
+.product-name {
+  font-weight: 700;
+  color: #111827;
+  font-size: 1.05rem;
   line-height: 1.3;
 }
-.product-meta { 
-  display:flex; 
-  justify-content:space-between; 
-  align-items:center; 
+.product-meta {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
 }
-.product-price { 
-  color: #059669; 
-  font-weight:700; 
+.product-price {
+  color: #059669;
+  font-weight:700;
   font-size: 1.1rem;
 }
-.supplier-badge { 
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); 
-  color: #475569; 
-  padding: 0.375rem 0.75rem; 
-  border-radius: 20px; 
+.supplier-badge {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  color: #475569;
+  padding: 0.375rem 0.75rem;
+  border-radius: 20px;
   font-size: 0.85rem;
   font-weight: 500;
   border: 1px solid #e2e8f0;
@@ -560,30 +629,30 @@ watch(selectedBranch, onBranchChange)
 }
 
 /* Form styles */
-.form-group { 
-  display: flex; 
-  flex-direction: column; 
-  gap: 0.5rem; 
-  margin-bottom: 1rem; 
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
 }
-.form-group label { 
-  color: #374151; 
-  font-weight: 600; 
-  font-size: 0.9rem; 
+.form-group label {
+  color: #374151;
+  font-weight: 600;
+  font-size: 0.9rem;
 }
-.form-group input, .form-group textarea { 
-  padding: 0.75rem; 
-  border: 1px solid #d1d5db; 
-  border-radius: 8px; 
-  background: #fff; 
-  color: #111827; 
-  font-size: 0.95rem; 
-  transition: border-color 0.2s; 
+.form-group input, .form-group textarea {
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  color: #111827;
+  font-size: 0.95rem;
+  transition: border-color 0.2s;
 }
-.form-group input:focus, .form-group textarea:focus { 
-  outline: none; 
-  border-color: #3b82f6; 
-  box-shadow: 0 0 0 3px rgba(59,130,246,0.1); 
+.form-group input:focus, .form-group textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
 }
 
 .budget-form {
@@ -593,35 +662,41 @@ watch(selectedBranch, onBranchChange)
   border: 1px solid #e2e8f0;
 }
 
-.error-msg { 
-  color: #dc2626; 
-  background: #fef2f2; 
-  padding: 0.75rem; 
-  border-radius: 8px; 
-  border-left: 4px solid #dc2626; 
+.error-msg {
+  color: #dc2626;
+  background: #fef2f2;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border-left: 4px solid #dc2626;
 }
 
-/* Buttons */
+/* Button styles copied from ProcurementManagerPanel for consistent look */
+/* Primary actions use a rounded 'pill' visual */
+.modal-footer .btn-primary,
 .btn-primary {
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-  color: white;
+  background: var(--dirty-white);
+  color: var(--text-dark);
   border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
+  border-radius: 999px;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+  padding: 8px 14px;
+  cursor: pointer;
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
 }
-.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 25px rgba(79,70,229,0.4); }
-.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-.btn-outline {
-  background: transparent;
-  color: #64748b;
-  border: 1px solid #d1d5db;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  cursor: pointer;
-}
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Button variants used across procurement panels */
+.btn-small { padding: 6px 10px; border-radius: 8px; font-size: 0.95rem; border: 1px solid var(--border-stroke); background: var(--surface-card); color: var(--text-dark); cursor: pointer; }
+.btn-small:focus { outline: 3px solid rgba(3,37,65,0.08); }
+.btn-refresh { padding: 6px 12px; font-size: 0.85rem; border-radius: 8px; border: none; background: transparent; box-shadow: none; }
+.btn-refresh:focus { outline: none; box-shadow: none; }
+.btn-budget { background: linear-gradient(180deg,#ff781a,#ff5a00); color: #fff; border: none; padding: 8px 14px; border-radius: 999px; box-shadow: 0 8px 18px rgba(255,90,0,0.18); cursor:pointer }
+.btn-budget:disabled { opacity:0.6; cursor:default }
+.btn-outline { background: transparent; border: 1px solid var(--border-stroke); color: var(--text-dark); padding: 8px 12px; border-radius: 8px; cursor: pointer; }
+.btn-outline[disabled], .btn-outline.disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-warning { background: var(--orange); color: var(--dirty-white); border: none; box-shadow: 0 8px 18px rgba(255,107,28,0.12); }
+
+.btn-copy { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; font-size: 0.9rem; white-space: nowrap; background: #4b1ddf; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
 
 /* Data table */
 .data-table {
@@ -749,3 +824,132 @@ watch(selectedBranch, onBranchChange)
   border-left: 4px solid #3b82f6;
 }
 </style>
+
+<style scoped>
+/* Match ProcurementManagerPanel request history layout and table polish */
+.requests-history .data-table th,
+.requests-history .data-table td { padding: 10px 12px; }
+.requests-history .data-table td.amount { text-align: right; white-space: nowrap; font-weight:600 }
+.requests-history .product-name { white-space: normal; word-break: break-word; max-width: 420px }
+
+.requests-container {
+  overflow: visible;
+  background: var(--surface-card);
+  padding: 0;
+  border-radius: 10px;
+  border: 1px solid var(--border-stroke);
+}
+
+.requests-scroll {
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 0 12px 12px 12px;
+  width: calc(100% + 24px);
+  margin-left: -12px;
+  margin-right: -12px;
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.04);
+  background: transparent;
+}
+.requests-scroll .data-table { margin: 0; }
+.requests-scroll .data-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--dirty-white);
+  z-index: 2;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+}
+</style>
+
+<style scoped>
+/* Page visual polish: color scheme, typography, spacing */
+/* Typography */
+:deep(.admin-main-header h1) {
+  color: var(--text-dark); /* match StaffIndex */
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  font-size: 1.6rem;
+  line-height: 1.15;
+  margin: 0;
+}
+:deep(.admin-main-header p) {
+  color: rgba(66,33,11,0.9); /* match StaffIndex description color */
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+
+/* Header / spacing */
+:deep(.admin-main-header) { padding: 0.5rem 0 0.75rem 0; }
+:deep(.admin-layout--wider) { padding-top: 0.8rem; }
+
+/* Back button styling */
+.back-to-dashboard-btn {
+  background: linear-gradient(90deg, #334155 0%, #1f2937 100%);
+  color: #ffffff;
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+/* Branch selector appearance */
+.branch-selector-section label { color: var(--text-dark); font-weight: 600; }
+.branch-selector-section select {
+  border: 1px solid #e6edf3;
+  background: #ffffff;
+  color: var(--text-dark);
+  padding: 0.45rem 0.6rem;
+  min-width: 200px;
+}
+.branch-selector-section span { color: rgba(66,33,11,0.6); }
+
+/* Reduce large empty feeling by tightening top margins */
+.hr-stats-grid { margin-top: 0.6rem; }
+
+/* Product cards contrast and spacing */
+.product-card { padding: 1rem; }
+.product-name { font-size: 1.03rem; color: var(--text-dark); }
+
+/* Buttons: make primary slightly warmer */
+.btn-primary { background: var(--dirty-white); color: var(--text-dark); border: none; border-radius: 999px; padding: 8px 14px; box-shadow: 0 8px 18px rgba(0,0,0,0.06); cursor: pointer; font-weight:600; }
+
+/* Table and panels: softer borders */
+.data-table th { background: #fbfdfe; }
+.panel-block { border: 1px solid #eef2f6; }
+
+/* Responsive: stack selector under heading on small screens */
+@media (max-width: 768px) {
+  :deep(.admin-main-header) { display: block; }
+  .branch-selector-section { margin-top: 0.6rem; }
+  :deep(.admin-layout--wider) { padding-left: 1rem; padding-right: 1rem; }
+}
+</style>
+
+<style scoped>
+/* When profile column is hidden (superadmin view), match manager layout columns */
+:deep(.admin-layout.no-profile-column) {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 1rem;
+}
+:deep(.admin-layout.no-profile-column) .admin-main { width: 100%; }
+:deep(.admin-layout.no-profile-column) .admin-side { width: 360px; }
+</style>
+
+<style scoped>
+/* Back button (match other admin pages) */
+.back-to-dashboard-btn { display:inline-flex; align-items:center; gap:0.5rem; margin-bottom:1rem; padding:0.5rem 1rem; font-size:0.9rem; background:#6c757d; color:#fff; border:none; border-radius:4px; cursor:pointer; }
+.back-to-dashboard-btn:hover { background:#5a6268; }
+.back-icon { flex-shrink:0; }
+</style>
+
+<style scoped>
+/* Put only the back button in the top row (full width),
+   then align header actions (selector) with the title below. */
+</style>
+
+<style scoped>
+/* Keep back button on its own top row */
+:deep(.header-left-slot) { flex-basis: 100%; display: block; margin-bottom: 0.5rem; }
+.branch-selector-section { margin: 0.5rem 0 1rem 0; display:flex; align-items:center; gap:0.6rem; }
+</style>
+

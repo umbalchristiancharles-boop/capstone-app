@@ -1,6 +1,9 @@
 <template>
   <OwnerPanelLayout
     :userProfile="userProfile"
+    :fullWidth="true"
+    :showBackButton="true"
+    @back="() => router.back()"
     :panelTitle="'Super Admin Procurement Panel'"
     :panelDescription="'Monitor and manage procurement across all branches. Select branch to view scoped data.'"
     :enableProfileUpdate="false"
@@ -10,13 +13,13 @@
     @profile-updated="onProfileUpdated"
   >
     <template #main>
-      <!-- Branch Selector -->
-      <div class="branch-selector-section" style="margin-bottom: 1.5rem; padding: 1rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
-        <label style="font-weight: 600; color: #1e293b; margin-right: 0.75rem; font-size: 0.95rem;">Select Branch:</label>
-        <select v-model="selectedBranch" @change="onBranchChange" style="padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; background: white; font-size: 0.9rem; min-width: 220px;">
+
+      <div class="branch-selector-section">
+        <label class="branch-selector-label">Select Branch:</label>
+        <select v-model="selectedBranch" @change="onBranchChange" class="branch-selector-select">
           <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }} (ID: {{ b.id }})</option>
         </select>
-        <span v-if="branchName" style="margin-left: 1rem; color: #64748b; font-size: 0.9rem;">Viewing: <strong>{{ branchName }}</strong></span>
+        <span v-if="branchName" class="branch-viewing">Viewing: <strong>{{ branchName }}</strong></span>
       </div>
 
       <div class="hr-stats-grid">
@@ -149,8 +152,8 @@
                       </div>
                     </div>
                     <div v-else>
-                      <button class="btn-primary" 
-                        @click="placeOrder(p)" 
+                      <button class="btn-primary"
+                        @click="placeOrder(p)"
                         :disabled="isPlacingOrder"
                         style="padding:6px 10px; border-radius:8px">
                         {{ isPlacingOrder ? 'Placing...' : 'Place Order to Supplier' }}
@@ -170,14 +173,14 @@
     </template>
 
     <template #side>
-      <section class="panel-block hr-settings-panel">
+      <section class="panel-block sticky hr-settings-panel">
         <div class="panel-header"><h2>Procurement Settings</h2></div>
         <div class="panel-body panel-body--list">
           <div class="side-item"><span>View procurement orders and supplier info</span></div>
         </div>
       </section>
     </template>
-  
+
   </OwnerPanelLayout>
 
   <transition name="fade">
@@ -265,17 +268,17 @@ function goToStaffManagement() {
   router.push(`/super-admin/staff?role=procurement_manager&branch=${selectedBranch.value}`)
 }
 
-function onProfileUpdated(updatedProfile) { 
-  userProfile.value = { ...userProfile.value, ...updatedProfile } 
+function onProfileUpdated(updatedProfile) {
+  userProfile.value = { ...userProfile.value, ...updatedProfile }
 }
 
 function cancelLogout() { showLogoutConfirm.value = false }
-async function confirmLogout() { 
-  try { await axios.post('/api/logout', {}, { withCredentials: true }) } catch (e) {} finally { 
-    localStorage.clear(); 
-    sessionStorage.clear(); 
-    router.push('/super-admin') 
-  } 
+async function confirmLogout() {
+  try { await axios.post('/api/logout', {}, { withCredentials: true }) } catch (e) {} finally {
+    localStorage.clear();
+    sessionStorage.clear();
+    router.push('/super-admin')
+  }
 }
 
 async function onBranchChange() {
@@ -406,9 +409,9 @@ function formatDate(dateStr) {
 
 async function placeOrder(product) {
   if (!product || !product.id || isPlacingOrder.value) return
-  
+
   isPlacingOrder.value = true
-  
+
   try {
     const qtyInput = prompt('Enter quantity to order from supplier (leave blank to accept request quantity):', '')
     let qty = null
@@ -420,13 +423,13 @@ async function placeOrder(product) {
       }
     }
 
-    const payload = { 
+    const payload = {
       branch_id: selectedBranch.value,
-      quantity: qty 
+      quantity: qty
     }
-    
+
     const res = await axios.post(`/api/procurement.products/${product.id}/place-order`, payload, { withCredentials: true })
-    
+
     alert(res.data.message || 'Order placed successfully')
 
     await loadProducts()
@@ -460,12 +463,12 @@ async function markDeliveryComplete(product) {
 }
 
 onMounted(async () => {
-  try { 
-    await axios.get('/sanctum/csrf-cookie', { withCredentials: true }) 
+  try {
+    await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
   } catch (e) {}
-  
+
   await loadBranches()
-  
+
   if (selectedBranch.value) {
     try {
       const res = await axios.get('/api/superadmin/profile', { withCredentials: true })
@@ -474,7 +477,7 @@ onMounted(async () => {
       // Fallback to generic superadmin profile
       userProfile.value = { role: 'SUPER_ADMIN', full_name: 'Super Admin' }
     }
-    
+
     await Promise.all([
       refreshAllData(),
       loadProducts(),
@@ -490,7 +493,7 @@ watch(selectedBranch, onBranchChange)
 
 <style scoped>
 /* Exact copy from ProcurementManagerPanel.vue */
-.hr-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.hr-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
 .hr-stat-card { background: white; border-radius: 8px; padding: 1rem; display:flex; gap:0.75rem; align-items:center; color: #1b1b1f; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 .hr-stat-card:hover { transform: translateY(-1px); transition: all 0.2s; }
 .hr-stat-value { font-weight:700; font-size:1.25rem; color: #1e40af; }
@@ -522,27 +525,27 @@ watch(selectedBranch, onBranchChange)
   box-shadow: 0 12px 40px rgba(0,0,0,0.15);
 }
 
-.product-name { 
-  font-weight: 700; 
-  color: #111827; 
-  font-size: 1.05rem; 
+.product-name {
+  font-weight: 700;
+  color: #111827;
+  font-size: 1.05rem;
   line-height: 1.3;
 }
-.product-meta { 
-  display:flex; 
-  justify-content:space-between; 
-  align-items:center; 
+.product-meta {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
 }
-.product-price { 
-  color: #059669; 
-  font-weight:700; 
+.product-price {
+  color: #059669;
+  font-weight:700;
   font-size: 1.1rem;
 }
-.supplier-badge { 
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); 
-  color: #475569; 
-  padding: 0.375rem 0.75rem; 
-  border-radius: 20px; 
+.supplier-badge {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  color: #475569;
+  padding: 0.375rem 0.75rem;
+  border-radius: 20px;
   font-size: 0.85rem;
   font-weight: 500;
   border: 1px solid #e2e8f0;
@@ -555,30 +558,30 @@ watch(selectedBranch, onBranchChange)
 }
 
 /* Form styles */
-.form-group { 
-  display: flex; 
-  flex-direction: column; 
-  gap: 0.5rem; 
-  margin-bottom: 1rem; 
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
 }
-.form-group label { 
-  color: #374151; 
-  font-weight: 600; 
-  font-size: 0.9rem; 
+.form-group label {
+  color: #374151;
+  font-weight: 600;
+  font-size: 0.9rem;
 }
-.form-group input, .form-group textarea { 
-  padding: 0.75rem; 
-  border: 1px solid #d1d5db; 
-  border-radius: 8px; 
-  background: #fff; 
-  color: #111827; 
-  font-size: 0.95rem; 
-  transition: border-color 0.2s; 
+.form-group input, .form-group textarea {
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  color: #111827;
+  font-size: 0.95rem;
+  transition: border-color 0.2s;
 }
-.form-group input:focus, .form-group textarea:focus { 
-  outline: none; 
-  border-color: #3b82f6; 
-  box-shadow: 0 0 0 3px rgba(59,130,246,0.1); 
+.form-group input:focus, .form-group textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
 }
 
 .budget-form {
@@ -588,12 +591,12 @@ watch(selectedBranch, onBranchChange)
   border: 1px solid #e2e8f0;
 }
 
-.error-msg { 
-  color: #dc2626; 
-  background: #fef2f2; 
-  padding: 0.75rem; 
-  border-radius: 8px; 
-  border-left: 4px solid #dc2626; 
+.error-msg {
+  color: #dc2626;
+  background: #fef2f2;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border-left: 4px solid #dc2626;
 }
 
 /* Buttons */
@@ -725,6 +728,41 @@ watch(selectedBranch, onBranchChange)
   margin-bottom: 1rem;
   overflow: hidden;
   box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+.panel-block.sticky {
+  position: sticky;
+  top: 20px;
+}
+
+.branch-selector-section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+.branch-selector-label {
+  font-weight: 600;
+  color: #1e293b;
+  margin-right: 0.5rem;
+  font-size: 0.95rem;
+}
+.branch-selector-select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: white;
+  font-size: 0.9rem;
+  min-width: 220px;
+}
+.branch-viewing {
+  margin-left: 0.75rem;
+  color: #64748b;
+  font-size: 0.9rem;
 }
 .panel-header {
   background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);

@@ -47,6 +47,9 @@
         <main class="admin-main">
           <header class="admin-main-header">
             <div class="admin-main-header-top">
+              <div class="header-left-slot">
+                <slot name="headerLeft"></slot>
+              </div>
               <div>
                 <h1>{{ panelTitle }}</h1>
                 <p>{{ panelDescription }}</p>
@@ -60,7 +63,7 @@
         </main>
         <!-- RIGHT: SIDE PANELS -->
         <aside class="admin-side">
-          <section class="panel-block announcements-panel">
+          <section v-if="showAnnouncements" class="panel-block announcements-panel">
             <div class="panel-header announcements-header">
               <h2>Announcements</h2>
               <!-- announcements header - avatar removed (profile button available in page header) -->
@@ -242,9 +245,13 @@ const props = defineProps({
   avatarEndpoint: { type: String, default: '' }
   ,
   showProfileColumn: { type: Boolean, default: true }
+  ,
+  showBackButton: { type: Boolean, default: false }
+  ,
+  showAnnouncements: { type: Boolean, default: true }
 })
 
-const emit = defineEmits(['logout', 'profile-updated'])
+const emit = defineEmits(['logout', 'profile-updated', 'back'])
 
 const localProfile = ref({})
 const showInfoModal = ref(false)
@@ -562,6 +569,13 @@ async function onAvatarChange(event) {
   padding: 0;
 }
 
+.admin-main-header-top-inner h1 { margin: 0 0 0.25rem 0 }
+.admin-main-header-top-inner p { margin: 0; color: #475569 }
+
+/* When a headerLeft slot is used, make it span full width so
+  the title sits below the left content (e.g., back button). */
+.header-left-slot { flex-basis: 100%; display: block; margin-bottom: 0.5rem; }
+
 .admin-layout--wider {
   max-width: 64rem;
   width: 100%;
@@ -576,11 +590,24 @@ async function onAvatarChange(event) {
   width: 100%;
 }
 
+.announcements-panel {
+  background: var(--surface-card);
+  color: var(--text-primary);
+  border-radius: 12px;
+  padding: 0.75rem 0.75rem;
+  border: 1px solid var(--border-stroke);
+  box-shadow: 0 8px 24px rgba(16,24,40,0.06);
+}
+.announcements-panel .panel-header {
+  background: transparent;
+  padding: 0;
+}
 .announcements-panel .announcement-list { list-style: none; margin: 0; padding: 0; }
-.announcements-panel .announcement-item { padding: 0.5rem 0; border-bottom: 1px solid #f1f1f1; }
-.announcements-panel .announcement-title { font-weight: 600; color: #333; margin-bottom: 0.25rem; }
-.announcements-panel .announcement-meta { font-size: 0.8rem; color: #777; margin-bottom: 0.5rem; }
-.announcements-panel .announcement-message { font-size: 0.95rem; color: #444; }
+.announcements-panel .announcement-item { padding: 0.75rem; border-bottom: 1px solid #f1f1f1; border-radius: 8px; background: transparent; }
+.announcements-panel .announcement-item:last-child { border-bottom: none; }
+.announcements-panel .announcement-title { font-weight: 700; color: #1e293b; margin-bottom: 0.25rem; }
+.announcements-panel .announcement-meta { font-size: 0.8rem; color: #64748b; margin-bottom: 0.25rem; }
+.announcements-panel .announcement-message { font-size: 0.95rem; color: #475569; }
 
 /* Avatar controls inside Info modal */
 .info-avatar-row { display:flex; gap:12px; align-items:center; padding-bottom:8px }
