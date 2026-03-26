@@ -24,6 +24,12 @@ class ProcurementRequest extends Model
         'supplier_confirmed',
         'budget_amount',
         'branch_id',
+        'receipt_path',
+        'receipt_uploaded_by',
+        'receipt_uploaded_at',
+        'receipt_confirmed',
+        'receipt_confirmed_by',
+        'receipt_confirmed_at',
     ];
 
     protected $casts = [
@@ -32,6 +38,7 @@ class ProcurementRequest extends Model
         'budget_amount' => 'decimal:2',
         'price' => 'decimal:2',
         'total_amount' => 'decimal:2',
+        'receipt_confirmed' => 'boolean',
     ];
 
     public function logisticsUser(): BelongsTo

@@ -225,7 +225,8 @@ public function placeOrder(Request $request, $productId)
                         try {
                             $procRequest->update([
                                 'procurement_user_id' => $user->id,
-                                'status' => 'pending_order_to_supplier'
+                                'status' => 'pending_order_to_supplier',
+                                'supplier_confirmed' => false,
                             ]);
                         } catch (\Exception $e) {
                             Log::warning('Failed to set pending_order_to_supplier, falling back to delivery_pending', ['error' => $e->getMessage(), 'procurement_request_id' => $procRequest->id]);
@@ -285,10 +286,11 @@ public function placeOrder(Request $request, $productId)
                 // Update procurement request status to pending_order_to_supplier and clear flags
                 // Use 'pending_order_to_supplier' to match current enum values and queries.
                 // If the DB doesn't accept that enum value, fall back to 'delivery_pending'.
-                try {
+                    try {
                     $procRequest->update([
                         'procurement_user_id' => $user->id,
-                        'status' => 'pending_order_to_supplier'  // Prevents re-showing in procurement lists
+                        'status' => 'pending_order_to_supplier',  // Prevents re-showing in procurement lists
+                        'supplier_confirmed' => false,
                     ]);
                 } catch (\Exception $e) {
                     Log::warning('Failed to set pending_order_to_supplier, falling back to delivery_pending', ['error' => $e->getMessage(), 'procurement_request_id' => $procRequest->id]);

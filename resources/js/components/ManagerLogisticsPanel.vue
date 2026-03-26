@@ -15,6 +15,17 @@
         <h2 class="section-title">Inventory Monitor</h2>
         <p class="section-description">Current stock levels for your branch (Read-only)</p>
 
+        <!-- Branch selector: shown when user can select branch (main branch logistics) -->
+        <div v-if="userProfile.can_select_branch" class="branch-filter-row">
+          <label for="branchSelect">Branch</label>
+          <select id="branchSelect" v-model="selectedBranch">
+            <option value="" disabled>Select branch...</option>
+            <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
+          </select>
+          <div v-if="branchesLoading" class="loading-spinner" style="width:20px;height:20px;margin-left:8px"></div>
+          <div v-if="branchesError" class="error-message" style="margin-left:8px">{{ branchesError }}</div>
+        </div>
+
         <div v-if="inventoryLoading" class="loading-container">
           <div class="loading-spinner"></div>
           <p>Loading inventory...</p>
@@ -48,13 +59,14 @@
                 </td>
                 <td>
                   <button
-                    v-if="product.status !== 'OK'"
+                    v-if="product.status !== 'OK' && canRequestProcurement"
                     class="btn-primary btn-small"
                     :disabled="requesting[product.id]"
                     @click="requestProcurement(product)"
                   >
                     {{ requesting[product.id] ? 'Requesting...' : 'Request Procurement' }}
                   </button>
+                  <span v-else-if="product.status !== 'OK'" class="muted-note">Not allowed</span>
                 </td>
               </tr>
               <tr v-if="inventory.length === 0">
@@ -68,15 +80,17 @@
       <!-- Procurement Requests Section -->
       <div class="panel-section">
         <h2 class="section-title">Procurement Requests</h2>
-        <p class="section-description">Create procurement requests for products needing budget approval</p>
+        <p class="section-description">
+          {{ canRequestProcurement ? 'Create procurement requests for products needing budget approval' : 'Read-only access. Main Branch logistics cannot create procurement requests.' }}
+        </p>
 
         <!-- Create New Request Button -->
-        <button v-if="!showProcRequestForm" class="btn-primary" @click="showProcRequestForm = true">
+        <button v-if="!showProcRequestForm && canRequestProcurement" class="btn-primary" @click="showProcRequestForm = true">
           + New Procurement Request
         </button>
 
         <!-- Procurement Request Form -->
-        <div v-if="showProcRequestForm" class="form-container">
+        <div v-if="showProcRequestForm && canRequestProcurement" class="form-container">
           <h3>Create New Procurement Request</h3>
           <form @submit.prevent="submitProcRequest">
             <div class="form-group">
@@ -184,7 +198,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import axios from 'axios'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 
@@ -194,6 +208,14 @@ const userProfile = ref({})
 const inventory = ref([])
 const inventoryLoading = ref(false)
 const inventoryError = ref('')
+
+const canRequestProcurement = ref(true)
+
+// Branch selector state (main-branch users can select branch)
+const branches = ref([])
+const selectedBranch = ref(null)
+const branchesLoading = ref(false)
+const branchesError = ref('')
 
 const products = ref([])
 const procurementRequests = ref([])
@@ -237,7 +259,9 @@ async function fetchInventory() {
   inventoryLoading.value = true
   inventoryError.value = ''
   try {
-    const res = await axios.get('/api/manager/logistics/inventory', { withCredentials: true })
+    const params = {}
+    if (selectedBranch.value) params.branch_id = selectedBranch.value
+    const res = await axios.get('/api/manager/logistics/inventory', { params, withCredentials: true })
     const rawData = res.data?.products ?? res.data?.data ?? res.data ?? []
     inventory.value = (Array.isArray(rawData) ? rawData : []).map(p => ({
       ...p,
@@ -257,7 +281,9 @@ async function fetchInventory() {
 
 async function loadProducts() {
   try {
-    const res = await axios.get('/api/manager/logistics/products', { withCredentials: true })
+    const params = {}
+    if (selectedBranch.value) params.branch_id = selectedBranch.value
+    const res = await axios.get('/api/manager/logistics/products', { params, withCredentials: true })
     const rawData = res.data?.data ?? res.data ?? []
     products.value = Array.isArray(rawData) ? rawData : []
   } catch (e) {
@@ -269,7 +295,12 @@ async function loadProducts() {
 async function fetchProcRequests() {
   procRequestsLoading.value = true
   try {
-    const res = await axios.get('/api/procurement-requests', { withCredentials: true })
+    const params = {}
+    if (selectedBranch.value) params.branch_id = selectedBranch.value
+    // Request completed requests as well for branch-wide view
+    if (selectedBranch.value) params.include_completed = 1
+    const res = await axios.get('/api/procurement-requests', { params, withCredentials: true })
+    console.debug('ManagerLogisticsPanel.fetchProcRequests params:', params, 'res.data:', res.data)
     // Handle Laravel paginate() response or plain array
     const data = res.data?.data ?? res.data ?? (res.data ? [res.data] : [])
     procurementRequests.value = Array.isArray(data) ? data : []
@@ -281,7 +312,37 @@ async function fetchProcRequests() {
   }
 }
 
+async function fetchBranches() {
+  branchesLoading.value = true
+  branchesError.value = ''
+  try {
+    const res = await axios.get('/api/manager/logistics/branches', { withCredentials: true })
+    const data = res.data?.data ?? res.data ?? []
+    branches.value = Array.isArray(data) ? data : []
+    // set selected branch: prefer current user branch if present, else first
+    if (!selectedBranch.value) {
+      // try to set from userProfile if available
+      if (userProfile.value && userProfile.value.branch_id) {
+        selectedBranch.value = userProfile.value.branch_id
+      } else if (branches.value.length > 0) {
+        selectedBranch.value = branches.value[0].id
+      }
+    }
+  } catch (e) {
+    console.error('Branches fetch error:', e)
+    branches.value = []
+    branchesError.value = 'Failed to load branches'
+  } finally {
+    branchesLoading.value = false
+  }
+}
+
 async function submitProcRequest() {
+  if (!canRequestProcurement.value) {
+    alert('Main Branch logistics cannot create procurement requests.')
+    return
+  }
+
   procRequestSubmitting.value = true
   try {
     const payload = {
@@ -307,6 +368,11 @@ async function cancelProcRequest() {
 }
 
 async function requestProcurement(product) {
+  if (!canRequestProcurement.value) {
+    alert('Main Branch logistics cannot create procurement requests.')
+    return
+  }
+
   if (!confirm(`Create procurement request for ${product.name}?`)) return
 
   requesting.value = { ...requesting.value, [product.id]: true }
@@ -330,6 +396,8 @@ async function requestProcurement(product) {
   }
 }
 
+// branch selector removed: Main Branch users are redirected to main-branch panel
+
 onMounted(async () => {
   try {
     await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
@@ -341,6 +409,7 @@ onMounted(async () => {
   try {
     const profileRes = await axios.get('/api/manager/logistics/profile', { withCredentials: true })
     userProfile.value = profileRes.data.user || profileRes.data || {}
+    canRequestProcurement.value = userProfile.value?.can_request_procurement !== false
   } catch (err) {
     console.warn('Profile check failed:', err.response?.status, err.message)
     if (err?.response?.status === 401) {
@@ -361,9 +430,17 @@ onMounted(async () => {
     userProfile.value = {}
   }
 
-  fetchInventory()
-  loadProducts()
-  fetchProcRequests()
+  // Load branches first (if user can select), then data using selected branch
+  await fetchBranches()
+
+  // React to branch changes to reload tables
+  watch(selectedBranch, async (newVal, oldVal) => {
+    // fetch updated data for the selected branch
+    await Promise.all([fetchInventory(), loadProducts(), fetchProcRequests()])
+  })
+
+  // initial load
+  await Promise.all([fetchInventory(), loadProducts(), fetchProcRequests()])
 })
 
 // Handle profile updates emitted from OwnerPanelLayout
@@ -425,6 +502,34 @@ async function confirmLogout() {
   font-size: 14px;
   color: #666;
   margin: 0 0 16px 0;
+}
+
+.branch-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.branch-filter-row label {
+  font-size: 14px;
+  color: #4b2a06;
+  font-weight: 600;
+}
+
+.branch-filter-row select {
+  min-width: 240px;
+  padding: 8px 10px;
+  border: 1px solid #d7d7d7;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #fff;
+}
+
+.branch-filter-row select:focus {
+  outline: none;
+  border-color: #ff9f43;
+  box-shadow: 0 0 0 3px rgba(255, 159, 67, 0.15);
 }
 
 .loading-container {
@@ -526,6 +631,11 @@ async function confirmLogout() {
   text-align: center;
   color: #999;
   font-style: italic;
+}
+
+.muted-note {
+  color: #7a7a7a;
+  font-size: 12px;
 }
 
 .status-badge {

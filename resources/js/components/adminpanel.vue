@@ -110,9 +110,9 @@
                   >
                     Staff Management
                   </button>
-                  <!-- Add Branch Button (Owner only) -->
+                  <!-- Add Branch Button (Main Branch Admin only) -->
                   <button
-                    v-if="ownerProfile.role === 'OWNER'"
+                    v-if="ownerProfile.role === 'ADMIN'"
                     class="primary-action-btn"
                     @click="goToAddBranches"
                   >
@@ -1230,11 +1230,11 @@ function goToStaffManagement() {
 }
 
 function goToAddBranches() {
-  if (ownerProfile.value.role !== 'OWNER') return
+  if (ownerProfile.value.role !== 'ADMIN') return
   try {
-    router.push('/owner/add-branches')
+    router.push('/main-branch/branches')
   } catch (e) {
-    window.location.href = '/owner/add-branches'
+    window.location.href = '/main-branch/branches'
   }
 }
 

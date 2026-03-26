@@ -170,7 +170,12 @@
             <tbody>
               <tr v-for="branch in branches" :key="branch.id">
                 <td><strong>{{ branch.code }}</strong></td>
-                <td>{{ branch.name }}</td>
+                <td>
+                  {{ branch.name }}
+                  <span v-if="branch.is_main_branch" class="account-chip" style="margin-left: 8px; background: #fff3cd; color: #7c2d12; border-color: #f59e0b;">
+                    HQ Protected
+                  </span>
+                </td>
                 <td>{{ formatCurrency(branch.budget || 0) }}</td>
                 <td>{{ branch.address || '-' }}</td>
                 <td>
@@ -220,8 +225,12 @@
                 </td>
                 <td>{{ branch.staff_count || 0 }}</td>
                 <td>
-                  <button class="btn btn-secondary" @click="confirmDeleteBranch(branch)" :disabled="isDeleting">
-                    Delete
+                  <button
+                    class="btn btn-secondary"
+                    @click="confirmDeleteBranch(branch)"
+                    :disabled="isDeleting || branch.can_delete === false || branch.is_main_branch"
+                  >
+                    {{ branch.can_delete === false || branch.is_main_branch ? 'Protected' : 'Delete' }}
                   </button>
                 </td>
               </tr>
@@ -246,25 +255,9 @@ import '../css/adminpanel.css'
 
 const router = useRouter()
 
-const backTarget = computed(() => {
-  try {
-    const u = JSON.parse(localStorage.getItem('user') || 'null')
-    const role = (u && u.role) ? String(u.role).toLowerCase() : ''
-    if (role === 'owner') return '/owner-panel'
-    if (role === 'super_admin' || role === 'superadmin') return '/super-admin/procurement'
-  } catch (e) {}
-  return '/owner-panel'
-})
+const backTarget = computed(() => '/main-branch/admin')
 
-const backLabel = computed(() => {
-  try {
-    const u = JSON.parse(localStorage.getItem('user') || 'null')
-    const role = (u && u.role) ? String(u.role).toLowerCase() : ''
-    if (role === 'owner') return 'Back to Owner'
-    if (role === 'super_admin' || role === 'superadmin') return 'Back to Super Admin'
-  } catch (e) {}
-  return 'Back'
-})
+const backLabel = computed(() => 'Back to Main Branch')
 
 function handleBack() {
   try {
@@ -308,6 +301,12 @@ const isDeleting = ref(false)
 
 async function confirmDeleteBranch(branch) {
   try {
+    if (branch.can_delete === false || branch.is_main_branch) {
+      formError.value = 'Main Branch (HQ) is protected and cannot be deleted.'
+      setTimeout(() => { formError.value = '' }, 2200)
+      return
+    }
+
     const count = branch.staff_count || 0
     const ok = confirm(`Delete branch "${branch.name}" and all ${count} account(s) in it? This will permanently delete those accounts and the branch from the database. This cannot be undone.`)
     if (!ok) return

@@ -199,6 +199,19 @@ async function handleLogin() {
                 redirectPath = resolveRedirectPath(res.data.user?.role, res.data.user?.department);
             }
 
+            // If user belongs to Main Branch (branch_id === 1) and is logistics manager,
+            // prefer the main-branch logistics route so they land on the HQ panel.
+            try {
+                const bId = Number(res.data.user?.branch_id || 0)
+                const r = (res.data.user?.role || '').toString().toUpperCase()
+                const d = (res.data.user?.department || '').toString().toUpperCase()
+                if (bId === 1 && d.includes('LOGISTICS')) {
+                    redirectPath = '/main-branch/logistics'
+                }
+            } catch (e) {
+                // ignore
+            }
+
             // Validate redirect path exists to prevent invalid routing
             if (!redirectPath || redirectPath.includes('error=')) {
                 console.error('Invalid redirect path received:', redirectPath);

@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             TestUserSeeder::class,
             AdminUserSeeder::class,
             SuperAdminSeeder::class,
+            MainBranchSeeder::class,
             ProductSeeder::class,
         ]);
     }

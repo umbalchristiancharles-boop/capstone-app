@@ -76,6 +76,36 @@ class ManagerProfileController extends Controller
         return $userDept === $targetDept || $userDept === strtoupper($targetDept);
     }
 
+    /**
+     * Resolve branch record for authenticated manager.
+     */
+    private function resolveUserBranch($user)
+    {
+        if (!$user || !$user->branch_id) {
+            return null;
+        }
+
+        return Branch::find($user->branch_id);
+    }
+
+    /**
+     * Main branch logistics manager can select branches but cannot create procurement requests.
+     */
+    private function isMainBranchLogisticsManager($user)
+    {
+        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'logistics')) {
+            return false;
+        }
+
+        $branch = $this->resolveUserBranch($user);
+        if (!$branch) {
+            return false;
+        }
+
+        $branchName = strtoupper(trim((string) ($branch->name ?? '')));
+        return (int) $branch->id === 1 || str_contains($branchName, 'MAIN BRANCH');
+    }
+
     // ==========================================
     // HR Manager Profile Endpoints
     // ==========================================
@@ -647,6 +677,9 @@ class ManagerProfileController extends Controller
             ], 401);
         }
 
+        $branch = $this->resolveUserBranch($user);
+        $isMainBranchLogistics = $this->isMainBranchLogisticsManager($user);
+
         return response()->json([
             'ok' => true,
             'user' => [
@@ -657,9 +690,32 @@ class ManagerProfileController extends Controller
                 'role' => $user->role,
                 'department' => $user->department,
                 'branch_id' => $user->branch_id,
+                'branch_name' => $branch->name ?? null,
                 'must_change_password' => (bool) $user->must_change_password,
+                'can_select_branch' => $isMainBranchLogistics,
+                'can_request_procurement' => !$isMainBranchLogistics,
             ]
         ]);
+    }
+
+    /**
+     * Return available branches for logistics branch selector.
+     */
+    public function logisticsBranches(Request $request)
+    {
+        $user = $this->getAuthenticatedManager($request);
+
+        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'logistics')) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        if ($this->isMainBranchLogisticsManager($user)) {
+            $branches = Branch::orderBy('name', 'asc')->get(['id', 'name']);
+            return response()->json(['ok' => true, 'data' => $branches]);
+        }
+
+        $branches = Branch::where('id', $user->branch_id)->get(['id', 'name']);
+        return response()->json(['ok' => true, 'data' => $branches]);
     }
 
     public function updateLogisticsProfile(Request $request)
@@ -733,6 +789,10 @@ class ManagerProfileController extends Controller
         }
 
         $branchId = $user->branch_id;
+        // Allow main-branch logistics manager to view suppliers for a selected branch
+        if ($this->isMainBranchLogisticsManager($user) && $request->filled('branch_id')) {
+            $branchId = (int) $request->input('branch_id');
+        }
         $suppliers = \App\Models\User::where('role', 'SUPPLIER')
             ->when($branchId, function ($q) use ($branchId) { return $q->where('branch_id', $branchId); })
             ->whereNull('deleted_at')
@@ -759,6 +819,13 @@ class ManagerProfileController extends Controller
         }
 
         $branchId = $user->branch_id;
+        if ($this->isMainBranchLogisticsManager($user) && $request->filled('branch_id')) {
+            $branchId = (int) $request->input('branch_id');
+        }
+
+        if ($branchId && !Branch::where('id', $branchId)->exists()) {
+            return response()->json(['ok' => false, 'message' => 'Branch not found'], 404);
+        }
 
         if (!$branchId) {
             return response()->json(['ok' => false, 'message' => 'Manager has no branch assigned'], 400);
@@ -967,7 +1034,7 @@ class ManagerProfileController extends Controller
             // Find pending procurement request for this product (branch-scoped)
             $procReq = ProcurementRequest::where('product_id', $product->id)
                 ->where('branch_id', $branchId)
-                ->whereIn('status', ['pending_order_to_supplier'])
+                ->whereIn('status', ['pending', 'pending_order_to_supplier'])
                 ->first();
 
             if (!$procReq) {
@@ -982,7 +1049,7 @@ class ManagerProfileController extends Controller
             $quantity = $validated['quantity'] ?? $procReq->quantity;
 
             try {
-                $supplierOrder = \DB::transaction(function () use ($procReq, $supplierId, $quantity, $user) {
+                $supplierOrder = DB::transaction(function () use ($procReq, $supplierId, $quantity, $user) {
                     $order = SupplierOrder::create([
                         'procurement_request_id' => $procReq->id,
                         'product_id' => $procReq->product_id,
@@ -994,7 +1061,8 @@ class ManagerProfileController extends Controller
 
                     $procReq->update([
                         'procurement_user_id' => $user->id,
-                        'status' => 'pending_order_to_supplier'
+                        'status' => 'pending_order_to_supplier',
+                        'supplier_confirmed' => false,
                     ]);
 
                     // Deduct branch budget if applicable
@@ -1012,22 +1080,69 @@ class ManagerProfileController extends Controller
                     return $order;
                 });
             } catch (\Exception $e) {
-                \Log::error('Manager placeOrderProduct supplier-order failed', ['error' => $e->getMessage()]);
+                Log::error('Manager placeOrderProduct supplier-order failed', ['error' => $e->getMessage()]);
                 return response()->json(['ok' => false, 'message' => 'Failed to place supplier order'], 500);
             }
 
             return response()->json(['ok' => true, 'message' => 'Supplier order created', 'supplier_order' => $supplierOrder, 'procurement_request' => $procReq->fresh()->load('product')]);
         }
 
-        // Default behaviour: mark product as published and optionally increase stock
-        if (isset($validated['quantity'])) {
-            $product->stock = max(0, $product->stock + (int)$validated['quantity']);
+        // If no supplier selected: create a broadcast SupplierOrder so suppliers can confirm
+        $quantity = $validated['quantity'] ?? null;
+
+        try {
+            $supplierOrder = DB::transaction(function () use ($product, $branchId, $quantity, $user) {
+                // Try to find the pending procurement request for this product
+                $procReq = ProcurementRequest::where('product_id', $product->id)
+                    ->where('branch_id', $branchId)
+                    ->whereIn('status', ['pending', 'pending_order_to_supplier'])
+                    ->first();
+
+                if (!$procReq) {
+                    throw new \Exception('No pending procurement request found for this product');
+                }
+
+                $qty = $quantity ?? $procReq->quantity;
+
+                $order = SupplierOrder::create([
+                    'procurement_request_id' => $procReq->id,
+                    'product_id' => $procReq->product_id,
+                    'supplier_id' => null,
+                    'quantity' => $qty,
+                    'status' => 'pending',
+                    'is_broadcast' => 1,
+                    'branch_id' => $procReq->branch_id,
+                ]);
+
+                $procReq->update([
+                    'procurement_user_id' => $user->id,
+                    'status' => 'pending_order_to_supplier',
+                    'supplier_confirmed' => false,
+                ]);
+
+                // Deduct branch budget if applicable
+                try {
+                    $branch = Branch::where('id', $procReq->branch_id)->lockForUpdate()->first();
+                    $deductAmount = $procReq->budget_amount ?? $procReq->total_amount ?? ($procReq->price * $qty);
+                    if ($branch && $deductAmount) {
+                        $branch->budget = is_null($branch->budget) ? 0 : ($branch->budget - (float) $deductAmount);
+                        $branch->save();
+                    }
+                } catch (\Exception $e) {
+                    throw $e;
+                }
+
+                return $order;
+            });
+        } catch (\Exception $e) {
+            Log::error('Manager placeOrderProduct broadcast supplier-order failed', ['error' => $e->getMessage()]);
+            return response()->json(['ok' => false, 'message' => $e->getMessage() ?: 'Failed to create broadcast supplier order'], 500);
         }
 
-        $product->is_published = 1;
-        $product->save();
+        // Return the created broadcast order and refreshed procurement request
+        $procReq = ProcurementRequest::where('product_id', $product->id)->where('branch_id', $branchId)->where('status', 'pending_order_to_supplier')->first();
 
-        return response()->json(['ok' => true, 'message' => 'Product placed into inventory', 'product' => $product]);
+        return response()->json(['ok' => true, 'message' => 'Broadcast supplier order created, waiting for supplier confirmation', 'supplier_order' => $supplierOrder, 'procurement_request' => $procReq]);
     }
 
     /**
@@ -1126,6 +1241,14 @@ public function logisticsInventory(Request $request)
     }
 
     $branchId = $user->branch_id;
+    if ($this->isMainBranchLogisticsManager($user) && $request->filled('branch_id')) {
+        $branchId = (int) $request->input('branch_id');
+    }
+
+    if ($branchId && !Branch::where('id', $branchId)->exists()) {
+        return response()->json(['ok' => false, 'message' => 'Branch not found'], 404);
+    }
+
     if (!$branchId) {
         return response()->json(['ok' => false, 'message' => 'No branch assigned'], 400);
     }
@@ -1136,7 +1259,7 @@ public function logisticsInventory(Request $request)
             $q->whereNull('is_kitchen_dish')
               ->orWhere('is_kitchen_dish', false);
         })
-        ->select('id', 'name', 'price', 'stock', 'min_stock')
+        ->select('id', 'name', 'price', 'stock', 'min_stock', 'branch_id')
         ->get()
         ->map(function ($p) {
             $status = ($p->stock <= ($p->min_stock ?? 10)) ? 'LOW STOCK' : 'OK';

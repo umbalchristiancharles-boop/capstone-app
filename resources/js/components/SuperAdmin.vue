@@ -660,7 +660,7 @@ function openModule(name) {
 
 function ownerAddBranches() {
   // Navigate to the owner add branches page (route should exist or be implemented separately)
-  router.push('/owner/add-branches')
+  router.push('/main-branch/branches')
 }
 
 async function sendAnnouncement() {

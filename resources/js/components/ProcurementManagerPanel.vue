@@ -161,26 +161,36 @@
                   <template v-else-if="p.procurement_status === 'budget_pending' || p.status === 'budget_pending'">
                     <button class="btn-outline" disabled style="padding:6px 10px; border-radius:8px">Budget to be received</button>
                   </template>
-                  <template v-else-if="p.procurement_status === 'pending_order_to_supplier' || p.status === 'pending_order_to_supplier' || p.procurement_status === 'ongoing_delivery' || p.status === 'ongoing_delivery'">
+                  <template v-else-if="p.procurement_status === 'pending_order_to_supplier' || p.status === 'pending_order_to_supplier' || p.procurement_status === 'ongoing_delivery' || p.status === 'ongoing_delivery' || p.procurement_status === 'receipt_confirmed' || p.receipt_confirmed">
                     <div v-if="p.existingOrder" style="display:flex; gap:0.5rem; align-items:center">
                       <div class="status-badge" style="background:#fbbf24; color:#92400e; padding:6px 10px; border-radius:8px; font-size:0.9rem; font-weight:600;">
                         Transaction Pending (ID: {{ p.existingOrder.id }})
                       </div>
                       <div v-if="(p.existingOrder && (p.existingOrder.status === 'on_delivery' || p.existingOrder.status === 'ongoing_delivery' || p.existingOrder.status === 'fulfilled')) || p.procurement_status === 'delivery_pending' || p.procurement_status === 'ongoing_delivery'">
-                        <button class="btn-primary" @click="markDeliveryComplete(p)" :disabled="isCompletingDelivery" style="padding:6px 10px; border-radius:8px">{{ isCompletingDelivery ? 'Submitting...' : 'Delivery complete' }}</button>
-                      </div>
+                          <template v-if="p.receipt_confirmed || p.procurement_status === 'ongoing_delivery' || p.procurement_status === 'receipt_confirmed' || (p.existingOrder && p.existingOrder.receipt_confirmed)">
+                            <button class="btn-primary" @click="markDeliveryComplete(p)" :disabled="isCompletingDelivery" style="padding:6px 10px; border-radius:8px">{{ isCompletingDelivery ? 'Submitting...' : 'Complete Order' }}</button>
+                          </template>
+                          <template v-else>
+                            <button class="btn-primary" @click="openReceiptModal(p)" :disabled="isCompletingDelivery" style="padding:6px 10px; border-radius:8px">{{ isCompletingDelivery ? 'Submitting...' : 'Delivery complete' }}</button>
+                          </template>
+                        </div>
                     </div>
-                    <div v-else-if="p.procurement_status === 'ongoing_delivery' || p.status === 'ongoing_delivery'">
-                      <button class="btn-primary" @click="markDeliveryComplete(p)" :disabled="isCompletingDelivery" style="padding:6px 10px; border-radius:8px">{{ isCompletingDelivery ? 'Submitting...' : 'Delivery complete' }}</button>
+                      <div v-else-if="p.procurement_status === 'ongoing_delivery' || p.status === 'ongoing_delivery' || p.procurement_status === 'receipt_confirmed' || p.receipt_confirmed">
+                      <button class="btn-primary" 
+                        @click="p.receipt_confirmed || p.procurement_status === 'receipt_confirmed' ? markDeliveryComplete(p) : openReceiptModal(p)" 
+                        :disabled="isCompletingDelivery" 
+                        style="padding:6px 10px; border-radius:8px">
+                        {{ isCompletingDelivery ? 'Submitting...' : ((p.receipt_confirmed || p.procurement_status === 'receipt_confirmed') ? 'Complete Order' : 'Delivery complete') }}
+                      </button>
                     </div>
                       <div v-else>
                       <button class="btn-primary" 
                         @click="placeOrder(p)" 
-                        :disabled="isPlacingOrder || (p.procurementRequest && !p.procurementRequest.supplier_confirmed) || (p.supplier_confirmed === false)"
+                        :disabled="isPlacingOrder || p.waiting_for_supplier"
                         style="padding:6px 10px; border-radius:8px">
                         {{ isPlacingOrder ? 'Placing...' : 'Place Order' }}
                       </button>
-                      <div v-if="(p.procurementRequest && !p.procurementRequest.supplier_confirmed) || (p.supplier_confirmed === false)" style="margin-top:6px; color:#92400e; font-weight:600; font-size:0.9rem">
+                      <div v-if="p.waiting_for_supplier" style="margin-top:6px; color:#92400e; font-weight:600; font-size:0.9rem">
                         Waiting for supplier confirmation
                       </div>
                     </div>
@@ -290,6 +300,35 @@
       </div>
     </div>
   </transition>
+
+  <!-- Receipt upload modal (supplier must paste/upload physical receipt) -->
+  <transition name="fade">
+    <div v-if="showReceiptModal" class="modal-backdrop" @click.self="closeReceiptModal">
+      <div class="modal">
+        <div class="modal-card">
+          <div class="modal-header">
+            <h3>Upload Physical Receipt</h3>
+          </div>
+          <div class="modal-body">
+            <div class="form-group full-span">
+              <label>Please upload a clear photo of the physical receipt (required)</label>
+              <input type="file" accept="image/*" @change="onReceiptSelected" />
+            </div>
+            <div class="form-group full-span" v-if="receiptPreview">
+              <label>Preview</label>
+              <img :src="receiptPreview" alt="receipt preview" style="max-width:100%; border-radius:8px; border:1px solid #e5e7eb" />
+            </div>
+            <div v-if="receiptError" class="error-msg">{{ receiptError }}</div>
+            <div style="font-size:0.9rem; color:#374151; grid-column:1 / -1; margin-top:6px">After you submit the receipt, Finance must confirm it before status becomes On Delivery.</div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-outline" @click="closeReceiptModal" :disabled="receiptUploading">Cancel</button>
+            <button class="btn-primary" @click="submitReceipt" :disabled="!receiptFile || receiptUploading">{{ receiptUploading ? 'Uploading...' : 'Submit Receipt' }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </transition>
   <!-- Supplier selection modal -->
   <transition name="fade">
     <div v-if="supplierModalVisible" class="modal-backdrop" @click.self="closeSupplierModal">
@@ -328,7 +367,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import axios from 'axios'
@@ -636,7 +675,7 @@ async function confirmSupplierSelection() {
   try {
     const payload = { supplier_id: selectedSupplierId.value }
     if (pendingOrderQty.value) payload.quantity = pendingOrderQty.value
-    const res = await axios.post(`/api/procurement.products/${pendingOrderProduct.value.id}/place-order`, payload, { withCredentials: true })
+    const res = await axios.post(`/api/manager/procurement/products/${pendingOrderProduct.value.id}/place-order`, payload, { withCredentials: true })
     const supplierOrder = res.data.supplier_order
     const procReq = res.data.procurement_request
     alert(res.data.message || 'Order placed successfully')
@@ -747,14 +786,16 @@ async function placeOrder(product) {
 
     const payload = {}
     if (qty !== null) payload.quantity = qty
-    // If product has no assigned supplier, open modal to select one
+    // If product has an assigned supplier, include it so Manager endpoint
+    // creates a SupplierOrder (transaction pending) instead of auto-publishing.
     if (!product.supplier_id) {
       openSupplierModal(product, qty)
       return
     }
+    if (product.supplier_id) payload.supplier_id = product.supplier_id
 
-    // Use procurement endpoint which creates the SupplierOrder record
-    const res = await axios.post(`/api/procurement.products/${product.id}/place-order`, payload, { withCredentials: true })
+    // Use manager procurement endpoint which creates the SupplierOrder record
+    const res = await axios.post(`/api/manager/procurement/products/${product.id}/place-order`, payload, { withCredentials: true })
     
     // Handle response and update local UI immediately
     const supplierOrder = res.data.supplier_order
@@ -803,12 +844,90 @@ async function placeOrder(product) {
   }
 }
 
+// Receipt / completion workflow:
+// Supplier must upload a photo of the physical receipt. The receipt is posted
+// to the same complete endpoint as multipart/form-data. Finance must confirm
+// the receipt on the backend before status becomes 'on_delivery'.
+const showReceiptModal = ref(false)
+const receiptFile = ref(null)
+const receiptPreview = ref(null)
+const receiptError = ref('')
+const receiptUploading = ref(false)
+const receiptPreviewProduct = ref(null)
+
+function openReceiptModal(product) {
+  if (!product || !product.procurement_request_id) return
+  receiptPreviewProduct.value = product
+  receiptFile.value = null
+  receiptPreview.value = null
+  receiptError.value = ''
+  showReceiptModal.value = true
+}
+
+function closeReceiptModal() {
+  if (receiptUploading.value) return
+  showReceiptModal.value = false
+  receiptFile.value = null
+  receiptPreview.value = null
+  receiptError.value = ''
+  receiptPreviewProduct.value = null
+}
+
+function onReceiptSelected(e) {
+  const f = (e.target && e.target.files && e.target.files[0]) || null
+  if (!f) { receiptFile.value = null; receiptPreview.value = null; return }
+  // Basic client-side check
+  if (!f.type.startsWith('image/')) { receiptError.value = 'Please select an image file.'; receiptFile.value = null; return }
+  receiptFile.value = f
+  receiptError.value = ''
+  const reader = new FileReader()
+  reader.onload = (ev) => { receiptPreview.value = ev.target.result }
+  reader.readAsDataURL(f)
+}
+
+async function submitReceipt() {
+  if (!receiptPreviewProduct.value || !receiptPreviewProduct.value.procurement_request_id) return
+  if (!receiptFile.value) { receiptError.value = 'Receipt image is required.'; return }
+  receiptUploading.value = true
+  isCompletingDelivery.value = true
+  receiptError.value = ''
+  try {
+    const id = receiptPreviewProduct.value.procurement_request_id
+    const fd = new FormData()
+    fd.append('receipt', receiptFile.value)
+    // optional: include note identifying supplier user
+    const res = await axios.post(`/api/procurement-requests/${id}/complete`, fd, { headers: { 'Content-Type': 'multipart/form-data' }, withCredentials: true })
+    alert(res.data?.message || 'Receipt submitted. Awaiting finance confirmation.')
+
+    // Update local item to indicate receipt submitted and awaiting finance
+    try {
+      const prod = receiptPreviewProduct.value
+      prod.procurement_status = res.data?.procurement_status || 'receipt_submitted'
+      if (prod.existingOrder) prod.existingOrder.status = res.data?.order_status || prod.existingOrder.status
+    } catch (e) { /* ignore local update failures */ }
+
+    await loadRequestedProducts()
+    await loadProducts()
+    await refreshAllData()
+    closeReceiptModal()
+  } catch (e) {
+    console.error('Receipt upload failed', e)
+    receiptError.value = e.response?.data?.message || 'Failed to upload receipt'
+    alert(receiptError.value)
+  } finally {
+    receiptUploading.value = false
+    isCompletingDelivery.value = false
+  }
+}
+
 async function markDeliveryComplete(product) {
   if (!product || !product.procurement_request_id) return
-  if (!confirm(`Mark delivery complete for ${product.name}? This will set the request as completed.`)) return
+  if (!confirm(`Mark delivery complete for ${product.name || 'this item'}? This will set the request as completed.`)) return
   isCompletingDelivery.value = true
   try {
-    const res = await axios.post(`/api/procurement-requests/${product.procurement_request_id}/complete`, {}, { withCredentials: true })
+    const id = product.procurement_request_id
+    const payload = {}
+    const res = await axios.post(`/api/procurement-requests/${id}/complete`, payload, { withCredentials: true })
     alert(res.data?.message || 'Procurement request marked completed')
     await loadRequestedProducts()
     await loadProducts()
@@ -820,6 +939,21 @@ async function markDeliveryComplete(product) {
     isCompletingDelivery.value = false
   }
 }
+
+// Listen for global receiptConfirmed events (dispatched by Finance panel) and refresh lists
+function onReceiptConfirmed(e) {
+  try {
+    loadRequestedProducts()
+    loadProducts()
+    refreshAllData()
+  } catch (err) { console.warn('onReceiptConfirmed handler failed', err) }
+}
+
+window.addEventListener('receiptConfirmed', onReceiptConfirmed)
+
+onUnmounted(() => {
+  try { window.removeEventListener('receiptConfirmed', onReceiptConfirmed) } catch (e) { /* ignore */ }
+})
 
 </script>
 

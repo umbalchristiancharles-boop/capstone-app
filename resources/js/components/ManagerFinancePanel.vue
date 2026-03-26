@@ -147,6 +147,47 @@
 
     <!-- Branch Budgets (new) -->
     <div class="branch-stats panel-section">
+      <h2 class="section-title">Receipt Submissions</h2>
+      <p class="section-description">Review uploaded physical receipts from suppliers and confirm them to proceed to delivery.</p>
+
+      <div v-if="receiptsLoading" class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Loading receipt submissions...</p>
+      </div>
+
+      <div v-else class="table-container">
+        <table class="branch-table data-table">
+          <thead>
+            <tr>
+              <th>Request ID</th>
+              <th>Product</th>
+              <th>Branch</th>
+              <th>Uploaded At</th>
+              <th>Receipt</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="r in receiptSubmissions" :key="r.id">
+              <td>{{ r.id }}</td>
+              <td>{{ r.product?.name || '(no product)' }}</td>
+              <td>{{ r.branch?.name || 'N/A' }}</td>
+              <td>{{ formatDate(r.receipt_uploaded_at) }}</td>
+              <td>
+                <a href="#" @click.prevent="openReceiptPreview(r)">View Receipt</a>
+              </td>
+              <td>
+                <button class="btn-approve" @click="confirmReceipt(r.id)" :disabled="confirmingId === r.id">{{ confirmingId === r.id ? 'Confirming...' : 'Confirm Receipt' }}</button>
+              </td>
+            </tr>
+            <tr v-if="receiptSubmissions.length === 0">
+              <td colspan="6" class="empty-message">No receipt submissions awaiting confirmation.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="branch-stats panel-section">
       <h2 class="section-title">Branch Budgets</h2>
       <p class="section-description">View and edit branch budgets. Changes are applied immediately.</p>
 
@@ -220,6 +261,28 @@
         </div>
       </div>
     </transition>
+    <!-- Receipt preview modal -->
+    <transition name="fade">
+      <div v-if="receiptModalVisible" class="modal-backdrop" @click.self="closeReceiptPreview">
+        <div class="receipt-preview-modal">
+          <div class="modal-header"><h3>Receipt Preview</h3></div>
+          <div class="modal-body">
+            <div class="preview-meta">
+              <div><strong>Request ID:</strong> {{ receiptModalRequest?.id }}</div>
+              <div><strong>Product:</strong> {{ receiptModalRequest?.product?.name || '(no product)' }}</div>
+              <div><strong>Uploaded:</strong> {{ formatDate(receiptModalRequest?.receipt_uploaded_at) }}</div>
+            </div>
+            <div class="preview-image">
+              <img :src="receiptModalPath" alt="receipt preview" />
+            </div>
+          </div>
+          <div class="modal-footer" style="display:flex; gap:8px; justify-content:flex-end; margin-top:8px">
+            <button class="btn-secondary" @click="closeReceiptPreview">Close</button>
+            <a :href="receiptModalPath" target="_blank" class="btn-primary">Open in new tab</a>
+          </div>
+        </div>
+      </div>
+    </transition>
       </div>
     </template>
   </OwnerPanelLayout>
@@ -274,6 +337,14 @@ const selectedRange = ref('all')
 const budgetRequests = ref([])
 const budgetLoading = ref(true)
 const processingId = ref(null)
+// Receipt submissions
+const receiptSubmissions = ref([])
+const receiptsLoading = ref(false)
+const confirmingId = ref(null)
+// Receipt preview modal state
+const receiptModalVisible = ref(false)
+const receiptModalPath = ref('')
+const receiptModalRequest = ref(null)
 
 // Computed: count of pending requests
 const pendingBudgetCount = computed(() => {
@@ -447,6 +518,9 @@ function getStatusClass(status) {
 onMounted(() => {
   loadInitialData()
 
+  // load receipt submissions for finance review
+  loadReceiptSubmissions()
+
   // Auto-refresh every 30 seconds
   refreshInterval.value = setInterval(async () => {
     try {
@@ -481,6 +555,66 @@ async function loadInitialData() {
   } catch (err) {
     console.error('Error loading initial data:', err)
   }
+}
+
+async function loadReceiptSubmissions() {
+  receiptsLoading.value = true
+  try {
+    const res = await axios.get('/api/procurement-requests/receipt-submissions', { withCredentials: true })
+    if (res.data && res.data.ok) {
+      receiptSubmissions.value = res.data.requests || []
+    } else {
+      receiptSubmissions.value = []
+    }
+  } catch (e) {
+    console.error('Failed to load receipt submissions', e)
+    receiptSubmissions.value = []
+  } finally {
+    receiptsLoading.value = false
+  }
+}
+
+function storageUrl(path) {
+  if (!path) return '#'
+  // if stored under public/receipts, convert to storage URL
+  if (typeof path !== 'string') return '#'
+  if (path.startsWith('public/')) return '/storage/' + path.replace(/^public\//, '')
+  if (path.startsWith('/receipts/')) return path
+  if (path.startsWith('receipts/')) return '/' + path
+  // already a public URL or full path
+  return path
+}
+
+async function confirmReceipt(id) {
+  if (confirm('Confirm this receipt and move request to On Delivery?')) {
+    confirmingId.value = id
+    try {
+      const res = await axios.post(`/api/procurement-requests/${id}/confirm-receipt`, {}, { withCredentials: true })
+      alert(res.data?.message || 'Receipt confirmed')
+      await loadReceiptSubmissions()
+      await refreshDashboard()
+      // notify other open UIs (procurement manager) to refresh their lists
+      try { window.dispatchEvent(new CustomEvent('receiptConfirmed', { detail: id })) } catch (e) { /* ignore */ }
+    } catch (e) {
+      console.error('Confirm receipt failed', e)
+      alert(e.response?.data?.message || 'Failed to confirm receipt')
+    } finally {
+      confirmingId.value = null
+    }
+  }
+}
+
+function openReceiptPreview(r) {
+  if (!r) return
+  receiptModalRequest.value = r
+  receiptModalPath.value = storageUrl(r.receipt_path)
+  receiptModalVisible.value = true
+}
+
+function closeReceiptPreview() {
+  receiptModalVisible.value = false
+  receiptModalPath.value = ''
+  receiptModalRequest.value = null
 }
 
 onUnmounted(() => {
@@ -743,5 +877,14 @@ async function markBudgetGiven(id) {
 
 .fade-enter-active, .fade-leave-active { transition: opacity 0.3s }
 .fade-enter-from, .fade-leave-to { opacity:0 }
+
+/* Receipt preview modal styles */
+.receipt-preview-modal { background:#fff; padding:12px; border-radius:10px; width:min(90vw,900px); max-height:90vh; overflow:auto; box-shadow:0 18px 40px rgba(0,0,0,0.35); }
+.receipt-preview-modal .modal-header h3 { margin:0 0 8px 0 }
+.receipt-preview-modal .modal-body { display:grid; grid-template-columns: 1fr; gap:12px }
+.preview-meta { color:#374151; font-size:14px; display:flex; gap:16px; flex-wrap:wrap }
+.preview-image { display:flex; justify-content:center; align-items:center; padding:8px; background:#f8fafc; border-radius:8px }
+.preview-image img { max-width:100%; height:auto; border-radius:6px; border:1px solid #e5e7eb }
+
 </style>
 

@@ -169,8 +169,10 @@ Route::middleware('web')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::apiResource('procurement-requests', \App\Http\Controllers\Api\ProcurementRequestController::class)->except(['show']);
     Route::get('procurement-requests/requested-products', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'requestedProducts']);
+    Route::get('procurement-requests/receipt-submissions', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'receiptSubmissions']);
     Route::post('procurement-requests/{id}/status', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'updateStatus']);
     Route::post('procurement-requests/{id}/complete', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'completeOrder']);
+    Route::post('procurement-requests/{id}/confirm-receipt', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'confirmReceipt']);
     Route::post('procurement-requests/{id}/broadcast', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'broadcastToSuppliers']);
 
     Route::apiResource('procurement.products', \App\Http\Controllers\Api\ProcurementProductController::class)->only(['index']);
@@ -230,6 +232,7 @@ Route::prefix('manager')->middleware('auth')->group(function () {
         Route::get('/logistics/dashboard', [\App\Http\Controllers\Api\ManagerProfileController::class, 'logisticsDashboard']);
         Route::get('/logistics/deliveries', [\App\Http\Controllers\Api\ManagerProfileController::class, 'logisticsDeliveries']);
         Route::get('/logistics/products', [\App\Http\Controllers\Api\ManagerProfileController::class, 'logisticsProducts']);
+        Route::get('/logistics/branches', [\App\Http\Controllers\Api\ManagerProfileController::class, 'logisticsBranches']);
         Route::get('/logistics/suppliers', [\App\Http\Controllers\Api\ManagerProfileController::class, 'logisticsSuppliers']);
 
         // Procurement Manager endpoints

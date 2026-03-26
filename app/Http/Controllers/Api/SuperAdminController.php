@@ -726,7 +726,12 @@ class SuperAdminController extends Controller
         }
 
         $roleUpper = strtoupper($user->role ?? '');
-        if (!in_array($roleUpper, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER'])) {
+        $isMainBranchAdmin = false;
+        if ($roleUpper === 'ADMIN') {
+            $b = Branch::find($user->branch_id);
+            $isMainBranchAdmin = (bool) ($b && ($b->is_main_branch ?? false));
+        }
+        if (!in_array($roleUpper, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER']) && !$isMainBranchAdmin) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -773,6 +778,8 @@ class SuperAdminController extends Controller
                 'address' => $branch->address,
                 'budget' => isset($branch->budget) ? (int) $branch->budget : 0,
                 'is_active' => (bool) $branch->is_active,
+                'is_main_branch' => (bool) ($branch->is_main_branch ?? false),
+                'can_delete' => !((bool) ($branch->is_main_branch ?? false)),
                 'staff_count' => $staffCount,
                 'admin_user' => $adminUser ? [
                     'id' => $adminUser->id,
@@ -822,7 +829,12 @@ class SuperAdminController extends Controller
         }
 
         $roleUpper = strtoupper($user->role ?? '');
-        if (!in_array($roleUpper, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER'])) {
+        $isMainBranchAdmin = false;
+        if ($roleUpper === 'ADMIN') {
+            $b = Branch::find($user->branch_id);
+            $isMainBranchAdmin = (bool) ($b && ($b->is_main_branch ?? false));
+        }
+        if (!in_array($roleUpper, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER']) && !$isMainBranchAdmin) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -866,6 +878,7 @@ class SuperAdminController extends Controller
                 'name' => $name,
                 'address' => $address,
                 'is_active' => 1,
+                'is_main_branch' => 0,
                 // Use provided budget or default to 100000
                 'budget' => (int) ($request->input('budget', 100000)),
             ]);
@@ -996,13 +1009,31 @@ class SuperAdminController extends Controller
         }
 
         $roleUpper = strtoupper($user->role ?? '');
-        if (!in_array($roleUpper, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER'])) {
+        $isMainBranchAdmin = false;
+        if ($roleUpper === 'ADMIN') {
+            $b = Branch::find($user->branch_id);
+            $isMainBranchAdmin = (bool) ($b && ($b->is_main_branch ?? false));
+        }
+        if (!in_array($roleUpper, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER']) && !$isMainBranchAdmin) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
         }
 
         $branch = Branch::find($id);
         if (!$branch) {
             return response()->json(['ok' => false, 'message' => 'Branch not found'], 404);
+        }
+
+        $branchCodeUpper = strtoupper((string) ($branch->code ?? ''));
+        $branchNameUpper = strtoupper((string) ($branch->name ?? ''));
+        $isMainBranch = (bool) ($branch->is_main_branch ?? false)
+            || in_array($branchCodeUpper, ['MAIN', 'MAIN_HQ', 'HQ', 'MAINBRANCH'])
+            || in_array($branchNameUpper, ['MAIN BRANCH', 'MAIN HQ BRANCH', 'HEADQUARTERS']);
+
+        if ($isMainBranch) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Main Branch (HQ) is protected and cannot be deleted.',
+            ], 422);
         }
 
         DB::beginTransaction();

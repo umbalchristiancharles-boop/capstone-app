@@ -9,8 +9,10 @@ use App\Models\ProcurementRequest;
 use App\Models\SupplierOrder;
 use App\Models\Product;
 use App\Models\User;
+use App\Models\Branch;
 use App\Models\BudgetRequest;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class ProcurementRequestController extends Controller
 {
@@ -18,9 +20,13 @@ class ProcurementRequestController extends Controller
     {
         $user = $request->user();
         $role = strtoupper($user->role ?? '');
+        $dept = strtoupper($user->department ?? '');
 
         $query = ProcurementRequest::with(['product', 'logisticsUser', 'procurementUser', 'financeUser'])
             ->orderBy('created_at', 'desc');
+
+        // If frontend requests to include completed/archived requests, allow it
+        $includeCompleted = $request->boolean('include_completed', false);
 
         // Allow Super Admin to view requests across branches (optionally filtered by branch_id)
         if ($role === 'SUPER_ADMIN') {
@@ -28,18 +34,47 @@ class ProcurementRequestController extends Controller
             if ($branchFilter) {
                 $query->where('branch_id', $branchFilter);
             }
-        } elseif (in_array($role, ['LOGISTICS_MANAGER', 'MANAGER_LOGISTICS'])) {
-            // Logistics sees own requests
-            $query->where('logistics_user_id', $user->id);
+        } elseif (in_array($role, ['LOGISTICS_MANAGER', 'MANAGER_LOGISTICS']) || ($role === 'MANAGER' && $dept === 'LOGISTICS')) {
+            // Logistics managers normally see requests they created (logistics_user_id)
+            // However, a MAIN BRANCH logistics manager may select a branch to view
+            $isMainBranch = false;
+            try {
+                if ($user->branch_id) {
+                    $branch = Branch::find($user->branch_id);
+                    if ($branch) {
+                        $branchName = strtoupper(trim((string) ($branch->name ?? '')));
+                        $isMainBranch = ((int) $branch->id === 1) || str_contains($branchName, 'MAIN BRANCH');
+                    }
+                }
+            } catch (\Exception $e) {
+                // ignore and treat as non-main branch
+                $isMainBranch = false;
+            }
+
+            $branchFilter = $request->query('branch_id');
+            if ($isMainBranch && $branchFilter) {
+                // Allow main-branch logistics to view requests for the selected branch
+                $query->where('branch_id', (int) $branchFilter);
+            } else {
+                // Default: only show requests created by this logistics user
+                $query->where('logistics_user_id', $user->id);
+            }
         } elseif ($role === 'PROCUREMENT_MANAGER') {
-            // Procurement sees pending/approved/budget/cash-in-transit/delivery states for branch
-            $query->where('branch_id', $user->branch_id ?? 1)
-                  ->whereIn('status', ['pending', 'approved', 'budget_pending', 'cash_in_transit', 'pending_order_to_supplier']);
+            // Procurement sees procurement lifecycle states for branch. By default exclude 'completed'
+            $query->where('branch_id', $user->branch_id ?? 1);
+            if (!$includeCompleted) {
+                $query->whereIn('status', ['pending', 'approved', 'budget_pending', 'cash_in_transit', 'pending_order_to_supplier']);
+            }
         } elseif (in_array($role, ['FINANCE_MANAGER', 'MANAGER_FINANCE'])) {
             // Finance sees pending budget approvals and items they need to confirm (cash in transit)
-            $query->where(function($q) {
-                $q->where('budget_approved', false)
-                  ->orWhere('status', 'cash_in_transit');
+            $query->where(function($q) use ($includeCompleted) {
+                if ($includeCompleted) {
+                    // include everything if requested
+                    $q->whereRaw('1 = 1');
+                } else {
+                    $q->where('budget_approved', false)
+                      ->orWhere('status', 'cash_in_transit');
+                }
             });
         } else {
             // Default branch filter
@@ -141,6 +176,17 @@ class ProcurementRequestController extends Controller
             return response()->json(['error' => 'Unauthorized role'], 401);
         }
 
+        if ($role !== 'SUPER_ADMIN' && $user->branch_id) {
+            $branch = Branch::find($user->branch_id);
+            $branchName = strtoupper(trim((string) ($branch->name ?? '')));
+            $isMainBranch = $branch && ((int) $branch->id === 1 || str_contains($branchName, 'MAIN BRANCH'));
+
+            if ($isMainBranch) {
+                Log::warning('PROC REQUEST BLOCKED FOR MAIN BRANCH LOGISTICS', ['user_id' => $user->id, 'branch_id' => $user->branch_id]);
+                return response()->json(['error' => 'Main Branch logistics cannot create procurement requests.'], 403);
+            }
+        }
+
         try {
             $validated = $request->validate([
                 'product_id' => 'required|exists:products,id',
@@ -232,7 +278,7 @@ public function requestedProducts(Request $request)
             $requests = ProcurementRequest::with(['product:id,name,price,sku,branch_id,supplier_id,logistics_request_available'])
                 ->where('branch_id', $branchId)
                     ->whereIn('status', ['pending', 'budget_pending', 'pending_order_to_supplier', 'delivery_pending', 'ongoing_delivery'])
-                ->get(['id', 'product_id', 'branch_id', 'status', 'budget_approved', 'supplier_confirmed']);
+                ->get(['id', 'product_id', 'branch_id', 'status', 'budget_approved', 'supplier_confirmed', 'receipt_confirmed', 'receipt_path']);
             Log::info('Requests fetched', ['count' => $requests->count()]);
 
             if ($requests->isEmpty()) {
@@ -254,12 +300,37 @@ public function requestedProducts(Request $request)
             // Attach the procurement request id to each product so the frontend
             // can reference the correct procurement_request when acting on it.
             $requestsByProduct = $requests->keyBy('product_id');
-            $products = $products->map(function ($p) use ($requestsByProduct) {
+
+            // Precompute which procurement requests were broadcast to suppliers
+            $broadcastedProcReqIds = \App\Models\SupplierOrder::whereIn('procurement_request_id', $requests->pluck('id')->toArray())
+                ->where('is_broadcast', true)
+                ->pluck('procurement_request_id')
+                ->unique()
+                ->toArray();
+
+            $products = $products->map(function ($p) use ($requestsByProduct, $broadcastedProcReqIds) {
                 $req = $requestsByProduct->get($p->id);
                 $p->procurement_request_id = $req ? $req->id : null;
                 $p->procurement_status = $req ? $req->status : null;
                 $p->procurement_budget_approved = $req ? (bool)$req->budget_approved : false;
+
+                // Include receipt info so procurement UI can react when finance confirms
+                $p->receipt_confirmed = $req ? (bool)$req->receipt_confirmed : false;
+                $p->receipt_path = $req ? ($req->receipt_path ?? null) : null;
+
+                // If finance confirmed, expose a virtual status for the UI
+                if ($p->receipt_confirmed) {
+                    $p->procurement_status = 'receipt_confirmed';
+                }
+
+                // supplier_confirmed reflects the procurement request flag only.
                 $p->supplier_confirmed = $req ? (bool)$req->supplier_confirmed : false;
+
+                // Determine if this request was broadcast to suppliers and still
+                // waiting for supplier confirmation. Only in that case should the
+                // UI block placing orders and show the waiting message.
+                $wasBroadcast = $req ? in_array($req->id, $broadcastedProcReqIds) : false;
+                $p->waiting_for_supplier = $wasBroadcast && !$p->supplier_confirmed;
 
                 // Determine if procurement can acknowledge this request. If the product
                 // has no supplier or a non-positive price, procurement should NOT
@@ -281,6 +352,39 @@ public function requestedProducts(Request $request)
                 'user_id' => $user->id
             ]);
             return response()->json(['error' => 'Server error: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Return procurement requests that have receipts uploaded and awaiting finance confirmation.
+     */
+    public function receiptSubmissions(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) return response()->json(['error' => 'Unauthenticated'], 401);
+
+        $role = strtoupper($user->role ?? '');
+        $dept = strtoupper($user->department ?? '');
+        if (!in_array($role, ['FINANCE_MANAGER', 'MANAGER_FINANCE']) && !($role === 'MANAGER' && $dept === 'FINANCE')) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        try {
+            $query = ProcurementRequest::with(['product', 'logisticsUser', 'branch'])
+                ->whereNotNull('receipt_path')
+                ->where('receipt_confirmed', false)
+                ->orderBy('receipt_uploaded_at', 'desc');
+
+            // Finance managers may want to filter by branch
+            if ($role !== 'SUPER_ADMIN' && $user->branch_id) {
+                $query->where('branch_id', $user->branch_id);
+            }
+
+            $requests = $query->get();
+            return response()->json(['ok' => true, 'requests' => $requests]);
+        } catch (\Exception $e) {
+            Log::error('Failed to fetch receipt submissions', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to fetch submissions'], 500);
         }
     }
 
@@ -399,16 +503,17 @@ public function requestedProducts(Request $request)
         $user = $request->user();
         $role = strtoupper($user->role ?? '');
         $dept = strtoupper($user->department ?? '');
-        if ($role !== 'PROCUREMENT_MANAGER' && !($role === 'MANAGER' && $dept === 'PROCUREMENT')) {
+        // Allow procurement manager or supplier to upload receipt. Actual
+        // completion requires finance confirmation and should be handled
+        // separately via confirmReceipt.
+        if (!in_array($role, ['PROCUREMENT_MANAGER', 'SUPPLIER']) && !($role === 'MANAGER' && $dept === 'PROCUREMENT')) {
             Log::warning('UNAUTHORIZED ROLE', ['role' => $role, 'dept' => $dept]);
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
         $procRequest = ProcurementRequest::with('product')->findOrFail($id);
-        // Allow procurement manager to mark a procurement request as completed
-        // (delivery received) when appropriate. Acceptable current statuses
-        // include orders that were sent to supplier or are on delivery.
-        $allowedForComplete = ['pending_order_to_supplier', 'delivery_pending', 'on_delivery', 'ongoing_delivery'];
+        // Acceptable statuses for receipt upload / completion flow
+        $allowedForComplete = ['pending_order_to_supplier', 'delivery_pending', 'ongoing_delivery'];
 
         if ($user->branch_id && $procRequest->branch_id != $user->branch_id) {
             return response()->json(['error' => 'Not your branch'], 403);
@@ -418,79 +523,121 @@ public function requestedProducts(Request $request)
             return response()->json(['error' => 'Request not in a state that can be completed'], 400);
         }
 
+        // If there's a receipt file in the request, treat this as a supplier
+        // uploading the physical receipt. Save the file and mark the request
+        // as awaiting finance confirmation.
+        if ($request->hasFile('receipt')) {
+            $file = $request->file('receipt');
+            if (!$file->isValid()) {
+                return response()->json(['error' => 'Invalid file upload'], 400);
+            }
+
+            // If role is SUPPLIER, ensure they are permitted to upload for this request
+            if ($role === 'SUPPLIER') {
+                if (Schema::hasTable('supplier_orders')) {
+                    $supplierOrder = SupplierOrder::where('procurement_request_id', $procRequest->id)
+                        ->where('supplier_id', $user->id)
+                        ->first();
+                    if (!$supplierOrder) {
+                        return response()->json(['error' => 'No supplier order found for this supplier'], 403);
+                    }
+                } else {
+                    Log::warning('supplier_orders table missing; skipping supplier verification for receipt upload', ['proc_req_id' => $procRequest->id, 'user_id' => $user->id]);
+                }
+            }
+
+            // Store file directly under public/receipts so it's immediately
+            // accessible via /receipts/<filename>. This avoids relying on
+            // storage symlinks on environments where that's inconvenient.
+            try {
+                $receiptsDir = public_path('receipts');
+                if (!file_exists($receiptsDir)) mkdir($receiptsDir, 0755, true);
+                $ext = $file->getClientOriginalExtension() ?: 'jpg';
+                $filename = 'receipt_' . $procRequest->id . '_' . time() . '.' . $ext;
+                $file->move($receiptsDir, $filename);
+                // Store a public path starting with /receipts/... so frontend can use it directly
+                $procRequest->receipt_path = '/receipts/' . $filename;
+                $procRequest->receipt_uploaded_by = $user->id;
+                $procRequest->receipt_uploaded_at = now();
+                $procRequest->receipt_confirmed = false;
+                $procRequest->save();
+                Log::info('Receipt uploaded for procurement request', ['proc_req_id' => $procRequest->id, 'uploaded_by' => $user->id, 'path' => $procRequest->receipt_path]);
+            } catch (\Exception $e) {
+                Log::error('Failed to store receipt file in public/receipts', ['error' => $e->getMessage()]);
+                return response()->json(['error' => 'Failed to save receipt file'], 500);
+            }
+
+            return response()->json(['ok' => true, 'message' => 'Receipt uploaded. Awaiting finance confirmation.', 'procurement_status' => 'receipt_submitted']);
+        }
+
+        // Without a receipt file, only allow completion if receipt was already
+        // confirmed by finance. This enforces the flow: supplier uploads, finance confirms.
+        if (empty($procRequest->receipt_path) || !$procRequest->receipt_confirmed) {
+            return response()->json(['error' => 'Receipt not uploaded or not yet confirmed by finance'], 400);
+        }
+
+        // Proceed with marking as completed only if finance already confirmed
         try {
             DB::transaction(function () use ($procRequest, $user) {
-                // Update procurement request status to completed
                 $procRequest->update([
                     'status' => 'completed',
                     'procurement_user_id' => $user->id
                 ]);
 
-                // Try to increment stock for the product (if present)
-                    if ($procRequest->product) {
-                        // Lock product row and increment stock
-                        $prod = \App\Models\Product::where('id', $procRequest->product->id)->lockForUpdate()->first();
-                        if ($prod) {
-                            $prod->increment('stock', $procRequest->quantity);
-                            $prod->has_been_ordered = true;
-                            $prod->logistics_request_available = false;
+                if ($procRequest->product) {
+                    $prod = \App\Models\Product::where('id', $procRequest->product->id)->lockForUpdate()->first();
+                    if ($prod) {
+                        $prod->increment('stock', $procRequest->quantity);
+                        $prod->has_been_ordered = true;
+                        $prod->logistics_request_available = false;
 
-                            // Determine supplier cost per unit. Prefer budget_amount (if set),
-                            // otherwise fall back to procurement request price.
-                            try {
-                                $costPerUnit = null;
-                                if (!empty($procRequest->budget_amount) && !empty($procRequest->quantity)) {
-                                    $costPerUnit = (float) $procRequest->budget_amount / max(1, (int)$procRequest->quantity);
-                                } elseif (!empty($procRequest->price)) {
-                                    $costPerUnit = (float) $procRequest->price;
-                                }
-
-                                    if (!is_null($costPerUnit)) {
-                                        // Prepare audit data
-                                        $oldCost = $prod->cost_price;
-                                        $oldPrice = $prod->price;
-
-                                        // Save cost_price and set selling price = cost_price * 1.10 (non-compounding)
-                                        $prod->cost_price = round($costPerUnit, 2);
-                                        $prod->price = round($prod->cost_price * 1.10, 2);
-
-                                        // Record audit if values changed
-                                        $newCost = $prod->cost_price;
-                                        $newPrice = $prod->price;
-                                        if ($oldCost != $newCost || $oldPrice != $newPrice) {
-                                            try {
-                                                \Illuminate\Support\Facades\DB::table('price_audits')->insert([
-                                                    'product_id' => $prod->id,
-                                                    'old_cost_price' => $oldCost,
-                                                    'new_cost_price' => $newCost,
-                                                    'old_price' => $oldPrice,
-                                                    'new_price' => $newPrice,
-                                                    'user_id' => $user->id ?? null,
-                                                    'reason' => 'procurement_complete',
-                                                    'created_at' => now(),
-                                                    'updated_at' => now(),
-                                                ]);
-                                            } catch (\Exception $e) {
-                                                \Illuminate\Support\Facades\Log::warning('Failed to insert price_audit', ['product_id' => $prod->id, 'error' => $e->getMessage()]);
-                                            }
-                                        }
-                                    }
-                            } catch (\Exception $e) {
-                                \Illuminate\Support\Facades\Log::warning('Failed to set cost/selling price on procurement completion', ['product_id' => $prod->id, 'error' => $e->getMessage()]);
+                        try {
+                            $costPerUnit = null;
+                            if (!empty($procRequest->budget_amount) && !empty($procRequest->quantity)) {
+                                $costPerUnit = (float) $procRequest->budget_amount / max(1, (int)$procRequest->quantity);
+                            } elseif (!empty($procRequest->price)) {
+                                $costPerUnit = (float) $procRequest->price;
                             }
 
-                            $prod->save();
-                        }
-                    }
+                            if (!is_null($costPerUnit)) {
+                                $oldCost = $prod->cost_price;
+                                $oldPrice = $prod->price;
+                                $prod->cost_price = round($costPerUnit, 2);
+                                $prod->price = round($prod->cost_price * 1.10, 2);
 
-                // If there's a linked SupplierOrder, mark it fulfilled as well
+                                $newCost = $prod->cost_price;
+                                $newPrice = $prod->price;
+                                if ($oldCost != $newCost || $oldPrice != $newPrice) {
+                                    try {
+                                        \Illuminate\Support\Facades\DB::table('price_audits')->insert([
+                                            'product_id' => $prod->id,
+                                            'old_cost_price' => $oldCost,
+                                            'new_cost_price' => $newCost,
+                                            'old_price' => $oldPrice,
+                                            'new_price' => $newPrice,
+                                            'user_id' => $user->id ?? null,
+                                            'reason' => 'procurement_complete',
+                                            'created_at' => now(),
+                                            'updated_at' => now(),
+                                        ]);
+                                    } catch (\Exception $e) {
+                                        \Illuminate\Support\Facades\Log::warning('Failed to insert price_audit', ['product_id' => $prod->id, 'error' => $e->getMessage()]);
+                                    }
+                                }
+                            }
+                        } catch (\Exception $e) {
+                            \Illuminate\Support\Facades\Log::warning('Failed to set cost/selling price on procurement completion', ['product_id' => $prod->id, 'error' => $e->getMessage()]);
+                        }
+
+                        $prod->save();
+                    }
+                }
+
                 $supplierOrder = SupplierOrder::where('procurement_request_id', $procRequest->id)->first();
                 if ($supplierOrder && $supplierOrder->status !== 'fulfilled') {
                     $supplierOrder->update(['status' => 'fulfilled', 'fulfilled_at' => now()]);
                 }
 
-                // If there's a linked BudgetRequest created for this procurement,
-                // mark it as completed so the finance panel reflects the fulfilled request.
                 try {
                     $budgetReq = BudgetRequest::where('branch_id', $procRequest->branch_id)
                         ->where('purpose', 'LIKE', "%Procurement Request #{$procRequest->id}%")
@@ -514,6 +661,65 @@ public function requestedProducts(Request $request)
         }
 
         return response()->json(['ok' => true, 'message' => 'Procurement request marked as completed', 'request' => $procRequest->fresh()->load('product')]);
+    }
+
+    /**
+     * Finance confirms uploaded receipt and moves status to on_delivery.
+     */
+    public function confirmReceipt(Request $request, $id)
+    {
+        $user = $request->user();
+        if (!$user) return response()->json(['error' => 'Unauthenticated'], 401);
+
+        $role = strtoupper($user->role ?? '');
+        $dept = strtoupper($user->department ?? '');
+        if (!in_array($role, ['FINANCE_MANAGER', 'MANAGER_FINANCE']) && !($role === 'MANAGER' && $dept === 'FINANCE')) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $procRequest = ProcurementRequest::findOrFail($id);
+        Log::info('confirmReceipt called', ['proc_req_id' => $id, 'user_id' => $user->id]);
+        if (empty($procRequest->receipt_path)) {
+            return response()->json(['error' => 'No receipt uploaded for this request'], 400);
+        }
+
+        try {
+            DB::transaction(function () use ($procRequest, $user) {
+                // Force update via query builder to avoid any stale model state issues
+                DB::table('procurement_requests')
+                    ->where('id', $procRequest->id)
+                    ->update([
+                        'receipt_confirmed' => true,
+                        'receipt_confirmed_by' => $user->id,
+                        'receipt_confirmed_at' => now(),
+                        'status' => 'ongoing_delivery',
+                        'updated_at' => now(),
+                    ]);
+
+                // Refresh model instance
+                $procRequest->refresh();
+
+                // if there's a linked supplier order, mark it on_delivery (guard if table exists)
+                if (Schema::hasTable('supplier_orders')) {
+                    try {
+                        $supplierOrder = SupplierOrder::where('procurement_request_id', $procRequest->id)->first();
+                        if ($supplierOrder) {
+                            $supplierOrder->update(['status' => 'on_delivery']);
+                        }
+                    } catch (\Exception $e) {
+                        Log::warning('Failed to update SupplierOrder status after receipt confirm', ['error' => $e->getMessage(), 'proc_req_id' => $procRequest->id]);
+                    }
+                } else {
+                    Log::warning('supplier_orders table missing; skipping supplier order update', ['proc_req_id' => $procRequest->id]);
+                }
+            });
+            Log::info('Receipt confirmed successfully', ['proc_req_id' => $procRequest->id, 'confirmed_by' => $user->id]);
+        } catch (\Exception $e) {
+            Log::error('Failed to confirm receipt', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString(), 'proc_req_id' => $procRequest->id]);
+            return response()->json(['error' => 'Failed to confirm receipt', 'message' => $e->getMessage()], 500);
+        }
+
+        return response()->json(['ok' => true, 'message' => 'Receipt confirmed. Status set to ongoing_delivery.', 'request' => $procRequest->fresh()]);
     }
 }
 

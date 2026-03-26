@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Branch;
 use App\Models\User;
 use App\Models\CustomerAccount;
 use Illuminate\Http\Request;
@@ -175,6 +176,17 @@ $validRoles = ['SUPER_ADMIN', 'ADMIN', 'OWNER', 'MANAGER', 'MANAGER_HR', 'HR', '
     {
         $role = strtoupper(trim($user->role ?? ''));
         $department = strtoupper(trim($user->department ?? ''));
+        $isMainBranchUser = false;
+
+        try {
+            if (!empty($user->branch_id)) {
+                $isMainBranchUser = Branch::where('id', $user->branch_id)
+                    ->where('is_main_branch', 1)
+                    ->exists();
+            }
+        } catch (\Throwable $e) {
+            $isMainBranchUser = false;
+        }
 
         // Handle MANAGER_HR - treat as MANAGER with HR department
         if ($role === 'MANAGER_HR') {
@@ -194,6 +206,9 @@ $validRoles = ['SUPER_ADMIN', 'ADMIN', 'OWNER', 'MANAGER', 'MANAGER_HR', 'HR', '
 
         // ADMIN
         if ($role === 'ADMIN') {
+            if ($isMainBranchUser) {
+                return '/main-branch/admin';
+            }
             return '/admin-panel';
         }
 
@@ -208,15 +223,24 @@ $validRoles = ['SUPER_ADMIN', 'ADMIN', 'OWNER', 'MANAGER', 'MANAGER_HR', 'HR', '
                 return '/manager/inventory';
             }
             if ($department === 'FINANCE') {
+                if ($isMainBranchUser) {
+                    return '/main-branch/finance';
+                }
                 return '/manager/finance';
             }
             if ($department === 'PROCUREMENT') {
                 return '/manager/procurement';
             }
             if ($department === 'LOGISTICS') {
+                if ($isMainBranchUser) {
+                    return '/main-branch/logistics';
+                }
                 return '/manager/logistics';
             }
             if ($department === 'HR') {
+                if ($isMainBranchUser) {
+                    return '/main-branch/hr';
+                }
                 return '/manager/hr';
             }
             // Default manager panel

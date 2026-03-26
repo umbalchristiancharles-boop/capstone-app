@@ -16,12 +16,15 @@ class Branch extends Model
         'name',
         'address',
         'is_active',
+        'is_main_branch',
         'budget',
     ];
 
     protected function casts(): array
     {
         return [
+            'is_active' => 'boolean',
+            'is_main_branch' => 'boolean',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];

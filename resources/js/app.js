@@ -163,7 +163,11 @@ const router = createRouter({
   { path: '/super-admin/procurement', component: () => import('./components/SuperAdminProcurement.vue'), meta: { requiresAuth: true } },
     { path: '/super-admin/finance', component: () => import('./components/SuperAdminFinance.vue'), meta: { requiresAuth: true } },
     { path: '/super-admin/cashier', component: () => import('./components/Cashier.vue'), meta: { requiresAuth: true } },
-    { path: '/owner/add-branches', component: () => import('./components/OwnerAddBranches.vue'), meta: { requiresAuth: true } },
+    { path: '/main-branch/admin', component: () => import('./components/MainBranchAdminPanel.vue'), meta: { requiresAuth: true } },
+    { path: '/main-branch/hr', component: () => import('./components/MainBranchHrPanel.vue'), meta: { requiresAuth: true } },
+    { path: '/main-branch/finance', component: () => import('./components/MainBranchFinancePanel.vue'), meta: { requiresAuth: true } },
+    { path: '/main-branch/logistics', component: () => import('./components/MainBranchLogisticsPanel.vue'), meta: { requiresAuth: true } },
+    { path: '/main-branch/branches', component: () => import('./components/OwnerAddBranches.vue'), meta: { requiresAuth: true } },
     { path: '/manager-panel', component: AdminPanel, meta: { requiresAuth: true } },
     { path: '/manager/inventory', component: ManagerInventoryPanel, meta: { requiresAuth: true } },
     { path: '/manager/finance', component: ManagerFinancePanel, meta: { requiresAuth: true } },
@@ -442,6 +446,28 @@ router.beforeEach(async (to, from, next) => {
     // Admin panel - authenticated but not admin → redirect to unauthorized
     if (to.path === '/admin-panel') {
       if (user.role !== 'admin') {
+        return next('/unauthorized');
+      }
+    }
+
+    // Main Branch role pages
+    if (to.path.startsWith('/main-branch/admin')) {
+      if (user.role !== 'admin') {
+        return next('/unauthorized');
+      }
+    }
+    if (to.path.startsWith('/main-branch/hr')) {
+      if (user.role !== 'manager' || user.department !== 'hr') {
+        return next('/unauthorized');
+      }
+    }
+    if (to.path.startsWith('/main-branch/finance')) {
+      if (user.role !== 'manager' || user.department !== 'finance') {
+        return next('/unauthorized');
+      }
+    }
+    if (to.path.startsWith('/main-branch/logistics')) {
+      if (user.role !== 'manager' || user.department !== 'logistics') {
         return next('/unauthorized');
       }
     }
