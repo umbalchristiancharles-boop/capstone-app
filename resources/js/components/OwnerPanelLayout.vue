@@ -1,9 +1,9 @@
 <template>
   <div class="min-h-screen bg-gradient-to-b from-[#FF9A4A] to-[#FF6A3D]">
     <div class="admin-page" :class="{ 'admin-page--wider': fullWidth }">
-      <section class="admin-layout" :class="{ 'admin-layout--wider': fullWidth }">
-        <!-- LEFT: PROFILE COLUMN -->
-        <aside class="admin-profile-column">
+      <section class="admin-layout" :class="{ 'admin-layout--wider': fullWidth, 'no-profile-column': !showProfileColumn }">
+        <!-- LEFT: PROFILE COLUMN (can be hidden via prop) -->
+        <aside v-if="showProfileColumn" class="admin-profile-column">
           <div v-if="userProfile" class="admin-card admin-card--stacked">
             <div class="admin-card__header admin-card__header--stacked">
               <label class="admin-avatar admin-avatar--photo avatar-upload" for="avatar-input">
@@ -30,7 +30,7 @@
             <div class="admin-card__body admin-card__body--stacked">
               <div class="admin-id-block admin-id-block--center">
                 <span class="admin-id-label">Account I.D: </span>
-                <span class="admin-id-value">&nbsp;{{ userProfile.accountId || userProfile.account_id || 'id0001' }}</span>
+                <span class="admin-id-value">&nbsp;{{ formatAccountId(userProfile.accountId || userProfile.account_id || userProfile.id || '') }}</span>
               </div>
               <!-- View Info Button -->
               <button v-if="enableProfileUpdate" class="admin-info-btn admin-info-btn--center" @click="openInfoModal">Info</button>
@@ -51,7 +51,9 @@
                 <h1>{{ panelTitle }}</h1>
                 <p>{{ panelDescription }}</p>
               </div>
-              <slot name="headerActions"></slot>
+              <div class="header-actions-top">
+                <slot name="headerActions"></slot>
+              </div>
             </div>
           </header>
           <slot name="main"></slot>
@@ -59,7 +61,10 @@
         <!-- RIGHT: SIDE PANELS -->
         <aside class="admin-side">
           <section class="panel-block announcements-panel">
-            <div class="panel-header"><h2>Announcements</h2></div>
+            <div class="panel-header announcements-header">
+              <h2>Announcements</h2>
+              <!-- announcements header - avatar removed (profile button available in page header) -->
+            </div>
             <div class="panel-body">
               <div v-if="loadingAnnouncements">Loading...</div>
               <div v-else-if="announcements.length === 0">No announcements</div>
@@ -79,6 +84,17 @@
     </div>
       <Toast />
 
+      <!-- Global avatar input (always available even when profile column hidden) -->
+      <input
+        ref="globalAvatarInput"
+        id="global-avatar-input"
+        type="file"
+        accept="image/*"
+        @change="onAvatarChange"
+        style="display:none"
+        v-if="enableProfileUpdate"
+      />
+
     <!-- PROFILE INFO MODAL -->
     <transition name="fade">
       <div v-if="showInfoModal" class="info-backdrop">
@@ -87,9 +103,25 @@
           <p class="info-sub">Your account information.</p>
 
           <div class="info-grid">
+            <!-- Avatar preview + change control (appears when editing and profile updates enabled) -->
+            <div v-if="enableProfileUpdate && isEditingInfo" class="info-avatar-row">
+              <div class="info-avatar">
+                <img v-if="localProfile.avatarUrl" :src="localProfile.avatarUrl" alt="avatar" />
+                <div v-else class="info-avatar-initials">{{ (localProfile.fullName || localProfile.full_name || 'U').charAt(0) }}</div>
+              </div>
+              <div class="info-avatar-actions">
+                <button class="btn-outline" type="button" @click.prevent="$refs.avatarInputModal.click()">Change Photo</button>
+                <input ref="avatarInputModal" id="avatar-input-modal" type="file" accept="image/*" @change="onAvatarChange" style="display:none" />
+              </div>
+            </div>
             <div class="info-row">
               <span class="info-label">Full name</span>
               <span class="info-value">{{ localProfile.fullName || localProfile.full_name || '-' }}</span>
+            </div>
+
+            <div class="info-row">
+              <span class="info-label">Account I.D</span>
+              <span class="info-value">{{ formatAccountId(localProfile.accountId) }}</span>
             </div>
 
             <div class="info-row">
@@ -193,7 +225,7 @@
 </template>
 
 <script setup>
-import { ref, watch, computed, onMounted } from 'vue'
+import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
 import Toast from './Toast.vue'
 
@@ -208,6 +240,8 @@ const props = defineProps({
   profileEndpoint: { type: String, default: '' },
   updateEndpoint: { type: String, default: '' },
   avatarEndpoint: { type: String, default: '' }
+  ,
+  showProfileColumn: { type: Boolean, default: true }
 })
 
 const emit = defineEmits(['logout', 'profile-updated'])
@@ -248,12 +282,23 @@ const canChangePassword = computed(() => {
 
 watch(() => props.userProfile, (newVal) => {
   if (newVal) {
-    localProfile.value = { ...newVal }
+    // Ensure accountId is available under a consistent key for the Info modal
+    const normalized = { ...newVal }
+    normalized.accountId = normalized.accountId || normalized.account_id || normalized.id || normalized.user_id || normalized.staff_id || ''
+    localProfile.value = normalized
   }
 }, { immediate: true })
 
 onMounted(() => {
   fetchAnnouncements()
+  // listen for global triggers from parent panels when they cannot call child methods directly
+  window.addEventListener('open-owner-edit-profile', openEditProfile)
+  window.addEventListener('open-owner-info', openInfoModal)
+})
+
+onUnmounted(() => {
+  try { window.removeEventListener('open-owner-edit-profile', openEditProfile) } catch (e) {}
+  try { window.removeEventListener('open-owner-info', openInfoModal) } catch (e) {}
 })
 
 // Register Toast component for global toasts
@@ -304,7 +349,36 @@ function openInfoModal() {
   profile.password = ''
   profile.password_confirmation = ''
 
+  profile.accountId = profile.accountId || profile.account_id || profile.id || profile.user_id || profile.staff_id || ''
   localProfile.value = profile
+}
+
+function openEditProfile() {
+  showInfoModal.value = true
+  isEditingInfo.value = true
+  profileError.value = ''
+  profileSuccess.value = ''
+
+  // Normalize fields for form binding (same as openInfoModal but in edit mode)
+  const profile = { ...props.userProfile }
+  profile.fullName = profile.fullName || profile.full_name || ''
+  profile.contact = profile.contact || profile.phone_number || ''
+  profile.password = ''
+  profile.password_confirmation = ''
+  profile.accountId = profile.accountId || profile.account_id || profile.id || profile.user_id || profile.staff_id || ''
+  localProfile.value = profile
+}
+
+function formatAccountId(val) {
+  if (val === null || val === undefined || val === '') return '-'
+  const s = String(val)
+  // already looks like an id with letters
+  if (/^id[\-0-9]/i.test(s) || /[a-zA-Z]/.test(s)) return s
+  // numeric -> pad to 4 digits and prefix with 'id'
+  const digits = s.replace(/[^0-9]/g, '')
+  if (!digits) return s
+  const padded = digits.padStart(4, '0')
+  return 'id' + padded
 }
 
 function handleInfoClose() {
@@ -414,6 +488,18 @@ async function saveProfile() {
   }
 }
 
+// modal controls are exposed further below together with avatar picker
+
+// Expose global avatar picker so parent components can open file dialog
+const globalAvatarInput = ref(null)
+function openAvatarPicker() {
+  try {
+    if (globalAvatarInput && globalAvatarInput.value) globalAvatarInput.value.click()
+  } catch (e) {}
+}
+
+defineExpose({ openInfoModal, openEditProfile, openAvatarPicker })
+
 async function onAvatarChange(event) {
   const file = event.target.files[0]
   if (!file) return
@@ -495,6 +581,27 @@ async function onAvatarChange(event) {
 .announcements-panel .announcement-title { font-weight: 600; color: #333; margin-bottom: 0.25rem; }
 .announcements-panel .announcement-meta { font-size: 0.8rem; color: #777; margin-bottom: 0.5rem; }
 .announcements-panel .announcement-message { font-size: 0.95rem; color: #444; }
+
+/* Avatar controls inside Info modal */
+.info-avatar-row { display:flex; gap:12px; align-items:center; padding-bottom:8px }
+.info-avatar { width:72px; height:72px; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; overflow:hidden; border:1px solid #eee }
+.info-avatar img { width:100%; height:100%; object-fit:cover }
+.info-avatar-initials { font-weight:700; color:#374151 }
+.info-avatar-actions { display:flex; flex-direction:column; gap:8px }
+.info-avatar-actions .btn-outline { padding:6px 10px }
+
+/* Position the header/profile control inside the announcements card (top-right) */
+.announcements-panel .announcements-header { position: relative }
+/* cleaned: announcements header no longer contains proxy avatar button */
+.announcements-panel .announcements-header h2 { margin-right: 0 }
+
+/* When profile column hidden, float the header action to the top-right of the layout */
+:deep(.admin-layout.no-profile-column) { position: relative }
+:deep(.admin-layout.no-profile-column) .header-actions-top { position: absolute; right: 24px; top: 12px; z-index: 120 }
+:deep(.header-actions-top .header-profile-btn) { display: inline-flex; align-items: center }
+
+/* Small avatar-only button inside announcements (proxies to header slot) */
+/* announcements avatar styles removed */
 
 @media (min-width: 640px) {
   .admin-layout--wider {
