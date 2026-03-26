@@ -1,8 +1,9 @@
 <template>
-  <OwnerPanelLayout
+  <OwnerPanelLayout ref="ownerLayout"
     :userProfile="userProfile"
     :panelTitle="'Supplier Panel'"
     :panelDescription="'Manage suppliers, view deliveries, and monitor supplier performance.'"
+    :showProfileColumn="false"
     :enableProfileUpdate="true"
     :canEditProfile="userProfile.role === 'OWNER'"
     :canChangePassword="true"
@@ -10,10 +11,30 @@
     @profile-updated="onProfileUpdated"
   >
     <template #main>
-      <div class="overview-grid">
-        <div class="overview-card"><span class="overview-label">Active Deliveries:</span><span class="overview-value">{{ dashboardTotals.activeDeliveries }}</span></div>
-        <div class="overview-card"><span class="overview-label">Pending Orders:</span><span class="overview-value">{{ dashboardTotals.pendingOrders }}</span></div>
-      </div>
+      <div class="panel-content">
+        <div class="hr-stats-grid">
+          <div class="hr-stat-card hr-stat-card--total">
+            <div class="hr-stat-icon">📦</div>
+            <div class="hr-stat-content">
+              <span class="hr-stat-label">Active Deliveries</span>
+              <span class="hr-stat-value">{{ dashboardTotals.activeDeliveries }}</span>
+            </div>
+          </div>
+          <div class="hr-stat-card hr-stat-card--active">
+            <div class="hr-stat-icon">🕒</div>
+            <div class="hr-stat-content">
+              <span class="hr-stat-label">Pending Orders</span>
+              <span class="hr-stat-value">{{ dashboardTotals.pendingOrders }}</span>
+            </div>
+          </div>
+          <div class="hr-stat-card hr-stat-card--leave">
+            <div class="hr-stat-icon">🏷️</div>
+            <div class="hr-stat-content">
+              <span class="hr-stat-label">Total Suppliers</span>
+              <span class="hr-stat-value">{{ dashboardTotals.totalSuppliers }}</span>
+            </div>
+          </div>
+        </div>
 
       <!-- Orders Section (merged) -->
       <div class="panel-section">
@@ -22,8 +43,9 @@
           <div class="loading-spinner"></div>
           <p>Loading orders...</p>
         </div>
-        <div v-else class="table-container">
-          <table class="data-table">
+        <div v-else class="requests-container">
+          <div class="requests-scroll table-container">
+            <table class="data-table">
             <thead>
               <tr>
                 <th>Product</th>
@@ -45,7 +67,7 @@
                     {{ order.status }}
                   </span>
                 </td>
-                <td>
+                <td class="action-cell">
                   <template v-if="order.status === 'pending'">
                     <div v-if="canSubmitProduct(order)">
                       <button class="btn-primary btn-small" @click="openSupplierSubmitModal(order)">Product available</button>
@@ -58,19 +80,28 @@
                         <button class="btn-disabled btn-small" disabled>Product submitted</button>
                         <div class="muted small-text" v-if="order.product.created_at" style="margin-top:4px">Submitted: {{ formatDate(order.product.created_at) }}</div>
                       </div>
-                      <button v-else class="btn-disabled btn-small" disabled>Waiting for procurement order</button>
+                      <div v-else>
+                        <button class="btn-disabled btn-small" disabled>Waiting for procurement order</button>
+                      </div>
                     </div>
                   </template>
-                  <button v-else-if="order.status === 'fulfilled'" class="btn-disabled btn-small" disabled>Completed</button>
-                  <button v-else-if="order.status === 'on_delivery'" class="btn-disabled btn-small" disabled>On delivery</button>
-                  <button v-else-if="order.status === 'cancelled'" class="btn-muted btn-small" disabled>Cancelled</button>
+                  <template v-else-if="order.status === 'fulfilled'">
+                    <button class="btn-disabled btn-small" disabled>Completed</button>
+                  </template>
+                  <template v-else-if="order.status === 'on_delivery'">
+                    <button class="btn-disabled btn-small" disabled>On delivery</button>
+                  </template>
+                  <template v-else-if="order.status === 'cancelled'">
+                    <button class="btn-muted btn-small" disabled>Cancelled</button>
+                  </template>
                 </td>
               </tr>
               <tr v-if="orders.length === 0">
                 <td colspan="6" class="empty-message">No orders yet.</td>
               </tr>
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -88,8 +119,29 @@
                 </div>
               </div>
             </div>
-          </section>
-    </template>
+              </section>
+            </div>
+            </template>
+
+            <template #headerActions>
+              <div class="header-actions-top">
+                <div class="header-profile-wrapper" @click.stop>
+                  <button class="header-profile-btn" @click="toggleProfileDropdown">
+                    <div class="header-avatar">
+                      <div v-if="userProfile.avatarUrl" class="header-avatar-img" :style="{ backgroundImage: 'url('+userProfile.avatarUrl+')' }"></div>
+                      <div v-else class="header-avatar-initials">{{ (userProfile.fullName || userProfile.full_name || 'S').charAt(0) }}</div>
+                    </div>
+                    <div class="header-name">{{ ((userProfile.fullName || userProfile.full_name) ? (userProfile.fullName || userProfile.full_name).toUpperCase() : 'SUPPLIER') }} - {{ (userProfile.branch_name || userProfile.branch || userProfile.branch_id || 'Branch') }}</div>
+                  </button>
+                  <div v-if="profileDropdownVisible" class="header-profile-dropdown" @click.stop>
+                    <button class="dropdown-item" @click="openInfoFromHeader">Info</button>
+                    <button class="dropdown-item" @click="triggerLogoutFromHeader">Logout</button>
+                  </div>
+                </div>
+              </div>
+            </template>
+
+
   </OwnerPanelLayout>
 
   <!-- LOGOUT CONFIRM -->
@@ -200,6 +252,34 @@ const submitSubmitting = ref(false)
 const submitError = ref('')
 const currentSubmitOrderId = ref(null)
 const lastOrderCheck = ref(new Date().toISOString())
+
+// Header/profile dropdown state and owner layout ref
+const profileDropdownVisible = ref(false)
+const ownerLayout = ref(null)
+
+function toggleProfileDropdown() { profileDropdownVisible.value = !profileDropdownVisible.value }
+function closeProfileDropdown() { profileDropdownVisible.value = false }
+
+function openInfoFromHeader() {
+  closeProfileDropdown()
+  try {
+    if (ownerLayout.value && typeof ownerLayout.value.openInfoModal === 'function') {
+      ownerLayout.value.openInfoModal()
+      return
+    }
+  } catch (e) {}
+  try { window.dispatchEvent(new Event('open-owner-info')); return } catch (e) {}
+  const infoBtn = document.querySelector('.admin-info-btn')
+  if (infoBtn) infoBtn.click()
+}
+
+function triggerLogoutFromHeader() {
+  closeProfileDropdown()
+  showLogoutConfirm.value = true
+}
+
+// Close dropdown when clicking outside
+window.addEventListener('click', (e) => { try { if (profileDropdownVisible.value) closeProfileDropdown() } catch (e) {} })
 
 onMounted(async () => {
   try {
@@ -601,5 +681,48 @@ function onProfileUpdated(newData) {
 .receipt-actions { display:flex; justify-content:flex-end; gap:0.5rem; margin-top:0.75rem }
 .receipt-actions .btn-secondary { background:#f3f4f6; border:1px solid #e5e7eb; padding:6px 10px; border-radius:6px }
 .receipt-actions .btn-primary { background:#0b6e3a; color:#fff; padding:6px 10px; border-radius:6px; border:none }
+
+/* Layout refinements for SupplierPanel */
+.panel-content { display:flex; flex-direction:column; gap:0.9rem }
+.panel-section { margin-bottom:0.75rem }
+.table-container { overflow-x:auto; background:transparent; border-radius:8px }
+.data-table { width:100%; border-collapse:separate; border-spacing:0; min-width:720px }
+.data-table th, .data-table td { padding:10px 12px; border-bottom:1px solid #eef2f6; vertical-align:middle }
+.data-table thead th { background:transparent; color:#374151; font-weight:700; text-align:left }
+.action-cell { min-width:200px; white-space:nowrap; text-align:right }
+.status-badge { display:inline-block; padding:4px 8px; border-radius:8px; font-size:0.9rem }
+.btn-small { padding:6px 8px; font-size:0.85rem }
+
+.product-grid { gap:0.75rem }
+.product-card { display:flex; flex-direction:column; justify-content:space-between }
+
+@media (max-width: 900px) {
+  .overview-grid { flex-direction:column }
+  .data-table { min-width:600px }
+  .product-grid { grid-template-columns: repeat(auto-fill,minmax(160px,1fr)) }
+}
+
+@media (max-width: 480px) {
+  .data-table { min-width:480px }
+  .action-cell { min-width:160px }
+}
+
+/* Scroll container similar to ProcurementManagerPanel */
+.requests-container { background:transparent; border-radius:8px }
+.requests-scroll { max-height:360px; overflow:auto; padding-right:6px }
+.requests-scroll .data-table { min-width:640px }
+
+/* When profile column is hidden, lay out main + side like other manager panels */
+:deep(.admin-layout.no-profile-column) {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 1rem;
+}
+
+:deep(.admin-layout.no-profile-column) .admin-main { width: 100%; }
+:deep(.admin-layout.no-profile-column) .admin-side { width: 360px; }
+
+/* Ensure announcements panel fits inside the side column and doesn't overlap */
+.announcements-panel { max-width: 100%; box-sizing: border-box }
 
 </style>
