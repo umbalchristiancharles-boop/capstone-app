@@ -8,7 +8,7 @@
     avatarEndpoint="/api/staff/inventory/avatar"
     profileEndpoint="/api/staff/inventory/profile"
     updateEndpoint="/api/staff/inventory/profile"
-    @logout="showLogoutConfirm = true"
+    @logout="askLogout"
     @profile-updated="onProfileUpdated"
   >
     <template #profileFooter>
@@ -82,6 +82,13 @@ async function confirmLogout() {
     try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
     try { window.location.replace('/staff-landing') ; window.location.reload(); } catch (e) { router.push('/staff-landing').catch(() => {}) }
   }, 600)
+}
+
+async function askLogout() {
+  try {
+    const ok = await (window.swalConfirm ? window.swalConfirm('This will end your current session for Chikin Tayo.', 'Confirm logout') : Promise.resolve(false))
+    if (ok) await confirmLogout()
+  } catch (e) { console.error('askLogout failed', e) }
 }
 
 function onProfileUpdated(newData) {

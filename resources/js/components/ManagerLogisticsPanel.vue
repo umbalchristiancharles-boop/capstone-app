@@ -8,7 +8,7 @@
     :canEditProfile="userProfile.role === 'OWNER'"
     :canChangePassword="true"
     :showProfileColumn="false"
-    @logout="showLogoutConfirm = true"
+    @logout="askLogout"
     @profile-updated="onProfileUpdated"
   >
     <template #main>
@@ -437,7 +437,7 @@ async function requestProcurement(product) {
     return
   }
 
-  if (!confirm(`Create procurement request for ${product.name}?`)) return
+  if (!(await window.swalConfirm(`Create procurement request for ${product.name}?`))) return
 
   requesting.value = { ...requesting.value, [product.id]: true }
 
@@ -551,9 +551,12 @@ function openEditProfileFromHeader() {
   if (fileInput) fileInput.click()
 }
 
-function triggerLogoutFromHeader() {
+async function triggerLogoutFromHeader() {
   closeProfileDropdown()
-  showLogoutConfirm.value = true
+  try {
+    const ok = await (window.swalConfirm ? window.swalConfirm('This will end your current session for Chikin Tayo.', 'Confirm logout') : Promise.resolve(false))
+    if (ok) await confirmLogout()
+  } catch (e) { console.error('triggerLogoutFromHeader failed', e) }
 }
 
 // Close dropdown when clicking outside
@@ -586,6 +589,13 @@ async function confirmLogout() {
     try { localStorage.clear(); sessionStorage.clear() } catch (e) {}
     try { window.location.replace('/staff-landing') } catch (e) { /* ignore */ }
   }, 600)
+}
+
+async function askLogout() {
+  try {
+    const ok = await (window.swalConfirm ? window.swalConfirm('This will end your current session for Chikin Tayo.', 'Confirm logout') : Promise.resolve(false))
+    if (ok) await confirmLogout()
+  } catch (e) { console.error('askLogout failed', e) }
 }
 </script>
 

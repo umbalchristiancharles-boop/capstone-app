@@ -115,7 +115,7 @@ export default {
     },
 
     async restoreAccount(id, username) {
-      if (! confirm(`Restore account "${username}"?`)) return
+      if (!(await window.swalConfirm(`Restore account "${username}"?`))) return
 
       this.restoringIds.push(id)
       try {
@@ -132,7 +132,7 @@ export default {
     },
 
     async permanentDelete(id, username) {
-      if (!confirm(`⚠️ PERMANENTLY DELETE "${username}"?  This cannot be undone! `)) return
+      if (!(await window.swalConfirm(`⚠️ PERMANENTLY DELETE "${username}"?  This cannot be undone! `))) return
 
       this.deletingIds.push(id)
       try {

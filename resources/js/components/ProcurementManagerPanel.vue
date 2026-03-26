@@ -7,7 +7,7 @@
     :canEditProfile="userProfile.role === 'OWNER'"
     :canChangePassword="true"
     :showProfileColumn="false"
-    @logout="showLogoutConfirm = true"
+    @logout="askLogout"
     @profile-updated="onProfileUpdated"
   >
     <template #main>
@@ -176,32 +176,39 @@
                   <template v-else-if="p.procurement_status === 'budget_pending' || p.status === 'budget_pending'">
                     <button class="btn-small btn-outline" disabled>Budget to be received</button>
                   </template>
-                  <template v-else-if="p.procurement_status === 'pending_order_to_supplier' || p.status === 'pending_order_to_supplier' || p.procurement_status === 'ongoing_delivery' || p.status === 'ongoing_delivery' || p.procurement_status === 'receipt_confirmed' || p.receipt_confirmed">
-                    <div v-if="p.existingOrder" class="inline-row gap-sm align-center">
+                  <template v-else-if="p.procurement_status === 'pending_order_to_supplier' || p.status === 'pending_order_to_supplier' || p.procurement_status === 'ongoing_delivery' || p.status === 'ongoing_delivery' || p.procurement_status === 'receipt_confirmed' || p.receipt_confirmed || isReceiptChecking(p)">
+                    <div v-if="isReceiptChecking(p)">
+                      <button class="btn-small btn-outline" disabled>Waiting receipt confirmation</button>
+                    </div>
+                    <div v-else-if="p.existingOrder" class="inline-row gap-sm align-center">
                       <div class="status-badge status-warning">
                         Transaction Pending (ID: {{ p.existingOrder.id }})
                       </div>
                       <div v-if="(p.existingOrder && (p.existingOrder.status === 'on_delivery' || p.existingOrder.status === 'ongoing_delivery' || p.existingOrder.status === 'fulfilled')) || p.procurement_status === 'delivery_pending' || p.procurement_status === 'ongoing_delivery'">
                           <template v-if="p.receipt_confirmed || p.procurement_status === 'ongoing_delivery' || p.procurement_status === 'receipt_confirmed' || (p.existingOrder && p.existingOrder.receipt_confirmed)">
-                            <button class="btn-small btn-primary" @click="markDeliveryComplete(p)" :disabled="isCompletingDelivery">{{ isCompletingDelivery ? 'Submitting...' : 'Complete Order' }}</button>
+                            <button class="btn-small btn-primary" @click="markDeliveryComplete(p)" :disabled="completingDeliveryIds[(p.procurement_request_id || p.id)]">
+                              {{ completingDeliveryIds[(p.procurement_request_id || p.id)] ? 'Submitting...' : 'Complete Order' }}
+                            </button>
                           </template>
                           <template v-else>
-                            <button class="btn-small btn-primary" @click="openReceiptModal(p)" :disabled="isCompletingDelivery">{{ isCompletingDelivery ? 'Submitting...' : 'Delivery complete' }}</button>
+                            <button class="btn-small btn-primary" @click="openReceiptModal(p)" :disabled="completingDeliveryIds[(p.procurement_request_id || p.id)]">
+                              {{ completingDeliveryIds[(p.procurement_request_id || p.id)] ? 'Submitting...' : 'Delivery complete' }}
+                            </button>
                           </template>
                         </div>
                     </div>
                       <div v-else-if="p.procurement_status === 'ongoing_delivery' || p.status === 'ongoing_delivery' || p.procurement_status === 'receipt_confirmed' || p.receipt_confirmed">
                       <button class="btn-small btn-primary"
                         @click="p.receipt_confirmed || p.procurement_status === 'receipt_confirmed' ? markDeliveryComplete(p) : openReceiptModal(p)"
-                        :disabled="isCompletingDelivery">
-                        {{ isCompletingDelivery ? 'Submitting...' : ((p.receipt_confirmed || p.procurement_status === 'receipt_confirmed') ? 'Complete Order' : 'Delivery complete') }}
+                        :disabled="completingDeliveryIds[(p.procurement_request_id || p.id)]">
+                        {{ completingDeliveryIds[(p.procurement_request_id || p.id)] ? 'Submitting...' : ((p.receipt_confirmed || p.procurement_status === 'receipt_confirmed') ? 'Complete Order' : 'Delivery complete') }}
                       </button>
                     </div>
                       <div v-else>
                       <button class="btn-small btn-primary"
                         @click="placeOrder(p)"
-                        :disabled="isPlacingOrder || p.waiting_for_supplier">
-                        {{ isPlacingOrder ? 'Placing...' : 'Place Order' }}
+                        :disabled="placingOrderIds[p.id] || orderPlacedIds[p.id] || p.waiting_for_supplier">
+                        {{ orderPlacedIds[p.id] ? 'Order placed' : (placingOrderIds[p.id] ? 'Placing...' : 'Place Order') }}
                       </button>
                       <div v-if="p.waiting_for_supplier" class="note-warning">Waiting for supplier confirmation</div>
                     </div>
@@ -444,8 +451,34 @@ const publishedProducts = computed(() => (products.value || []).filter(p => p.is
 // Requested products (logistics requests)
 const requestedProducts = ref([])
 const requestedProductsLoading = ref(false)
-const isPlacingOrder = ref(false)
-const isCompletingDelivery = ref(false)
+// track per-item placing/completing state to avoid global disable for all items
+const placingOrderIds = ref({})
+const orderPlacedIds = ref({})
+const completingDeliveryIds = ref({})
+const receiptPendingIds = ref({})
+
+function setPlacingFlag(id, val) {
+  placingOrderIds.value = { ...(placingOrderIds.value || {}), [id]: val }
+}
+
+function setOrderPlacedFlag(id, val) {
+  orderPlacedIds.value = { ...(orderPlacedIds.value || {}), [id]: val }
+}
+
+function setCompletingFlag(id, val) {
+  completingDeliveryIds.value = { ...(completingDeliveryIds.value || {}), [id]: val }
+}
+
+function setReceiptPendingFlag(id, val) {
+  receiptPendingIds.value = { ...(receiptPendingIds.value || {}), [id]: val }
+}
+
+function isReceiptChecking(item) {
+  const status = (item?.procurement_status || item?.status || '').toLowerCase()
+  const orderStatus = (item?.existingOrder?.status || '').toLowerCase()
+  if (receiptPendingIds.value?.[item?.id]) return true
+  return status === 'receipt_submitted' || status === 'pending_receipt_check' || status === 'pending_receipt' || orderStatus === 'receipt_submitted' || orderStatus === 'pending_receipt_check' || orderStatus === 'pending_receipt'
+}
 
 // Header profile dropdown (procurement-specific)
 const profileDropdownVisible = ref(false)
@@ -493,9 +526,13 @@ function openEditProfileFromHeader() {
   if (fileInput) fileInput.click()
 }
 
-function triggerLogoutFromHeader() {
+async function triggerLogoutFromHeader() {
   closeProfileDropdown()
-  showLogoutConfirm.value = true
+  // show SweetAlert confirmation then proceed
+  try {
+    const ok = await (window.swalConfirm ? window.swalConfirm('This will end your current session for Chikin Tayo Manager.', 'Confirm logout') : Promise.resolve(false))
+    if (ok) await confirmLogout()
+  } catch (e) { console.error('triggerLogoutFromHeader failed', e) }
 }
 
 // Close dropdown when clicking outside
@@ -560,6 +597,13 @@ async function confirmLogout() {
     sessionStorage.clear();
     window.location.replace('/staff-landing')
   }
+}
+
+async function askLogout() {
+  try {
+    const ok = await (window.swalConfirm ? window.swalConfirm('This will end your current session for Chikin Tayo Manager.', 'Confirm logout') : Promise.resolve(false))
+    if (ok) await confirmLogout()
+  } catch (e) { console.error('askLogout failed', e) }
 }
 
 function onProfileUpdated(updatedProfile) {
@@ -688,7 +732,7 @@ async function loadRequestedProducts() {
 }
 
 async function acknowledgeRequest(product) {
-  if (!confirm(`Acknowledge logistics request for ${product.name}? (Sends to finance for budget)`)) return
+  if (!(await window.swalConfirm(`Acknowledge logistics request for ${product.name}? (Sends to finance for budget)`))) return
   try {
     const requestId = product.procurement_request_id || product.id
     const res = await axios.post(`/api/procurement-requests/${requestId}/status`, { }, { withCredentials: true })
@@ -701,7 +745,7 @@ async function acknowledgeRequest(product) {
 }
 
 async function requestSupplier(product) {
-  if (!confirm(`Request suppliers to provide ${product.name}?`)) return
+  if (!(await window.swalConfirm(`Request suppliers to provide ${product.name}?`))) return
   try {
     const requestId = product.procurement_request_id || product.id
     const res = await axios.post(`/api/procurement-requests/${requestId}/broadcast`, {}, { withCredentials: true })
@@ -775,7 +819,8 @@ function closeSupplierModal() {
 async function confirmSupplierSelection() {
   if (!pendingOrderProduct.value) return
   if (!selectedSupplierId.value) { alert('Please select a supplier'); return }
-  isPlacingOrder.value = true
+  // mark this product id as placing
+  setPlacingFlag(pendingOrderProduct.value.id, true)
   try {
     const payload = { supplier_id: selectedSupplierId.value }
     if (pendingOrderQty.value) payload.quantity = pendingOrderQty.value
@@ -783,6 +828,7 @@ async function confirmSupplierSelection() {
     const supplierOrder = res.data.supplier_order
     const procReq = res.data.procurement_request
     alert(res.data.message || 'Order placed successfully')
+    setOrderPlacedFlag(pendingOrderProduct.value.id, true)
     // update local lists
     await loadProducts()
     await loadRequestedProducts()
@@ -791,7 +837,8 @@ async function confirmSupplierSelection() {
     console.error('confirmSupplierSelection failed', e)
     alert(e.response?.data?.error || e.response?.data?.message || 'Failed to place order')
   } finally {
-    isPlacingOrder.value = false
+    // clear placing flag
+    setPlacingFlag(pendingOrderProduct.value.id, false)
     closeSupplierModal()
   }
 }
@@ -872,13 +919,14 @@ function formatProcStatus(status, budgetApproved) {
 }
 
 async function placeOrder(product) {
-  if (!product || !product.id || isPlacingOrder.value) return
+  if (!product || !product.id || placingOrderIds.value[product.id]) return
 
-  isPlacingOrder.value = true
+  // set placing flag for this product
+  setPlacingFlag(product.id, true)
 
   try {
     // Prompt for quantity (optional)
-    const qtyInput = prompt('Enter quantity to order from supplier (leave blank to accept request quantity):', '')
+    const qtyInput = await window.swalPrompt('Enter quantity to order from supplier (leave blank to accept request quantity):', '', 'text')
     let qty = null
     if (qtyInput !== null && qtyInput !== '') {
       qty = parseInt(qtyInput, 10)
@@ -910,6 +958,8 @@ async function placeOrder(product) {
     } else {
       alert(res.data.message || 'Order placed successfully')
     }
+
+    setOrderPlacedFlag(product.id, true)
 
     // Optimistically update local product entries so the Place Order button hides
     try {
@@ -944,7 +994,8 @@ async function placeOrder(product) {
     console.error('Place order failed', e)
     alert(e.response?.data?.error || e.response?.data?.message || 'Failed to place order')
   } finally {
-    isPlacingOrder.value = false
+    // clear placing flag
+    setPlacingFlag(product.id, false)
   }
 }
 
@@ -990,10 +1041,13 @@ function onReceiptSelected(e) {
 }
 
 async function submitReceipt() {
+  if (receiptUploading.value) return
   if (!receiptPreviewProduct.value || !receiptPreviewProduct.value.procurement_request_id) return
   if (!receiptFile.value) { receiptError.value = 'Receipt image is required.'; return }
   receiptUploading.value = true
-  isCompletingDelivery.value = true
+  // mark this procurement id as completing
+  const rid = receiptPreviewProduct.value.procurement_request_id
+  setCompletingFlag(rid, true)
   receiptError.value = ''
   try {
     const id = receiptPreviewProduct.value.procurement_request_id
@@ -1003,31 +1057,72 @@ async function submitReceipt() {
     const res = await axios.post(`/api/procurement-requests/${id}/complete`, fd, { headers: { 'Content-Type': 'multipart/form-data' }, withCredentials: true })
     alert(res.data?.message || 'Receipt submitted. Awaiting finance confirmation.')
 
-    // Update local item to indicate receipt submitted and awaiting finance
+    // Update local item and list entries to indicate receipt submitted and awaiting finance
     try {
+      const statusVal = res.data?.procurement_status || 'receipt_submitted'
+      const orderStatusVal = res.data?.order_status || 'receipt_submitted'
       const prod = receiptPreviewProduct.value
-      prod.procurement_status = res.data?.procurement_status || 'receipt_submitted'
-      if (prod.existingOrder) prod.existingOrder.status = res.data?.order_status || prod.existingOrder.status
-    } catch (e) { /* ignore local update failures */ }
+      prod.procurement_status = statusVal
+      prod.status = statusVal
+      prod.receipt_confirmed = false
+      setReceiptPendingFlag(prod.id, true)
+      if (prod.existingOrder) {
+        prod.existingOrder.status = orderStatusVal
+        prod.existingOrder.receipt_confirmed = false
+      }
 
+      // sync in products list
+      const pIdx = products.value.findIndex(p => p.id === prod.id)
+      if (pIdx > -1) {
+        products.value[pIdx].procurement_status = statusVal
+        products.value[pIdx].status = statusVal
+        products.value[pIdx].receipt_confirmed = false
+        setReceiptPendingFlag(products.value[pIdx].id, true)
+        if (products.value[pIdx].existingOrder) {
+          products.value[pIdx].existingOrder.status = orderStatusVal
+          products.value[pIdx].existingOrder.receipt_confirmed = false
+        }
+      }
+
+      // sync in requestedProducts list
+      const rIdx = requestedProducts.value.findIndex(p => p.id === prod.id)
+      if (rIdx > -1) {
+        requestedProducts.value[rIdx].procurement_status = statusVal
+        requestedProducts.value[rIdx].status = statusVal
+        requestedProducts.value[rIdx].receipt_confirmed = false
+        setReceiptPendingFlag(requestedProducts.value[rIdx].id, true)
+        if (requestedProducts.value[rIdx].existingOrder) {
+          requestedProducts.value[rIdx].existingOrder.status = orderStatusVal
+          requestedProducts.value[rIdx].existingOrder.receipt_confirmed = false
+        }
+      }
+    } catch (e) { /* ignore local update failures */ }
     await loadRequestedProducts()
     await loadProducts()
     await refreshAllData()
-    closeReceiptModal()
   } catch (e) {
     console.error('Receipt upload failed', e)
     receiptError.value = e.response?.data?.message || 'Failed to upload receipt'
     alert(receiptError.value)
   } finally {
     receiptUploading.value = false
-    isCompletingDelivery.value = false
+    // ensure we clear the flag for the request id we captured earlier
+    try {
+      if (typeof rid !== 'undefined' && rid !== null) setCompletingFlag(rid, false)
+    } catch (err) {
+      // ignore
+    }
+    // Close modal after attempt so UI does not stay open
+    closeReceiptModal()
   }
 }
 
 async function markDeliveryComplete(product) {
   if (!product || !product.procurement_request_id) return
-  if (!confirm(`Mark delivery complete for ${product.name || 'this item'}? This will set the request as completed.`)) return
-  isCompletingDelivery.value = true
+  if (!(await window.swalConfirm(`Mark delivery complete for ${product.name || 'this item'}? This will set the request as completed.`))) return
+  const rid = product.procurement_request_id
+  if (completingDeliveryIds.value[rid]) return
+  setCompletingFlag(rid, true)
   try {
     const id = product.procurement_request_id
     const payload = {}
@@ -1040,7 +1135,7 @@ async function markDeliveryComplete(product) {
     console.error('Mark delivery complete failed', e)
     alert(e.response?.data?.error || e.response?.data?.message || 'Failed to mark delivery complete')
   } finally {
-    isCompletingDelivery.value = false
+    setCompletingFlag(rid, false)
   }
 }
 

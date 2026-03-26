@@ -350,9 +350,9 @@ async function loadTransactions() {
 }
 
 async function refundOrder(tx) {
-  if (!confirm(`Refund order ${tx.order_code}? You will be asked for a reason.`)) return
-  const reason = prompt('Enter refund reason (required):')
-  if (!reason || !reason.trim()) {
+  if (!(await window.swalConfirm(`Refund order ${tx.order_code}? You will be asked for a reason.`))) return
+  const reason = await window.swalPrompt('Enter refund reason (required):', '', 'text')
+  if (reason === null || !reason || !reason.trim()) {
     alert('Refund cancelled: reason is required.')
     return
   }
@@ -500,9 +500,9 @@ onMounted(async () => {
 })
 
 // Logout functions
-function confirmLogout() {
+async function confirmLogout() {
   if (isLoggingOut.value) return
-  if (!confirm('Are you sure you want to logout?')) return
+  if (!(await window.swalConfirm('Are you sure you want to logout?'))) return
   performLogout()
 }
 

@@ -308,7 +308,7 @@ async function confirmDeleteBranch(branch) {
     }
 
     const count = branch.staff_count || 0
-    const ok = confirm(`Delete branch "${branch.name}" and all ${count} account(s) in it? This will permanently delete those accounts and the branch from the database. This cannot be undone.`)
+    const ok = await window.swalConfirm(`Delete branch "${branch.name}" and all ${count} account(s) in it? This will permanently delete those accounts and the branch from the database. This cannot be undone.`)
     if (!ok) return
     await deleteBranch(branch.id)
   } catch (e) {

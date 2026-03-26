@@ -71,13 +71,13 @@ body {
 /* Route transitions */
 .route-fade-enter-active,
 .route-fade-leave-active {
-  transition: opacity 260ms ease, transform 260ms ease;
+  transition: opacity 460ms cubic-bezier(.2,.8,.2,1), transform 460ms cubic-bezier(.2,.8,.2,1);
 }
 
 .route-fade-enter-from,
 .route-fade-leave-to {
   opacity: 0;
-  transform: translateY(6px);
+  transform: translateY(10px);
 }
 
 /* Global page blur layer */

@@ -422,7 +422,7 @@ export default {
     },
     
     async confirmDelete(id, username) {
-      if (!confirm(`Are you sure you want to delete "${username}"?`)) {
+      if (!(await window.swalConfirm(`Are you sure you want to delete "${username}"?`))) {
         return
       }
 

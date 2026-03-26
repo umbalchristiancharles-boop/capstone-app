@@ -73,9 +73,6 @@
                 <td class="col-price">{{ formatCurrency(p.price) }}</td>
                 <td class="col-stock"><span :class="stockClass(p.stock)">{{ p.stock }}</span></td>
                 <td class="col-actions">
-                  <button class="btn btn-icon" @click="$emit('edit', p)" :aria-label="`Edit ${p.name}`">Edit</button>
-                  <button class="btn btn-icon" @click="$emit('count', p)" :aria-label="`Count ${p.name}`">Count</button>
-                  <button class="btn btn-icon" @click="$emit('adjust', p)" :aria-label="`Adjust ${p.name}`">Adjust</button>
                   <button class="btn btn-icon btn-danger" @click="$emit('delete', p)" :aria-label="`Delete ${p.name}`">Delete</button>
                 </td>
               </tr>
@@ -109,9 +106,6 @@
               <div class="card-sub">SKU: <span class="sku">{{ p.sku || '-' }}</span></div>
               <div class="card-meta">{{ formatCurrency(p.price) }} · <span :class="stockClass(p.stock)">{{ p.stock }}</span></div>
               <div class="card-actions">
-                <button class="btn btn-small" @click="$emit('edit', p)">Edit</button>
-                <button class="btn btn-small" @click="$emit('count', p)">Count</button>
-                <button class="btn btn-small" @click="$emit('adjust', p)">Adjust</button>
                 <button class="btn btn-small btn-danger" @click="$emit('delete', p)">Delete</button>
               </div>
             </div>

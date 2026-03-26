@@ -21,6 +21,7 @@
         @adjust="openAdjustModal"
         @count="openCountModal"
       >
+        
         <!-- Profile Slot -->
         <template #profile>
           <div class="profile-card">
@@ -143,6 +144,7 @@
               <div v-else class="empty-text">No announcements</div>
             </div>
           </div>
+          
         </template>
 
         <!-- Stats Slot (for non-STAFF roles) -->
@@ -163,6 +165,63 @@
           </template>
         </template>
       </ProductList>
+
+      <!-- Centered Pending + History Section (main content) -->
+      <div class="pending-center" style="max-width:1100px;margin:20px auto;">
+        <div class="pending-box">
+          <h3>Pending Stock Confirmations</h3>
+          <div v-if="pendingProcurements.length">
+            <table class="pending-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Product</th>
+                  <th>Quantity</th>
+                  <th>Uploaded</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="pp in pendingProcurements" :key="pp.id">
+                  <td>{{ pp.id }}</td>
+                  <td>{{ pp.product_name || 'Unknown' }}</td>
+                  <td>{{ pp.quantity }}</td>
+                  <td>{{ formatDate(pp.created_at) }}</td>
+                  <td><button class="btn-primary" @click.prevent="openProcurementConfirm(pp)">Confirm</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div v-else class="empty-text">No pending confirmations</div>
+        </div>
+
+        <div class="history-box">
+          <h3>Confirmed Stock History</h3>
+          <div v-if="confirmedProcurements.length">
+            <table class="history-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Product</th>
+                  <th>Quantity</th>
+                  <th>Confirmed By</th>
+                  <th>When</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="c in confirmedProcurements" :key="c.id">
+                  <td>{{ c.id }}</td>
+                  <td>{{ c.product_name || 'Unknown' }}</td>
+                  <td>{{ c.quantity }}</td>
+                  <td>{{ c.confirmed_by || '-' }}</td>
+                  <td>{{ formatDate(c.confirmed_at) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div v-else class="empty-text">No confirmed stock history</div>
+        </div>
+      </div>
 
       <!-- COUNT / ADJUST / ADD MODALS -->
       <transition name="fade">
@@ -432,6 +491,7 @@ const showAdjustModal = ref(false);
 const showAddModal = ref(false);
 const activeProduct = ref(null);
 const countValue = ref(0);
+const activeProcurementId = ref(null);
 const adjust = ref({ delta: 0, note: '' });
 const newProduct = ref({ name: '', price: 0, stock: 0, sku: '' });
 const previewSku = ref('');
@@ -548,7 +608,31 @@ onMounted(async () => {
   // initial stats update after mount
   setTimeout(() => updateStats(), 300)
   fetchAnnouncements()
+  loadPendingProcurements()
+  loadConfirmedProcurements()
 });
+
+async function loadPendingProcurements() {
+  try {
+    const res = await axios.get('/api/staff/inventory/pending-procurements', { withCredentials: true })
+    pendingProcurements.value = res.data || []
+  } catch (e) {
+    pendingProcurements.value = []
+  }
+}
+
+const confirmedProcurements = ref([])
+
+async function loadConfirmedProcurements() {
+  try {
+    const res = await axios.get('/api/staff/inventory/confirmed-procurements', { withCredentials: true })
+    confirmedProcurements.value = res.data || []
+  } catch (e) {
+    confirmedProcurements.value = []
+  }
+}
+
+const pendingProcurements = ref([])
 
 // Note: ProductList can fetch products itself via `fetchUrl`. Parent mutating actions will call `refreshList()` after success.
 
@@ -562,6 +646,7 @@ function openCountModal(prod) {
   countValue.value = prod.stock || 0;
   formError.value = '';
   formSuccess.value = '';
+  activeProcurementId.value = null;
   showCountModal.value = true;
 }
 
@@ -570,12 +655,23 @@ async function submitCount() {
   const okCsrf = await ensureCsrf()
   if (!okCsrf) { formError.value = 'Unable to refresh CSRF token. Please reload or login.'; return }
   try {
-    const payload = { stock: Number(countValue.value) };
-    const res = await axios.put(endpoints.value.update(activeProduct.value.id), payload, { withCredentials: true });
-    // refresh the list from server
-    refreshList()
-    formSuccess.value = 'Stock updated successfully.';
-    showCountModal.value = false;
+    if (activeProcurementId.value) {
+      // Confirm stock for a procurement request (staff flow)
+      const res = await axios.post(`/api/staff/inventory/procurements/${activeProcurementId.value}/confirm-stock`, { counted_stock: Number(countValue.value) }, { withCredentials: true })
+      await refreshList()
+      await loadPendingProcurements()
+      await loadConfirmedProcurements()
+      formSuccess.value = res.data?.message || 'Stock confirmed successfully.'
+      showCountModal.value = false
+      activeProcurementId.value = null
+    } else {
+      const payload = { stock: Number(countValue.value) };
+      const res = await axios.put(endpoints.value.update(activeProduct.value.id), payload, { withCredentials: true });
+      // refresh the list from server
+      refreshList()
+      formSuccess.value = 'Stock updated successfully.';
+      showCountModal.value = false;
+    }
   } catch (e) {
     formError.value = (e.response && e.response.data && e.response.data.message) || 'Failed to update stock.';
   }
@@ -622,6 +718,18 @@ function openAddProduct() {
   previewSku.value = makePreviewSku('')
 }
 
+function openProcurementConfirm(proc) {
+  // Try to find product entry in current list
+  const prod = (internalProducts.value || []).find(p => p.id === proc.product_id) || { id: proc.product_id, name: proc.product_name, stock: 0 };
+  activeProduct.value = prod;
+  // Suggest counted input as the delivered quantity (we will increment stock by this)
+  countValue.value = Number(proc.quantity || 0);
+  formError.value = '';
+  formSuccess.value = '';
+  activeProcurementId.value = proc.id;
+  showCountModal.value = true;
+}
+
 async function submitAddProduct() {
   const okCsrf = await ensureCsrf()
   if (!okCsrf) { formError.value = 'Unable to refresh CSRF token. Please reload or login.'; return }
@@ -648,7 +756,7 @@ async function submitAddProduct() {
 }
 
 async function deleteProduct(prod) {
-  if (!confirm('Delete product "' + prod.name + '"? This cannot be undone.')) return;
+  if (!(await window.swalConfirm('Delete product "' + prod.name + '"? This cannot be undone.'))) return;
   const okCsrf = await ensureCsrf()
   if (!okCsrf) { alert('Unable to refresh CSRF token. Please reload or login.'); return }
   try {
@@ -704,7 +812,7 @@ async function saveStaffInfo() {
 async function onAvatarChange(event) {
   const file = event.target.files[0]
   if (!file) return
-  if (!window.confirm('Are you sure you want to change your profile picture?')) return
+  if (!(await window.swalConfirm('Are you sure you want to change your profile picture?'))) return
 
   try {
     await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
@@ -755,17 +863,19 @@ async function onAvatarChange(event) {
 
 async function logout() {
   if (isLoggingOut.value) return;
-  isLoggingOut.value = true;
   try {
-    await axios.post('/api/logout', {}, { withCredentials: true });
-  } catch (e) {}
-  try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
-  // Optional: show overlay (if you have one)
-  showLogoutConfirm.value = false;
-    setTimeout(() => {
+    const ok = await (window.swalConfirm ? window.swalConfirm('This will end your current session for Chikin Tayo.', 'Confirm logout') : Promise.resolve(false))
+    if (!ok) return
+    isLoggingOut.value = true;
+    try { await axios.post('/api/logout', {}, { withCredentials: true }) } catch (e) {}
     try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
-    try { window.location.replace('/staff-landing') } catch (e) { router.push('/staff-landing').catch(() => {}) }
-  }, 600);
+    // Optional: show overlay (if you have one)
+    showLogoutConfirm.value = false;
+    setTimeout(() => {
+      try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
+      try { window.location.replace('/staff-landing') } catch (e) { router.push('/staff-landing').catch(() => {}) }
+    }, 600);
+  } catch (e) { console.error('logout failed', e) }
 }
 
 // Attendance functions
@@ -943,6 +1053,16 @@ ProductList[compact] { width:100% }
   flex-direction: column;
   gap: 10px;
 }
+
+/* Pending/History centered section */
+.pending-center { display:flex; gap:20px; justify-content:center; align-items:flex-start; margin:12px 0; }
+.pending-box, .history-box { background: rgba(255,255,255,0.9); padding:12px; border-radius:10px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); width:48%; }
+.pending-box h3, .history-box h3 { margin:0 0 8px; color:#7a2b00 }
+.pending-table, .history-table { width:100%; border-collapse:collapse }
+.pending-table th, .pending-table td, .history-table th, .history-table td { padding:8px; border-bottom:1px solid rgba(0,0,0,0.06); text-align:left }
+.pending-table thead th, .history-table thead th { font-weight:700; font-size:0.9rem }
+.pending-table tbody tr:last-child td, .history-table tbody tr:last-child td { border-bottom:none }
+.history-box { max-height:360px; overflow:auto }
 
 /* Inventory Summary Cards - below Attendance card */
 .inventory-summary {

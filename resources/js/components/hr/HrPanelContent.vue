@@ -418,7 +418,7 @@ async function toggleStatus(member) {
 }
 
 async function deleteStaff(member) {
-  if (!confirm(`Are you sure you want to delete ${member.full_name || member.username}?`)) {
+  if (!(await window.swalConfirm(`Are you sure you want to delete ${member.full_name || member.username}?`))) {
     return
   }
 

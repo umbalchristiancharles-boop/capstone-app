@@ -292,6 +292,11 @@ Route::prefix('manager')->middleware('auth')->group(function () {
             Route::put('/inventory/products/{id}', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'update']);
             Route::delete('/inventory/products/{id}', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'destroy']);
 
+            // Pending procurements awaiting stock confirmation (staff)
+            Route::get('/inventory/pending-procurements', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'pendingProcurements']);
+            Route::get('/inventory/confirmed-procurements', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'confirmedProcurements']);
+            Route::post('/inventory/procurements/{id}/confirm-stock', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'confirmProcurementStock']);
+
             // Backwards-compatible aliases (old frontend used these paths)
             Route::post('/inventory/store', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'store']);
             Route::put('/inventory/update/{id}', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'update']);

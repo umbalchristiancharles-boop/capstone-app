@@ -48,7 +48,7 @@
           <button class="link-btn" @click="router.push('/manager/finance')">Finance Dashboard</button>
           <button class="link-btn" @click="router.push('/super-admin/finance')">Super Admin Finance</button>
           <button class="link-btn" @click="router.push('/manager/procurement')">Procurement View</button>
-          <button class="logout-btn" @click="showLogoutConfirm = true">Logout</button>
+          <button class="logout-btn" @click.prevent="askLogout">Logout</button>
         </section>
       </aside>
     </section>
@@ -94,6 +94,13 @@ async function confirmLogout() {
   setTimeout(() => {
     window.location.replace('/staff-landing')
   }, 350)
+}
+
+async function askLogout() {
+  try {
+    const ok = await (window.swalConfirm ? window.swalConfirm('This will end your current session for Chikin Tayo.', 'Confirm logout') : Promise.resolve(false))
+    if (ok) await confirmLogout()
+  } catch (e) { console.error('askLogout failed', e) }
 }
 
 function currency(v) {

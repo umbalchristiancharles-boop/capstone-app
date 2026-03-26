@@ -6,7 +6,7 @@
     :enableProfileUpdate="true"
     :canEditProfile="userProfile.role === 'OWNER'"
     :canChangePassword="true"
-    @logout="showLogoutConfirm = true"
+    @logout="askLogout"
     @profile-updated="onProfileUpdated"
   >
     <template #main>
@@ -376,6 +376,13 @@ async function confirmLogout() {
   }, 600)
 }
 
+async function askLogout() {
+  try {
+    const ok = await (window.swalConfirm ? window.swalConfirm('This will end your current session for Chikin Tayo Manager.', 'Confirm logout') : Promise.resolve(false))
+    if (ok) await confirmLogout()
+  } catch (e) { console.error('askLogout failed', e) }
+}
+
 // Fetch budget requests
 async function fetchBudgetRequests() {
   budgetLoading.value = true
@@ -439,7 +446,7 @@ async function saveBudget(id) {
 async function approveRequest(id) {
   if (processingId.value) return
 
-  if (!confirm('Are you sure you want to approve this budget request?')) {
+  if (!(await window.swalConfirm('Are you sure you want to approve this budget request?'))) {
     return
   }
 
@@ -470,7 +477,7 @@ async function approveRequest(id) {
 async function rejectRequest(id) {
   if (processingId.value) return
 
-  if (!confirm('Are you sure you want to reject this budget request?')) {
+  if (!(await window.swalConfirm('Are you sure you want to reject this budget request?'))) {
     return
   }
 
@@ -586,7 +593,7 @@ function storageUrl(path) {
 }
 
 async function confirmReceipt(id) {
-  if (confirm('Confirm this receipt and move request to On Delivery?')) {
+  if (await window.swalConfirm('Confirm this receipt and move request to On Delivery?')) {
     confirmingId.value = id
     try {
       const res = await axios.post(`/api/procurement-requests/${id}/confirm-receipt`, {}, { withCredentials: true })
@@ -652,7 +659,7 @@ function onRangeChange() {
 // Mark budget as given by finance (handed to procurement)
 async function markBudgetGiven(id) {
   if (processingId.value) return
-  if (!confirm('Confirm you have handed the budget to procurement?')) return
+  if (!(await window.swalConfirm('Confirm you have handed the budget to procurement?'))) return
   processingId.value = id
   try {
     const response = await axios.put(`/api/manager/finance/budget/${id}/given`, {}, { withCredentials: true })

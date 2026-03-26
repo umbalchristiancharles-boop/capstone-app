@@ -758,7 +758,7 @@ export default {
 
     async resetPasswordToDefault() {
       if (!this.staff || !this.staff.id) return
-      if (!confirm('Reset this staff member\'s password to the system default?')) return
+      if (!(await window.swalConfirm('Reset this staff member\'s password to the system default?'))) return
       this.isResetting = true
       this.resetSuccessMsg = ''
       this.resetErrorMsg = ''

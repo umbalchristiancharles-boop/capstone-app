@@ -222,9 +222,9 @@ onMounted(async () => {
 // Logout state and handlers (consistent with other staff panels)
 const isLoggingOut = ref(false)
 
-function confirmLogout() {
+async function confirmLogout() {
   if (isLoggingOut.value) return
-  if (!confirm('Are you sure you want to logout?')) return
+  if (!(await window.swalConfirm('Are you sure you want to logout?'))) return
   performLogout()
 }
 

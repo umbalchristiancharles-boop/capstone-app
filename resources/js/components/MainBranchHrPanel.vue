@@ -48,7 +48,7 @@
           <button class="link-btn" @click="router.push('/manager/hr/staff-management')">HR Staff Management</button>
           <button class="link-btn" @click="router.push('/manager/hr')">HR Dashboard</button>
           <button class="link-btn" @click="router.push('/super-admin/hr')">Super Admin HR View</button>
-          <button class="logout-btn" @click="showLogoutConfirm = true">Logout</button>
+          <button class="logout-btn" @click="askLogout">Logout</button>
         </section>
       </aside>
     </section>
@@ -94,6 +94,13 @@ async function confirmLogout() {
   setTimeout(() => {
     window.location.replace('/staff-landing')
   }, 350)
+}
+
+async function askLogout() {
+  try {
+    const ok = await (window.swalConfirm ? window.swalConfirm('This will end your current session for Chikin Tayo.', 'Confirm logout') : Promise.resolve(false))
+    if (ok) await confirmLogout()
+  } catch (e) { console.error('askLogout failed', e) }
 }
 
 async function loadProfile() {

@@ -9,7 +9,7 @@
     :enableProfileUpdate="false"
     :canEditProfile="false"
     :canChangePassword="true"
-    @logout="showLogoutConfirm = true"
+    @logout="askLogout"
     @profile-updated="onProfileUpdated"
   >
     <template #main>
@@ -148,15 +148,15 @@
                         Order Pending (ID: {{ p.existingOrder.id }})
                       </div>
                       <div v-if="(p.existingOrder && (p.existingOrder.status === 'on_delivery' || p.existingOrder.status === 'ongoing_delivery' || p.existingOrder.status === 'fulfilled')) || p.procurement_status === 'delivery_pending' || p.procurement_status === 'ongoing_delivery'">
-                        <button class="btn-primary" @click="markDeliveryComplete(p)" :disabled="isCompletingDelivery" style="padding:6px 10px; border-radius:8px">{{ isCompletingDelivery ? 'Submitting...' : 'Delivery Complete' }}</button>
+                        <button class="btn-primary" @click="markDeliveryComplete(p)" :disabled="completingDeliveryIds[(p.procurement_request_id || p.id)]" style="padding:6px 10px; border-radius:8px">{{ completingDeliveryIds[(p.procurement_request_id || p.id)] ? 'Submitting...' : 'Delivery Complete' }}</button>
                       </div>
                     </div>
                     <div v-else>
                       <button class="btn-primary"
                         @click="placeOrder(p)"
-                        :disabled="isPlacingOrder"
+                        :disabled="placingOrderIds[p.id]"
                         style="padding:6px 10px; border-radius:8px">
-                        {{ isPlacingOrder ? 'Placing...' : 'Place Order to Supplier' }}
+                        {{ placingOrderIds[p.id] ? 'Placing...' : 'Place Order to Supplier' }}
                       </button>
                     </div>
                   </template>
@@ -233,8 +233,18 @@ const publishedProducts = computed(() => (products.value || []).filter(p => p.is
 // Procurement requests / logistics requests
 const requestedProducts = ref([])
 const requestedProductsLoading = ref(false)
-const isPlacingOrder = ref(false)
-const isCompletingDelivery = ref(false)
+
+// per-item in-flight flags to avoid duplicate clicks/spam
+const placingOrderIds = ref({})
+const completingDeliveryIds = ref({})
+
+function setPlacingFlag(id, v) {
+  placingOrderIds.value = { ...(placingOrderIds.value || {}), [id]: !!v }
+}
+
+function setCompletingFlag(id, v) {
+  completingDeliveryIds.value = { ...(completingDeliveryIds.value || {}), [id]: !!v }
+}
 
 // Default password utilities (kept but unused since no supplier modal)
 const fetchedDefaultPassword = ref('Chikintayo_123')
@@ -281,6 +291,13 @@ async function confirmLogout() {
   }
 }
 
+async function askLogout() {
+  try {
+    const ok = await (window.swalConfirm ? window.swalConfirm('This will end your current session for Chikin Tayo.', 'Confirm logout') : Promise.resolve(false))
+    if (ok) await confirmLogout()
+  } catch (e) { console.error('askLogout failed', e) }
+}
+
 async function onBranchChange() {
   await Promise.all([loadProducts(), loadRequestedProducts(), refreshAllData(), fetchBudgetRequests()])
 }
@@ -316,7 +333,7 @@ async function loadRequestedProducts() {
 }
 
 async function acknowledgeRequest(product) {
-  if (!confirm(`Acknowledge logistics request for ${product.name}? (Sends to finance for budget)`)) return
+  if (!(await window.swalConfirm(`Acknowledge logistics request for ${product.name}? (Sends to finance for budget)`))) return
   try {
     const requestId = product.procurement_request_id || product.id
     const payload = { branch_id: selectedBranch.value }
@@ -330,7 +347,7 @@ async function acknowledgeRequest(product) {
 }
 
 async function requestSupplier(product) {
-  if (!confirm(`Request suppliers to provide ${product.name} for branch ${branchName.value}?`)) return
+  if (!(await window.swalConfirm(`Request suppliers to provide ${product.name} for branch ${branchName.value}?`))) return
   try {
     const requestId = product.procurement_request_id || product.id
     const payload = { branch_id: selectedBranch.value }
@@ -408,12 +425,14 @@ function formatDate(dateStr) {
 }
 
 async function placeOrder(product) {
-  if (!product || !product.id || isPlacingOrder.value) return
+  if (!product || !product.id) return
+  const id = product.id
+  if (placingOrderIds.value[id]) return
 
-  isPlacingOrder.value = true
+  setPlacingFlag(id, true)
 
   try {
-    const qtyInput = prompt('Enter quantity to order from supplier (leave blank to accept request quantity):', '')
+    const qtyInput = await window.swalPrompt('Enter quantity to order from supplier (leave blank to accept request quantity):', '', 'text')
     let qty = null
     if (qtyInput !== null && qtyInput !== '') {
       qty = parseInt(qtyInput, 10)
@@ -439,14 +458,16 @@ async function placeOrder(product) {
     console.error('Place order failed', e)
     alert(e.response?.data?.error || e.response?.data?.message || 'Failed to place order')
   } finally {
-    isPlacingOrder.value = false
+    setPlacingFlag(id, false)
   }
 }
 
 async function markDeliveryComplete(product) {
   if (!product || !product.procurement_request_id) return
-  if (!confirm(`Mark delivery complete for ${product.name}? This will set the request as completed.`)) return
-  isCompletingDelivery.value = true
+  if (!(await window.swalConfirm(`Mark delivery complete for ${product.name}? This will set the request as completed.`))) return
+  const rid = product.procurement_request_id || product.id
+  if (completingDeliveryIds.value[rid]) return
+  setCompletingFlag(rid, true)
   try {
     const payload = { branch_id: selectedBranch.value }
     const res = await axios.post(`/api/procurement-requests/${product.procurement_request_id}/complete`, payload, { withCredentials: true })
@@ -458,7 +479,7 @@ async function markDeliveryComplete(product) {
     console.error('Mark delivery complete failed', e)
     alert(e.response?.data?.error || e.response?.data?.message || 'Failed to mark delivery complete')
   } finally {
-    isCompletingDelivery.value = false
+    setCompletingFlag(rid, false)
   }
 }
 

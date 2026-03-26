@@ -123,7 +123,7 @@
                   <!-- Logout Button -->
                   <button
                     class="logout-btn logout-btn--center"
-                    @click="showLogoutConfirm = true"
+                    @click.prevent="askLogout"
                   >
                     Logout
                   </button>
@@ -134,7 +134,7 @@
                 <div class="admin-actions-row">
                   <button
                     class="logout-btn logout-btn--center"
-                    @click="showLogoutConfirm = true"
+                    @click.prevent="askLogout"
                   >
                     Logout
                   </button>
@@ -1009,7 +1009,7 @@ async function onAvatarChange(event) {
   const file = event.target.files[0]
   if (!file) return
   // Confirm before changing profile picture
-  if (!window.confirm('Are you sure you want to change your profile picture?')) return
+  if (!(await window.swalConfirm('Are you sure you want to change your profile picture?'))) return
 
   try {
     // Get CSRF cookie first
@@ -1146,6 +1146,13 @@ async function confirmLogout() {
 function cancelLogout() {
   if (isLoggingOut.value) return
   showLogoutConfirm.value = false
+}
+
+async function askLogout() {
+  try {
+    const ok = await (window.swalConfirm ? window.swalConfirm('This will end your current session for Chikin Tayo Admin.', 'Confirm logout') : Promise.resolve(false))
+    if (ok) await confirmLogout()
+  } catch (e) { console.error('askLogout failed', e) }
 }
 
 // Announcement modal state (OWNER)

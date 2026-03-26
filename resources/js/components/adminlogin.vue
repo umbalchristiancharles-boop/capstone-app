@@ -17,7 +17,7 @@
                 First time login? Change your password!
             </div>
 
-            <form class="login-form" @submit.prevent="handleLogin">
+            <form class="login-form" @submit.prevent="handleLogin" data-no-overlay="1">
                 <div class="field-group">
                     <label for="username">Username</label>
                     <input

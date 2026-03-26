@@ -175,7 +175,7 @@
         <section class="panel-block">
           <h3>Quick Links</h3>
           <!-- Logistics Dashboard link removed for Main Branch panel -->
-          <button class="logout-btn" @click="showLogoutConfirm = true">Logout</button>
+          <button class="logout-btn" @click="askLogout">Logout</button>
         </section>
       </aside>
     </section>
@@ -239,6 +239,13 @@ async function confirmLogout() {
   setTimeout(() => {
     window.location.replace('/staff-landing')
   }, 350)
+}
+
+async function askLogout() {
+  try {
+    const ok = await (window.swalConfirm ? window.swalConfirm('This will end your current session for Chikin Tayo.', 'Confirm logout') : Promise.resolve(false))
+    if (ok) await confirmLogout()
+  } catch (e) { console.error('askLogout failed', e) }
 }
 
 async function loadProfile() {

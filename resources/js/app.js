@@ -19,6 +19,9 @@ import StaffCashierPanel from './components/StaffCashierPanel.vue'
 import SuperAdmin from './components/SuperAdmin.vue'
 import axios from 'axios'
 
+// SweetAlert2 wrapper (exposes `swalAlert`, `swalConfirm`, `swalPrompt`, and replaces `window.alert` visually)
+import './sweet-alerts'
+
 // GLOBAL CSS (body margin reset, etc.)
 import './css/index.css'
 
@@ -261,13 +264,75 @@ window.pageBlur = {
   hide: hidePageBlur,
 }
 
+// Intercept non-SPA navigations (regular <a> clicks and form submits)
+// to show the same route overlay used by the SPA so full-page redirects
+// feel smooth. Skips external links, _blank targets, download links,
+// and links with data-no-overlay attribute.
+function shouldInterceptLink(anchor) {
+  try {
+    if (!anchor || !anchor.href) return false
+    if (anchor.target && anchor.target !== '_self') return false
+    if (anchor.hasAttribute('download')) return false
+    if (anchor.dataset && anchor.dataset.noOverlay === '1') return false
+    const url = new URL(anchor.href, window.location.href)
+    if (url.origin !== window.location.origin) return false
+    // allow mailto/tel and hash-only anchors to proceed normally
+    if (url.protocol === 'mailto:' || url.protocol === 'tel:') return false
+    return true
+  } catch (e) { return false }
+}
+
+function attachGlobalNavInterceptors() {
+  if (window.__nav_interceptors_attached) return
+  window.__nav_interceptors_attached = true
+  // Link clicks
+  document.addEventListener('click', (ev) => {
+    const a = ev.target.closest && ev.target.closest('a')
+    if (!a) return
+    if (!shouldInterceptLink(a)) return
+    // If the router can handle this path, allow SPA navigation
+    const href = a.getAttribute('href') || a.href
+    // Skip fragment-only links
+    if (href.startsWith('#')) return
+
+    // show overlay and then navigate
+    ev.preventDefault()
+    try { showRouteOverlay('Loading...') } catch (e) {}
+    try { showPageBlur() } catch (e) {}
+    // small delay to let CSS show overlay, then navigate
+    setTimeout(() => { window.location.href = href }, 140)
+  }, { capture: true })
+
+  // Form submissions that will trigger full page reload
+  document.addEventListener('submit', (ev) => {
+    const form = ev.target
+    if (!form || !(form instanceof HTMLFormElement)) return
+    // If form has attribute data-no-overlay, skip
+    if (form.dataset && form.dataset.noOverlay === '1') return
+    try { showRouteOverlay('Submitting...') } catch (e) {}
+    try { showPageBlur() } catch (e) {}
+    // allow submission to proceed normally
+  }, { capture: true })
+}
+
+// Add page-exit class right before unload for a quick fade-out on full reloads
+window.addEventListener('beforeunload', () => {
+  try { document.documentElement.classList.add('page-exit') } catch (e) {}
+})
+
+// On DOM ready remove any exit class to allow a fade-in effect
+document.addEventListener('DOMContentLoaded', () => {
+  try { document.documentElement.classList.remove('page-exit') } catch (e) {}
+  try { attachGlobalNavInterceptors() } catch (e) {}
+})
+
 // --- Global route loading overlay ---
 const routeLogoUrl = new URL('./assets/chikinlogo.png', import.meta.url).href
 
 function showRouteOverlay(text = 'Loading...') {
   try {
     if (window.__chikin_temp_overlay || window.__route_loading_overlay) return
-    if (document.querySelector('.loading-overlay')) return
+    if (document.querySelector('.route-loading-overlay')) return
     const overlay = document.createElement('div')
     overlay.className = 'route-loading-overlay'
     overlay.innerHTML = `
@@ -292,7 +357,7 @@ function hideRouteOverlay() {
       if (window.__route_loading_overlay === overlay) {
         window.__route_loading_overlay = null
       }
-    }, 260)
+    }, 480)
   } catch (e) {}
 }
 
@@ -322,10 +387,10 @@ router.afterEach(() => {
   waitForRequests().then(() => {
     setTimeout(() => {
       hidePageBlur()
-    }, 200)
+    }, 420)
     setTimeout(() => {
       hideRouteOverlay()
-    }, 200)
+    }, 420)
   })
 
   // Refresh CSRF cookie after navigation to protected panels to avoid 419s

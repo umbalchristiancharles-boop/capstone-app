@@ -10,6 +10,10 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use App\Models\ProcurementRequest;
+use App\Models\SupplierOrder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class StaffInventoryController extends Controller
 {
@@ -329,5 +333,145 @@ class StaffInventoryController extends Controller
         } catch (\Exception $ex) {
             return response()->json(['ok' => false, 'message' => 'Failed to upload avatar'], 500);
         }
+    }
+
+    // GET /api/staff/inventory/pending-procurements
+    public function pendingProcurements(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) return response()->json(['error' => 'Unauthenticated'], 401);
+
+        $branchId = $user->branch_id;
+
+        try {
+            $requests = ProcurementRequest::with(['product:id,name,sku,price', 'logisticsUser'])
+                ->where('branch_id', $branchId)
+                ->where('status', 'awaiting_inventory_confirmation')
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            // Map to simple payload expected by frontend
+            $payload = $requests->map(function ($r) {
+                return [
+                    'id' => $r->id,
+                    'procurement_request_id' => $r->id,
+                    'product_id' => $r->product_id,
+                    'product_name' => $r->product?->name,
+                    'quantity' => $r->quantity,
+                    'price' => $r->price,
+                    'receipt_path' => $r->receipt_path ?? null,
+                    'created_at' => $r->created_at,
+                ];
+            });
+
+            return response()->json($payload);
+        } catch (\Exception $e) {
+            Log::error('Failed to load pending procurements for staff', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to fetch pending procurements'], 500);
+        }
+    }
+
+    // GET /api/staff/inventory/confirmed-procurements
+    public function confirmedProcurements(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) return response()->json(['error' => 'Unauthenticated'], 401);
+
+        $branchId = $user->branch_id;
+
+        try {
+            $requests = ProcurementRequest::with(['product', 'procurementUser'])
+                ->where('branch_id', $branchId)
+                ->where('status', 'completed')
+                ->orderBy('updated_at', 'desc')
+                ->limit(50)
+                ->get();
+
+            $payload = $requests->map(function ($r) {
+                return [
+                    'id' => $r->id,
+                    'product_id' => $r->product_id,
+                    'product_name' => $r->product?->name,
+                    'quantity' => $r->quantity,
+                    'confirmed_by' => $r->procurementUser?->full_name ?? $r->procurementUser?->username ?? null,
+                    'confirmed_at' => $r->updated_at,
+                ];
+            });
+
+            return response()->json($payload);
+        } catch (\Exception $e) {
+            Log::error('Failed to load confirmed procurements for staff', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to fetch confirmed procurements'], 500);
+        }
+    }
+
+    // POST /api/staff/inventory/procurements/{id}/confirm-stock
+    public function confirmProcurementStock(Request $request, $id)
+    {
+        $user = $request->user();
+        if (!$user) return response()->json(['error' => 'Unauthenticated'], 401);
+
+        $validated = $request->validate([
+            'counted_stock' => 'required|integer|min:0'
+        ]);
+
+        $proc = ProcurementRequest::with('product')->find($id);
+        if (!$proc) return response()->json(['error' => 'Procurement request not found'], 404);
+        if ($proc->branch_id != $user->branch_id) return response()->json(['error' => 'Not your branch'], 403);
+        // Accept the new status used by procurement completion flow.
+        if ($proc->status !== 'awaiting_inventory_confirmation') return response()->json(['error' => 'Procurement not awaiting inventory confirmation'], 400);
+
+        try {
+            DB::transaction(function () use ($proc, $validated, $user) {
+                $prod = \App\Models\Product::where('id', $proc->product_id)->lockForUpdate()->first();
+                if ($prod) {
+                    // Increment product stock by the counted delivered quantity
+                    $incrementBy = (int) $validated['counted_stock'];
+                    if ($incrementBy < 0) $incrementBy = 0;
+                    $prod->increment('stock', $incrementBy);
+                    $prod->has_been_ordered = true;
+                    $prod->logistics_request_available = false;
+
+                    // Optionally update cost/price similar to procurement completion logic
+                    try {
+                        $costPerUnit = null;
+                        if (!empty($proc->budget_amount) && !empty($proc->quantity)) {
+                            $costPerUnit = (float) $proc->budget_amount / max(1, (int)$proc->quantity);
+                        } elseif (!empty($proc->price)) {
+                            $costPerUnit = (float) $proc->price;
+                        }
+                        if (!is_null($costPerUnit)) {
+                            $prod->cost_price = round($costPerUnit, 2);
+                            $prod->price = round($prod->cost_price * 1.10, 2);
+                        }
+                        $prod->save();
+                    } catch (\Exception $e) {
+                        Log::warning('Failed to apply cost/price update on stock confirmation', ['error' => $e->getMessage(), 'product_id' => $prod->id]);
+                    }
+                }
+
+                // Mark procurement request completed
+                $proc->update([
+                    'status' => 'completed',
+                    'procurement_user_id' => $user->id,
+                    'updated_at' => now()
+                ]);
+
+                // Mark supplier order fulfilled if exists
+                try {
+                    $supplierOrder = SupplierOrder::where('procurement_request_id', $proc->id)->first();
+                    if ($supplierOrder) {
+                        $supplierOrder->update(['status' => 'fulfilled', 'fulfilled_at' => now()]);
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('Failed to update SupplierOrder after stock confirmation', ['error' => $e->getMessage(), 'proc_req_id' => $proc->id]);
+                }
+            });
+        } catch (\Exception $e) {
+            Log::error('Failed to confirm procurement stock', ['error' => $e->getMessage(), 'proc_req_id' => $proc->id]);
+            return response()->json(['error' => 'Failed to confirm stock'], 500);
+        }
+
+        return response()->json(['ok' => true, 'message' => 'Stock confirmed and product updated']);
     }
 }

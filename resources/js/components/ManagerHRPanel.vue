@@ -6,7 +6,7 @@
     :enableProfileUpdate="true"
     :canEditProfile="userProfile.role === 'OWNER'"
     :canChangePassword="true"
-    @logout="showLogoutConfirm = true"
+    @logout="askLogout"
     @profile-updated="onProfileUpdated"
   >
     <template #profileFooter>
@@ -238,7 +238,7 @@ async function toggleStatus(member) {
 }
 
 async function deleteStaff(member) {
-  if (!confirm(`Are you sure you want to delete ${member.full_name || member.username}?`)) return
+  if (!(await window.swalConfirm(`Are you sure you want to delete ${member.full_name || member.username}?`))) return
   try {
     const res = await axios.delete(`/api/manager/hr/staff/${member.id}`, { withCredentials: true })
     if (res.data.ok) { loadStaff(); alert('Staff deleted successfully') }
@@ -271,6 +271,13 @@ async function confirmLogout() {
   try { await axios.post('/api/logout', {}, { withCredentials: true }) } catch (e) {}
   try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
   setTimeout(() => { try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}; try { window.location.replace('/staff-landing') } catch (e) {} }, 600)
+}
+
+async function askLogout() {
+  try {
+    const ok = await (window.swalConfirm ? window.swalConfirm('This will end your current session for Chikin Tayo Manager.', 'Confirm logout') : Promise.resolve(false))
+    if (ok) await confirmLogout()
+  } catch (e) { console.error('askLogout failed', e) }
 }
 
 defineExpose({ refreshAllData, onProfileUpdated })

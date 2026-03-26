@@ -7,7 +7,7 @@
     :enableProfileUpdate="true"
     :canEditProfile="userProfile.role === 'OWNER'"
     :canChangePassword="true"
-    @logout="showLogoutConfirm = true"
+    @logout="askLogout"
     @profile-updated="onProfileUpdated"
   >
     <template #main>
@@ -650,6 +650,13 @@ async function confirmLogout() {
     try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
     try { window.location.replace('/staff-landing') } catch (e) { /* ignore */ }
   }, 600)
+}
+
+async function askLogout() {
+  try {
+    const ok = await (window.swalConfirm ? window.swalConfirm('This will end your current session for Chikin Tayo.', 'Confirm logout') : Promise.resolve(false))
+    if (ok) await confirmLogout()
+  } catch (e) { console.error('askLogout failed', e) }
 }
 
 function onProfileUpdated(newData) {

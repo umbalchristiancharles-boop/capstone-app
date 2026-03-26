@@ -6,6 +6,12 @@
   --text-dark: #42210b;
 }
 
+/* Full-page fade on navigation for non-SPA page loads */
+html.page-exit {
+  opacity: 0;
+  transition: opacity 240ms ease;
+}
+
 /* GLOBAL RESET */
 * {
   box-sizing: border-box;
@@ -33,12 +39,10 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.18);
+  background: rgba(0, 0, 0, 0.06);
   z-index: 9999;
   opacity: 0;
-  transition: opacity 220ms ease;
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
+  transition: opacity 420ms cubic-bezier(.2,.8,.2,1);
 }
 
 .route-loading-overlay.active {
@@ -46,26 +50,35 @@ body {
 }
 
 .route-loading-overlay .logo-loading-box {
-  background: #111;
-  color: #fff;
-  padding: 16px 22px;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  background: rgba(255,255,255,0.96);
+  color: #1b1b18;
+  padding: 10px 18px;
+  border-radius: 14px;
+  box-shadow: 0 8px 28px rgba(16, 24, 40, 0.12);
   display: flex;
   align-items: center;
   gap: 12px;
-  animation: routePulse 1.2s ease-in-out infinite;
+  transform: translateY(8px) scale(0.98);
+  opacity: 0.95;
+  transition: transform 420ms cubic-bezier(.2,.8,.2,1), opacity 320ms ease;
+}
+
+.route-loading-overlay.active .logo-loading-box {
+  transform: translateY(0) scale(1);
 }
 
 .route-loading-overlay .logo-loading-img {
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   object-fit: contain;
+  border-radius: 6px;
 }
 
 .route-loading-overlay .logo-loading-box p {
   font-size: 0.95rem;
   margin: 0;
+  color: #6b6b6b;
+  font-weight: 500;
 }
 
 @keyframes routePulse {

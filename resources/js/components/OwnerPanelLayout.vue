@@ -510,7 +510,7 @@ defineExpose({ openInfoModal, openEditProfile, openAvatarPicker })
 async function onAvatarChange(event) {
   const file = event.target.files[0]
   if (!file) return
-  if (!window.confirm('Are you sure you want to change your profile picture?')) return
+  if (!(await window.swalConfirm('Are you sure you want to change your profile picture?'))) return
 
   try {
     await axios.get('/sanctum/csrf-cookie', { withCredentials: true })

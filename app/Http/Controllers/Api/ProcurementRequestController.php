@@ -576,67 +576,22 @@ public function requestedProducts(Request $request)
             return response()->json(['error' => 'Receipt not uploaded or not yet confirmed by finance'], 400);
         }
 
-        // Proceed with marking as completed only if finance already confirmed
+        // Instead of immediately incrementing product stock here, mark the
+        // procurement request as awaiting inventory confirmation so inventory
+        // staff can verify actual delivered quantities and confirm the stock
+        // count. We store this in the `awaiting_inventory_confirmation` status
+        // (added via migration) so the staff UI can surface the confirmation tile.
         try {
             DB::transaction(function () use ($procRequest, $user) {
                 $procRequest->update([
-                    'status' => 'completed',
+                    'status' => 'awaiting_inventory_confirmation',
                     'procurement_user_id' => $user->id
                 ]);
 
-                if ($procRequest->product) {
-                    $prod = \App\Models\Product::where('id', $procRequest->product->id)->lockForUpdate()->first();
-                    if ($prod) {
-                        $prod->increment('stock', $procRequest->quantity);
-                        $prod->has_been_ordered = true;
-                        $prod->logistics_request_available = false;
-
-                        try {
-                            $costPerUnit = null;
-                            if (!empty($procRequest->budget_amount) && !empty($procRequest->quantity)) {
-                                $costPerUnit = (float) $procRequest->budget_amount / max(1, (int)$procRequest->quantity);
-                            } elseif (!empty($procRequest->price)) {
-                                $costPerUnit = (float) $procRequest->price;
-                            }
-
-                            if (!is_null($costPerUnit)) {
-                                $oldCost = $prod->cost_price;
-                                $oldPrice = $prod->price;
-                                $prod->cost_price = round($costPerUnit, 2);
-                                $prod->price = round($prod->cost_price * 1.10, 2);
-
-                                $newCost = $prod->cost_price;
-                                $newPrice = $prod->price;
-                                if ($oldCost != $newCost || $oldPrice != $newPrice) {
-                                    try {
-                                        \Illuminate\Support\Facades\DB::table('price_audits')->insert([
-                                            'product_id' => $prod->id,
-                                            'old_cost_price' => $oldCost,
-                                            'new_cost_price' => $newCost,
-                                            'old_price' => $oldPrice,
-                                            'new_price' => $newPrice,
-                                            'user_id' => $user->id ?? null,
-                                            'reason' => 'procurement_complete',
-                                            'created_at' => now(),
-                                            'updated_at' => now(),
-                                        ]);
-                                    } catch (\Exception $e) {
-                                        \Illuminate\Support\Facades\Log::warning('Failed to insert price_audit', ['product_id' => $prod->id, 'error' => $e->getMessage()]);
-                                    }
-                                }
-                            }
-                        } catch (\Exception $e) {
-                            \Illuminate\Support\Facades\Log::warning('Failed to set cost/selling price on procurement completion', ['product_id' => $prod->id, 'error' => $e->getMessage()]);
-                        }
-
-                        $prod->save();
-                    }
-                }
-
-                $supplierOrder = SupplierOrder::where('procurement_request_id', $procRequest->id)->first();
-                if ($supplierOrder && $supplierOrder->status !== 'fulfilled') {
-                    $supplierOrder->update(['status' => 'fulfilled', 'fulfilled_at' => now()]);
-                }
+                // Do NOT increment product stock here; inventory staff will
+                // confirm and perform the stock update. Also do not mark
+                // supplier order fulfilled yet — that will be updated once
+                // staff confirms delivered quantities.
 
                 try {
                     $budgetReq = BudgetRequest::where('branch_id', $procRequest->branch_id)
@@ -656,11 +611,11 @@ public function requestedProducts(Request $request)
                 }
             });
         } catch (\Exception $e) {
-            Log::error('Failed to mark procurement request completed', ['error' => $e->getMessage(), 'proc_req_id' => $procRequest->id]);
-            return response()->json(['error' => 'Failed to mark as completed'], 500);
+            Log::error('Failed to mark procurement request awaiting stock confirmation', ['error' => $e->getMessage(), 'proc_req_id' => $procRequest->id]);
+            return response()->json(['error' => 'Failed to update procurement status'], 500);
         }
 
-        return response()->json(['ok' => true, 'message' => 'Procurement request marked as completed', 'request' => $procRequest->fresh()->load('product')]);
+        return response()->json(['ok' => true, 'message' => 'Procurement request marked awaiting stock confirmation', 'request' => $procRequest->fresh()->load('product')]);
     }
 
     /**

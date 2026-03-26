@@ -315,7 +315,7 @@ export default {
     closeModal() { this.showModal = false; this.selectedStaff = null },
     handleSaved() { this.closeModal(); this.fetchStaff(); this.showAlert('Account saved successfully!', 'success') },
     async confirmDelete(id, username) {
-      if (!confirm(`Are you sure you want to delete "${username}"?`)) return
+      if (!(await window.swalConfirm(`Are you sure you want to delete "${username}"?`))) return
       this.deletingIds.push(id)
       try {
         const res = await axios.delete(`/api/admin/staff/${id}`)
