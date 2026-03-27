@@ -175,6 +175,11 @@ async function handleLogin() {
                 branch_id: res.data.user?.branch_id
             };
 
+            // Persist permissions for CUSTOM fallback routing
+            if (res.data.user?.permissions) {
+                userData.permissions = res.data.user.permissions;
+            }
+
             try {
                 localStorage.setItem('user', JSON.stringify(userData));
                 console.debug('[LOGIN] User saved to localStorage:', userData);
@@ -186,6 +191,26 @@ async function handleLogin() {
                     axios.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
                     console.debug('[LOGIN] Token saved to localStorage and axios header set');
                 }
+                // Fetch authoritative user object (including permissions) and update localStorage
+                try {
+                    const me = await axios.get('/api/me', { withCredentials: true });
+                    if (me && me.data && me.data.user) {
+                        const serverUser = me.data.user;
+                        const merged = Object.assign({}, userData, {
+                            id: serverUser.id,
+                            username: serverUser.username || userData.username,
+                            role: (serverUser.role || userData.role || '').toLowerCase(),
+                            department: (serverUser.department || userData.department || '').toLowerCase(),
+                            full_name: serverUser.full_name || userData.full_name,
+                            branch_id: serverUser.branch_id || userData.branch_id,
+                            permissions: serverUser.permissions || userData.permissions || {},
+                        });
+                        localStorage.setItem('user', JSON.stringify(merged));
+                        console.debug('[LOGIN] Updated localStorage user from /api/me', merged);
+                    }
+                } catch (e) {
+                    console.debug('[LOGIN] /api/me fetch failed, continuing', e);
+                }
             } catch (e) {
                 console.error('[LOGIN] Failed to save user to localStorage:', e);
             }
@@ -196,7 +221,7 @@ async function handleLogin() {
 
             // Fallback to client-side calculation if server doesn't provide redirect_path
             if (!redirectPath) {
-                redirectPath = resolveRedirectPath(res.data.user?.role, res.data.user?.department);
+                redirectPath = resolveRedirectPath(res.data.user?.role, res.data.user?.department, res.data.user?.permissions);
             }
 
             // If user belongs to Main Branch (branch_id === 1) and is logistics manager,
@@ -298,14 +323,34 @@ function handleBack() {
     }, 2000);
 }
 
-function resolveRedirectPath(role, department) {
+function resolveRedirectPath(role, department, permissions = {}) {
     // Use case-insensitive comparison by normalizing to uppercase
     let r = (role || '').toString().trim().toUpperCase();
     const d = (department || '').toString().trim().toUpperCase();
 
+    // Normalize permissions for CUSTOM accounts (modules/functions arrays)
+    const permModules = Array.isArray(permissions.modules)
+        ? permissions.modules.map(m => (m || '').toString().trim().toUpperCase())
+        : [];
+
     // Handle MANAGER_HR role specially - treat as MANAGER with HR department
     if (r === 'MANAGER_HR') {
         return '/manager/hr';
+    }
+
+    // CUSTOM: choose a panel based on assigned modules; fallback to staff panel
+    if (r === 'CUSTOM') {
+        const has = (keys) => keys.some(k => permModules.includes(k.toUpperCase()));
+        if (has(['ADMIN'])) return '/admin-panel';
+        if (has(['FINANCE'])) return '/manager/finance';
+        if (has(['PROCUREMENT'])) return '/manager/procurement';
+        if (has(['LOGISTICS'])) return '/manager/logistics';
+        if (has(['INVENTORY'])) return '/manager/inventory';
+        if (has(['KITCHEN'])) return '/staff/kitchen';
+        if (has(['CASHIER'])) return '/staff/cashier';
+        if (has(['HR'])) return '/manager/hr';
+        if (has(['REPORTS'])) return '/manager/finance';
+        return '/staff-panel';
     }
 
     // If department explicitly indicates inventory/finance/etc, prefer that

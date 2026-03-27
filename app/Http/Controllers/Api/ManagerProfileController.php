@@ -42,18 +42,54 @@ class ManagerProfileController extends Controller
     }
 
     /**
-     * Check if user is a manager
+     * Check if user has a module/department access (supports custom accounts with permissions.modules).
      */
-    private function isManager($user)
+    private function customHasModule($user, string $module): bool
     {
-        if (!$user) {
-            return false;
+        if (!$user) return false;
+
+        $perms = $user->permissions ?? [];
+        if (is_string($perms)) {
+            try {
+                $decoded = json_decode($perms, true);
+                if (is_array($decoded)) $perms = $decoded;
+            } catch (\Throwable $e) {
+                $perms = [];
+            }
         }
-        
+
+        $mods = [];
+        if (is_array($perms) && isset($perms['modules']) && is_array($perms['modules'])) {
+            $mods = $perms['modules'];
+        } elseif (is_array($perms)) {
+            $mods = $perms;
+        }
+
+        return collect($mods)
+            ->filter()
+            ->map(fn($m) => strtolower((string) $m))
+            ->contains(strtolower($module));
+    }
+
+    /**
+     * Generalized access check: managers with department, owners/admins, or custom accounts with module.
+     */
+    private function allowManagerDept($user, string $department): bool
+    {
+        if (!$user) return false;
+
         $role = strtoupper($user->role ?? '');
-        
-        // Allow MANAGER, MANAGER_HR, BRANCH_MANAGER roles
-        return in_array($role, ['MANAGER', 'MANAGER_HR', 'BRANCH_MANAGER']);
+        if (in_array($role, ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN'])) return true;
+
+        if (in_array($role, ['MANAGER', 'MANAGER_HR', 'BRANCH_MANAGER'])) {
+            return $this->hasDepartmentAccess($user, $department);
+        }
+
+        if ($role === 'CUSTOM') {
+            return $this->customHasModule($user, $department);
+        }
+
+        return false;
     }
 
     /**
@@ -114,7 +150,7 @@ class ManagerProfileController extends Controller
     {
         $user = $this->getAuthenticatedManager($request);
         
-        if (!$user || !$this->isManager($user)) {
+        if (!$this->allowManagerDept($user, 'hr')) {
             return response()->json([
                 'ok' => false,
                 'message' => 'Unauthorized'
@@ -172,7 +208,7 @@ class ManagerProfileController extends Controller
     {
         $user = $this->getAuthenticatedManager($request);
         
-        if (!$user || !$this->isManager($user)) {
+        if (!$this->allowManagerDept($user, 'hr')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
@@ -203,7 +239,7 @@ class ManagerProfileController extends Controller
     {
         $user = $this->getAuthenticatedManager($request);
         
-        if (!$user || !$this->isManager($user)) {
+        if (!$this->allowManagerDept($user, 'hr')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
@@ -243,7 +279,7 @@ class ManagerProfileController extends Controller
     {
         $user = $this->getAuthenticatedManager($request);
         
-        if (!$user || !$this->isManager($user)) {
+        if (!$this->allowManagerDept($user, 'hr')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
@@ -303,7 +339,7 @@ class ManagerProfileController extends Controller
     {
         $user = $this->getAuthenticatedManager($request);
         
-        if (!$user || !$this->isManager($user)) {
+        if (!$this->allowManagerDept($user, 'hr')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
@@ -378,7 +414,7 @@ class ManagerProfileController extends Controller
     {
         $user = $this->getAuthenticatedManager($request);
         
-        if (!$user || !$this->isManager($user)) {
+        if (!$this->allowManagerDept($user, 'hr')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
@@ -411,7 +447,7 @@ class ManagerProfileController extends Controller
     {
         $user = $this->getAuthenticatedManager($request);
         
-        if (!$user || !$this->isManager($user)) {
+        if (!$this->allowManagerDept($user, 'hr')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
@@ -430,7 +466,7 @@ class ManagerProfileController extends Controller
     {
         $user = $this->getAuthenticatedManager($request);
         
-        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'finance')) {
+        if (!$this->allowManagerDept($user, 'finance')) {
             return response()->json([
                 'ok' => false,
                 'message' => 'Unauthorized'
@@ -456,7 +492,7 @@ class ManagerProfileController extends Controller
     {
         $user = $this->getAuthenticatedManager($request);
         
-        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'finance')) {
+        if (!$this->allowManagerDept($user, 'finance')) {
             return response()->json([
                 'ok' => false,
                 'message' => 'Unauthorized'
@@ -488,7 +524,7 @@ class ManagerProfileController extends Controller
     {
         $user = $this->getAuthenticatedManager($request);
         
-        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'finance')) {
+        if (!$this->allowManagerDept($user, 'finance')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
@@ -578,7 +614,7 @@ class ManagerProfileController extends Controller
     {
         $user = $this->getAuthenticatedManager($request);
         
-        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'finance')) {
+        if (!$this->allowManagerDept($user, 'finance')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
@@ -592,7 +628,7 @@ class ManagerProfileController extends Controller
     {
         $user = $this->getAuthenticatedManager($request);
         
-        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'finance')) {
+        if (!$this->allowManagerDept($user, 'finance')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
@@ -670,7 +706,7 @@ class ManagerProfileController extends Controller
     {
         $user = $this->getAuthenticatedManager($request);
         
-        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'logistics')) {
+        if (!$this->allowManagerDept($user, 'logistics')) {
             return response()->json([
                 'ok' => false,
                 'message' => 'Unauthorized'
@@ -722,7 +758,7 @@ class ManagerProfileController extends Controller
     {
         $user = $this->getAuthenticatedManager($request);
         
-        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'logistics')) {
+        if (!$this->allowManagerDept($user, 'logistics')) {
             return response()->json([
                 'ok' => false,
                 'message' => 'Unauthorized'
@@ -853,8 +889,8 @@ class ManagerProfileController extends Controller
     public function procurementProfile(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
-
-        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'procurement')) {
+        
+        if (!$this->allowManagerDept($user, 'procurement')) {
             return response()->json([
                 'ok' => false,
                 'message' => 'Unauthorized'
@@ -879,8 +915,8 @@ class ManagerProfileController extends Controller
     public function updateProcurementProfile(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
-
-        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'procurement')) {
+        
+        if (!$this->allowManagerDept($user, 'procurement')) {
             return response()->json([
                 'ok' => false,
                 'message' => 'Unauthorized'
@@ -954,8 +990,8 @@ class ManagerProfileController extends Controller
     public function procurementProducts(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
-
-        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'procurement')) {
+        
+        if (!$this->allowManagerDept($user, 'procurement')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
@@ -1281,7 +1317,7 @@ public function logisticsInventory(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
         
-        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'inventory')) {
+        if (!$this->allowManagerDept($user, 'inventory')) {
             return response()->json([
                 'ok' => false,
                 'message' => 'Unauthorized'
@@ -1307,7 +1343,7 @@ public function logisticsInventory(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
         
-        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'inventory')) {
+        if (!$this->allowManagerDept($user, 'inventory')) {
             return response()->json([
                 'ok' => false,
                 'message' => 'Unauthorized'

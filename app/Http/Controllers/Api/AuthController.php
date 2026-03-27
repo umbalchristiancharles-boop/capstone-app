@@ -81,8 +81,8 @@ class AuthController extends Controller
         }
 
         // Validate role exists and is valid
-        // Include all expected roles: SUPER_ADMIN, ADMIN, OWNER, MANAGER, MANAGER_HR, HR, STAFF
-$validRoles = ['SUPER_ADMIN', 'ADMIN', 'OWNER', 'MANAGER', 'MANAGER_HR', 'HR', 'STAFF', 'SUPPLIER'];
+        // Include all expected roles: SUPER_ADMIN, ADMIN, OWNER, MANAGER, MANAGER_HR, HR, STAFF, CUSTOM, SUPPLIER
+    $validRoles = ['SUPER_ADMIN', 'ADMIN', 'OWNER', 'MANAGER', 'MANAGER_HR', 'HR', 'STAFF', 'CUSTOM', 'SUPPLIER'];
         $roleUpper = strtoupper(trim($user->role ?? ''));
 
         // Handle MANAGER_HR role specially - treat as MANAGER with HR department
@@ -164,6 +164,7 @@ $validRoles = ['SUPER_ADMIN', 'ADMIN', 'OWNER', 'MANAGER', 'MANAGER_HR', 'HR', '
                 'full_name' => $user->full_name,
                 'branch_id' => $user->branch_id,
                 'must_change_password' => (bool) $user->must_change_password,
+                'permissions' => $user->permissions ?? [],
             ],
         ]);
     }
@@ -266,6 +267,14 @@ $validRoles = ['SUPER_ADMIN', 'ADMIN', 'OWNER', 'MANAGER', 'MANAGER_HR', 'HR', '
             }
             // Default staff panel
             return '/staff-panel';
+        }
+
+        // CUSTOM – pick the best panel based on assigned modules
+        if ($role === 'CUSTOM') {
+            // Custom accounts land on a unified custom panel where they can access
+            // the modules assigned to them. The front-end will route them to
+            // specific module panels from there.
+            return '/custom-panel';
         }
 
         // SUPPLIER
@@ -668,6 +677,21 @@ $validRoles = ['SUPER_ADMIN', 'ADMIN', 'OWNER', 'MANAGER', 'MANAGER_HR', 'HR', '
         if (Auth::check()) {
             return Auth::user();
         }
+
+        // Try Sanctum guard (token-based) if available
+        try {
+            $sanctumUser = auth('sanctum')->user();
+            if ($sanctumUser) return $sanctumUser;
+        } catch (\Throwable $e) {}
+
+        // Try Personal Access Token lookup (plain bearer token)
+        try {
+            $bearer = $request->bearerToken();
+            if ($bearer && class_exists(\Laravel\Sanctum\PersonalAccessToken::class)) {
+                $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($bearer);
+                if ($tokenModel && $tokenModel->tokenable) return $tokenModel->tokenable;
+            }
+        } catch (\Throwable $e) {}
 
         $sessionUserId = $request->session()->get('user_id');
         if ($sessionUserId) {

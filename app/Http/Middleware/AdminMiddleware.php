@@ -5,6 +5,8 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use App\Models\User;
+use App\Support\Permission;
 
 class AdminMiddleware
 {
@@ -20,9 +22,10 @@ class AdminMiddleware
             return redirect('/staff-landing')->with('error', 'Please login first.');
         }
 
-        // Check if user role is admin (case-insensitive check for 'ADMIN')
-        $userRole = strtoupper(session('user_role'));
-        if ($userRole !== 'ADMIN') {
+        $user = User::find(session('user_id'));
+
+        $allowed = Permission::allowed($user, ['ADMIN'], ['admin']);
+        if (! $allowed) {
             return redirect('/staff-landing')->with('error', 'Unauthorized access. Admin only.');
         }
 

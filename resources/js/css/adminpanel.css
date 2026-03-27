@@ -1,3 +1,6 @@
+/* Import required fonts (moved to file top for PostCSS/Vite) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@800&family=Poppins:wght@800&display=swap');
+
 :root {
   /* Map admin panel colors to the public site (index) color tokens */
   --color-royal-blue: var(--orange, #ff6b1c); /* primary accent now uses index orange */
@@ -11,9 +14,6 @@
   --text-primary: var(--text-dark, #42210b);
   --text-secondary: rgba(66,33,11,0.6);
 }
-
-/* Import required fonts (moved to file top for PostCSS/Vite) */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@800&family=Poppins:wght@800&display=swap');
 
 /* PAGE BACKGROUND */
 .admin-page {

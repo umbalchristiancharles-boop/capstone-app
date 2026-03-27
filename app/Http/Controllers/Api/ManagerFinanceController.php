@@ -42,7 +42,18 @@ class ManagerFinanceController extends Controller
         $role = strtoupper($user->role ?? '');
 
         // Only finance manager / owner / superadmin can update budgets
-        if (!in_array($role, ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN', 'FINANCE_MANAGER', 'MANAGER'])) {
+        $hasFinanceModule = false;
+        if ($role === 'CUSTOM') {
+            $perms = $user->permissions ?? [];
+            if (is_string($perms)) {
+                try { $decoded = json_decode($perms, true); if (is_array($decoded)) $perms = $decoded; } catch (\Throwable $e) { $perms = []; }
+            }
+            if (is_array($perms) && isset($perms['modules']) && is_array($perms['modules'])) {
+                $hasFinanceModule = collect($perms['modules'])->map(fn($m)=>strtolower((string)$m))->contains('finance');
+            }
+        }
+
+        if (!in_array($role, ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN', 'FINANCE_MANAGER', 'MANAGER']) && !$hasFinanceModule) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 

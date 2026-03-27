@@ -48,6 +48,7 @@ class User extends Authenticatable implements CanResetPassword
         'full_name',
         'role',
         'department',
+        'permissions',
         'branch_id',
         'avatar_url',
         'phone_number',
@@ -77,6 +78,7 @@ class User extends Authenticatable implements CanResetPassword
         'deleted_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'permissions' => 'array',
     ];
 
     /**

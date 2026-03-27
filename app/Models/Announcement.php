@@ -75,8 +75,18 @@ class Announcement extends Model
 
         $role = strtoupper($user->role ?? '');
 
-        // Owners, admins, and superadmins see everything
+        // Owners, admins, superadmins see everything
         if (in_array($role, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER', 'ADMIN'])) {
+            return $query;
+        }
+
+        // Custom accounts: if they have admin module, show all; if they have manager-like modules, treat as manager group
+        $permissions = $user->permissions ?? [];
+        $modules = is_array($permissions['modules'] ?? null) ? array_map('strtolower', $permissions['modules']) : [];
+        $isCustomAdmin = $role === 'CUSTOM' && in_array('admin', $modules, true);
+        $isCustomManager = $role === 'CUSTOM' && count(array_intersect($modules, ['finance', 'logistics', 'inventory', 'procurement', 'kitchen', 'cashier', 'hr'])) > 0;
+
+        if ($isCustomAdmin) {
             return $query;
         }
 
@@ -89,11 +99,11 @@ class Announcement extends Model
             $q->orWhere('target', 'account:' . intval($user->id));
 
             // global role targets
-            if (str_contains($role, 'MANAGER')) {
+            if (str_contains($role, 'MANAGER') || $isCustomManager) {
                 $q->orWhere('target', 'managers');
             }
             // Staff and other regular roles
-            if (! str_contains($role, 'MANAGER') && ! in_array($role, ['ADMIN', 'OWNER', 'SUPER_ADMIN', 'SUPERADMIN'])) {
+            if (! str_contains($role, 'MANAGER') && !$isCustomManager && ! in_array($role, ['ADMIN', 'OWNER', 'SUPER_ADMIN', 'SUPERADMIN'])) {
                 $q->orWhere('target', 'staff');
             }
 
@@ -103,11 +113,11 @@ class Announcement extends Model
                 // branch-wide
                 $q->orWhere('target', 'branch:' . $branchId . ':all');
                 // branch-managers
-                if (str_contains($role, 'MANAGER')) {
+                if (str_contains($role, 'MANAGER') || $isCustomManager) {
                     $q->orWhere('target', 'branch:' . $branchId . ':managers');
                 }
                 // branch-staff
-                if (! str_contains($role, 'MANAGER') && ! in_array($role, ['ADMIN', 'OWNER', 'SUPER_ADMIN', 'SUPERADMIN'])) {
+                if (! str_contains($role, 'MANAGER') && !$isCustomManager && ! in_array($role, ['ADMIN', 'OWNER', 'SUPER_ADMIN', 'SUPERADMIN'])) {
                     $q->orWhere('target', 'branch:' . $branchId . ':staff');
                 }
             }

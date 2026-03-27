@@ -48,7 +48,8 @@
           <header class="admin-main-header">
             <div class="admin-main-header-top">
               <div class="header-left-slot">
-                <slot name="headerLeft"></slot>
+                  <button v-if="showBackComputed" class="back-to-dashboard-btn" @click="handleBack">← Back</button>
+                  <slot name="headerLeft"></slot>
               </div>
               <div>
                 <h1>{{ panelTitle }}</h1>
@@ -229,6 +230,7 @@
 
 <script setup>
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import Toast from './Toast.vue'
 
@@ -252,6 +254,34 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['logout', 'profile-updated', 'back'])
+const route = useRoute()
+const router = useRouter()
+
+const isCustomAccount = computed(() => {
+  try {
+    const raw = localStorage.getItem('user') || 'null'
+    const u = JSON.parse(raw)
+    return (u?.role || '').toLowerCase() === 'custom'
+  } catch (e) {
+    return false
+  }
+})
+
+// Show a back button when parent explicitly requests it via prop, when the
+// current route contains `?from=custom-panel`, or when the logged-in account is
+// of type custom (so modules always have a way back).
+const showBackComputed = computed(() => {
+  try {
+    return Boolean(props.showBackButton) || (route && route.query && route.query.from === 'custom-panel') || isCustomAccount.value
+  } catch (e) {
+    return Boolean(props.showBackButton) || isCustomAccount.value
+  }
+})
+
+function handleBack() {
+  try { emit('back') } catch (e) {}
+  try { router.push('/custom-panel') } catch (e) { window.location.href = '/custom-panel' }
+}
 
 const localProfile = ref({})
 const showInfoModal = ref(false)
@@ -264,7 +294,7 @@ const profileSuccess = ref('')
 const announcements = ref([])
 const loadingAnnouncements = ref(false)
 
-async function fetchAnnouncements() {
+const loadAnnouncements = async () => {
   loadingAnnouncements.value = true
   try {
     const res = await axios.get('/api/announcements', { withCredentials: true })
@@ -297,7 +327,37 @@ watch(() => props.userProfile, (newVal) => {
 }, { immediate: true })
 
 onMounted(() => {
-  fetchAnnouncements()
+  try {
+    ;(async () => {
+      try {
+        await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
+      } catch (e) {
+        // non-fatal; continue to load announcements and profile
+      }
+    })()
+
+    Promise.resolve(loadAnnouncements()).catch(() => {})
+  } catch (e) {}
+  // If parent did not provide a populated `userProfile` prop, try fetching the
+  // authoritative current user so the profile column is not empty after SPA
+  // navigations (e.g. coming from the custom panel).
+  (async () => {
+    try {
+      const isEmpty = !props.userProfile || Object.keys(props.userProfile).length === 0
+      if (isEmpty) {
+        const res = await axios.get('/api/me', { withCredentials: true })
+        const u = res.data?.user || res.data?.data || res.data || null
+        if (u) {
+          const normalized = { ...u }
+          normalized.accountId = normalized.accountId || normalized.account_id || normalized.id || normalized.user_id || ''
+          localProfile.value = normalized
+          emit('profile-updated', normalized)
+        }
+      }
+    } catch (e) {
+      // ignore - non-critical; child panels will still attempt their own profile fetch
+    }
+  })()
   // listen for global triggers from parent panels when they cannot call child methods directly
   window.addEventListener('open-owner-edit-profile', openEditProfile)
   window.addEventListener('open-owner-info', openInfoModal)

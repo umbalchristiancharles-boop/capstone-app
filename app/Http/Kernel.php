@@ -18,6 +18,7 @@ class Kernel extends HttpKernel
     'ensure.admin' => \App\Http\Middleware\EnsureAdmin::class,
     'no-cache' => \App\Http\Middleware\NoCache::class,
     'owner.only' => \App\Http\Middleware\OwnerOnly::class,
+    'permission' => \App\Http\Middleware\EnsurePermission::class,
 
     // Ensure SPA stateful requests are recognized by Sanctum when using API middleware
     'ensure.frontend' => \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,

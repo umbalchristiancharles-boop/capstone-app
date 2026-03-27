@@ -140,6 +140,12 @@ const routes = [
     component: () => import('../components/SupplierPanel.vue'),
     meta: { requiresAuth: true, role: 'supplier' }
   },
+  {
+    path: '/custom-panel',
+    name: 'CustomPanel',
+    component: () => import('../components/CustomPanel.vue'),
+    meta: { requiresAuth: true, role: 'custom' }
+  },
   // Forgot Password Route (guest only)
   {
     path: '/admin/forgot-password',
@@ -224,6 +230,7 @@ router.beforeEach((to, from, next) => {
   if (to.path === '/' || to.path === '/login') {
     if (user) {
       const userRole = (user.role || '').toLowerCase();
+      if (userRole === 'custom') return next('/custom-panel');
       if (userRole === 'owner') return next('/owner-panel');
       if (userRole === 'admin') return next('/admin-panel');
       if (userRole === 'manager') {
@@ -260,6 +267,71 @@ router.beforeEach((to, from, next) => {
   if (to.meta.role) {
     const requiredRole = (to.meta.role || '').toLowerCase();
     console.log('[ROUTER] Required role:', requiredRole);
+
+    // Custom accounts: if navigation came from Custom Panel, allow and continue
+    if (userRole === 'custom' && to.query && to.query.from === 'custom-panel') {
+      console.log('[ROUTER] CUSTOM account with from=custom-panel - allowing');
+      return next();
+    }
+
+    // Allow 'custom' accounts to access routes based on assigned modules
+    if (userRole === 'custom') {
+      let modules = [];
+      try {
+        modules = Array.isArray(user.permissions?.modules) ? user.permissions.modules.map(m => (m || '').toLowerCase()) : [];
+      } catch (e) {
+        modules = [];
+      }
+
+      const hasModule = (m) => modules.includes((m || '').toLowerCase());
+
+      // If route requires a manager with a department, map department to module name
+      if (requiredRole === 'manager') {
+        if (to.meta.department) {
+          if (hasModule(to.meta.department)) {
+            console.log('[ROUTER] CUSTOM account module check PASSED - allowing');
+            return next();
+          }
+          console.log('[ROUTER] CUSTOM account module check FAILED - redirecting to /custom-panel');
+          return next('/custom-panel');
+        }
+        // Manager routes without explicit department: allow if module name matches path segment
+        if (hasModule((to.name || '').replace('Manager', '').replace('Panel', '').toLowerCase()) || hasModule('manager')) {
+          console.log('[ROUTER] CUSTOM account manager route without department - allowing');
+          return next();
+        }
+        console.log('[ROUTER] CUSTOM account manager route without module - redirecting to /custom-panel');
+        return next('/custom-panel');
+      }
+
+      // If route requires staff with a department
+      if (requiredRole === 'staff') {
+        if (to.meta.department) {
+          if (hasModule(to.meta.department)) {
+            console.log('[ROUTER] CUSTOM account module check PASSED - allowing');
+            return next();
+          }
+          console.log('[ROUTER] CUSTOM account module check FAILED - redirecting to /custom-panel');
+          return next('/custom-panel');
+        }
+        // Staff routes without explicit department: allow if any staff module exists
+        if (hasModule('staff') || hasModule((to.name || '').toLowerCase())) {
+          console.log('[ROUTER] CUSTOM account staff route without department - allowing');
+          return next();
+        }
+        console.log('[ROUTER] CUSTOM account staff route without module - redirecting to /custom-panel');
+        return next('/custom-panel');
+      }
+
+      // Generic role mappings for custom modules
+      if (requiredRole === 'admin' && hasModule('admin')) {
+        return next();
+      }
+      if (requiredRole === 'supplier' && hasModule('supplier')) {
+        return next();
+      }
+      // Otherwise fall through to normal checks below
+    }
 
     // Owner routes
     if (requiredRole === 'owner') {
@@ -338,6 +410,7 @@ router.beforeEach((to, from, next) => {
 function getPanelRoute(user) {
   if (!user) return '/staff-landing';
   const userRole = (user.role || '').toLowerCase();
+  if (userRole === 'custom') return '/custom-panel';
   if (userRole === 'owner') return '/owner-panel';
   if (userRole === 'admin') return '/admin-panel';
   if (userRole === 'manager') {

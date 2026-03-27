@@ -17,7 +17,7 @@
         <button @click="openAddBranchForm" class="btn-success">+ Add Branch</button>
       </div>
     </div>
-    
+
     <div v-if="showAddBranchForm" class="modal-backdrop" @click.self="closeAddBranch">
       <div class="modal">
         <div class="modal-card">
@@ -51,66 +51,97 @@
 
             <div class="default-accounts-info">
               <h3>Default Accounts</h3>
-              <p class="info-sub">The following accounts will be automatically created for this branch:</p>
+              <p class="info-sub">Select which accounts to create automatically for this branch.</p>
               <div class="default-account-list">
-                <div class="default-account-item">
-                  <span class="account-role-badge admin-badge">ADMIN</span>
+                <div
+                  v-for="account in accountOptions"
+                  :key="account.key"
+                  class="default-account-item"
+                >
+                  <input
+                    :id="`account-${account.key}`"
+                    v-model="branchForm.selectedAccounts[account.key]"
+                    type="checkbox"
+                    class="account-checkbox"
+                    :disabled="account.key === 'admin'"
+                  />
                   <div class="account-details">
-                    <span>Username: <strong>admin_{{ branchForm.code ? branchForm.code.toLowerCase() : 'branchcode' }}</strong></span>
-                    <span>
-                      Password: <strong>{{ showPassword ? defaultPassword : maskedPassword }}</strong>
-                      <button type="button" class="btn btn-secondary" style="margin-left:8px; padding:4px 8px; font-size:0.78rem;" @click="toggleShowPassword">
-                        {{ showPassword ? 'Hide' : 'Show' }}
-                      </button>
-                    </span>
+                    <label :for="`account-${account.key}`" class="account-checkbox-label">
+                      {{ account.label }}
+                      <span v-if="account.key === 'admin'" class="checkbox-helper">(required)</span>
+                    </label>
+                    <div class="account-info">
+                      <span class="account-role-badge" :class="account.badgeClass">{{ account.badgeText }}</span>
+                      <span class="account-username">
+                        Username:
+                        <strong>{{ account.prefix }}_{{ codeSlugPreview }}</strong>
+                      </span>
+                      <span class="account-password">
+                        Password:
+                        <strong>{{ showPassword ? defaultPassword : maskedPassword }}</strong>
+                        <button
+                          type="button"
+                          class="btn btn-secondary password-toggle-btn"
+                          @click="toggleShowPassword"
+                        >
+                          {{ showPassword ? 'Hide' : 'Show' }}
+                        </button>
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div class="default-account-item">
-                  <span class="account-role-badge hr-badge">HR MANAGER</span>
-                  <div class="account-details">
-                    <span>Username: <strong>hr_{{ branchForm.code ? branchForm.code.toLowerCase() : 'branchcode' }}</strong></span>
-                    <span>
-                      Password: <strong>{{ showPassword ? defaultPassword : maskedPassword }}</strong>
-                      <button type="button" class="btn btn-secondary" style="margin-left:8px; padding:4px 8px; font-size:0.78rem;" @click="toggleShowPassword">
-                        {{ showPassword ? 'Hide' : 'Show' }}
-                      </button>
-                    </span>
+              </div>
+            </div>
+
+            <div class="custom-account-card">
+              <div class="custom-account-header">
+                <div>
+                  <h3>Custom Account (role: CUSTOM)</h3>
+                  <p class="info-sub">Pick any modules and functions across panels. A CUSTOM account is created only if at least one permission is selected.</p>
+                </div>
+                <label class="toggle">
+                  <input type="checkbox" v-model="branchForm.customAccount.enabled" />
+                  <span>Create custom account</span>
+                </label>
+              </div>
+
+              <div v-if="branchForm.customAccount.enabled" class="custom-account-body">
+                <div class="form-grid compact">
+                  <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input v-model="branchForm.customAccount.username" class="form-input" :placeholder="`custom_${codeSlugPreview}`" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Full Name</label>
+                    <input v-model="branchForm.customAccount.fullName" class="form-input" :placeholder="`Custom Account - ${branchForm.name || branchForm.code}`" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input v-model="branchForm.customAccount.password" class="form-input" :placeholder="defaultPassword" />
                   </div>
                 </div>
-                <div class="default-account-item">
-                  <span class="account-role-badge finance-badge">FINANCE MANAGER</span>
-                  <div class="account-details">
-                    <span>Username: <strong>finance_{{ branchForm.code ? branchForm.code.toLowerCase() : 'branchcode' }}</strong></span>
-                    <span>
-                      Password: <strong>{{ showPassword ? defaultPassword : maskedPassword }}</strong>
-                      <button type="button" class="btn btn-secondary" style="margin-left:8px; padding:4px 8px; font-size:0.78rem;" @click="toggleShowPassword">
-                        {{ showPassword ? 'Hide' : 'Show' }}
-                      </button>
-                    </span>
-                  </div>
-                </div>
-                <div class="default-account-item">
-                  <span class="account-role-badge procurement-badge">PROCUREMENT MANAGER</span>
-                  <div class="account-details">
-                    <span>Username: <strong>procurement_{{ branchForm.code ? branchForm.code.toLowerCase() : 'branchcode' }}</strong></span>
-                    <span>
-                      Password: <strong>{{ showPassword ? defaultPassword : maskedPassword }}</strong>
-                      <button type="button" class="btn btn-secondary" style="margin-left:8px; padding:4px 8px; font-size:0.78rem;" @click="toggleShowPassword">
-                        {{ showPassword ? 'Hide' : 'Show' }}
-                      </button>
-                    </span>
-                  </div>
-                </div>
-                <div class="default-account-item">
-                  <span class="account-role-badge logistics-badge">LOGISTICS MANAGER</span>
-                  <div class="account-details">
-                    <span>Username: <strong>logistics_{{ branchForm.code ? branchForm.code.toLowerCase() : 'branchcode' }}</strong></span>
-                    <span>
-                      Password: <strong>{{ showPassword ? defaultPassword : maskedPassword }}</strong>
-                      <button type="button" class="btn btn-secondary" style="margin-left:8px; padding:4px 8px; font-size:0.78rem;" @click="toggleShowPassword">
-                        {{ showPassword ? 'Hide' : 'Show' }}
-                      </button>
-                    </span>
+
+                <div class="permission-grid">
+                  <div v-for="module in permissionTemplates" :key="module.key" class="permission-card">
+                    <div class="permission-card-header">
+                      <label>
+                        <input type="checkbox" v-model="branchForm.customAccount.permissions.modules[module.key]" />
+                        <span class="module-label">{{ module.label }}</span>
+                      </label>
+                    </div>
+                    <div class="permission-functions">
+                      <label
+                        v-for="fn in module.functions"
+                        :key="fn.key"
+                        class="function-row"
+                      >
+                        <input
+                          type="checkbox"
+                          v-model="branchForm.customAccount.permissions.functions[fn.key]"
+                        />
+                        <span>{{ fn.label }}</span>
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -155,7 +186,7 @@
               <tr>
                 <th>Code</th>
                 <th>Branch Name</th>
-                  <th>Budget</th>
+                <th>Budget</th>
                 <th>Address</th>
                 <th>Admin Account</th>
                 <th>HR Manager Account</th>
@@ -246,7 +277,6 @@
     </div>
   </div>
 </template>
-
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
@@ -273,6 +303,97 @@ const errorMessage = ref('')
 const branches = ref([])
 const defaultPassword = ref('Chikintayo_123')
 
+const accountOptions = [
+  { key: 'admin', label: 'Admin Account', badgeText: 'ADMIN', badgeClass: 'admin-badge', prefix: 'admin' },
+  { key: 'hr', label: 'HR Manager Account', badgeText: 'HR MANAGER', badgeClass: 'hr-badge', prefix: 'hr' },
+  { key: 'finance', label: 'Finance Manager Account', badgeText: 'FINANCE MANAGER', badgeClass: 'finance-badge', prefix: 'finance' },
+  { key: 'procurement', label: 'Procurement Manager Account', badgeText: 'PROCUREMENT MANAGER', badgeClass: 'procurement-badge', prefix: 'procurement' },
+  { key: 'logistics', label: 'Logistics Manager Account', badgeText: 'LOGISTICS MANAGER', badgeClass: 'logistics-badge', prefix: 'logistics' },
+]
+
+// Modules and granular functions available for custom accounts
+const permissionTemplates = [
+  { key: 'admin', label: 'Admin', functions: [
+    { key: 'admin.users', label: 'User Management' },
+    { key: 'admin.branches', label: 'Branch Settings' },
+    { key: 'admin.settings', label: 'System Settings' },
+  ]},
+  { key: 'finance', label: 'Finance', functions: [
+    { key: 'finance.dashboard', label: 'Dashboard & KPIs' },
+    { key: 'finance.budget', label: 'Branch Budgets' },
+    { key: 'finance.reports', label: 'Reports' },
+    { key: 'finance.expenses', label: 'Expenses' },
+  ]},
+  { key: 'logistics', label: 'Logistics', functions: [
+    { key: 'logistics.dispatch', label: 'Dispatch / Delivery' },
+    { key: 'logistics.receiving', label: 'Receiving' },
+    { key: 'logistics.transfers', label: 'Transfers' },
+  ]},
+  { key: 'inventory', label: 'Inventory', functions: [
+    { key: 'inventory.products', label: 'Products' },
+    { key: 'inventory.counts', label: 'Stock Counts' },
+    { key: 'inventory.adjustments', label: 'Adjustments' },
+  ]},
+  { key: 'procurement', label: 'Procurement', functions: [
+    { key: 'procurement.purchase_orders', label: 'Purchase Orders' },
+    { key: 'procurement.suppliers', label: 'Suppliers' },
+    { key: 'procurement.approvals', label: 'Approvals' },
+  ]},
+  { key: 'kitchen', label: 'Kitchen Staff', functions: [
+    { key: 'kitchen.orders', label: 'Orders Queue' },
+    { key: 'kitchen.production', label: 'Production' },
+    { key: 'kitchen.waste', label: 'Waste / Spoilage' },
+  ]},
+  { key: 'cashier', label: 'Cashier', functions: [
+    { key: 'cashier.pos', label: 'POS' },
+    { key: 'cashier.refunds', label: 'Refunds / Voids' },
+    { key: 'cashier.shifts', label: 'Shift Closure' },
+  ]},
+  { key: 'hr', label: 'HR', functions: [
+    { key: 'hr.attendance', label: 'Attendance' },
+    { key: 'hr.scheduling', label: 'Scheduling' },
+    { key: 'hr.payroll', label: 'Payroll Export' },
+  ]},
+  { key: 'reports', label: 'Reports', functions: [
+    { key: 'reports.sales', label: 'Sales Reports' },
+    { key: 'reports.inventory', label: 'Inventory Reports' },
+    { key: 'reports.finance', label: 'Finance Reports' },
+  ]},
+]
+
+function buildPermissionState() {
+  const modules = {}
+  const functions = {}
+  permissionTemplates.forEach(mod => {
+    modules[mod.key] = false
+    mod.functions.forEach(fn => { functions[fn.key] = false })
+  })
+  return { modules, functions }
+}
+
+const defaultAccountSelection = () => ({
+  admin: true,
+  hr: true,
+  finance: true,
+  procurement: true,
+  logistics: true,
+})
+
+const getInitialBranchForm = () => ({
+  code: '',
+  name: '',
+  address: '',
+  budget: 100000,
+  selectedAccounts: defaultAccountSelection(),
+  customAccount: {
+    enabled: false,
+    username: '',
+    fullName: '',
+    password: '',
+    permissions: buildPermissionState(),
+  },
+})
+
 // Show/hide password toggle for default password preview
 const showPassword = ref(false)
 const maskedPassword = computed(() => {
@@ -290,12 +411,8 @@ const showAddBranchForm = ref(false)
 const isSubmitting = ref(false)
 const formError = ref('')
 const formSuccess = ref('')
-const branchForm = ref({
-  code: '',
-  name: '',
-  address: '',
-  budget: 100000,
-})
+const branchForm = ref(getInitialBranchForm())
+const codeSlugPreview = computed(() => branchForm.value.code ? branchForm.value.code.toLowerCase() : 'branchcode')
 
 const isDeleting = ref(false)
 
@@ -382,7 +499,7 @@ function closeAddBranch() {
   showAddBranchForm.value = false
   formError.value = ''
   formSuccess.value = ''
-  branchForm.value = { code: '', name: '', address: '', budget: 100000 }
+  branchForm.value = getInitialBranchForm()
 }
 
 function suggestBranchCode(name) {
@@ -397,6 +514,7 @@ function suggestBranchCode(name) {
 
 function openAddBranchForm() {
   // Prefill suggested code based on current name (if any) or timestamp
+  branchForm.value = getInitialBranchForm()
   branchForm.value.code = suggestBranchCode(branchForm.value.name)
   branchForm.value.budget = 100000
   formError.value = ''
@@ -416,11 +534,40 @@ async function submitBranch() {
   isSubmitting.value = true
   try {
     await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
+
+    let customAccountPayload = null
+    if (branchForm.value.customAccount.enabled) {
+      const selectedModules = permissionTemplates
+        .filter(m => branchForm.value.customAccount.permissions.modules[m.key])
+        .map(m => m.key)
+
+      const selectedFunctions = permissionTemplates.flatMap(m =>
+        m.functions
+          .filter(fn => branchForm.value.customAccount.permissions.functions[fn.key])
+          .map(fn => fn.key)
+      )
+
+      if (selectedModules.length > 0 || selectedFunctions.length > 0) {
+        const username = (branchForm.value.customAccount.username || '').trim() || `custom_${codeSlugPreview.value}`
+        const fullName = (branchForm.value.customAccount.fullName || '').trim() || `Custom Account - ${branchForm.value.name || branchForm.value.code}`
+        const password = (branchForm.value.customAccount.password || '').trim() || defaultPassword.value
+        customAccountPayload = {
+          username,
+          full_name: fullName,
+          password,
+          modules: selectedModules,
+          functions: selectedFunctions,
+        }
+      }
+    }
+
     const res = await axios.post('/api/superadmin/branches', {
       code: branchForm.value.code.trim(),
       name: branchForm.value.name.trim(),
       address: branchForm.value.address.trim(),
       budget: Number(branchForm.value.budget) || 0,
+      accounts: branchForm.value.selectedAccounts,
+      custom_account: customAccountPayload,
     }, { withCredentials: true })
 
     if (res.data && res.data.ok) {
@@ -542,14 +689,32 @@ textarea.form-input { resize: vertical; }
 .default-accounts-info h3 { margin: 0 0 0.25rem 0; font-size: 1rem; color: #374151; }
 .info-sub { margin: 0 0 1rem 0; color: #6b7280; font-size: 0.85rem; }
 .default-account-list { display: flex; flex-direction: column; gap: 0.75rem; }
-.default-account-item { display: flex; align-items: center; gap: 1rem; padding: 0.75rem 1rem; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; }
+.default-account-item { display: flex; align-items: flex-start; gap: 1rem; padding: 0.75rem 1rem; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; }
 .account-role-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
 .admin-badge { background: #dbeafe; color: #1d4ed8; }
 .hr-badge { background: #dcfce7; color: #166534; }
 .finance-badge { background: #fef3c7; color: #b45309; }
 .logistics-badge { background: #e0e7ff; color: #4338ca; }
 .procurement-badge { background: #fff7ed; color: #92400e; }
-.account-details { display: flex; flex-direction: column; gap: 2px; font-size: 0.85rem; color: #4b5563; }
+.account-details { display: flex; flex-direction: column; gap: 6px; font-size: 0.85rem; color: #4b5563; }
+.account-checkbox { width: 18px; height: 18px; margin-top: 4px; accent-color: #ff8c42; cursor: pointer; }
+.account-checkbox-label { font-weight: 700; color: #374151; cursor: pointer; }
+.checkbox-helper { margin-left: 6px; font-weight: 600; color: #6b7280; font-size: 0.8rem; }
+.account-info { display: flex; flex-direction: column; gap: 6px; }
+.account-username, .account-password { display: inline-flex; align-items: center; gap: 6px; }
+.password-toggle-btn { margin-left: 8px; padding: 4px 8px; font-size: 0.78rem; }
+
+.custom-account-card { margin: 0 0 1.5rem 0; padding: 1.25rem 2rem; border-top: 1px solid #e5e7eb; background: #fffefb; }
+.custom-account-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.toggle { display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; color: #374151; }
+.custom-account-body { margin-top: 1rem; display: flex; flex-direction: column; gap: 1rem; }
+.form-grid.compact { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; padding: 0; }
+.permission-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem; }
+.permission-card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 0.75rem; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+.permission-card-header { margin-bottom: 0.5rem; font-weight: 700; color: #111827; }
+.module-label { margin-left: 0.4rem; }
+.permission-functions { display: flex; flex-direction: column; gap: 0.4rem; }
+.function-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: #374151; }
 
 .error-message { margin: 0 2rem 1rem; padding: 0.75rem 1rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; color: #dc2626; font-size: 0.9rem; }
 .success-message { margin: 0 2rem 1rem; padding: 0.75rem 1rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; color: #16a34a; font-size: 0.9rem; }

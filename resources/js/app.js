@@ -17,6 +17,7 @@ import ManagerHRStaffManagement from './components/ManagerHRStaffManagement.vue'
 import ManagerProcurementPanel from './components/ProcurementManagerPanel.vue'
 import StaffCashierPanel from './components/StaffCashierPanel.vue'
 import SuperAdmin from './components/SuperAdmin.vue'
+const CustomPanel = () => import('./components/CustomPanel.vue')
 import axios from 'axios'
 
 // SweetAlert2 wrapper (exposes `swalAlert`, `swalConfirm`, `swalPrompt`, and replaces `window.alert` visually)
@@ -78,12 +79,23 @@ axios.interceptors.request.use(config => {
   // If there is no laravel session cookie, avoid sending any stored Authorization header
   // This prevents sending a stale Bearer token for endpoints expecting session (web) auth
   try {
-    const laravelSession = getCookie('laravel_session')
+    // Detect session cookie dynamically instead of relying on a hard-coded
+    // "laravel_session" name. Some deployments use a custom session cookie
+    // name (eg. "myapp-session"), so check for any cookie containing
+    // "session" or ending with "-session".
+    let laravelSession = getCookie('laravel_session')
+    if (!laravelSession) {
+      try {
+        const pairs = String(document.cookie || '').split('; ').map(p => p.split('='))
+        const found = pairs.find(([k]) => !!k && (/session$/i.test(k) || /session/i.test(k)))
+        if (found) laravelSession = decodeURIComponent(found[1] || '')
+      } catch (e) { /* ignore */ }
+    }
+
     // Preserve Authorization header for API requests (Sanctum token auth).
     // Only remove the Authorization header for non-API requests when there is
     // no session cookie to avoid accidentally stripping Bearer tokens used
     // for stateless API endpoints.
-    // Check if URL is an API request (starts with /api or includes /api/)
     const url = String(config.url || '')
     const isApiRequest = url.startsWith('/api') || url.includes('/api/')
     if (!laravelSession && config && config.headers && config.headers['Authorization'] && !isApiRequest) {
@@ -186,6 +198,7 @@ const router = createRouter({
     { path: '/staff/kitchen', component: () => import('./components/KitchenStaffPanel.vue'), meta: { requiresAuth: true } },
     { path: '/supplier-panel', component: SupplierPanel, meta: { requiresAuth: true } },
     { path: '/owner-panel', component: AdminPanel },
+    { path: '/custom-panel', component: CustomPanel, meta: { requiresAuth: true } },
     { path: '/hr-panel', component: DeletedStaffList},
     {
       path: '/staff-management',
@@ -446,26 +459,36 @@ router.beforeEach(async (to, from, next) => {
     }
 
     // STRICT ROLE CHECK - Manager Inventory should only access /manager/inventory
+    const hasModule = (m) => {
+      try {
+        const perms = user.permissions || {};
+        const mods = Array.isArray(perms.modules) ? perms.modules.map(x => (x||'').toString().toLowerCase()) : [];
+        return mods.includes((m||'').toString().toLowerCase());
+      } catch (e) { return false }
+    }
+
     if (to.path.startsWith('/manager/inventory')) {
-      if (user.role !== 'manager' || user.department !== 'inventory') {
+      if (user.role === 'manager' && user.department === 'inventory') { /* ok */ }
+      else if (user.role === 'custom' && hasModule('inventory')) { /* ok */ }
+      else {
         console.warn('[ROUTER] Manager Inventory - wrong role/department:', user);
         return next('/unauthorized');
       }
     }
     if (to.path.startsWith('/manager/finance')) {
-      if (user.role !== 'manager' || user.department !== 'finance') {
-        return next('/unauthorized');
-      }
+      if (user.role === 'manager' && user.department === 'finance') { }
+      else if (user.role === 'custom' && hasModule('finance')) { }
+      else return next('/unauthorized');
     }
     if (to.path.startsWith('/manager/logistics')) {
-      if (user.role !== 'manager' || user.department !== 'logistics') {
-        return next('/unauthorized');
-      }
+      if (user.role === 'manager' && user.department === 'logistics') { }
+      else if (user.role === 'custom' && hasModule('logistics')) { }
+      else return next('/unauthorized');
     }
     if (to.path.startsWith('/manager/hr')) {
-      if (user.role !== 'manager' || user.department !== 'hr') {
-        return next('/unauthorized');
-      }
+      if (user.role === 'manager' && user.department === 'hr') { }
+      else if (user.role === 'custom' && hasModule('hr')) { }
+      else return next('/unauthorized');
       // Allow navigation to staff-management sub-route
       return next();
     }
@@ -479,7 +502,9 @@ router.beforeEach(async (to, from, next) => {
     // Staff Inventory should only access /staff/inventory
     // Supplier panel access
     if (to.path.startsWith('/supplier-panel')) {
-      if (user.role !== 'supplier') {
+      if (user.role === 'supplier') { }
+      else if (user.role === 'custom' && hasModule('supplier')) { }
+      else {
         console.warn('[ROUTER] Supplier panel - wrong role:', user);
         return next('/unauthorized');
       }
@@ -510,7 +535,9 @@ router.beforeEach(async (to, from, next) => {
 
     // Admin panel - authenticated but not admin → redirect to unauthorized
     if (to.path === '/admin-panel') {
-      if (user.role !== 'admin') {
+      if (user.role === 'admin') { }
+      else if (user.role === 'custom' && hasModule('admin')) { }
+      else {
         return next('/unauthorized');
       }
     }

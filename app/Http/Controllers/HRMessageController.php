@@ -13,6 +13,10 @@ class HRMessageController extends Controller
     {
         $user = $this->currentUser();
 
+        if (! $user) {
+            return redirect()->route('login');
+        }
+
         $users = $this->resolveChatUsersFor($user);
 
         return view('hr.messages', compact('users'));
@@ -21,6 +25,9 @@ class HRMessageController extends Controller
     public function conversation($otherUserId)
     {
         $me = $this->currentUser();
+        if (! $me) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
         $other = User::findOrFail($otherUserId);
 
         if (! $this->canChatWith($me, $other)) {
@@ -57,6 +64,9 @@ class HRMessageController extends Controller
     public function users()
     {
         $user = $this->currentUser();
+        if (! $user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
 
         $users = $this->resolveChatUsersFor($user);
 
@@ -71,6 +81,9 @@ class HRMessageController extends Controller
         ]);
 
         $me = $this->currentUser();
+        if (! $me) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
         $to = User::findOrFail($request->to_user_id);
 
         if (! $this->canChatWith($me, $to)) {

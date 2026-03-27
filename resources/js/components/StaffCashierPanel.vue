@@ -6,7 +6,10 @@
         <h1>Cashier - {{ branchName }}</h1>
         <p>Process transactions and manage sales</p>
       </div>
-      <button class="logout-btn" @click="confirmLogout">Logout</button>
+      <div class="header-actions">
+        <button class="back-btn" @click="goBack">← Back</button>
+        <button class="logout-btn" @click="confirmLogout">Logout</button>
+      </div>
     </header>
 
     <div v-if="!branchId" class="loading-text">
@@ -212,7 +215,10 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import axios from 'axios'
+
+const router = useRouter()
 
 // State
 const branchId = ref(null)
@@ -296,6 +302,10 @@ const grandTotal = computed(() => Number((taxable.value + vatAmount.value).toFix
 const canCheckout = computed(() =>
   cart.value.length > 0 && amountPaid.value >= grandTotal.value && grandTotal.value > 0
 )
+
+function goBack() {
+  try { router.push({ path: '/custom-panel', query: { from: 'custom-panel' } }) } catch (e) { window.location.href = '/custom-panel' }
+}
 
 // Load staff profile and set branch
 async function loadStaffProfile() {

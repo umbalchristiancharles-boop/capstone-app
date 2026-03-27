@@ -80,23 +80,23 @@ Route::middleware('web')->group(function () {
     Route::get('/announcements', [\App\Http\Controllers\Api\AnnouncementController::class, 'index'])->middleware('auth');
 
 // SuperAdmin Logistics - Product Management across all branches
-    Route::get('/superadmin/logistics/products', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsProducts'])->middleware('auth');
-    Route::post('/superadmin/logistics/products', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsStoreProduct'])->middleware('auth');
-    Route::put('/superadmin/logistics/products/{id}', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsUpdateProduct'])->middleware('auth');
-    Route::delete('/superadmin/logistics/products/{id}', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsDestroyProduct'])->middleware('auth');
-    Route::get('/superadmin/logistics/branches', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsBranches'])->middleware('auth');
+    Route::get('/superadmin/logistics/products', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsProducts'])->middleware(['auth','permission:logistics']);
+    Route::post('/superadmin/logistics/products', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsStoreProduct'])->middleware(['auth','permission:logistics']);
+    Route::put('/superadmin/logistics/products/{id}', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsUpdateProduct'])->middleware(['auth','permission:logistics']);
+    Route::delete('/superadmin/logistics/products/{id}', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsDestroyProduct'])->middleware(['auth','permission:logistics']);
+    Route::get('/superadmin/logistics/branches', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsBranches'])->middleware(['auth','permission:logistics']);
 
     // SuperAdmin Branch Management
-    Route::get('/superadmin/branches', [\App\Http\Controllers\Api\SuperAdminController::class, 'branchesWithAccounts'])->middleware('auth');
-    Route::post('/superadmin/branches', [\App\Http\Controllers\Api\SuperAdminController::class, 'storeBranch'])->middleware('auth');
+    Route::get('/superadmin/branches', [\App\Http\Controllers\Api\SuperAdminController::class, 'branchesWithAccounts'])->middleware(['auth', 'permission:admin']);
+    Route::post('/superadmin/branches', [\App\Http\Controllers\Api\SuperAdminController::class, 'storeBranch'])->middleware(['auth', 'permission:admin,admin.branches']);
     // Delete a branch (soft-delete branch and associated user accounts)
-    Route::delete('/superadmin/branches/{id}', [\App\Http\Controllers\Api\SuperAdminController::class, 'deleteBranch'])->middleware('auth');
+    Route::delete('/superadmin/branches/{id}', [\App\Http\Controllers\Api\SuperAdminController::class, 'deleteBranch'])->middleware(['auth', 'permission:admin,admin.branches']);
 
     // ==========================================
     // SUPERADMIN FINANCE MODULE
     // Financial monitoring, analytics, and reporting across all branches
     // ==========================================
-    Route::prefix('superadmin/finance')->middleware('auth')->group(function () {
+    Route::prefix('superadmin/finance')->middleware(['auth','permission:finance'])->group(function () {
         // Dashboard - Get financial KPIs
         Route::get('/dashboard', [\App\Http\Controllers\SuperAdmin\Finance\SuperAdminFinanceController::class, 'dashboard']);
 
@@ -127,17 +127,17 @@ Route::middleware('web')->group(function () {
     // ==========================================
     // SUPERADMIN CASHIER
     // ==========================================
-    Route::get('/superadmin/cashier/branches',    [\App\Http\Controllers\Api\CashierController::class, 'branches']);
-    Route::get('/superadmin/cashier/products',    [\App\Http\Controllers\Api\CashierController::class, 'products']);
-    Route::post('/superadmin/cashier/checkout',   [\App\Http\Controllers\Api\CashierController::class, 'checkout']);
-    Route::post('/superadmin/cashier/cancel-pending', [\App\Http\Controllers\Api\CashierController::class, 'cancelPending']);
-    Route::post('/superadmin/cashier/refund',   [\App\Http\Controllers\Api\CashierController::class, 'refund']);
-    Route::get('/superadmin/cashier/transactions',[\App\Http\Controllers\Api\CashierController::class, 'transactions']);
+    Route::get('/superadmin/cashier/branches',    [\App\Http\Controllers\Api\CashierController::class, 'branches'])->middleware(['auth','permission:cashier']);
+    Route::get('/superadmin/cashier/products',    [\App\Http\Controllers\Api\CashierController::class, 'products'])->middleware(['auth','permission:cashier']);
+    Route::post('/superadmin/cashier/checkout',   [\App\Http\Controllers\Api\CashierController::class, 'checkout'])->middleware(['auth','permission:cashier']);
+    Route::post('/superadmin/cashier/cancel-pending', [\App\Http\Controllers\Api\CashierController::class, 'cancelPending'])->middleware(['auth','permission:cashier']);
+    Route::post('/superadmin/cashier/refund',   [\App\Http\Controllers\Api\CashierController::class, 'refund'])->middleware(['auth','permission:cashier']);
+    Route::get('/superadmin/cashier/transactions',[\App\Http\Controllers\Api\CashierController::class, 'transactions'])->middleware(['auth','permission:cashier']);
 
     Route::get('/owner-dashboard', [OwnerDashboardController::class, 'index']);
 
     // HR Messaging routes
-    Route::prefix('hr')->middleware('auth')->group(function () {
+        Route::prefix('hr')->middleware(['auth','permission:hr'])->group(function () {
         Route::get('/messages/users', [\App\Http\Controllers\HRMessageController::class, 'users']);
         Route::get('/messages/conversation/{userId}', [\App\Http\Controllers\HRMessageController::class, 'conversation']);
         Route::post('/messages/send', [\App\Http\Controllers\HRMessageController::class, 'send']);
@@ -328,10 +328,10 @@ Route::prefix('manager')->middleware('auth')->group(function () {
             Route::get('/logistics/deliveries', function() { return response()->json([]); });
 
             // Kitchen - Dish creation and ingredient submission
-            Route::get('/kitchen/dishes', [\App\Http\Controllers\Staff\KitchenDishController::class, 'index']);
-            Route::post('/kitchen/dishes', [\App\Http\Controllers\Staff\KitchenDishController::class, 'store']);
-            Route::post('/kitchen/dishes/{id}/produce', [\App\Http\Controllers\Staff\KitchenDishController::class, 'produce']);
-            Route::post('/kitchen/ingredients/{id}/low-stock', [\App\Http\Controllers\Staff\KitchenDishController::class, 'markLowStock']);
+            Route::get('/kitchen/dishes', [\App\Http\Controllers\Staff\KitchenDishController::class, 'index'])->middleware(['auth', 'permission:kitchen,fn:kitchen.orders']);
+            Route::post('/kitchen/dishes', [\App\Http\Controllers\Staff\KitchenDishController::class, 'store'])->middleware(['auth', 'permission:kitchen,fn:kitchen.production']);
+            Route::post('/kitchen/dishes/{id}/produce', [\App\Http\Controllers\Staff\KitchenDishController::class, 'produce'])->middleware(['auth', 'permission:kitchen,fn:kitchen.production']);
+            Route::post('/kitchen/ingredients/{id}/low-stock', [\App\Http\Controllers\Staff\KitchenDishController::class, 'markLowStock'])->middleware(['auth', 'permission:kitchen,fn:kitchen.waste']);
         });
     });
 

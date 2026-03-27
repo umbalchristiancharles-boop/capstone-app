@@ -90,6 +90,31 @@
               </div>
             </div>
           </div>
+
+          <div class="queue-card">
+            <div class="queue-header">
+              <div>
+                <h3>Orders Queue</h3>
+                <p class="sub">Pending / In Kitchen orders for this branch</p>
+              </div>
+              <button type="button" class="refresh-btn" @click="loadOrderQueue" :disabled="queueLoading">
+                {{ queueLoading ? 'Refreshing...' : 'Refresh' }}
+              </button>
+            </div>
+            <div v-if="queueLoading">Loading queue...</div>
+            <div v-else-if="queueError" class="muted">{{ queueError }}</div>
+            <div v-else-if="queueForbidden" class="muted">Access requires kitchen.orders permission.</div>
+            <div v-else-if="orderQueue.length === 0" class="muted">No orders in queue.</div>
+            <div v-else class="queue-list">
+              <div v-for="order in orderQueue" :key="order.id" class="queue-item">
+                <div class="queue-main">
+                  <strong>{{ order.title }}</strong>
+                  <span class="queue-meta">{{ order.meta }}</span>
+                </div>
+                <span :class="['badge', order.badgeClass]">{{ order.badgeLabel }}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
     </template>
@@ -104,8 +129,12 @@ import axios from 'axios'
 const userProfile = ref({})
 const dishes = ref([])
 const loading = ref(false)
+const queueLoading = ref(false)
 const message = ref('')
 const products = ref([])
+const orderQueue = ref([])
+const queueForbidden = ref(false)
+const queueError = ref('')
 
 const form = ref({
   name: '',
@@ -157,6 +186,46 @@ async function loadProducts() {
   } catch (e) {
     console.error('Failed to load products for kitchen form', e)
     products.value = []
+  }
+}
+
+function mapQueueItem(task) {
+  const status = String(task.status || task.badgeLabel || '').toLowerCase()
+  const badgeLabel = task.badgeLabel || (status ? status.replace(/_/g, ' ') : 'pending')
+  const badgeClass = task.badgeClass || (status === 'in_kitchen' ? 'badge--warning' : 'badge--info')
+  const title = task.title || `Order #${task.code || task.id || task.order_id || 'N/A'}`
+  const meta = task.meta || [task.customer ?? task.customer_name ?? 'Guest', task.created_at ?? task.time ?? ''].filter(Boolean).join(' • ')
+  return {
+    id: task.id || task.order_id || task.code || Math.random().toString(36).slice(2, 9),
+    title,
+    meta,
+    badgeLabel,
+    badgeClass,
+  }
+}
+
+async function loadOrderQueue() {
+  queueLoading.value = true
+  queueForbidden.value = false
+  queueError.value = ''
+  try {
+    const res = await axios.get('/api/staff/dashboard', { params: { range: 'today' } })
+    const tasks = res.data?.myTasks || res.data?.ordersQueue || res.data?.data?.myTasks || []
+    orderQueue.value = Array.isArray(tasks) ? tasks.map(mapQueueItem) : []
+  } catch (e) {
+    const status = e?.response?.status
+    if (status === 401) {
+      queueError.value = 'Please log in again to see the kitchen queue.'
+    } else if (status === 403) {
+      queueForbidden.value = true
+      queueError.value = 'You do not have access to the kitchen orders queue.'
+    } else {
+      queueError.value = 'Unable to load the kitchen queue right now.'
+    }
+    console.error('Failed to load order queue', e)
+    orderQueue.value = []
+  } finally {
+    queueLoading.value = false
   }
 }
 
@@ -216,7 +285,7 @@ onMounted(async () => {
   } catch (e) {
     console.error('Failed to load staff profile for kitchen panel', e)
   }
-  await Promise.all([loadDishes(), loadProducts()])
+  await Promise.all([loadDishes(), loadProducts(), loadOrderQueue()])
 })
 
 // Logout state and handlers (consistent with other staff panels)
@@ -246,4 +315,17 @@ async function performLogout() {
 .panel-block { padding: 1rem; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff }
 .panel-header h2 { margin: 0 0 8px 0 }
 .panel-body { color: #374151 }
+.queue-card { margin-top: 1.5rem; padding: 1rem; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb }
+.queue-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.queue-header h3 { margin: 0; }
+.sub { margin: 0; color: #6b7280; font-size: 0.9rem; }
+.refresh-btn { padding: 0.5rem 0.9rem; border: 1px solid #d1d5db; background: #fff; border-radius: 6px; cursor: pointer; }
+.queue-list { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.75rem; }
+.queue-item { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; }
+.queue-main { display: flex; flex-direction: column; gap: 4px; }
+.queue-meta { color: #6b7280; font-size: 0.9rem; }
+.muted { color: #6b7280; }
+.badge { padding: 0.25rem 0.6rem; border-radius: 999px; font-size: 0.82rem; text-transform: capitalize; }
+.badge--warning { background: #fff7ed; color: #b45309; }
+.badge--info { background: #e0f2fe; color: #0369a1; }
 </style>

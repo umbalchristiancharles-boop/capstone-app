@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Models\Branch;
 use App\Models\Order;
     use Illuminate\Support\Facades\Schema;
+use App\Support\Permission;
 
 class SuperAdminController extends Controller
 {
@@ -24,6 +25,21 @@ class SuperAdminController extends Controller
         if (Auth::check()) {
             return Auth::user();
         }
+
+        // Try Sanctum guard (token-based) if available
+        try {
+            $sanctumUser = auth('sanctum')->user();
+            if ($sanctumUser) return $sanctumUser;
+        } catch (\Throwable $e) {}
+
+        // Try Personal Access Token lookup (plain bearer token)
+        try {
+            $bearer = $request->bearerToken();
+            if ($bearer && class_exists(\Laravel\Sanctum\PersonalAccessToken::class)) {
+                $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($bearer);
+                if ($tokenModel && $tokenModel->tokenable) return $tokenModel->tokenable;
+            }
+        } catch (\Throwable $e) {}
 
         $sessionUserId = $request->session()->get('user_id');
         if ($sessionUserId) {
@@ -44,10 +60,8 @@ class SuperAdminController extends Controller
             return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
         }
 
-        // Check if user is super admin
-        $roleUpper = strtoupper($user->role ?? '');
-        // Allow Super Admins and Owners to send announcements
-        if (!in_array($roleUpper, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER'])) {
+        $allowed = Permission::allowed($user, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER'], ['admin']);
+        if (! $allowed) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -87,8 +101,8 @@ class SuperAdminController extends Controller
             return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
         }
 
-        $roleUpper = strtoupper($user->role ?? '');
-        if ($roleUpper !== 'SUPER_ADMIN' && $roleUpper !== 'SUPERADMIN') {
+        $allowed = Permission::allowed($user, ['SUPER_ADMIN', 'SUPERADMIN'], ['admin']);
+        if (! $allowed) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -163,8 +177,8 @@ class SuperAdminController extends Controller
             return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
         }
 
-        $roleUpper = strtoupper($user->role ?? '');
-        if ($roleUpper !== 'SUPER_ADMIN' && $roleUpper !== 'SUPERADMIN') {
+        $allowed = Permission::allowed($user, ['SUPER_ADMIN', 'SUPERADMIN'], ['admin']);
+        if (! $allowed) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -208,8 +222,8 @@ class SuperAdminController extends Controller
             return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
         }
 
-        $roleUpper = strtoupper($user->role ?? '');
-        if ($roleUpper !== 'SUPER_ADMIN' && $roleUpper !== 'SUPERADMIN') {
+        $allowed = Permission::allowed($user, ['SUPER_ADMIN', 'SUPERADMIN'], ['admin']);
+        if (! $allowed) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -348,9 +362,8 @@ class SuperAdminController extends Controller
             return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
         }
 
-        $roleUpper = strtoupper($user->role ?? '');
-        // Allow Super Admins and Owners to send announcements
-        if (!in_array($roleUpper, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER'])) {
+        $allowed = Permission::allowed($user, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER'], ['admin']);
+        if (! $allowed) {
             Log::warning('Unauthorized announcement attempt', [
                 'user_id' => $user->id ?? null,
                 'role' => $user->role ?? null,
@@ -719,102 +732,111 @@ class SuperAdminController extends Controller
      */
     public function branchesWithAccounts(Request $request)
     {
-        $user = $this->resolveAuthenticatedUser($request);
+        try {
+            $user = $this->resolveAuthenticatedUser($request);
 
-        if (!$user) {
-            return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
+            if (!$user) {
+                return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
+            }
+
+            $roleUpper = strtoupper($user->role ?? '');
+            $isMainBranchAdmin = false;
+            if ($roleUpper === 'ADMIN') {
+                $b = Branch::find($user->branch_id);
+                $isMainBranchAdmin = (bool) ($b && ($b->is_main_branch ?? false));
+            }
+            $allowed = Permission::allowed($user, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER'], ['admin', 'admin.branches']);
+            if (! $allowed && ! $isMainBranchAdmin) {
+                return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
+            }
+
+            $branches = Branch::orderBy('name', 'asc')->get();
+
+            $result = $branches->map(function ($branch) {
+                $adminUser = User::where('branch_id', $branch->id)
+                    ->where('role', 'ADMIN')
+                    ->whereNull('deleted_at')
+                    ->first();
+
+                $hrManager = User::where('branch_id', $branch->id)
+                    ->where('role', 'MANAGER')
+                    ->where('department', 'HR')
+                    ->whereNull('deleted_at')
+                    ->first();
+
+                $financeManager = User::where('branch_id', $branch->id)
+                    ->where('role', 'MANAGER')
+                    ->where('department', 'FINANCE')
+                    ->whereNull('deleted_at')
+                    ->first();
+
+                $procurementManager = User::where('branch_id', $branch->id)
+                    ->where('role', 'MANAGER')
+                    ->where('department', 'PROCUREMENT')
+                    ->whereNull('deleted_at')
+                    ->first();
+
+                $logisticsManager = User::where('branch_id', $branch->id)
+                    ->where('role', 'MANAGER')
+                    ->where('department', 'Logistics')
+                    ->whereNull('deleted_at')
+                    ->first();
+
+                $staffCount = User::where('branch_id', $branch->id)
+                    ->whereNull('deleted_at')
+                    ->count();
+
+                return [
+                    'id' => $branch->id,
+                    'code' => $branch->code,
+                    'name' => $branch->name,
+                    'address' => $branch->address,
+                    'budget' => isset($branch->budget) ? (int) $branch->budget : 0,
+                    'is_active' => (bool) $branch->is_active,
+                    'is_main_branch' => (bool) ($branch->is_main_branch ?? false),
+                    'can_delete' => !((bool) ($branch->is_main_branch ?? false)),
+                    'staff_count' => $staffCount,
+                    'admin_user' => $adminUser ? [
+                        'id' => $adminUser->id,
+                        'username' => $adminUser->username,
+                        'email' => $adminUser->email,
+                        'is_active' => (bool) $adminUser->is_active,
+                    ] : null,
+                    'hr_manager' => $hrManager ? [
+                        'id' => $hrManager->id,
+                        'username' => $hrManager->username,
+                        'email' => $hrManager->email,
+                        'is_active' => (bool) $hrManager->is_active,
+                    ] : null,
+                    'finance_manager' => $financeManager ? [
+                        'id' => $financeManager->id,
+                        'username' => $financeManager->username,
+                        'email' => $financeManager->email,
+                        'is_active' => (bool) $financeManager->is_active,
+                    ] : null,
+                    'procurement_manager' => $procurementManager ? [
+                        'id' => $procurementManager->id,
+                        'username' => $procurementManager->username,
+                        'email' => $procurementManager->email,
+                        'is_active' => (bool) $procurementManager->is_active,
+                    ] : null,
+                    'logistics_manager' => $logisticsManager ? [
+                        'id' => $logisticsManager->id,
+                        'username' => $logisticsManager->username,
+                        'email' => $logisticsManager->email,
+                        'is_active' => (bool) $logisticsManager->is_active,
+                    ] : null,
+                ];
+            });
+
+            return response()->json(['ok' => true, 'branches' => $result]);
+        } catch (\Exception $e) {
+            Log::error('branchesWithAccounts failed', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['ok' => false, 'message' => 'Failed to load branches'], 500);
         }
-
-        $roleUpper = strtoupper($user->role ?? '');
-        $isMainBranchAdmin = false;
-        if ($roleUpper === 'ADMIN') {
-            $b = Branch::find($user->branch_id);
-            $isMainBranchAdmin = (bool) ($b && ($b->is_main_branch ?? false));
-        }
-        if (!in_array($roleUpper, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER']) && !$isMainBranchAdmin) {
-            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
-        }
-
-        $branches = Branch::orderBy('name', 'asc')->get();
-
-        $result = $branches->map(function ($branch) {
-            $adminUser = User::where('branch_id', $branch->id)
-                ->where('role', 'ADMIN')
-                ->whereNull('deleted_at')
-                ->first();
-
-            $hrManager = User::where('branch_id', $branch->id)
-                ->where('role', 'MANAGER')
-                ->where('department', 'HR')
-                ->whereNull('deleted_at')
-                ->first();
-
-            $financeManager = User::where('branch_id', $branch->id)
-                ->where('role', 'MANAGER')
-                ->where('department', 'FINANCE')
-                ->whereNull('deleted_at')
-                ->first();
-
-            $procurementManager = User::where('branch_id', $branch->id)
-                ->where('role', 'MANAGER')
-                ->where('department', 'PROCUREMENT')
-                ->whereNull('deleted_at')
-                ->first();
-
-            $logisticsManager = User::where('branch_id', $branch->id)
-                ->where('role', 'MANAGER')
-                ->where('department', 'Logistics')
-                ->whereNull('deleted_at')
-                ->first();
-
-            $staffCount = User::where('branch_id', $branch->id)
-                ->whereNull('deleted_at')
-                ->count();
-
-            return [
-                'id' => $branch->id,
-                'code' => $branch->code,
-                'name' => $branch->name,
-                'address' => $branch->address,
-                'budget' => isset($branch->budget) ? (int) $branch->budget : 0,
-                'is_active' => (bool) $branch->is_active,
-                'is_main_branch' => (bool) ($branch->is_main_branch ?? false),
-                'can_delete' => !((bool) ($branch->is_main_branch ?? false)),
-                'staff_count' => $staffCount,
-                'admin_user' => $adminUser ? [
-                    'id' => $adminUser->id,
-                    'username' => $adminUser->username,
-                    'email' => $adminUser->email,
-                    'is_active' => (bool) $adminUser->is_active,
-                ] : null,
-                'hr_manager' => $hrManager ? [
-                    'id' => $hrManager->id,
-                    'username' => $hrManager->username,
-                    'email' => $hrManager->email,
-                    'is_active' => (bool) $hrManager->is_active,
-                ] : null,
-                'finance_manager' => $financeManager ? [
-                    'id' => $financeManager->id,
-                    'username' => $financeManager->username,
-                    'email' => $financeManager->email,
-                    'is_active' => (bool) $financeManager->is_active,
-                ] : null,
-                'procurement_manager' => $procurementManager ? [
-                    'id' => $procurementManager->id,
-                    'username' => $procurementManager->username,
-                    'email' => $procurementManager->email,
-                    'is_active' => (bool) $procurementManager->is_active,
-                ] : null,
-                'logistics_manager' => $logisticsManager ? [
-                    'id' => $logisticsManager->id,
-                    'username' => $logisticsManager->username,
-                    'email' => $logisticsManager->email,
-                    'is_active' => (bool) $logisticsManager->is_active,
-                ] : null,
-            ];
-        });
-
-        return response()->json(['ok' => true, 'branches' => $result]);
     }
 
     /**
@@ -834,7 +856,8 @@ class SuperAdminController extends Controller
             $b = Branch::find($user->branch_id);
             $isMainBranchAdmin = (bool) ($b && ($b->is_main_branch ?? false));
         }
-        if (!in_array($roleUpper, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER']) && !$isMainBranchAdmin) {
+        $allowed = Permission::allowed($user, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER'], ['admin', 'admin.branches']);
+        if (! $allowed && ! $isMainBranchAdmin) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -843,6 +866,20 @@ class SuperAdminController extends Controller
             'name' => 'required|string|max:100',
             'address' => 'nullable|string|max:255',
             'budget' => 'nullable|numeric|min:0',
+            'accounts' => 'nullable|array',
+            'accounts.admin' => 'nullable|boolean',
+            'accounts.hr' => 'nullable|boolean',
+            'accounts.finance' => 'nullable|boolean',
+            'accounts.procurement' => 'nullable|boolean',
+            'accounts.logistics' => 'nullable|boolean',
+            'custom_account' => 'nullable|array',
+            'custom_account.username' => 'nullable|string|max:60',
+            'custom_account.password' => 'nullable|string|min:6|max:100',
+            'custom_account.full_name' => 'nullable|string|max:120',
+            'custom_account.modules' => 'nullable|array',
+            'custom_account.modules.*' => 'string',
+            'custom_account.functions' => 'nullable|array',
+            'custom_account.functions.*' => 'string',
         ]);
 
         $code = $request->input('code');
@@ -850,6 +887,41 @@ class SuperAdminController extends Controller
         $address = $request->input('address');
 
         $defaultPassword = config('chikintayo.default_password', 'Chikintayo_123');
+
+        // Allowed permission catalog for custom accounts
+        // Permission catalog (keep in sync with frontend templates)
+        $allowedModules = [
+            'admin', 'finance', 'logistics', 'inventory', 'procurement', 'kitchen', 'cashier', 'hr', 'reports',
+        ];
+        $allowedFunctions = [
+            // Admin
+            'admin.users', 'admin.branches', 'admin.settings',
+            // Finance
+            'finance.dashboard', 'finance.budget', 'finance.reports', 'finance.expenses',
+            // Logistics
+            'logistics.dispatch', 'logistics.receiving', 'logistics.transfers',
+            // Inventory
+            'inventory.products', 'inventory.counts', 'inventory.adjustments',
+            // Procurement
+            'procurement.purchase_orders', 'procurement.suppliers', 'procurement.approvals',
+            // Kitchen
+            'kitchen.orders', 'kitchen.production', 'kitchen.waste',
+            // Cashier
+            'cashier.pos', 'cashier.refunds', 'cashier.shifts',
+            // HR
+            'hr.attendance', 'hr.scheduling', 'hr.payroll',
+            // Reports
+            'reports.sales', 'reports.inventory', 'reports.finance',
+        ];
+
+        $accountsInput = is_array($request->input('accounts')) ? $request->input('accounts') : [];
+        $selectedAccounts = [
+            'admin' => true,
+            'hr' => array_key_exists('hr', $accountsInput) ? filter_var($accountsInput['hr'], FILTER_VALIDATE_BOOLEAN) : true,
+            'finance' => array_key_exists('finance', $accountsInput) ? filter_var($accountsInput['finance'], FILTER_VALIDATE_BOOLEAN) : true,
+            'procurement' => array_key_exists('procurement', $accountsInput) ? filter_var($accountsInput['procurement'], FILTER_VALIDATE_BOOLEAN) : true,
+            'logistics' => array_key_exists('logistics', $accountsInput) ? filter_var($accountsInput['logistics'], FILTER_VALIDATE_BOOLEAN) : true,
+        ];
 
         // If no code provided, auto-generate from name. Ensure uniqueness.
         if (empty($code)) {
@@ -883,107 +955,171 @@ class SuperAdminController extends Controller
                 'budget' => (int) ($request->input('budget', 100000)),
             ]);
 
+            $createdRoles = [];
+
             // Create default ADMIN account for this branch (no email; user will add/verify later)
-            $adminUsername = 'admin_' . $codeSlug;
+            if ($selectedAccounts['admin']) {
+                $adminUsername = 'admin_' . $codeSlug;
 
-            // Check if username already exists
-            if (User::where('username', $adminUsername)->exists()) {
-                $adminUsername = 'admin_' . $codeSlug . '_' . $branch->id;
+                // Check if username already exists
+                if (User::where('username', $adminUsername)->exists()) {
+                    $adminUsername = 'admin_' . $codeSlug . '_' . $branch->id;
+                }
+
+                User::create([
+                    'username' => $adminUsername,
+                    'email' => null,
+                    'password' => $defaultPassword, // Mutator will hash this automatically
+                    'full_name' => 'Admin - ' . $name,
+                    'role' => 'ADMIN',
+                    'department' => null,
+                    'branch_id' => $branch->id,
+                    'is_active' => 1,
+                    'must_change_password' => 1,
+                ]);
+
+                $createdRoles[] = 'Admin';
             }
-
-            User::create([
-                'username' => $adminUsername,
-                'email' => null,
-                'password' => $defaultPassword, // Mutator will hash this automatically
-                'full_name' => 'Admin - ' . $name,
-                'role' => 'ADMIN',
-                'department' => null,
-                'branch_id' => $branch->id,
-                'is_active' => 1,
-                'must_change_password' => 1,
-            ]);
 
             // Create default HR Manager account for this branch
-            $hrUsername = 'hr_' . $codeSlug;
+            if ($selectedAccounts['hr']) {
+                $hrUsername = 'hr_' . $codeSlug;
 
-            if (User::where('username', $hrUsername)->exists()) {
-                $hrUsername = 'hr_' . $codeSlug . '_' . $branch->id;
+                if (User::where('username', $hrUsername)->exists()) {
+                    $hrUsername = 'hr_' . $codeSlug . '_' . $branch->id;
+                }
+
+                User::create([
+                    'username' => $hrUsername,
+                    'email' => null,
+                    'password' => $defaultPassword, // Mutator will hash this automatically
+                    'full_name' => 'HR Manager - ' . $name,
+                    'role' => 'MANAGER',
+                    'department' => 'HR',
+                    'branch_id' => $branch->id,
+                    'is_active' => 1,
+                    'must_change_password' => 1,
+                ]);
+
+                $createdRoles[] = 'HR Manager';
             }
-
-            User::create([
-                'username' => $hrUsername,
-                'email' => null,
-                'password' => $defaultPassword, // Mutator will hash this automatically
-                'full_name' => 'HR Manager - ' . $name,
-                'role' => 'MANAGER',
-                'department' => 'HR',
-                'branch_id' => $branch->id,
-                'is_active' => 1,
-                'must_change_password' => 1,
-            ]);
 
             // Create default Finance Manager account for this branch
-            $financeUsername = 'finance_' . $codeSlug;
+            if ($selectedAccounts['finance']) {
+                $financeUsername = 'finance_' . $codeSlug;
 
-            if (User::where('username', $financeUsername)->exists()) {
-                $financeUsername = 'finance_' . $codeSlug . '_' . $branch->id;
+                if (User::where('username', $financeUsername)->exists()) {
+                    $financeUsername = 'finance_' . $codeSlug . '_' . $branch->id;
+                }
+
+                User::create([
+                    'username' => $financeUsername,
+                    'email' => null,
+                    'password' => $defaultPassword, // Mutator will hash this automatically
+                    'full_name' => 'Finance Manager - ' . $name,
+                    'role' => 'MANAGER',
+                    'department' => 'Finance',
+                    'branch_id' => $branch->id,
+                    'is_active' => 1,
+                    'must_change_password' => 1,
+                ]);
+
+                $createdRoles[] = 'Finance Manager';
             }
-
-            User::create([
-                'username' => $financeUsername,
-                'email' => null,
-                'password' => $defaultPassword, // Mutator will hash this automatically
-                'full_name' => 'Finance Manager - ' . $name,
-                'role' => 'MANAGER',
-                'department' => 'Finance',
-                'branch_id' => $branch->id,
-                'is_active' => 1,
-                'must_change_password' => 1,
-            ]);
 
             // Create default Procurement Manager account for this branch
-            $procurementUsername = 'procurement_' . $codeSlug;
+            if ($selectedAccounts['procurement']) {
+                $procurementUsername = 'procurement_' . $codeSlug;
 
-            if (User::where('username', $procurementUsername)->exists()) {
-                $procurementUsername = 'procurement_' . $codeSlug . '_' . $branch->id;
+                if (User::where('username', $procurementUsername)->exists()) {
+                    $procurementUsername = 'procurement_' . $codeSlug . '_' . $branch->id;
+                }
+
+                User::create([
+                    'username' => $procurementUsername,
+                    'email' => null,
+                    'password' => $defaultPassword, // Mutator will hash this automatically
+                    'full_name' => 'Procurement Manager - ' . $name,
+                    'role' => 'MANAGER',
+                    'department' => 'PROCUREMENT',
+                    'branch_id' => $branch->id,
+                    'is_active' => 1,
+                    'must_change_password' => 1,
+                ]);
+
+                $createdRoles[] = 'Procurement Manager';
             }
-
-            User::create([
-                'username' => $procurementUsername,
-                'email' => null,
-                'password' => $defaultPassword, // Mutator will hash this automatically
-                'full_name' => 'Procurement Manager - ' . $name,
-                'role' => 'MANAGER',
-                'department' => 'PROCUREMENT',
-                'branch_id' => $branch->id,
-                'is_active' => 1,
-                'must_change_password' => 1,
-            ]);
 
             // Create default Logistics Manager account for this branch
-            $logisticsUsername = 'logistics_' . $codeSlug;
+            if ($selectedAccounts['logistics']) {
+                $logisticsUsername = 'logistics_' . $codeSlug;
 
-            if (User::where('username', $logisticsUsername)->exists()) {
-                $logisticsUsername = 'logistics_' . $codeSlug . '_' . $branch->id;
+                if (User::where('username', $logisticsUsername)->exists()) {
+                    $logisticsUsername = 'logistics_' . $codeSlug . '_' . $branch->id;
+                }
+
+                User::create([
+                    'username' => $logisticsUsername,
+                    'email' => null,
+                    'password' => $defaultPassword, // Mutator will hash this automatically
+                    'full_name' => 'Logistics Manager - ' . $name,
+                    'role' => 'MANAGER',
+                    'department' => 'Logistics',
+                    'branch_id' => $branch->id,
+                    'is_active' => 1,
+                    'must_change_password' => 1,
+                ]);
+
+                $createdRoles[] = 'Logistics Manager';
             }
 
-            User::create([
-                'username' => $logisticsUsername,
-                'email' => null,
-                'password' => $defaultPassword, // Mutator will hash this automatically
-                'full_name' => 'Logistics Manager - ' . $name,
-                'role' => 'MANAGER',
-                'department' => 'Logistics',
-                'branch_id' => $branch->id,
-                'is_active' => 1,
-                'must_change_password' => 1,
-            ]);
+            // Optionally create a custom account with granular module/function access
+            $customAccountInput = $request->input('custom_account', null);
+            if (is_array($customAccountInput)) {
+                $rawModules = array_filter($customAccountInput['modules'] ?? [], fn ($m) => in_array(strtolower($m), $allowedModules, true));
+                $rawFunctions = array_filter($customAccountInput['functions'] ?? [], fn ($f) => in_array(strtolower($f), array_map('strtolower', $allowedFunctions), true));
+
+                $modules = array_values(array_unique(array_map('strtolower', $rawModules)));
+                $functions = array_values(array_unique(array_map('strtolower', $rawFunctions)));
+
+                // Only create if there is at least one permission selected
+                if (!empty($modules) || !empty($functions)) {
+                    $customUsername = trim($customAccountInput['username'] ?? '');
+                    if (empty($customUsername)) {
+                        $customUsername = 'custom_' . $codeSlug;
+                        if (User::where('username', $customUsername)->exists()) {
+                            $customUsername = 'custom_' . $codeSlug . '_' . $branch->id;
+                        }
+                    }
+
+                    $customPassword = trim($customAccountInput['password'] ?? '') ?: $defaultPassword;
+                    $customFullName = trim($customAccountInput['full_name'] ?? '') ?: ('Custom Account - ' . $name);
+
+                    User::create([
+                        'username' => $customUsername,
+                        'email' => null,
+                        'password' => $customPassword, // Mutator hashes
+                        'full_name' => $customFullName,
+                        'role' => 'CUSTOM',
+                        'department' => null,
+                        'branch_id' => $branch->id,
+                        'is_active' => 1,
+                        'must_change_password' => 1,
+                        'permissions' => [
+                            'modules' => $modules,
+                            'functions' => $functions,
+                        ],
+                    ]);
+
+                    $createdRoles[] = 'Custom Account';
+                }
+            }
 
             DB::commit();
 
             return response()->json([
                 'ok' => true,
-                'message' => "Branch '{$name}' created with default Admin, HR Manager, Finance Manager, and Logistics Manager accounts.",
+                'message' => "Branch '{$name}' created" . (!empty($createdRoles) ? ' with ' . implode(', ', $createdRoles) . ' account' . (count($createdRoles) === 1 ? '' : 's') . '.' : '.'),
                 'branch_id' => $branch->id,
             ], 201);
 
@@ -1014,7 +1150,8 @@ class SuperAdminController extends Controller
             $b = Branch::find($user->branch_id);
             $isMainBranchAdmin = (bool) ($b && ($b->is_main_branch ?? false));
         }
-        if (!in_array($roleUpper, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER']) && !$isMainBranchAdmin) {
+        $allowed = Permission::allowed($user, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER'], ['admin']);
+        if (! $allowed && ! $isMainBranchAdmin) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
         }
 

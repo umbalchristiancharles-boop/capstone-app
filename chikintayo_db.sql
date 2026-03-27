@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 26, 2026 at 10:33 PM
+-- Generation Time: Mar 27, 2026 at 11:17 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -85,7 +85,8 @@ CREATE TABLE `attendance_settings` (
 
 INSERT INTO `attendance_settings` (`id`, `branch_id`, `early_clockout_override`, `created_at`, `updated_at`) VALUES
 (121, 31, 0, '2026-03-22 10:21:33', '2026-03-22 10:21:33'),
-(136, 32, 0, '2026-03-26 06:45:12', '2026-03-26 06:45:12');
+(136, 32, 0, '2026-03-26 06:45:12', '2026-03-26 06:45:12'),
+(139, 35, 0, '2026-03-27 09:15:32', '2026-03-27 09:15:32');
 
 -- --------------------------------------------------------
 
@@ -111,7 +112,8 @@ CREATE TABLE `branches` (
 
 INSERT INTO `branches` (`id`, `code`, `name`, `address`, `is_active`, `is_main_branch`, `budget`, `created_at`, `updated_at`) VALUES
 (31, 'BR743957', 'Dasma Branch', 'Dasma', 1, 0, 91244, '2026-03-22 10:19:21', '2026-03-26 21:19:03'),
-(32, 'MAIN', 'Main Branch', 'HQ', 1, 1, 300000, '2026-03-25 06:56:11', '2026-03-25 06:56:11');
+(32, 'MAIN', 'Main Branch', 'HQ', 1, 1, 300000, '2026-03-25 06:56:11', '2026-03-25 06:56:11'),
+(35, 'BR352812', 'test', 'test', 1, 0, 100000, '2026-03-27 09:06:57', '2026-03-27 09:06:57');
 
 -- --------------------------------------------------------
 
@@ -172,10 +174,8 @@ CREATE TABLE `cache` (
 --
 
 INSERT INTO `cache` (`key`, `value`, `expiration`) VALUES
-('laravel-cache-verification_rate_limit_lefet30141@fun4k.com', 'i:1;', 1774423907),
-('laravel-cache-verification_rate_limit_radalol730@fun4k.com', 'i:1;', 1774423614),
-('laravel-cache-verification_rate_limit_tavej98512@fabaos.com', 'i:1;', 1774423808),
-('laravel-cache-verification_rate_limit_xecof21486@fun4k.com', 'i:1;', 1774423054);
+('laravel-cache-verification_rate_limit_lecemex549@fabaos.com', 'i:1;', 1774594626),
+('laravel-cache-verification_rate_limit_megopa6706@fabaos.com', 'i:1;', 1774603186);
 
 -- --------------------------------------------------------
 
@@ -473,7 +473,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (80, '2026_03_24_150001_add_price_to_supplier_orders', 38),
 (81, '2026_03_25_000100_add_is_main_branch_to_branches_table', 39),
 (82, '2026_03_26_000000_add_receipt_fields_to_procurement_requests', 40),
-(83, '2026_03_27_041700_add_awaiting_inventory_confirmation_to_procurement_requests', 41);
+(83, '2026_03_27_041700_add_awaiting_inventory_confirmation_to_procurement_requests', 41),
+(84, '2026_03_27_000100_add_permissions_to_users_table', 42);
 
 -- --------------------------------------------------------
 
@@ -1933,7 +1934,39 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1336, 'App\\Models\\User', 150, 'auth-token', '65f2644bc5412c022acdc3c567e48631285f0ab6cfcf56ac7ac245c6aa2fac20', '[\"*\"]', NULL, NULL, '2026-03-26 21:22:31', '2026-03-26 21:22:31'),
 (1337, 'App\\Models\\User', 149, 'auth-token', '056459526d1f96eb0981214d110bcf6872472fa73eec6acdab201bd81957e202', '[\"*\"]', NULL, NULL, '2026-03-26 21:32:10', '2026-03-26 21:32:10'),
 (1338, 'App\\Models\\User', 150, 'auth-token', 'e2d29253549b6e0065482bb13a89c73e872e56c396595c86087246e91dcafbef', '[\"*\"]', NULL, NULL, '2026-03-26 21:32:38', '2026-03-26 21:32:38'),
-(1339, 'App\\Models\\User', 154, 'auth-token', '2a847a9709e6ce55d2d8a0c6c82b2d5053c62fd2814ce7ac97f00e9d18d2863f', '[\"*\"]', NULL, NULL, '2026-03-26 21:33:01', '2026-03-26 21:33:01');
+(1339, 'App\\Models\\User', 154, 'auth-token', '2a847a9709e6ce55d2d8a0c6c82b2d5053c62fd2814ce7ac97f00e9d18d2863f', '[\"*\"]', NULL, NULL, '2026-03-26 21:33:01', '2026-03-26 21:33:01'),
+(1340, 'App\\Models\\User', 159, 'auth-token', '021266f29c1bbc9f7665734c7930380a05367834fe76f1cd5168417284f7ab33', '[\"*\"]', NULL, NULL, '2026-03-27 05:02:25', '2026-03-27 05:02:25'),
+(1341, 'App\\Models\\User', 147, 'auth-token', 'adacb950669f08bfe6d747fa91e0d243d5b747db399157cee436759114998487', '[\"*\"]', NULL, NULL, '2026-03-27 05:11:33', '2026-03-27 05:11:33'),
+(1342, 'App\\Models\\User', 159, 'auth-token', 'ef5539807c979789d078fbd685b459c25a5dfa60830e25ccc24fc2dfa38936f6', '[\"*\"]', NULL, NULL, '2026-03-27 05:23:39', '2026-03-27 05:23:39'),
+(1343, 'App\\Models\\User', 159, 'auth-token', '4af7f77beec04e16e4b36d35ff48ec2016fc07e632a159b272ff45ed117117b3', '[\"*\"]', NULL, NULL, '2026-03-27 05:46:58', '2026-03-27 05:46:58'),
+(1344, 'App\\Models\\User', 159, 'auth-token', 'c79b2c18a7e186065bf60502374caf72e625afa6092d216c66836b036f17b91a', '[\"*\"]', NULL, NULL, '2026-03-27 05:52:45', '2026-03-27 05:52:45'),
+(1345, 'App\\Models\\User', 159, 'auth-token', '364c8b95b289c390c4f9ed9347c89e59b3b9b3b40bf59dea975ac8816cdf1124', '[\"*\"]', NULL, NULL, '2026-03-27 05:55:32', '2026-03-27 05:55:32'),
+(1346, 'App\\Models\\User', 159, 'auth-token', '27d7cbb70a9f7be319f612ee7cb9e90831608b4a73ec1e0c3a4aa01f37caf684', '[\"*\"]', NULL, NULL, '2026-03-27 06:01:54', '2026-03-27 06:01:54'),
+(1347, 'App\\Models\\User', 151, 'auth-token', '7f6eef13c026658667b6af7b07eff11684a699a66113968bd4432aab24ae85f6', '[\"*\"]', NULL, NULL, '2026-03-27 06:13:25', '2026-03-27 06:13:25'),
+(1348, 'App\\Models\\User', 159, 'auth-token', '1da95a3120b407a8c17123fd4a8f1aba6a406528908d91d9e7f97a908827eff5', '[\"*\"]', NULL, NULL, '2026-03-27 06:14:51', '2026-03-27 06:14:51'),
+(1349, 'App\\Models\\User', 159, 'auth-token', 'c23cf915ecb2e9981abbf1efc013c156abc04cd8f9ae3c74d2a18d7385be0e32', '[\"*\"]', NULL, NULL, '2026-03-27 06:36:15', '2026-03-27 06:36:15'),
+(1350, 'App\\Models\\User', 159, 'auth-token', 'ac05c14c878f9f056ad601d263421af384488729ac0ac71189b343e7c5d9f472', '[\"*\"]', NULL, NULL, '2026-03-27 06:40:12', '2026-03-27 06:40:12'),
+(1351, 'App\\Models\\User', 167, 'auth-token', '1c7e89a38f31ceb081a9064bda1c61fa6a6d9b6dc23330322afe74cd67936335', '[\"*\"]', NULL, NULL, '2026-03-27 06:45:46', '2026-03-27 06:45:46'),
+(1352, 'App\\Models\\User', 167, 'auth-token', '6df635684ed33d8dad8dfc94b8a067b9952e76330bfcc28f01bd468a87306297', '[\"*\"]', NULL, NULL, '2026-03-27 06:46:28', '2026-03-27 06:46:28'),
+(1353, 'App\\Models\\User', 167, 'auth-token', 'eba222f2734a0022b4abbcd6c30fb92d0b53fc8ae4ea5c64a966ade911ab051d', '[\"*\"]', NULL, NULL, '2026-03-27 06:47:33', '2026-03-27 06:47:33'),
+(1354, 'App\\Models\\User', 167, 'auth-token', '0c413dba4d55364e501538a13a0a4f6ac5c7080b6a5af89d3b13bdd9a0f84259', '[\"*\"]', NULL, NULL, '2026-03-27 08:19:28', '2026-03-27 08:19:28'),
+(1355, 'App\\Models\\User', 167, 'auth-token', 'c486df1249b85f316235a39e8591f649c59e3a9648eeddd26fb6008cfabe72c2', '[\"*\"]', NULL, NULL, '2026-03-27 08:24:00', '2026-03-27 08:24:00'),
+(1356, 'App\\Models\\User', 167, 'auth-token', 'd5415b398b88a49f9ebfac7ee8c00c112d33d01283f983f9483175baa76a9e13', '[\"*\"]', NULL, NULL, '2026-03-27 08:29:13', '2026-03-27 08:29:13'),
+(1357, 'App\\Models\\User', 167, 'auth-token', 'c97d168fa15bf98f91614a54c9277fae5d3b31273e28a56403d30c564f7f876a', '[\"*\"]', NULL, NULL, '2026-03-27 08:33:18', '2026-03-27 08:33:18'),
+(1358, 'App\\Models\\User', 167, 'auth-token', '65874e939d0749beb850acec844327077d5ac9aad7a209e9c2f7aac39bcd6d06', '[\"*\"]', NULL, NULL, '2026-03-27 08:35:54', '2026-03-27 08:35:54'),
+(1359, 'App\\Models\\User', 167, 'auth-token', 'eddc5c025c342d3cec9d4e3276765d48e2509a336d8c04741c36b1c4acf3a463', '[\"*\"]', NULL, NULL, '2026-03-27 08:50:29', '2026-03-27 08:50:29'),
+(1360, 'App\\Models\\User', 167, 'auth-token', '67e145290bb35b85d428676e867562e8d58e6415751235da52d4888d037ce595', '[\"*\"]', NULL, NULL, '2026-03-27 09:02:21', '2026-03-27 09:02:21'),
+(1361, 'App\\Models\\User', 167, 'auth-token', '6caad882cde152b55ec62d9b474f5b7f285f9f15669968ef30aa80a080e06e47', '[\"*\"]', NULL, NULL, '2026-03-27 09:04:36', '2026-03-27 09:04:36'),
+(1362, 'App\\Models\\User', 159, 'auth-token', 'd2b58964c44526b1f7473affb57faa320620f78dd77e97a38e05dc6acebcc411', '[\"*\"]', NULL, NULL, '2026-03-27 09:05:34', '2026-03-27 09:05:34'),
+(1363, 'App\\Models\\User', 169, 'auth-token', '9ac892b4d8d8bd0e057b5301e6ae2a52bdc5de2d64d3fb6290b349450149a9bc', '[\"*\"]', NULL, NULL, '2026-03-27 09:08:42', '2026-03-27 09:08:42'),
+(1364, 'App\\Models\\User', 169, 'auth-token', '290c523e03debc1d3e8552dd222d9caeb9f247dfaa685fd4691663e5051696dc', '[\"*\"]', NULL, NULL, '2026-03-27 09:09:20', '2026-03-27 09:09:20'),
+(1365, 'App\\Models\\User', 169, 'auth-token', 'e13f664e418b3055b532f4b2d2f6dab6cbcd4ed50257b8d75b015c388a60bf55', '[\"*\"]', NULL, NULL, '2026-03-27 09:10:17', '2026-03-27 09:10:17'),
+(1366, 'App\\Models\\User', 169, 'auth-token', '28bedc20e4a8c232d1b8fa4675976161ade85442eefe4d7aee6fc4fd3bc56b41', '[\"*\"]', NULL, NULL, '2026-03-27 09:16:49', '2026-03-27 09:16:49'),
+(1367, 'App\\Models\\User', 169, 'auth-token', '80e75aecf09bb8c2c06885d49816070f9812330da72cca3cd79520e5e47e8174', '[\"*\"]', NULL, NULL, '2026-03-27 09:17:12', '2026-03-27 09:17:12'),
+(1368, 'App\\Models\\User', 169, 'auth-token', '1e6567ca7806dff4409b0988cf32dea47a14046c8b1e4dbf32792f6aa1f80a32', '[\"*\"]', NULL, NULL, '2026-03-27 09:38:18', '2026-03-27 09:38:18'),
+(1369, 'App\\Models\\User', 169, 'auth-token', '0ef3e9fdb0247723e9b9fd4b08f4d5a8061d4d1512b71430ca1f5aaec3a91526', '[\"*\"]', NULL, NULL, '2026-03-27 09:47:59', '2026-03-27 09:47:59');
+INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `name`, `token`, `abilities`, `last_used_at`, `expires_at`, `created_at`, `updated_at`) VALUES
+(1370, 'App\\Models\\User', 169, 'auth-token', '3811bebb2422ca5191a75423546f16c2fc0eb54ea3cf7447eb684198d606fbed', '[\"*\"]', NULL, NULL, '2026-03-27 09:48:30', '2026-03-27 09:48:30');
 
 -- --------------------------------------------------------
 
@@ -2137,7 +2170,9 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('TjiVHAnVBf0CelF8NlM8ssJmul7vmaOePFTWbNDq', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiMGV3MnM5Q203YjFaTE8xMUg1RVVtemtDR0ZIcjUwYU1IQnhhanNmWiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO319', 1774560803);
+('4ZW1bxUMtiR25c1dd9nQk4MRHZ0nnu5nRCpOydA6', 169, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoielBBV0pYVk9YOE1WRUxLSmNkaU1jb2pmc2NsWFNVajBHRkh4bWdJMiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE2OTtzOjc6InVzZXJfaWQiO2k6MTY5O3M6OToidXNlcl9yb2xlIjtzOjY6IkNVU1RPTSI7czo5OiJ1c2VyX25hbWUiO3M6MjE6IkN1c3RvbSBBY2NvdW50IC0gdGVzdCI7czoxMzoicmVkaXJlY3RfcGF0aCI7czoxMzoiL2N1c3RvbS1wYW5lbCI7fQ==', 1774604855),
+('eC6iGA3yhxNrwFSW067NJ4g78KTV7sdX6OZ528mF', 167, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoic3BrTG0xSGpOcmxzYUFUTm1UaE9QalV1NERhTGxMeExxc0h1U0w5RCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE2NztzOjc6InVzZXJfaWQiO2k6MTY3O3M6OToidXNlcl9yb2xlIjtzOjY6IkNVU1RPTSI7czo5OiJ1c2VyX25hbWUiO3M6MjE6IkN1c3RvbSBBY2NvdW50IC0gdGVzdCI7czoxMzoicmVkaXJlY3RfcGF0aCI7czoxMzoiL2N1c3RvbS1wYW5lbCI7fQ==', 1774600540),
+('o5kFa8vtwSD7KVKfPWpyFibOE1N9JVg5RgllNvdm', 169, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoibTNIQnpBNzVuNHlaZmlrb2ZHdERSYTJuWDZEYlpxWnpUOGxnenhzWCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE2OTtzOjc6InVzZXJfaWQiO2k6MTY5O3M6OToidXNlcl9yb2xlIjtzOjY6IkNVU1RPTSI7czo5OiJ1c2VyX25hbWUiO3M6MjE6IkN1c3RvbSBBY2NvdW50IC0gdGVzdCI7czoxMzoicmVkaXJlY3RfcGF0aCI7czoxMzoiL2N1c3RvbS1wYW5lbCI7fQ==', 1774605267);
 
 -- --------------------------------------------------------
 
@@ -2236,6 +2271,7 @@ CREATE TABLE `users` (
   `email_verified_at` timestamp NULL DEFAULT NULL,
   `role` varchar(50) NOT NULL DEFAULT 'STAFF',
   `department` enum('HR','FINANCE','INVENTORY','LOGISTICS','CASHIER','KITCHEN','PROCUREMENT') DEFAULT NULL,
+  `permissions` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`permissions`)),
   `branch_id` bigint(20) UNSIGNED DEFAULT NULL,
   `remember_token` varchar(100) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -2252,23 +2288,25 @@ CREATE TABLE `users` (
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `email`, `username`, `full_name`, `name`, `password`, `email_verified_at`, `role`, `department`, `branch_id`, `remember_token`, `created_at`, `updated_at`, `deleted_at`, `must_change_password`, `is_active`, `address`, `avatar_url`, `phone_number`) VALUES
-(28, 'superadmin@example.com', 'superadmin', 'Super Administrators', NULL, '$2y$12$f67akYY/xm/H9KJoqytmXeblCxSgZ786slMmHkmqzlMozGUn3Ew7G', '2026-03-05 15:03:55', 'SUPER_ADMIN', NULL, NULL, NULL, '2026-03-05 15:03:55', '2026-03-05 16:01:06', NULL, 0, 1, NULL, '/storage/avatars/avatar_28_1773722875.webp', NULL),
-(31, 'admin@chikintayo.com', 'Parks', 'Mr.parks', NULL, '$2y$12$/jjxezfu4JAW55dvduVkVu7hpmk5CBXg2GWKtlT17A8jEMfJFpY8y', NULL, 'OWNER', NULL, NULL, NULL, '2026-03-07 04:30:58', '2026-03-07 04:30:58', NULL, 0, 1, NULL, NULL, 'admin'),
-(147, 'biteyag645@onbap.com', 'admin_br743957', 'Admin - Dasma Branch', NULL, '$2y$12$8RJHYsL5dHsXJc9.XiEUSuHL8F2DAPRGug1ED5uYU6tZylZwpcjGa', '2026-03-22 11:35:00', 'ADMIN', NULL, 31, NULL, '2026-03-22 10:19:22', '2026-03-22 11:35:00', NULL, 0, 1, NULL, NULL, NULL),
-(148, 'yawilog234@lxbeta.com', 'hr_br743957', 'HR Manager - Dasma Branch', NULL, '$2y$12$1AUNIAaO6IsU.NgPHyVqfuZmrI7EbeUTnHrku.w9douNkI7STbjfW', '2026-03-22 10:21:24', 'MANAGER', 'HR', 31, NULL, '2026-03-22 10:19:22', '2026-03-22 10:21:24', NULL, 0, 1, NULL, NULL, NULL),
-(149, 'jiveda9771@lxbeta.com', 'finance_br743957', 'Finance Manager - Dasma Branch', NULL, '$2y$12$9tGgivqfWOXFzZjHh./TNeQnKFXsrvyMHitvfpjtnRH9ctUwYKA5S', '2026-03-22 10:27:01', 'MANAGER', 'FINANCE', 31, NULL, '2026-03-22 10:19:22', '2026-03-22 10:27:01', NULL, 0, 1, NULL, NULL, NULL),
-(150, 'yenater279@onbap.com', 'procurement_br743957', 'Procurement Manager - Dasma Branch', NULL, '$2y$12$kF..QIb.DvV18ylucsDIHuPPnLwxXpZe4R5/VcwiI5CCZ2XpkCYx.', '2026-03-22 10:33:29', 'MANAGER', 'PROCUREMENT', 31, NULL, '2026-03-22 10:19:22', '2026-03-22 10:33:29', NULL, 0, 1, NULL, NULL, NULL),
-(151, 'rogogaj619@onbap.com', 'logistics_br743957', 'Logistics Manager - Dasma Branch', NULL, '$2y$12$OGJ.SPNyGXorcgKCa/EAaOmnaeqm4sLmZtx6dpGJiijay1uXA6LXq', '2026-03-22 11:37:41', 'MANAGER', 'LOGISTICS', 31, NULL, '2026-03-22 10:19:22', '2026-03-22 11:37:41', NULL, 0, 1, NULL, NULL, NULL),
-(152, 'jadol43025@onbap.com', 'Umberto', 'Umberto Batumbakal', NULL, '$2y$12$eym3kh1XoBRy0Ibjr3qrR.fLvvYUL9bimjdYe.f867drHAYjMURWa', NULL, 'SUPPLIER', NULL, 31, NULL, '2026-03-22 10:37:58', '2026-03-22 10:38:57', NULL, 0, 1, NULL, NULL, ''),
-(153, 'mecepey855@lxbeta.com', 'janne', 'Janne De Guzman', NULL, '$2y$12$1SY4y/G62PeI69w/RGa3bu13s/bCYLFpBPEiT8kZD7K.Ebg3UV/ly', '2026-03-22 10:58:41', 'STAFF', 'CASHIER', 31, NULL, '2026-03-22 10:49:07', '2026-03-22 10:58:41', NULL, 0, 1, '213', NULL, '09156818822'),
-(154, 'lalaher611@lxbeta.com', 'vince', 'Vince Hannibal Bido', NULL, '$2y$12$.9o2LKOIrQQWcrtHTKCtKOxdGGgLVs41Xr.eaY9OqHDe/iNtJwnUi', '2026-03-22 10:55:12', 'STAFF', 'INVENTORY', 31, NULL, '2026-03-22 10:50:09', '2026-03-22 10:55:12', NULL, 0, 1, '213', NULL, '09156818811'),
-(157, 'matika8515@onbap.com', 'charles', 'christian Umbal', NULL, '$2y$12$DUh2zXlesutpPfCM6bBeHuKfbmkGWR083ZLYQ9Ul4RT9QV/HB.XMC', '2026-03-23 05:10:23', 'STAFF', 'KITCHEN', 31, NULL, '2026-03-23 05:07:32', '2026-03-23 05:10:23', NULL, 0, 1, '123', NULL, '09156818831'),
-(158, 'xiralih141@lxbeta.com', 'John', 'John Stalone', NULL, '$2y$12$LOUp7zlefTxO05AmE6OCAuQtq3vFSVkgFjMUSa2LAyD57UwtF85uC', '2026-03-24 08:58:36', 'SUPPLIER', NULL, 31, NULL, '2026-03-24 08:57:40', '2026-03-24 08:58:36', NULL, 0, 1, NULL, NULL, ''),
-(159, 'xecof21486@fun4k.com', 'admin_main_branch', 'Admin Main Branch', NULL, '$2y$12$0mEgYuYslnBkJs79fi7H0OjiH3uTrkDbe2Kvas21ltIJ9BExNMm0C', '2026-03-25 07:07:57', 'ADMIN', NULL, 32, NULL, '2026-03-25 06:56:11', '2026-03-25 07:07:57', NULL, 0, 1, NULL, NULL, NULL),
-(160, 'radalol730@fun4k.com', 'hr_main_branch', 'HR Main Branch', NULL, '$2y$12$7XE7ggeRv7J3xUcTOgf6qOvZEPs4A8ppDdHk8zb3VxzTggE3EUI2i', '2026-03-25 07:17:25', 'MANAGER', 'HR', 32, NULL, '2026-03-25 06:56:12', '2026-03-25 07:17:25', NULL, 0, 1, NULL, NULL, NULL),
-(161, 'tavej98512@fabaos.com', 'finance_main_branch', 'Finance Main Branch', NULL, '$2y$12$Hb8m1H0Iau3u0jFJ0Spr5uqsg2Fl0kk.2QbHUAKQ.iMtZ9zKuBpra', '2026-03-25 07:20:21', 'MANAGER', 'FINANCE', 32, NULL, '2026-03-25 06:56:12', '2026-03-25 07:20:21', NULL, 0, 1, NULL, NULL, NULL),
-(162, 'lefet30141@fun4k.com', 'logistics_main_branch', 'Logistics Main Branch', NULL, '$2y$12$5jgXzzPw90ASb/4TuQnmreNk6jVKcPGX6ELJy6C9yfDFNv67u2j6u', '2026-03-25 07:22:05', 'MANAGER', 'LOGISTICS', 32, NULL, '2026-03-25 06:56:12', '2026-03-25 07:22:05', NULL, 0, 1, NULL, NULL, NULL);
+INSERT INTO `users` (`id`, `email`, `username`, `full_name`, `name`, `password`, `email_verified_at`, `role`, `department`, `permissions`, `branch_id`, `remember_token`, `created_at`, `updated_at`, `deleted_at`, `must_change_password`, `is_active`, `address`, `avatar_url`, `phone_number`) VALUES
+(28, 'superadmin@example.com', 'superadmin', 'Super Administrators', NULL, '$2y$12$f67akYY/xm/H9KJoqytmXeblCxSgZ786slMmHkmqzlMozGUn3Ew7G', '2026-03-05 15:03:55', 'SUPER_ADMIN', NULL, NULL, NULL, NULL, '2026-03-05 15:03:55', '2026-03-05 16:01:06', NULL, 0, 1, NULL, '/storage/avatars/avatar_28_1773722875.webp', NULL),
+(31, 'admin@chikintayo.com', 'Parks', 'Mr.parks', NULL, '$2y$12$/jjxezfu4JAW55dvduVkVu7hpmk5CBXg2GWKtlT17A8jEMfJFpY8y', NULL, 'OWNER', NULL, NULL, NULL, NULL, '2026-03-07 04:30:58', '2026-03-07 04:30:58', NULL, 0, 1, NULL, NULL, 'admin'),
+(147, 'biteyag645@onbap.com', 'admin_br743957', 'Admin - Dasma Branch', NULL, '$2y$12$8RJHYsL5dHsXJc9.XiEUSuHL8F2DAPRGug1ED5uYU6tZylZwpcjGa', '2026-03-22 11:35:00', 'ADMIN', NULL, NULL, 31, NULL, '2026-03-22 10:19:22', '2026-03-22 11:35:00', NULL, 0, 1, NULL, NULL, NULL),
+(148, 'yawilog234@lxbeta.com', 'hr_br743957', 'HR Manager - Dasma Branch', NULL, '$2y$12$1AUNIAaO6IsU.NgPHyVqfuZmrI7EbeUTnHrku.w9douNkI7STbjfW', '2026-03-22 10:21:24', 'MANAGER', 'HR', NULL, 31, NULL, '2026-03-22 10:19:22', '2026-03-22 10:21:24', NULL, 0, 1, NULL, NULL, NULL),
+(149, 'jiveda9771@lxbeta.com', 'finance_br743957', 'Finance Manager - Dasma Branch', NULL, '$2y$12$9tGgivqfWOXFzZjHh./TNeQnKFXsrvyMHitvfpjtnRH9ctUwYKA5S', '2026-03-22 10:27:01', 'MANAGER', 'FINANCE', NULL, 31, NULL, '2026-03-22 10:19:22', '2026-03-22 10:27:01', NULL, 0, 1, NULL, NULL, NULL),
+(150, 'yenater279@onbap.com', 'procurement_br743957', 'Procurement Manager - Dasma Branch', NULL, '$2y$12$kF..QIb.DvV18ylucsDIHuPPnLwxXpZe4R5/VcwiI5CCZ2XpkCYx.', '2026-03-22 10:33:29', 'MANAGER', 'PROCUREMENT', NULL, 31, NULL, '2026-03-22 10:19:22', '2026-03-22 10:33:29', NULL, 0, 1, NULL, NULL, NULL),
+(151, 'rogogaj619@onbap.com', 'logistics_br743957', 'Logistics Manager - Dasma Branch', NULL, '$2y$12$OGJ.SPNyGXorcgKCa/EAaOmnaeqm4sLmZtx6dpGJiijay1uXA6LXq', '2026-03-22 11:37:41', 'MANAGER', 'LOGISTICS', NULL, 31, NULL, '2026-03-22 10:19:22', '2026-03-22 11:37:41', NULL, 0, 1, NULL, NULL, NULL),
+(152, 'jadol43025@onbap.com', 'Umberto', 'Umberto Batumbakal', NULL, '$2y$12$eym3kh1XoBRy0Ibjr3qrR.fLvvYUL9bimjdYe.f867drHAYjMURWa', NULL, 'SUPPLIER', NULL, NULL, 31, NULL, '2026-03-22 10:37:58', '2026-03-22 10:38:57', NULL, 0, 1, NULL, NULL, ''),
+(153, 'mecepey855@lxbeta.com', 'janne', 'Janne De Guzman', NULL, '$2y$12$1SY4y/G62PeI69w/RGa3bu13s/bCYLFpBPEiT8kZD7K.Ebg3UV/ly', '2026-03-22 10:58:41', 'STAFF', 'CASHIER', NULL, 31, NULL, '2026-03-22 10:49:07', '2026-03-22 10:58:41', NULL, 0, 1, '213', NULL, '09156818822'),
+(154, 'lalaher611@lxbeta.com', 'vince', 'Vince Hannibal Bido', NULL, '$2y$12$.9o2LKOIrQQWcrtHTKCtKOxdGGgLVs41Xr.eaY9OqHDe/iNtJwnUi', '2026-03-22 10:55:12', 'STAFF', 'INVENTORY', NULL, 31, NULL, '2026-03-22 10:50:09', '2026-03-22 10:55:12', NULL, 0, 1, '213', NULL, '09156818811'),
+(157, 'matika8515@onbap.com', 'charles', 'christian Umbal', NULL, '$2y$12$DUh2zXlesutpPfCM6bBeHuKfbmkGWR083ZLYQ9Ul4RT9QV/HB.XMC', '2026-03-23 05:10:23', 'STAFF', 'KITCHEN', NULL, 31, NULL, '2026-03-23 05:07:32', '2026-03-23 05:10:23', NULL, 0, 1, '123', NULL, '09156818831'),
+(158, 'xiralih141@lxbeta.com', 'John', 'John Stalone', NULL, '$2y$12$LOUp7zlefTxO05AmE6OCAuQtq3vFSVkgFjMUSa2LAyD57UwtF85uC', '2026-03-24 08:58:36', 'SUPPLIER', NULL, NULL, 31, NULL, '2026-03-24 08:57:40', '2026-03-24 08:58:36', NULL, 0, 1, NULL, NULL, ''),
+(159, 'xecof21486@fun4k.com', 'admin_main_branch', 'Admin Main Branch', NULL, '$2y$12$0mEgYuYslnBkJs79fi7H0OjiH3uTrkDbe2Kvas21ltIJ9BExNMm0C', '2026-03-25 07:07:57', 'ADMIN', NULL, NULL, 32, NULL, '2026-03-25 06:56:11', '2026-03-25 07:07:57', NULL, 0, 1, NULL, NULL, NULL),
+(160, 'radalol730@fun4k.com', 'hr_main_branch', 'HR Main Branch', NULL, '$2y$12$7XE7ggeRv7J3xUcTOgf6qOvZEPs4A8ppDdHk8zb3VxzTggE3EUI2i', '2026-03-25 07:17:25', 'MANAGER', 'HR', NULL, 32, NULL, '2026-03-25 06:56:12', '2026-03-25 07:17:25', NULL, 0, 1, NULL, NULL, NULL),
+(161, 'tavej98512@fabaos.com', 'finance_main_branch', 'Finance Main Branch', NULL, '$2y$12$Hb8m1H0Iau3u0jFJ0Spr5uqsg2Fl0kk.2QbHUAKQ.iMtZ9zKuBpra', '2026-03-25 07:20:21', 'MANAGER', 'FINANCE', NULL, 32, NULL, '2026-03-25 06:56:12', '2026-03-25 07:20:21', NULL, 0, 1, NULL, NULL, NULL),
+(162, 'lefet30141@fun4k.com', 'logistics_main_branch', 'Logistics Main Branch', NULL, '$2y$12$5jgXzzPw90ASb/4TuQnmreNk6jVKcPGX6ELJy6C9yfDFNv67u2j6u', '2026-03-25 07:22:05', 'MANAGER', 'LOGISTICS', NULL, 32, NULL, '2026-03-25 06:56:12', '2026-03-25 07:22:05', NULL, 0, 1, NULL, NULL, NULL),
+(168, NULL, 'admin_br352812', 'Admin - test', NULL, '$2y$12$fqKe.GeFkP/JjdselX.T1uC5BpEWJKFblVFgGB2e9PWPwvIl54qyO', NULL, 'ADMIN', NULL, NULL, 35, NULL, '2026-03-27 09:06:57', '2026-03-27 09:06:57', NULL, 1, 1, NULL, NULL, NULL),
+(169, 'megopa6706@fabaos.com', 'custom', 'Custom Account - test', NULL, '$2y$12$FmuAFNl2HGQ.14cjZqnnhOPRFgLP3XHCfJmS9JDXIK0I4G93gidES', '2026-03-27 09:10:13', 'CUSTOM', NULL, '{\"modules\":[\"admin\",\"finance\",\"logistics\",\"inventory\",\"procurement\",\"kitchen\",\"cashier\",\"hr\",\"reports\"],\"functions\":[\"admin.users\",\"admin.branches\",\"admin.settings\",\"finance.dashboard\",\"finance.budget\",\"finance.reports\",\"finance.expenses\",\"logistics.dispatch\",\"logistics.receiving\",\"logistics.transfers\",\"inventory.products\",\"inventory.counts\",\"inventory.adjustments\",\"procurement.purchase_orders\",\"procurement.suppliers\",\"procurement.approvals\",\"kitchen.orders\",\"kitchen.production\",\"kitchen.waste\",\"cashier.pos\",\"cashier.refunds\",\"cashier.shifts\",\"hr.attendance\",\"hr.scheduling\",\"hr.payroll\",\"reports.sales\",\"reports.inventory\",\"reports.finance\"]}', 35, NULL, '2026-03-27 09:06:57', '2026-03-27 09:10:13', NULL, 0, 1, NULL, NULL, NULL);
 
 --
 -- Indexes for dumped tables
@@ -2552,13 +2590,13 @@ ALTER TABLE `attendance`
 -- AUTO_INCREMENT for table `attendance_settings`
 --
 ALTER TABLE `attendance_settings`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=138;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=140;
 
 --
 -- AUTO_INCREMENT for table `branches`
 --
 ALTER TABLE `branches`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36;
 
 --
 -- AUTO_INCREMENT for table `budget_requests`
@@ -2618,7 +2656,7 @@ ALTER TABLE `messages`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=84;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=85;
 
 --
 -- AUTO_INCREMENT for table `orders`
@@ -2636,7 +2674,7 @@ ALTER TABLE `order_items`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1340;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1371;
 
 --
 -- AUTO_INCREMENT for table `price_audits`
@@ -2696,7 +2734,7 @@ ALTER TABLE `supplier_orders`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=163;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=170;
 
 --
 -- Constraints for dumped tables

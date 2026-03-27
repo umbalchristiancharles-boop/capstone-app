@@ -2,15 +2,18 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Controller;
+use App\Models\User;
+use App\Models\Attendance;
+use App\Models\Branch;
 use App\Models\StaffDocument;
-use App\Models\User; // ADD THIS IMPORT
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use App\Http\Controllers\Controller;
+use App\Support\Permission;
 
 class StaffController extends Controller
 {
@@ -522,6 +525,16 @@ $rules = [
                     'success' => false,
                     'message' => 'Forbidden'
                 ], 403);
+            }
+
+            // CUSTOM users with hr/admin.users can create only within their branch (if branch-bound)
+            if (strtoupper($user->role ?? '') === 'CUSTOM' && $user->branch_id && $branchId && (int) $branchId !== (int) $user->branch_id) {
+                if (!Permission::allowed($user, [], ['admin.users', 'hr'])) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Forbidden'
+                    ], 403);
+                }
             }
 
             $transactionStarted = false;
