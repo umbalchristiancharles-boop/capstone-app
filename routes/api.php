@@ -166,7 +166,7 @@ Route::middleware('web')->group(function () {
     // All manager routes require authentication
     // Using 'auth' middleware (web guard) which works with both session and token
     // ==========================================
-Route::middleware('auth')->group(function () {
+Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('procurement-requests', \App\Http\Controllers\Api\ProcurementRequestController::class)->except(['show']);
     Route::get('procurement-requests/requested-products', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'requestedProducts']);
     Route::get('procurement-requests/receipt-submissions', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'receiptSubmissions']);
@@ -183,7 +183,7 @@ Route::middleware('auth')->group(function () {
     Route::post('supplier-orders/{id}/submit-product', [\App\Http\Controllers\Api\SupplierOrderController::class, 'submitProduct']);
 });
 
-Route::prefix('manager')->middleware('auth')->group(function () {
+Route::prefix('manager')->middleware('auth:sanctum')->group(function () {
         // Dashboard
         Route::get('/dashboard',        [ManagerDashboardController::class, 'index']);
 

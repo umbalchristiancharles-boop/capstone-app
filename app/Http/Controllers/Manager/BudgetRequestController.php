@@ -26,6 +26,25 @@ class BudgetRequestController extends Controller
         $isManager = in_array($role, ['MANAGER', 'MANAGER_HR', 'BRANCH_MANAGER']);
         $hasDeptAccess = strtoupper($requiredDepartment) === $userDept;
 
+        // Allow CUSTOM accounts that have the required module in their permissions
+        if ($role === 'CUSTOM') {
+            try {
+                $perms = $user->permissions ?? [];
+                if (is_string($perms)) $perms = json_decode($perms, true) ?: [];
+                $modules = [];
+                if (is_array($perms) && isset($perms['modules']) && is_array($perms['modules'])) {
+                    $modules = $perms['modules'];
+                } elseif (is_array($perms)) {
+                    $modules = $perms;
+                }
+                foreach ($modules as $m) {
+                    if (strtoupper(trim((string)$m)) === strtoupper($requiredDepartment)) return true;
+                }
+            } catch (\Throwable $e) {
+                // ignore and continue
+            }
+        }
+
         return $isManager && $hasDeptAccess;
     }
 

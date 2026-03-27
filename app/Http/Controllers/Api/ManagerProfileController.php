@@ -31,14 +31,26 @@ class ManagerProfileController extends Controller
         if (Auth::check()) {
             return Auth::user();
         }
-        
+
         // Fallback: try to get user from session
         $userId = $request->session()->get('user_id');
         if ($userId) {
             return User::find($userId);
         }
-        
+
         return null;
+    }
+
+    /**
+     * Check whether given user is considered a manager (any manager flavor).
+     */
+    private function isManager($user): bool
+    {
+        if (!$user) return false;
+        $role = strtoupper($user->role ?? '');
+        if (in_array($role, ['MANAGER', 'MANAGER_HR', 'MANAGER_FINANCE', 'MANAGER_LOGISTICS', 'BRANCH_MANAGER'])) return true;
+        // Fallback: treat any role string containing 'MANAGER' as manager
+        return str_contains($role, 'MANAGER');
     }
 
     /**
@@ -100,15 +112,15 @@ class ManagerProfileController extends Controller
         if (!$user) {
             return false;
         }
-        
+
         $userDept = strtoupper($user->department ?? '');
         $targetDept = strtoupper($department);
-        
+
         // MANAGER_HR has access to HR
         if (strtoupper($user->role ?? '') === 'MANAGER_HR' && $targetDept === 'HR') {
             return true;
         }
-        
+
         return $userDept === $targetDept || $userDept === strtoupper($targetDept);
     }
 
@@ -145,11 +157,11 @@ class ManagerProfileController extends Controller
     // ==========================================
     // HR Manager Profile Endpoints
     // ==========================================
-    
+
     public function hrProfile(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
-        
+
         if (!$this->allowManagerDept($user, 'hr')) {
             return response()->json([
                 'ok' => false,
@@ -175,7 +187,7 @@ class ManagerProfileController extends Controller
     public function updateHrProfile(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
-        
+
         if (!$user || !$this->isManager($user)) {
             return response()->json([
                 'ok' => false,
@@ -207,7 +219,7 @@ class ManagerProfileController extends Controller
     public function hrDashboard(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
-        
+
         if (!$this->allowManagerDept($user, 'hr')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
@@ -215,7 +227,7 @@ class ManagerProfileController extends Controller
         // Get HR-specific dashboard data - filtered by branch
         // Get HR-specific dashboard data - filtered by branch
         $branchId = $user->branch_id;
-        
+
         $totalStaff = User::where('role', 'STAFF')
             ->where('branch_id', $branchId)
             ->where('is_active', 1)
@@ -238,14 +250,14 @@ class ManagerProfileController extends Controller
     public function hrStaff(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
-        
+
         if (!$this->allowManagerDept($user, 'hr')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
         // Filter by branch_id - get all staff in the branch (excluding OWNER and SUPER_ADMIN)
         $branchId = $user->branch_id;
-        
+
         $staff = User::where('branch_id', $branchId)
             ->whereNotIn('role', ['OWNER', 'SUPER_ADMIN'])
             ->whereNull('deleted_at')
@@ -278,7 +290,7 @@ class ManagerProfileController extends Controller
     public function createHrStaff(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
-        
+
         if (!$this->allowManagerDept($user, 'hr')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
@@ -293,7 +305,7 @@ class ManagerProfileController extends Controller
 
         // Force branch_id to manager's branch
         $branchId = $user->branch_id;
-        
+
         if (!$branchId) {
             return response()->json([
                 'ok' => false,
@@ -338,13 +350,13 @@ class ManagerProfileController extends Controller
     public function updateHrStaff(Request $request, $id)
     {
         $user = $this->getAuthenticatedManager($request);
-        
+
         if (!$this->allowManagerDept($user, 'hr')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
         $branchId = $user->branch_id;
-        
+
         // Find staff member - must be in same branch (and not the manager themselves)
         $staff = User::where('id', $id)
             ->where('branch_id', $branchId)
@@ -369,7 +381,7 @@ class ManagerProfileController extends Controller
         ]);
 
         $updateData = [];
-        
+
         if (!empty($validated['fullName'])) {
             $updateData['full_name'] = $validated['fullName'];
         }
@@ -413,13 +425,13 @@ class ManagerProfileController extends Controller
     public function deleteHrStaff(Request $request, $id)
     {
         $user = $this->getAuthenticatedManager($request);
-        
+
         if (!$this->allowManagerDept($user, 'hr')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
         $branchId = $user->branch_id;
-        
+
         // Find staff member - must be in same branch (and not the manager themselves)
         $staff = User::where('id', $id)
             ->where('branch_id', $branchId)
@@ -446,7 +458,7 @@ class ManagerProfileController extends Controller
     public function hrReports(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
-        
+
         if (!$this->allowManagerDept($user, 'hr')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
@@ -461,11 +473,11 @@ class ManagerProfileController extends Controller
     // ==========================================
     // Finance Manager Profile Endpoints
     // ==========================================
-    
+
     public function financeProfile(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
-        
+
         if (!$this->allowManagerDept($user, 'finance')) {
             return response()->json([
                 'ok' => false,
@@ -491,7 +503,7 @@ class ManagerProfileController extends Controller
     public function updateFinanceProfile(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
-        
+
         if (!$this->allowManagerDept($user, 'finance')) {
             return response()->json([
                 'ok' => false,
@@ -523,7 +535,7 @@ class ManagerProfileController extends Controller
     public function financeDashboard(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
-        
+
         if (!$this->allowManagerDept($user, 'finance')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
@@ -613,7 +625,7 @@ class ManagerProfileController extends Controller
     public function financeReports(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
-        
+
         if (!$this->allowManagerDept($user, 'finance')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
@@ -627,7 +639,7 @@ class ManagerProfileController extends Controller
     public function financeTransactions(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
-        
+
         if (!$this->allowManagerDept($user, 'finance')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
@@ -701,11 +713,11 @@ class ManagerProfileController extends Controller
     // ==========================================
     // Logistics Manager Profile Endpoints
     // ==========================================
-    
+
     public function logisticsProfile(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
-        
+
         if (!$this->allowManagerDept($user, 'logistics')) {
             return response()->json([
                 'ok' => false,
@@ -757,7 +769,7 @@ class ManagerProfileController extends Controller
     public function updateLogisticsProfile(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
-        
+
         if (!$this->allowManagerDept($user, 'logistics')) {
             return response()->json([
                 'ok' => false,
@@ -789,7 +801,7 @@ class ManagerProfileController extends Controller
     public function logisticsDashboard(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
-        
+
         if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'logistics')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
@@ -805,7 +817,7 @@ class ManagerProfileController extends Controller
     public function logisticsDeliveries(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
-        
+
         if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'logistics')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
@@ -819,7 +831,7 @@ class ManagerProfileController extends Controller
     public function logisticsSuppliers(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
-        
+
         if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'logistics')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
@@ -889,7 +901,7 @@ class ManagerProfileController extends Controller
     public function procurementProfile(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
-        
+
         if (!$this->allowManagerDept($user, 'procurement')) {
             return response()->json([
                 'ok' => false,
@@ -915,7 +927,7 @@ class ManagerProfileController extends Controller
     public function updateProcurementProfile(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
-        
+
         if (!$this->allowManagerDept($user, 'procurement')) {
             return response()->json([
                 'ok' => false,
@@ -990,7 +1002,7 @@ class ManagerProfileController extends Controller
     public function procurementProducts(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
-        
+
         if (!$this->allowManagerDept($user, 'procurement')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
@@ -1304,7 +1316,7 @@ public function logisticsInventory(Request $request)
         });
 
     return response()->json([
-        'ok' => true, 
+        'ok' => true,
         'data' => $products,
     ]);
 }
@@ -1312,11 +1324,11 @@ public function logisticsInventory(Request $request)
 // ==========================================
 // Inventory Manager Profile Endpoints
 // ==========================================
-    
+
     public function inventoryProfile(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
-        
+
         if (!$this->allowManagerDept($user, 'inventory')) {
             return response()->json([
                 'ok' => false,
@@ -1342,7 +1354,7 @@ public function logisticsInventory(Request $request)
     public function updateInventoryProfile(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
-        
+
         if (!$this->allowManagerDept($user, 'inventory')) {
             return response()->json([
                 'ok' => false,
@@ -1374,7 +1386,7 @@ public function logisticsInventory(Request $request)
     public function inventoryDashboard(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
-        
+
         if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'inventory')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
@@ -1390,7 +1402,7 @@ public function logisticsInventory(Request $request)
     public function inventoryProducts(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
-        
+
         if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'inventory')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
@@ -1404,7 +1416,7 @@ public function logisticsInventory(Request $request)
     public function inventoryReports(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
-        
+
         if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'inventory')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }

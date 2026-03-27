@@ -293,7 +293,7 @@ public function requestedProducts(Request $request)
                 ->where('branch_id', $branchId)
                 ->with(['supplier:id,username,full_name'])
                 ->get(['id', 'name', 'price', 'sku', 'branch_id', 'supplier_id', 'logistics_request_available']);
-            
+
             Log::info('Products fetched', ['count' => $products->count()]);
             Log::info('=== REQUESTED PRODUCTS SUCCESS ===');
 
@@ -365,9 +365,27 @@ public function requestedProducts(Request $request)
 
         $role = strtoupper($user->role ?? '');
         $dept = strtoupper($user->department ?? '');
-        if (!in_array($role, ['FINANCE_MANAGER', 'MANAGER_FINANCE']) && !($role === 'MANAGER' && $dept === 'FINANCE')) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+        $allowed = false;
+        if (in_array($role, ['FINANCE_MANAGER', 'MANAGER_FINANCE']) || ($role === 'MANAGER' && $dept === 'FINANCE')) {
+            $allowed = true;
         }
+        // Allow CUSTOM accounts with finance module permission
+        if (!$allowed && $role === 'CUSTOM') {
+            try {
+                $perms = $user->permissions ?? [];
+                if (is_string($perms)) $perms = json_decode($perms, true) ?: [];
+                $modules = [];
+                if (is_array($perms) && isset($perms['modules']) && is_array($perms['modules'])) {
+                    $modules = $perms['modules'];
+                } elseif (is_array($perms)) {
+                    $modules = $perms;
+                }
+                foreach ($modules as $m) {
+                    if (strtoupper(trim((string)$m)) === 'FINANCE') { $allowed = true; break; }
+                }
+            } catch (\Throwable $e) { /* ignore */ }
+        }
+        if (!$allowed) return response()->json(['error' => 'Unauthorized'], 401);
 
         try {
             $query = ProcurementRequest::with(['product', 'logisticsUser', 'branch'])
@@ -445,7 +463,7 @@ public function requestedProducts(Request $request)
                             'status' => 'Pending',
                             'date_requested' => now()->toDateString(),
                         ]);
-                        
+
                         Log::info('Auto-created BudgetRequest from ProcurementRequest', [
                             'proc_req_id' => $procRequest->id,
                             'budget_user_id' => $user->id,
@@ -628,9 +646,26 @@ public function requestedProducts(Request $request)
 
         $role = strtoupper($user->role ?? '');
         $dept = strtoupper($user->department ?? '');
-        if (!in_array($role, ['FINANCE_MANAGER', 'MANAGER_FINANCE']) && !($role === 'MANAGER' && $dept === 'FINANCE')) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+        $allowed = false;
+        if (in_array($role, ['FINANCE_MANAGER', 'MANAGER_FINANCE']) || ($role === 'MANAGER' && $dept === 'FINANCE')) {
+            $allowed = true;
         }
+        if (!$allowed && $role === 'CUSTOM') {
+            try {
+                $perms = $user->permissions ?? [];
+                if (is_string($perms)) $perms = json_decode($perms, true) ?: [];
+                $modules = [];
+                if (is_array($perms) && isset($perms['modules']) && is_array($perms['modules'])) {
+                    $modules = $perms['modules'];
+                } elseif (is_array($perms)) {
+                    $modules = $perms;
+                }
+                foreach ($modules as $m) {
+                    if (strtoupper(trim((string)$m)) === 'FINANCE') { $allowed = true; break; }
+                }
+            } catch (\Throwable $e) { /* ignore */ }
+        }
+        if (!$allowed) return response()->json(['error' => 'Unauthorized'], 401);
 
         $procRequest = ProcurementRequest::findOrFail($id);
         Log::info('confirmReceipt called', ['proc_req_id' => $id, 'user_id' => $user->id]);
