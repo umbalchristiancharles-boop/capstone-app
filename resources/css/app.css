@@ -18,6 +18,11 @@ body {
   justify-content: center;
 }
 
+/* Ensure default text uses normal weight unless specified otherwise */
+body {
+  font-weight: 400;
+}
+
 .container {
   background: #fff;
   border-radius: 1.5rem;

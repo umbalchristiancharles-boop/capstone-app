@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Attendance;
 use Carbon\Carbon;
+use App\Support\Permission;
 
 class AttendanceController extends Controller
 {
@@ -17,7 +18,8 @@ class AttendanceController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-        if (!$user || !in_array($user->role, ['OWNER', 'ADMIN', 'HR'])) {
+        // Allow OWNER, ADMIN, HR, or CUSTOM accounts with HR permissions/functions
+        if (! Permission::allowed($user, ['OWNER', 'ADMIN', 'HR'], ['hr'], ['hr.attendance'])) {
             return response()->json(['ok' => false, 'message' => 'Forbidden'], 403);
         }
 
