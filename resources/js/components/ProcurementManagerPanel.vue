@@ -1222,7 +1222,7 @@ onUnmounted(() => {
 }
 
 /* Reuse styles from HR panel; keep minimal overrides */
-.hr-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.hr-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; align-items: start; }
 .hr-stat-card { background: white; border-radius: 8px; padding: 1rem; display:flex; gap:0.75rem; align-items:center; color: #1b1b1f; }
 .hr-stat-value { font-weight:700; font-size:1.25rem; }
 
@@ -1283,10 +1283,8 @@ onUnmounted(() => {
   max-height: 320px;
   overflow-y: auto;
   padding: 0 12px 12px 12px; /* keep previous padding inside scroll area */
-  /* extend to cover parent's horizontal padding so no white sliver shows */
-  width: calc(100% + 24px);
-  margin-left: -12px;
-  margin-right: -12px;
+  width: 100%;
+  box-sizing: border-box;
   border-radius: 10px;
   box-shadow: 0 8px 20px rgba(0,0,0,0.04);
   background: transparent;
@@ -1374,8 +1372,8 @@ onUnmounted(() => {
 /* Product grid styles for supplier products */
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
   margin-top: 0.75rem;
 }
 
@@ -1388,12 +1386,17 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  justify-content: space-between;
+  min-height: 110px;
 }
 
-.product-name { font-weight: 700; color: #111827; }
-.product-meta { display:flex; justify-content:space-between; align-items:center; gap:0.5rem }
+.product-name { font-weight: 700; color: #111827; font-size: 1rem }
+.product-meta { display:flex; justify-content:space-between; align-items:center; gap:0.5rem; margin-top: 0.5rem }
 .product-price { color: #0b6e3a; font-weight:700 }
-.supplier-badge { background: #f3f4f6; color: #374151; padding: 4px 8px; border-radius: 12px; font-size: 0.85rem }
+.supplier-badge { background: #f3f4f6; color: #374151; padding: 4px 8px; border-radius: 12px; font-size: 0.85rem; margin-top: 0.5rem }
+
+/* Ensure cards stretch to same height in grid */
+.product-grid > .product-card { height: 100%; }
 
 /* Utility spacing classes */
 .mt-1 { margin-top: 1rem; }
