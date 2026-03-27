@@ -1,31 +1,32 @@
 <template>
   <div class="superadmin-logistics-wrapper">
-    <!-- Standalone Back Button (top-left, like current LogisticsManager) -->
-    <button @click="goBackToSuperAdmin" class="back-to-superadmin-btn">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="19" y1="12" x2="5" y2="12"></line>
-        <polyline points="12 19 5 12 12 5"></polyline>
-      </svg>
-      Back to Super Admin
-    </button>
-
-    <!-- Branch Selector (at top) -->
-    <div class="branch-selector-section">
-      <label>Select Branch:</label>
-      <select v-model="selectedBranchId" @change="handleBranchChange">
-        <option value="">All Branches</option>
-        <option v-for="branch in branches" :key="branch.id" :value="branch.id">
-          {{ branch.name }}
-        </option>
-      </select>
-    </div>
+    <!-- Use header slot for back button (matches procurement UI) -->
 
     <!-- OwnerPanelLayout (adapted for superadmin) -->
     <OwnerPanelLayout
       panelTitle="Super Admin Logistics Panel"
       panelDescription="Monitor inventory, procurement requests, and manage across all branches."
+      :showProfileColumn="false"
     >
+      <template #headerLeft>
+        <button class="btn-secondary back-to-dashboard-btn" @click="goBackToSuperAdmin">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="back-icon">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+          Back to Super Admin
+        </button>
+      </template>
+
       <template #main>
+        <!-- Branch Selector (matches procurement UI placement) -->
+        <div class="branch-selector-section" style="margin-bottom: 1rem; display: flex; align-items: center;">
+          <label style="font-weight:600; color:#1e293b; margin-right:0.75rem; font-size:0.95rem;">Select Branch:</label>
+          <select v-model="selectedBranchId" @change="handleBranchChange" style="padding:0.45rem 0.6rem; border:1px solid #CBD5E1; border-radius:6px; background:white; font-size:0.9rem; min-width:220px;">
+            <option value="">All Branches</option>
+            <option v-for="branch in branches" :key="branch.id" :value="branch.id">{{ branch.name }} (ID: {{ branch.id }})</option>
+          </select>
+        </div>
         <!-- Inventory Section (filtered by branch) -->
         <div class="panel-section">
           <h2 class="section-title">Inventory Monitor ({{ selectedBranchName }})</h2>
@@ -631,10 +632,10 @@ defineExpose({ fetchInventory })
   color: #f39c12;
 }
 
-.btn-small { 
-  padding: 6px 10px; 
-  font-size: 0.85rem; 
-  border-radius: 6px 
+.btn-small {
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  border-radius: 6px
 }
 
 .form-container {
@@ -786,6 +787,138 @@ defineExpose({ fetchInventory })
 
 .fade-enter-from, .fade-leave-to {
   opacity: 0;
+}
+
+/* Ensure announcements/right side doesn't overlap main content when profile column hidden */
+:deep(.admin-layout.no-profile-column) {
+  display: grid !important;
+  grid-template-columns: 1fr 360px !important;
+  gap: 1rem !important;
+}
+
+:deep(.admin-layout.no-profile-column) .admin-main {
+  width: 100% !important;
+}
+
+:deep(.admin-side) {
+  /* Keep the side panel in normal flow so it scrolls with the page
+     instead of staying fixed (user requested it should move on scroll). */
+  position: relative;
+  align-self: start;
+  max-height: none;
+  overflow: visible;
+  padding-right: 8px;
+}
+
+/* Announcements panel responsiveness */
+:deep(.announcements-panel) {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  padding: 12px;
+}
+
+:deep(.announcements-panel .panel-header) {
+  padding: 0 8px 8px 8px;
+}
+
+:deep(.announcement-list) {
+  list-style: none;
+  margin: 0;
+  padding: 0 8px 8px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+:deep(.announcement-item) {
+  background: transparent;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(0,0,0,0.04);
+}
+
+:deep(.announcement-title) {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+:deep(.announcement-meta) {
+  font-size: 12px;
+  color: rgba(0,0,0,0.5);
+  margin-bottom: 6px;
+}
+
+@media (max-width: 1200px) {
+  :deep(.announcements-panel) {
+    max-width: 100%;
+    padding: 10px;
+  }
+
+  :deep(.announcement-list) {
+    padding: 0;
+  }
+
+  :deep(.announcement-item) {
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 768px) {
+  :deep(.admin-side) {
+    position: relative !important;
+    top: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding-right: 0 !important;
+  }
+
+  :deep(.announcements-panel) {
+    padding: 8px 6px !important;
+    margin-bottom: 12px;
+  }
+
+  :deep(.announcement-meta) { font-size: 11px }
+  :deep(.announcement-message) { font-size: 0.95rem }
+}
+
+/* Remove OwnerPanelLayout's orange gradient for this specific view and
+   make the layout responsive: collapse right column under main on smaller screens */
+.superadmin-logistics-wrapper :deep(.min-h-screen) {
+  /* kept for compatibility when layout is nested, but also add a global override below */
+  background: transparent !important;
+}
+
+:deep(.min-h-screen) {
+  /* Override the orange gradient used on OwnerPanelLayout root */
+  background: transparent !important;
+}
+
+@media (max-width: 1200px) {
+  :deep(.admin-layout.no-profile-column) {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+
+  :deep(.admin-side) {
+    position: relative !important;
+    top: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding-right: 0 !important;
+    order: 3 !important;
+  }
+
+  .branch-selector-section {
+    margin: 16px 12px !important;
+    max-width: calc(100% - 24px) !important;
+  }
+
+  .back-to-superadmin-btn {
+    left: 12px !important;
+    top: 12px !important;
+  }
 }
 </style>
 

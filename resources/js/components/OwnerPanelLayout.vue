@@ -48,7 +48,7 @@
           <header class="admin-main-header">
             <div class="admin-main-header-top">
               <div class="header-left-slot">
-                  <button v-if="showBackComputed" class="back-to-dashboard-btn" @click="handleBack">← Back</button>
+                  <button v-if="showDefaultBack" class="back-to-dashboard-btn" @click="handleBack">← Back</button>
                   <slot name="headerLeft"></slot>
               </div>
               <div>
@@ -229,7 +229,7 @@
 </template>
 
 <script setup>
-import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
+import { ref, watch, computed, onMounted, onUnmounted, useSlots } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import Toast from './Toast.vue'
@@ -270,11 +270,25 @@ const isCustomAccount = computed(() => {
 // Show a back button when parent explicitly requests it via prop, when the
 // current route contains `?from=custom-panel`, or when the logged-in account is
 // of type custom (so modules always have a way back).
+const slots = useSlots()
+
 const showBackComputed = computed(() => {
   try {
     return Boolean(props.showBackButton) || (route && route.query && route.query.from === 'custom-panel') || isCustomAccount.value
   } catch (e) {
     return Boolean(props.showBackButton) || isCustomAccount.value
+  }
+})
+
+// Only render the default back button when the parent did not provide a custom
+// `headerLeft` slot (prevents duplicate back buttons when a parent injects its
+// own back control into the headerLeft slot).
+const showDefaultBack = computed(() => {
+  try {
+    const hasHeaderLeft = Boolean(slots.headerLeft && slots.headerLeft().length)
+    return showBackComputed.value && !hasHeaderLeft
+  } catch (e) {
+    return showBackComputed.value
   }
 })
 
