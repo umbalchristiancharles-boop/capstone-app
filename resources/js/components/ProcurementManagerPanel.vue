@@ -1462,6 +1462,47 @@ onUnmounted(() => {
 .data-table tbody tr:nth-child(odd) { background: rgba(3,37,65,0.02); }
 .data-table th, .data-table td { padding: 8px 10px; }
 
+/* Requests History: make columns equal and aligned */
+.requests-scroll .data-table { table-layout: fixed; width: 100%; }
+.requests-scroll .data-table thead th { text-align: left; font-weight: 700; color: #5b4030; }
+.requests-scroll .data-table tbody td { vertical-align: middle; color: #423022; }
+.requests-scroll .data-table th:nth-child(1), .requests-scroll .data-table td:nth-child(1) { width: 18%; }
+.requests-scroll .data-table th:nth-child(2), .requests-scroll .data-table td:nth-child(2) { width: 30%; }
+.requests-scroll .data-table th:nth-child(3), .requests-scroll .data-table td:nth-child(3) { width: 6%; text-align: center; }
+.requests-scroll .data-table th:nth-child(4), .requests-scroll .data-table td:nth-child(4) { width: 12%; text-align: right; }
+.requests-scroll .data-table th:nth-child(5), .requests-scroll .data-table td:nth-child(5) { width: 18%; text-align: left; }
+.requests-scroll .data-table th:nth-child(6), .requests-scroll .data-table td:nth-child(6) { width: 16%; text-align: left; }
+.requests-scroll .data-table td.product-name { font-weight: 700; color: #1f2937; }
+.requests-scroll .data-table td.amount { text-align: right; font-weight:700 }
+.requests-scroll .data-table td, .requests-scroll .data-table th { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Ensure the sticky header spans full width and matches body cells */
+.requests-scroll .data-table thead th { padding-top: 12px; padding-bottom: 12px; }
+.requests-scroll::-webkit-scrollbar { width: 12px; height: 12px; }
+
+/* Scrollbar styling - warm beige/orange theme to match panel */
+.requests-scroll::-webkit-scrollbar-track {
+  background: linear-gradient(180deg, rgba(247,242,239,1), rgba(255,255,255,1));
+  border-radius: 999px;
+  margin: 8px 0;
+}
+.requests-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #ffb07a, #ff7a2c);
+  border-radius: 999px;
+  border: 2px solid rgba(255,255,255,0.9);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+.requests-scroll::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #ff964d, #ff6511); }
+
+/* Firefox scrollbar support */
+.requests-scroll { scrollbar-width: thin; scrollbar-color: #ff7a2c rgba(247,242,239,1); }
+
+/* Apply same styling for supplier list and other internal scrollable areas */
+.supplier-list-scroll::-webkit-scrollbar { width: 10px; }
+.supplier-list-scroll::-webkit-scrollbar-track { background: rgba(250,247,244,1); border-radius: 999px; }
+.supplier-list-scroll::-webkit-scrollbar-thumb { background: linear-gradient(180deg,#ffb07a,#ff7a2c); border-radius: 999px; border: 2px solid rgba(255,255,255,0.9); }
+.supplier-list-scroll { scrollbar-width: thin; scrollbar-color: #ff7a2c rgba(250,247,244,1); }
+
 /* Stat cards consistent */
 .hr-stat-card { min-height: 88px; display:flex; align-items:center; gap:0.75rem; padding: 1rem; }
 
