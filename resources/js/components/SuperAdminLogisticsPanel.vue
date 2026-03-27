@@ -9,7 +9,7 @@
       :showProfileColumn="false"
     >
       <template #headerLeft>
-        <button class="btn-secondary back-to-dashboard-btn" @click="goBackToSuperAdmin">
+        <button class="btn-secondary back-to-superadmin-btn" @click="goBackToSuperAdmin">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="back-icon">
             <line x1="19" y1="12" x2="5" y2="12"></line>
             <polyline points="12 19 5 12 12 5"></polyline>
@@ -414,47 +414,44 @@ defineExpose({ fetchInventory })
   min-height: 100vh;
 }
 
-/* Back Button (standalone, top-left) */
+/* Back Button: keep it inline with the header so it aligns responsively */
 .back-to-superadmin-btn {
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  z-index: 100;
-  padding: 12px 20px;
+  position: relative;
+  margin: 0;
+  padding: 10px 16px;
   background: rgba(255,255,255,0.95);
   border: none;
   border-radius: 8px;
   color: #333;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  display: flex;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.2s;
+  transition: transform 0.18s, box-shadow 0.18s;
 }
 
 .back-to-superadmin-btn:hover {
   background: white;
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.16);
 }
 
-.back-to-superadmin-btn svg {
-  stroke: #666;
-}
+.back-to-superadmin-btn svg { stroke: #666 }
 
 /* Branch Selector */
 .branch-selector-section {
   background: rgba(255,255,255,0.95);
-  padding: 16px 24px;
-  margin: 80px 20px 20px;
+  padding: 12px 18px;
+  margin: 0 0 1rem 0;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
   display: flex;
   align-items: center;
   gap: 12px;
-  max-width: 400px;
+  max-width: 520px;
+  align-self: start;
 }
 
 .branch-selector-section label {
@@ -565,6 +562,23 @@ defineExpose({ fetchInventory })
 
 .table-container {
   overflow-x: auto;
+  /* Limit height so long tables don't stretch the page; enable internal scrolling */
+  max-height: 420px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Keep table header visible while scrolling the table body */
+.data-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  background: #fff4e6; /* match header background */
+}
+
+/* Ensure thead row doesn't collapse visually when sticky */
+.data-table thead tr {
+  display: table-row;
 }
 
 .data-table {
@@ -810,32 +824,38 @@ defineExpose({ fetchInventory })
   padding-right: 8px;
 }
 
-/* Announcements panel responsiveness */
+/* Make the announcements panel visually match the main `panel-section` */
 :deep(.announcements-panel) {
+  background: rgba(255,255,255,0.95);
+  border-radius: 16px;
+  padding: 20px 18px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border: 1px solid rgba(0,0,0,0.04);
   box-sizing: border-box;
   width: 100%;
   max-width: 100%;
-  padding: 12px;
 }
 
 :deep(.announcements-panel .panel-header) {
-  padding: 0 8px 8px 8px;
+  padding: 0 6px 10px 6px;
 }
 
 :deep(.announcement-list) {
   list-style: none;
   margin: 0;
-  padding: 0 8px 8px 8px;
+  padding: 6px 0 0 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 :deep(.announcement-item) {
-  background: transparent;
-  padding: 8px 10px;
-  border-radius: 8px;
+  background: #fff;
+  padding: 10px 12px;
+  border-radius: 12px;
   border: 1px solid rgba(0,0,0,0.04);
+  box-shadow: 0 2px 8px rgba(3,37,65,0.04);
 }
 
 :deep(.announcement-title) {
@@ -916,8 +936,8 @@ defineExpose({ fetchInventory })
   }
 
   .back-to-superadmin-btn {
-    left: 12px !important;
-    top: 12px !important;
+    padding: 8px 12px !important;
+    display: inline-flex !important;
   }
 }
 </style>
