@@ -36,22 +36,8 @@
 
       <!-- RIGHT side: big logo only -->
       <div class="hero-right">
-        <div class="logo-wrapper flip-card">
-          <div class="flip-card-inner">
-            <div class="flip-card-front">
-              <img :src="chikintayoImg" alt="Chikintayo" />
-            </div>
-            <div class="flip-card-back">
-              <div class="flip-content">
-                <h2>CHIKIN TAYO</h2>
-                <p class="tagline">Korean-Inspired Food & Snack Shop</p>
-                <p class="description">A popular spot in the Philippines offering trendy and comforting Korean-style meals and treats. Riding the growing popularity of Korean culture, we provide delicious, affordable, and visually appealing food in a cozy and Instagrammable setting.</p>
-                <p class="specialties"><strong>Specialties:</strong> Crispy fried chicken, Korean-style corndogs, flavorful ramen, ice cream, and trendy Korean desserts.</p>
-                <p class="offerings"><strong>More Than Food:</strong> We also offer coffee, milk-based drinks, and refreshers—making us a complete hub for casual dining and hangouts.</p>
-                <p class="mission">Making Korean-style cuisine accessible and fun for the local community!</p>
-              </div>
-            </div>
-          </div>
+        <div class="logo-wrapper">
+          <img :src="chikintayoImg" alt="Chikintayo" class="logo-static" />
         </div>
       </div>
 
