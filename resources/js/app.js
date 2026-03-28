@@ -101,7 +101,7 @@ axios.interceptors.request.use(config => {
       delete config.headers['Authorization']
     }
   } catch (e) {}
-  
+
   // Also ensure Bearer token is always sent for API requests
   try {
     const url = String(config.url || '')
@@ -174,6 +174,7 @@ const router = createRouter({
     { path: '/super-admin/dashboard', redirect: '/super-admin-panel' },
 { path: '/super-admin/hr', component: () => import('./components/HRStaffManagement.vue'), meta: { requiresAuth: true } },
 { path: '/super-admin/logistics', component: () => import('./components/SuperAdminLogisticsPanel.vue'), meta: { requiresAuth: true } },
+{ path: '/super-admin/supplier', component: () => import('./components/SuperAdminSupplier.vue'), meta: { requiresAuth: true } },
   { path: '/super-admin/procurement', component: () => import('./components/SuperAdminProcurement.vue'), meta: { requiresAuth: true } },
     { path: '/super-admin/finance', component: () => import('./components/SuperAdminFinance.vue'), meta: { requiresAuth: true } },
     { path: '/super-admin/cashier', component: () => import('./components/Cashier.vue'), meta: { requiresAuth: true } },

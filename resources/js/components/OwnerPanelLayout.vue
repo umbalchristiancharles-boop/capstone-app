@@ -701,6 +701,20 @@ async function onAvatarChange(event) {
 :deep(.admin-layout.no-profile-column) .header-actions-top { position: absolute; right: 24px; top: 12px; z-index: 120 }
 :deep(.header-actions-top .header-profile-btn) { display: inline-flex; align-items: center }
 
+/* Keep grid columns stable when profile column is hidden so main content
+   doesn't jump width when toggling the left column. Reserve a right-side
+   column for side panels (announcements) so they remain on the right. */
+:deep(.admin-layout.no-profile-column) {
+  grid-template-columns: 1fr minmax(260px, 360px);
+  gap: 1rem;
+}
+:deep(.admin-layout.no-profile-column) .admin-main {
+  width: 100%;
+}
+:deep(.admin-layout.no-profile-column) .admin-side {
+  width: 360px;
+}
+
 /* Small avatar-only button inside announcements (proxies to header slot) */
 /* announcements avatar styles removed */
 
@@ -713,6 +727,24 @@ async function onAvatarChange(event) {
 @media (min-width: 1024px) {
   .admin-layout--wider {
     padding: 1.5rem 2.5rem;
+  }
+}
+
+@media (min-width: 1000px) {
+  /* Make side column sticky so announcements never overlay main content
+     while allowing the main panel to scroll independently. */
+  :deep(.admin-side) {
+    position: sticky;
+    top: 96px;
+    align-self: start;
+    max-height: calc(100vh - 120px);
+    overflow: auto;
+    padding-right: 8px;
+  }
+
+  :deep(.announcements-panel) {
+    max-height: calc(100vh - 160px);
+    overflow: auto;
   }
 }
 

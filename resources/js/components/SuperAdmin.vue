@@ -100,7 +100,7 @@
               </div>
 
               <div class="admin-actions-row">
-                <button class="staff-btn staff-btn--center" @click="openModule('logistics')">Supplier Management</button>
+                <button class="staff-btn staff-btn--center" @click="openModule('supplier')">Supplier Management</button>
               </div>
 
               <div class="admin-actions-row">
@@ -653,6 +653,7 @@ function openModule(name) {
     case 'finance': return router.push('/super-admin/finance')
     case 'cashier': return router.push('/super-admin/cashier')
     case 'logistics': return router.push('/super-admin/logistics')
+    case 'supplier': return router.push('/super-admin/supplier')
     case 'procurement': return router.push('/super-admin/procurement')
     default: return
   }
