@@ -448,4 +448,31 @@ function toggleShowPassword() {
     font-weight: 700;
     text-align: center;
 }
+
+/* Loading overlay tweaks: make the inner container slightly transparent */
+.loading-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.45);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+}
+.loading-overlay .logo-loading-box {
+    background: rgba(255,255,255,0.60);
+    border-radius: 12px;
+    padding: 18px 22px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.10);
+    text-align: center;
+    min-width: 200px;
+    backdrop-filter: blur(2px);
+}
+.loading-overlay .logo-loading-img{
+    width: 96px;
+    height: auto;
+    margin-bottom: 8px;
+}
 </style>

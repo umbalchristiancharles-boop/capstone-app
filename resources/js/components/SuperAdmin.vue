@@ -661,7 +661,10 @@ function openModule(name) {
 
 function ownerAddBranches() {
   // Navigate to the owner add branches page (route should exist or be implemented separately)
-  router.push('/main-branch/branches')
+  // Navigate to the main-branch branches page but include a query marker
+  // so the branches page can return to the Super Admin panel when needed.
+  // Use dedicated super-admin route so the branches page can detect Super Admin
+  router.push({ path: '/super-admin/branches', query: { from: 'superadmin' } })
 }
 
 async function sendAnnouncement() {

@@ -279,21 +279,26 @@
 </template>
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import '../css/adminpanel.css'
 
 const router = useRouter()
+const route = useRoute()
 
-const backTarget = computed(() => '/main-branch/admin')
+const backTarget = computed(() => {
+  // If navigated from Super Admin, return there; otherwise default to main branch admin
+  return (route.query && route.query.from === 'superadmin') ? '/super-admin-panel' : '/main-branch/admin'
+})
 
-const backLabel = computed(() => 'Back to Main Branch')
+const backLabel = computed(() => route.query && route.query.from === 'superadmin' ? 'Back to Super Admin' : 'Back to Main Branch')
 
 function handleBack() {
   try {
-    window.location.href = backTarget.value
+    // Prefer router navigation so SPA state is preserved
+    router.push(backTarget.value)
   } catch (e) {
-    try { router.push(backTarget.value) } catch (_) {}
+    try { window.location.href = backTarget.value } catch (_) {}
   }
 }
 

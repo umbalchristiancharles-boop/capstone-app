@@ -183,6 +183,8 @@ const router = createRouter({
     { path: '/main-branch/finance', component: () => import('./components/MainBranchFinancePanel.vue'), meta: { requiresAuth: true } },
     { path: '/main-branch/logistics', component: () => import('./components/MainBranchLogisticsPanel.vue'), meta: { requiresAuth: true } },
     { path: '/main-branch/branches', component: () => import('./components/OwnerAddBranches.vue'), meta: { requiresAuth: true } },
+    // Accessible by Super Admin as a dedicated route (reuses OwnerAddBranches component)
+    { path: '/super-admin/branches', component: () => import('./components/OwnerAddBranches.vue'), meta: { requiresAuth: true } },
     { path: '/manager-panel', component: AdminPanel, meta: { requiresAuth: true } },
     { path: '/manager/finance', component: ManagerFinancePanel, meta: { requiresAuth: true } },
     { path: '/manager/logistics', component: ManagerLogisticsPanel, meta: { requiresAuth: true } },
