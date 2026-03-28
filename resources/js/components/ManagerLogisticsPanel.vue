@@ -1219,6 +1219,36 @@ async function askLogout() {
   max-height: none !important;
 }
 
+@media (min-width: 1000px) {
+  /* Ensure we override the layout's sticky side column at large viewports
+     so announcements become part of the document flow and scroll away. */
+  :deep(.admin-layout.no-profile-column) .admin-side {
+    position: static !important;
+    top: auto !important;
+    align-self: stretch !important;
+     /* align announcements vertically with the first panel (Inventory Monitor)
+       tuned for desktop layouts; reduced for tighter alignment */
+     margin-top: 212px !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding-right: 0 !important;
+  }
+
+  :deep(.announcements-panel) {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  :deep(.announcements-panel .panel-header) {
+    position: static !important;
+  }
+
+  :deep(.announcements-panel .panel-body) {
+    overflow: visible !important;
+    max-height: none !important;
+  }
+}
+
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.3s;
