@@ -60,6 +60,9 @@ class SupplierOrderController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
+            'category' => 'required|string|max:255',
+            'per_pack_or_individual' => 'required|in:individual,per_pack,both',
+            'expires_at' => 'required|date_format:Y-m-d\TH:i',
             'stock' => 'nullable|integer|min:0',
             'sku' => 'nullable|string|max:255'
         ]);
@@ -99,6 +102,8 @@ class SupplierOrderController extends Controller
                 $existingProduct->update([
                     'name' => $validated['name'],
                     'slug' => \Illuminate\Support\Str::slug($validated['name']),
+                    'category' => $validated['category'],
+                    'per_pack_or_individual' => $validated['per_pack_or_individual'],
                     'price' => $validated['price'],
                     'cost_price' => $validated['price'],
                     'stock' => $validated['stock'] ?? $existingProduct->stock ?? 0,
@@ -106,6 +111,7 @@ class SupplierOrderController extends Controller
                     'branch_id' => $order->branch_id,
                     'supplier_id' => $user->id,
                     'supplier_name' => $user->full_name ?? $user->username,
+                    'expires_at' => $validated['expires_at'],
                     'is_published' => 1,
                     'is_active' => 1,
                     'is_kitchen_dish' => $isDish,
@@ -117,6 +123,8 @@ class SupplierOrderController extends Controller
                 $product = $ProductModel::create([
                     'name' => $validated['name'],
                     'slug' => \Illuminate\Support\Str::slug($validated['name']),
+                    'category' => $validated['category'],
+                    'per_pack_or_individual' => $validated['per_pack_or_individual'],
                     'price' => $validated['price'],
                     'cost_price' => $validated['price'],
                     'stock' => $validated['stock'] ?? 0,
@@ -124,6 +132,7 @@ class SupplierOrderController extends Controller
                     'branch_id' => $order->branch_id,
                     'supplier_id' => $user->id,
                     'supplier_name' => $user->full_name ?? $user->username,
+                    'expires_at' => $validated['expires_at'],
                     'is_published' => 1,
                     'is_active' => 1,
                     'is_kitchen_dish' => $isDish,

@@ -1,37 +1,19 @@
-# Manager Finance Panel Fix - Implementation Plan
+# Fix Custom Panel Logistics 401 Unauthorized
 
-## Status: 4/7 Complete
+## Steps:
+- [ ] 1. Create TODO.md ✅
+- [x] 2. Edit resources/js/components/CustomPanel.vue: Store token from /api/me response in localStorage ✅
+- [x] 3. Update TODO.md after edit ✅
+- [ ] 4. Test: Login custom user → navigate to /manager/logistics → verify APIs load without 401 (check Network tab for Authorization: Bearer header)
+- [ ] 5. Complete task
 
-### 1. ✅ Create TODO.md [DONE]
+**Root cause:** Custom users lack Bearer token for sanctum APIs. Fix ensures token storage after /api/me.
 
-### 2. ✅ Update FinancePanelContent.vue → Professional transactions table [DONE]
+**Status:** CustomPanel.vue fixed. Test step 4 manually:
+- Login custom user (with logistics permission)
+- Visit http://localhost/capstone-app/public/custom-panel (adjust port)
+- Click Logistics → verify no 401 in console/Network tab
 
-### 3. ✅ Add auto-refresh polling (30s) + optimize fetches with Promise.all() [DONE]
+Run `npm run dev` + refresh if needed.
 
-### 2. Verify backend data via CLI queries
-```
-# Find finance manager
-SELECT id, username, branch_id FROM users WHERE department='finance' AND role IN ('MANAGER','BRANCH_MANAGER');
-
-# Check orders for branch
-SELECT COUNT(*), SUM(grand_total) FROM orders WHERE branch_id=? AND status IN ('completed','approved');
-
-# Check pending budgets  
-SELECT COUNT(*) FROM budget_requests WHERE branch_id=? AND status='Pending';
-```
-
-### 3. Update FinancePanelContent.vue - Replace placeholder with real transactions/reports table
-
-### 4. Add auto-refresh polling (30s) to ManagerFinancePanel.vue onMounted()
-
-### 5. Polish KPI cards - Add loading/error states, better formatting
-
-### 6. Test status updates - Approve budget → verify ProcurementRequest status change
-
-### 7. Final test & attempt_completion
-
-**Notes:**
-- Backend logic correct (branch-filtered, date-range aware)
-- Status linkage works via BudgetRequestController::markGiven()
-- No duplicate code/files needed
 

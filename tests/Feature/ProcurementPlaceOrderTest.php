@@ -71,7 +71,7 @@ class ProcurementPlaceOrderTest extends TestCase
         ]);
     }
 
-    public function test_place_order_with_custom_quantity_creates_supplier_order_with_custom_qty()
+    public function test_place_order_ignores_custom_quantity_and_uses_request_quantity()
     {
         $user = User::factory()->create([
             'role' => 'PROCUREMENT_MANAGER',
@@ -99,18 +99,21 @@ class ProcurementPlaceOrderTest extends TestCase
             'status' => 'pending_order_to_supplier',
             'budget_approved' => true,
             'branch_id' => 1,
+            'supplier_confirmed' => true,
         ]);
 
         $this->actingAs($user);
 
+        // Try to send a custom quantity of 5, but it should be ignored
         $payload = ['quantity' => 5];
         $response = $this->postJson("/api/procurement.products/{$product->id}/place-order", $payload);
         $response->assertStatus(200);
 
+        // The supplier order should use the procurement request quantity (3), not the custom quantity (5)
         $this->assertDatabaseHas('supplier_orders', [
             'procurement_request_id' => $proc->id,
             'product_id' => $product->id,
-            'quantity' => 5,
+            'quantity' => 3,  // Should use the procurement request quantity, not custom 5
             'branch_id' => 1,
         ]);
 

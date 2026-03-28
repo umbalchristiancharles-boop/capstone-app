@@ -14,6 +14,8 @@ class Product extends Model
     protected $fillable = [
         'name',
         'slug',
+        'category',
+        'per_pack_or_individual',
         'price',
         'cost_price',
         'stock',
@@ -25,8 +27,9 @@ class Product extends Model
         'is_published',
         'is_active',
         'is_kitchen_dish',
-    'has_been_ordered',
+        'has_been_ordered',
         'logistics_request_available',
+        'expires_at',
     ];
 
     protected $casts = [
@@ -39,6 +42,7 @@ class Product extends Model
         'is_kitchen_dish' => 'boolean',
         'has_been_ordered' => 'boolean',
         'logistics_request_available' => 'boolean',
+        'expires_at' => 'datetime',
     ];
 
     public function supplier(): BelongsTo

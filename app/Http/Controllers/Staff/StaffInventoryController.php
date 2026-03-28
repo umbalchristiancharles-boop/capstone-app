@@ -145,13 +145,19 @@ class StaffInventoryController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
-            'stock' => 'required|integer|min:0',
+            'stock' => 'nullable|integer|min:0',
+            'category' => 'required|string|max:255',
+            'per_pack_or_individual' => 'required|in:individual,per_pack,both',
+            'expires_at' => 'required|date_format:Y-m-d\TH:i',
             'sku' => 'nullable|string|unique:products,sku',
         ]);
 
+        // Default stock to 0 if not provided
+        $stock = $validated['stock'] ?? 0;
+        
         // Additional protection: ensure stock is never negative
-        if ($validated['stock'] < 0) {
-            $validated['stock'] = 0;
+        if ($stock < 0) {
+            $stock = 0;
         }
 
         /** @var \App\Models\User $user */
@@ -185,18 +191,33 @@ class StaffInventoryController extends Controller
             $isPublished = 0;
         }
 
+        // Check if this is a kitchen dish (wrapped in try-catch to avoid timeouts)
+        $isKitchenDish = false;
+        try {
+            $isKitchenDish = Dish::whereRaw('TRIM(UPPER(name)) = ?', [trim(strtoupper($validated['name']))])
+                ->where('branch_id', $branchId)
+                ->exists();
+        } catch (\Exception $e) {
+            \Log::warning('Failed to check if product is kitchen dish', ['error' => $e->getMessage()]);
+            $isKitchenDish = false;
+        }
+
         $product = Product::create([
             'name' => $validated['name'],
             'slug' => Str::slug($validated['name']),
             'price' => $validated['price'],
-            'stock' => $validated['stock'],
+            'cost_price' => $validated['price'],
+            'stock' => $stock,
             'sku' => $sku,
+            'category' => $validated['category'],
+            'per_pack_or_individual' => $validated['per_pack_or_individual'],
+            'expires_at' => $validated['expires_at'],
             'branch_id' => $branchId,
             'supplier_id' => $user->id,
             'supplier_name' => $supplierName,
             'is_published' => $isPublished,
             'is_active' => true,
-            'is_kitchen_dish' => Dish::whereRaw('TRIM(UPPER(name)) = ?', [trim(strtoupper($validated['name']))])->where('branch_id', $branchId)->exists(),
+            'is_kitchen_dish' => $isKitchenDish,
         ]);
 
         return response()->json([
@@ -225,6 +246,9 @@ class StaffInventoryController extends Controller
             'price' => 'sometimes|numeric|min:0',
             'stock' => 'sometimes|integer|min:0',
             'sku' => 'sometimes|string|unique:products,sku,' . $id,
+            'category' => 'sometimes|string|max:255',
+            'per_pack_or_individual' => 'sometimes|in:individual,per_pack,both',
+            'expires_at' => 'sometimes|date_format:Y-m-d\TH:i',
         ]);
 
         // Additional protection: ensure stock is never negative

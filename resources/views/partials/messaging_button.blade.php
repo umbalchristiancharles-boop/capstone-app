@@ -23,8 +23,19 @@
             }
 
             const isPanelPath = (p => {
-                const panels = ['/admin-panel','/manager-panel','/staff-panel','/hr-panel','/super-admin-panel']
-                return panels.some(x => p === x || p.startsWith(x + '/'))
+                // Check if on any of the panel routes where messaging is available
+                const panelPrefixes = [
+                    '/admin-panel',
+                    '/manager-panel', 
+                    '/manager/',           // Covers /manager/hr, /manager/finance, etc.
+                    '/staff-panel',
+                    '/staff/',             // Covers /staff/kitchen, /staff/cashier, etc.
+                    '/hr-panel',
+                    '/super-admin-panel',
+                    '/custom-panel',       // NEW: Custom account panel
+                    '/supplier-panel'
+                ]
+                return panelPrefixes.some(x => p === x || p.startsWith(x))
             })(window.location.pathname || '/')
 
             // Only show when on a panel path AND authenticated either server-side or client-side

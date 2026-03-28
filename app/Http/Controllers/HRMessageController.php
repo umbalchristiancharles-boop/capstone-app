@@ -146,8 +146,33 @@ class HRMessageController extends Controller
                 ->orderBy('name')
                 ->get();
 
+            // Also include CUSTOM accounts with HR module permission in same branch
+            $customHrUsers = User::where('role', 'CUSTOM')
+                ->where('branch_id', $user->branch_id)
+                ->get(['id', 'full_name', 'username', 'role', 'branch_id', 'permissions']);
+            
+            foreach ($customHrUsers as $cu) {
+                try {
+                    $perms = $cu->permissions ?? [];
+                    if (is_string($perms)) $perms = json_decode($perms, true) ?: [];
+                    if (is_array($perms) && isset($perms['modules']) && is_array($perms['modules'])) {
+                        foreach ($perms['modules'] as $m) {
+                            if (strtoupper(trim((string)$m)) === 'HR') {
+                                $sameBranchHr->push((object)[
+                                    'id' => $cu->id,
+                                    'name' => $cu->full_name ?? $cu->username ?? ('User #' . $cu->id),
+                                    'role' => $cu->role,
+                                    'branch_id' => $cu->branch_id,
+                                ]);
+                                break;
+                            }
+                        }
+                    }
+                } catch (\Throwable $e) { /* ignore */ }
+            }
+
             if ($sameBranchHr->isNotEmpty()) {
-                return $sameBranchHr;
+                return $sameBranchHr->sortBy('name')->values();
             }
         }
 
@@ -161,8 +186,33 @@ class HRMessageController extends Controller
             ->orderBy('name')
             ->get();
 
+        // Also include global CUSTOM accounts with HR module permission
+        $customGlobalHrUsers = User::where('role', 'CUSTOM')
+            ->whereNull('branch_id')
+            ->get(['id', 'full_name', 'username', 'role', 'branch_id', 'permissions']);
+        
+        foreach ($customGlobalHrUsers as $cu) {
+            try {
+                $perms = $cu->permissions ?? [];
+                if (is_string($perms)) $perms = json_decode($perms, true) ?: [];
+                if (is_array($perms) && isset($perms['modules']) && is_array($perms['modules'])) {
+                    foreach ($perms['modules'] as $m) {
+                        if (strtoupper(trim((string)$m)) === 'HR') {
+                            $globalHr->push((object)[
+                                'id' => $cu->id,
+                                'name' => $cu->full_name ?? $cu->username ?? ('User #' . $cu->id),
+                                'role' => $cu->role,
+                                'branch_id' => $cu->branch_id,
+                            ]);
+                            break;
+                        }
+                    }
+                }
+            } catch (\Throwable $e) { /* ignore */ }
+        }
+
         if ($globalHr->isNotEmpty()) {
-            return $globalHr;
+            return $globalHr->sortBy('name')->values();
         }
 
         // Fallback so the widget never shows an empty list: pick admins/owners in same branch.
@@ -212,7 +262,24 @@ class HRMessageController extends Controller
         $role = strtoupper($user->role ?? '');
         $department = strtoupper($user->department ?? '');
 
-        return $this->isHrRole($role) || $department === 'HR';
+        if ($this->isHrRole($role) || $department === 'HR') {
+            return true;
+        }
+
+        // Check CUSTOM accounts with HR module permission
+        if ($role === 'CUSTOM') {
+            try {
+                $perms = $user->permissions ?? [];
+                if (is_string($perms)) $perms = json_decode($perms, true) ?: [];
+                if (is_array($perms) && isset($perms['modules']) && is_array($perms['modules'])) {
+                    foreach ($perms['modules'] as $m) {
+                        if (strtoupper(trim((string)$m)) === 'HR') return true;
+                    }
+                }
+            } catch (\Throwable $e) { /* ignore */ }
+        }
+
+        return false;
     }
 
     private function currentUser(): User

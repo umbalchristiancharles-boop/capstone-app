@@ -72,8 +72,11 @@
             <thead>
               <tr>
                 <th>Product Name</th>
+                <th>Category</th>
+                <th>Pricing Type</th>
                 <th>Stock Count</th>
                 <th>Minimum Stock</th>
+                <th>Expires At</th>
                 <th>Status</th>
                 <th>Action</th>
               </tr>
@@ -81,8 +84,16 @@
             <tbody>
               <tr v-for="product in inventory" :key="product.id">
                 <td>{{ product.name }}</td>
+                <td>{{ product.category || 'N/A' }}</td>
+                <td><span :class="['pricing-type-badge', 'type-' + product.per_pack_or_individual]">{{ formatPricingType(product.per_pack_or_individual) }}</span></td>
                 <td>{{ product.stock }}</td>
                 <td>{{ product.min_stock }}</td>
+                <td class="expiry-cell">
+                  <span v-if="product.expires_at" :class="['expiry-date', isExpired(product.expires_at) ? 'expired' : isExpiringSoon(product.expires_at) ? 'expiring-soon' : '']">
+                    {{ formatDate(product.expires_at) }}
+                  </span>
+                  <span v-else class="muted">N/A</span>
+                </td>
                 <td>
                   <span :class="['status-badge', product.status === 'OK' ? 'status-ok' : 'status-low']">
                     {{ product.status }}
@@ -101,7 +112,7 @@
                 </td>
               </tr>
               <tr v-if="inventory.length === 0">
-                <td colspan="5" class="empty-message">No products found in your branch.</td>
+                <td colspan="7" class="empty-message">No products found in your branch.</td>
               </tr>
             </tbody>
           </table>
@@ -251,6 +262,7 @@
 import { ref, onMounted, watch } from 'vue'
 import axios from 'axios'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
+import { showToast } from './toastStore'
 
 // basic state
 const userProfile = ref({})
@@ -282,6 +294,110 @@ const showRequestForm = ref(false)
 // map of productId => boolean for per-row requesting state
 const requesting = ref({})
 
+// Helper: perform request with graceful handling and token-fallback on 401.
+async function requestWithFallback(method, url, options = {}) {
+  const token = (typeof localStorage !== 'undefined') ? localStorage.getItem('token') || '' : '';
+
+  // Build initial headers (do not overwrite caller-provided headers)
+  const baseHeaders = Object.assign({}, options.headers || {});
+  if (token && !baseHeaders['Authorization'] && !baseHeaders['authorization']) {
+    baseHeaders['Authorization'] = `Bearer ${token}`;
+  }
+
+  try {
+    const res = await axios[method](url, Object.assign({}, options, { headers: baseHeaders }));
+    return res;
+  } catch (e) {
+    const status = e?.response?.status;
+    console.warn('[ManagerLogistics] Request failed', { method, url, status, message: e.message })
+    try {
+      console.debug('[ManagerLogistics] Request config:', e?.config || options)
+      console.debug('[ManagerLogistics] Response headers:', e?.response?.headers)
+      console.debug('[ManagerLogistics] Document.cookie:', typeof document !== 'undefined' ? document.cookie : null)
+    } catch (logErr) {}
+
+    // On 401/403 try a CSRF cookie refresh first (session-based auth may have expired)
+    if (status === 401 || status === 403) {
+      try {
+        await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
+        // attach XSRF token from cookie if present
+        try {
+          const xsrf = (function(){ try { return decodeURIComponent(document.cookie.split(';').find(r=>r.trim().startsWith('XSRF-TOKEN='))?.split('=')[1]||'') } catch(e){return ''} })()
+          if (xsrf) baseHeaders['X-XSRF-TOKEN'] = xsrf
+        } catch (xx) {}
+        const retry = await axios[method](url, Object.assign({}, options, { headers: baseHeaders }))
+        return retry
+      } catch (e2) {
+        console.warn('[ManagerLogistics] CSRF cookie refresh retry failed', e2?.message || e2)
+        try { console.debug('[ManagerLogistics] CSRF retry response headers:', e2?.response?.headers) } catch(_) {}
+      }
+
+      // If CSRF retry didn't succeed, try explicit token retry if token exists
+      if (token) {
+        try {
+          const retryHeaders = Object.assign({}, baseHeaders, { Authorization: `Bearer ${token}` })
+          const retryOpts = Object.assign({}, options, { headers: retryHeaders })
+          const res2 = await axios[method](url, retryOpts)
+          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+          return res2
+        } catch (e3) {
+          console.warn('[ManagerLogistics] Token retry failed', e3?.message || e3)
+          try { console.debug('[ManagerLogistics] Token retry response headers:', e3?.response?.headers) } catch(_) {}
+        }
+      }
+    }
+
+    throw e
+  }
+}
+
+// POST helper to support body + options signature
+async function requestWithFallbackPost(url, data = {}, options = {}) {
+  const token = (typeof localStorage !== 'undefined') ? localStorage.getItem('token') || '' : '';
+  const baseHeaders = Object.assign({}, options.headers || {});
+  if (token && !baseHeaders['Authorization'] && !baseHeaders['authorization']) {
+    baseHeaders['Authorization'] = `Bearer ${token}`;
+  }
+
+  try {
+    const res = await axios.post(url, data, Object.assign({}, options, { headers: baseHeaders }))
+    return res
+  } catch (e) {
+    const status = e?.response?.status
+    console.warn('[ManagerLogistics] POST error', { url, status, message: e.message })
+
+    if (status === 401 || status === 403) {
+      // Try CSRF cookie refresh first
+      try {
+        await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
+        try {
+          const xsrf = (function(){ try { return decodeURIComponent(document.cookie.split(';').find(r=>r.trim().startsWith('XSRF-TOKEN='))?.split('=')[1]||'') } catch(e){return ''} })()
+          if (xsrf) baseHeaders['X-XSRF-TOKEN'] = xsrf
+        } catch (xx) {}
+        const retry = await axios.post(url, data, Object.assign({}, options, { headers: baseHeaders }))
+        return retry
+      } catch (e2) {
+        console.warn('[ManagerLogistics] POST CSRF retry failed', e2?.message || e2)
+      }
+
+      // Token fallback
+      if (token) {
+        try {
+          const retryHeaders = Object.assign({}, baseHeaders, { Authorization: `Bearer ${token}` })
+          const retryOpts = Object.assign({}, options, { headers: retryHeaders })
+          const res2 = await axios.post(url, data, retryOpts)
+          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+          return res2
+        } catch (e3) {
+          console.warn('[ManagerLogistics] POST token retry failed', e3?.message || e3)
+        }
+      }
+    }
+
+    throw e
+  }
+}
+
 function formatPrice(n) {
   const num = Number(n || 0)
   if (Number.isNaN(num)) return '₱0.00'
@@ -291,6 +407,29 @@ function formatPrice(n) {
 function formatDate(d) {
   if (!d) return ''
   try { return new Date(d).toLocaleString() } catch (e) { return d }
+}
+
+function isExpired(expiryDate) {
+  if (!expiryDate) return false
+  try {
+    const expiry = new Date(expiryDate)
+    const now = new Date()
+    return expiry < now
+  } catch (e) {
+    return false
+  }
+}
+
+function isExpiringSoon(expiryDate) {
+  if (!expiryDate) return false
+  try {
+    const expiry = new Date(expiryDate)
+    const now = new Date()
+    const daysUntilExpiry = (expiry - now) / (1000 * 60 * 60 * 24)
+    return daysUntilExpiry >= 0 && daysUntilExpiry <= 7
+  } catch (e) {
+    return false
+  }
 }
 
 function getProcStatusClass(status) {
@@ -307,6 +446,15 @@ function formatProcStatus(status, budgetApproved) {
   return (status || '').toUpperCase()
 }
 
+function formatPricingType(type) {
+  const typeMap = {
+    'individual': 'Individual',
+    'per_pack': 'Per Pack',
+    'both': 'Both'
+  }
+  return typeMap[type] || 'N/A'
+}
+
 // fetchAnnouncements removed
 
 async function fetchInventory() {
@@ -315,7 +463,7 @@ async function fetchInventory() {
   try {
     const params = {}
     if (selectedBranch.value) params.branch_id = selectedBranch.value
-    const res = await axios.get('/api/manager/logistics/inventory', { params, withCredentials: true })
+    const res = await requestWithFallback('get', '/api/manager/logistics/inventory', { params, withCredentials: true })
     const rawData = res.data?.products ?? res.data?.data ?? res.data ?? []
     inventory.value = (Array.isArray(rawData) ? rawData : []).map(p => ({
       ...p,
@@ -338,7 +486,7 @@ async function loadProducts() {
   try {
     const params = {}
     if (selectedBranch.value) params.branch_id = selectedBranch.value
-    const res = await axios.get('/api/manager/logistics/products', { params, withCredentials: true })
+    const res = await requestWithFallback('get', '/api/manager/logistics/products', { params, withCredentials: true })
     const rawData = res.data?.data ?? res.data ?? []
     products.value = Array.isArray(rawData) ? rawData : []
   } catch (e) {
@@ -354,7 +502,7 @@ async function fetchProcRequests() {
     if (selectedBranch.value) params.branch_id = selectedBranch.value
     // Request completed requests as well for branch-wide view
     if (selectedBranch.value) params.include_completed = 1
-    const res = await axios.get('/api/procurement-requests', { params, withCredentials: true })
+    const res = await requestWithFallback('get', '/api/procurement-requests', { params, withCredentials: true })
     console.debug('ManagerLogisticsPanel.fetchProcRequests params:', params, 'res.data:', res.data)
     // Handle Laravel paginate() response or plain array
     const data = res.data?.data ?? res.data ?? (res.data ? [res.data] : [])
@@ -380,7 +528,7 @@ async function fetchBranches() {
   branchesLoading.value = true
   branchesError.value = ''
   try {
-    const res = await axios.get('/api/manager/logistics/branches', { withCredentials: true })
+    const res = await requestWithFallback('get', '/api/manager/logistics/branches', { withCredentials: true })
     const data = res.data?.data ?? res.data ?? []
     branches.value = Array.isArray(data) ? data : []
     // set selected branch: prefer current user branch if present, else first
@@ -403,7 +551,7 @@ async function fetchBranches() {
 
 async function submitProcRequest() {
   if (!canRequestProcurement.value) {
-    alert('Main Branch logistics cannot create procurement requests.')
+    showToast('Main Branch logistics cannot create procurement requests.', 'warning')
     return
   }
 
@@ -413,14 +561,19 @@ async function submitProcRequest() {
       product_id: procRequestForm.value.product_id,
       quantity: procRequestForm.value.quantity
     }
-    await axios.post('/api/procurement-requests', payload, { withCredentials: true })
-    alert('Procurement request created')
+    await requestWithFallbackPost('/api/procurement-requests', payload, { withCredentials: true })
+    showToast('Procurement request created', 'success')
     showProcRequestForm.value = false
     procRequestForm.value = { product_id: '', quantity: 1 }
-    await fetchProcRequests()
-    await fetchInventory()
+    try {
+      await fetchProcRequests()
+      await fetchInventory()
+    } catch (fetchErr) {
+      console.error('Error refreshing data after procurement request', fetchErr)
+    }
   } catch (e) {
-    alert('Failed to create procurement request')
+    console.error('submitProcRequest error', e)
+    showToast(e.response?.data?.message || 'Failed to create procurement request', 'error')
   } finally {
     procRequestSubmitting.value = false
   }
@@ -433,7 +586,7 @@ async function cancelProcRequest() {
 
 async function requestProcurement(product) {
   if (!canRequestProcurement.value) {
-    alert('Main Branch logistics cannot create procurement requests.')
+    showToast('Main Branch logistics cannot create procurement requests.', 'warning')
     return
   }
 
@@ -441,20 +594,25 @@ async function requestProcurement(product) {
 
   requesting.value = { ...requesting.value, [product.id]: true }
 
-  // Ensure we treat a min_stock of 0 as "unset" and use default (10).
-  const minStock = Number(product.min_stock) > 0 ? Number(product.min_stock) : 10
-  const currentStock = Number(product.stock ?? 0) || 0
-  // Order enough to reach minStock (at least 1). This avoids sending 0 or NaN quantities.
-  const diff = Math.ceil(minStock - currentStock)
-  const qty = Math.max(diff, 1)
-
   try {
-    await axios.post('/api/procurement-requests', { product_id: product.id, quantity: qty }, { withCredentials: true })
-    alert('Procurement request created')
-    await fetchProcRequests()
-    await fetchInventory()
+    // Ensure we treat a min_stock of 0 as "unset" and use default (10).
+    const minStock = Number(product.min_stock) > 0 ? Number(product.min_stock) : 10
+    const currentStock = Number(product.stock ?? 0) || 0
+    // Order enough to reach minStock (at least 1). This avoids sending 0 or NaN quantities.
+    const diff = Math.ceil(minStock - currentStock)
+    const qty = Math.max(diff, 1)
+
+    await requestWithFallbackPost('/api/procurement-requests', { product_id: product.id, quantity: qty }, { withCredentials: true })
+    showToast('Procurement request created', 'success')
+    try {
+      await fetchProcRequests()
+      await fetchInventory()
+    } catch (fetchErr) {
+      console.error('Error refreshing data after procurement request', fetchErr)
+    }
   } catch (e) {
-    alert('Failed to create procurement request')
+    console.error('requestProcurement error', e)
+    showToast(e.response?.data?.message || 'Failed to create procurement request', 'error')
   } finally {
     requesting.value = { ...requesting.value, [product.id]: false }
   }
@@ -801,6 +959,55 @@ async function askLogout() {
 .status-approved {
   background: rgba(46, 204, 113, 0.15);
   color: #27ae60;
+}
+
+.pricing-type-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.pricing-type-badge.type-individual {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.pricing-type-badge.type-per_pack {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.pricing-type-badge.type-both {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.expiry-cell {
+  white-space: nowrap;
+}
+
+.expiry-date {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.expiry-date.expired {
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.expiry-date.expiring-soon {
+  color: #d97706;
+  background: rgba(217, 119, 6, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
 }
 
 .status-rejected {

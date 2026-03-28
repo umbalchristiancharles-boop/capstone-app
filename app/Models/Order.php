@@ -37,12 +37,15 @@ class Order extends Model
         'refund_reason',
         'approved_at',
         'approved_by',
+        'completed_at',
+        'completed_by',
     ];
 
     protected $casts = [
         'ordered_at'    => 'datetime',
         'cancelled_at'  => 'datetime',
         'approved_at'   => 'datetime',
+        'completed_at'  => 'datetime',
         'created_at'    => 'datetime',
         'updated_at'    => 'datetime',
         'subtotal'      => 'decimal:2',

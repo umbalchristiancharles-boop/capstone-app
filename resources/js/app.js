@@ -8,7 +8,6 @@ import adminlogin from './components/adminlogin.vue'
 import StaffList from './components/StaffList.vue'
 import OwnerStaffManagement from './components/OwnerStaffManagement.vue'
 import DeletedStaffList from './components/DeletedStaffList.vue'
-import ManagerInventoryPanel from './components/ManagerInventoryPanel.vue'
 import ManagerFinancePanel from './components/ManagerFinancePanel.vue'
 import ManagerLogisticsPanel from './components/ManagerLogisticsPanel.vue'
 import SupplierPanel from './components/SupplierPanel.vue'
@@ -184,7 +183,6 @@ const router = createRouter({
     { path: '/main-branch/logistics', component: () => import('./components/MainBranchLogisticsPanel.vue'), meta: { requiresAuth: true } },
     { path: '/main-branch/branches', component: () => import('./components/OwnerAddBranches.vue'), meta: { requiresAuth: true } },
     { path: '/manager-panel', component: AdminPanel, meta: { requiresAuth: true } },
-    { path: '/manager/inventory', component: ManagerInventoryPanel, meta: { requiresAuth: true } },
     { path: '/manager/finance', component: ManagerFinancePanel, meta: { requiresAuth: true } },
     { path: '/manager/logistics', component: ManagerLogisticsPanel, meta: { requiresAuth: true } },
     { path: '/manager/logistics/suppliers', component: SupplierPanel, meta: { requiresAuth: true } },
@@ -458,22 +456,12 @@ router.beforeEach(async (to, from, next) => {
       return next('/staff-landing');
     }
 
-    // STRICT ROLE CHECK - Manager Inventory should only access /manager/inventory
     const hasModule = (m) => {
       try {
         const perms = user.permissions || {};
         const mods = Array.isArray(perms.modules) ? perms.modules.map(x => (x||'').toString().toLowerCase()) : [];
         return mods.includes((m||'').toString().toLowerCase());
       } catch (e) { return false }
-    }
-
-    if (to.path.startsWith('/manager/inventory')) {
-      if (user.role === 'manager' && user.department === 'inventory') { /* ok */ }
-      else if (user.role === 'custom' && hasModule('inventory')) { /* ok */ }
-      else {
-        console.warn('[ROUTER] Manager Inventory - wrong role/department:', user);
-        return next('/unauthorized');
-      }
     }
     if (to.path.startsWith('/manager/finance')) {
       if (user.role === 'manager' && user.department === 'finance') { }
@@ -494,9 +482,9 @@ router.beforeEach(async (to, from, next) => {
     }
 
     if (to.path.startsWith('/manager/procurement')) {
-      if (user.role !== 'manager' || user.department !== 'procurement') {
-        return next('/unauthorized');
-      }
+      if (user.role === 'manager' && user.department === 'procurement') { /* ok */ }
+      else if (user.role === 'custom' && hasModule('procurement')) { /* ok */ }
+      else return next('/unauthorized');
     }
 
     // Staff Inventory should only access /staff/inventory
@@ -510,15 +498,18 @@ router.beforeEach(async (to, from, next) => {
       }
     }
     if (to.path.startsWith('/staff/inventory')) {
-      if (user.role !== 'staff' || user.department !== 'inventory') {
+      if (user.role === 'manager' && user.department === 'inventory') { /* ok */ }
+      else if (user.role === 'custom' && hasModule('inventory')) { /* ok */ }
+      else if (user.role === 'staff' && user.department === 'inventory') { /* ok */ }
+      else {
         console.warn('[ROUTER] Staff Inventory - wrong role/department:', user);
         return next('/unauthorized');
       }
     }
     if (to.path.startsWith('/staff/cashier')) {
-      if (user.role !== 'staff' || user.department !== 'cashier') {
-        return next('/unauthorized');
-      }
+      if (user.role === 'staff' && user.department === 'cashier') { /* ok */ }
+      else if (user.role === 'custom' && hasModule('cashier')) { /* ok */ }
+      else return next('/unauthorized');
     }
     if (to.path.startsWith('/staff/finance')) {
       if (user.role !== 'staff' || user.department !== 'finance') {

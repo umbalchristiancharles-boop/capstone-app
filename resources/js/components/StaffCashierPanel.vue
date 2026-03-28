@@ -24,18 +24,26 @@
         </div>
         <div v-if="isLoadingProducts" class="loading-text">Loading products...</div>
         <div v-else-if="filteredProducts.length === 0" class="empty-text">No products available</div>
-        <div v-else class="product-grid">
-          <div
-            v-for="p in filteredProducts"
-            :key="p.id"
-            class="product-card"
-            :class="{ 'out-of-stock': p.stock <= 0 }"
-            @click="p.stock > 0 && addToCart(p)"
-          >
-            <div class="product-name">{{ p.name }}</div>
-            <div class="product-price">₱{{ fmt(p.price) }}</div>
-            <div class="product-stock" :class="{ 'stock-zero': p.stock <= 0 }">
-              {{ p.stock > 0 ? 'Stock: ' + p.stock : 'Out of stock' }}
+        <div v-else>
+          <div v-for="cat in productCategories" :key="cat" class="category-section">
+            <h3 class="category-header">{{ cat || 'Uncategorized' }}</h3>
+            <div class="product-grid">
+              <div
+                v-for="p in getProductsByCategory(cat)"
+                :key="p.id"
+                class="product-card"
+                :class="{ 'out-of-stock': p.stock <= 0 }"
+                @click="p.stock > 0 && addToCart(p)"
+              >
+                <div class="product-name">{{ p.name }}</div>
+                <div v-if="p.per_pack_or_individual" class="product-type" :class="'type-' + p.per_pack_or_individual">
+                  {{ formatPricingType(p.per_pack_or_individual) }}
+                </div>
+                <div class="product-price">₱{{ fmt(p.price) }}</div>
+                <div class="product-stock" :class="{ 'stock-zero': p.stock <= 0 }">
+                  {{ p.stock > 0 ? 'Stock: ' + p.stock : 'Out of stock' }}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -268,12 +276,34 @@ function formatDate(d) {
   return new Date(d).toLocaleString()
 }
 
+function formatPricingType(type) {
+  const typeMap = {
+    'individual': 'Individual',
+    'per_pack': 'Per Pack',
+    'both': 'Both'
+  }
+  return typeMap[type] || type
+}
+
 const filteredProducts = computed(() => {
   const q = (productSearch.value || '').toLowerCase()
   return products.value.filter(p =>
     p.name.toLowerCase().includes(q) || (p.sku || '').toLowerCase().includes(q)
   )
 })
+
+// Product categories for organizing cashier display
+const productCategories = computed(() => {
+  const categories = new Set()
+  filteredProducts.value.forEach(p => {
+    categories.add(p.category || 'Uncategorized')
+  })
+  return Array.from(categories).sort()
+})
+
+function getProductsByCategory(category) {
+  return filteredProducts.value.filter(p => (p.category || 'Uncategorized') === category)
+}
 
 const totalItems = computed(() => cart.value.reduce((s, i) => s + i.quantity, 0))
 const subtotal = computed(() => cart.value.reduce((s, i) => s + i.subtotal, 0))
@@ -595,6 +625,19 @@ async function performLogout() {
 }
 .search-bar input:focus { outline: none; border-color: #ff7a18; }
 
+.category-section {
+  margin-bottom: 20px;
+}
+
+.category-header {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #7a2b00;
+  margin: 10px 0 8px 0;
+  padding-bottom: 6px;
+  border-bottom: 2px solid #ff9a4a;
+}
+
 .product-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -627,6 +670,10 @@ async function performLogout() {
 }
 .stock-zero { color: #dc3545; font-weight: 600; }
 .product-name { font-weight: 600; color: #7a2b00; margin-bottom: 4px; }
+.product-type { display: inline-block; font-size: 0.7rem; font-weight: 600; padding: 2px 6px; border-radius: 5px; margin-bottom: 4px; }
+.product-type.type-individual { background: #dbeafe; color: #1e40af; }
+.product-type.type-per_pack { background: #d1fae5; color: #065f46; }
+.product-type.type-both { background: #fef3c7; color: #92400e; }
 .product-price { color: #e65100; font-weight: 700; font-size: 1.05rem; }
 .product-stock { color: #888; font-size: 0.85rem; margin-top: 4px; }
 

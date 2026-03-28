@@ -44,6 +44,9 @@
             @click="p.stock > 0 && addToCart(p)"
           >
             <div class="product-name">{{ p.name }}</div>
+            <div v-if="p.per_pack_or_individual" class="product-type" :class="'type-' + p.per_pack_or_individual">
+              {{ formatPricingType(p.per_pack_or_individual) }}
+            </div>
             <div class="product-price">₱{{ fmt(p.price) }}</div>
             <div v-if="p.computed_cost" class="product-cost">Cost: ₱{{ fmt(p.computed_cost) }}</div>
             <div class="product-stock" :class="{ 'stock-zero': p.stock <= 0 }">
@@ -274,6 +277,15 @@ function fmt(n) {
 function formatDate(d) {
   if (!d) return ''
   return new Date(d).toLocaleString()
+}
+
+function formatPricingType(type) {
+  const typeMap = {
+    'individual': 'Individual',
+    'per_pack': 'Per Pack',
+    'both': 'Both'
+  }
+  return typeMap[type] || type
 }
 
 const filteredProducts = computed(() => {
@@ -602,6 +614,10 @@ textarea:focus {
 .product-card.out-of-stock { opacity:0.6; cursor:not-allowed; }
 
 .product-name { font-weight:700; color:var(--text-dark); margin-bottom:6px; }
+.product-type { display: inline-block; font-size: 0.75rem; font-weight: 600; padding: 3px 8px; border-radius: 6px; margin-bottom: 6px; }
+.product-type.type-individual { background: #dbeafe; color: #1e40af; }
+.product-type.type-per_pack { background: #d1fae5; color: #065f46; }
+.product-type.type-both { background: #fef3c7; color: #92400e; }
 .product-price { color:var(--text-dark); font-weight:800; font-size:1.05rem; }
 .product-stock { color:rgba(66,33,11,0.6); font-size:0.85rem; }
 

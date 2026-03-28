@@ -50,7 +50,18 @@ onMounted(() => {
       if (perms && Array.isArray(perms.modules)) {
         modules.value = perms.modules.map(m => (m || '').toLowerCase());
       }
-    }).catch(() => {
+      // FIX: Store token for sanctum API auth (fixes 401 on manager/logistics APIs from custom panel)
+      const token = res.data.token || res.data.access_token || null;
+      if (token) {
+        localStorage.setItem('token', token);
+        // Ensure axios global header is set
+        if (typeof axios !== 'undefined') {
+          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        }
+        console.log('[CustomPanel] Token stored for API auth');
+      }
+    }).catch((err) => {
+      console.warn('[CustomPanel] /api/me failed:', err.response?.status);
       // ignore - leave modules empty
     });
   }
@@ -70,7 +81,7 @@ const goToModule = (m) => {
   if (mod === 'finance') return router.push({ path: '/manager/finance', ...q });
   if (mod === 'procurement') return router.push({ path: '/manager/procurement', ...q });
   if (mod === 'logistics') return router.push({ path: '/manager/logistics', ...q });
-  if (mod === 'inventory') return router.push({ path: '/manager/inventory', ...q });
+  if (mod === 'inventory') return router.push({ path: '/staff/inventory', ...q });
   if (mod === 'hr') return router.push({ path: '/manager/hr', ...q });
   if (mod === 'kitchen') return router.push({ path: '/staff/kitchen', ...q });
   if (mod === 'cashier') return router.push({ path: '/staff/cashier', ...q });

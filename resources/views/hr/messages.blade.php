@@ -61,7 +61,12 @@
     async function loadConversation(userId){
         messagesDiv.innerHTML = '<em>Loading...</em>';
         const res = await fetch('/api/hr/messages/conversation/' + userId, {headers:{'X-Requested-With':'XMLHttpRequest'}});
-        if(!res.ok){ messagesDiv.innerHTML = '<div style="color:#c53030">Unable to load conversation.</div>'; return; }
+        if(!res.ok){ 
+            const errorData = await res.json().catch(() => ({}));
+            const errorMsg = errorData.error || `Error: ${res.statusText}`;
+            messagesDiv.innerHTML = '<div style="color:#c53030">' + htmlEscape(errorMsg) + '</div>'; 
+            return; 
+        }
         const data = await res.json();
         messagesDiv.innerHTML = '';
         data.messages.forEach(m => {
@@ -117,7 +122,12 @@
             },
             body: JSON.stringify({to_user_id: to, body: body})
         });
-        if(!res.ok){ alert('Send failed'); return; }
+        if(!res.ok){ 
+            const errorData = await res.json().catch(() => ({}));
+            const errorMsg = errorData.error || `Error: ${res.statusText}`;
+            alert('Send failed: ' + errorMsg); 
+            return; 
+        }
         document.getElementById('body').value = '';
         await loadConversation(to);
     });

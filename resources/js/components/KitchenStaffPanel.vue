@@ -111,7 +111,18 @@
                   <strong>{{ order.title }}</strong>
                   <span class="queue-meta">{{ order.meta }}</span>
                 </div>
-                <span :class="['badge', order.badgeClass]">{{ order.badgeLabel }}</span>
+                <div class="queue-actions">
+                  <span :class="['badge', order.badgeClass]">{{ order.badgeLabel }}</span>
+                  <button 
+                    v-if="order.badgeLabel && order.badgeLabel.toLowerCase().includes('kitchen')"
+                    type="button" 
+                    class="btn-done" 
+                    @click="markOrderDone(order.id)"
+                    :disabled="markingDoneId === order.id"
+                  >
+                    {{ markingDoneId === order.id ? 'Marking...' : 'Mark Done' }}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -130,6 +141,7 @@ const userProfile = ref({})
 const dishes = ref([])
 const loading = ref(false)
 const queueLoading = ref(false)
+const markingDoneId = ref(null)
 const message = ref('')
 const products = ref([])
 const orderQueue = ref([])
@@ -201,6 +213,20 @@ function mapQueueItem(task) {
     meta,
     badgeLabel,
     badgeClass,
+  }
+}
+
+async function markOrderDone(orderId) {
+  markingDoneId.value = orderId
+  try {
+    await axios.patch(`/api/orders/${orderId}/mark-completed`)
+    // Reload the queue to reflect the change
+    await loadOrderQueue()
+  } catch (e) {
+    console.error('Failed to mark order as done', e)
+    alert(e?.response?.data?.message || 'Failed to mark order as done')
+  } finally {
+    markingDoneId.value = null
   }
 }
 
@@ -324,8 +350,12 @@ async function performLogout() {
 .queue-item { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; }
 .queue-main { display: flex; flex-direction: column; gap: 4px; }
 .queue-meta { color: #6b7280; font-size: 0.9rem; }
+.queue-actions { display: flex; align-items: center; gap: 0.75rem; }
 .muted { color: #6b7280; }
 .badge { padding: 0.25rem 0.6rem; border-radius: 999px; font-size: 0.82rem; text-transform: capitalize; }
 .badge--warning { background: #fff7ed; color: #b45309; }
 .badge--info { background: #e0f2fe; color: #0369a1; }
+.btn-done { padding: 0.4rem 0.8rem; background: #10b981; color: white; border: none; border-radius: 6px; font-size: 0.85rem; cursor: pointer; transition: background 0.2s; }
+.btn-done:hover:not(:disabled) { background: #059669; }
+.btn-done:disabled { background: #d1d5db; cursor: not-allowed; }
 </style>

@@ -134,6 +134,12 @@ Route::middleware('web')->group(function () {
     Route::post('/superadmin/cashier/refund',   [\App\Http\Controllers\Api\CashierController::class, 'refund'])->middleware(['auth','permission:cashier']);
     Route::get('/superadmin/cashier/transactions',[\App\Http\Controllers\Api\CashierController::class, 'transactions'])->middleware(['auth','permission:cashier']);
 
+    // ==========================================
+    // ORDERS - KITCHEN STAFF
+    // ==========================================
+    Route::patch('/orders/{id}/mark-completed', [\App\Http\Controllers\Api\OrderController::class, 'markCompleted'])->middleware('auth');
+    Route::get('/orders/{id}', [\App\Http\Controllers\Api\OrderController::class, 'show'])->middleware('auth');
+
     Route::get('/owner-dashboard', [OwnerDashboardController::class, 'index']);
 
     // HR Messaging routes
@@ -164,9 +170,9 @@ Route::middleware('web')->group(function () {
     // ==========================================
     // BRANCH MANAGER API - Protected with auth middleware
     // All manager routes require authentication
-    // Using 'auth' middleware (web guard) which works with both session and token
+    // Using 'auth:sanctum,web' middleware to support both Bearer token (Sanctum) AND session (web) auth
     // ==========================================
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware('auth:sanctum,web')->group(function () {
     Route::apiResource('procurement-requests', \App\Http\Controllers\Api\ProcurementRequestController::class)->except(['show']);
     Route::get('procurement-requests/requested-products', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'requestedProducts']);
     Route::get('procurement-requests/receipt-submissions', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'receiptSubmissions']);
@@ -183,7 +189,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('supplier-orders/{id}/submit-product', [\App\Http\Controllers\Api\SupplierOrderController::class, 'submitProduct']);
 });
 
-Route::prefix('manager')->middleware('auth:sanctum')->group(function () {
+Route::prefix('manager')->middleware('auth:sanctum,web')->group(function () {
         // Dashboard
         Route::get('/dashboard',        [ManagerDashboardController::class, 'index']);
 
@@ -269,6 +275,8 @@ Route::prefix('manager')->middleware('auth:sanctum')->group(function () {
         Route::get('/inventory/dashboard', [\App\Http\Controllers\Api\ManagerProfileController::class, 'invDashboard']);
         Route::get('/inventory/products', [\App\Http\Controllers\Api\ManagerProfileController::class, 'invProducts']);
         Route::get('/inventory/reports', [\App\Http\Controllers\Api\ManagerProfileController::class, 'invReports']);
+        Route::get('/inventory/pending-procurements', [\App\Http\Controllers\Api\ManagerProfileController::class, 'invPendingProcurements']);
+        Route::get('/inventory/confirmed-procurements', [\App\Http\Controllers\Api\ManagerProfileController::class, 'invConfirmedProcurements']);
     });
 
     // ==========================================

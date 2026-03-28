@@ -91,7 +91,7 @@ class Announcement extends Model
         }
 
         // Build conditional visibility: global + role-specific + account + branch-scoped
-        return $query->where(function ($q) use ($user, $role) {
+        return $query->where(function ($q) use ($user, $role, $isCustomManager) {
             // global announcements
             $q->where('target', 'all');
 

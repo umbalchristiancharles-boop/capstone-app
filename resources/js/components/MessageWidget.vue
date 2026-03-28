@@ -75,14 +75,26 @@ export default {
 
         const role = String(user.role).toUpperCase()
         const allowedRoles = ['STAFF', 'MANAGER', 'HR', 'BRANCH_MANAGER', 'BRANCH MANAGER', 'BRANCH-MANAGER']
-        const isAllowedRole = allowedRoles.includes(role) || role.includes('STAFF') || role.includes('HR')
+        let isAllowedRole = allowedRoles.includes(role) || role.includes('STAFF') || role.includes('HR')
+
+        // CUSTOM accounts: check if they have 'hr' module permission
+        if (role === 'CUSTOM' && !isAllowedRole) {
+          try {
+            const modules = Array.isArray(user.permissions?.modules) ? user.permissions.modules.map(m => (m || '').toLowerCase()) : []
+            isAllowedRole = modules.includes('hr')
+          } catch (e) {
+            isAllowedRole = false
+          }
+        }
 
         const isPanelPath = p.startsWith('/staff') ||
           p.startsWith('/manager') ||
           p.startsWith('/hr') ||
+          p.startsWith('/custom-panel') ||
           p.includes('staff-panel') ||
           p.includes('manager-panel') ||
-          p.includes('hr-panel')
+          p.includes('hr-panel') ||
+          p.includes('custom-panel')
         return isAllowedRole && isPanelPath && this.hasSession
       } catch (e) {
         return false

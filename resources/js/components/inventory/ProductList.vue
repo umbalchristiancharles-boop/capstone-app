@@ -46,38 +46,90 @@
       <!-- Main table / card list -->
       <main class="pl-main">
         <section class="pl-table-wrap" v-if="!isLoading">
-          <table class="pl-table" role="table" aria-label="Product list table">
-            <thead>
-              <tr>
-                <th class="col-thumb">Image</th>
-                <th class="col-name" @click="toggleSort('name')" role="button" tabindex="0">Product Name <span class="sort">{{ sortIndicator('name') }}</span></th>
-                <th class="col-sku" @click="toggleSort('sku')" role="button" tabindex="0">SKU <span class="sort">{{ sortIndicator('sku') }}</span></th>
-                <th class="col-price" @click="toggleSort('price')" role="button" tabindex="0">Price (PHP) <span class="sort">{{ sortIndicator('price') }}</span></th>
-                <th class="col-stock" @click="toggleSort('stock')" role="button" tabindex="0">Stock <span class="sort">{{ sortIndicator('stock') }}</span></th>
-                <th class="col-actions">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="p in pageItems" :key="p.id" class="pl-row" :title="p.name">
-                <td class="col-thumb">
-                  <img v-if="p.image_url" :src="p.image_url" :alt="p.name" class="thumb" />
-                  <div v-else class="thumb thumb-placeholder" aria-hidden="true">{{ p.name ? p.name.charAt(0) : '?' }}</div>
-                </td>
-                <td class="col-name">
-                  <div class="name-block">
-                    <div class="name">{{ p.name }}</div>
-                    <div class="meta">{{ p.category || '—' }}</div>
-                  </div>
-                </td>
-                <td class="col-sku"><span class="sku">{{ p.sku || '-' }}</span></td>
-                <td class="col-price">{{ formatCurrency(p.price) }}</td>
-                <td class="col-stock"><span :class="stockClass(p.stock)">{{ p.stock }}</span></td>
-                <td class="col-actions">
-                  <button class="btn btn-icon btn-danger" @click="$emit('delete', p)" :aria-label="`Delete ${p.name}`">Delete</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <!-- Group by category if applicable -->
+          <div v-if="groupByCategory" class="category-groups">
+            <div v-for="cat in groupedCategories" :key="cat" class="category-group">
+              <h3 class="category-title">{{ cat || 'Uncategorized' }}</h3>
+              <table class="pl-table" role="table" :aria-label="`Product list for ${cat}`">
+                <thead>
+                  <tr>
+                    <th class="col-thumb">Image</th>
+                    <th class="col-name" @click="toggleSort('name')" role="button" tabindex="0">Product Name <span class="sort">{{ sortIndicator('name') }}</span></th>
+                    <th class="col-sku" @click="toggleSort('sku')" role="button" tabindex="0">SKU <span class="sort">{{ sortIndicator('sku') }}</span></th>
+                    <th class="col-price" @click="toggleSort('price')" role="button" tabindex="0">Price (PHP) <span class="sort">{{ sortIndicator('price') }}</span></th>
+                    <th class="col-stock" @click="toggleSort('stock')" role="button" tabindex="0">Stock <span class="sort">{{ sortIndicator('stock') }}</span></th>
+                    <th class="col-expiry">Expires</th>
+                    <th class="col-actions">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="p in getProductsByCategory(cat)" :key="p.id" class="pl-row" :title="p.name" :class="{ expired: isProductExpired(p) }">
+                    <td class="col-thumb">
+                      <img v-if="p.image_url" :src="p.image_url" :alt="p.name" class="thumb" />
+                      <div v-else class="thumb thumb-placeholder" aria-hidden="true">{{ p.name ? p.name.charAt(0) : '?' }}</div>
+                    </td>
+                    <td class="col-name">
+                      <div class="name-block">
+                        <div class="name">{{ p.name }}</div>
+                        <div class="meta">{{ p.category || '—' }}</div>
+                      </div>
+                    </td>
+                    <td class="col-sku"><span class="sku">{{ p.sku || '-' }}</span></td>
+                    <td class="col-price">{{ formatCurrency(p.price) }}</td>
+                    <td class="col-stock"><span :class="stockClass(p.stock)">{{ p.stock }}</span></td>
+                    <td class="col-expiry">
+                      <span v-if="p.expires_at" :class="getExpiryClass(p)">{{ formatDate(p.expires_at) }}</span>
+                      <span v-else class="expiry-none">—</span>
+                    </td>
+                    <td class="col-actions">
+                      <button class="btn btn-icon btn-danger" @click="$emit('delete', p)" :aria-label="`Delete ${p.name}`">Delete</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <!-- Regular table view (no grouping) -->
+          <div v-else>
+            <table class="pl-table" role="table" aria-label="Product list table">
+              <thead>
+                <tr>
+                  <th class="col-thumb">Image</th>
+                  <th class="col-name" @click="toggleSort('name')" role="button" tabindex="0">Product Name <span class="sort">{{ sortIndicator('name') }}</span></th>
+                  <th class="col-sku" @click="toggleSort('sku')" role="button" tabindex="0">SKU <span class="sort">{{ sortIndicator('sku') }}</span></th>
+                  <th class="col-price" @click="toggleSort('price')" role="button" tabindex="0">Price (PHP) <span class="sort">{{ sortIndicator('price') }}</span></th>
+                  <th class="col-stock" @click="toggleSort('stock')" role="button" tabindex="0">Stock <span class="sort">{{ sortIndicator('stock') }}</span></th>
+                  <th class="col-expiry">Expires</th>
+                  <th class="col-actions">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="p in pageItems" :key="p.id" class="pl-row" :title="p.name" :class="{ expired: isProductExpired(p) }">
+                  <td class="col-thumb">
+                    <img v-if="p.image_url" :src="p.image_url" :alt="p.name" class="thumb" />
+                    <div v-else class="thumb thumb-placeholder" aria-hidden="true">{{ p.name ? p.name.charAt(0) : '?' }}</div>
+                  </td>
+                  <td class="col-name">
+                    <div class="name-block">
+                      <div class="name">{{ p.name }}</div>
+                      <div class="meta">{{ p.category || '—' }}</div>
+                    </div>
+                  </td>
+                  <td class="col-sku"><span class="sku">{{ p.sku || '-' }}</span></td>
+                  <td class="col-price">{{ formatCurrency(p.price) }}</td>
+                  <td class="col-stock"><span :class="stockClass(p.stock)">{{ p.stock }}</span></td>
+                  <td class="col-expiry">
+                    <span v-if="p.expires_at" :class="getExpiryClass(p)">{{ formatDate(p.expires_at) }}</span>
+                    <span v-else class="expiry-none">—</span>
+                  </td>
+                  <td class="col-actions">
+                    <button class="btn btn-icon btn-danger" @click="$emit('delete', p)" :aria-label="`Delete ${p.name}`">Delete</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
           <!-- Pagination -->
           <div class="pl-pagination" role="navigation" aria-label="Pagination">
@@ -163,27 +215,44 @@ watch(() => props.products, (v) => { internal.value = v ? v.slice() : [] })
 
 // optional fetch from API
 async function fetchProducts() {
-  if (!props.fetchUrl) return
+  if (!props.fetchUrl) {
+    console.debug('[ProductList] No fetchUrl provided')
+    return
+  }
   isLoading.value = true
   try {
+    console.debug('[ProductList] Fetching from:', props.fetchUrl)
     const res = await fetch(props.fetchUrl, { credentials: 'same-origin' })
+    
+    console.debug('[ProductList] Response status:', res.status)
 
     // Validate JSON response before parsing
     const contentType = res.headers.get('content-type')
     if (!contentType || !contentType.includes('application/json')) {
-      console.error('Invalid JSON response - received', contentType || 'no content-type header')
+      console.error('[ProductList] Invalid JSON response - received', contentType || 'no content-type header')
       // Try to get text for debugging
       const text = await res.text()
-      console.error('Response body (first 200 chars):', text.substring(0, 200))
+      console.error('[ProductList] Response body (first 200 chars):', text.substring(0, 200))
       internal.value = []
       return
     }
 
     const data = await res.json()
-    if (Array.isArray(data)) internal.value = data
-    else if (data && Array.isArray(data.products)) internal.value = data.products
+    console.debug('[ProductList] Response data:', data, 'Length:', Array.isArray(data) ? data.length : 'not array')
+    if (Array.isArray(data)) {
+      internal.value = data
+      console.debug('[ProductList] Set products array, count:', data.length)
+    }
+    else if (data && Array.isArray(data.products)) {
+      internal.value = data.products
+      console.debug('[ProductList] Set products from data.products, count:', data.products.length)
+    }
+    else {
+      console.warn('[ProductList] Unexpected response format:', data)
+      internal.value = []
+    }
   } catch (e) {
-    console.warn('fetchProducts failed', e)
+    console.warn('[ProductList] fetchProducts failed', e)
   } finally { isLoading.value = false }
 }
 
@@ -309,6 +378,65 @@ function getStats() {
 function setQuery(val) { q.value = val }
 function setStockFilter(val) { stockFilter.value = val }
 function setCategoryFilter(val) { categoryFilter.value = val }
+
+// Category grouping
+const groupByCategory = ref(true)
+const groupedCategories = computed(() => {
+  const cats = new Set()
+  sorted.value.forEach(p => {
+    cats.add(p.category || 'Uncategorized')
+  })
+  return Array.from(cats).sort()
+})
+
+function getProductsByCategory(category) {
+  return sorted.value.filter(p => (p.category || 'Uncategorized') === category)
+}
+
+// Expiration date utilities
+function formatDate(dateStr) {
+  if (!dateStr) return '—'
+  try {
+    const d = new Date(dateStr)
+    return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+  } catch (e) {
+    return dateStr
+  }
+}
+
+function isProductExpired(product) {
+  if (!product.expires_at) return false
+  try {
+    const expiryDate = new Date(product.expires_at)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return expiryDate < today
+  } catch (e) {
+    return false
+  }
+}
+
+function getExpiryClass(product) {
+  if (!product.expires_at) return 'expiry-none'
+  try {
+    const expiryDate = new Date(product.expires_at)
+    const today = new Date()
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    const weekFromNow = new Date(today)
+    weekFromNow.setDate(weekFromNow.getDate() + 7)
+    
+    today.setHours(0, 0, 0, 0)
+    expiryDate.setHours(0, 0, 0, 0)
+    
+    if (expiryDate < today) return 'expiry-expired'
+    if (expiryDate <= tomorrow) return 'expiry-critical'
+    if (expiryDate <= weekFromNow) return 'expiry-warning'
+    return 'expiry-ok'
+  } catch (e) {
+    return 'expiry-none'
+  }
+}
 
 defineExpose({ fetchProducts, getStats, setQuery, setStockFilter, setCategoryFilter })
 
@@ -460,4 +588,22 @@ defineExpose({ fetchProducts, getStats, setQuery, setStockFilter, setCategoryFil
 /* Utility */
 .pl-loading, .pl-empty { padding: 28px; background: white; border-radius: 10px; text-align: center; color: #475569 }
 
+/* Category Grouping */
+.category-groups { display: flex; flex-direction: column; gap: 24px }
+.category-group { display: flex; flex-direction: column; gap: 8px }
+.category-title { margin: 0; padding: 0 8px; font-size: 1rem; font-weight: 700; color: #0b213f; border-bottom: 2px solid #ff9a4a; padding-bottom: 8px }
+
+/* Expiration date columns */
+.col-expiry { text-align: center; width: 120px }
+.expiry-expired { background: #fee2e2; color: #7f1d1d; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 0.85rem }
+.expiry-critical { background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 0.85rem }
+.expiry-warning { background: #fef08a; color: #713f12; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 0.85rem }
+.expiry-ok { background: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 0.85rem }
+.expiry-none { color: #9ca3af; font-size: 0.85rem }
+
+/* Expired product row highlight */
+.pl-row.expired { background: #fef2f2 !important }
+.pl-row.expired .col-name .name { color: #991b1b }
+
 </style>
+

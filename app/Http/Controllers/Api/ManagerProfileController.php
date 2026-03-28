@@ -18,37 +18,76 @@ use App\Models\ProcurementRequest;
 use App\Models\SupplierOrder;
 use App\Models\Branch;
 use Carbon\Carbon;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class ManagerProfileController extends Controller
 {
     /**
      * Get the authenticated manager's profile
-     * Uses auth() helper which works with 'auth' middleware
+     * Handles auth:sanctum,web middleware which supports both Bearer tokens and sessions
      */
     private function getAuthenticatedManager(Request $request)
     {
-        // Use auth() helper - works with 'auth' middleware (web guard)
+        // 1. Try $request->user() first - set by the middleware for both Sanctum and session auth
+        $user = $request->user();
+        if ($user && $user instanceof User && $user->is_active) {
+            Log::debug('[getAuthenticatedManager] request->user() success', ['user_id' => $user->id, 'username' => $user->username]);
+            return $user;
+        }
+
+        // 2. Fallback: Laravel Auth (session-based or already authenticated)
         if (Auth::check()) {
-            return Auth::user();
+            $user = Auth::user();
+            if ($user && $user instanceof User && $user->is_active) {
+                Log::debug('[getAuthenticatedManager] Auth::check() success', ['user_id' => $user->id, 'username' => $user->username]);
+                return $user;
+            }
         }
 
-        // Fallback: try to get user from session
-        $userId = $request->session()->get('user_id');
-        if ($userId) {
-            return User::find($userId);
+        // 3. Session fallback (for edge cases)
+        try {
+            $userId = $request->session()->get('user_id');
+            if ($userId) {
+                $user = User::find($userId);
+                if ($user && $user->is_active) {
+                    Log::debug('[getAuthenticatedManager] Session fallback success', ['user_id' => $user->id]);
+                    return $user;
+                }
+            }
+        } catch (\Exception $e) {
+            Log::debug('[getAuthenticatedManager] Session fallback error', ['error' => $e->getMessage()]);
         }
 
+        // 4. Sanctum Bearer token manual lookup (last resort)
+        try {
+            $bearerToken = $request->bearerToken();
+            if ($bearerToken && class_exists(PersonalAccessToken::class)) {
+                $accessToken = PersonalAccessToken::findToken($bearerToken);
+                if ($accessToken && $accessToken->tokenable instanceof User && $accessToken->tokenable->is_active) {
+                    $user = $accessToken->tokenable;
+                    Log::debug('[getAuthenticatedManager] Bearer token manual lookup success', ['user_id' => $user->id, 'username' => $user->username]);
+                    // Populate Auth facade for controller compatibility
+                    Auth::login($user);
+                    return $user;
+                }
+            }
+        } catch (\Exception $e) {
+            Log::debug('[getAuthenticatedManager] Bearer token manual lookup failed', ['error' => $e->getMessage()]);
+        }
+
+        Log::warning('[getAuthenticatedManager] All auth methods failed. request->bearerToken: ' . ($request->bearerToken() ? 'present' : 'absent') . ', Auth::check: ' . (Auth::check() ? 'true' : 'false'));
         return null;
     }
 
     /**
-     * Check whether given user is considered a manager (any manager flavor).
+     * Check whether given user is considered a manager (any manager flavor, includes CUSTOM).
      */
     private function isManager($user): bool
     {
         if (!$user) return false;
         $role = strtoupper($user->role ?? '');
-        if (in_array($role, ['MANAGER', 'MANAGER_HR', 'MANAGER_FINANCE', 'MANAGER_LOGISTICS', 'BRANCH_MANAGER'])) return true;
+        // Include CUSTOM since custom accounts can have any modules assigned
+        if (in_array($role, ['MANAGER', 'MANAGER_HR', 'MANAGER_FINANCE', 'MANAGER_LOGISTICS', 'BRANCH_MANAGER', 'CUSTOM'])) return true;
         // Fallback: treat any role string containing 'MANAGER' as manager
         return str_contains($role, 'MANAGER');
     }
@@ -141,7 +180,7 @@ class ManagerProfileController extends Controller
      */
     private function isMainBranchLogisticsManager($user)
     {
-        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'logistics')) {
+        if (!$user || !$this->allowManagerDept($user, 'logistics')) {
             return false;
         }
 
@@ -749,13 +788,23 @@ class ManagerProfileController extends Controller
     /**
      * Return available branches for logistics branch selector.
      */
-    public function logisticsBranches(Request $request)
+public function logisticsBranches(Request $request)
     {
+        Log::debug('=== logisticsBranches DEBUG ===');
+        Log::debug('Auth::check(): ' . (Auth::check() ? 'YES' : 'NO'));
+        Log::debug('Auth::user(): ' . json_encode(Auth::user() ? Auth::user() : null));
+        Log::debug('Raw Bearer token present: ' . ($request->bearerToken() ? 'YES' : 'NO'));
+        
         $user = $this->getAuthenticatedManager($request);
-
-        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'logistics')) {
+        Log::debug('getAuthenticatedManager result: ' . json_encode($user ? $user : null));
+        
+        if (!$this->allowManagerDept($user, 'logistics')) {
+            Log::warning('logisticsBranches 401 BLOCKED', [
+                'user' => $user ? $user->only(['id', 'username', 'role', 'department']) : null,
+            ]);
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
+        Log::info('logisticsBranches PASSED auth check');
 
         if ($this->isMainBranchLogisticsManager($user)) {
             $branches = Branch::orderBy('name', 'asc')->get(['id', 'name']);
@@ -802,7 +851,7 @@ class ManagerProfileController extends Controller
     {
         $user = $this->getAuthenticatedManager($request);
 
-        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'logistics')) {
+        if (!$this->allowManagerDept($user, 'logistics')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
@@ -818,7 +867,7 @@ class ManagerProfileController extends Controller
     {
         $user = $this->getAuthenticatedManager($request);
 
-        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'logistics')) {
+        if (!$this->allowManagerDept($user, 'logistics')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
@@ -832,7 +881,7 @@ class ManagerProfileController extends Controller
     {
         $user = $this->getAuthenticatedManager($request);
 
-        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'logistics')) {
+        if (!$this->allowManagerDept($user, 'logistics')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
@@ -858,13 +907,24 @@ class ManagerProfileController extends Controller
      * Return products for logistics manager (same as procurementProducts but for logistics dept)
      * GET /api/manager/logistics/products
      */
-    public function logisticsProducts(Request $request)
+public function logisticsProducts(Request $request)
     {
+        Log::debug('=== logisticsProducts DEBUG ===');
+        Log::debug('Auth::check(): ' . (Auth::check() ? 'YES' : 'NO'));
+        $authUser = Auth::user();
+        Log::debug('Auth::user(): ' . json_encode($authUser ?? null));
+        Log::debug('Raw Bearer token present: ' . ($request->bearerToken() ? 'YES' : 'NO'));
+        
         $user = $this->getAuthenticatedManager($request);
-
-        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'logistics')) {
+        Log::debug('getAuthenticatedManager result: ' . json_encode($user ?? null));
+        
+        if (!$this->allowManagerDept($user, 'logistics')) {
+            Log::warning('logisticsProducts 401 BLOCKED', [
+                'user' => $user ? $user->only(['id', 'username', 'role', 'department']) : null,
+            ]);
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
+        Log::info('logisticsProducts PASSED auth check');
 
         $branchId = $user->branch_id;
         if ($this->isMainBranchLogisticsManager($user) && $request->filled('branch_id')) {
@@ -970,7 +1030,7 @@ class ManagerProfileController extends Controller
         if ($role === 'SUPER_ADMIN') {
             $branchId = $request->query('branch_id') ?? 1;
         } else {
-            if (!$this->isManager($user) || !$this->hasDepartmentAccess($user, 'procurement')) {
+            if (!$this->allowManagerDept($user, 'procurement')) {
                 return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
             }
             $branchId = $user->branch_id;
@@ -1009,17 +1069,28 @@ class ManagerProfileController extends Controller
 
         $branchId = $user->branch_id;
 
+        \Illuminate\Support\Facades\Log::info('procurementProducts DEBUG', [
+            'user_id' => $user->id,
+            'user_role' => $user->role,
+            'branch_id' => $branchId,
+        ]);
+
+        // All users (including CUSTOM accounts) see products from their assigned branch
+        // If no branch assigned, show no products (require branch assignment)
         if (!$branchId) {
-            return response()->json(['ok' => false, 'message' => 'Manager has no branch assigned'], 400);
+            \Illuminate\Support\Facades\Log::warning('procurementProducts: user has no branch assigned', ['user_id' => $user->id]);
+            return response()->json(['ok' => true, 'data' => []]);
         }
 
-        // Fetch products that belong to the manager's branch. This returns products
-        // supplied/registered under that branch (including supplier-added products).
-        $products = Product::where('branch_id', $branchId)
-        ->where('is_active', 1)
-        ->select('id', 'name', 'slug', 'price', 'stock', 'sku', 'branch_id', 'supplier_name', 'supplier_id', 'is_published', 'created_at', 'updated_at')
-        ->orderBy('name', 'asc')
-        ->get();
+        $query = Product::where('is_active', 1)
+            ->where('branch_id', $branchId)
+            ->select('id', 'name', 'slug', 'price', 'stock', 'sku', 'branch_id', 'supplier_name', 'supplier_id', 'is_published', 'created_at', 'updated_at');
+
+        \Illuminate\Support\Facades\Log::info('procurementProducts: filtering by branch_id', ['branch_id' => $branchId]);
+
+        $products = $query->orderBy('name', 'asc')->get();
+
+        \Illuminate\Support\Facades\Log::info('procurementProducts: products count', ['count' => $products->count()]);
 
         // For each product, determine if procurement can acknowledge any pending request
         $products = $products->map(function ($p) use ($branchId) {
@@ -1059,19 +1130,26 @@ class ManagerProfileController extends Controller
     {
         $user = $this->getAuthenticatedManager($request);
 
-        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'procurement')) {
+        if (!$this->allowManagerDept($user, 'procurement')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
         $branchId = $user->branch_id;
 
-        $product = Product::where('id', $id)->where('branch_id', $branchId)->first();
+        if (!$branchId) {
+            return response()->json(['ok' => false, 'message' => 'User has no branch assigned'], 400);
+        }
+
+        // Build query to find the product from this user's branch
+        $productQuery = Product::where('id', $id)
+            ->where('branch_id', $branchId);
+        $product = $productQuery->first();
+
         if (!$product) {
             return response()->json(['ok' => false, 'message' => 'Product not found'], 404);
         }
 
         $validated = $request->validate([
-            'quantity' => 'nullable|integer|min:0',
             'supplier_id' => 'nullable|exists:users,id'
         ]);
 
@@ -1079,22 +1157,31 @@ class ManagerProfileController extends Controller
         if (!empty($validated['supplier_id'])) {
             $supplierId = $validated['supplier_id'];
 
-            // Find pending procurement request for this product (branch-scoped)
+            \Illuminate\Support\Facades\Log::info('placeOrderProduct SPECIFIC SUPPLIER: starting', [
+                'product_id' => $product->id,
+                'supplier_id' => $supplierId,
+                'branch_id' => $branchId,
+            ]);
+
+            // Find pending procurement request for this product in this branch
             $procReq = ProcurementRequest::where('product_id', $product->id)
                 ->where('branch_id', $branchId)
                 ->whereIn('status', ['pending', 'pending_order_to_supplier'])
                 ->first();
 
             if (!$procReq) {
+                \Illuminate\Support\Facades\Log::warning('placeOrderProduct SPECIFIC SUPPLIER: no procurement request found', ['product_id' => $product->id]);
                 return response()->json(['ok' => false, 'message' => 'No pending procurement request found for this product'], 400);
             }
 
             // Ensure budget approved before ordering
             if (!$procReq->budget_approved) {
+                \Illuminate\Support\Facades\Log::warning('placeOrderProduct SPECIFIC SUPPLIER: budget not approved', ['proc_id' => $procReq->id]);
                 return response()->json(['ok' => false, 'message' => 'Budget must be approved before ordering'], 400);
             }
 
-            $quantity = $validated['quantity'] ?? $procReq->quantity;
+            // Use the quantity requested by logistics (cannot be changed by procurement manager)
+            $quantity = $procReq->quantity;
 
             try {
                 $supplierOrder = DB::transaction(function () use ($procReq, $supplierId, $quantity, $user) {
@@ -1136,21 +1223,36 @@ class ManagerProfileController extends Controller
         }
 
         // If no supplier selected: create a broadcast SupplierOrder so suppliers can confirm
-        $quantity = $validated['quantity'] ?? null;
+        // Always use the quantity requested by logistics (cannot be changed by procurement manager)
 
         try {
-            $supplierOrder = DB::transaction(function () use ($product, $branchId, $quantity, $user) {
-                // Try to find the pending procurement request for this product
+            $supplierOrder = DB::transaction(function () use ($product, $branchId, $user) {
+                \Illuminate\Support\Facades\Log::info('placeOrderProduct BROADCAST: starting', [
+                    'product_id' => $product->id,
+                    'branch_id' => $branchId,
+                    'user_id' => $user->id,
+                ]);
+
+                // Try to find the pending procurement request for this product in this branch
                 $procReq = ProcurementRequest::where('product_id', $product->id)
                     ->where('branch_id', $branchId)
                     ->whereIn('status', ['pending', 'pending_order_to_supplier'])
                     ->first();
 
                 if (!$procReq) {
+                    \Illuminate\Support\Facades\Log::warning('placeOrderProduct BROADCAST: no procurement request found', [
+                        'product_id' => $product->id,
+                        'branch_id' => $branchId,
+                    ]);
                     throw new \Exception('No pending procurement request found for this product');
                 }
 
-                $qty = $quantity ?? $procReq->quantity;
+                \Illuminate\Support\Facades\Log::info('placeOrderProduct BROADCAST: found procurement request', [
+                    'proc_id' => $procReq->id,
+                ]);
+
+                // Use the quantity requested by logistics (cannot be changed by procurement manager)
+                $qty = $procReq->quantity;
 
                 $order = SupplierOrder::create([
                     'procurement_request_id' => $procReq->id,
@@ -1160,6 +1262,10 @@ class ManagerProfileController extends Controller
                     'status' => 'pending',
                     'is_broadcast' => 1,
                     'branch_id' => $procReq->branch_id,
+                ]);
+
+                \Illuminate\Support\Facades\Log::info('placeOrderProduct BROADCAST: created supplier order', [
+                    'order_id' => $order->id,
                 ]);
 
                 $procReq->update([
@@ -1183,12 +1289,15 @@ class ManagerProfileController extends Controller
                 return $order;
             });
         } catch (\Exception $e) {
-            Log::error('Manager placeOrderProduct broadcast supplier-order failed', ['error' => $e->getMessage()]);
+            \Illuminate\Support\Facades\Log::error('Manager placeOrderProduct broadcast supplier-order failed', ['error' => $e->getMessage()]);
             return response()->json(['ok' => false, 'message' => $e->getMessage() ?: 'Failed to create broadcast supplier order'], 500);
         }
 
         // Return the created broadcast order and refreshed procurement request
-        $procReq = ProcurementRequest::where('product_id', $product->id)->where('branch_id', $branchId)->where('status', 'pending_order_to_supplier')->first();
+        $procReq = ProcurementRequest::where('product_id', $product->id)
+            ->where('branch_id', $branchId)
+            ->where('status', 'pending_order_to_supplier')
+            ->first();
 
         return response()->json(['ok' => true, 'message' => 'Broadcast supplier order created, waiting for supplier confirmation', 'supplier_order' => $supplierOrder, 'procurement_request' => $procReq]);
     }
@@ -1201,7 +1310,7 @@ class ManagerProfileController extends Controller
     {
         $user = $this->getAuthenticatedManager($request);
 
-        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'procurement')) {
+        if (!$this->allowManagerDept($user, 'procurement')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
@@ -1282,11 +1391,21 @@ class ManagerProfileController extends Controller
  */
 public function logisticsInventory(Request $request)
 {
+    Log::debug('=== logisticsInventory DEBUG ===');
+    Log::debug('Auth::check(): ' . (Auth::check() ? 'YES' : 'NO'));
+    Log::debug('Auth::user(): ' . json_encode(Auth::user() ?? null));
+    Log::debug('Raw Bearer token present: ' . ($request->bearerToken() ? 'YES' : 'NO'));
+    
     $user = $this->getAuthenticatedManager($request);
-
-    if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'logistics')) {
+    Log::debug('getAuthenticatedManager result: ' . json_encode($user ?? null));
+    
+    if (!$this->allowManagerDept($user, 'logistics')) {
+        Log::warning('logisticsInventory 401 BLOCKED', [
+            'user' => $user ? $user->only(['id', 'username', 'role', 'department']) : null,
+        ]);
         return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
     }
+    Log::info('logisticsInventory PASSED auth check');
 
     $branchId = $user->branch_id;
     if ($this->isMainBranchLogisticsManager($user) && $request->filled('branch_id')) {
@@ -1307,7 +1426,7 @@ public function logisticsInventory(Request $request)
             $q->whereNull('is_kitchen_dish')
               ->orWhere('is_kitchen_dish', false);
         })
-        ->select('id', 'name', 'price', 'stock', 'min_stock', 'branch_id')
+        ->select('id', 'name', 'category', 'price', 'stock', 'min_stock', 'expires_at', 'branch_id')
         ->get()
         ->map(function ($p) {
             $status = ($p->stock <= ($p->min_stock ?? 10)) ? 'LOW STOCK' : 'OK';
@@ -1383,47 +1502,225 @@ public function logisticsInventory(Request $request)
         ]);
     }
 
-    public function inventoryDashboard(Request $request)
+    // ==========================================
+    // Inventory Manager Profile Endpoints
+    // ==========================================
+
+    public function invProfile(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
 
-        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'inventory')) {
-            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
+        if (!$this->allowManagerDept($user, 'inventory')) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Unauthorized'
+            ], 401);
         }
 
         return response()->json([
             'ok' => true,
-            'totalProducts' => 0,
-            'lowStockItems' => 0,
-            'outOfStock' => 0,
+            'user' => [
+                'id' => $user->id,
+                'username' => $user->username,
+                'full_name' => $user->full_name,
+                'email' => $user->email,
+                'role' => $user->role,
+                'department' => $user->department,
+                'branch_id' => $user->branch_id,
+                'must_change_password' => (bool) $user->must_change_password,
+            ]
         ]);
     }
 
-    public function inventoryProducts(Request $request)
+    public function updateInvProfile(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
 
-        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'inventory')) {
-            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
+        if (!$this->allowManagerDept($user, 'inventory')) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Unauthorized'
+            ], 401);
         }
+
+        $validated = $request->validate([
+            'full_name' => 'nullable|string|max:255',
+            'email' => 'nullable|email|max:255',
+            'phone_number' => 'nullable|string|max:20',
+        ]);
+
+        $user->update($validated);
 
         return response()->json([
             'ok' => true,
-            'products' => []
+            'message' => 'Profile updated successfully',
+            'user' => [
+                'id' => $user->id,
+                'username' => $user->username,
+                'full_name' => $user->full_name,
+                'email' => $user->email,
+                'phone_number' => $user->phone_number,
+            ]
         ]);
     }
 
-    public function inventoryReports(Request $request)
+    public function invDashboard(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
 
-        if (!$user || !$this->isManager($user) || !$this->hasDepartmentAccess($user, 'inventory')) {
+        if (!$this->allowManagerDept($user, 'inventory')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
+        // Fetch products for this branch
+        $products = Product::where('branch_id', $user->branch_id)->get();
+        $totalProducts = $products->count();
+        $lowStockItems = $products->where('stock', '>', 0)->where('stock', '<=', function($q) {
+            return $q->select('min_stock');
+        })->count();
+        $outOfStock = $products->where('stock', 0)->count();
+
         return response()->json([
             'ok' => true,
-            'reports' => []
+            'totalProducts' => $totalProducts,
+            'lowStockItems' => $lowStockItems,
+            'outOfStock' => $outOfStock,
         ]);
+    }
+
+    public function invProducts(Request $request)
+    {
+        $user = $this->getAuthenticatedManager($request);
+
+        if (!$this->allowManagerDept($user, 'inventory')) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        // Fetch products for this branch
+        $products = Product::where('branch_id', $user->branch_id)
+            ->where('is_active', true)
+            ->get()
+            ->map(function($product) {
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'sku' => $product->sku,
+                    'price' => $product->price,
+                    'cost_price' => $product->cost_price,
+                    'stock' => $product->stock,
+                    'min_stock' => $product->min_stock,
+                    'is_low_stock' => $product->stock <= $product->min_stock,
+                    'is_out_of_stock' => $product->stock == 0,
+                    'supplier_name' => $product->supplier_name,
+                ];
+            });
+
+        return response()->json([
+            'ok' => true,
+            'products' => $products
+        ]);
+    }
+
+    public function invReports(Request $request)
+    {
+        $user = $this->getAuthenticatedManager($request);
+
+        if (!$this->allowManagerDept($user, 'inventory')) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        // Fetch inventory reports for this branch
+        $products = Product::where('branch_id', $user->branch_id)
+            ->where('is_active', true)
+            ->get();
+
+        $reports = [
+            [
+                'id' => 1,
+                'title' => 'Stock Status Report',
+                'type' => 'stock_status',
+                'generated_at' => now()->toIso8601String(),
+                'summary' => [
+                    'total_products' => $products->count(),
+                    'low_stock_items' => $products->filter(fn($p) => $p->stock > 0 && $p->stock <= $p->min_stock)->count(),
+                    'out_of_stock_items' => $products->filter(fn($p) => $p->stock == 0)->count(),
+                    'total_inventory_value' => $products->sum(fn($p) => $p->stock * $p->cost_price),
+                ]
+            ]
+        ];
+
+        return response()->json([
+            'ok' => true,
+            'reports' => $reports
+        ]);
+    }
+
+    public function invPendingProcurements(Request $request)
+    {
+        $user = $this->getAuthenticatedManager($request);
+
+        if (!$this->allowManagerDept($user, 'inventory')) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        try {
+            $requests = ProcurementRequest::with(['product:id,name,sku,price', 'logisticsUser'])
+                ->where('branch_id', $user->branch_id)
+                ->where('status', 'awaiting_inventory_confirmation')
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            $payload = $requests->map(function ($r) {
+                return [
+                    'id' => $r->id,
+                    'procurement_request_id' => $r->id,
+                    'product_id' => $r->product_id,
+                    'product_name' => $r->product?->name,
+                    'quantity' => $r->quantity,
+                    'price' => $r->price,
+                    'receipt_path' => $r->receipt_path ?? null,
+                    'created_at' => $r->created_at,
+                ];
+            });
+
+            return response()->json($payload);
+        } catch (\Exception $e) {
+            Log::error('Failed to load pending procurements for manager', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to fetch pending procurements'], 500);
+        }
+    }
+
+    public function invConfirmedProcurements(Request $request)
+    {
+        $user = $this->getAuthenticatedManager($request);
+
+        if (!$this->allowManagerDept($user, 'inventory')) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        try {
+            $requests = ProcurementRequest::with(['product', 'procurementUser'])
+                ->where('branch_id', $user->branch_id)
+                ->where('status', 'completed')
+                ->orderBy('updated_at', 'desc')
+                ->limit(50)
+                ->get();
+
+            $payload = $requests->map(function ($r) {
+                return [
+                    'id' => $r->id,
+                    'product_id' => $r->product_id,
+                    'product_name' => $r->product?->name,
+                    'quantity' => $r->quantity,
+                    'confirmed_by' => $r->procurementUser?->full_name ?? $r->procurementUser?->username ?? null,
+                    'confirmed_at' => $r->updated_at,
+                ];
+            });
+
+            return response()->json($payload);
+        } catch (\Exception $e) {
+            Log::error('Failed to load confirmed procurements for manager', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to fetch confirmed procurements'], 500);
+        }
     }
 }

@@ -479,19 +479,9 @@ async function placeOrder(product) {
   setPlacingFlag(product.id, true)
 
   try {
-    const qtyInput = await window.swalPrompt('Enter quantity to order from supplier (leave blank to accept request quantity):', '', 'text')
-    let qty = null
-    if (qtyInput !== null && qtyInput !== '') {
-      qty = parseInt(qtyInput, 10)
-      if (Number.isNaN(qty) || qty < 1) {
-        alert('Invalid quantity (must be 1+)')
-        return
-      }
-    }
-
+    // Note: Quantity is locked to what logistics requested and cannot be changed by procurement
     const payload = {
-      branch_id: selectedBranch.value,
-      quantity: qty
+      branch_id: selectedBranch.value
     }
 
     const res = await axios.post(`/api/procurement.products/${product.id}/place-order`, payload, { withCredentials: true })

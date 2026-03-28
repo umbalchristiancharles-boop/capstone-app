@@ -345,7 +345,7 @@ function resolveRedirectPath(role, department, permissions = {}) {
         if (has(['FINANCE'])) return '/manager/finance';
         if (has(['PROCUREMENT'])) return '/manager/procurement';
         if (has(['LOGISTICS'])) return '/manager/logistics';
-        if (has(['INVENTORY'])) return '/manager/inventory';
+        if (has(['INVENTORY'])) return '/staff/inventory';
         if (has(['KITCHEN'])) return '/staff/kitchen';
         if (has(['CASHIER'])) return '/staff/cashier';
         if (has(['HR'])) return '/manager/hr';
@@ -354,7 +354,7 @@ function resolveRedirectPath(role, department, permissions = {}) {
     }
 
     // If department explicitly indicates inventory/finance/etc, prefer that
-    if (d.includes('INVENTORY')) return '/manager/inventory'
+    if (d.includes('INVENTORY')) return '/staff/inventory'
     if (d.includes('FINANCE')) return '/manager/finance'
     if (d.includes('LOGISTICS')) return '/manager/logistics'
     if (d.includes('HR')) return '/manager/hr'
@@ -366,7 +366,7 @@ function resolveRedirectPath(role, department, permissions = {}) {
     if (r.includes('MANAGER')) {
         // try to detect department in the role string after the word 'manager'
         const after = r.replace(/MANAGER[_\- ]*/, '')
-        if (after.includes('INVENTORY')) return '/manager/inventory'
+        if (after.includes('INVENTORY')) return '/staff/inventory'
         if (after.includes('FINANCE')) return '/manager/finance'
         if (after.includes('LOGISTICS')) return '/manager/logistics'
         if (after.includes('HR')) return '/manager/hr'

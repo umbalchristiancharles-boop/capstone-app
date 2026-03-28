@@ -4,8 +4,20 @@
       <!-- Page Header -->
       <header class="pl-page-header">
         <div>
-          <h1 class="pl-h1">{{ pageTitle }}</h1>
-          <p class="pl-lead">Manage your branch inventory</p>
+          <div style="display: flex; align-items: center; gap: 15px;">
+            <button 
+              v-if="showBackButton"
+              @click="goBack"
+              style="background: none; border: none; cursor: pointer; font-size: 20px; padding: 0; color: #333;"
+              title="Back to Custom Panel"
+            >
+              ← Back
+            </button>
+            <div>
+              <h1 class="pl-h1">{{ pageTitle }}</h1>
+              <p class="pl-lead">Manage your branch inventory</p>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -371,6 +383,21 @@ import ProductList from './ProductList.vue'
 
 const router = useRouter();
 
+// Back button logic
+const showBackButton = computed(() => {
+  return new URLSearchParams(window.location.search).get('from') === 'custom-panel'
+})
+
+function goBack() {
+  // Check if there's a from parameter
+  const params = new URLSearchParams(window.location.search)
+  if (params.get('from') === 'custom-panel') {
+    router.push({ path: '/custom-panel' })
+  } else {
+    router.back()
+  }
+}
+
 const staffProfile = ref({
   avatarUrl: '',
   fullName: '',
@@ -480,7 +507,8 @@ const endpoints = computed(() => {
 })
 
 // Also update the fetchUrl to use computed endpoints
-const fetchUrl = computed(() => endpoints.value.products)
+// Include unpublished products for inventory management
+const fetchUrl = computed(() => `${endpoints.value.products}?include_unpublished=1`)
 
 // ref to the ProductList child so we can trigger refreshes
 const productListRef = ref(null)

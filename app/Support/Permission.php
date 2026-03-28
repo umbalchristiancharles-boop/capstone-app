@@ -27,7 +27,18 @@ class Permission
     private static function extractPermissions(?User $user): array
     {
         $perms = $user?->permissions ?? [];
+        
+        // Handle JSON-encoded permissions
+        if (is_string($perms)) {
+            try {
+                $perms = json_decode($perms, true) ?: [];
+            } catch (\Throwable $e) {
+                return ['modules' => [], 'functions' => []];
+            }
+        }
+        
         if (!is_array($perms)) return ['modules' => [], 'functions' => []];
+        
         $modules = array_map('strtolower', $perms['modules'] ?? []);
         $functions = array_map('strtolower', $perms['functions'] ?? []);
         return [

@@ -53,12 +53,19 @@
 
           <div>
             <h3 class="section-subtitle">Published Products ({{ publishedProducts.length }})</h3>
-            <div class="product-grid">
-              <div v-for="p in publishedProducts" :key="p.id" class="product-card">
-                <div class="product-name">{{ p.name }}</div>
-                <div class="product-meta">
-                  <div class="product-price">{{ formatPrice(p.price) }}</div>
-                  <div class="supplier-badge">{{ p.supplier_name || 'Unknown Supplier' }}</div>
+            <div v-for="cat in publishedProductCategories" :key="cat" class="category-section mb-1">
+              <h4 class="category-title">{{ cat || 'Uncategorized' }}</h4>
+              <div class="product-grid">
+                <div v-for="p in getPublishedProductsByCategory(cat)" :key="p.id" class="product-card">
+                  <div class="product-name">{{ p.name }}</div>
+                  <div v-if="p.per_pack_or_individual" class="product-type-badge" :class="'type-' + p.per_pack_or_individual">
+                    {{ formatPricingType(p.per_pack_or_individual) }}
+                  </div>
+                  <div class="product-meta">
+                    <div class="product-price">{{ formatPrice(p.price) }}</div>
+                    <div class="supplier-badge">{{ p.supplier_name || 'Unknown Supplier' }}</div>
+                    <div v-if="p.expires_at" class="expiry-info">Expires: {{ formatDate(p.expires_at) }}</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -164,6 +171,9 @@
           <div class="product-grid">
             <div v-for="p in requestedProducts" :key="'req-'+p.id" class="product-card">
               <div class="product-name">{{ p.name }}</div>
+              <div v-if="p.per_pack_or_individual" class="product-type-badge" :class="'type-' + p.per_pack_or_individual">
+                {{ formatPricingType(p.per_pack_or_individual) }}
+              </div>
               <div class="product-meta">
                 <div class="product-price">{{ formatPrice(p.price) }}</div>
                 <div>
@@ -447,6 +457,19 @@ const loadingProducts = ref(false)
 
 const pendingProducts = computed(() => (products.value || []).filter(p => !p.is_published))
 const publishedProducts = computed(() => (products.value || []).filter(p => p.is_published))
+
+// Organize published products by category
+const publishedProductCategories = computed(() => {
+  const cats = new Set()
+  publishedProducts.value.forEach(p => {
+    cats.add(p.category || 'Uncategorized')
+  })
+  return Array.from(cats).sort()
+})
+
+function getPublishedProductsByCategory(category) {
+  return publishedProducts.value.filter(p => (p.category || 'Uncategorized') === category)
+}
 
 // Requested products (logistics requests)
 const requestedProducts = ref([])
@@ -795,9 +818,9 @@ const selectedSupplierId = ref(null)
 const pendingOrderProduct = ref(null)
 const pendingOrderQty = ref(null)
 
-function openSupplierModal(product, qty) {
+function openSupplierModal(product) {
   pendingOrderProduct.value = product
-  pendingOrderQty.value = qty ?? null
+  pendingOrderQty.value = null
   selectedSupplierId.value = null
   supplierModalVisible.value = true
   supplierLoading.value = true
@@ -822,8 +845,8 @@ async function confirmSupplierSelection() {
   // mark this product id as placing
   setPlacingFlag(pendingOrderProduct.value.id, true)
   try {
+    // Note: Quantity is locked to what logistics requested and cannot be changed
     const payload = { supplier_id: selectedSupplierId.value }
-    if (pendingOrderQty.value) payload.quantity = pendingOrderQty.value
     const res = await axios.post(`/api/manager/procurement/products/${pendingOrderProduct.value.id}/place-order`, payload, { withCredentials: true })
     const supplierOrder = res.data.supplier_order
     const procReq = res.data.procurement_request
@@ -918,6 +941,15 @@ function formatProcStatus(status, budgetApproved) {
   return (status || '').toUpperCase()
 }
 
+function formatPricingType(type) {
+  const typeMap = {
+    'individual': 'Individual',
+    'per_pack': 'Per Pack',
+    'both': 'Both'
+  }
+  return typeMap[type] || type
+}
+
 async function placeOrder(product) {
   if (!product || !product.id || placingOrderIds.value[product.id]) return
 
@@ -925,23 +957,12 @@ async function placeOrder(product) {
   setPlacingFlag(product.id, true)
 
   try {
-    // Prompt for quantity (optional)
-    const qtyInput = await window.swalPrompt('Enter quantity to order from supplier (leave blank to accept request quantity):', '', 'text')
-    let qty = null
-    if (qtyInput !== null && qtyInput !== '') {
-      qty = parseInt(qtyInput, 10)
-      if (Number.isNaN(qty) || qty < 1) {
-        alert('Invalid quantity (must be 1+)')
-        return
-      }
-    }
-
+    // Note: Quantity is locked to what logistics requested and cannot be changed by procurement
     const payload = {}
-    if (qty !== null) payload.quantity = qty
     // If product has an assigned supplier, include it so Manager endpoint
     // creates a SupplierOrder (transaction pending) instead of auto-publishing.
     if (!product.supplier_id) {
-      openSupplierModal(product, qty)
+      openSupplierModal(product)
       return
     }
     if (product.supplier_id) payload.supplier_id = product.supplier_id
@@ -1394,6 +1415,10 @@ onUnmounted(() => {
 .product-meta { display:flex; justify-content:space-between; align-items:center; gap:0.5rem; margin-top: 0.5rem }
 .product-price { color: #0b6e3a; font-weight:700 }
 .supplier-badge { background: #f3f4f6; color: #374151; padding: 4px 8px; border-radius: 12px; font-size: 0.85rem; margin-top: 0.5rem }
+.product-type-badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; margin-top: 4px }
+.product-type-badge.type-individual { background: #dbeafe; color: #1e40af; }
+.product-type-badge.type-per_pack { background: #d1fae5; color: #065f46; }
+.product-type-badge.type-both { background: #fef3c7; color: #92400e; }
 
 /* Ensure cards stretch to same height in grid */
 .product-grid > .product-card { height: 100%; }

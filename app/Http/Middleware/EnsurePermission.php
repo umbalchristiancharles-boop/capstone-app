@@ -35,7 +35,12 @@ class EnsurePermission
         }
 
         // Allow privileged administrative roles by default when modules/functions are required
+        // STAFF role is allowed for kitchen-related endpoints, cashier operations, and HR messaging
         $privilegedRoles = ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER', 'ADMIN'];
+        if (in_array('kitchen', $modules) || in_array('kitchen.orders', $functions) || in_array('kitchen.production', $functions) || in_array('kitchen.waste', $functions)
+            || in_array('cashier', $modules) || in_array('hr', $modules)) {
+            $privilegedRoles[] = 'STAFF';
+        }
         if (! Permission::allowed($user, $privilegedRoles, $modules, $functions)) {
             if ($request->expectsJson()) {
                 return response()->json(['ok' => false, 'message' => 'Forbidden'], 403);

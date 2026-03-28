@@ -16,6 +16,68 @@ use Illuminate\Support\Facades\Schema;
 
 class ProcurementRequestController extends Controller
 {
+    /**
+     * Check if user has procurement access (including CUSTOM role with procurement module)
+     */
+    private function canAccessProcurement($user): bool
+    {
+        if (!$user) return false;
+
+        $role = strtoupper($user->role ?? '');
+        $dept = strtoupper($user->department ?? '');
+
+        // Check standard roles
+        if ($role === 'SUPER_ADMIN') return true;
+        if ($role === 'PROCUREMENT_MANAGER') return true;
+        if ($role === 'MANAGER' && $dept === 'PROCUREMENT') return true;
+
+        // Check CUSTOM role with procurement module
+        if ($role === 'CUSTOM') {
+            try {
+                $perms = $user->permissions ?? [];
+                if (is_string($perms)) $perms = json_decode($perms, true) ?: [];
+                $modules = [];
+                if (is_array($perms) && isset($perms['modules']) && is_array($perms['modules'])) {
+                    $modules = $perms['modules'];
+                } elseif (is_array($perms)) {
+                    $modules = $perms;
+                }
+                foreach ($modules as $m) {
+                    if (strtoupper(trim((string)$m)) === 'PROCUREMENT') return true;
+                }
+            } catch (\Throwable $e) { /* ignore */ }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if user has CUSTOM role with logistics module
+     */
+    private function hasCustomLogisticsAccess($user): bool
+    {
+        if (!$user) return false;
+
+        $role = strtoupper($user->role ?? '');
+        if ($role !== 'CUSTOM') return false;
+
+        try {
+            $perms = $user->permissions ?? [];
+            if (is_string($perms)) $perms = json_decode($perms, true) ?: [];
+            $modules = [];
+            if (is_array($perms) && isset($perms['modules']) && is_array($perms['modules'])) {
+                $modules = $perms['modules'];
+            } elseif (is_array($perms)) {
+                $modules = $perms;
+            }
+            foreach ($modules as $m) {
+                if (strtoupper(trim((string)$m)) === 'LOGISTICS') return true;
+            }
+        } catch (\Throwable $e) { /* ignore */ }
+
+        return false;
+    }
+
     public function index(Request $request)
     {
         $user = $request->user();
@@ -34,7 +96,7 @@ class ProcurementRequestController extends Controller
             if ($branchFilter) {
                 $query->where('branch_id', $branchFilter);
             }
-        } elseif (in_array($role, ['LOGISTICS_MANAGER', 'MANAGER_LOGISTICS']) || ($role === 'MANAGER' && $dept === 'LOGISTICS')) {
+        } elseif (in_array($role, ['LOGISTICS_MANAGER', 'MANAGER_LOGISTICS']) || ($role === 'MANAGER' && $dept === 'LOGISTICS') || $this->hasCustomLogisticsAccess($user)) {
             // Logistics managers normally see requests they created (logistics_user_id)
             // However, a MAIN BRANCH logistics manager may select a branch to view
             $isMainBranch = false;
@@ -95,9 +157,7 @@ class ProcurementRequestController extends Controller
         $user = $request->user();
         if (!$user) return response()->json(['error' => 'Unauthenticated'], 401);
 
-        $role = strtoupper($user->role ?? '');
-        $dept = strtoupper($user->department ?? '');
-        if (!($role === 'PROCUREMENT_MANAGER' || ($role === 'MANAGER' && $dept === 'PROCUREMENT') || $role === 'SUPER_ADMIN')) {
+        if (!$this->canAccessProcurement($user)) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
@@ -167,11 +227,34 @@ class ProcurementRequestController extends Controller
         $dept = strtoupper($user->department ?? '');
         Log::info('Role check', ['role' => $role, 'dept' => $dept]);
 
-        if (!(
+        // Check if user has logistics access (standard roles or CUSTOM with logistics)
+        $hasLogisticsAccess = (
             $role === 'LOGISTICS_MANAGER' || $role === 'MANAGER_LOGISTICS' ||
             ($role === 'MANAGER' && $dept === 'LOGISTICS') ||
             $role === 'SUPER_ADMIN'
-        )) {
+        );
+
+        // Check CUSTOM role with logistics module
+        if (!$hasLogisticsAccess && $role === 'CUSTOM') {
+            try {
+                $perms = $user->permissions ?? [];
+                if (is_string($perms)) $perms = json_decode($perms, true) ?: [];
+                $modules = [];
+                if (is_array($perms) && isset($perms['modules']) && is_array($perms['modules'])) {
+                    $modules = $perms['modules'];
+                } elseif (is_array($perms)) {
+                    $modules = $perms;
+                }
+                foreach ($modules as $m) {
+                    if (strtoupper(trim((string)$m)) === 'LOGISTICS') {
+                        $hasLogisticsAccess = true;
+                        break;
+                    }
+                }
+            } catch (\Throwable $e) { /* ignore */ }
+        }
+
+        if (!$hasLogisticsAccess) {
             Log::error('UNAUTHORIZED ROLE', ['role' => $role, 'dept' => $dept]);
             return response()->json(['error' => 'Unauthorized role'], 401);
         }
@@ -266,7 +349,26 @@ public function requestedProducts(Request $request)
         $isProcurementManager = $role === 'PROCUREMENT_MANAGER';
         $isManagerProcurement = ($role === 'MANAGER' && $dept === 'PROCUREMENT');
         $isSuperAdmin = $role === 'SUPER_ADMIN';
-        if (!($isProcurementManager || $isManagerProcurement || $isSuperAdmin)) {
+        $isAllowed = $isProcurementManager || $isManagerProcurement || $isSuperAdmin;
+
+        // Allow CUSTOM accounts with procurement module permission
+        if (!$isAllowed && $role === 'CUSTOM') {
+            try {
+                $perms = $user->permissions ?? [];
+                if (is_string($perms)) $perms = json_decode($perms, true) ?: [];
+                $modules = [];
+                if (is_array($perms) && isset($perms['modules']) && is_array($perms['modules'])) {
+                    $modules = $perms['modules'];
+                } elseif (is_array($perms)) {
+                    $modules = $perms;
+                }
+                foreach ($modules as $m) {
+                    if (strtoupper(trim((string)$m)) === 'PROCUREMENT') { $isAllowed = true; break; }
+                }
+            } catch (\Throwable $e) { /* ignore */ }
+        }
+
+        if (!$isAllowed) {
             Log::warning('UNAUTHORIZED ROLE', ['role' => $role, 'dept' => $dept]);
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -430,9 +532,9 @@ public function requestedProducts(Request $request)
 
         $procRequest = ProcurementRequest::with('product')->findOrFail($id);
 
-        // Allow either explicit PROCUREMENT_MANAGER role or a branch Manager in PROCUREMENT
-        if (( $role === 'PROCUREMENT_MANAGER' || ($role === 'MANAGER' && $dept === 'PROCUREMENT') )
-            && $procRequest->status === 'pending') {
+        // Allow either explicit PROCUREMENT_MANAGER role or a branch Manager in PROCUREMENT or CUSTOM with procurement
+        $canAccessProcurement = $role === 'PROCUREMENT_MANAGER' || ($role === 'MANAGER' && $dept === 'PROCUREMENT') || $this->canAccessProcurement($user);
+        if ($canAccessProcurement && $procRequest->status === 'pending') {
             // Prevent procurement from acknowledging if there's no supplier price
             // Supplier must submit product/price first so Finance can approve a budget.
             $product = $procRequest->product;
@@ -524,7 +626,8 @@ public function requestedProducts(Request $request)
         // Allow procurement manager or supplier to upload receipt. Actual
         // completion requires finance confirmation and should be handled
         // separately via confirmReceipt.
-        if (!in_array($role, ['PROCUREMENT_MANAGER', 'SUPPLIER']) && !($role === 'MANAGER' && $dept === 'PROCUREMENT')) {
+        $canAccessProcurement = $this->canAccessProcurement($user);
+        if (!in_array($role, ['SUPPLIER']) && !($role === 'MANAGER' && $dept === 'PROCUREMENT') && !$canAccessProcurement) {
             Log::warning('UNAUTHORIZED ROLE', ['role' => $role, 'dept' => $dept]);
             return response()->json(['error' => 'Unauthorized'], 401);
         }

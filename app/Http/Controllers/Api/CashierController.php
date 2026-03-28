@@ -299,15 +299,35 @@ class CashierController extends Controller
             $nextNum = $lastOrder ? ((int) str_replace('CT-', '', $lastOrder->order_code)) + 1 : 1;
             $orderCode = 'CT-' . str_pad($nextNum, 4, '0', STR_PAD_LEFT);
 
+            // Check if order contains any kitchen dishes
+            $hasKitchenDishes = false;
+            foreach ($orderItems as $oi) {
+                $product = Product::find($oi['product_id']);
+                if ($product && $product->is_kitchen_dish) {
+                    $hasKitchenDishes = true;
+                    break;
+                }
+            }
+
+            // If order has kitchen dishes, set status to 'in_kitchen' so kitchen staff can see it
+            $orderStatus = $hasKitchenDishes ? 'in_kitchen' : 'completed';
+
             $order = Order::create([
                 'order_code'    => $orderCode,
                 'owner_id'      => $request->user()->id,
                 'cashier_id'    => $request->user()->id,
                 'branch_id'     => $request->branch_id,
                 'customer_name' => $request->customer_name ?? 'Walk-in',
-                // Cashier transactions are completed immediately — no finance approval required.
-                'status'        => 'completed',
+                // If order contains kitchen dishes, mark as 'in_kitchen' for kitchen staff to process
+                // Otherwise, mark as 'completed' for regular items
+                'status'        => $orderStatus,
                 'is_cancelled'  => false,
+                'subtotal'      => $subtotalAll,
+                'discount_type' => $discountType,
+                'discount_percent' => $discountPercent,
+                'discount_amount' => round($discountAmount, 2),
+                'vat_percent'   => $vatPercent * 100,
+                'vat_amount'    => round($vatAmount, 2),
                 'grand_total'   => $finalGrandTotal,
                 'amount_paid'   => $amountPaid,
                 'change_amount' => $changeAmount,
@@ -383,10 +403,11 @@ class CashierController extends Controller
                 }
             }
 
-            // mark order as approved/completed with approval metadata
             $order->approved_at = now();
             $order->approved_by = $request->user()->id;
-            $order->status = 'completed';
+            if ($order->status !== 'in_kitchen') {
+                $order->status = 'completed';
+            }
             $order->save();
             $order->load('items', 'branch');
 
@@ -397,15 +418,6 @@ class CashierController extends Controller
                 $branch->budget = is_null($branch->budget) ? (float) $amount : ($branch->budget + (float) $amount);
                 $branch->save();
             }
-
-            // include computed VAT and discount details in response (not persisted)
-            $order->subtotal = $subtotalAll;
-            $order->discount_type = $discountType;
-            $order->discount_percent = $discountPercent;
-            $order->discount_amount = round($discountAmount, 2);
-            $order->vat_percent = $vatPercent * 100;
-            $order->vat_amount = round($vatAmount, 2);
-            $order->grand_total = round($finalGrandTotal, 2);
 
             return response()->json([
                 'ok'      => true,
@@ -532,7 +544,7 @@ class CashierController extends Controller
         }
 
         $query = Order::with('items', 'branch')
-            ->whereIn('status', ['pending', 'approved', 'completed', 'cancelled'])
+            ->whereIn('status', ['pending', 'in_kitchen', 'approved', 'completed', 'cancelled'])
             ->orderByDesc('ordered_at');
 
         if ($branchId) {

@@ -132,7 +132,6 @@ public function placeOrder(Request $request, $productId)
         }
 
         $validated = $request->validate([
-            'quantity' => 'integer|min:1',
             'supplier_id' => 'nullable|exists:users,id'
         ]);
 
@@ -140,8 +139,6 @@ public function placeOrder(Request $request, $productId)
         if ($user->branch_id && $product->branch_id != $user->branch_id) {
             return response()->json(['error' => 'Not your branch'], 403);
         }
-
-        $customQuantity = $validated['quantity'] ?? null;
 
         // Find pending procurement request
         $procRequest = ProcurementRequest::where('product_id', $productId)
@@ -185,7 +182,8 @@ public function placeOrder(Request $request, $productId)
             return response()->json(['error' => 'Product has no assigned supplier'], 400);
         }
 
-        $quantity = $customQuantity ?? $procRequest->quantity;
+        // Always use the quantity requested by logistics (cannot be changed by procurement)
+        $quantity = $procRequest->quantity;
 
         Log::info('Placing supplier order', [
             'user_id' => $user->id,
@@ -205,7 +203,8 @@ public function placeOrder(Request $request, $productId)
                 return response()->json(['error' => 'Budget must be approved before ordering'], 400);
             }
 
-            $quantity = $customQuantity ?? $procRequest->quantity;
+            // Use the logistics-requested quantity (cannot be modified by procurement)
+            $quantity = $procRequest->quantity;
 
             try {
                 $supplierOrder = DB::transaction(function () use ($procRequest, $supplierId, $quantity, $user) {
