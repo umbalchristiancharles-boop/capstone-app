@@ -39,9 +39,9 @@
     <div v-else class="kpi-grid">
       <div class="kpi-card">
         <div class="kpi-icon revenue-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="12" y1="1" x2="12" y2="23"></line>
-            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+          <!-- Peso sign rendered as SVG text to ensure locale glyph is used -->
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" role="img" aria-label="Peso">
+            <text x="12" y="16" text-anchor="middle" font-size="14" fill="currentColor" font-family="Segoe UI Symbol, Noto Sans Symbols, Arial Unicode MS">₱</text>
           </svg>
         </div>
         <div class="kpi-content">
@@ -826,7 +826,7 @@ async function markBudgetGiven(id) {
   align-items: center;
   margin-bottom: 24px;
   padding: 18px;
-  background: #fff8f5;
+  background: #ffffff;
   border-radius: 14px;
   border: 1px solid rgba(75,42,6,0.04);
   box-shadow: 0 8px 24px rgba(75,42,6,0.03);
