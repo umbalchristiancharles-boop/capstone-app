@@ -84,6 +84,8 @@ Route::middleware('web')->group(function () {
     Route::post('/superadmin/logistics/products', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsStoreProduct'])->middleware(['auth','permission:logistics']);
     Route::put('/superadmin/logistics/products/{id}', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsUpdateProduct'])->middleware(['auth','permission:logistics']);
     Route::delete('/superadmin/logistics/products/{id}', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsDestroyProduct'])->middleware(['auth','permission:logistics']);
+    // Supplier orders accessible to SuperAdmin logistics viewers
+    Route::get('/superadmin/logistics/supplier-orders', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsSupplierOrders'])->middleware(['auth','permission:logistics']);
     Route::get('/superadmin/logistics/branches', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsBranches'])->middleware(['auth','permission:logistics']);
 
     // SuperAdmin Branch Management

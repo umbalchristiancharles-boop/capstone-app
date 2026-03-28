@@ -347,6 +347,42 @@ class SuperAdminController extends Controller
     }
 
     /**
+     * Return supplier orders across branches for SuperAdmin logistics views.
+     * GET /api/superadmin/logistics/supplier-orders
+     */
+    public function logisticsSupplierOrders(Request $request)
+    {
+        $user = $this->resolveAuthenticatedUser($request);
+        if (!$user) {
+            return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
+        }
+
+        $allowed = Permission::allowed($user, ['SUPER_ADMIN', 'SUPERADMIN'], ['admin']);
+        if (! $allowed) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        try {
+            $branchId = $request->query('branch_id');
+
+            $query = \App\Models\SupplierOrder::with(['product', 'procurementRequest.logisticsUser', 'branch', 'supplier'])
+                ->orderBy('created_at', 'desc');
+
+            if ($branchId) {
+                $query->where('branch_id', $branchId);
+            }
+
+            $perPage = intval($request->query('per_page', 50));
+            $orders = $query->paginate($perPage);
+
+            return response()->json($orders);
+        } catch (\Exception $e) {
+            Log::error('logisticsSupplierOrders failed', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Server error'], 500);
+        }
+    }
+
+    /**
      * Send announcement to all branches/staff
      * Validates input, saves to database, and returns appropriate response
      */

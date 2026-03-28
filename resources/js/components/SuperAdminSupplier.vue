@@ -27,43 +27,43 @@
           <h2 class="section-title">Supplier Management</h2>
           <p class="section-description">View suppliers and supplier activity for the selected branch.</p>
 
-          <div class="hr-stats-grid" style="display:flex;gap:12px;margin-bottom:12px">
-            <div class="overview-card"><span class="overview-label">Active Deliveries:</span><span class="overview-value">&nbsp;{{ dashboardTotals.activeDeliveries }}</span></div>
-            <div class="overview-card"><span class="overview-label">Pending Orders:</span><span class="overview-value">&nbsp;{{ dashboardTotals.pendingOrders }}</span></div>
-            <div class="overview-card"><span class="overview-label">Total Suppliers:</span><span class="overview-value">&nbsp;{{ dashboardTotals.totalSuppliers }}</span></div>
-          </div>
+          <!-- stats grid removed as requested -->
 
           <!-- Orders table (read-only monitoring) -->
           <div class="panel-section" style="padding:0">
             <h3 style="margin:0 0 12px 0">Supplier Orders</h3>
             <div v-if="ordersLoading" class="loading-container"><div class="loading-spinner"></div><p>Loading orders...</p></div>
             <div v-else class="requests-container">
-              <div class="scroll-wrapper">
-                <button v-if="showOrdersArrows" class="scroll-btn scroll-btn--left" @click="scrollContainer(ordersTableRef, -1)">◀</button>
-                <div ref="ordersTableRef" class="requests-scroll table-container">
-                  <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th>Product</th>
-                      <th>Branch</th>
-                      <th>Qty</th>
-                      <th>Total</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="order in orders" :key="order.id">
-                      <td>{{ order.product?.name }}</td>
-                      <td>{{ order.branch?.name || order.branch_id }}</td>
-                      <td>{{ order.quantity }}</td>
-                      <td>{{ formatPrice(order.product?.price * order.quantity) }}</td>
-                      <td><span :class="['status-badge', getStatusClass(order.status)]">{{ order.status }}</span></td>
-                    </tr>
-                    <tr v-if="orders.length === 0"><td colspan="5" class="empty-message">No orders.</td></tr>
-                  </tbody>
-                  </table>
+              <div class="orders-table-wrapper">
+                <div class="scroll-wrapper">
+                  <button v-if="showOrdersArrows" class="scroll-btn scroll-btn--left" @click="scrollContainer(ordersTableRef, -1)">◀</button>
+                  <div ref="ordersTableRef" class="requests-scroll table-container">
+                    <table class="data-table">
+                      <thead>
+                        <tr>
+                          <th>Product</th>
+                          <th>Branch</th>
+                          <th>Qty</th>
+                          <th>Total</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="order in orders" :key="order.id">
+                          <td>{{ order.product?.name }}</td>
+                          <td>{{ order.branch?.name || order.branch_id }}</td>
+                          <td>{{ order.quantity }}</td>
+                          <td>{{ formatPrice(order.product?.price * order.quantity) }}</td>
+                          <td><span :class="['status-badge', getStatusClass(order.status)]">{{ order.status }}</span></td>
+                        </tr>
+                        <tr v-if="orders.length === 0"><td colspan="5" class="empty-message">No orders.</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <button v-if="showOrdersArrows" class="scroll-btn scroll-btn--right" @click="scrollContainer(ordersTableRef, 1)">▶</button>
                 </div>
-                <button v-if="showOrdersArrows" class="scroll-btn scroll-btn--right" @click="scrollContainer(ordersTableRef, 1)">▶</button>
+                <button v-if="showOrdersVertArrows" class="scroll-vertical-btn top" @click="scrollOrdersVertical(-1)">▲</button>
+                <button v-if="showOrdersVertArrows" class="scroll-vertical-btn bottom" @click="scrollOrdersVertical(1)">▼</button>
               </div>
             </div>
           </div>
@@ -93,17 +93,28 @@
           <section class="supplier-products" style="margin-top:12px">
             <h3>Your Supplier Products</h3>
             <div v-if="loadingProducts">Loading products...</div>
-            <div v-else-if="!products.length">No products found.</div>
-            <div v-else class="product-grid">
-              <div v-for="p in products" :key="p.id" class="product-card">
-                <div class="product-card-header">
-                  <div class="product-name">{{ p.name }}</div>
-                </div>
-                <div class="product-meta">
-                  <div class="product-price">{{ formatPrice(p.price) }}</div>
-                  <div class="product-stock">Stock: {{ p.stock ?? '-' }}</div>
-                </div>
+            <div v-else-if="!products.length" class="empty-message">No products found.</div>
+            <div v-else class="products-table-wrapper">
+              <div class="table-container" ref="productsTableRef">
+                <table class="products-table">
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>Price</th>
+                      <th>Stock</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="p in products" :key="p.id">
+                      <td>{{ p.name }}</td>
+                      <td>{{ formatPrice(p.price) }}</td>
+                      <td>{{ p.stock ?? '-' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
+              <button v-if="showProductsArrows" class="scroll-vertical-btn top" @click="scrollProducts(-1)">▲</button>
+              <button v-if="showProductsArrows" class="scroll-vertical-btn bottom" @click="scrollProducts(1)">▼</button>
             </div>
           </section>
         </div>
@@ -113,7 +124,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
@@ -125,7 +136,7 @@ const selectedBranchId = ref('')
 
 function handleBranchChange() {
   fetchSuppliers()
-  // Reload monitoring data for selected branch
+    // Reload monitoring data for selected branch
   loadDashboardTotals().catch(()=>{})
   loadOrders().catch(()=>{})
   loadDeliveries().catch(()=>{})
@@ -147,7 +158,7 @@ function goBackToSuperAdmin() {
 
 async function fetchSuppliers() {
   try {
-    const params = selectedBranchId.value ? { branch_id: selectedBranchId.value } : {}
+      const params = selectedBranchId.value ? { branch_id: Number(selectedBranchId.value) } : {}
     const res = await axios.get('/api/superadmin/suppliers', { params, withCredentials: true })
     suppliers.value = Array.isArray(res.data) ? res.data : (res.data?.data || [])
   } catch (e) {
@@ -171,8 +182,11 @@ const loadingProducts = ref(false)
 // refs for scrollable tables
 const ordersTableRef = ref(null)
 const deliveriesTableRef = ref(null)
+const productsTableRef = ref(null)
 const showOrdersArrows = ref(false)
 const showDeliveriesArrows = ref(false)
+const showOrdersVertArrows = ref(false)
+const showProductsArrows = ref(false)
 
 function getStatusClass(status) {
   switch ((status || '').toLowerCase()) {
@@ -192,7 +206,7 @@ function formatPrice(val) {
 
 async function loadDashboardTotals() {
   try {
-    const params = selectedBranchId.value ? { branch_id: selectedBranchId.value } : {}
+      const params = selectedBranchId.value ? { branch_id: Number(selectedBranchId.value) } : {}
     const res = await axios.get('/api/manager/logistics/dashboard', { params, withCredentials: true })
     const d = res.data || {}
     dashboardTotals.value = {
@@ -209,8 +223,8 @@ async function loadDashboardTotals() {
 async function loadOrders() {
   ordersLoading.value = true
   try {
-    const params = selectedBranchId.value ? { branch_id: selectedBranchId.value } : {}
-    const res = await axios.get('/api/supplier-orders', { params, withCredentials: true })
+      const params = selectedBranchId.value ? { branch_id: Number(selectedBranchId.value) } : {}
+    const res = await axios.get('/api/superadmin/logistics/supplier-orders', { params, withCredentials: true })
     const raw = res.data.data || res.data || []
     orders.value = Array.isArray(raw) ? raw : []
   } catch (e) {
@@ -227,7 +241,7 @@ async function loadOrders() {
 async function loadDeliveries() {
   deliveriesLoading.value = true
   try {
-    const params = selectedBranchId.value ? { branch_id: selectedBranchId.value } : {}
+      const params = selectedBranchId.value ? { branch_id: Number(selectedBranchId.value) } : {}
     const res = await axios.get('/api/logistics/deliveries', { params, withCredentials: true })
     const raw = res.data.data || res.data || []
     deliveries.value = Array.isArray(raw) ? raw : []
@@ -246,7 +260,7 @@ async function loadDeliveries() {
 async function loadProducts() {
   loadingProducts.value = true
   try {
-    const params = selectedBranchId.value ? { branch_id: selectedBranchId.value } : {}
+      const params = selectedBranchId.value ? { branch_id: Number(selectedBranchId.value) } : {}
     const res = await axios.get('/api/superadmin/logistics/products', { params, withCredentials: true })
     const raw = res.data.data || res.data || []
     products.value = Array.isArray(raw) ? raw : []
@@ -258,6 +272,8 @@ async function loadProducts() {
     console.warn('Failed to load products', e)
     products.value = []
   } finally { loadingProducts.value = false }
+  // check overflow for products table after data is loaded
+  setTimeout(checkProductsOverflow, 60)
 }
 
 function scrollContainer(refEl, dir) {
@@ -269,12 +285,38 @@ function scrollContainer(refEl, dir) {
   } catch (e) { console.warn('scrollContainer failed', e) }
 }
 
+function scrollProducts(dir) {
+  try {
+    const el = (productsTableRef && productsTableRef.value) ? productsTableRef.value : null
+    if (!el) return
+    const amount = Math.floor(el.clientHeight * 0.6) * dir
+    el.scrollBy({ top: amount, behavior: 'smooth' })
+  } catch (e) { console.warn('scrollProducts failed', e) }
+}
+
+function scrollOrdersVertical(dir) {
+  try {
+    const el = (ordersTableRef && ordersTableRef.value) ? ordersTableRef.value : null
+    if (!el) return
+    const amount = Math.floor(el.clientHeight * 0.6) * dir
+    el.scrollBy({ top: amount, behavior: 'smooth' })
+  } catch (e) { console.warn('scrollOrdersVertical failed', e) }
+}
+
 function checkOrdersOverflow() {
   try {
     const el = ordersTableRef.value
     if (!el) return showOrdersArrows.value = false
     showOrdersArrows.value = el.scrollWidth > el.clientWidth + 4
   } catch (e) { showOrdersArrows.value = false }
+}
+
+function checkOrdersVerticalOverflow() {
+  try {
+    const el = ordersTableRef.value
+    if (!el) return showOrdersVertArrows.value = false
+    showOrdersVertArrows.value = el.scrollHeight > el.clientHeight + 8
+  } catch (e) { showOrdersVertArrows.value = false }
 }
 
 function checkDeliveriesOverflow() {
@@ -285,17 +327,32 @@ function checkDeliveriesOverflow() {
   } catch (e) { showDeliveriesArrows.value = false }
 }
 
+function checkProductsOverflow() {
+  try {
+    const el = productsTableRef.value
+    if (!el) return showProductsArrows.value = false
+    showProductsArrows.value = el.scrollHeight > el.clientHeight + 8
+  } catch (e) { showProductsArrows.value = false }
+}
+
 function handleResize() {
   checkOrdersOverflow()
   checkDeliveriesOverflow()
+  checkProductsOverflow()
+  checkOrdersVerticalOverflow()
 }
 
 onMounted(async () => {
   try { await axios.get('/sanctum/csrf-cookie', { withCredentials: true }) } catch (e) {}
   await Promise.all([fetchBranches().catch(()=>{}), fetchSuppliers().catch(()=>{}), loadDashboardTotals().catch(()=>{}), loadOrders().catch(()=>{}), loadDeliveries().catch(()=>{}), loadProducts().catch(()=>{})])
   // check overflow for tables and listen for resizes
-  setTimeout(() => { checkOrdersOverflow(); checkDeliveriesOverflow() }, 100)
+  setTimeout(() => { checkOrdersOverflow(); checkDeliveriesOverflow(); checkProductsOverflow(); checkOrdersVerticalOverflow() }, 100)
   window.addEventListener('resize', handleResize)
+})
+
+// Watch branch selection and reload when changed (handles programmatic changes)
+watch(selectedBranchId, (nv, ov) => {
+  if (nv !== ov) handleBranchChange()
 })
 
 onUnmounted(() => {
@@ -369,6 +426,24 @@ onUnmounted(() => {
 .table-container::-webkit-scrollbar { height: 8px }
 .table-container::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 6px }
 
+/* Make tables fill the available container width and prevent external
+   styles that force a minimum width from creating horizontal overflow. */
+:deep(.requests-scroll .data-table) {
+  min-width: 0 !important;
+  width: 100% !important;
+  table-layout: fixed;
+}
+
+:deep(.requests-scroll) {
+  width: 100% !important;
+  overflow-x: auto;
+}
+
+:deep(.data-table th), :deep(.data-table td) {
+  white-space: normal;
+  word-break: break-word;
+}
+
 /* Ensure announcements on this view are responsive and scroll with the page
    instead of remaining sticky and getting "left behind" when the main content scrolls. */
 :deep(.admin-layout.no-profile-column) .admin-side {
@@ -392,5 +467,73 @@ onUnmounted(() => {
   overflow: auto;
   max-height: calc(100vh - 200px);
   min-height: 0;
+}
+/* Products table styles (placed here to keep component-scoped) */
+.products-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: transparent;
+}
+.products-table thead th {
+  text-align: left;
+  padding: 12px 16px;
+  background: #fff4e6;
+  color: #5a2c0a;
+  font-weight: 600;
+  font-size: 13px;
+  position: sticky;
+  top: 0;
+  z-index: 6;
+}
+.products-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #eee;
+  color: #333;
+}
+.products-table-wrapper .table-container { max-height: 480px; overflow: auto; }
+.products-table tbody tr:last-child td { border-bottom: none; }
+
+/* Custom vertical scrollbar visuals and overlay arrow buttons */
+.products-table-wrapper { position: relative; }
+.products-table-wrapper .table-container { scrollbar-width: thin; scrollbar-color: #8b8b8b #f1f1f1; }
+.products-table-wrapper .table-container::-webkit-scrollbar { width: 12px; }
+.products-table-wrapper .table-container::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 8px; }
+.products-table-wrapper .table-container::-webkit-scrollbar-thumb { background: #9b9b9b; border-radius: 8px; border: 2px solid #f1f1f1; }
+
+.scroll-vertical-btn {
+  position: absolute;
+  right: 12px;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  border: 1px solid rgba(0,0,0,0.06);
+  cursor: pointer;
+  color: #666;
+  font-size: 10px;
+  line-height: 1;
+  padding: 0;
+}
+.scroll-vertical-btn.top { top: 10px; }
+.scroll-vertical-btn.bottom { bottom: 10px; transform: rotate(180deg); }
+
+/* Orders table wrapper custom scrollbar + overlay buttons */
+.orders-table-wrapper { position: relative; }
+.orders-table-wrapper .table-container { scrollbar-width: thin; scrollbar-color: #8b8b8b #f1f1f1; }
+.orders-table-wrapper .table-container::-webkit-scrollbar { width: 12px; }
+.orders-table-wrapper .table-container::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 8px; }
+.orders-table-wrapper .table-container::-webkit-scrollbar-thumb { background: #9b9b9b; border-radius: 8px; border: 2px solid #f1f1f1; }
+
+@media (max-width: 640px) {
+  .orders-table-wrapper .table-container::-webkit-scrollbar { width: 8px; }
+}
+
+/* hide native scrollbar on small screens while preserving functionality */
+@media (max-width: 640px) {
+  .products-table-wrapper .table-container::-webkit-scrollbar { width: 8px; }
 }
 </style>
