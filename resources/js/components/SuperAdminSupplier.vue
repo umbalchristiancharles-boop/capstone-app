@@ -456,7 +456,7 @@ onUnmounted(() => {
 
 /* Make announcements panel adapt to viewport and keep header visible when
    the list itself becomes scrollable. */
-:deep(.announcements-panel) { max-width: 100%; box-sizing: border-box; }
+:deep(.announcements-panel) { max-width: 100%; box-sizing: border-box; margin-top: 120px; }
 :deep(.announcements-panel .panel-header) {
   position: sticky;
   top: 0;

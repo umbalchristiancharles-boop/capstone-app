@@ -2,7 +2,7 @@
   <div class="cashier-page">
     <!-- Back to Dashboard Button - Same as Finance Panel -->
     <button @click="router.push('/super-admin-panel')" class="btn-secondary back-to-dashboard-btn">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="back-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="back-icon">
         <line x1="19" y1="12" x2="5" y2="12"></line>
         <polyline points="12 19 5 12 12 5"></polyline>
       </svg>
@@ -11,9 +11,9 @@
 
     <!-- Header -->
     <header class="cashier-header">
-      <div class="header-title">
-        <h1>Cashier</h1>
-        <p>Process transactions and manage sales</p>
+        <div class="header-title">
+          <h1>Cashier</h1>
+          <p>Process transactions and manage sales</p>
       </div>
     </header>
 
@@ -491,7 +491,7 @@ async function processCheckout() {
 .cashier-page,
 .cashier-container {
   background-color: #F8FAFC;
-  padding: 20px;
+  padding: 28px;
   min-height: 100vh;
 }
 
@@ -501,13 +501,14 @@ async function processCheckout() {
   font-family: 'Inter', 'Poppins', sans-serif;
   font-weight: 800;
   color: var(--text-dark);
-  margin: 0 0 8px;
+  margin: 0 0 6px;
 }
 
 /* Larger responsive H1 like StaffIndex */
 .cashier-page h1 {
-  font-size: clamp(2.4rem, 3.2vw, 3.0rem);
-  line-height: 1.1;
+  /* Slightly smaller for better balance on this layout */
+  font-size: clamp(1.8rem, 2.4vw, 2.4rem);
+  line-height: 1.08;
 }
 
 /* Global button styles (visual only) */
@@ -588,41 +589,42 @@ textarea:focus {
 }
 
 /* Layout */
-.cashier-header { display:flex; align-items:center; gap:16px; margin-bottom:12px; }
-.back-to-dashboard-btn { display:inline-flex; align-items:center; gap:8px; }
+.cashier-header { display:flex; align-items:center; gap:12px; margin-bottom:6px; }
+.back-to-dashboard-btn { display:inline-flex; align-items:center; gap:8px; margin-bottom:6px; }
 .back-icon { width:16px; height:16px; }
 
-.branch-filter { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
-.branch-filter label { font-weight:600; color:var(--text-dark); }
+.branch-filter { display:flex; align-items:center; gap:12px; margin-bottom:18px; }
+.branch-filter label { font-weight:600; color:var(--text-dark); font-size:0.95rem; }
 
-.cashier-body { display:grid; grid-template-columns: 1fr 420px; gap:20px; margin-bottom:20px; }
+.cashier-body { display:grid; grid-template-columns: 1fr 440px; gap:24px; margin-bottom:24px; }
 
 .product-catalogue h2,
 .cart-section h2,
-.transactions-section h2 { font-size:1.1rem; }
+.transactions-section h2 { font-size:1.2rem; margin-bottom:10px }
 
 .search-bar input { width:100%; padding:10px; border-radius:8px; border:1px solid #E5E7EB; }
 
-.product-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap:12px; max-height:55vh; overflow-y:auto; }
+.product-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap:14px; max-height:60vh; overflow-y:auto; }
 
 .product-card {
   cursor:pointer;
   transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
   border: 1px solid rgba(15,23,42,0.03);
+  padding: 16px;
 }
-.product-card:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(2,6,23,0.06); border-color: rgba(59,130,246,0.18); }
+.product-card:hover { transform: translateY(-4px); box-shadow: 0 10px 28px rgba(2,6,23,0.07); border-color: rgba(59,130,246,0.18); }
 .product-card.out-of-stock { opacity:0.6; cursor:not-allowed; }
 
-.product-name { font-weight:700; color:var(--text-dark); margin-bottom:6px; }
-.product-type { display: inline-block; font-size: 0.75rem; font-weight: 600; padding: 3px 8px; border-radius: 6px; margin-bottom: 6px; }
+.product-name { font-weight:800; color:var(--text-dark); margin-bottom:8px; font-size:1.02rem }
+.product-type { display: inline-block; font-size: 0.78rem; font-weight: 600; padding: 4px 10px; border-radius: 6px; margin-bottom: 8px; }
 .product-type.type-individual { background: #dbeafe; color: #1e40af; }
 .product-type.type-per_pack { background: #d1fae5; color: #065f46; }
 .product-type.type-both { background: #fef3c7; color: #92400e; }
-.product-price { color:var(--text-dark); font-weight:800; font-size:1.05rem; }
-.product-stock { color:rgba(66,33,11,0.6); font-size:0.85rem; }
+.product-price { color:var(--text-dark); font-weight:900; font-size:1.15rem; }
+.product-stock { color:rgba(66,33,11,0.6); font-size:0.9rem; }
 
 /* Cart */
-.cart-list { max-height:32vh; overflow-y:auto; margin-bottom:12px; }
+.cart-list { max-height:40vh; overflow-y:auto; margin-bottom:14px; }
 .cart-item { padding:10px 0; border-bottom:1px solid rgba(2,6,23,0.04); display:flex; flex-direction:column; gap:6px; }
 .cart-item-info { display:flex; justify-content:space-between; }
 .cart-item-name { font-weight:700; color:var(--text-dark); }
@@ -637,9 +639,9 @@ textarea:focus {
 .remove-btn { background:none; border:none; color:#ef4444; cursor:pointer; }
 
 /* Totals */
-.totals-box { padding:12px; }
-.total-row { display:flex; justify-content:space-between; padding:6px 0; color:#0f172a; }
-.total-grand { font-size:1.2rem; font-weight:800; color:#0066FF; border-top:2px solid rgba(6,95,212,0.06); padding-top:8px; margin-top:6px; }
+.totals-box { padding:14px; }
+.total-row { display:flex; justify-content:space-between; padding:8px 0; color:#0f172a; }
+.total-grand { font-size:1.28rem; font-weight:900; color:#0066FF; border-top:2px solid rgba(6,95,212,0.06); padding-top:8px; margin-top:8px; }
 
 /* Payment */
 .form-group label { display:block; margin-bottom:6px; font-weight:600; color:#0f172a; }
@@ -660,7 +662,7 @@ textarea:focus {
 .item-badge { display:inline-block; background: rgba(59,130,246,0.08); color:#0f172a; padding:4px 8px; border-radius:9999px; font-size:0.8rem; margin:2px; }
 
 /* Misc */
-.loading-text, .empty-text { color:#6b7280; text-align:center; padding:20px 0; }
+.loading-text, .empty-text { color:#6b7280; text-align:center; padding:20px 0; font-size:0.98rem }
 
 @media (max-width:860px) { .cashier-body { grid-template-columns: 1fr; } }
 </style>
