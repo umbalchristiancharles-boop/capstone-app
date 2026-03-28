@@ -1,17 +1,19 @@
 <template>
   <OwnerPanelLayout
+    ref="ownerLayout"
     :userProfile="userProfile"
-    :panelTitle="''"
-    :panelDescription="''"
+    :panelTitle="'Finance Manager Panel'"
+    :panelDescription="'Manage budget approvals and monitor your branch financial performance'"
     :enableProfileUpdate="true"
     :canEditProfile="userProfile.role === 'OWNER'"
     :canChangePassword="true"
+    :showProfileColumn="false"
     @logout="askLogout"
     @profile-updated="onProfileUpdated"
   >
     <template #main>
       <div class="manager-finance">
-    
+
 
     <div class="page-header">
       <h1 class="page-title">Finance Manager Panel</h1>
@@ -285,6 +287,23 @@
     </transition>
       </div>
     </template>
+
+    <template #headerActions>
+      <div class="header-profile-wrapper" @click.stop>
+        <button class="header-profile-btn" @click="toggleProfileDropdown">
+          <div class="header-avatar">
+            <div v-if="userProfile.avatarUrl" class="header-avatar-img" :style="{ backgroundImage: 'url('+userProfile.avatarUrl+')' }"></div>
+            <div v-else class="header-avatar-initials">{{ (userProfile.fullName || userProfile.full_name || 'U').charAt(0) }}</div>
+          </div>
+          <div class="header-name">{{ ((userProfile.fullName || userProfile.full_name) || ((userProfile.role || 'Manager') + (userProfile.branch_name ? ' - ' + userProfile.branch_name : (userProfile.branch ? ' - ' + userProfile.branch : '')) )).toUpperCase() }}</div>
+        </button>
+        <div v-if="profileDropdownVisible" class="header-profile-dropdown" @click.stop>
+          <button class="dropdown-item" @click="openInfoFromHeader">Info</button>
+          <button class="dropdown-item" @click="triggerLogoutFromHeader">Logout</button>
+        </div>
+
+      </div>
+    </template>
   </OwnerPanelLayout>
 </template>
 
@@ -304,6 +323,55 @@ const showLogoutConfirm = ref(false)
 const isLoggingOut = ref(false)
 const showOverlay = ref(false)
 const overlayText = ref('Logging out...')
+
+// Header profile dropdown (match Logistics panel behavior)
+const profileDropdownVisible = ref(false)
+const ownerLayout = ref(null)
+
+function toggleProfileDropdown() {
+  profileDropdownVisible.value = !profileDropdownVisible.value
+}
+
+function closeProfileDropdown() { profileDropdownVisible.value = false }
+
+function openInfoFromHeader() {
+  closeProfileDropdown()
+  try {
+    if (ownerLayout.value && typeof ownerLayout.value.openInfoModal === 'function') {
+      ownerLayout.value.openInfoModal()
+      return
+    }
+  } catch (e) {}
+  try { window.dispatchEvent(new Event('open-owner-info')); return } catch (e) {}
+  const infoBtn = document.querySelector('.admin-info-btn')
+  if (infoBtn) infoBtn.click()
+}
+
+function openEditProfileFromHeader() {
+  closeProfileDropdown()
+  try {
+    if (ownerLayout.value && typeof ownerLayout.value.openAvatarPicker === 'function') {
+      ownerLayout.value.openAvatarPicker()
+      return
+    }
+  } catch (e) {}
+  try { window.dispatchEvent(new Event('open-owner-edit-profile')); return } catch (e) {}
+  const fileInput = document.querySelector('#avatar-input') || document.querySelector('#avatar-input-modal') || document.querySelector('#global-avatar-input')
+  if (fileInput) fileInput.click()
+}
+
+async function triggerLogoutFromHeader() {
+  closeProfileDropdown()
+  try {
+    const ok = await (window.swalConfirm ? window.swalConfirm('This will end your current session for Chikin Tayo Manager.', 'Confirm logout') : Promise.resolve(false))
+    if (ok) await confirmLogout()
+  } catch (e) { console.error('triggerLogoutFromHeader failed', e) }
+}
+
+// Close dropdown when clicking outside
+window.addEventListener('click', (e) => {
+  try { if (profileDropdownVisible.value) closeProfileDropdown() } catch (e) {}
+})
 
 // Helper function to safely extract array from response
 const extractArray = (response, key = null) => {
@@ -700,9 +768,10 @@ async function markBudgetGiven(id) {
 
 <style scoped>
 .manager-finance {
-  background-color: #F8FAFC;
+  background-color: #FBF7F4;
   padding: 30px;
   min-height: 100vh;
+  color: #4b2a06;
 }
 
 .page-header {
@@ -712,30 +781,27 @@ async function markBudgetGiven(id) {
 .btn-primary, .btn-success, .btn-secondary, .btn-info, .btn-danger {
   padding: 0.5rem 1rem;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
+  font-size: 0.95rem;
+  transition: all 0.18s ease;
 }
 
 .btn-primary {
-  background: #ff9f43;
+  background: #ff7a18;
   color: #fff;
 }
 
 .btn-secondary {
-  background: #0066FF;
-  color: white;
-  border: none;
+  background: #fff;
+  color: #4b2a06;
+  border: 1px solid rgba(75,42,6,0.06);
   border-radius: 8px;
-  padding: 8px 16px;
-  font-weight: 600;
-  transition: background 0.3s ease;
+  padding: 8px 14px;
+  font-weight: 700;
 }
 
-.btn-secondary:hover {
-  background: #3B82F6;
-}
+.btn-secondary:hover { background: #fff8f3 }
 
 .back-to-dashboard-btn {
   display: inline-flex;
@@ -749,7 +815,7 @@ async function markBudgetGiven(id) {
 .page-title {
   font-size: 28px;
   font-weight: 700;
-  color: #0066FF;
+  color: #4b2a06;
   margin: 0 0 8px 0;
 }
 
@@ -764,11 +830,11 @@ async function markBudgetGiven(id) {
   gap: 16px;
   align-items: center;
   margin-bottom: 24px;
-  padding: 20px;
-  background: white;
-  border-radius: 12px;
-  border: 1px solid #E5E7EB;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  padding: 18px;
+  background: #fff8f5;
+  border-radius: 14px;
+  border: 1px solid rgba(75,42,6,0.04);
+  box-shadow: 0 8px 24px rgba(75,42,6,0.03);
 }
 
 .filter-group {
@@ -794,23 +860,23 @@ async function markBudgetGiven(id) {
 
 .filter-group select:focus {
   outline: none;
-  border-color: #0066FF;
-  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
+  border-color: #ff7a18;
+  box-shadow: 0 0 0 6px rgba(255,122,24,0.06);
 }
 
 .btn-refresh {
-  background: #0066FF;
+  background: #ff7a18;
   color: white;
   border: none;
   border-radius: 8px;
   padding: 8px 16px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: background 0.3s ease;
+  transition: background 0.18s ease;
 }
 
-.btn-refresh:hover { background:#3B82F6 }
+.btn-refresh:hover { background:#ff9f43 }
 
 .loading-container,
 .error-container {
@@ -836,16 +902,16 @@ async function markBudgetGiven(id) {
 
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-.kpi-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap:20px; margin-bottom:32px }
-.kpi-card { display:flex; align-items:center; gap:16px; padding:20px; background:white; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1); border:1px solid #E5E7EB }
-.kpi-card:hover { transform: translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,0.15) }
-.kpi-card.highlight { border-left:4px solid #FACC15; background:white }
-.kpi-icon { display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:12px; background:#EFF6FF; color:#1E40AF }
+.kpi-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap:20px; margin-bottom:32px }
+.kpi-card { display:flex; align-items:center; gap:16px; padding:20px; background:#FFF6F1; border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,0.06); border:1px solid rgba(75,42,6,0.04) }
+.kpi-card:hover { transform: translateY(-2px); box-shadow:0 8px 28px rgba(0,0,0,0.08) }
+.kpi-card.highlight { border-left:6px solid #FF9F43; background:#FFF8F3 }
+.kpi-icon { display:flex; align-items:center; justify-content:center; width:56px; height:56px; border-radius:12px; background:#FFF3EA; color:#7a3b00 }
 .kpi-content { display:flex; flex-direction:column }
-.kpi-label { font-size:13px; color:#6B7280; margin-bottom:4px }
-.kpi-value { font-size:22px; font-weight:700; color:#0066FF }
+.kpi-label { font-size:13px; color:#7a5a44; margin-bottom:4px }
+.kpi-value { font-size:22px; font-weight:700; color:#4b2a06 }
 
-.section-title { font-size:18px; font-weight:600; color:#1F2937; margin:0 0 16px 0 }
+.section-title { font-size:18px; font-weight:700; color:#4b2a06; margin:0 0 16px 0 }
 
 .branch-stats, .recent-transactions, .panel-section { background:white; padding:20px; border-radius:12px; border:1px solid #E5E7EB; box-shadow:0 4px 12px rgba(0,0,0,0.1); margin-bottom:24px }
 
@@ -892,6 +958,33 @@ async function markBudgetGiven(id) {
 .preview-meta { color:#374151; font-size:14px; display:flex; gap:16px; flex-wrap:wrap }
 .preview-image { display:flex; justify-content:center; align-items:center; padding:8px; background:#f8fafc; border-radius:8px }
 .preview-image img { max-width:100%; height:auto; border-radius:6px; border:1px solid #e5e7eb }
+
+/* Hide the parent layout header for this panel (we render header inside layout already) */
+:deep(.admin-main-header) {
+  display: none;
+}
+
+/* Announcements panel uses the default layout so it scrolls with page */
+
+/* Force the side column to normal document flow to override other compiled styles */
+:deep(.admin-layout.no-profile-column) .admin-side {
+  position: static !important;
+  top: auto !important;
+  align-self: stretch !important;
+  margin-top: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding-right: 0 !important;
+}
+
+:deep(.announcements-panel .panel-header) {
+  position: static !important;
+}
+
+:deep(.announcements-panel .panel-body) {
+  overflow: visible !important;
+  max-height: none !important;
+}
 
 </style>
 

@@ -1198,6 +1198,27 @@ async function askLogout() {
   margin-bottom: 16px;
 }
 
+/* Announcements panel uses the default layout so it scrolls with page */
+/* Force the side column to normal document flow to override other compiled styles */
+:deep(.admin-layout.no-profile-column) .admin-side {
+  position: static !important;
+  top: auto !important;
+  align-self: stretch !important;
+  margin-top: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding-right: 0 !important;
+}
+
+:deep(.announcements-panel .panel-header) {
+  position: static !important;
+}
+
+:deep(.announcements-panel .panel-body) {
+  overflow: visible !important;
+  max-height: none !important;
+}
+
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.3s;
