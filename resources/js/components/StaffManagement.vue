@@ -1,7 +1,7 @@
 <template>
   <div class="staff-management-page">
     <!-- Back to Dashboard Button -->
-    <button @click="router.push('/admin-panel')" class="btn-secondary back-to-dashboard-btn">
+    <button @click="backToDashboard()" class="btn-secondary back-to-dashboard-btn">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="back-icon">
         <line x1="19" y1="12" x2="5" y2="12"></line>
         <polyline points="12 19 5 12 12 5"></polyline>
@@ -153,6 +153,35 @@ function onStaffModalSuccess() {
 
 const router = useRouter()
 const currentRoute = useRoute()
+
+const backToDashboard = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem('user') || 'null')
+    if (user) {
+      const role = (user.role || '').toLowerCase()
+      if (role === 'owner') { router.push('/owner-panel'); return }
+      if (role === 'admin') { router.push('/admin-panel'); return }
+      if (role === 'manager') {
+        const dep = (user.department || '').toLowerCase()
+        if (dep === 'hr') { router.push('/manager/hr'); return }
+        if (dep === 'finance') { router.push('/manager/finance'); return }
+        if (dep === 'logistics') { router.push('/manager/logistics'); return }
+        if (dep === 'inventory') { router.push('/manager/inventory'); return }
+        router.push('/manager-panel')
+        return
+      }
+      if (role === 'staff') {
+        const dep = (user.department || '').toLowerCase()
+        if (dep === 'cashier') { router.push('/staff/cashier'); return }
+        if (dep === 'finance') { router.push('/staff/finance'); return }
+        if (dep === 'inventory') { router.push('/staff/inventory'); return }
+      }
+    }
+  } catch (e) {
+    // fallback
+  }
+  router.push('/staff-landing')
+}
 
 // Watch for route changes to reload staff when navigating to this page
 watch(() => currentRoute.path, (newPath) => {
@@ -493,27 +522,31 @@ function formatDate(dateString) {
 <style scoped>
 .staff-management-page {
   padding: 2rem;
-  background: linear-gradient(180deg, #ff8c42 0%, #ff6b1c 100%);
+  background: transparent;
   min-height: 100vh;
+  font-family: 'Inter', 'Poppins', sans-serif;
+  color: var(--text-dark);
 }
 
 .staff-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
-  background: rgba(255,255,255,0.18);
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 1.75rem;
+  background: rgba(255,255,255,0.06);
+  padding: 1.25rem 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
 }
 
-h1, h2 {
-  color: #0066FF !important;
-  font-weight: 800 !important;
-  font-family: 'Inter', 'Poppins', sans-serif !important;
-  letter-spacing: -0.5px !important;
-  margin-bottom: 8px !important;
+/* Title: slightly smaller and 'sakto' size */
+.staff-header h1, .staff-header .owner-staff-title {
+  margin: 0;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+  font-size: clamp(1.6rem, 2.4vw, 2.2rem);
+  color: var(--text-dark);
 }
 
 .admin-label, .metric-label, .overview-label, .branch-count {
@@ -577,23 +610,19 @@ h1, h2 {
   box-shadow: 0 0 0 3px rgba(255, 154, 74, 0.1);
 }
 
+
 .btn-primary, .btn-success, .btn-secondary, .btn-info, .btn-danger {
-  padding: 0.5rem 1rem;
+  padding: 0.6rem 1.1rem;
   border: none;
-  border-radius: 4px;
+  border-radius: 999px;
   cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
+  font-size: 0.95rem;
+  font-weight: 700;
+  transition: all 0.18s ease;
 }
 
-.btn-primary {
-  background: #ff9f43;
-  color: #fff;
-}
-
-.btn-primary:hover {
-  background: #fabd83;
-}
+.btn-primary { background: var(--dirty-white); color: var(--text-dark); box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0,0,0,0.09); }
 
 .btn-success {
   background: #28a745;
@@ -640,36 +669,14 @@ h1, h2 {
   font-size: 0.8rem;
 }
 
-.back-to-dashboard-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  padding: 0.5rem 1rem;
-  font-size: 0.9rem;
-}
+.back-to-dashboard-btn { display: inline-flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; padding: 0.6rem 1.2rem; border-radius: 10px; background: transparent; color: var(--text-dark); border: 1px solid rgba(16,24,40,0.04); }
 
 .back-icon {
   flex-shrink: 0;
 }
 
-.summary-card {
-  background: rgba(255,255,255,0.18);
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  margin-bottom: 2rem;
-}
-
-.summary-card h3 {
-  margin: 0;
-  color: #222;
-}
-
-/* Override h3 color for owner-staff-total */
-.owner-staff-total {
-  color: #ffffff !important;
-}
+.summary-card { background: rgba(255,255,255,0.06); padding: 1rem 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; box-shadow: 0 6px 18px rgba(0,0,0,0.04); }
+.owner-staff-total { color: var(--text-dark); margin: 0; font-size: 1.05rem; }
 
 /* Branch Group Styles */
 .branch-group {
@@ -730,7 +737,7 @@ h1, h2 {
 .staff-table td {
   padding: 1rem;
   border-bottom: 1px solid #dee2e6;
-  color: #222;
+  color: var(--text-dark);
 }
 
 .staff-table tbody tr:hover {
