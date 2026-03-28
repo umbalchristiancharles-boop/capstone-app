@@ -12,13 +12,9 @@
     @profile-updated="onProfileUpdated"
   >
     <template #main>
-      <div class="manager-finance">
 
 
-    <div class="page-header">
-      <h1 class="page-title">Finance Manager Panel</h1>
-      <p class="page-subtitle">Manage budget approvals and monitor your branch financial performance</p>
-    </div>
+
 
     <div class="filter-bar">
       <div class="filter-group">
@@ -285,7 +281,6 @@
         </div>
       </div>
     </transition>
-      </div>
     </template>
 
     <template #headerActions>
@@ -959,10 +954,8 @@ async function markBudgetGiven(id) {
 .preview-image { display:flex; justify-content:center; align-items:center; padding:8px; background:#f8fafc; border-radius:8px }
 .preview-image img { max-width:100%; height:auto; border-radius:6px; border:1px solid #e5e7eb }
 
-/* Hide the parent layout header for this panel (we render header inside layout already) */
-:deep(.admin-main-header) {
-  display: none;
-}
+/* Previously hid the parent layout header; keep it visible so
+   header actions (profile button) render correctly. */
 
 /* Announcements panel uses the default layout so it scrolls with page */
 
@@ -984,6 +977,14 @@ async function markBudgetGiven(id) {
 :deep(.announcements-panel .panel-body) {
   overflow: visible !important;
   max-height: none !important;
+}
+
+@media (min-width: 1000px) {
+  /* Lower the side announcements so it lines up with the Budget Request
+     section on the finance panel. Adjust if needed (+/- 10-20px). */
+  :deep(.admin-layout.no-profile-column) .admin-side {
+    margin-top: 200px !important;
+  }
 }
 
 </style>
