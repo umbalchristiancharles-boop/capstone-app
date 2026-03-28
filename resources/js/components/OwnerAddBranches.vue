@@ -1,5 +1,5 @@
 <template>
-  <div class="staff-management-page">
+  <div :class="['staff-management-page', { 'main-branch-theme': isMainBranch }]">
     <!-- Back button: goes to Owner or Super Admin depending on role -->
     <button @click="handleBack" class="btn-secondary back-to-dashboard-btn">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="back-icon">
@@ -285,6 +285,12 @@ import '../css/adminpanel.css'
 
 const router = useRouter()
 const route = useRoute()
+
+// Detect if page is opened under main-branch routes
+const isMainBranch = computed(() => {
+  try { return String(route.path || '').startsWith('/main-branch') }
+  catch (e) { return false }
+})
 
 const backTarget = computed(() => {
   // If navigated from Super Admin, return there; otherwise default to main branch admin
@@ -612,7 +618,8 @@ function formatCurrency(amount) {
 <style scoped>
 .staff-management-page {
   padding: 2rem;
-  background: linear-gradient(180deg, #ff8c42 0%, #ff6b1c 100%);
+  /* Match Super Admin panel gradient */
+  background: linear-gradient(180deg, #FF9A4A 0%, #FF6A3D 100%);
   min-height: 100vh;
 }
 
@@ -621,19 +628,20 @@ function formatCurrency(amount) {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
-  background: rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.12);
   padding: 1.5rem;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
 }
 
 .staff-header h1 { margin: 0; color: #000; font-size: 2.5rem; font-weight: 700; }
-.owner-staff-title { color: #ffffff !important; }
+.staff-management-page:not(.main-branch-theme) .owner-staff-title { color: #ffffff; }
 .header-actions { display: flex; gap: 1rem; align-items: center; }
 
-.btn-primary, .btn-success, .btn-secondary { padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; transition: all 0.3s ease; }
-.btn-primary { background: #ff9f43; color: #fff; }
-.btn-primary:hover { background: #fabd83; }
+.btn-primary, .btn-success, .btn-secondary { padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; transition: all 0.25s ease; }
+/* Primary matches Super Admin primary-action (blue gradient) */
+.btn-primary { background: linear-gradient(135deg, #2b8aef, #1a6ed8); color: #fff; }
+.btn-primary:hover { background: linear-gradient(135deg, #1a6ed8, #1557b0); transform: translateY(-1px); }
 .btn-success { background: #28a745; color: #fff; }
 .btn-success:hover { background: #218838; }
 .btn-secondary { background: #6c757d; color: #fff; }
@@ -641,7 +649,7 @@ function formatCurrency(amount) {
 
 .back-to-dashboard-btn { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem; padding: 0.6rem 1.2rem; border: none; border-radius: 6px; cursor: pointer; }
 
-.summary-card { background: rgba(255,255,255,0.15); padding: 1rem 1.5rem; border-radius: 8px; margin-bottom: 2rem; }
+.summary-card { background: rgba(255,255,255,0.14); padding: 1rem 1.5rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
 .owner-staff-total { color: #fff; margin: 0; font-size: 1.2rem; }
 
 .loading-state, .empty-state { text-align: center; padding: 3rem; color: #fff; font-size: 1.1rem; }
@@ -650,7 +658,7 @@ function formatCurrency(amount) {
 .branch-group { margin-bottom: 2rem; }
 .staff-table-wrapper { overflow-x: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
 .staff-table { width: 100%; border-collapse: collapse; background: #fff; }
-.staff-table thead { background: linear-gradient(135deg, #ff9a56, #ff8c5f); }
+.staff-table thead { background: linear-gradient(135deg, #FF9A4A, #FF6A3D); }
 .staff-table th { padding: 0.85rem 1rem; text-align: left; color: #fff; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
 .staff-table td { padding: 0.75rem 1rem; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; color: #333; }
 .staff-table tbody tr:hover { background: #fff8f0; }
@@ -730,4 +738,105 @@ textarea.form-input { resize: vertical; }
 .btn.btn-secondary { background: #e5e7eb; color: #374151; }
 .btn.btn-secondary:hover { background: #d1d5db; }
 .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Main Branch theme (based on StaffIndex) */
+.staff-management-page.main-branch-theme {
+  /* Use cleaner, pale background with consistent typography */
+  background: linear-gradient(180deg, rgba(255,154,74,0.08) 0%, rgba(255,106,61,0.06) 100%);
+  font-family: 'Inter', 'Poppins', sans-serif;
+}
+
+.staff-management-page.main-branch-theme .owner-staff-title {
+  font-family: 'Inter', 'Poppins', sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+  /* slightly smaller per request */
+  font-size: clamp(1.6rem, 2.4vw, 2.2rem);
+  padding-bottom: 16px;
+  color: var(--text-dark, #1f2937);
+}
+
+.staff-management-page.main-branch-theme .owner-staff-total {
+  color: rgba(31,41,55,0.95);
+  font-size: 1.05rem;
+}
+
+.staff-management-page.main-branch-theme .staff-header {
+  color: var(--text-dark, #1f2937);
+}
+
+.staff-management-page.main-branch-theme .header-actions .btn-primary,
+.staff-management-page.main-branch-theme .header-actions .btn-success,
+.staff-management-page.main-branch-theme .header-actions .btn-secondary {
+  font-family: 'Inter', 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 0.98rem;
+}
+
+.staff-management-page.main-branch-theme .header-actions .btn-primary {
+  /* ensure Refresh button matches StaffIndex look */
+  background: #fffefb;
+  color: var(--text-dark, #1f2937);
+  padding: 10px 18px;
+  border-radius: 999px;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+}
+
+.staff-management-page.main-branch-theme .header-actions .btn-success {
+  background: #28a745;
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 8px;
+}
+
+.staff-management-page.main-branch-theme .staff-table thead {
+  /* make header light with dark text like StaffIndex */
+  background: var(--dirty-white, #fbfdfe);
+  color: var(--text-dark, #42210b);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+}
+
+.staff-management-page.main-branch-theme .btn-primary {
+  /* make primary buttons like StaffIndex .btn-login (light background, dark text) */
+  background: #fffefb; /* dirty-white */
+  color: #1f2937;
+  border-radius: 999px;
+  padding: 10px 18px;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+  font-weight: 700;
+}
+
+.staff-management-page.main-branch-theme .btn-primary:hover {
+  transform: translateY(-2px);
+}
+
+.staff-management-page.main-branch-theme .btn-secondary {
+  background: transparent;
+  border: 1px solid rgba(31,41,55,0.08);
+  color: #1f2937;
+}
+
+.staff-management-page.main-branch-theme .btn-secondary:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+.staff-management-page.main-branch-theme .staff-table thead th {
+  color: var(--text-dark, #42210b);
+  font-weight: 700;
+  padding: 12px 16px;
+  font-size: 14px;
+}
+
+.staff-management-page.main-branch-theme .staff-table td {
+  color: var(--text-dark, #42210b);
+  font-size: 14px;
+  padding: 12px 16px;
+}
+
+.staff-management-page.main-branch-theme .staff-table {
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+}
 </style>
