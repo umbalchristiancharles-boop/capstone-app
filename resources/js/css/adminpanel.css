@@ -1492,3 +1492,44 @@ h1[style*="orange"] {
   font-weight: 800 !important;
   font-family: 'Inter', 'Poppins', sans-serif !important;
 }
+
+/* Announcements list - ensure long text wraps inside the panel */
+.announcement-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.announcement-item {
+  padding: 8px 10px;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
+  /* allow long words and URLs to wrap and not overflow the container */
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.announcement-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.announcement-meta {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.announcement-message {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
