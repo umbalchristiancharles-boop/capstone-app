@@ -1,5 +1,5 @@
 <template>
-  <div :class="['staff-management-page', { 'main-branch-theme': isMainBranch }]">
+  <div :class="['staff-management-page', { 'main-branch-theme': (isMainBranch || isFromSuperAdmin), 'from-superadmin': isFromSuperAdmin }]">
     <!-- Back button: goes to Owner or Super Admin depending on role -->
     <button @click="handleBack" class="btn-secondary back-to-dashboard-btn">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="back-icon">
@@ -286,9 +286,20 @@ import '../css/adminpanel.css'
 const router = useRouter()
 const route = useRoute()
 
-// Detect if page is opened under main-branch routes
+// Detect if page is opened under main-branch routes (more robust)
 const isMainBranch = computed(() => {
-  try { return String(route.path || '').startsWith('/main-branch') }
+  try {
+    const p = String(route.path || '')
+    const full = String(route.fullPath || '')
+    const winPath = (typeof window !== 'undefined' && window.location && window.location.pathname) ? String(window.location.pathname) : ''
+    // match when path starts with or contains main-branch in any of the route/location values
+    return p.startsWith('/main-branch') || full.includes('/main-branch') || winPath.includes('/main-branch') || p.includes('main-branch')
+  } catch (e) { return false }
+})
+
+// Detect when opened from Super Admin panel via ?from=superadmin
+const isFromSuperAdmin = computed(() => {
+  try { return String(route.query?.from || '') === 'superadmin' }
   catch (e) { return false }
 })
 
@@ -740,13 +751,15 @@ textarea.form-input { resize: vertical; }
 .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 /* Main Branch theme (based on StaffIndex) */
-.staff-management-page.main-branch-theme {
+.staff-management-page.main-branch-theme,
+.staff-management-page.from-superadmin {
   /* Use cleaner, pale background with consistent typography */
   background: linear-gradient(180deg, rgba(255,154,74,0.08) 0%, rgba(255,106,61,0.06) 100%);
   font-family: 'Inter', 'Poppins', sans-serif;
 }
 
-.staff-management-page.main-branch-theme .owner-staff-title {
+.staff-management-page.main-branch-theme .owner-staff-title,
+.staff-management-page.from-superadmin .owner-staff-title {
   font-family: 'Inter', 'Poppins', sans-serif;
   font-weight: 800;
   letter-spacing: -0.5px;
@@ -757,24 +770,37 @@ textarea.form-input { resize: vertical; }
   color: var(--text-dark, #1f2937);
 }
 
-.staff-management-page.main-branch-theme .owner-staff-total {
+/* When opened from Super Admin keep Super Admin color scheme but use smaller title */
+.staff-management-page.from-superadmin .owner-staff-title {
+  font-size: clamp(1.6rem, 2.4vw, 2.2rem);
+  line-height: 1.1;
+  padding-bottom: 16px;
+}
+
+.staff-management-page.main-branch-theme .owner-staff-total,
+.staff-management-page.from-superadmin .owner-staff-total {
   color: rgba(31,41,55,0.95);
   font-size: 1.05rem;
 }
 
-.staff-management-page.main-branch-theme .staff-header {
+.staff-management-page.main-branch-theme .staff-header,
+.staff-management-page.from-superadmin .staff-header {
   color: var(--text-dark, #1f2937);
 }
 
 .staff-management-page.main-branch-theme .header-actions .btn-primary,
 .staff-management-page.main-branch-theme .header-actions .btn-success,
-.staff-management-page.main-branch-theme .header-actions .btn-secondary {
+.staff-management-page.main-branch-theme .header-actions .btn-secondary,
+.staff-management-page.from-superadmin .header-actions .btn-primary,
+.staff-management-page.from-superadmin .header-actions .btn-success,
+.staff-management-page.from-superadmin .header-actions .btn-secondary {
   font-family: 'Inter', 'Poppins', sans-serif;
   font-weight: 700;
   font-size: 0.98rem;
 }
 
-.staff-management-page.main-branch-theme .header-actions .btn-primary {
+.staff-management-page.main-branch-theme .header-actions .btn-primary,
+.staff-management-page.from-superadmin .header-actions .btn-primary {
   /* ensure Refresh button matches StaffIndex look */
   background: #fffefb;
   color: var(--text-dark, #1f2937);
@@ -783,21 +809,24 @@ textarea.form-input { resize: vertical; }
   box-shadow: 0 8px 18px rgba(0,0,0,0.08);
 }
 
-.staff-management-page.main-branch-theme .header-actions .btn-success {
+.staff-management-page.main-branch-theme .header-actions .btn-success,
+.staff-management-page.from-superadmin .header-actions .btn-success {
   background: #28a745;
   color: #fff;
   padding: 10px 16px;
   border-radius: 8px;
 }
 
-.staff-management-page.main-branch-theme .staff-table thead {
+.staff-management-page.main-branch-theme .staff-table thead,
+.staff-management-page.from-superadmin .staff-table thead {
   /* make header light with dark text like StaffIndex */
   background: var(--dirty-white, #fbfdfe);
   color: var(--text-dark, #42210b);
   box-shadow: 0 2px 6px rgba(0,0,0,0.04);
 }
 
-.staff-management-page.main-branch-theme .btn-primary {
+.staff-management-page.main-branch-theme .btn-primary,
+.staff-management-page.from-superadmin .btn-primary {
   /* make primary buttons like StaffIndex .btn-login (light background, dark text) */
   background: #fffefb; /* dirty-white */
   color: #1f2937;
@@ -807,34 +836,40 @@ textarea.form-input { resize: vertical; }
   font-weight: 700;
 }
 
-.staff-management-page.main-branch-theme .btn-primary:hover {
+.staff-management-page.main-branch-theme .btn-primary:hover,
+.staff-management-page.from-superadmin .btn-primary:hover {
   transform: translateY(-2px);
 }
 
-.staff-management-page.main-branch-theme .btn-secondary {
+.staff-management-page.main-branch-theme .btn-secondary,
+.staff-management-page.from-superadmin .btn-secondary {
   background: transparent;
   border: 1px solid rgba(31,41,55,0.08);
   color: #1f2937;
 }
 
-.staff-management-page.main-branch-theme .btn-secondary:hover {
+.staff-management-page.main-branch-theme .btn-secondary:hover,
+.staff-management-page.from-superadmin .btn-secondary:hover {
   background: rgba(255,255,255,0.06);
 }
 
-.staff-management-page.main-branch-theme .staff-table thead th {
+.staff-management-page.main-branch-theme .staff-table thead th,
+.staff-management-page.from-superadmin .staff-table thead th {
   color: var(--text-dark, #42210b);
   font-weight: 700;
   padding: 12px 16px;
   font-size: 14px;
 }
 
-.staff-management-page.main-branch-theme .staff-table td {
+.staff-management-page.main-branch-theme .staff-table td,
+.staff-management-page.from-superadmin .staff-table td {
   color: var(--text-dark, #42210b);
   font-size: 14px;
   padding: 12px 16px;
 }
 
-.staff-management-page.main-branch-theme .staff-table {
+.staff-management-page.main-branch-theme .staff-table,
+.staff-management-page.from-superadmin .staff-table {
   background: #fff;
   border-radius: 8px;
   overflow: hidden;
