@@ -677,11 +677,11 @@ async function onAvatarChange(event) {
   padding: 0;
 }
 .announcements-panel .announcement-list { list-style: none; margin: 0; padding: 0; }
-.announcements-panel .announcement-item { padding: 0.75rem; border-bottom: 1px solid #f1f1f1; border-radius: 8px; background: transparent; }
+.announcements-panel .announcement-item { padding: 0.75rem; border-bottom: 1px solid #f1f1f1; border-radius: 8px; background: transparent; word-break: break-word; }
 .announcements-panel .announcement-item:last-child { border-bottom: none; }
 .announcements-panel .announcement-title { font-weight: 700; color: #1e293b; margin-bottom: 0.25rem; }
 .announcements-panel .announcement-meta { font-size: 0.8rem; color: #64748b; margin-bottom: 0.25rem; }
-.announcements-panel .announcement-message { font-size: 0.95rem; color: #475569; }
+.announcements-panel .announcement-message { font-size: 0.95rem; color: #475569; white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
 
 /* Avatar controls inside Info modal */
 .info-avatar-row { display:flex; gap:12px; align-items:center; padding-bottom:8px }

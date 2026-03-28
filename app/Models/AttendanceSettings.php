@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\Branch;
 
 class AttendanceSettings extends Model
 {
@@ -31,6 +32,15 @@ class AttendanceSettings extends Model
      */
     public static function getForBranch(int $branchId): self
     {
+        // If the branch does not exist, return an unsaved default settings
+        // object instead of attempting to create a DB row (avoids FK errors).
+        if (!Branch::find($branchId)) {
+            $instance = new self();
+            $instance->branch_id = $branchId;
+            $instance->early_clockout_override = false;
+            return $instance;
+        }
+
         $settings = self::where('branch_id', $branchId)->first();
 
         if (!$settings) {
