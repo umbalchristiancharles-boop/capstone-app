@@ -1,55 +1,102 @@
 <template>
-  <div class="cashier-page">
-    <!-- Header -->
-    <header class="cashier-header">
-      <div class="header-title">
-        <h1>Cashier - {{ branchName }}</h1>
-        <p>Process transactions and manage sales</p>
-      </div>
-      <div class="header-actions">
-        <button class="back-btn" @click="goBack">← Back</button>
-        <button class="logout-btn" @click="confirmLogout">Logout</button>
-      </div>
-    </header>
-
-    <div v-if="!branchId" class="loading-text">
-      Loading branch information...
-    </div>
-    <div v-else class="cashier-body">
-      <!-- LEFT: Product catalogue -->
-      <section class="product-catalogue">
-        <h2>Products</h2>
-        <div class="search-bar">
-          <input v-model="productSearch" type="text" placeholder="Search products..." />
-        </div>
-        <div v-if="isLoadingProducts" class="loading-text">Loading products...</div>
-        <div v-else-if="filteredProducts.length === 0" class="empty-text">No products available</div>
-        <div v-else>
-          <div v-for="cat in productCategories" :key="cat" class="category-section">
-            <h3 class="category-header">{{ cat || 'Uncategorized' }}</h3>
-            <div class="product-grid">
-              <div
-                v-for="p in getProductsByCategory(cat)"
-                :key="p.id"
-                class="product-card"
-                :class="{ 'out-of-stock': p.stock <= 0 }"
-                @click="p.stock > 0 && addToCart(p)"
-              >
-                <div class="product-name">{{ p.name }}</div>
-                <div v-if="p.per_pack_or_individual" class="product-type" :class="'type-' + p.per_pack_or_individual">
-                  {{ formatPricingType(p.per_pack_or_individual) }}
-                </div>
-                <div class="product-price">₱{{ fmt(p.price) }}</div>
-                <div class="product-stock" :class="{ 'stock-zero': p.stock <= 0 }">
-                  {{ p.stock > 0 ? 'Stock: ' + p.stock : 'Out of stock' }}
+  <OwnerPanelLayout
+    :userProfile="userProfile"
+    :panelTitle="`Cashier - ${branchName}`"
+    panelDescription="Process transactions and manage sales"
+    :enableProfileUpdate="false"
+    :canChangePassword="false"
+    :showProfileColumn="false"
+    @logout="confirmLogout"
+  >
+    <template #main>
+      <div v-if="!branchId" class="loading-text">Loading branch information...</div>
+      <div v-else class="cashier-body">
+        <!-- LEFT: Product catalogue -->
+        <section class="product-catalogue">
+          <h2>Products</h2>
+          <div class="search-bar">
+            <input v-model="productSearch" type="text" placeholder="Search products..." />
+          </div>
+          <div v-if="isLoadingProducts" class="loading-text">Loading products...</div>
+          <div v-else-if="filteredProducts.length === 0" class="empty-text">No products available</div>
+          <div v-else>
+            <div v-for="cat in productCategories" :key="cat" class="category-section">
+              <h3 class="category-header">{{ cat || 'Uncategorized' }}</h3>
+              <div class="product-grid">
+                <div
+                  v-for="p in getProductsByCategory(cat)"
+                  :key="p.id"
+                  class="product-card"
+                  :class="{ 'out-of-stock': p.stock <= 0 }"
+                  @click="p.stock > 0 && addToCart(p)"
+                >
+                  <div class="product-name">{{ p.name }}</div>
+                  <div v-if="p.per_pack_or_individual" class="product-type" :class="'type-' + p.per_pack_or_individual">
+                    {{ formatPricingType(p.per_pack_or_individual) }}
+                  </div>
+                  <div class="product-price">₱{{ fmt(p.price) }}</div>
+                  <div class="product-stock" :class="{ 'stock-zero': p.stock <= 0 }">
+                    {{ p.stock > 0 ? 'Stock: ' + p.stock : 'Out of stock' }}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+        </section>
+
+        <!-- Cart moved to side slot -->
+      </div>
+
+      <!-- Recent Transactions -->
+      <section v-if="branchId" class="transactions-section">
+        <h2>Recent Transactions</h2>
+        <div v-if="transactions.length === 0" class="empty-text">No transactions yet</div>
+        <div v-else class="tx-table-wrap">
+          <table class="tx-table">
+            <thead>
+              <tr>
+              <th>Order #</th>
+              <th>Customer</th>
+              <th>Items Bought</th>
+              <th>Total</th>
+              <th>Paid</th>
+              <th>Change</th>
+              <th>Status</th>
+              <th>Action</th>
+              <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="tx in transactions" :key="tx.id">
+                <td>{{ tx.order_code }}</td>
+                <td>{{ tx.customer_name }}</td>
+                <td class="items-cell">
+                  <span v-for="(item, idx) in tx.items" :key="idx" class="item-badge">
+                    {{ item.quantity }}x {{ item.product_name }}
+                  </span>
+                </td>
+                <td>₱{{ fmt(tx.grand_total) }}</td>
+                <td>₱{{ fmt(tx.amount_paid) }}</td>
+                <td>₱{{ fmt(tx.change_amount) }}</td>
+                <td>
+                  <span :class="['status-badge', tx.status === 'cancelled' ? 'status-rejected' : (tx.status === 'completed' ? 'status-approved' : 'status-pending')]">{{ tx.status }}</span>
+                </td>
+                <td>
+                  <button v-if="tx.status !== 'cancelled' && (tx.status === 'completed' || tx.status === 'approved')" class="refund-btn" @click="refundOrder(tx)" :disabled="tx.isRefunding">Refund</button>
+                  <span v-else class="small-muted">—</span>
+                </td>
+                <td>{{ formatDate(tx.ordered_at) }}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </section>
+    </template>
 
-      <!-- RIGHT: Cart + Payment -->
+    <template #headerActions>
+      <button class="logout-btn" @click="confirmLogout">Logout</button>
+    </template>
+    <template #side>
       <section class="cart-section">
         <h2>Current Order</h2>
 
@@ -158,73 +205,15 @@
           </button>
         </div>
       </section>
-    </div>
-
-    <!-- Recent Transactions -->
-    <section v-if="branchId" class="transactions-section">
-      <h2>Recent Transactions</h2>
-      <div v-if="transactions.length === 0" class="empty-text">No transactions yet</div>
-      <div v-else class="tx-table-wrap">
-        <table class="tx-table">
-          <thead>
-            <tr>
-              <th>Order #</th>
-              <th>Customer</th>
-              <th>Items Bought</th>
-              <th>Total</th>
-              <th>Paid</th>
-              <th>Change</th>
-              <th>Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="tx in transactions" :key="tx.id">
-              <td>{{ tx.order_code }}</td>
-              <td>{{ tx.customer_name }}</td>
-              <td class="items-cell">
-                <span v-for="(item, idx) in tx.items" :key="idx" class="item-badge">
-                  {{ item.quantity }}x {{ item.product_name }}
-                </span>
-              </td>
-              <td>₱{{ fmt(tx.grand_total) }}</td>
-              <td>₱{{ fmt(tx.amount_paid) }}</td>
-              <td>₱{{ fmt(tx.change_amount) }}</td>
-              <td>
-                <span :class="['status-badge', tx.status === 'cancelled' ? 'status-rejected' : (tx.status === 'completed' ? 'status-approved' : 'status-pending')]">{{ tx.status }}</span>
-              </td>
-              <td>
-                <button v-if="tx.status !== 'cancelled' && (tx.status === 'completed' || tx.status === 'approved')" class="refund-btn" @click="refundOrder(tx)" :disabled="tx.isRefunding">Refund</button>
-                <span v-else class="small-muted">—</span>
-              </td>
-              <td>{{ formatDate(tx.ordered_at) }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- ANNOUNCEMENTS -->
-    <section class="panel-block announcements-panel" style="margin-top:18px;">
-      <div class="panel-header"><h2>Announcements</h2></div>
-      <div class="panel-body panel-body--list">
-        <div v-if="loadingAnnouncements">Loading...</div>
-        <div v-else-if="announcements.length === 0">No announcements</div>
-        <ul v-else class="announcement-list">
-          <li v-for="a in announcements" :key="a.id" class="announcement-item">
-            <div class="announcement-title">{{ a.title }}</div>
-            <div class="announcement-meta">{{ new Date(a.created_at).toLocaleString() }} • {{ a.target }}</div>
-            <div class="announcement-message">{{ a.message }}</div>
-          </li>
-        </ul>
-      </div>
-    </section>
-  </div>
+    </template>
+  </OwnerPanelLayout>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
+import OwnerPanelLayout from './OwnerPanelLayout.vue'
 
 const router = useRouter()
 
@@ -232,6 +221,7 @@ const router = useRouter()
 const branchId = ref(null)
 const branchName = ref('')
 const products = ref([])
+const userProfile = ref({})
 const productSearch = ref('')
 const isLoadingProducts = ref(false)
 
@@ -340,12 +330,36 @@ function goBack() {
 // Load staff profile and set branch
 async function loadStaffProfile() {
   try {
+    console.log('[StaffCashierPanel] localStorage user:', localStorage.getItem('user'))
     const res = await axios.get('/api/staff/profile', { withCredentials: true })
+    console.log('[StaffCashierPanel] /api/staff/profile response:', res && res.data)
     if (res.data && res.data.ok && res.data.user) {
       const user = res.data.user
+      // Persist authoritative user object to localStorage so router guards use correct role
+      try {
+        const normalized = {
+          id: user.id,
+          username: user.username || user.user_name || user.name || '',
+          role: (user.role || '').toLowerCase(),
+          department: (user.department || '').toLowerCase(),
+          full_name: user.full_name || user.name || '',
+          branch_id: user.branch_id || null,
+          permissions: user.permissions || {}
+        }
+        localStorage.setItem('user', JSON.stringify(normalized))
+        userProfile.value = normalized
+        // Ensure axios has Authorization header if token exists
+        try {
+          const t = localStorage.getItem('token')
+          if (t) axios.defaults.headers.common['Authorization'] = `Bearer ${t}`
+        } catch (e) {}
+      } catch (e) {
+        console.warn('[StaffCashierPanel] failed to update localStorage user:', e)
+      }
+
       branchId.value = user.branch_id
       branchName.value = user.branch_name || 'Unknown Branch'
-      
+
       // Auto-load products and transactions for this branch
       if (branchId.value) {
         await loadProducts()
@@ -476,7 +490,7 @@ async function clearCart() {
       console.warn('Cancel pending failed:', e)
     }
   }
-  
+
   cart.value = []
   customerName.value = ''
   amountPaid.value = null
@@ -535,6 +549,7 @@ async function processCheckout() {
 
 // Initialize on mount
 onMounted(async () => {
+  console.log('[StaffCashierPanel] mounted - localStorage user:', localStorage.getItem('user'))
   await loadStaffProfile()
   fetchAnnouncements()
 })
@@ -595,9 +610,12 @@ async function performLogout() {
 /* Body: 2-column layout */
 .cashier-body {
   display: grid;
-  grid-template-columns: 1fr 420px;
+  /* Use the same wide main + side column as OwnerPanelLayout when profile column hidden */
+  /* reduce right-side whitespace so main column is wider */
+  grid-template-columns: 1fr 320px;
   gap: 20px;
   margin-bottom: 24px;
+  align-items: start;
 }
 
 /* Product catalogue */
@@ -606,6 +624,15 @@ async function performLogout() {
   background: rgba(255,255,255,0.95);
   border-radius: 12px;
   padding: 20px;
+}
+
+.product-catalogue {
+  /* Make the whole left column scrollable so categories share one scrollbar */
+  max-height: calc(100vh - 180px);
+  overflow-y: auto;
+  padding-right: 8px;
+  /* Span the full grid width so Products match the width of Recent Transactions */
+  grid-column: 1 / -1;
 }
 
 .product-catalogue h2,
@@ -640,10 +667,13 @@ async function performLogout() {
 
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 12px;
-  max-height: 55vh;
-  overflow-y: auto;
+  /* slightly larger product tiles for readability */
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 18px;
+  /* let the parent column handle scrolling */
+  max-height: none;
+  overflow: visible;
+  padding-right: 6px;
 }
 
 .product-card {
@@ -653,6 +683,10 @@ async function performLogout() {
   padding: 14px;
   cursor: pointer;
   transition: transform 0.15s, box-shadow 0.15s;
+  min-height: 96px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 .product-card:hover {
   transform: translateY(-2px);
@@ -679,9 +713,16 @@ async function performLogout() {
 
 /* Cart */
 .cart-list {
-  max-height: 32vh;
+  max-height: 40vh;
   overflow-y: auto;
   margin-bottom: 12px;
+}
+
+/* Make cart section sticky so totals remain visible while browsing products */
+.cart-section {
+  position: sticky;
+  top: 96px;
+  align-self: start;
 }
 
 .cart-item {
@@ -873,7 +914,13 @@ async function performLogout() {
   font-size: 1.15rem;
 }
 
-.tx-table-wrap { overflow-x: auto; }
+.tx-table-wrap {
+  overflow-x: auto;
+  /* limit height and allow vertical scrolling for long transaction lists */
+  max-height: 44vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
 
 .tx-table {
   width: 100%;
@@ -928,6 +975,48 @@ async function performLogout() {
   color: #888;
   text-align: center;
   padding: 24px 0;
+}
+
+/* Softer, less-saturated visual style overrides */
+.product-card {
+  background: #ffffff;
+  border: 1px solid #ececec;
+  border-radius: 10px;
+  box-shadow: 0 1px 6px rgba(16,24,40,0.04);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.product-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(16,24,40,0.06);
+  border-color: #ececec;
+}
+.product-name { color: #1f2937; font-weight: 600; }
+.product-stock { color: #6b7280; font-weight: 500; }
+.product-price { color: #2f6f4a; font-weight: 700; }
+.product-type {
+  background: #f3f4f6;
+  color: #374151;
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: 999px;
+}
+.item-badge {
+  background: #f8fafc;
+  color: #374151;
+  border: 1px solid #eef2f7;
+  font-size: 0.78rem;
+}
+.tx-table td:nth-child(4),
+.tx-table td:nth-child(5),
+.tx-table td:nth-child(6) {
+  text-align: right;
+}
+.cashier-page { background: #ffffff; }
+.refund-btn { background: #fff7f7; color: #9b1f2d; border: 1px solid #fde2e2; }
+.tx-table th {
+  background: #fafafa;
+  color: #374151;
+  border-bottom-color: #ececec;
 }
 
 /* Responsive */
