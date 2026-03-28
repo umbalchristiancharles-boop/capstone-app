@@ -3,7 +3,7 @@
 @endphp
 
 <a id="__chikin_msg_btn" href="/hr/messages" title="Messages" data-server-auth="{{ $serverAuth }}"
-     style="position:fixed;right:18px;bottom:18px;z-index:9999;display:flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:999px;background:#2563eb;color:#fff;box-shadow:0 6px 18px rgba(37,99,235,0.2);text-decoration:none">
+    style="position:fixed;right:18px;bottom:18px;z-index:9999;display:flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:999px;background:var(--dirty-white,#fff4e6);color:var(--text-dark,#42210b);box-shadow:0 8px 20px rgba(66,33,11,0.06);text-decoration:none">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4-.9L3 20l1.1-3.3A7.972 7.972 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
         </svg>
@@ -26,7 +26,7 @@
                 // Check if on any of the panel routes where messaging is available
                 const panelPrefixes = [
                     '/admin-panel',
-                    '/manager-panel', 
+                    '/manager-panel',
                     '/manager/',           // Covers /manager/hr, /manager/finance, etc.
                     '/staff-panel',
                     '/staff/',             // Covers /staff/kitchen, /staff/cashier, etc.
