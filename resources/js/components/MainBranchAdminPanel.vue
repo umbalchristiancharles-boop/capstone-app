@@ -22,7 +22,6 @@
       <main class="main-col">
         <header class="panel-header">
           <h1>Main Branch Admin Dashboard</h1>
-          <p>Super-admin inspired layout for HQ administration.</p>
         </header>
 
         <section class="overview-grid">
@@ -149,53 +148,80 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.main-branch-page { min-height: 100vh; padding: 24px; background: linear-gradient(180deg, #ff9a4a 0%, #ff6a3d 100%); }
-.panel-layout { display: grid; grid-template-columns: 320px 1fr 300px; gap: 16px; }
-.profile-card, .panel-block, .overview-card, .panel-header { background: #fff; border-radius: 16px; padding: 16px; }
-.profile-head { display: flex; gap: 12px; align-items: center; }
-.avatar { width: 56px; height: 56px; border-radius: 50%; background: #1f2d3d; color: #fff; display: grid; place-items: center; font-weight: 700; }
-.label { font-size: 12px; color: #7a7a7a; }
-.profile-meta { margin: 12px 0; display: grid; gap: 6px; font-size: 14px; }
-.action-btn, .link-btn { border: 0; border-radius: 10px; padding: 10px 12px; background: #1f2d3d; color: #fff; cursor: pointer; }
-.main-col { display: grid; gap: 16px; }
-.overview-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-.overview-card .k { color: #6b7280; font-size: 12px; display: block; }
-.overview-card strong { font-size: 22px; color: #1f2d3d; }
-.side-col { display: grid; gap: 16px; align-content: start; }
+/* Modern, softer UI theme — layout, spacing, typography and controls only */
+.main-branch-page {
+  min-height: 100vh;
+  padding: 28px;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  color: var(--text-dark);
+  font-size: 15px;
+}
+
+.panel-layout { display: grid; grid-template-columns: 300px 1fr 260px; gap: 20px; align-items: start; }
+.profile-card, .panel-block, .overview-card, .panel-header { background: #ffffff; border-radius: 12px; padding: 18px; box-shadow: 0 4px 14px rgba(16,24,40,0.04); border: 1px solid #eef2f7; }
+
+.profile-head { display: flex; gap: 14px; align-items: center; }
+.avatar { width: 56px; height: 56px; border-radius: 50%; background: #111827; color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 18px; }
+.label { font-size: 12px; color: #6b7280; }
+.profile-meta { margin: 12px 0; display: grid; gap: 6px; font-size: 14px; color: rgba(66,33,11,0.9); }
+
+.action-btn, .link-btn {
+  border: 0; border-radius: 10px; background: var(--color-royal-blue); color: #fff; cursor: pointer; box-shadow: 0 8px 24px rgba(224,88,24,0.08);
+}
+.action-btn:hover, .link-btn:hover { filter: brightness(0.98); }
+
+/* Make primary action full-width in profile card and give consistent spacing */
+.profile-card .action-btn {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  margin-top: 12px;
+}
+
+/* Quick links: stack buttons with consistent gaps and padding */
+.side-col .panel-block .link-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  background: linear-gradient(180deg, var(--color-royal-blue), #e05818);
+  box-shadow: 0 8px 20px rgba(224,88,24,0.08);
+}
+.side-col .panel-block .link-btn:last-child { margin-bottom: 0; }
+
+.main-col { display: grid; gap: 18px; }
+.overview-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.overview-card { display: flex; flex-direction: column; gap: 8px; padding: 16px; }
+.overview-card .k { color: rgba(66,33,11,0.9); font-size: 13px; }
+.overview-card strong { font-size: 24px; color: var(--text-dark); }
+
+.side-col { display: grid; gap: 14px; align-content: start; }
 .panel-block ul { margin: 0; padding-left: 18px; }
-.panel-block li { margin: 8px 0; }
-.panel-header h1 { margin: 0 0 6px; }
-.panel-header p { margin: 0; color: #6b7280; }
-.logout-btn { border: 0; border-radius: 10px; padding: 10px 12px; background: #b91c1c; color: #fff; cursor: pointer; margin-top: 8px; }
+.panel-block li { margin: 8px 0; color: rgba(66,33,11,0.9); }
+.panel-header h1 { margin: 0 0 6px; font-size: 34px; letter-spacing: -0.5px; color: var(--text-dark); }
+.panel-header p { margin: 0; color: rgba(66,33,11,0.9); }
+
+.logout-btn { border: 0; border-radius: 999px; padding: 8px 12px; background: var(--alert); color: #fff; cursor: pointer; margin-top: 8px; box-shadow: 0 6px 18px rgba(239,68,68,0.08); }
 
 .logout-confirm-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.55);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
+  position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45); display: flex; align-items: center; justify-content: center; z-index: 9999;
 }
-
-.logout-confirm-box {
-  width: min(92vw, 420px);
-  background: #fff;
-  border-radius: 14px;
-  padding: 18px;
-}
-
-.logout-confirm-box h3 { margin: 0 0 8px; }
+.logout-confirm-box { width: min(92vw, 420px); background: #fff; border-radius: 12px; padding: 18px; box-shadow: 0 12px 40px rgba(16,24,40,0.12); }
+.logout-confirm-box h3 { margin: 0 0 8px; font-size: 18px; }
 .logout-confirm-box p { margin: 0 0 14px; color: #64748b; }
 .logout-actions { display: flex; gap: 10px; justify-content: flex-end; }
-.btn-cancel, .btn-confirm { border: 0; border-radius: 8px; padding: 8px 12px; cursor: pointer; }
-.btn-cancel { background: #e2e8f0; color: #0f172a; }
-.btn-confirm { background: #b91c1c; color: #fff; }
+.btn-cancel, .btn-confirm { border: 0; border-radius: 999px; padding: 6px 14px; font-size: 0.88rem; cursor: pointer; }
+.btn-cancel { background: rgba(16,24,40,0.04); color: var(--text-primary); }
+.btn-confirm { background: var(--alert); color: #ffffff; }
 
-.fade-enter-active, .fade-leave-active { transition: opacity .2s ease; }
+.fade-enter-active, .fade-leave-active { transition: opacity .18s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
+
 @media (max-width: 1100px) {
   .panel-layout { grid-template-columns: 1fr; }
   .overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
 </style>
