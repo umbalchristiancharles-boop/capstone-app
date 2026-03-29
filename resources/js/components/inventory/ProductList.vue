@@ -91,43 +91,44 @@
             </div>
           </div>
 
-          <!-- Separate Confirmed Stock History panel (moved out of Uncategorized group) -->
-          <div v-if="groupByCategory" class="panel-section" style="margin-top:18px;">
-            <h2 class="section-title">Confirmed Stock History</h2>
-            <div class="section-description">Recent confirmed stock changes for your branch</div>
-            <div style="margin-top:12px;">
-              <table class="history-table">
+          <!-- Inventory Monitor: show current stock levels in a Manager-like table -->
+          <div class="panel-section" style="margin-top:18px;">
+            <h2 class="section-title">Inventory Monitor</h2>
+            <p class="section-description">Current stock levels for your branch (Read-only)</p>
+            <div class="table-container inventory-table-container" style="margin-top:12px;">
+              <table class="data-table">
                 <thead>
                   <tr>
-                    <th>ID</th>
-                    <th>Product</th>
-                    <th>Quantity</th>
-                    <th>Confirmed By</th>
-                    <th>When</th>
+                    <th>Product Name</th>
+                    <th>Category</th>
+                    <th>Pricing Type</th>
+                    <th>Stock Count</th>
+                    <th>Minimum Stock</th>
+                    <th>Expires At</th>
+                    <th>Status</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr><td>60</td><td>pepper</td><td>10</td><td>Vince Hannibal Bido</td><td>3/28/2026, 5:42:51 PM</td></tr>
-                  <tr><td>57</td><td>Water Bottle</td><td>20</td><td>Vince Hannibal Bido</td><td>3/27/2026, 5:33:15 AM</td></tr>
-                  <tr><td>58</td><td>Flour</td><td>1</td><td>Vince Hannibal Bido</td><td>3/27/2026, 5:33:12 AM</td></tr>
-                  <tr><td>56</td><td>Seaweeds</td><td>40</td><td>Vince Hannibal Bido</td><td>3/27/2026, 4:43:41 AM</td></tr>
-                  <tr><td>53</td><td>Salt</td><td>5</td><td>Vince Hannibal Bido</td><td>3/27/2026, 4:36:57 AM</td></tr>
-                  <tr><td>54</td><td>frozen hot Dogs</td><td>5</td><td>Vince Hannibal Bido</td><td>3/27/2026, 4:28:47 AM</td></tr>
-                  <tr><td>55</td><td>Flour</td><td>1</td><td>Procurement Manager - Dasma Branch</td><td>3/27/2026, 3:46:07 AM</td></tr>
-                  <tr><td>52</td><td>Water Bottle</td><td>10</td><td>Procurement Manager - Dasma Branch</td><td>3/26/2026, 6:17:23 PM</td></tr>
-                  <tr><td>51</td><td>Flour</td><td>4</td><td>Procurement Manager - Dasma Branch</td><td>3/26/2026, 4:36:33 PM</td></tr>
-                  <tr><td>44</td><td>Seaweeds</td><td>10</td><td>Procurement Manager - Dasma Branch</td><td>3/26/2026, 4:20:05 PM</td></tr>
-                  <tr><td>48</td><td>Salt</td><td>10</td><td>Procurement Manager - Dasma Branch</td><td>3/24/2026, 5:16:08 PM</td></tr>
-                  <tr><td>46</td><td>Flour</td><td>10</td><td>Procurement Manager - Dasma Branch</td><td>3/24/2026, 3:58:46 PM</td></tr>
-                  <tr><td>45</td><td>frozen hot Dogs</td><td>10</td><td>Procurement Manager - Dasma Branch</td><td>3/24/2026, 3:43:03 PM</td></tr>
-                  <tr><td>30</td><td>Samjang</td><td>50</td><td>Procurement Manager - Dasma Branch</td><td>3/22/2026, 7:42:33 PM</td></tr>
+                  <tr v-for="p in sorted" :key="p.id">
+                    <td>{{ p.name }}</td>
+                    <td>{{ p.category || '—' }}</td>
+                    <td><span class="pricing-type-badge">{{ p.pricing_type || 'N/A' }}</span></td>
+                    <td>{{ p.stock == null ? '—' : p.stock }}</td>
+                    <td>{{ p.low_stock_threshold ?? 10 }}</td>
+                    <td class="expiry-cell"><span class="expiry-date">{{ formatDate(p.expires_at) }}</span></td>
+                    <td><span :class="['status-badge', statusClass(p)]">{{ statusLabel(p) }}</span></td>
+                    <td>
+                      <button v-if="(p.stock == null ? 0 : p.stock) <= (p.low_stock_threshold ?? 10)" class="btn-primary btn-small">Request Procurement</button>
+                    </td>
+                  </tr>
                 </tbody>
               </table>
             </div>
           </div>
 
           <!-- Regular table view (no grouping) -->
-          <div v-else>
+          <div v-if="!groupByCategory">
             <table class="pl-table" role="table" aria-label="Product list table">
               <thead>
                 <tr>
@@ -344,6 +345,22 @@ const sorted = computed(() => {
   return arr
 })
 
+// helpers for inventory monitor status
+function statusClass(p) {
+  const n = (p.stock == null) ? 0 : p.stock
+  if (n <= 0) return 'status-out'
+  const threshold = p.low_stock_threshold ?? 10
+  if (n <= threshold) return 'status-low'
+  return 'status-ok'
+}
+
+function statusLabel(p) {
+  const cls = statusClass(p)
+  if (cls === 'status-out') return 'OUT'
+  if (cls === 'status-low') return 'LOW STOCK'
+  return 'OK'
+}
+
 // Pagination
 const totalItems = computed(() => sorted.value.length)
 const totalPages = computed(() => Math.max(1, Math.ceil(totalItems.value / perPage.value)))
@@ -515,7 +532,7 @@ defineExpose({ fetchProducts, getStats, setQuery, setStockFilter, setCategoryFil
 /* Root layout - 2 column grid: profile panel (320px) + content (flex) */
 .pl-root {
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: 240px 1fr;
   gap: 18px;
   align-items: start;
   padding: 18px;
@@ -534,6 +551,7 @@ defineExpose({ fetchProducts, getStats, setQuery, setStockFilter, setCategoryFil
   flex-direction: column;
   gap: 12px;
   height: fit-content;
+  margin-top: 0; /* ensure default no offset; adjusted on wider screens below */
 }
 
 /* Right Column */
@@ -581,6 +599,13 @@ defineExpose({ fetchProducts, getStats, setQuery, setStockFilter, setCategoryFil
 /* Table */
 .pl-table-wrap { background: white; border-radius: 10px; padding: 12px; box-shadow: 0 1px 6px rgba(16,24,40,0.04) }
 .pl-table { width: 100%; border-collapse: collapse; font-family: Inter, system-ui, Segoe UI, Roboto, "Helvetica Neue", Arial }
+.pl-table th.col-thumb, .pl-table td:nth-child(1) { width: 72px }
+.pl-table th.col-name, .pl-table td:nth-child(2) { min-width: 220px }
+.pl-table th.col-sku, .pl-table td:nth-child(3) { width: 200px }
+.pl-table th.col-price, .pl-table td:nth-child(4) { width: 120px; text-align: right }
+.pl-table th.col-stock, .pl-table td:nth-child(5) { width: 90px; text-align: center }
+.pl-table th.col-expiry, .pl-table td:nth-child(6) { width: 120px; text-align: center }
+.pl-table th.col-actions, .pl-table td:nth-child(7) { width: 120px; text-align: right }
 .pl-table thead th { text-align: left; padding: 10px; border-bottom: 1px solid #eef2f7; color: #0b213f; font-weight: 700; font-size: 0.9rem }
 .pl-table tbody tr { transition: background .12s ease, transform .08s ease; }
 .pl-table tbody tr:hover { background: #fbfeff }
@@ -654,6 +679,15 @@ defineExpose({ fetchProducts, getStats, setQuery, setStockFilter, setCategoryFil
   .card-actions { margin-top: 8px; display: flex; gap: 8px }
 }
 
+/* On wider screens nudge the left panel down so it aligns with the
+   main product list (moves it below the header area). Adjust value
+   if you want a different vertical alignment. */
+@media (min-width: 880px) {
+  .pl-left-panel {
+    margin-top: 60px;
+  }
+}
+
 /* Utility */
 .pl-loading, .pl-empty { padding: 28px; background: white; border-radius: 10px; text-align: center; color: #475569 }
 
@@ -674,6 +708,18 @@ defineExpose({ fetchProducts, getStats, setQuery, setStockFilter, setCategoryFil
 .pl-row.expired { background: #fef2f2 !important }
 .pl-row.expired .col-name .name { color: #991b1b }
 
+/* Inventory monitor / data-table styles */
+.inventory-table-container { overflow: auto }
+.data-table { width: 100%; border-collapse: collapse; background: #fff }
+.data-table thead th { text-align: left; padding: 10px; border-bottom: 1px solid #eef2f7; color: #0b213f; font-weight: 700; font-size: 0.9rem }
+.data-table td { padding: 10px; border-bottom: 1px solid #f1f5f9; vertical-align: middle }
+.pricing-type-badge { display:inline-block; padding:6px 8px; border-radius:6px; background:#f8fafc; border:1px solid #e6eef6; font-size:0.82rem }
+.expiry-cell .expiry-date { color:#475569 }
+.status-badge { padding:6px 8px; border-radius:8px; font-weight:700; font-size:0.8rem }
+.status-ok { background:#dcfce7; color:#166534 }
+.status-low { background:#fff7ed; color:#92400e }
+.status-out { background:#fee2e2; color:#7f1d1d }
+
 </style>
 
 <style scoped>
@@ -690,7 +736,7 @@ defineExpose({ fetchProducts, getStats, setQuery, setStockFilter, setCategoryFil
 .history-box h3 { margin: 0 0 8px; color: #7a2b00; font-size: 1rem }
 .history-table { width: 100%; border-collapse: collapse; font-family: inherit }
 .history-table thead th { text-align: left; padding: 10px; border-bottom: 1px solid #eef2f7; color: #0b213f; font-weight: 700; font-size: 0.9rem }
-.history-table td, .history-table th { padding: 8px; border-bottom: 1px solid rgba(0,0,0,0.06); vertical-align: middle; font-size: 0. ninerem }
+.history-table td, .history-table th { padding: 8px; border-bottom: 1px solid rgba(0,0,0,0.06); vertical-align: middle; font-size: 0.9rem }
 .history-table tbody tr:last-child td { border-bottom: none }
 
 @media (max-width: 880px) {

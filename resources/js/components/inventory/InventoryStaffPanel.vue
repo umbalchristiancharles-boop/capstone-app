@@ -223,19 +223,7 @@
         </div>
       </transition>
 
-      <!-- LOGOUT CONFIRM MODAL -->
-      <transition name="fade">
-        <div v-if="showLogoutConfirm" class="info-backdrop">
-          <div class="info-modal">
-            <h3>Confirm Logout</h3>
-            <p>Are you sure you want to logout?</p>
-            <div class="info-actions">
-              <button class="btn-outline" @click="showLogoutConfirm = false">Cancel</button>
-              <button class="btn-primary" @click="logout" :disabled="isLoggingOut">{{ isLoggingOut ? 'Logging out...' : 'Logout' }}</button>
-            </div>
-          </div>
-        </div>
-      </transition>
+      <!-- Logout handled via SweetAlert2 popup; no local confirm modal -->
 </template>
 
 <script setup>
@@ -535,7 +523,11 @@ function openInfoFromMenu() {
 
 function openLogoutFromMenu() {
   showProfileMenu.value = false
-  showLogoutConfirm.value = true
+  // Use global SweetAlert2 wrapper if available for consistent confirmation UI
+  ;(async () => {
+    const ok = await (window.swalConfirm ? window.swalConfirm('This will end your current session for Chikin Tayo.', 'Confirm logout') : Promise.resolve(false))
+    if (ok) await logout()
+  })()
 }
 
 async function loadPendingProcurements() {
@@ -1381,6 +1373,23 @@ ProductList[compact] { width:100% }
   .admin-layout.no-profile-column .admin-side {
     position: static !important;
     margin-top: 0 !important;
+  }
+}
+
+/* Ensure admin-side content sits below the ProductList header/profile area on wider screens.
+   Increase offset so the side column aligns with the Product List panel. Use the same
+   breakpoint as ProductList responsive rules. */
+@media (min-width: 880px) {
+  .admin-side {
+    margin-top: 100px !important;
+  }
+}
+
+/* Specifically nudge the announcements panel lower so it doesn't overlap
+   with the ProductList header area in this inventory panel. Tune value as needed. */
+@media (min-width: 880px) {
+  .admin-side .announcements-panel {
+    margin-top: 220px !important;
   }
 }
 </style>
