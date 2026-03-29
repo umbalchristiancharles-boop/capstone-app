@@ -64,6 +64,7 @@
         </main>
         <!-- RIGHT: SIDE PANELS -->
         <aside class="admin-side">
+          <slot name="sideTop"></slot>
           <section v-if="showAnnouncements" class="panel-block announcements-panel">
             <div class="panel-header announcements-header">
               <h2>Announcements</h2>
