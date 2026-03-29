@@ -88,41 +88,41 @@
                 </tbody>
               </table>
 
-              <!-- Insert Confirmed Stock History under the "Uncategorized" group -->
-              <template v-if="cat === 'Uncategorized'">
-                <div class="history-box" style="margin-top:12px;">
-                  <h3>Confirmed Stock History</h3>
-                  <div>
-                    <table class="history-table">
-                      <thead>
-                        <tr>
-                          <th>ID</th>
-                          <th>Product</th>
-                          <th>Quantity</th>
-                          <th>Confirmed By</th>
-                          <th>When</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr><td>60</td><td>pepper</td><td>10</td><td>Vince Hannibal Bido</td><td>3/28/2026, 5:42:51 PM</td></tr>
-                        <tr><td>57</td><td>Water Bottle</td><td>20</td><td>Vince Hannibal Bido</td><td>3/27/2026, 5:33:15 AM</td></tr>
-                        <tr><td>58</td><td>Flour</td><td>1</td><td>Vince Hannibal Bido</td><td>3/27/2026, 5:33:12 AM</td></tr>
-                        <tr><td>56</td><td>Seaweeds</td><td>40</td><td>Vince Hannibal Bido</td><td>3/27/2026, 4:43:41 AM</td></tr>
-                        <tr><td>53</td><td>Salt</td><td>5</td><td>Vince Hannibal Bido</td><td>3/27/2026, 4:36:57 AM</td></tr>
-                        <tr><td>54</td><td>frozen hot Dogs</td><td>5</td><td>Vince Hannibal Bido</td><td>3/27/2026, 4:28:47 AM</td></tr>
-                        <tr><td>55</td><td>Flour</td><td>1</td><td>Procurement Manager - Dasma Branch</td><td>3/27/2026, 3:46:07 AM</td></tr>
-                        <tr><td>52</td><td>Water Bottle</td><td>10</td><td>Procurement Manager - Dasma Branch</td><td>3/26/2026, 6:17:23 PM</td></tr>
-                        <tr><td>51</td><td>Flour</td><td>4</td><td>Procurement Manager - Dasma Branch</td><td>3/26/2026, 4:36:33 PM</td></tr>
-                        <tr><td>44</td><td>Seaweeds</td><td>10</td><td>Procurement Manager - Dasma Branch</td><td>3/26/2026, 4:20:05 PM</td></tr>
-                        <tr><td>48</td><td>Salt</td><td>10</td><td>Procurement Manager - Dasma Branch</td><td>3/24/2026, 5:16:08 PM</td></tr>
-                        <tr><td>46</td><td>Flour</td><td>10</td><td>Procurement Manager - Dasma Branch</td><td>3/24/2026, 3:58:46 PM</td></tr>
-                        <tr><td>45</td><td>frozen hot Dogs</td><td>10</td><td>Procurement Manager - Dasma Branch</td><td>3/24/2026, 3:43:03 PM</td></tr>
-                        <tr><td>30</td><td>Samjang</td><td>50</td><td>Procurement Manager - Dasma Branch</td><td>3/22/2026, 7:42:33 PM</td></tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </template>
+            </div>
+          </div>
+
+          <!-- Separate Confirmed Stock History panel (moved out of Uncategorized group) -->
+          <div v-if="groupByCategory" class="panel-section" style="margin-top:18px;">
+            <h2 class="section-title">Confirmed Stock History</h2>
+            <div class="section-description">Recent confirmed stock changes for your branch</div>
+            <div style="margin-top:12px;">
+              <table class="history-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Confirmed By</th>
+                    <th>When</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td>60</td><td>pepper</td><td>10</td><td>Vince Hannibal Bido</td><td>3/28/2026, 5:42:51 PM</td></tr>
+                  <tr><td>57</td><td>Water Bottle</td><td>20</td><td>Vince Hannibal Bido</td><td>3/27/2026, 5:33:15 AM</td></tr>
+                  <tr><td>58</td><td>Flour</td><td>1</td><td>Vince Hannibal Bido</td><td>3/27/2026, 5:33:12 AM</td></tr>
+                  <tr><td>56</td><td>Seaweeds</td><td>40</td><td>Vince Hannibal Bido</td><td>3/27/2026, 4:43:41 AM</td></tr>
+                  <tr><td>53</td><td>Salt</td><td>5</td><td>Vince Hannibal Bido</td><td>3/27/2026, 4:36:57 AM</td></tr>
+                  <tr><td>54</td><td>frozen hot Dogs</td><td>5</td><td>Vince Hannibal Bido</td><td>3/27/2026, 4:28:47 AM</td></tr>
+                  <tr><td>55</td><td>Flour</td><td>1</td><td>Procurement Manager - Dasma Branch</td><td>3/27/2026, 3:46:07 AM</td></tr>
+                  <tr><td>52</td><td>Water Bottle</td><td>10</td><td>Procurement Manager - Dasma Branch</td><td>3/26/2026, 6:17:23 PM</td></tr>
+                  <tr><td>51</td><td>Flour</td><td>4</td><td>Procurement Manager - Dasma Branch</td><td>3/26/2026, 4:36:33 PM</td></tr>
+                  <tr><td>44</td><td>Seaweeds</td><td>10</td><td>Procurement Manager - Dasma Branch</td><td>3/26/2026, 4:20:05 PM</td></tr>
+                  <tr><td>48</td><td>Salt</td><td>10</td><td>Procurement Manager - Dasma Branch</td><td>3/24/2026, 5:16:08 PM</td></tr>
+                  <tr><td>46</td><td>Flour</td><td>10</td><td>Procurement Manager - Dasma Branch</td><td>3/24/2026, 3:58:46 PM</td></tr>
+                  <tr><td>45</td><td>frozen hot Dogs</td><td>10</td><td>Procurement Manager - Dasma Branch</td><td>3/24/2026, 3:43:03 PM</td></tr>
+                  <tr><td>30</td><td>Samjang</td><td>50</td><td>Procurement Manager - Dasma Branch</td><td>3/22/2026, 7:42:33 PM</td></tr>
+                </tbody>
+              </table>
             </div>
           </div>
 
@@ -479,6 +479,37 @@ function getExpiryClass(product) {
 defineExpose({ fetchProducts, getStats, setQuery, setStockFilter, setCategoryFilter })
 
 </script>
+
+<style scoped>
+/* Ensure the layout's side column participates in normal document flow
+   when this component is embedded without a profile column, so the
+   announcements/attendance column scrolls away instead of sticking. */
+:deep(.admin-layout.no-profile-column) .admin-side {
+  position: static !important;
+  top: auto !important;
+  align-self: stretch !important;
+  margin-top: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding-right: 0 !important;
+}
+
+/* Also ensure the announcements panel headers/body are not positioned
+   in a way that prevents normal document scrolling. */
+:deep(.announcements-panel .panel-header),
+:deep(.announcements-panel .panel-body) {
+  position: static !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+@media (min-width: 1000px) {
+  :deep(.admin-layout.no-profile-column) .admin-side {
+    position: static !important;
+    margin-top: 0 !important;
+  }
+}
+</style>
 
 <style scoped>
 /* Root layout - 2 column grid: profile panel (320px) + content (flex) */

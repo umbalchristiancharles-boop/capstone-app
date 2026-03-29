@@ -29,7 +29,7 @@
 
     <template #main>
       <!-- Top stats (moved under header) -->
-      <div class="hr-stats-grid header-stats" style="margin: 12px 0 0 0; display:flex; gap:12px;">
+      <div class="hr-stats-grid header-stats" style="margin: 8px 0 0 0; display:flex; gap:12px;">
         <div class="hr-stat-card hr-stat-card--total" style="flex:1; display:flex; gap:10px; align-items:center; padding:10px; border-radius:8px;"><div class="hr-stat-icon">…</div><div class="hr-stat-content"><span class="hr-stat-label">Total Products</span><div style="font-weight:800; color:#333">{{ totalProducts }}</div></div></div>
         <div class="hr-stat-card hr-stat-card--active" style="flex:1; display:flex; gap:10px; align-items:center; padding:10px; border-radius:8px;"><div class="hr-stat-icon">…</div><div class="hr-stat-content"><span class="hr-stat-label">Low Stock</span><div style="font-weight:800; color:#333">{{ lowStockCount }}</div></div></div>
         <div class="hr-stat-card hr-stat-card--leave" style="flex:1; display:flex; gap:10px; align-items:center; padding:10px; border-radius:8px;"><div class="hr-stat-icon">…</div><div class="hr-stat-content"><span class="hr-stat-label">Out of Stock</span><div style="font-weight:800; color:#333">{{ outOfStockCount }}</div></div></div>
@@ -928,7 +928,7 @@ async function performClockOut() {
 .staff-table td.actions { white-space: nowrap; }
 
 .pl-page { padding: 16px; background: radial-gradient(circle at center, #FFFFFF 0%, #FCFCFC 40%, #EFEFEF 100%); min-height: 100vh; width: 100vw; }
-.pl-container { width: 100%; max-width: 1200px; margin: 0 auto; background: #FFFFFF; border-radius: 12px; border: 1px solid #F0E9E0; padding: 20px; box-shadow: 0 8px 24px rgba(16,24,40,0.06); box-sizing: border-box; display: grid; grid-template-columns: 180px 1fr 300px; gap: 20px; align-items: start }
+.pl-container { width: 100%; max-width: none; margin: 0 auto; background: #FFFFFF; border-radius: 12px; border: 1px solid #F0E9E0; padding: 20px; box-shadow: 0 8px 24px rgba(16,24,40,0.06); box-sizing: border-box; display: grid; grid-template-columns: minmax(240px, 320px) 1fr minmax(260px, 360px); gap: 20px; align-items: start }
 
 /* root columns inside the container */
 .pl-root { display: flex; gap: 20px; align-items: flex-start }
@@ -936,9 +936,9 @@ async function performClockOut() {
 .pl-right-column { flex: 1 1 auto; }
 
 /* make the right column content stand out as a white card */
-.pl-right-column .pl-header,
+.pl-right-column .pl-header { background: #ffffff; border-radius: 12px; padding: 12px; margin-top: 8px; box-shadow: 0 8px 28px rgba(0,0,0,0.06); }
 .pl-right-column .pl-main,
-.pl-right-column .pl-table-wrap { background: #ffffff; border-radius: 12px; padding: 18px; box-shadow: 0 8px 28px rgba(0,0,0,0.06); }
+.pl-right-column .pl-table-wrap { background: #ffffff; border-radius: 12px; padding: 12px; box-shadow: 0 8px 28px rgba(0,0,0,0.06); }
 
 .pl-header { display:flex; justify-content:space-between; align-items:center; gap:12px }
 .pl-title { margin:0; font-size:1.05rem; color:#2c2c2c }
@@ -999,6 +999,33 @@ ProductList[compact] { width:100% }
   flex-direction: column;
   gap: 10px;
   box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+}
+
+/* Desktop-specific adjustments to mirror ManagerLogisticsPanel behavior */
+@media (min-width: 1000px) {
+  /* ensure container uses the same column sizing as admin layout at large widths */
+  .pl-container {
+    grid-template-columns: minmax(240px, 320px) 1fr minmax(260px, 360px);
+    gap: 20px;
+  }
+
+  /* keep right column in document flow and align it vertically with main content */
+  .pl-right-column {
+    position: static !important;
+    margin-top: 212px !important;
+    align-self: start !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding-right: 0 !important;
+  }
+
+  /* announcements/pending box should scroll normally and not be sticky */
+  .pending-box, .history-box {
+    position: static !important;
+    margin-top: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
 }
 
 /* Pending/History centered section */
@@ -1331,4 +1358,29 @@ ProductList[compact] { width:100% }
 :deep(.header-actions-top .header-avatar-img) { width:100%; height:100%; background-size:cover; background-position:center }
 :deep(.header-actions-top .header-avatar-initials) { font-weight:700; color:#374151 }
 :deep(.header-actions-top .header-name) { font-size: 0.8rem; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; max-width: 320px }
+</style>
+
+<!-- Global override: ensure admin side column is not sticky for this panel -->
+<style>
+.admin-layout.no-profile-column .admin-side {
+  position: static !important;
+  top: auto !important;
+  align-self: stretch !important;
+  margin-top: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding-right: 0 !important;
+}
+.announcements-panel .panel-header,
+.announcements-panel .panel-body {
+  position: static !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+@media (min-width: 1000px) {
+  .admin-layout.no-profile-column .admin-side {
+    position: static !important;
+    margin-top: 0 !important;
+  }
+}
 </style>
