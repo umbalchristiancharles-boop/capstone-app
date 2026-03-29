@@ -1,30 +1,44 @@
 <template>
-  <div class="pl-page">
-    <div class="pl-container">
-      <!-- Page Header -->
-      <header class="pl-page-header">
-        <div>
-          <div style="display: flex; align-items: center; gap: 15px;">
-            <button 
-              v-if="showBackButton"
-              @click="goBack"
-              style="background: none; border: none; cursor: pointer; font-size: 20px; padding: 0; color: #333;"
-              title="Back to Custom Panel"
-            >
-              ← Back
-            </button>
-            <div>
-              <h1 class="pl-h1">{{ pageTitle }}</h1>
-              <p class="pl-lead">Manage your branch inventory</p>
-            </div>
+  <OwnerPanelLayout
+    :userProfile="staffProfile"
+    :panelTitle="pageTitle"
+    panelDescription="Manage your branch inventory"
+    :enableProfileUpdate="true"
+    :showProfileColumn="false"
+    @logout="logout"
+  >
+    <template #headerActions>
+      <div class="header-profile-wrapper" ref="headerProfileWrapper" style="margin: 0 0 12px;">
+        <button class="header-profile-btn" @click.stop="toggleProfileMenu" type="button">
+          <div class="header-avatar">
+            <div v-if="staffProfile.avatarUrl" class="header-avatar-img" :style="{ backgroundImage: 'url(' + staffProfile.avatarUrl + ')' }"></div>
+            <div v-else class="header-avatar-initials">{{ staffProfile.fullName ? (staffProfile.fullName.charAt(0) || 'U') : 'U' }}</div>
           </div>
-        </div>
-      </header>
+          <div class="header-name">{{ ((staffProfile.fullName || staffProfile.full_name) || ((staffProfile.role || 'STAFF') + (staffProfile.branch_name ? ' - ' + staffProfile.branch_name : (staffProfile.branch ? ' - ' + staffProfile.branch : '')) )).toUpperCase() }}</div>
+        </button>
+        <input id="staff-avatar-input" type="file" accept="image/*" @change="onAvatarChange" style="display: none" />
 
-      <!-- Product List with Profile/Attendance in left panel -->
-      <ProductList 
-        ref="productListRef" 
-        :fetchUrl="fetchUrl" 
+        <!-- Profile dropdown -->
+        <div v-if="showProfileMenu" class="profile-dropdown" ref="profileDropdown" @click.stop>
+          <button class="dropdown-item" @click="openInfoFromMenu">Info</button>
+          <button class="dropdown-item" @click="openLogoutFromMenu">Logout</button>
+        </div>
+      </div>
+
+    </template>
+
+    <template #main>
+      <!-- Top stats (moved under header) -->
+      <div class="hr-stats-grid header-stats" style="margin: 12px 0 0 0; display:flex; gap:12px;">
+        <div class="hr-stat-card hr-stat-card--total" style="flex:1; display:flex; gap:10px; align-items:center; padding:10px; border-radius:8px;"><div class="hr-stat-icon">…</div><div class="hr-stat-content"><span class="hr-stat-label">Total Products</span><div style="font-weight:800; color:#333">{{ totalProducts }}</div></div></div>
+        <div class="hr-stat-card hr-stat-card--active" style="flex:1; display:flex; gap:10px; align-items:center; padding:10px; border-radius:8px;"><div class="hr-stat-icon">…</div><div class="hr-stat-content"><span class="hr-stat-label">Low Stock</span><div style="font-weight:800; color:#333">{{ lowStockCount }}</div></div></div>
+        <div class="hr-stat-card hr-stat-card--leave" style="flex:1; display:flex; gap:10px; align-items:center; padding:10px; border-radius:8px;"><div class="hr-stat-icon">…</div><div class="hr-stat-content"><span class="hr-stat-label">Out of Stock</span><div style="font-weight:800; color:#333">{{ outOfStockCount }}</div></div></div>
+      </div>
+
+      <!-- Product list (center column) -->
+      <ProductList
+        ref="productListRef"
+        :fetchUrl="fetchUrl"
         :products="internalProducts"
         compact
         @open-add="openAddProduct"
@@ -33,207 +47,58 @@
         @adjust="openAdjustModal"
         @count="openCountModal"
       >
-        
-        <!-- Profile Slot -->
-        <template #profile>
-          <div class="profile-card">
-            <div class="profile-avatar">
-              <label class="avatar-upload" for="staff-avatar-input">
-                <img v-if="staffProfile.avatarUrl" :src="staffProfile.avatarUrl" alt="Profile picture" class="avatar-img" />
-                <div v-else class="avatar-circle">{{ staffProfile.fullName ? (staffProfile.fullName.charAt(0) || 'U') : 'U' }}</div>
-                <div class="avatar-overlay">
-                  <span class="avatar-change-text">Change Photo</span>
-                </div>
-              </label>
-              <input
-                id="staff-avatar-input"
-                type="file"
-                accept="image/*"
-                @change="onAvatarChange"
-                style="display: none"
-              />
-            </div>
-            <div class="profile-info">
-              <div class="profile-role">ACCOUNT</div>
-              <div class="profile-name">{{ staffProfile.fullName || 'Owner' }}</div>
-              <div class="profile-sub">{{ staffProfile.role || 'OWNER' }}</div>
-            </div>
-            <div class="profile-box">
-              <div class="account-id">Account I.D: <strong>{{ staffProfile.accountId || 'kk00001' }}</strong></div>
-              <button class="btn-info-small" @click="openInfoModal">Info</button>
-              <div class="qr-placeholder">QR</div>
-            </div>
-            <div class="profile-actions">
-              <!-- Only show stats and staff management for non-STAFF roles -->
-              <template v-if="staffProfile.role !== 'STAFF'">
-                <div class="small-stats">
-                  <div><div class="small-stat-title">Total Branches:</div><div class="small-stat-val">5</div></div>
-                  <div><div class="small-stat-title">Total Employees:</div><div class="small-stat-val">4</div></div>
-                </div>
-                <button class="btn-primary" @click="$emit('open-staff-management')">Staff Management</button>
-              </template>
-              <button class="btn-light" @click="logout">Logout</button>
-            </div>
-          </div>
-        </template>
-
-        <!-- Attendance Slot -->
-        <template #attendance>
-          <div class="attendance-card">
-            <div class="attendance-header">
-              <span class="attendance-title">Attendance</span>
-              <span :class="['attendance-status-badge', attendanceStatus.is_clocked_in ? 'status-on-duty' : 'status-off-duty']">
-                {{ attendanceStatus.is_clocked_in ? 'On Duty' : 'Off Duty' }}
-              </span>
-            </div>
-            <div class="attendance-times" v-if="attendanceStatus.clock_in_time || attendanceStatus.clock_out_time">
-              <div class="time-row">
-                <span class="time-label">Clock In:</span>
-                <span class="time-value">{{ attendanceStatus.clock_in_time || '-' }}</span>
-              </div>
-              <div class="time-row">
-                <span class="time-label">Clock Out:</span>
-                <span class="time-value">{{ attendanceStatus.clock_out_time || '-' }}</span>
-              </div>
-              <div class="time-row" v-if="attendanceStatus.hours_worked > 0">
-                <span class="time-label">Hours:</span>
-                <span class="time-value">{{ attendanceStatus.hours_worked }} hrs</span>
-              </div>
-            </div>
-            <div class="attendance-buttons">
-              <button
-                @click="performClockIn"
-                :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing"
-                class="btn-clock-in"
-              >
-                {{ isAttendanceProcessing ? '...' : 'Clock In' }}
-              </button>
-              <button
-                @click="performClockOut"
-                :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockOut"
-                class="btn-clock-out"
-                :class="{ 'btn-disabled': !canClockOut && attendanceStatus.is_clocked_in }"
-              >
-                {{ isAttendanceProcessing ? '...' : 'Clock Out' }}
-              </button>
-            </div>
-            <div v-if="!canClockOut && attendanceStatus.is_clocked_in" class="clockout-restriction">
-              <span class="restriction-icon">🔒</span>
-              <span>Cannot clock out before {{ scheduledTimeOut }}</span>
-            </div>
-            <div v-if="attendanceMessage" :class="['attendance-message', attendanceMessageType]">
-              {{ attendanceMessage }}
-            </div>
-          </div>
-
-          <!-- Inventory Summary Cards (below Attendance card) -->
-          <div class="inventory-summary">
-            <div class="stat-card">
-              <div class="stat-title">Total Products</div>
-              <div class="stat-value">{{ totalProducts }}</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-title">Low Stock</div>
-              <div class="stat-value">{{ lowStockCount }}</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-title">Out of Stock</div>
-              <div class="stat-value">{{ outOfStockCount }}</div>
-            </div>
-          </div>
-          <!-- Announcements (Staff) -->
-          <div class="announcements-card" style="margin-top:12px;">
-            <h3 style="margin:0 0 8px;color:#7a2b00;font-size:0.95rem">Announcements</h3>
-            <div v-if="loadingAnnouncements" class="loading-text">Loading announcements...</div>
-            <div v-else>
-              <div v-if="announcements.length">
-                <div v-for="a in announcements" :key="a.id" class="announcement-item" style="padding:8px;border-radius:8px;background:#fff8f0;margin-bottom:8px;border:1px solid rgba(255,211,107,0.4)">
-                  <div style="font-weight:700;color:#7a2b00">{{ a.title }}</div>
-                  <div style="margin-top:6px;color:#8a4b1a">{{ a.message }}</div>
-                  <div style="margin-top:8px;font-size:0.75rem;color:#a65a2a">{{ formatDate(a.created_at) }}</div>
-                </div>
-              </div>
-              <div v-else class="empty-text">No announcements</div>
-            </div>
-          </div>
-          
-        </template>
-
-        <!-- Stats Slot (for non-STAFF roles) -->
+        <template #profile></template>
+        <template #attendance></template>
         <template #stats>
           <template v-if="staffProfile.role !== 'STAFF'">
-            <div class="stat-card">
-              <div class="stat-title">Total products</div>
-              <div class="stat-value">{{ totalProducts }}</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-title">Low stock</div>
-              <div class="stat-value">{{ lowStockCount }}</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-title">Out of stock</div>
-              <div class="stat-value">{{ outOfStockCount }}</div>
+            <div class="hr-stats-grid">
+              <div class="hr-stat-card hr-stat-card--total">
+                <div class="hr-stat-icon"> … </div>
+                <div class="hr-stat-content">
+                  <span class="hr-stat-label">Total products</span>
+                  <span class="hr-stat-value">{{ totalProducts }}</span>
+                </div>
+              </div>
             </div>
           </template>
         </template>
       </ProductList>
+    </template>
 
-      <!-- Centered Pending + History Section (main content) -->
-      <div class="pending-center" style="max-width:1100px;margin:20px auto;">
-        <div class="pending-box">
-          <h3>Pending Stock Confirmations</h3>
-          <div v-if="pendingProcurements.length">
-            <table class="pending-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Product</th>
-                  <th>Quantity</th>
-                  <th>Uploaded</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="pp in pendingProcurements" :key="pp.id">
-                  <td>{{ pp.id }}</td>
-                  <td>{{ pp.product_name || 'Unknown' }}</td>
-                  <td>{{ pp.quantity }}</td>
-                  <td>{{ formatDate(pp.created_at) }}</td>
-                  <td><button class="btn-primary" @click.prevent="openProcurementConfirm(pp)">Confirm</button></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div v-else class="empty-text">No pending confirmations</div>
+    <template #side>
+      <div class="attendance-card" style="margin-top:12px; background: #ffffff;">
+        <div class="attendance-header">
+          <span class="attendance-title">Attendance</span>
+          <span :class="['attendance-status-badge', attendanceStatus.is_clocked_in ? 'status-on-duty' : 'status-off-duty']">
+            {{ attendanceStatus.is_clocked_in ? 'On Duty' : 'Off Duty' }}
+          </span>
         </div>
-
-        <div class="history-box">
-          <h3>Confirmed Stock History</h3>
-          <div v-if="confirmedProcurements.length">
-            <table class="history-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Product</th>
-                  <th>Quantity</th>
-                  <th>Confirmed By</th>
-                  <th>When</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="c in confirmedProcurements" :key="c.id">
-                  <td>{{ c.id }}</td>
-                  <td>{{ c.product_name || 'Unknown' }}</td>
-                  <td>{{ c.quantity }}</td>
-                  <td>{{ c.confirmed_by || '-' }}</td>
-                  <td>{{ formatDate(c.confirmed_at) }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div v-else class="empty-text">No confirmed stock history</div>
+        <!-- rest of attendance card markup preserved -->
+        <div class="attendance-times" v-if="attendanceStatus.clock_in_time || attendanceStatus.clock_out_time">
+          <div class="time-row"><span class="time-label">Clock In:</span><span class="time-value">{{ attendanceStatus.clock_in_time || '-' }}</span></div>
+          <div class="time-row"><span class="time-label">Clock Out:</span><span class="time-value">{{ attendanceStatus.clock_out_time || '-' }}</span></div>
+          <div class="time-row" v-if="attendanceStatus.hours_worked > 0"><span class="time-label">Hours:</span><span class="time-value">{{ attendanceStatus.hours_worked }} hrs</span></div>
         </div>
+        <div class="attendance-buttons">
+          <button @click="performClockIn" :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing" class="btn-clock-in">{{ isAttendanceProcessing ? '...' : 'Clock In' }}</button>
+          <button @click="performClockOut" :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockOut" class="btn-clock-out" :class="{ 'btn-disabled': !canClockOut && attendanceStatus.is_clocked_in }">{{ isAttendanceProcessing ? '...' : 'Clock Out' }}</button>
+        </div>
+        <div v-if="!canClockOut && attendanceStatus.is_clocked_in" class="clockout-restriction"><span class="restriction-icon">🔒</span><span>Cannot clock out before {{ scheduledTimeOut }}</span></div>
+        <div v-if="attendanceMessage" :class="['attendance-message', attendanceMessageType]">{{ attendanceMessage }}</div>
       </div>
+
+
+
+      <!-- Announcements removed per request -->
+      <div class="pending-box" style="margin-top:12px;">
+        <h3>Pending Stock Confirmations</h3>
+        <div v-if="pendingProcurements.length">
+          <table class="pending-table"><thead><tr><th>ID</th><th>Product</th><th>Quantity</th><th>Uploaded</th><th></th></tr></thead><tbody><tr v-for="pp in pendingProcurements" :key="pp.id"><td>{{ pp.id }}</td><td>{{ pp.product_name || 'Unknown' }}</td><td>{{ pp.quantity }}</td><td>{{ formatDate(pp.created_at) }}</td><td><button class="btn-primary" @click.prevent="openProcurementConfirm(pp)">Confirm</button></td></tr></tbody></table>
+        </div>
+        <div v-else class="empty-text">No pending confirmations</div>
+      </div>
+    </template>
+  </OwnerPanelLayout>
 
       <!-- COUNT / ADJUST / ADD MODALS -->
       <transition name="fade">
@@ -371,15 +236,14 @@
           </div>
         </div>
       </transition>
-    </div>
-  </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue';
+import { ref, onMounted, watch, computed, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import ProductList from './ProductList.vue'
+import OwnerPanelLayout from '../OwnerPanelLayout.vue'
 
 const router = useRouter();
 
@@ -417,6 +281,11 @@ const profileError = ref('');
 const profileSuccess = ref('');
 const showLogoutConfirm = ref(false);
 const isLoggingOut = ref(false);
+
+// Header/profile dropdown state
+const showProfileMenu = ref(false);
+const headerProfileWrapper = ref(null);
+const profileDropdown = ref(null);
 
 // Attendance state variables
 const attendanceStatus = ref({
@@ -614,12 +483,13 @@ onMounted(async () => {
       const u = res.data.user;
       staffProfile.value = {
         avatarUrl: u.avatar_url || '',
-        fullName: u.full_name || '',
+        fullName: u.full_name || u.fullName || '',
         role: u.role || '',
         username: u.username || '',
         email: u.email || '',
         contact: u.contact || '',
         accountId: u.account_id || '',
+        branch_name: u.branch_name || (u.branch && (u.branch.name || u.branch.branch_name)) || '',
         password: '',
         password_confirmation: ''
       };
@@ -638,7 +508,35 @@ onMounted(async () => {
   fetchAnnouncements()
   loadPendingProcurements()
   loadConfirmedProcurements()
+
+  // click-away listener to close header profile dropdown
+  function onDocClick(e) {
+    try {
+      if (!showProfileMenu.value) return
+      const wrapper = headerProfileWrapper.value
+      if (!wrapper) return
+      if (!wrapper.contains(e.target)) {
+        showProfileMenu.value = false
+      }
+    } catch (err) { /* ignore */ }
+  }
+  document.addEventListener('click', onDocClick)
+  onUnmounted(() => document.removeEventListener('click', onDocClick))
 });
+
+function toggleProfileMenu() {
+  showProfileMenu.value = !showProfileMenu.value
+}
+
+function openInfoFromMenu() {
+  showProfileMenu.value = false
+  openInfoModal()
+}
+
+function openLogoutFromMenu() {
+  showProfileMenu.value = false
+  showLogoutConfirm.value = true
+}
 
 async function loadPendingProcurements() {
   try {
@@ -1029,36 +927,56 @@ async function performClockOut() {
 .prod-name { font-size: 0.98rem; }
 .staff-table td.actions { white-space: nowrap; }
 
-/* New layout styles for InventoryStaffPanel */
-.pl-page { padding: 18px; background: linear-gradient(180deg,#FF9A4A 0%,#FF6A3D 100%); min-height: 100vh }
-.pl-container { max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px }
+.pl-page { padding: 16px; background: radial-gradient(circle at center, #FFFFFF 0%, #FCFCFC 40%, #EFEFEF 100%); min-height: 100vh; width: 100vw; }
+.pl-container { width: 100%; max-width: 1200px; margin: 0 auto; background: #FFFFFF; border-radius: 12px; border: 1px solid #F0E9E0; padding: 20px; box-shadow: 0 8px 24px rgba(16,24,40,0.06); box-sizing: border-box; display: grid; grid-template-columns: 180px 1fr 300px; gap: 20px; align-items: start }
+
+/* root columns inside the container */
+.pl-root { display: flex; gap: 20px; align-items: flex-start }
+.pl-left-panel { width: 280px; flex: 0 0 280px }
+.pl-right-column { flex: 1 1 auto; }
+
+/* make the right column content stand out as a white card */
+.pl-right-column .pl-header,
+.pl-right-column .pl-main,
+.pl-right-column .pl-table-wrap { background: #ffffff; border-radius: 12px; padding: 18px; box-shadow: 0 8px 28px rgba(0,0,0,0.06); }
+
+.pl-header { display:flex; justify-content:space-between; align-items:center; gap:12px }
+.pl-title { margin:0; font-size:1.05rem; color:#2c2c2c }
+.pl-sub { margin:0; color:#6b6b6b; font-size:0.9rem }
+.pl-actions { display:flex; gap:12px; align-items:center }
+.pl-filters select, .pl-search input { border-radius:8px; border:1px solid rgba(0,0,0,0.06); padding:8px }
 .pl-page-header { background: transparent; padding: 4px 0 }
-.pl-h1 { margin:0; font-size:1.4rem; color:#7a2b00 }
-.pl-lead { margin:0; color:#8a4b1a }
+.pl-container > .pl-page-header { grid-column: 1 / -1 }
+
+/* Make ProductList span the first two columns (left + center) so there's no empty gutter */
+.pl-container > ProductList { grid-column: 2 / 3 }
+.pl-container > .pl-right-column { grid-column: 3 / 4 }
+.pl-h1 { margin:0; font-size:1.4rem; color:#2c2c2c }
+.pl-lead { margin:0; color:#6b6b6b }
 .pl-controls { display:flex; justify-content:space-between; gap:12px; align-items:center }
 .pl-controls-left { flex:1 }
 .pl-controls-right { display:flex; gap:8px; align-items:center }
-.pl-search { width:100%; padding:8px 12px; border-radius:8px; border:1px solid rgba(255,211,107,0.4); background:#fff3e6 }
+.pl-search { width:100%; padding:8px 12px; border-radius:8px; border:1px solid rgba(0,0,0,0.06); background:#ffffff }
 .pl-stats { display:flex; flex-direction:column; gap:12px }
-.stat-card { background: rgba(255,244,230,0.9); padding:12px; border-radius:10px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
-.stat-title { color:#8a4b1a; font-size:0.85rem }
-.stat-value { font-weight:800; font-size:1.25rem; color:#7a2b00 }
+.stat-card { background: #ffffff; padding:12px; border-radius:10px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
+.stat-title { color:#6b6b6b; font-size:0.85rem }
+.stat-value { font-weight:800; font-size:1.25rem; color:#333333 }
 .pl-main { min-width:0 }
 
 /* compact ProductList overrides when embedded */
 ProductList[compact] { width:100% }
 
 /* Profile card styles (restored owner look) */
-.profile-card { background: rgba(255,244,230,0.92); border-radius: 14px; padding: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.06); display:flex; flex-direction:column; gap:12px }
+.profile-card { background: #ffffff; border-radius: 14px; padding: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.06); display:flex; flex-direction:column; gap:12px }
 .profile-avatar { display:flex; justify-content:center }
-.avatar-circle { width:72px; height:72px; border-radius:50%; background: linear-gradient(180deg,#ff7a18,#ff6a3d); color:white; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:1.25rem; border:4px solid rgba(255,244,230,0.9) }
+.avatar-circle { width:72px; height:72px; border-radius:50%; background: linear-gradient(180deg,#ff9a4b,#ff7043); color:white; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:1.25rem; border:4px solid rgba(255,255,255,0.9) }
 .profile-info { text-align:center }
 .profile-role { font-size:0.75rem; color:#8a4b1a; font-weight:700 }
 .profile-name { font-size:1.05rem; font-weight:800; color:#7a2b00 }
 .profile-sub { font-size:0.8rem; color:#a65a2a }
-.profile-box { background: rgba(255,255,255,0.6); padding:12px; border-radius:10px; display:flex; flex-direction:column; gap:8px; align-items:center }
-.account-id { color:#7a2b00; font-weight:700 }
-.btn-info-small { padding:6px 12px; border-radius:999px; background: #ffb686; border:none; color:#7a2b00 }
+.profile-box { background: #ffffff; padding:12px; border-radius:10px; display:flex; flex-direction:column; gap:8px; align-items:center }
+.account-id { color:#333333; font-weight:700 }
+.btn-info-small { padding:6px 12px; border-radius:999px; background: #f0f0f0; border:none; color:#333333 }
 .qr-placeholder { width:84px; height:84px; border-radius:8px; border:2px dashed rgba(255,211,107,0.6); display:flex; align-items:center; justify-content:center; color:#7a2b00 }
 .profile-actions { display:flex; flex-direction:column; gap:10px }
 .small-stats { display:flex; justify-content:space-between; gap:12px }
@@ -1074,12 +992,13 @@ ProductList[compact] { width:100% }
 
 /* Attendance Card Styles */
 .attendance-card {
-  background: rgba(255,255,255,0.7);
+  background: #ffffff;
   border-radius: 10px;
   padding: 12px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
 }
 
 /* Pending/History centered section */
@@ -1091,6 +1010,27 @@ ProductList[compact] { width:100% }
 .pending-table thead th, .history-table thead th { font-weight:700; font-size:0.9rem }
 .pending-table tbody tr:last-child td, .history-table tbody tr:last-child td { border-bottom:none }
 .history-box { max-height:360px; overflow:auto }
+
+/* Pending confirmations box styling */
+.pending-box {
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 360px;
+  min-height: 120px;
+  margin: 0 auto;
+}
+.pending-box h3 { margin: 0 0 10px; color: #7a2b00; font-size: 1.05rem; font-weight:700 }
+.pending-box .empty-text { color: #6b6b6b; font-size:1rem; padding: 0 }
+.pending-table { width:100%; border-collapse:collapse; margin-top:8px }
+.pending-table th { font-size:0.85rem; color:#6b6b6b; padding:8px 6px; text-align:left }
+.pending-table td { font-size:0.95rem; padding:8px 6px; border-bottom:1px solid rgba(0,0,0,0.04) }
+.pending-table button.btn-primary { padding:6px 10px; font-size:0.88rem }
 
 /* Inventory Summary Cards - below Attendance card */
 .inventory-summary {
@@ -1114,7 +1054,7 @@ ProductList[compact] { width:100% }
 
 .attendance-title {
   font-weight: 700;
-  color: #7a2b00;
+  color: #333333;
   font-size: 0.9rem;
 }
 
@@ -1271,12 +1211,12 @@ ProductList[compact] { width:100% }
 
 .info-modal h3 {
   margin: 0 0 8px;
-  color: #7a2b00;
+  color: #333333;
 }
 
 .info-sub {
   margin: 0 0 16px;
-  color: #8a4b1a;
+  color: #6b6b6b;
   font-size: 0.9rem;
 }
 
@@ -1304,7 +1244,7 @@ ProductList[compact] { width:100% }
 
 .info-input {
   padding: 8px 12px;
-  border: 1px solid rgba(255,211,107,0.4);
+  border: 1px solid rgba(0,0,0,0.08);
   border-radius: 6px;
   width: 200px;
 }
@@ -1333,10 +1273,10 @@ ProductList[compact] { width:100% }
 
 .btn-outline {
   padding: 8px 16px;
-  border: 1px solid rgba(255,211,107,0.4);
+  border: 1px solid rgba(0,0,0,0.08);
   border-radius: 6px;
   background: transparent;
-  color: #7a2b00;
+  color: #333333;
   cursor: pointer;
 }
 
@@ -1344,7 +1284,7 @@ ProductList[compact] { width:100% }
   padding: 8px 16px;
   border: none;
   border-radius: 6px;
-  background: linear-gradient(180deg,#ff7a18,#ff6a3d);
+  background: linear-gradient(180deg,#ff8a4b,#ff7043);
   color: white;
   cursor: pointer;
 }
@@ -1359,4 +1299,36 @@ ProductList[compact] { width:100% }
 .fade-leave-to {
   opacity: 0;
 }
+
+/* Header profile dropdown */
+.header-profile-wrapper { position: relative; display: inline-block }
+.profile-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(2,6,23,0.12);
+  padding: 6px;
+  z-index: 1200;
+  min-width: 140px;
+}
+.profile-dropdown .dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  text-align: left;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.profile-dropdown .dropdown-item:hover { background: #f5f5f5 }
+
+/* header profile button (match Manager panels) - ensure styles apply inside OwnerPanelLayout slot */
+:deep(.header-actions-top .header-profile-btn) { border: 1px solid rgba(0,0,0,0.08); background: #fff; padding: 6px 10px; border-radius: 8px; display:flex; gap:8px; align-items:center }
+:deep(.header-actions-top .header-avatar) { width:36px; height:36px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; background:#f3f4f6; margin-right:8px }
+:deep(.header-actions-top .header-avatar-img) { width:100%; height:100%; background-size:cover; background-position:center }
+:deep(.header-actions-top .header-avatar-initials) { font-weight:700; color:#374151 }
+:deep(.header-actions-top .header-name) { font-size: 0.8rem; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; max-width: 320px }
 </style>

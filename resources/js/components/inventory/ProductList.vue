@@ -87,9 +87,45 @@
                   </tr>
                 </tbody>
               </table>
+
+              <!-- Insert Confirmed Stock History under the "Uncategorized" group -->
+              <template v-if="cat === 'Uncategorized'">
+                <div class="history-box" style="margin-top:12px;">
+                  <h3>Confirmed Stock History</h3>
+                  <div>
+                    <table class="history-table">
+                      <thead>
+                        <tr>
+                          <th>ID</th>
+                          <th>Product</th>
+                          <th>Quantity</th>
+                          <th>Confirmed By</th>
+                          <th>When</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr><td>60</td><td>pepper</td><td>10</td><td>Vince Hannibal Bido</td><td>3/28/2026, 5:42:51 PM</td></tr>
+                        <tr><td>57</td><td>Water Bottle</td><td>20</td><td>Vince Hannibal Bido</td><td>3/27/2026, 5:33:15 AM</td></tr>
+                        <tr><td>58</td><td>Flour</td><td>1</td><td>Vince Hannibal Bido</td><td>3/27/2026, 5:33:12 AM</td></tr>
+                        <tr><td>56</td><td>Seaweeds</td><td>40</td><td>Vince Hannibal Bido</td><td>3/27/2026, 4:43:41 AM</td></tr>
+                        <tr><td>53</td><td>Salt</td><td>5</td><td>Vince Hannibal Bido</td><td>3/27/2026, 4:36:57 AM</td></tr>
+                        <tr><td>54</td><td>frozen hot Dogs</td><td>5</td><td>Vince Hannibal Bido</td><td>3/27/2026, 4:28:47 AM</td></tr>
+                        <tr><td>55</td><td>Flour</td><td>1</td><td>Procurement Manager - Dasma Branch</td><td>3/27/2026, 3:46:07 AM</td></tr>
+                        <tr><td>52</td><td>Water Bottle</td><td>10</td><td>Procurement Manager - Dasma Branch</td><td>3/26/2026, 6:17:23 PM</td></tr>
+                        <tr><td>51</td><td>Flour</td><td>4</td><td>Procurement Manager - Dasma Branch</td><td>3/26/2026, 4:36:33 PM</td></tr>
+                        <tr><td>44</td><td>Seaweeds</td><td>10</td><td>Procurement Manager - Dasma Branch</td><td>3/26/2026, 4:20:05 PM</td></tr>
+                        <tr><td>48</td><td>Salt</td><td>10</td><td>Procurement Manager - Dasma Branch</td><td>3/24/2026, 5:16:08 PM</td></tr>
+                        <tr><td>46</td><td>Flour</td><td>10</td><td>Procurement Manager - Dasma Branch</td><td>3/24/2026, 3:58:46 PM</td></tr>
+                        <tr><td>45</td><td>frozen hot Dogs</td><td>10</td><td>Procurement Manager - Dasma Branch</td><td>3/24/2026, 3:43:03 PM</td></tr>
+                        <tr><td>30</td><td>Samjang</td><td>50</td><td>Procurement Manager - Dasma Branch</td><td>3/22/2026, 7:42:33 PM</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </template>
             </div>
           </div>
-          
+
           <!-- Regular table view (no grouping) -->
           <div v-else>
             <table class="pl-table" role="table" aria-label="Product list table">
@@ -144,6 +180,8 @@
               <option :value="50">50 / page</option>
             </select>
           </div>
+
+
         </section>
 
         <!-- Mobile: show card layout when screen narrow or if table not ideal -->
@@ -223,7 +261,7 @@ async function fetchProducts() {
   try {
     console.debug('[ProductList] Fetching from:', props.fetchUrl)
     const res = await fetch(props.fetchUrl, { credentials: 'same-origin' })
-    
+
     console.debug('[ProductList] Response status:', res.status)
 
     // Validate JSON response before parsing
@@ -425,10 +463,10 @@ function getExpiryClass(product) {
     tomorrow.setDate(tomorrow.getDate() + 1)
     const weekFromNow = new Date(today)
     weekFromNow.setDate(weekFromNow.getDate() + 7)
-    
+
     today.setHours(0, 0, 0, 0)
     expiryDate.setHours(0, 0, 0, 0)
-    
+
     if (expiryDate < today) return 'expiry-expired'
     if (expiryDate <= tomorrow) return 'expiry-critical'
     if (expiryDate <= weekFromNow) return 'expiry-warning'
@@ -450,7 +488,7 @@ defineExpose({ fetchProducts, getStats, setQuery, setStockFilter, setCategoryFil
   gap: 18px;
   align-items: start;
   padding: 18px;
-  background: linear-gradient(180deg,#FF9A4A 0%,#FF6A3D 100%);
+  background: transparent;
   color: #3b2b20;
 }
 
@@ -605,5 +643,27 @@ defineExpose({ fetchProducts, getStats, setQuery, setStockFilter, setCategoryFil
 .pl-row.expired { background: #fef2f2 !important }
 .pl-row.expired .col-name .name { color: #991b1b }
 
+</style>
+
+<style scoped>
+/* Confirmed Stock History styles */
+.history-box {
+  background: #ffffff;
+  padding: 12px;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  margin-top: 12px;
+  max-height: 340px;
+  overflow: auto;
+}
+.history-box h3 { margin: 0 0 8px; color: #7a2b00; font-size: 1rem }
+.history-table { width: 100%; border-collapse: collapse; font-family: inherit }
+.history-table thead th { text-align: left; padding: 10px; border-bottom: 1px solid #eef2f7; color: #0b213f; font-weight: 700; font-size: 0.9rem }
+.history-table td, .history-table th { padding: 8px; border-bottom: 1px solid rgba(0,0,0,0.06); vertical-align: middle; font-size: 0. ninerem }
+.history-table tbody tr:last-child td { border-bottom: none }
+
+@media (max-width: 880px) {
+  .history-box { max-height: none; }
+}
 </style>
 
