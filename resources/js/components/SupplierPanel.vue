@@ -385,20 +385,14 @@
   </transition>
 
   <!-- FULLSCREEN LOADING OVERLAY -->
-  <transition name="fade">
-    <div v-if="showOverlay" class="loading-overlay">
-      <div class="logo-loading-box">
-        <img :src="logoImg" alt="Chikin Tayo" class="logo-loading-img" />
-        <p>{{ overlayText }}</p>
-      </div>
-    </div>
-  </transition>
+  <LoadingOverlay :show="showOverlay" :text="overlayText" :logo-src="logoImg" />
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import LogisticsPanelContent from './logistics/LogisticsPanelContent.vue'
+import LoadingOverlay from './LoadingOverlay.vue'
 import axios from 'axios'
 import { showToast } from './toastStore'
 

@@ -717,23 +717,17 @@
       </transition>
 
       <!-- FULLSCREEN LOADING OVERLAY -->
-      <transition name="fade">
-        <div v-if="showOverlay" class="loading-overlay">
-          <div class="logo-loading-box">
-            <img :src="logoImg" alt="Chikin Tayo" class="logo-loading-img" />
-            <p>{{ overlayText }}</p>
-          </div>
-        </div>
-      </transition>
+      <LoadingOverlay :show="showOverlay" :text="overlayText" :logo-src="logoImg" />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { createApp, h, ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import '../css/adminpanel.css'
+import LoadingOverlay from './LoadingOverlay.vue'
 import { Chart } from 'vue-chartjs'
 import {
   Chart as ChartJS,
@@ -1087,12 +1081,7 @@ async function loadDashboard(range) {
   } finally {
     isLoadingDashboard.value = false
     // Remove any temporary global overlay created by previous route
-    try {
-      if (window.__chikin_temp_overlay) {
-        window.__chikin_temp_overlay.remove()
-        window.__chikin_temp_overlay = null
-      }
-    } catch (e) {}
+    clearTemporaryOverlay()
 
     // Hide global page blur (if using the pageBlur helper)
     try { if (window.pageBlur && typeof window.pageBlur.hide === 'function') window.pageBlur.hide() } catch (e) {}
@@ -1313,12 +1302,7 @@ onMounted(async () => {
   }
 
   // Remove loading overlay after content is loaded
-  try {
-    if (window.__chikin_temp_overlay) {
-      window.__chikin_temp_overlay.remove()
-      window.__chikin_temp_overlay = null
-    }
-  } catch (e) {}
+  clearTemporaryOverlay()
 
   // Hide global page blur if present
   try { if (window.pageBlur && typeof window.pageBlur.hide === 'function') window.pageBlur.hide() } catch (e) {}
@@ -1380,6 +1364,44 @@ const announcementError = ref('')
 const announcementSuccess = ref('')
 const isSendingAnnouncement = ref(false)
 
+function clearTemporaryOverlay() {
+  try {
+    const overlayHost = window.__chikin_temp_overlay
+    if (!overlayHost) return
+    const overlayApp = overlayHost.__loadingOverlayApp
+    if (overlayApp && typeof overlayApp.unmount === 'function') {
+      overlayApp.unmount()
+    }
+    overlayHost.remove()
+    window.__chikin_temp_overlay = null
+  } catch (e) {}
+}
+
+function mountTemporaryOverlay(message) {
+  try {
+    if (window.__chikin_temp_overlay) return false
+
+    const overlayHost = document.createElement('div')
+    const overlayApp = createApp({
+      render() {
+        return h(LoadingOverlay, {
+          show: true,
+          text: message,
+          logoSrc: logoImg,
+        })
+      },
+    })
+
+    overlayApp.mount(overlayHost)
+    overlayHost.__loadingOverlayApp = overlayApp
+    document.body.appendChild(overlayHost)
+    window.__chikin_temp_overlay = overlayHost
+    return true
+  } catch (e) {
+    return false
+  }
+}
+
 function closeAnnouncementModal() {
   showAnnouncement.value = false
   announcementTitle.value = ''
@@ -1425,20 +1447,7 @@ async function sendAnnouncement() {
 function goToStaffManagement() {
   if (ownerProfile.value.role === 'STAFF') return
   try {
-    if (window.__chikin_temp_overlay) return
-    const overlay = document.createElement('div')
-    overlay.className = 'loading-overlay __chikin_temp_overlay'
-    overlay.style.zIndex = '9999'
-    overlay.style.backdropFilter = 'blur(8px)'
-    overlay.style.webkitBackdropFilter = 'blur(8px)'
-    overlay.innerHTML = `
-      <div class="logo-loading-box">
-        <img src="${logoImg}" alt="Chikin Tayo" class="logo-loading-img" />
-        <p>Opening Staff Management...</p>
-      </div>
-    `
-    document.body.appendChild(overlay)
-    window.__chikin_temp_overlay = overlay
+    if (!mountTemporaryOverlay('Opening Staff Management...')) return
     try { if (window.pageBlur && typeof window.pageBlur.show === 'function') window.pageBlur.show() } catch (e) {}
     setTimeout(() => {
       try {
@@ -1455,20 +1464,7 @@ function goToStaffManagement() {
 function goToDishApproval() {
   if (ownerProfile.value.role !== 'OWNER') return
   try {
-    if (window.__chikin_temp_overlay) return
-    const overlay = document.createElement('div')
-    overlay.className = 'loading-overlay __chikin_temp_overlay'
-    overlay.style.zIndex = '9999'
-    overlay.style.backdropFilter = 'blur(8px)'
-    overlay.style.webkitBackdropFilter = 'blur(8px)'
-    overlay.innerHTML = `
-      <div class="logo-loading-box">
-        <img src="${logoImg}" alt="Chikin Tayo" class="logo-loading-img" />
-        <p>Opening Dish Approval...</p>
-      </div>
-    `
-    document.body.appendChild(overlay)
-    window.__chikin_temp_overlay = overlay
+    if (!mountTemporaryOverlay('Opening Dish Approval...')) return
     try { if (window.pageBlur && typeof window.pageBlur.show === 'function') window.pageBlur.show() } catch (e) {}
     setTimeout(() => {
       try {
@@ -1485,20 +1481,7 @@ function goToDishApproval() {
 function goToPriceMarkupApprovals() {
   if (ownerProfile.value.role !== 'OWNER') return
   try {
-    if (window.__chikin_temp_overlay) return
-    const overlay = document.createElement('div')
-    overlay.className = 'loading-overlay __chikin_temp_overlay'
-    overlay.style.zIndex = '9999'
-    overlay.style.backdropFilter = 'blur(8px)'
-    overlay.style.webkitBackdropFilter = 'blur(8px)'
-    overlay.innerHTML = `
-      <div class="logo-loading-box">
-        <img src="${logoImg}" alt="Chikin Tayo" class="logo-loading-img" />
-        <p>Opening Price Markup Approvals...</p>
-      </div>
-    `
-    document.body.appendChild(overlay)
-    window.__chikin_temp_overlay = overlay
+    if (!mountTemporaryOverlay('Opening Price Markup Approvals...')) return
     try { if (window.pageBlur && typeof window.pageBlur.show === 'function') window.pageBlur.show() } catch (e) {}
     setTimeout(() => {
       try {

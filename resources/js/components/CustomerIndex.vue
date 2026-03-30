@@ -1,7 +1,7 @@
 <template>
 	<div>
 		<nav class="customer-top-nav" aria-label="Top navigation">
-		  <button class="nav-btn" @click="goToStaffLanding" aria-label="Go to Staff Landing">Staff Landing</button>
+		  <button class="nav-btn" @click="goToStaffLanding" aria-label="Go to Staff Landing"><span class="sr-only">Staff Landing</span></button>
 		</nav>
 		<IndexComponent />
 	</div>
@@ -37,21 +37,41 @@ onUnmounted(() => {
 	align-items:center;
 }
 .nav-btn {
-	background: #ffffff22; /* subtle translucent */
-	backdrop-filter: blur(6px);
-	color: #fff;
-	border: 1px solid rgba(255,255,255,0.12);
-	padding: 8px 12px;
-	border-radius: 8px;
-	font-weight:600;
+	background: transparent;
+	backdrop-filter: none;
+	color: transparent;
+	border: none;
+	padding: 0;
+	width: 130px;
+	height: 48px;
+	border-radius: 0;
+	font-weight: 400;
 	cursor: pointer;
-	box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+	box-shadow: none;
+	transition: none;
 }
-.nav-btn:hover { transform: translateY(-1px); box-shadow:0 6px 18px rgba(0,0,0,0.12); }
-.nav-btn:active { transform: translateY(0); }
+.nav-btn:hover,
+.nav-btn:active,
+.nav-btn:focus,
+.nav-btn:focus-visible {
+	background: transparent;
+	border: none;
+	box-shadow: none;
+	outline: none;
+	color: transparent;
+	transform: none;
+	filter: none;
+}
 
-/* Make the button more visible on light sections */
-@media (prefers-color-scheme: light) {
-	.nav-btn { background: #f59e42; border-color: rgba(0,0,0,0.06); }
+.sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
 }
 </style>

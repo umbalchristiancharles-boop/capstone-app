@@ -369,8 +369,8 @@ function formatDate(dateString) {
 
 <style scoped>
 .staff-management-page {
-  padding: 2rem;
-  background: linear-gradient(180deg, #ff8c42 0%, #ff6b1c 100%);
+  padding: 30px;
+  background-color: #F8FAFC;
   min-height: 100vh;
 }
 
@@ -379,22 +379,53 @@ function formatDate(dateString) {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
-  background: rgba(255,255,255,0.18);
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.staff-management-page h1,
+.staff-management-page h2 {
+  font-family: 'Inter', 'Poppins', sans-serif;
+  font-weight: 800;
+  color: var(--text-dark);
+}
+
+.admin-label, .metric-label, .overview-label, .branch-count {
+  color: #64748B !important;
+}
+
+.avatar-change-text {
+  color: var(--text-dark) !important;
+}
+
+.btn-primary {
+  background: #0066FF !important;
+  color: white !important;
+}
+
+.btn-primary:hover {
+  background: #0057e6 !important;
+}
+
+.btn-secondary, .btn-outline {
+  background: #64748B !important;
+  color: white !important;
+}
+
+.btn-secondary:hover, .btn-outline:hover {
+  background: #525c6a !important;
 }
 
 .staff-header h1 {
   margin: 0;
-  color: #000;
   font-size: 2.5rem;
   font-weight: 700;
   letter-spacing: -1px;
 }
 
 .owner-staff-title {
-  color: var(--text-dark) !important;
   font-family: 'Inter', 'Poppins', sans-serif !important;
   font-weight: 800 !important;
   letter-spacing: -0.5px !important;
@@ -407,52 +438,53 @@ function formatDate(dateString) {
 }
 
 .filter-select {
-  padding: 0.45rem 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  background: #fff;
+  padding: 0.75rem 1rem;
+  border: 1px solid #D1D5DB;
+  border-radius: 8px;
+  background: white;
   font-size: 0.9rem;
 }
 
 .search-input {
-  padding: 0.5rem 1rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  border: 1px solid #D1D5DB;
+  border-radius: 8px;
   font-size: 0.9rem;
-  width: 250px;
+  width: 280px;
 }
 
 .search-input:focus {
   outline: none;
-  border-color: #FF9A4A;
-  box-shadow: 0 0 0 3px rgba(255, 154, 74, 0.1);
+  border-color: #0066FF;
+  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
 }
 
 .btn-primary, .btn-success, .btn-secondary, .btn-info, .btn-danger {
-  padding: 0.5rem 1rem;
+  padding: 8px 16px;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 0.9rem;
-  transition: all 0.3s ease;
+  font-weight: 600;
+  transition: background 0.3s ease;
 }
 
 .btn-primary {
-  background: #ff9f43;
-  color: #fff;
+  background: #0066FF;
+  color: white;
 }
 
 .btn-primary:hover {
-  background: #fabd83;
+  background: #3B82F6;
 }
 
 .btn-success {
-  background: #28a745;
-  color: #fff;
+  background: #10B981;
+  color: white;
 }
 
 .btn-success:hover {
-  background: #218838;
+  background: #059669;
 }
 
 .btn-secondary {
@@ -465,25 +497,27 @@ function formatDate(dateString) {
 }
 
 .btn-info {
-  background: #17a2b8;
-  color: #fff;
+  background: #3B82F6;
+  color: white;
   padding: 0.35rem 0.7rem;
   font-size: 0.8rem;
+  border-radius: 6px;
 }
 
 .btn-info:hover {
-  background: #138496;
+  background: #2563EB;
 }
 
 .btn-danger {
-  background: #dc3545;
-  color: #fff;
+  background: #EF4444;
+  color: white;
   padding: 0.35rem 0.7rem;
   font-size: 0.8rem;
+  border-radius: 6px;
 }
 
 .btn-danger:hover {
-  background: #c82333;
+  background: #DC2626;
 }
 
 .btn-sm {
@@ -496,8 +530,10 @@ function formatDate(dateString) {
   align-items: center;
   gap: 0.5rem;
   margin-bottom: 1rem;
-  padding: 0.5rem 1rem;
+  padding: 8px 16px;
   font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 8px;
 }
 
 .back-icon {
@@ -505,10 +541,10 @@ function formatDate(dateString) {
 }
 
 .summary-card {
-  background: rgba(255,255,255,0.18);
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
   margin-bottom: 2rem;
 }
 
@@ -522,15 +558,47 @@ function formatDate(dateString) {
 }
 
 .branch-info {
-  margin: 0.5rem 0 0 0;
-  color: #ffffff;
+  margin-top: 8px;
   font-size: 0.95rem;
+  color: #64748B;
+  font-weight: 500;
+}
+
+.branch-group {
+  margin-bottom: 2rem;
+}
+
+.branch-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1rem 1.5rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  border-left: 4px solid #0066FF;
+}
+
+.branch-title {
+  margin: 0;
+  color: #222;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.branch-count {
+  color: #555;
+  font-size: 0.95rem;
+  background: rgba(255, 255, 255, 0.4);
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
 }
 
 .staff-table-wrapper {
-  background: rgba(255,255,255,0.18);
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
   overflow: hidden;
 }
 
@@ -539,27 +607,23 @@ function formatDate(dateString) {
   border-collapse: collapse;
 }
 
-.staff-table thead {
-  background: rgba(255,255,255,0.22);
-  border-bottom: 2px solid #dee2e6;
-}
-
 .staff-table th {
+  background: #EFF6FF;
+  color: #1E3A8A;
+  font-weight: 600;
   padding: 1rem;
   text-align: left;
-  font-weight: 600;
   color: #222;
-  font-size: 0.9rem;
 }
 
 .staff-table td {
+  border-bottom: 1px solid #E5E7EB;
   padding: 1rem;
-  border-bottom: 1px solid #dee2e6;
-  color: #222;
+  color: #374151;
 }
 
 .staff-table tbody tr:hover {
-  background: rgba(255,255,255,0.14);
+  background: rgba(255, 255, 255, 0.14);
 }
 
 .staff-table tbody tr.inactive {
@@ -582,20 +646,22 @@ function formatDate(dateString) {
 
 .badge {
   display: inline-block;
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
+  background: #FACC15;
+  color: #1F2937;
+  border-radius: 6px;
+  padding: 4px 10px;
   font-size: 0.8rem;
   font-weight: 600;
 }
 
 .badge-online {
-  background: #28a745;
-  color: #ffffff;
+  background: #10B981;
+  color: white;
 }
 
 .badge-offline {
-  background: #6c757d;
-  color: #ffffff;
+  background: #6B7280;
+  color: white;
 }
 
 .actions {
@@ -607,8 +673,9 @@ function formatDate(dateString) {
   text-align: center;
   padding: 3rem;
   background: white;
-  border-radius: 8px;
-  color: #444;
+  border-radius: 12px;
+  color: #6B7280;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
 .alert {
@@ -618,9 +685,9 @@ function formatDate(dateString) {
 }
 
 .alert-danger {
-  background: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
+  background: #FEF2F2;
+  color: #DC2626;
+  border: 1px solid #FECACA;
 }
 
 @media (max-width: 768px) {

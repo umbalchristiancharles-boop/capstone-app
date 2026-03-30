@@ -75,6 +75,7 @@ Route::middleware('web')->group(function () {
     });
 
     Route::get('/me',               [AuthController::class, 'me'])->middleware('auth');
+    Route::get('/panel-descriptions', [ConfigController::class, 'panelDescriptions'])->middleware('auth');
     Route::get('/owner-profile',    [AuthController::class, 'ownerProfile'])->middleware('auth');
     Route::put('/owner-profile',    [AuthController::class, 'updateOwnerProfile'])->middleware('auth');
     Route::post('/upload-avatar',   [AuthController::class, 'uploadAvatar'])->middleware('auth');

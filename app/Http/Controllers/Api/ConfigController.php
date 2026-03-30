@@ -31,4 +31,26 @@ class ConfigController extends Controller
             return response()->json(['success' => false, 'message' => 'Failed to fetch config'], 500);
         }
     }
+
+    /**
+     * Return panel descriptions from shared configuration.
+     */
+    public function panelDescriptions(Request $request)
+    {
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['success' => false, 'message' => 'Not authenticated'], 401);
+        }
+
+        try {
+            $descriptions = config('panel_descriptions', []);
+            return response()->json([
+                'success' => true,
+                'descriptions' => is_array($descriptions) ? $descriptions : [],
+            ]);
+        } catch (\Exception $e) {
+            Log::warning('Could not fetch panel descriptions: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Failed to fetch panel descriptions'], 500);
+        }
+    }
 }

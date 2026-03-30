@@ -1,23 +1,11 @@
 <template>
   <main class="page">
     <!-- CHIKIN TAYO LOADING OVERLAY PAG CLICK NG LOGIN -->
-    <transition name="fade">
-      <div v-if="showLoginLoader" class="mr-loader-overlay">
-        <div class="mr-loader-box">
-          <img :src="mrLoaderImg" alt="Loading" class="mr-loader-img" />
-          <p>{{ loaderText }}</p>
-        </div>
-      </div>
-    </transition>
+    <LoadingOverlay :show="showLoginLoader" :text="loaderText" :logo-src="mrLoaderImg" />
 
     <section class="hero" id="scaffold-1">
       <!-- LEFT content -->
       <div class="hero-left">
-        <div class="badge">
-          <span class="badge-dot"></span>
-          <span>Admin Control Center</span>
-        </div>
-
         <h1>
           <span class="highlight-korean">Your Korean Snack & Fun Stop!</span> <br>
           <span>WELCOME TO CHIKIN TAYO!</span>
@@ -49,6 +37,15 @@
       >
         <span class="scroll-down-icon">↓</span>
         <span class="scroll-down-text">Ratings and Comments</span>
+      </button>
+
+      <button
+        type="button"
+        class="hero-staff-landing-hitbox"
+        @click="goToAdminLogin"
+        aria-label="Go to Staff Landing"
+      >
+        <span class="sr-only">Staff Landing</span>
       </button>
     </section>
 
@@ -507,6 +504,7 @@
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import axios from 'axios'
 import { useRouter, RouterLink } from 'vue-router'
+import LoadingOverlay from './LoadingOverlay.vue'
 
 const router = useRouter()
 const showLoginLoader = ref(false)

@@ -1,4 +1,4 @@
-import { createApp } from 'vue'
+import { createApp, h, ref } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import App from './app.vue'
 import CustomerIndex from './components/CustomerIndex.vue'
@@ -16,6 +16,7 @@ import ManagerHRStaffManagement from './components/ManagerHRStaffManagement.vue'
 import ManagerProcurementPanel from './components/ProcurementManagerPanel.vue'
 import StaffCashierPanel from './components/StaffCashierPanel.vue'
 import SuperAdmin from './components/SuperAdmin.vue'
+import LoadingOverlay from './components/LoadingOverlay.vue'
 const CustomPanel = () => import('./components/CustomPanel.vue')
 import axios from 'axios'
 
@@ -353,33 +354,61 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // --- Global route loading overlay ---
 const routeLogoUrl = new URL('./assets/chikinlogo.png', import.meta.url).href
+const routeOverlayState = {
+  app: null,
+  host: null,
+  isVisible: null,
+}
 
 function showRouteOverlay(text = 'Loading...') {
   try {
-    if (window.__chikin_temp_overlay || window.__route_loading_overlay) return
-    if (document.querySelector('.route-loading-overlay')) return
-    const overlay = document.createElement('div')
-    overlay.className = 'route-loading-overlay'
-    overlay.innerHTML = `
-      <div class="logo-loading-box">
-        <img src="${routeLogoUrl}" alt="Chikin Tayo" class="logo-loading-img" />
-        <p>${text}</p>
-      </div>
-    `
-    document.body.appendChild(overlay)
-    window.__route_loading_overlay = overlay
-    requestAnimationFrame(() => overlay.classList.add('active'))
+    if (window.__chikin_temp_overlay || routeOverlayState.app) return
+
+    const overlayHost = document.createElement('div')
+    const isVisible = ref(false)
+    const overlayText = ref(text)
+    const overlayApp = createApp({
+      render() {
+        return h(LoadingOverlay, {
+          show: isVisible.value,
+          text: overlayText.value,
+          logoSrc: routeLogoUrl,
+        })
+      },
+    })
+
+    overlayApp.mount(overlayHost)
+    document.body.appendChild(overlayHost)
+
+    routeOverlayState.app = overlayApp
+    routeOverlayState.host = overlayHost
+    routeOverlayState.isVisible = isVisible
+    window.__route_loading_overlay = overlayHost
+
+    requestAnimationFrame(() => {
+      isVisible.value = true
+    })
   } catch (e) {}
 }
 
 function hideRouteOverlay() {
   try {
-    const overlay = window.__route_loading_overlay
-    if (!overlay) return
-    overlay.classList.remove('active')
+    if (!routeOverlayState.app || !routeOverlayState.host || !routeOverlayState.isVisible) return
+
+    routeOverlayState.isVisible.value = false
+
     setTimeout(() => {
-      try { overlay.remove() } catch (e) {}
-      if (window.__route_loading_overlay === overlay) {
+      const overlayHost = routeOverlayState.host
+      const overlayApp = routeOverlayState.app
+
+      try { overlayApp.unmount() } catch (e) {}
+      try { overlayHost.remove() } catch (e) {}
+
+      routeOverlayState.app = null
+      routeOverlayState.host = null
+      routeOverlayState.isVisible = null
+
+      if (window.__route_loading_overlay === overlayHost) {
         window.__route_loading_overlay = null
       }
     }, 480)
