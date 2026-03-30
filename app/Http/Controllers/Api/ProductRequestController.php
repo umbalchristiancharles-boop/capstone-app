@@ -63,8 +63,8 @@ class ProductRequestController extends Controller
         $role = strtoupper($user->role ?? '');
         $dept = strtoupper($user->department ?? '');
 
-        // Only logistics managers can request new products
-        $isLogistics = in_array($role, ['LOGISTICS_MANAGER', 'MANAGER_LOGISTICS']) || ($role === 'MANAGER' && $dept === 'LOGISTICS');
+        // Allow logistics managers and inventory staff to request new products
+        $isLogistics = in_array($role, ['LOGISTICS_MANAGER', 'MANAGER_LOGISTICS']) || ($role === 'MANAGER' && $dept === 'LOGISTICS') || ($role === 'STAFF' && $dept === 'INVENTORY');
         if (!$isLogistics) {
             return response()->json(['error' => 'Only logistics managers can request new products'], 403);
         }

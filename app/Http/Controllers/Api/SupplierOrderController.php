@@ -29,6 +29,7 @@ class SupplierOrderController extends Controller
 
             $query = SupplierOrder::with(['product', 'procurementRequest.logisticsUser', 'branch'])
                 ->where('supplier_id', $user->id)
+                ->orderBy('updated_at', 'desc')
                 ->orderBy('created_at', 'desc');
 
             $orders = $query->paginate(20);
@@ -164,7 +165,12 @@ class SupplierOrderController extends Controller
                 ]);
                 Log::info('submitProduct: product created successfully', ['product_id' => $product->id, 'saved_category' => $product->category]);
             }
-
+            // Recompute persisted real_stock for this product group (branch + sku/name)
+            try {
+                \App\Models\Product::recomputeRealStockForGroup($order->branch_id, $product->sku, $product->name);
+            } catch (\Exception $e) {
+                Log::warning('Failed to recompute real_stock after supplier submitProduct', ['error' => $e->getMessage(), 'product_id' => $product->id, 'order_id' => $order->id]);
+            }
             // Attach product to supplier order
             $order->update(['product_id' => $product->id]);
 
@@ -247,17 +253,14 @@ class SupplierOrderController extends Controller
                         
                         try {
                             if ($newStatus === 'fulfilled') {
-                                // Finalize procurement: increment stock and mark procurement completed
-                                if ($proc->product) {
-                                    Log::info('Incrementing product stock', ['product_id' => $proc->product->id, 'quantity' => $proc->quantity]);
-                                    $proc->product->increment('stock', $proc->quantity);
-                                    $proc->product->update(['has_been_ordered' => true, 'logistics_request_available' => false]);
+                                // Supplier marked order fulfilled. Do NOT increment product stock here.
+                                // Inventory should only be updated when logistics staff confirm delivered quantities.
+                                if ($proc) {
+                                    Log::info('Marking procurement awaiting inventory confirmation (supplier fulfilled)', ['proc_id' => $proc->id]);
+                                    $proc->update(['status' => 'awaiting_inventory_confirmation']);
                                 } else {
-                                    Log::warning('No product found for procurement', ['proc_id' => $proc->id]);
+                                    Log::warning('No procurement found for supplier order', ['order_id' => $order->id]);
                                 }
-
-                                $proc->update(['status' => 'completed']);
-                                Log::info('ProcurementRequest completed', ['proc_id' => $proc->id]);
                             } else {
                                 // Supplier indicates items are on delivery -> map to an allowed procurement status
                                 // Map supplier's 'on_delivery' to procurement status 'ongoing_delivery'

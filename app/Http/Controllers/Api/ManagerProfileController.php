@@ -761,7 +761,8 @@ public function logisticsBranches(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
 
-        if (!$this->allowManagerDept($user, 'logistics')) {
+        // Allow logistics managers OR procurement managers to list suppliers
+        if (!($this->allowManagerDept($user, 'logistics') || $this->allowManagerDept($user, 'procurement'))) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
@@ -800,9 +801,11 @@ public function logisticsBranches(Request $request)
         if ($this->isMainBranchLogisticsManager($user) && $request->filled('branch_id')) {
             $branchId = (int) $request->input('branch_id');
         }
-        $suppliers = \App\Models\User::where('role', 'SUPPLIER')
+        // Match supplier role case-insensitively and ensure active users
+        $suppliers = \App\Models\User::whereRaw('UPPER(COALESCE(role, "")) = ?', ['SUPPLIER'])
             ->when($branchId, function ($q) use ($branchId) { return $q->where('branch_id', $branchId); })
             ->whereNull('deleted_at')
+            ->where('is_active', 1)
             ->select('id', 'username', 'full_name', 'email', 'phone_number')
             ->orderBy('full_name')
             ->get();

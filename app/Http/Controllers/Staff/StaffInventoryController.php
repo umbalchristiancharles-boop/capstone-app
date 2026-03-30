@@ -14,6 +14,7 @@ use App\Models\ProcurementRequest;
 use App\Models\SupplierOrder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Models\Product as ProductModel;
 
 class StaffInventoryController extends Controller
 {
@@ -198,7 +199,7 @@ class StaffInventoryController extends Controller
                 ->where('branch_id', $branchId)
                 ->exists();
         } catch (\Exception $e) {
-            \Log::warning('Failed to check if product is kitchen dish', ['error' => $e->getMessage()]);
+            Log::warning('Failed to check if product is kitchen dish', ['error' => $e->getMessage()]);
             $isKitchenDish = false;
         }
 
@@ -219,6 +220,13 @@ class StaffInventoryController extends Controller
             'is_active' => true,
             'is_kitchen_dish' => $isKitchenDish,
         ]);
+
+        // Recompute persisted real_stock for the group (branch + sku/name)
+        try {
+            ProductModel::recomputeRealStockForGroup($product->branch_id, $product->sku, $product->name);
+        } catch (\Exception $e) {
+            Log::warning('Failed to recompute real_stock after product create', ['error' => $e->getMessage(), 'product_id' => $product->id]);
+        }
 
         return response()->json([
             'message' => 'Product created successfully',
@@ -261,6 +269,15 @@ class StaffInventoryController extends Controller
         if (isset($validated['name'])) {
             $product->slug = Str::slug($validated['name']);
             $product->save();
+        }
+
+        // If stock was updated, recompute group real_stock
+        if (isset($validated['stock'])) {
+            try {
+                ProductModel::recomputeRealStockForGroup($product->branch_id, $product->sku, $product->name);
+            } catch (\Exception $e) {
+                Log::warning('Failed to recompute real_stock after product update', ['error' => $e->getMessage(), 'product_id' => $product->id]);
+            }
         }
 
         return response()->json([
@@ -382,6 +399,9 @@ class StaffInventoryController extends Controller
                     'product_id' => $r->product_id,
                     'product_name' => $r->product?->name,
                     'quantity' => $r->quantity,
+                    'product_stock' => $r->product?->stock ?? 0,
+                    'min_stock' => $r->product?->min_stock ?? $r->product?->minimum_stock ?? 10,
+                    'product_expires_at' => $r->product?->expires_at ?? null,
                     'price' => $r->price,
                     'receipt_path' => $r->receipt_path ?? null,
                     'created_at' => $r->created_at,
@@ -469,6 +489,13 @@ class StaffInventoryController extends Controller
                             $prod->price = round($prod->cost_price * 1.10, 2);
                         }
                         $prod->save();
+
+                        // Recompute persisted real_stock for this group after increment
+                        try {
+                            ProductModel::recomputeRealStockForGroup($prod->branch_id, $prod->sku, $prod->name);
+                        } catch (\Exception $e) {
+                            Log::warning('Failed to recompute real_stock after procurement stock confirmation', ['error' => $e->getMessage(), 'product_id' => $prod->id]);
+                        }
                     } catch (\Exception $e) {
                         Log::warning('Failed to apply cost/price update on stock confirmation', ['error' => $e->getMessage(), 'product_id' => $prod->id]);
                     }

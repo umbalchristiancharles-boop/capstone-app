@@ -41,7 +41,7 @@
             :key="p.id"
             class="product-card"
             :class="{ 'out-of-stock': p.stock <= 0 }"
-            @click="p.stock > 0 && addToCart(p)"
+                    @click="p.stock > 0 && addToCart(p)"
           >
             <div class="product-name">{{ p.name }}</div>
             <div v-if="p.per_pack_or_individual" class="product-type" :class="'type-' + p.per_pack_or_individual">
@@ -374,25 +374,50 @@ async function loadTransactions() {
 
 // Cart operations
 function addToCart(product) {
-  const existing = cart.value.find(i => i.product_id === product.id)
-  if (existing) {
-    if (existing.quantity < product.stock) {
-      existing.quantity++
-      existing.subtotal = existing.quantity * existing.unit_price
+    // If there are multiple supplier-specific product rows with stock for this group, prompt to choose
+    const options = getSupplierOptionsFor(product)
+    let chosen = product
+    if (options.length >= 2) {
+      const msg = options.map((o, idx) => `${idx+1}: ${o.name} — ₱${fmt(o.price)} (stock: ${o.stock})`).join('\n')
+      const sel = window.prompt('Multiple supplier options available:\n' + msg + '\nEnter option number to add:', '1')
+      const n = parseInt(sel)
+      if (!isNaN(n) && n >= 1 && n <= options.length) chosen = options[n-1]
+      else return
     }
-  } else {
-    cart.value.push({
-      product_id: product.id,
-      name: product.name,
-      unit_price: Number(product.price),
-      computed_cost: product.computed_cost ? Number(product.computed_cost) : null,
-      quantity: 1,
-      subtotal: Number(product.price),
-      max_stock: product.stock,
-    })
-  }
-}
 
+    const existing = cart.value.find(i => i.product_id === chosen.id)
+    if (existing) {
+      if (existing.quantity < (chosen.real_stock ?? chosen.stock)) {
+        existing.quantity++
+        existing.subtotal = existing.unit_price * existing.quantity
+      }
+      return
+    }
+
+    cart.value.push({
+      product_id: chosen.id,
+      name: chosen.name,
+      unit_price: Number(chosen.price) || 0,
+      computed_cost: chosen.computed_cost || null,
+      quantity: 1,
+      subtotal: Number(chosen.price) || 0,
+      max_stock: chosen.real_stock ?? chosen.stock,
+    })
+
+
+  function getSupplierOptionsFor(product) {
+    try {
+      const key = (product.sku || '').toString().trim()
+      const nameKey = (product.name || '').toString().trim().toUpperCase()
+      return products.value.filter(p => {
+        if (!p.supplier_id) return false
+        if (!p.stock || p.stock <= 0) return false
+        if (key && p.sku === key && p.branch_id === product.branch_id) return true
+        if (!key && (p.name || '').toString().trim().toUpperCase() === nameKey && p.branch_id === product.branch_id) return true
+        return false
+      })
+    } catch (e) { return [] }
+  }
 function decrementQty(idx) {
   const item = cart.value[idx]
   if (item.quantity > 1) {

@@ -545,13 +545,14 @@ onMounted(async () => {
   // load supplier orders for supplier user
   try {
     await loadOrders()
-    // initialize lastOrderCheck to latest returned order created_at
+    // initialize lastOrderCheck to latest returned order timestamp (created or updated)
     try {
-      const maxCreated = orders.value.reduce((max, o) => {
-        const t = o.created_at || o.createdAt || o.createdAt;
-        return t && new Date(t) > new Date(max) ? t : max
+      const maxTs = orders.value.reduce((max, o) => {
+        const candidates = [o.updated_at || o.updatedAt, o.created_at || o.createdAt].filter(Boolean)
+        const latest = candidates.reduce((m, t) => (t && new Date(t) > new Date(m) ? t : m), max)
+        return latest
       }, lastOrderCheck.value)
-      lastOrderCheck.value = maxCreated || lastOrderCheck.value
+      lastOrderCheck.value = maxTs || lastOrderCheck.value
     } catch (e) {}
   } catch (e) { console.warn('Failed to load supplier orders', e) }
 
@@ -601,17 +602,24 @@ function startOrdersPolling() {
       const res = await axios.get('/api/supplier-orders', { withCredentials: true })
       const rawList = res.data.data || res.data || []
       const list = Array.isArray(rawList) ? rawList.map(normalizeSupplierOrder) : []
-      // find any non-broadcast orders created after lastOrderCheck
-      const newReal = list.filter(o => !o.is_broadcast && o.created_at && new Date(o.created_at) > new Date(lastOrderCheck.value))
+      // find any non-broadcast orders created or updated after lastOrderCheck
+      const newReal = list.filter(o => {
+        const created = o.created_at || o.createdAt
+        const updated = o.updated_at || o.updatedAt
+        const createdNew = created && new Date(created) > new Date(lastOrderCheck.value)
+        const updatedNew = updated && new Date(updated) > new Date(lastOrderCheck.value)
+        return !o.is_broadcast && (createdNew || updatedNew)
+      })
       if (newReal && newReal.length > 0) {
         showToast('New order placed for your products', 'info')
-        // update orders list and last check
+        // update orders list and last check (consider both created_at and updated_at)
         orders.value = list
-        const maxCreated = list.reduce((max, o) => {
-          const t = o.created_at || max
-          return t && new Date(t) > new Date(max) ? t : max
+        const maxTs = list.reduce((max, o) => {
+          const candidates = [o.created_at || o.createdAt, o.updated_at || o.updatedAt].filter(Boolean)
+          const latest = candidates.reduce((m, t) => (t && new Date(t) > new Date(m) ? t : m), max)
+          return latest
         }, lastOrderCheck.value)
-        lastOrderCheck.value = maxCreated
+        lastOrderCheck.value = maxTs
       }
     } catch (e) {
       // ignore polling errors

@@ -28,41 +28,162 @@
     </template>
 
     <template #main>
-      <!-- Top stats (moved under header) -->
-      <div class="hr-stats-grid header-stats" style="margin: 8px 0 0 0; display:flex; gap:12px;">
-        <div class="hr-stat-card hr-stat-card--total" style="flex:1; display:flex; gap:10px; align-items:center; padding:10px; border-radius:8px;"><div class="hr-stat-icon">…</div><div class="hr-stat-content"><span class="hr-stat-label">Total Products</span><div style="font-weight:800; color:#333">{{ totalProducts }}</div></div></div>
-        <div class="hr-stat-card hr-stat-card--active" style="flex:1; display:flex; gap:10px; align-items:center; padding:10px; border-radius:8px;"><div class="hr-stat-icon">…</div><div class="hr-stat-content"><span class="hr-stat-label">Low Stock</span><div style="font-weight:800; color:#333">{{ lowStockCount }}</div></div></div>
-        <div class="hr-stat-card hr-stat-card--leave" style="flex:1; display:flex; gap:10px; align-items:center; padding:10px; border-radius:8px;"><div class="hr-stat-icon">…</div><div class="hr-stat-content"><span class="hr-stat-label">Out of Stock</span><div style="font-weight:800; color:#333">{{ outOfStockCount }}</div></div></div>
+      <!-- Dashboard stats (match manager panel) -->
+      <div class="hr-stats-grid">
+        <div class="hr-stat-card hr-stat-card--total">
+          <div class="hr-stat-icon">●</div>
+          <div class="hr-stat-content">
+            <span class="hr-stat-label">Total Products</span>
+            <span class="hr-stat-value">{{ dashboardTotals.totalProducts }}</span>
+          </div>
+        </div>
+        <div class="hr-stat-card hr-stat-card--active">
+          <div class="hr-stat-icon">●</div>
+          <div class="hr-stat-content">
+            <span class="hr-stat-label">Low Stock</span>
+            <span class="hr-stat-value">{{ dashboardTotals.lowStock }}</span>
+          </div>
+        </div>
+        <div class="hr-stat-card hr-stat-card--leave">
+          <div class="hr-stat-icon">●</div>
+          <div class="hr-stat-content">
+            <span class="hr-stat-label">Pending Requests</span>
+            <span class="hr-stat-value">{{ dashboardTotals.pendingRequests }}</span>
+          </div>
+        </div>
       </div>
 
-      <!-- Product list (center column) -->
-      <ProductList
-        ref="productListRef"
-        :fetchUrl="fetchUrl"
-        :products="internalProducts"
-        compact
-        @open-add="openAddProduct"
-        @edit="handleEdit"
-        @delete="deleteProduct"
-        @adjust="openAdjustModal"
-        @count="openCountModal"
-      >
-        <template #profile></template>
-        <template #attendance></template>
-        <template #stats>
-          <template v-if="staffProfile.role !== 'STAFF'">
-            <div class="hr-stats-grid">
-              <div class="hr-stat-card hr-stat-card--total">
-                <div class="hr-stat-icon"> … </div>
-                <div class="hr-stat-content">
-                  <span class="hr-stat-label">Total products</span>
-                  <span class="hr-stat-value">{{ totalProducts }}</span>
-                </div>
+      <!-- Inventory Monitor (manager-style table) -->
+      <div class="panel-section">
+        <h2 class="section-title">Inventory Monitor</h2>
+        <p class="section-description">Current stock levels for your branch (Read-only)</p>
+
+        <div v-if="inventoryLoading" class="loading-container">
+          <div class="loading-spinner"></div>
+          <p>Loading inventory...</p>
+        </div>
+
+        <div v-else-if="inventoryError" class="error-container">
+          <p class="error-message">{{ inventoryError }}</p>
+          <button class="btn-retry" @click="fetchInventory">Retry</button>
+        </div>
+
+        <div v-else class="inventory-list">
+          <div v-for="product in inventory" :key="product.id" class="inventory-item">
+            <div class="item-left">
+              <div class="item-name">{{ product.name }}</div>
+              <div class="item-meta">{{ product.category || 'N/A' }} · <span :class="['pricing-type-badge', 'type-' + product.per_pack_or_individual]">{{ formatPricingType(product.per_pack_or_individual) }}</span></div>
+            </div>
+            <div class="item-right">
+              <div class="item-stats">
+                <div class="stat"><div class="stat-label">Stock</div><div class="stat-value">{{ product.real_stock ?? product.stock }}</div></div>
+                <div class="stat"><div class="stat-label">Min</div><div class="stat-value">{{ product.min_stock }}</div></div>
+                <div class="stat"><div class="stat-label">Expires</div><div class="stat-value"> <span v-if="product.expires_at" :class="['expiry-date', isExpired(product.expires_at) ? 'expired' : isExpiringSoon(product.expires_at) ? 'expiring-soon' : '']">{{ formatDate(product.expires_at) }}</span><span v-else class="muted">N/A</span></div></div>
+                <div class="stat"><div class="stat-label">Status</div><div class="stat-value"><span :class="['status-badge', product.status === 'OK' ? 'status-ok' : 'status-low']">{{ product.status }}</span></div></div>
+              </div>
+              <div class="item-action">
+                <button v-if="product.status !== 'OK' && canRequestProcurement" class="btn-primary btn-small" :disabled="requesting[product.id]" @click="requestProcurement(product)">{{ requesting[product.id] ? 'Requesting...' : 'Request Procurement' }}</button>
+                <span v-else-if="product.status !== 'OK'" class="muted-note">Not allowed</span>
               </div>
             </div>
-          </template>
-        </template>
-      </ProductList>
+          </div>
+          <div v-if="inventory.length === 0" class="empty-message">No products found in your branch.</div>
+        </div>
+      </div>
+
+      <!-- Procurement Requests (Staff) -->
+      <div class="panel-section">
+        <h2 class="section-title">Procurement Requests</h2>
+        <p class="section-description">Create and view procurement requests for items needing replenishment.</p>
+
+        <button v-if="!showProcRequestForm" class="btn-primary" @click="showProcRequestForm = true">+ New Procurement Request</button>
+
+        <div v-if="showProcRequestForm" class="form-container">
+          <h3>Create New Procurement Request</h3>
+          <form @submit.prevent="submitProcRequest">
+            <div class="form-group">
+              <label>Product</label>
+              <select v-model="procRequestForm.product_id" required>
+                <option value="">Select product...</option>
+                <option v-for="p in internalProducts" :key="p.id" :value="p.id">{{ p.name }} (₱{{ formatCurrency(p.price) }})</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Quantity</label>
+              <input type="number" v-model="procRequestForm.quantity" min="1" required />
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn-secondary" @click="cancelProcRequest">Cancel</button>
+              <button type="submit" class="btn-primary" :disabled="procRequestSubmitting">{{ procRequestSubmitting ? 'Submitting...' : 'Submit Request' }}</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="requests-list">
+          <h3>My Procurement Requests</h3>
+          <div v-if="procRequestsLoading" class="loading-container small"><div class="loading-spinner"></div></div>
+          <div v-else class="requests-list-items">
+            <div v-for="req in procurementRequests" :key="req.id" class="request-item">
+              <div class="request-left">{{ req.product?.name || '(no product)' }}</div>
+              <div class="request-mid">{{ req.quantity }} · <span class="amount">{{ formatCurrency(req.total_amount) }}</span></div>
+              <div class="request-right">
+                <div><span :class="['status-badge', getProcStatusClass(req.status)]">{{ formatProcStatus(req.status, req.budget_approved) }}</span></div>
+                <div class="request-updated">{{ formatDate(req.updated_at) }}</div>
+              </div>
+            </div>
+            <div v-if="procurementRequests.length === 0" class="empty-message">No procurement requests.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Product Request Section (Staff) -->
+      <div class="panel-section">
+        <h2 class="section-title">Request New Products</h2>
+        <p class="section-description">Request new products to be added to inventory. Requires owner/main approval.</p>
+
+        <button v-if="!showProductRequestForm" class="btn-primary" @click="showProductRequestForm = true">+ Request New Product</button>
+
+        <div v-if="showProductRequestForm" class="form-container">
+          <h3>Request New Product</h3>
+          <form @submit.prevent="submitProductRequest">
+            <div class="form-group">
+              <label>Product Name*</label>
+              <input v-model="productRequestForm.name" type="text" placeholder="e.g., Organic Chicken Breast" required />
+            </div>
+            <div class="form-group">
+              <label>Description</label>
+              <textarea v-model="productRequestForm.description" rows="3" placeholder="Optional details"></textarea>
+            </div>
+            <div class="form-group">
+              <label>Unit of Measurement</label>
+              <select v-model="productRequestForm.unit"><option value="">-- Select unit (optional) --</option><option value="pcs">Pieces (pcs)</option><option value="g">Grams (g)</option><option value="kg">Kilograms (kg)</option><option value="ml">Milliliters (ml)</option><option value="l">Liters (l)</option><option value="pack">Pack</option><option value="box">Box</option></select>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn-secondary" @click="cancelProductRequest">Cancel</button>
+              <button type="submit" class="btn-primary" :disabled="productRequestSubmitting">{{ productRequestSubmitting ? 'Submitting...' : 'Submit Request' }}</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="requests-list">
+          <h3>My Product Requests</h3>
+          <div v-if="productRequestsLoading" class="loading-container small"><div class="loading-spinner"></div></div>
+          <div v-else class="requests-list-items">
+            <div v-for="req in productRequests" :key="req.id" class="request-item">
+              <div class="request-left">
+                <div class="item-name">{{ req.name }}</div>
+                <div v-if="req.description" class="product-description">{{ req.description }}</div>
+              </div>
+              <div class="request-mid">{{ req.unit || 'N/A' }}</div>
+              <div class="request-right">
+                <div><span :class="['status-badge', getProductReqStatusClass(req.approval_status)]">{{ formatProductReqStatus(req.approval_status) }}</span></div>
+                <div class="request-updated">{{ formatDate(req.created_at) }}</div>
+              </div>
+            </div>
+            <div v-if="productRequests.length === 0" class="empty-message">No product requests yet.</div>
+          </div>
+        </div>
+      </div>
     </template>
 
     <template #side>
@@ -90,94 +211,10 @@
 
 
       <!-- Announcements removed per request -->
-      <div class="pending-box" style="margin-top:12px;">
-        <h3>Pending Stock Confirmations</h3>
-        <div v-if="pendingProcurements.length">
-          <table class="pending-table"><thead><tr><th>ID</th><th>Product</th><th>Quantity</th><th>Uploaded</th><th></th></tr></thead><tbody><tr v-for="pp in pendingProcurements" :key="pp.id"><td>{{ pp.id }}</td><td>{{ pp.product_name || 'Unknown' }}</td><td>{{ pp.quantity }}</td><td>{{ formatDate(pp.created_at) }}</td><td><button class="btn-primary" @click.prevent="openProcurementConfirm(pp)">Confirm</button></td></tr></tbody></table>
-        </div>
-        <div v-else class="empty-text">No pending confirmations</div>
-      </div>
     </template>
   </OwnerPanelLayout>
 
-      <!-- COUNT / ADJUST / ADD MODALS -->
-      <transition name="fade">
-        <div v-if="showCountModal" class="info-backdrop">
-          <div class="info-modal">
-            <h3>Stock Count - {{ activeProduct ? activeProduct.name : '' }}</h3>
-            <p class="info-sub">Enter counted quantity for this product.</p>
-            <div class="info-grid">
-              <div class="info-row"><span class="info-label">Counted Qty</span>
-                <input v-model.number="countValue" class="info-input" type="number" min="0" />
-              </div>
-            </div>
-            <div v-if="formError" class="info-error">{{ formError }}</div>
-            <div v-if="formSuccess" class="info-success">{{ formSuccess }}</div>
-            <div class="info-actions">
-              <button class="btn-outline" @click="showCountModal = false">Cancel</button>
-              <button class="btn-primary" @click="submitCount">Save Count</button>
-            </div>
-          </div>
-        </div>
-      </transition>
-
-      <transition name="fade">
-        <div v-if="showAdjustModal" class="info-backdrop">
-          <div class="info-modal">
-            <h3>Adjust Stock - {{ activeProduct ? activeProduct.name : '' }}</h3>
-            <p class="info-sub">Add or subtract quantity. Use negative number to subtract.</p>
-            <div class="info-grid">
-              <div class="info-row"><span class="info-label">Delta</span>
-                <input v-model.number="adjust.delta" class="info-input" type="number" step="1" />
-              </div>
-              <div class="info-row"><span class="info-label">Note</span>
-                <input v-model="adjust.note" class="info-input" type="text" placeholder="Reason (optional)" />
-              </div>
-            </div>
-            <div v-if="formError" class="info-error">{{ formError }}</div>
-            <div v-if="formSuccess" class="info-success">{{ formSuccess }}</div>
-            <div class="info-actions">
-              <button class="btn-outline" @click="showAdjustModal = false">Cancel</button>
-              <button class="btn-primary" @click="submitAdjust">Apply Adjustment</button>
-            </div>
-          </div>
-        </div>
-      </transition>
-
-      <transition name="fade">
-        <div v-if="showAddModal" class="info-backdrop">
-          <div class="info-modal">
-            <h3>Add Product</h3>
-            <p class="info-sub">Create a new product for your branch.</p>
-            <div class="info-grid">
-              <div class="info-row"><span class="info-label">Name</span>
-                <input v-model="newProduct.name" class="info-input" type="text" />
-              </div>
-              <div class="info-row"><span class="info-label">SKU (optional)</span>
-                <input v-model="newProduct.sku" class="info-input" type="text" placeholder="Leave empty to auto-generate" />
-              </div>
-              <div class="info-row"><span class="info-label">Generated SKU Preview</span>
-                <div class="info-value" style="display:flex;align-items:center;gap:8px;">
-                  <span>{{ displaySku }}</span>
-                  <button class="btn-outline" @click.prevent="regeneratePreview">Regenerate</button>
-                </div>
-              </div>
-              <div class="info-row"><span class="info-label">Price</span>
-                <input v-model.number="newProduct.price" class="info-input" type="number" step="0.01" />
-              </div>
-              <div class="info-row"><span class="info-label">Initial Stock</span>
-                <input v-model.number="newProduct.stock" class="info-input" type="number" />
-              </div>
-            </div>
-            <div v-if="formError" class="info-error">{{ formError }}</div>
-            <div v-if="formSuccess" class="info-success">{{ formSuccess }}</div>
-            <div class="info-actions">
-              <button class="btn-outline" @click="showAddModal = false">Cancel</button>
-              <button class="btn-primary" @click="submitAddProduct">Create Product</button>
-            </div>
-          </div>
-        </div>
-      </transition>
+      <!-- Product-related modals removed from staff panel per request -->
 
       <!-- INFO MODAL -->
       <transition name="fade">
@@ -230,8 +267,9 @@
 import { ref, onMounted, watch, computed, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
-import ProductList from './ProductList.vue'
 import OwnerPanelLayout from '../OwnerPanelLayout.vue'
+import ProductList from './ProductList.vue'
+import { showToast } from '../toastStore'
 
 const router = useRouter();
 
@@ -370,13 +408,184 @@ const fetchUrl = computed(() => `${endpoints.value.products}?include_unpublished
 // ref to the ProductList child so we can trigger refreshes
 const productListRef = ref(null)
 
+// Procurement & Product Request state (staff)
+const procurementRequests = ref([])
+const procRequestsLoading = ref(false)
+const procRequestForm = ref({ product_id: '', quantity: 1 })
+const procRequestSubmitting = ref(false)
+const showProcRequestForm = ref(false)
+
+const productRequests = ref([])
+const productRequestsLoading = ref(false)
+const productRequestForm = ref({ name: '', description: '', unit: '' })
+const productRequestSubmitting = ref(false)
+const showProductRequestForm = ref(false)
+const requesting = ref({})
+
+// Dashboard + inventory state (match manager panel)
+const dashboardTotals = ref({ totalProducts: 0, lowStock: 0, pendingRequests: 0 })
+const inventory = ref([])
+const inventoryLoading = ref(false)
+const inventoryError = ref('')
+const canRequestProcurement = ref(true)
+
+function getProcStatusClass(status) {
+  switch ((status || '').toLowerCase()) {
+    case 'completed': return 'status-approved'
+    case 'approved': return 'status-approved'
+    case 'pending': return 'status-pending'
+    default: return 'status-pending'
+  }
+}
+
+function formatProcStatus(status, budgetApproved) {
+  if (budgetApproved) return 'BUDGET APPROVED'
+  return (status || '').toUpperCase()
+}
+
+// Helpers for product request approval statuses (used in Product Request section)
+function getProductReqStatusClass(status) {
+  switch ((status || '').toLowerCase()) {
+    case 'approved': return 'status-approved'
+    case 'rejected': return 'status-rejected'
+    case 'pending_approval': return 'status-pending'
+    default: return 'status-pending'
+  }
+}
+
+function formatProductReqStatus(status) {
+  const statusMap = {
+    'pending_approval': 'PENDING APPROVAL',
+    'approved': 'APPROVED',
+    'rejected': 'REJECTED'
+  }
+  return statusMap[status] || (status || '').toUpperCase()
+}
+
+async function fetchProcRequests() {
+  procRequestsLoading.value = true
+  try {
+    const res = await axios.get('/api/procurement-requests', { withCredentials: true })
+    const data = res.data?.data ?? res.data ?? []
+    const arr = Array.isArray(data) ? data : []
+    // deduplicate by id (avoid duplicates from multiple refreshes)
+    const map = {}
+    arr.forEach(item => { if (item && item.id) map[item.id] = item })
+    procurementRequests.value = Object.values(map)
+  } catch (e) {
+    console.error('fetchProcRequests error', e)
+    procurementRequests.value = []
+  } finally {
+    procRequestsLoading.value = false
+  }
+}
+
+async function submitProcRequest() {
+  procRequestSubmitting.value = true
+  try {
+    await ensureCsrf()
+    // If the product has an associated supplier, include it so procurement managers
+    // can acknowledge without requiring supplier-order submissions.
+    const payload = { product_id: procRequestForm.value.product_id, quantity: procRequestForm.value.quantity }
+    try {
+      const prodRes = await axios.get(`/api/staff/inventory/products`, { withCredentials: true, params: { include_unpublished: 1 } })
+      const allProducts = Array.isArray(prodRes.data) ? prodRes.data : (prodRes.data?.data || [])
+      const selected = allProducts.find(p => Number(p.id) === Number(procRequestForm.value.product_id))
+      if (selected && selected.supplier_id) payload.supplier_id = selected.supplier_id
+    } catch (e) {
+      // ignore; best-effort only
+    }
+    const res = await axios.post('/api/procurement-requests', payload, { withCredentials: true })
+    // try to use created object returned from server to insert into list and avoid duplicates
+    const created = res.data?.data ?? res.data ?? null
+    if (created && created.id) {
+      procurementRequests.value = [created, ...procurementRequests.value.filter(r => r.id !== created.id)]
+    }
+    showToast('Procurement request created', 'success')
+    showProcRequestForm.value = false
+    procRequestForm.value = { product_id: '', quantity: 1 }
+      await refreshList()
+  } catch (e) {
+    console.error('submitProcRequest error', e)
+    showToast(e.response?.data?.message || 'Failed to create procurement request', 'error')
+  } finally {
+    procRequestSubmitting.value = false
+  }
+}
+
+function cancelProcRequest() {
+  showProcRequestForm.value = false
+  procRequestForm.value = { product_id: '', quantity: 1 }
+}
+
+async function requestProcurement(product) {
+  if (!product) return
+  if (!(await window.swalConfirm ? window.swalConfirm(`Create procurement request for ${product.name}?`) : Promise.resolve(true))) return
+  requesting.value = { ...requesting.value, [product.id]: true }
+  try {
+    const minStock = Number(product.min_stock) > 0 ? Number(product.min_stock) : 10
+    const currentStock = Number(product.real_stock ?? product.stock ?? 0) || 0
+    const diff = Math.ceil(minStock - currentStock)
+    const qty = Math.max(diff, 1)
+    await ensureCsrf()
+    const res = await axios.post('/api/procurement-requests', { product_id: product.id, quantity: qty }, { withCredentials: true })
+    const created = res.data?.data ?? res.data ?? null
+    if (created && created.id) {
+      procurementRequests.value = [created, ...procurementRequests.value.filter(r => r.id !== created.id)]
+    }
+    showToast('Procurement request created', 'success')
+    await refreshList()
+  } catch (e) {
+    console.error('requestProcurement error', e)
+    showToast(e.response?.data?.message || 'Failed to create procurement request', 'error')
+  } finally {
+    requesting.value = { ...requesting.value, [product.id]: false }
+  }
+}
+
+async function fetchProductRequests() {
+  productRequestsLoading.value = true
+  try {
+    const res = await axios.get('/api/product-requests', { withCredentials: true })
+    const data = res.data?.data ?? res.data ?? []
+    productRequests.value = Array.isArray(data) ? data : []
+  } catch (e) {
+    console.error('fetchProductRequests error', e)
+    productRequests.value = []
+  } finally {
+    productRequestsLoading.value = false
+  }
+}
+
+async function submitProductRequest() {
+  productRequestSubmitting.value = true
+  try {
+    await ensureCsrf()
+    const payload = { name: productRequestForm.value.name, description: productRequestForm.value.description || null, unit: productRequestForm.value.unit || null }
+    await axios.post('/api/product-requests', payload, { withCredentials: true })
+    showToast('Product request submitted for approval', 'success')
+    showProductRequestForm.value = false
+    productRequestForm.value = { name: '', description: '', unit: '' }
+    await fetchProductRequests()
+  } catch (e) {
+    console.error('submitProductRequest error', e)
+    showToast(e.response?.data?.error || 'Failed to submit product request', 'error')
+  } finally {
+    productRequestSubmitting.value = false
+  }
+}
+
+function cancelProductRequest() {
+  showProductRequestForm.value = false
+  productRequestForm.value = { name: '', description: '', unit: '' }
+}
+
 // Modals / forms
 const showCountModal = ref(false);
 const showAdjustModal = ref(false);
 const showAddModal = ref(false);
 const activeProduct = ref(null);
 const countValue = ref(0);
-const activeProcurementId = ref(null);
 const adjust = ref({ delta: 0, note: '' });
 const newProduct = ref({ name: '', price: 0, stock: 0, sku: '' });
 const previewSku = ref('');
@@ -384,6 +593,128 @@ const previewSku = ref('');
 function refreshList() {
   if (productListRef.value && typeof productListRef.value.fetchProducts === 'function') {
     return productListRef.value.fetchProducts().then(() => updateStats()).catch(() => {})
+  }
+  // fallback: fetch inventory directly
+  return fetchInventory().then(() => updateDashboardTotals()).catch(() => {})
+}
+
+// Helper: perform request with graceful handling and token-fallback on 401/403
+async function requestWithFallback(method, url, options = {}) {
+  const token = (typeof localStorage !== 'undefined') ? localStorage.getItem('token') || '' : '';
+  const baseHeaders = Object.assign({}, options.headers || {});
+  if (token && !baseHeaders['Authorization'] && !baseHeaders['authorization']) {
+    baseHeaders['Authorization'] = `Bearer ${token}`;
+  }
+
+  try {
+    const res = await axios[method](url, Object.assign({}, options, { headers: baseHeaders }));
+    return res;
+  } catch (e) {
+    const status = e?.response?.status;
+    if (status === 401 || status === 403) {
+      try {
+        await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
+        const retry = await axios[method](url, Object.assign({}, options, { headers: baseHeaders }));
+        return retry
+      } catch (e2) {
+        // try token fallback
+        if (token) {
+          try {
+            const retryHeaders = Object.assign({}, baseHeaders, { Authorization: `Bearer ${token}` })
+            const retryOpts = Object.assign({}, options, { headers: retryHeaders })
+            const res2 = await axios[method](url, retryOpts)
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+            return res2
+          } catch (e3) {}
+        }
+      }
+    }
+    throw e
+  }
+}
+
+async function requestWithFallbackPost(url, data = {}, options = {}) {
+  return requestWithFallback('post', url, Object.assign({}, options, { data }))
+}
+
+function formatPricingType(type) {
+  const typeMap = { 'individual': 'Individual', 'per_pack': 'Per Pack', 'both': 'Both' }
+  return typeMap[type] || 'N/A'
+}
+
+function isExpired(expiryDate) {
+  if (!expiryDate) return false
+  try { return new Date(expiryDate) < new Date() } catch (e) { return false }
+}
+
+function isExpiringSoon(expiryDate) {
+  if (!expiryDate) return false
+  try {
+    const expiry = new Date(expiryDate)
+    const now = new Date()
+    const daysUntil = (expiry - now) / (1000*60*60*24)
+    return daysUntil >= 0 && daysUntil <= 7
+  } catch (e) { return false }
+}
+
+function updateDashboardTotals() {
+  const inv = inventory.value || []
+  const procs = procurementRequests.value || []
+  const prodReqs = productRequests.value || []
+  dashboardTotals.value.totalProducts = inv.length
+  dashboardTotals.value.lowStock = inv.filter(i => (i.status || '').toString().toLowerCase() !== 'ok').length
+  dashboardTotals.value.pendingRequests = procs.filter(r => (r.status || '').toString().toLowerCase() === 'pending').length + prodReqs.filter(r => (r.approval_status || '').toString().toLowerCase() === 'pending_approval').length
+}
+
+async function fetchInventory() {
+  inventoryLoading.value = true
+  inventoryError.value = ''
+  try {
+    const res = await requestWithFallback('get', '/api/staff/inventory/products', { params: { include_unpublished: 1 }, withCredentials: true })
+    const rawData = res.data?.data ?? res.data ?? []
+    const arr = Array.isArray(rawData) ? rawData : []
+    // Deduplicate products by normalized name: prefer published item, otherwise most recently updated
+    const nameMap = {}
+    arr.forEach(p => {
+      if (!p || !p.name) return
+      const key = String(p.name || '').trim().toLowerCase()
+      const existing = nameMap[key]
+      if (!existing) {
+        nameMap[key] = p
+        return
+      }
+      // prefer published
+      const existingPublished = !!existing.is_published
+      const curPublished = !!p.is_published
+      if (curPublished && !existingPublished) {
+        nameMap[key] = p
+        return
+      }
+      if (curPublished === existingPublished) {
+        // choose the most recently updated
+        try {
+          const eTime = new Date(existing.updated_at || existing.created_at || 0).getTime()
+          const pTime = new Date(p.updated_at || p.created_at || 0).getTime()
+          if (pTime > eTime) nameMap[key] = p
+        } catch (e) {
+          // fallback: keep existing
+        }
+      }
+    })
+
+    inventory.value = Object.values(nameMap).map(p => ({
+      ...p,
+      min_stock: (Number(p.min_stock) > 0) ? Number(p.min_stock) : 10,
+      stock: Number(p.stock ?? 0),
+      status: (Number(p.stock ?? 0) < ((Number(p.min_stock) > 0) ? Number(p.min_stock) : 10)) ? 'LOW STOCK' : 'OK'
+    }))
+  } catch (e) {
+    console.error('Inventory fetch error:', e)
+    inventoryError.value = 'Failed to load inventory: ' + (e.response?.data?.message || e.message)
+    inventory.value = []
+  } finally {
+    inventoryLoading.value = false
+    try { updateDashboardTotals() } catch (e) {}
   }
 }
 
@@ -463,6 +794,23 @@ async function updateStats() {
   }
 }
 
+// click-away listener to close header profile dropdown
+function onDocClick(e) {
+  try {
+    if (!showProfileMenu.value) return
+    const wrapper = headerProfileWrapper.value
+    if (!wrapper) return
+    if (!wrapper.contains(e.target)) {
+      showProfileMenu.value = false
+    }
+  } catch (err) { /* ignore */ }
+}
+
+// Register cleanup during setup (must be registered synchronously)
+onUnmounted(() => {
+  try { document.removeEventListener('click', onDocClick) } catch (e) {}
+})
+
 onMounted(async () => {
   isProfileLoading.value = true;
   try {
@@ -494,23 +842,23 @@ onMounted(async () => {
   // initial stats update after mount
   setTimeout(() => updateStats(), 300)
   fetchAnnouncements()
-  loadPendingProcurements()
-  loadConfirmedProcurements()
+  // pending/confirmed procurement loading removed for staff panel
 
-  // click-away listener to close header profile dropdown
-  function onDocClick(e) {
-    try {
-      if (!showProfileMenu.value) return
-      const wrapper = headerProfileWrapper.value
-      if (!wrapper) return
-      if (!wrapper.contains(e.target)) {
-        showProfileMenu.value = false
-      }
-    } catch (err) { /* ignore */ }
+  // Load internal products for selects (use same fetchUrl so include_unpublished is respected)
+  try {
+    const prodRes = await axios.get(fetchUrl.value, { withCredentials: true })
+    internalProducts.value = prodRes.data?.data ?? prodRes.data ?? []
+  } catch (e) {
+    internalProducts.value = []
   }
-  document.addEventListener('click', onDocClick)
-  onUnmounted(() => document.removeEventListener('click', onDocClick))
+
+  // load inventory for manager-style table and dashboard
+  await fetchInventory()
+
+  // attach click-away listener (defined in setup scope)
+  try { document.addEventListener('click', onDocClick) } catch (e) {}
 });
+
 
 function toggleProfileMenu() {
   showProfileMenu.value = !showProfileMenu.value
@@ -530,27 +878,7 @@ function openLogoutFromMenu() {
   })()
 }
 
-async function loadPendingProcurements() {
-  try {
-    const res = await axios.get('/api/staff/inventory/pending-procurements', { withCredentials: true })
-    pendingProcurements.value = res.data || []
-  } catch (e) {
-    pendingProcurements.value = []
-  }
-}
-
-const confirmedProcurements = ref([])
-
-async function loadConfirmedProcurements() {
-  try {
-    const res = await axios.get('/api/staff/inventory/confirmed-procurements', { withCredentials: true })
-    confirmedProcurements.value = res.data || []
-  } catch (e) {
-    confirmedProcurements.value = []
-  }
-}
-
-const pendingProcurements = ref([])
+/* Pending procurement confirmation removed from staff panel */
 
 // Note: ProductList can fetch products itself via `fetchUrl`. Parent mutating actions will call `refreshList()` after success.
 
@@ -564,7 +892,6 @@ function openCountModal(prod) {
   countValue.value = prod.stock || 0;
   formError.value = '';
   formSuccess.value = '';
-  activeProcurementId.value = null;
   showCountModal.value = true;
 }
 
@@ -573,23 +900,11 @@ async function submitCount() {
   const okCsrf = await ensureCsrf()
   if (!okCsrf) { formError.value = 'Unable to refresh CSRF token. Please reload or login.'; return }
   try {
-    if (activeProcurementId.value) {
-      // Confirm stock for a procurement request (staff flow)
-      const res = await axios.post(`/api/staff/inventory/procurements/${activeProcurementId.value}/confirm-stock`, { counted_stock: Number(countValue.value) }, { withCredentials: true })
-      await refreshList()
-      await loadPendingProcurements()
-      await loadConfirmedProcurements()
-      formSuccess.value = res.data?.message || 'Stock confirmed successfully.'
-      showCountModal.value = false
-      activeProcurementId.value = null
-    } else {
-      const payload = { stock: Number(countValue.value) };
-      const res = await axios.put(endpoints.value.update(activeProduct.value.id), payload, { withCredentials: true });
-      // refresh the list from server
-      refreshList()
-      formSuccess.value = 'Stock updated successfully.';
-      showCountModal.value = false;
-    }
+    const payload = { stock: Number(countValue.value) };
+    const res = await axios.put(endpoints.value.update(activeProduct.value.id), payload, { withCredentials: true });
+    await refreshList()
+    formSuccess.value = 'Stock updated successfully.';
+    showCountModal.value = false;
   } catch (e) {
     formError.value = (e.response && e.response.data && e.response.data.message) || 'Failed to update stock.';
   }
@@ -636,17 +951,7 @@ function openAddProduct() {
   previewSku.value = makePreviewSku('')
 }
 
-function openProcurementConfirm(proc) {
-  // Try to find product entry in current list
-  const prod = (internalProducts.value || []).find(p => p.id === proc.product_id) || { id: proc.product_id, name: proc.product_name, stock: 0 };
-  activeProduct.value = prod;
-  // Suggest counted input as the delivered quantity (we will increment stock by this)
-  countValue.value = Number(proc.quantity || 0);
-  formError.value = '';
-  formSuccess.value = '';
-  activeProcurementId.value = proc.id;
-  showCountModal.value = true;
-}
+// procurement confirmation UI removed from staff panel
 
 async function submitAddProduct() {
   const okCsrf = await ensureCsrf()
@@ -1350,6 +1655,41 @@ ProductList[compact] { width:100% }
 :deep(.header-actions-top .header-avatar-img) { width:100%; height:100%; background-size:cover; background-position:center }
 :deep(.header-actions-top .header-avatar-initials) { font-weight:700; color:#374151 }
 :deep(.header-actions-top .header-name) { font-size: 0.8rem; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; max-width: 320px }
+
+/* New list/card styles to replace tables in staff inventory panel */
+.inventory-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.inventory-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #fff;
+  border: 1px solid #f0e7df;
+  border-radius: 10px;
+}
+.inventory-item .item-left {
+  flex: 1 1 60%;
+}
+.inventory-item .item-name { font-weight: 600; color: #3b2a12; }
+.inventory-item .item-meta { font-size: 13px; color: #777; margin-top: 4px }
+.inventory-item .item-right { display:flex; align-items:center; gap:16px }
+.item-stats { display:flex; gap:12px; align-items:center }
+.stat { text-align:center }
+.stat-label { font-size:11px; color:#888 }
+.stat-value { font-weight:700; color:#222 }
+.item-action { min-width:160px; display:flex; justify-content:flex-end }
+
+.requests-list-items { display:flex; flex-direction:column; gap:10px }
+.request-item { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; background:#fff; border-radius:10px; border:1px solid #f3efe8 }
+.request-left { flex:1 1 50%; font-weight:600 }
+.request-mid { flex:0 0 160px; color:#444; text-align:left }
+.request-right { flex:0 0 180px; text-align:right }
+.request-updated { font-size:12px; color:#777; margin-top:6px }
+
 </style>
 
 <!-- Global override: ensure admin side column is not sticky for this panel -->

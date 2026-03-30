@@ -70,7 +70,7 @@
               <tbody>
                 <tr v-for="product in inventory" :key="product.id">
                   <td>{{ product.name }} <small v-if="product.branch_name">({{ product.branch_name }})</small></td>
-                  <td>{{ product.stock }}</td>
+                  <td>{{ product.real_stock ?? product.stock }}</td>
                   <td>{{ product.min_stock }}</td>
                   <td>
                     <span :class="['status-badge', product.status === 'OK' ? 'status-ok' : 'status-low']">{{ product.status }}</span>

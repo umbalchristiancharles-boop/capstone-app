@@ -430,22 +430,47 @@ async function refundOrder(tx) {
 
 // Cart operations
 function addToCart(product) {
-  const existing = cart.value.find(i => i.product_id === product.id)
+  // detect supplier-specific options with stock
+  const options = getSupplierOptionsFor(product)
+  let chosen = product
+  if (options.length >= 2) {
+    const msg = options.map((o, idx) => `${idx+1}: ${o.name} — ₱${fmt(o.price)} (stock: ${o.stock})`).join('\n')
+    const sel = window.prompt('Multiple supplier options available:\n' + msg + '\nEnter option number to add:', '1')
+    const n = parseInt(sel)
+    if (!isNaN(n) && n >= 1 && n <= options.length) chosen = options[n-1]
+    else return
+  }
+
+  const existing = cart.value.find(i => i.product_id === chosen.id)
   if (existing) {
-    if (existing.quantity < product.stock) {
+    if (existing.quantity < (chosen.real_stock ?? chosen.stock)) {
       existing.quantity++
       existing.subtotal = existing.quantity * existing.unit_price
     }
   } else {
     cart.value.push({
-      product_id: product.id,
-      name: product.name,
-      unit_price: Number(product.price),
+      product_id: chosen.id,
+      name: chosen.name,
+      unit_price: Number(chosen.price),
       quantity: 1,
-      subtotal: Number(product.price),
-      max_stock: product.stock,
+      subtotal: Number(chosen.price),
+      max_stock: chosen.real_stock ?? chosen.stock,
     })
   }
+}
+
+function getSupplierOptionsFor(product) {
+  try {
+    const key = (product.sku || '').toString().trim()
+    const nameKey = (product.name || '').toString().trim().toUpperCase()
+    return products.value.filter(p => {
+      if (!p.supplier_id) return false
+      if (!p.stock || p.stock <= 0) return false
+      if (key && p.sku === key && p.branch_id === product.branch_id) return true
+      if (!key && (p.name || '').toString().trim().toUpperCase() === nameKey && p.branch_id === product.branch_id) return true
+      return false
+    })
+  } catch (e) { return [] }
 }
 
 function decrementQty(idx) {

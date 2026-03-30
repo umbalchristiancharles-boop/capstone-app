@@ -828,6 +828,17 @@ async function acknowledgeRequest(product) {
     const errorMsg = e.response?.data?.error || e.response?.data?.message || 'Failed to acknowledge request'
     console.error('acknowledgeRequest error:', errorMsg, e)
     
+      // If backend indicates the selected supplier is not among confirmed suppliers,
+      // open the supplier modal so the user can pick a valid confirmed supplier.
+      if (typeof errorMsg === 'string' && errorMsg.includes('Selected supplier not found')) {
+        try {
+          openSupplierModal(product, true)
+          return
+        } catch (openErr) {
+          console.warn('Failed to open supplier modal automatically', openErr)
+        }
+      }
+
     // If error is about needing supplier selection
     if (errorMsg.includes('supplier selection')) {
       alert('✓ Multiple suppliers available - please select one from the list')

@@ -231,6 +231,7 @@ class ProcurementRequestController extends Controller
         $hasLogisticsAccess = (
             $role === 'LOGISTICS_MANAGER' || $role === 'MANAGER_LOGISTICS' ||
             ($role === 'MANAGER' && $dept === 'LOGISTICS') ||
+            ($role === 'STAFF' && $dept === 'INVENTORY') ||
             $role === 'SUPER_ADMIN'
         );
 
@@ -274,6 +275,7 @@ class ProcurementRequestController extends Controller
             $validated = $request->validate([
                 'product_id' => 'required|exists:products,id',
                 'quantity' => 'required|integer|min:1',
+                'supplier_id' => 'nullable|exists:users,id'
             ]);
             Log::info('Validation OK', $validated);
         } catch (\Exception $e) {
@@ -311,6 +313,10 @@ class ProcurementRequestController extends Controller
             'budget_approved' => false,
             'branch_id' => $branchId,
         ];
+        // If the requester supplied a supplier_id (e.g., inventory-created request), persist it.
+        if (!empty($validated['supplier_id'])) {
+            $data['supplier_id'] = $validated['supplier_id'];
+        }
         Log::info('Creating ProcurementRequest', $data);
 
         try {
@@ -575,6 +581,27 @@ public function requestedProducts(Request $request)
                 ], 400);
             }
 
+            // If there are NO confirmed suppliers but the user supplied a supplier_id
+            // (e.g. procurement request created from Inventory without SupplierOrder rows),
+            // allow the manager's selection as long as the supplier exists and the product has a valid price.
+            if ($confirmedSuppliers->count() === 0 && $selectedSupplierId) {
+                try {
+                    $supplierUser = \App\Models\User::where('id', $selectedSupplierId)->first();
+                } catch (\Exception $e) {
+                    $supplierUser = null;
+                }
+                if (!$supplierUser || strtoupper(($supplierUser->role ?? '')) !== 'SUPPLIER') {
+                    return response()->json(['error' => 'Selected supplier not found'], 400);
+                }
+                // Use the procurement request's product as the selected product (price must be present)
+                $selectedProduct = $procRequest->product;
+                if (!$selectedProduct || empty($selectedProduct->price) || (float)$selectedProduct->price <= 0) {
+                    return response()->json(['error' => 'Cannot acknowledge procurement: product has no price for selected supplier.'], 400);
+                }
+                // we will proceed using the product's price and the supplied supplier id
+                Log::info('Acknowledge using manager-selected supplier with no confirmed SupplierOrder', ['proc_id' => $procRequest->id, 'selected_supplier' => $selectedSupplierId]);
+            }
+
             // Determine the supplier order to use for pricing
             $selectedOrder = null;
             $selectedProduct = null;
@@ -583,10 +610,21 @@ public function requestedProducts(Request $request)
                 // User selected a specific supplier from confirmed list
                 $selectedOrder = $confirmedSuppliers->firstWhere('supplier_id', $selectedSupplierId);
                 if (!$selectedOrder) {
-                    return response()->json(['error' => 'Selected supplier not found in confirmed suppliers'], 400);
+                    // If there are no confirmed supplier orders, allow manager to
+                    // select a supplier directly (e.g. when procurement request
+                    // was created with a supplier but no SupplierOrder rows exist).
+                    if ($confirmedSuppliers->count() === 0) {
+                        $selectedProduct = $procRequest->product;
+                        Log::info('Acknowledge with manager-selected supplier (no SupplierOrder)', ['proc_id' => $procRequest->id, 'selected_supplier' => $selectedSupplierId, 'using_proc_product_id' => $selectedProduct?->id]);
+                    } else {
+                        return response()->json(['error' => 'Selected supplier not found in confirmed suppliers'], 400);
+                    }
+                } else {
+                    $selectedProduct = $selectedOrder->product;
                 }
-                $selectedProduct = $selectedOrder->product;
-                Log::info('Acknowledge with multi-supplier selection', ['proc_id' => $procRequest->id, 'selected_supplier' => $selectedSupplierId, 'selected_product_id' => $selectedProduct->id]);
+                if ($selectedProduct) {
+                    Log::info('Acknowledge with multi-supplier selection', ['proc_id' => $procRequest->id, 'selected_supplier' => $selectedSupplierId, 'selected_product_id' => $selectedProduct->id ?? null]);
+                }
             } elseif ($confirmedSuppliers->count() === 1) {
                 // Single confirmed supplier, use it automatically
                 $selectedOrder = $confirmedSuppliers->first();

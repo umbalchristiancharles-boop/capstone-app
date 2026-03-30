@@ -41,8 +41,8 @@
             </div>
           </div>
         </div>
-      <!-- Inventory Section -->
-      <div class="panel-section">
+      <!-- Inventory Section (moved to staff) -->
+      <div class="panel-section" v-if="false">
         <h2 class="section-title">Inventory Monitor</h2>
         <p class="section-description">Current stock levels for your branch (Read-only)</p>
 
@@ -86,7 +86,7 @@
                 <td>{{ product.name }}</td>
                 <td>{{ product.category || 'N/A' }}</td>
                 <td><span :class="['pricing-type-badge', 'type-' + product.per_pack_or_individual]">{{ formatPricingType(product.per_pack_or_individual) }}</span></td>
-                <td>{{ product.stock }}</td>
+                <td>{{ product.real_stock ?? product.stock }}</td>
                 <td>{{ product.min_stock }}</td>
                 <td class="expiry-cell">
                   <span v-if="product.expires_at" :class="['expiry-date', isExpired(product.expires_at) ? 'expired' : isExpiringSoon(product.expires_at) ? 'expiring-soon' : '']">
@@ -119,8 +119,8 @@
         </div>
       </div>
 
-      <!-- Procurement Requests Section -->
-      <div class="panel-section">
+      <!-- Procurement Requests Section (moved to staff) -->
+      <div class="panel-section" v-if="false">
         <h2 class="section-title">Procurement Requests</h2>
         <p class="section-description">
           {{ canRequestProcurement ? 'Create procurement requests for products needing budget approval' : 'Read-only access. Main Branch logistics cannot create procurement requests.' }}
@@ -202,8 +202,8 @@
         </div>
       </div>
 
-      <!-- Product Request Section (Request new products) -->
-      <div class="panel-section">
+      <!-- Product Request Section (moved to staff) -->
+      <div class="panel-section" v-if="false">
         <h2 class="section-title">Request New Products</h2>
         <p class="section-description">
           Request new products to be added to the inventory. Requests must be approved by the owner and main branch logistics before the product becomes available for procurement.
@@ -306,6 +306,50 @@
         </div>
       </div>
 
+      <!-- Pending Stock Section (moved to Logistics) -->
+      <div class="panel-section">
+        <h2 class="section-title">Pending Stock</h2>
+        <p class="section-description">Items delivered and awaiting inventory confirmation by Logistics.</p>
+
+        <div v-if="pendingStockLoading" class="loading-container">
+          <div class="loading-spinner"></div>
+          <p>Loading pending stock...</p>
+        </div>
+
+        <div v-else-if="pendingStockError" class="error-container">
+          <p class="error-message">{{ pendingStockError }}</p>
+          <button class="btn-retry" @click="fetchPendingStock">Retry</button>
+        </div>
+
+        <div v-else class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Qty</th>
+                <th>Requested</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in pendingStock" :key="item.procurement_request_id || item.id">
+                <td>{{ item.product_name || '(no product)' }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ formatDate(item.created_at) }}</td>
+                <td>
+                  <button class="btn-primary btn-small" :disabled="confirmingPending[item.procurement_request_id || item.id]" @click="confirmPendingStock(item)">
+                    {{ confirmingPending[item.procurement_request_id || item.id] ? 'Confirming...' : 'Confirm Stock' }}
+                  </button>
+                </td>
+              </tr>
+              <tr v-if="pendingStock.length === 0">
+                <td colspan="4" class="empty-message">No pending stock awaiting confirmation.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- Budget Request Section (legacy - keep for now) -->
       <div class="panel-section">
         <h2 class="section-title">Budget Requests (Legacy)</h2>
@@ -391,6 +435,12 @@ const procRequestsLoading = ref(false)
 const procRequestForm = ref({ product_id: '', quantity: 1 })
 const procRequestSubmitting = ref(false)
 const showProcRequestForm = ref(false)
+
+// Pending stock (procurements awaiting inventory confirmation) - moved to Logistics
+const pendingStock = ref([])
+const pendingStockLoading = ref(false)
+const pendingStockError = ref('')
+const confirmingPending = ref({})
 
 // Product Request state
 const productRequests = ref([])
@@ -627,13 +677,35 @@ async function fetchProcRequests() {
   }
 }
 
+async function fetchPendingStock() {
+  pendingStockLoading.value = true
+  pendingStockError.value = ''
+  try {
+    const params = {}
+    if (selectedBranch.value) params.branch_id = selectedBranch.value
+    const res = await requestWithFallback('get', '/api/staff/inventory/pending-procurements', { params, withCredentials: true })
+    const data = res.data ?? []
+    pendingStock.value = Array.isArray(data) ? data : []
+  } catch (e) {
+    console.error('fetchPendingStock error', e)
+    pendingStock.value = []
+    pendingStockError.value = 'Failed to load pending stock: ' + (e.response?.data?.message || e.message)
+  } finally {
+    pendingStockLoading.value = false
+    try { updateDashboardTotals() } catch (e) { /* ignore */ }
+  }
+}
+
 function updateDashboardTotals() {
   const inv = inventory.value || []
   const procs = procurementRequests.value || []
   const prodReqs = productRequests.value || []
   dashboardTotals.value.totalProducts = inv.length
   dashboardTotals.value.lowStock = inv.filter(i => (i.status || '').toString().toLowerCase() !== 'ok').length
-  dashboardTotals.value.pendingRequests = procs.filter(r => (r.status || '').toString().toLowerCase() === 'pending').length + prodReqs.filter(r => (r.approval_status || '').toString().toLowerCase() === 'pending_approval').length
+  // include procurement requests + product requests + pending stock awaiting inventory confirmation
+  dashboardTotals.value.pendingRequests = procs.filter(r => (r.status || '').toString().toLowerCase() === 'pending').length
+    + prodReqs.filter(r => (r.approval_status || '').toString().toLowerCase() === 'pending_approval').length
+    + (pendingStock.value || []).length
 }
 
 async function fetchBranches() {
@@ -709,7 +781,7 @@ async function requestProcurement(product) {
   try {
     // Ensure we treat a min_stock of 0 as "unset" and use default (10).
     const minStock = Number(product.min_stock) > 0 ? Number(product.min_stock) : 10
-    const currentStock = Number(product.stock ?? 0) || 0
+    const currentStock = Number(product.real_stock ?? product.stock ?? 0) || 0
     // Order enough to reach minStock (at least 1). This avoids sending 0 or NaN quantities.
     const diff = Math.ceil(minStock - currentStock)
     const qty = Math.max(diff, 1)
@@ -770,12 +842,51 @@ onMounted(async () => {
   // React to branch changes to reload tables
   watch(selectedBranch, async (newVal, oldVal) => {
     // fetch updated data for the selected branch
-    await Promise.all([fetchInventory(), loadProducts(), fetchProcRequests(), fetchProductRequests()])
+    await Promise.all([fetchInventory(), loadProducts(), fetchProcRequests(), fetchProductRequests(), fetchPendingStock()])
   })
 
   // initial load
-  await Promise.all([fetchInventory(), loadProducts(), fetchProcRequests(), fetchProductRequests()])
+  await Promise.all([fetchInventory(), loadProducts(), fetchProcRequests(), fetchProductRequests(), fetchPendingStock()])
 })
+
+// Confirm pending procurement stock (inventory) - called from logistics panel
+async function confirmPendingStock(item) {
+  if (!item || !item.procurement_request_id) return
+  const id = item.procurement_request_id || item.id
+  // ask for counted stock using swalPrompt if available, otherwise fallback to window.prompt
+  let input = null
+  try {
+    // Use product min_stock as default (fall back to 10). Show expiry in prompt if available.
+    const defaultQty = (item.min_stock ?? item.product_stock ?? 10)
+    const expiryText = item.product_expires_at ? ` | Expires: ${new Date(item.product_expires_at).toLocaleDateString()}` : ''
+    if (window.swalPrompt) {
+      input = await window.swalPrompt(`Enter counted stock for ${item.product_name || 'item'}${expiryText}`, String(defaultQty))
+    } else {
+      input = window.prompt(`Enter counted stock for ${item.product_name || 'item'}${expiryText}`, String(defaultQty))
+    }
+  } catch (e) {
+    console.warn('Prompt cancelled', e)
+    return
+  }
+  if (input === null || input === undefined) return
+  const qty = parseInt(String(input).replace(/[^0-9\-]/g, ''), 10)
+  if (Number.isNaN(qty) || qty < 0) {
+    showToast('Invalid quantity entered', 'error')
+    return
+  }
+
+  confirmingPending.value = { ...confirmingPending.value, [id]: true }
+  try {
+    await requestWithFallbackPost(`/api/staff/inventory/procurements/${id}/confirm-stock`, { counted_stock: qty }, { withCredentials: true })
+    showToast('Stock confirmed', 'success')
+    await Promise.all([fetchPendingStock(), fetchInventory(), fetchProcRequests()])
+  } catch (e) {
+    console.error('confirmPendingStock error', e)
+    showToast(e.response?.data?.message || 'Failed to confirm stock', 'error')
+  } finally {
+    confirmingPending.value = { ...confirmingPending.value, [id]: false }
+  }
+}
 
 // Handle profile updates emitted from OwnerPanelLayout
 function onProfileUpdated(updatedProfile) {

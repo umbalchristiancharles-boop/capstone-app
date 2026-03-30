@@ -40,7 +40,7 @@
                     <td>{{ product.name }}</td>
                     <td>{{ product.sku }}</td>
                     <td>{{ formatPrice(product.price) }}</td>
-                    <td>{{ product.stock }}</td>
+                    <td>{{ product.real_stock ?? product.stock }}</td>
                     <td>{{ product.min_stock }}</td>
                     <td>
                       <span v-if="product.expires_at" :class="getExpiryClass(product)">{{ formatDate(product.expires_at) }}</span>

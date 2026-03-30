@@ -56,7 +56,7 @@
               <tbody>
                 <tr v-for="product in inventory" :key="product.id">
                   <td>{{ product.name }} {{ product.branch_name ? `(${product.branch_name})` : '' }}</td>
-                  <td>{{ product.stock }}</td>
+                  <td>{{ product.real_stock ?? product.stock }}</td>
                   <td>{{ product.min_stock }}</td>
                   <td>
                     <span :class="['status-badge', product.status === 'OK' ? 'status-ok' : 'status-low']">
@@ -349,7 +349,7 @@ async function requestProcurement(product) {
 
   requesting.value[product.id] = true
   const minStock = Number(product.min_stock ?? 10)
-  const currentStock = Number(product.stock ?? 0)
+  const currentStock = Number(product.real_stock ?? product.stock ?? 0)
   const qty = Math.max(minStock - currentStock, minStock)
 
   try {

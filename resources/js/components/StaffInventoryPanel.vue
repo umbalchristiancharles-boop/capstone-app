@@ -63,7 +63,10 @@
                   <td><span class="pricing-type-badge">{{ p.pricing_type || 'N/A' }}</span></td>
                   <td>{{ p.stock ?? 0 }}</td>
                   <td>{{ p.min_stock ?? p.minimum_stock ?? 10 }}</td>
-                  <td class="expiry-cell"><span class="expiry-date">{{ formatDate(p.expires_at || p.expiresAt) }}</span></td>
+                  <td class="expiry-cell">
+                    <span v-if="(p.expires_at || p.expiresAt)" class="expiry-date">{{ formatDate(p.expires_at || p.expiresAt) }}</span>
+                    <span v-else class="muted">N/A</span>
+                  </td>
                   <td>
                     <span class="status-badge" :class="statusClass(p)">{{ statusLabel(p) }}</span>
                   </td>
@@ -151,7 +154,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import InventoryStaffPanel from './inventory/InventoryStaffPanel.vue'
@@ -161,8 +164,6 @@ import '../css/adminpanel.css'
 const userProfile = ref({})
 const products = ref([])
 const procurementRequests = ref([])
-const pendingProcurements = ref([])
-const confirmedProcurements = ref([])
 const announcements = ref([])
 const router = useRouter()
 
@@ -188,15 +189,7 @@ const lowStockCount = computed(() => {
     return acc + (stock <= min ? 1 : 0)
   }, 0)
 })
-const pendingCount = computed(() => (pendingProcurements.value || []).length)
-
-const procurementRequestsCombined = computed(() => {
-  // combine pending + confirmed or fallback to procurementRequests
-  if ((pendingProcurements.value || []).length || (confirmedProcurements.value || []).length) {
-    return [...(pendingProcurements.value || []), ...(confirmedProcurements.value || [])]
-  }
-  return procurementRequests.value || []
-})
+const pendingCount = computed(() => (procurementRequests.value || []).length)
 
 function formatDate(d) {
   if (!d) return ''
@@ -245,28 +238,9 @@ onMounted(async () => {
     userProfile.value = res.data.user || {}
   } catch (e) { console.error('profile fetch failed', e) }
 
-  try {
-    const prods = await axios.get('/api/staff/inventory/products', { withCredentials: true })
-    products.value = Array.isArray(prods.data) ? prods.data : (prods.data?.data || [])
-  } catch (e) { console.error('products fetch failed', e) }
-
-  // procurements
-  try {
-    const pending = await axios.get('/api/staff/inventory/pending-procurements', { withCredentials: true })
-    pendingProcurements.value = Array.isArray(pending.data) ? pending.data : (pending.data?.data || [])
-  } catch (e) { pendingProcurements.value = [] }
-
-  try {
-    const confirmed = await axios.get('/api/staff/inventory/confirmed-procurements', { withCredentials: true })
-    confirmedProcurements.value = Array.isArray(confirmed.data) ? confirmed.data : (confirmed.data?.data || [])
-  } catch (e) { confirmedProcurements.value = [] }
-
-  // fallback generic procurements endpoint
-  try {
-    const reqs = await axios.get('/api/staff/inventory/procurements', { withCredentials: true })
-    procurementRequests.value = Array.isArray(reqs.data) ? reqs.data : (reqs.data?.data || [])
-  } catch (e) { procurementRequests.value = [] }
-
+  // initial fetch
+  await fetchProducts()
+  await fetchProcurements()
   // announcements
   try {
     const ann = await axios.get('/api/announcements', { withCredentials: true })
@@ -278,6 +252,76 @@ function cancelLogout() {
   if (isLoggingOut.value) return
   showLogoutConfirm.value = false
 }
+
+// Fetch helpers so we can poll for updates
+async function fetchProducts() {
+  try {
+    const res = await axios.get('/api/staff/inventory/products', { withCredentials: true })
+    const raw = Array.isArray(res.data) ? res.data : (res.data?.data || [])
+
+    // Deduplicate products by slug (fallback to name). Prefer:
+    // 1) published items over unpublished
+    // 2) items with higher stock when published state is equal
+    const map = new Map()
+    for (const p of raw) {
+      const key = (p.slug || p.name || '').toString().toLowerCase()
+      if (!map.has(key)) {
+        map.set(key, p)
+        continue
+      }
+      const existing = map.get(key)
+      const existStock = Number(existing.stock || 0)
+      const thisStock = Number(p.stock || 0)
+
+      // Prefer higher stock first (so confirmed/ordered items show their actual counts).
+      if (thisStock > existStock) {
+        map.set(key, p)
+        continue
+      }
+
+      // If stock is equal, prefer published item.
+      if (thisStock === existStock) {
+        if ((existing.is_published ? 1 : 0) < (p.is_published ? 1 : 0)) {
+          map.set(key, p)
+        }
+      }
+      // otherwise keep existing (higher stock wins)
+    }
+
+    const normalized = Array.from(map.values()).map(p => ({
+      ...p,
+      min_stock: p.min_stock ?? p.minimum_stock ?? 10,
+      expires_at: p.expires_at ?? p.expiresAt ?? null,
+      stock: Number(p.stock ?? 0)
+    }))
+
+    products.value = normalized
+  } catch (e) {
+    console.error('products fetch failed', e)
+  }
+}
+
+async function fetchProcurements() {
+  try {
+    const res = await axios.get('/api/staff/inventory/procurements', { withCredentials: true })
+    procurementRequests.value = Array.isArray(res.data) ? res.data : (res.data?.data || [])
+  } catch (e) {
+    procurementRequests.value = []
+  }
+}
+
+// Poll for updates so staff UI reflects confirmations done by logistics
+const pollIntervalMs = 15000
+let pollId = null
+onMounted(() => {
+  pollId = setInterval(() => {
+    fetchProducts()
+    fetchProcurements()
+  }, pollIntervalMs)
+})
+onUnmounted(() => {
+  if (pollId) clearInterval(pollId)
+})
 
 async function confirmLogout() {
   if (isLoggingOut.value) return
