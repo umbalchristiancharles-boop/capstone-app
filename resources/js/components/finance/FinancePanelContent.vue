@@ -1,5 +1,22 @@
 <template>
   <div class="finance-content">
+    <div class="panel-section">
+      <h2 class="section-title">Financial Overview</h2>
+      <div v-if="chartLoading" class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Building analytics...</p>
+      </div>
+      <div v-else>
+        <div v-if="!hasChartData" class="empty-message">No finance reports available.</div>
+        <div v-else class="charts-container">
+          <div class="chart-wrapper">
+            <h3 class="chart-title">Revenue vs Expenses</h3>
+            <canvas ref="chartRef"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Recent Transactions Table -->
     <div class="panel-section">
       <h2 class="section-title">Recent Transactions</h2>
@@ -12,6 +29,7 @@
           <thead>
             <tr>
               <th>Order ID</th>
+              <th>Cashier</th>
               <th>Customer</th>
               <th>Total</th>
               <th>Paid</th>
@@ -25,6 +43,12 @@
                 {{ tx.order_code }}
                 <button class="details-btn" @click="toggle(tx.id)">{{ isOpen(tx.id) ? 'Hide' : 'Details' }}</button>
               </td>
+              <td>
+                <div style="font-size: 0.85em">
+                  <div v-if="tx.branch_name">{{ tx.branch_name }}</div>
+                  <small>{{ tx.cashier_name || 'N/A' }}</small>
+                </div>
+              </td>
               <td>{{ tx.customer }}</td>
               <td>₱{{ tx.total }}</td>
               <td>₱{{ tx.paid }}</td>
@@ -33,7 +57,7 @@
             </tr>
             <template v-for="tx in transactions" :key="tx.id + '-details'">
               <tr v-if="isOpen(tx.id)" class="tx-details-row">
-                <td colspan="6">
+                <td colspan="7">
                   <div class="tx-details">
                     <div class="items">
                       <strong>Items:</strong>
@@ -61,28 +85,18 @@
               </tr>
             </template>
             <tr v-if="transactions.length === 0">
-              <td colspan="6" class="empty-message">No recent transactions found.</td>
+              <td colspan="7" class="empty-message">No recent transactions found.</td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
-
-    <!-- Financial Reports (placeholder - expand when reports data available) -->
-    <div class="panel-section">
-      <h2 class="section-title">Financial Reports</h2>
-      <p v-if="!reports || reports.length === 0" class="empty-message">No financial reports available. Reports will appear here when generated.</p>
-      <div v-else class="reports-grid">
-        <div v-for="report in reports" :key="report.id" class="report-card">
-          <h3>{{ report.title }}</h3>
-          <p>{{ report.summary || 'No summary available' }}</p>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
+
 <script setup>
-import { computed, ref } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
+import Chart from 'chart.js/auto'
 
 const props = defineProps({
   reports: {
@@ -92,12 +106,61 @@ const props = defineProps({
   transactions: {
     type: Array,
     default: () => []
+  },
+  transactionsLoading: {
+    type: Boolean,
+    default: false
+  },
+  chartLoading: {
+    type: Boolean,
+    default: false
   }
 })
 
 const openIds = ref([])
+const chartRef = ref(null)
+const chartInstance = ref(null)
+const chartLoading = computed(() => props.chartLoading)
 
-const transactionsLoading = computed(() => props.transactions.length === 0 && !props.reports.length) // simple loading proxy
+const transactionsLoading = computed(() => props.transactionsLoading)
+
+const normalizedReports = computed(() => {
+  const rows = []
+
+  for (const r of (props.reports || [])) {
+    // Support report payloads shaped like { data: { months: [], income: [], expenses: [], netProfit: [] } }.
+    if (r?.data && Array.isArray(r.data.months)) {
+      const months = r.data.months || []
+      const income = r.data.income || r.data.revenue || []
+      const expenses = r.data.expenses || []
+      const netProfit = r.data.netProfit || r.data.profit || []
+
+      months.forEach((month, idx) => {
+        const revenue = toNumber(income[idx])
+        const expense = toNumber(expenses[idx])
+        const profit = toNumber(netProfit[idx] ?? (revenue - expense))
+        rows.push({
+          label: month || `Entry ${idx + 1}`,
+          revenue,
+          expenses: expense,
+          profit
+        })
+      })
+
+      continue
+    }
+
+    const label = r?.month || r?.label || r?.period || r?.date || `Entry ${rows.length + 1}`
+    const revenue = toNumber(r?.revenue || r?.totalRevenue || r?.total_sales || r?.sales)
+    const expenses = toNumber(r?.expenses || r?.totalExpenses || r?.total_expenses)
+    const profit = toNumber(r?.netProfit || r?.profit || (revenue - expenses))
+    rows.push({ label, revenue, expenses, profit })
+  }
+
+  return rows
+})
+
+const hasChartData = computed(() => normalizedReports.value.some(r => r.revenue || r.expenses || r.profit))
 
 function getStatusClass(status) {
   switch (status?.toLowerCase()) {
@@ -117,6 +180,62 @@ function toggle(id) {
 function isOpen(id) {
   return openIds.value.includes(id)
 }
+
+function toNumber(val) {
+  const n = Number(val)
+  return isNaN(n) ? 0 : n
+}
+
+function renderChart() {
+  if (!chartRef.value) return
+  if (chartInstance.value) {
+    chartInstance.value.destroy()
+    chartInstance.value = null
+  }
+  if (!hasChartData.value) return
+
+  const labels = normalizedReports.value.map(r => r.label)
+  const revenue = normalizedReports.value.map(r => r.revenue)
+  const expenses = normalizedReports.value.map(r => r.expenses)
+  const profit = normalizedReports.value.map(r => r.profit)
+
+  const ctx = chartRef.value.getContext('2d')
+  chartInstance.value = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Revenue', data: revenue, borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.12)', tension: 0.25, fill: true },
+        { label: 'Expenses', data: expenses, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.12)', tension: 0.25, fill: true },
+        { label: 'Profit', data: profit, borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.12)', tension: 0.25, fill: false }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'top' }
+      },
+      scales: {
+        y: { beginAtZero: true, ticks: { callback: (v) => `₱${Number(v).toLocaleString('en-PH')}` } }
+      }
+    }
+  })
+}
+
+watch(normalizedReports, () => {
+  renderChart()
+})
+
+onMounted(() => {
+  renderChart()
+})
+
+onUnmounted(() => {
+  if (chartInstance.value) {
+    try { chartInstance.value.destroy() } catch (e) {}
+  }
+})
 </script>
 
 <style scoped>
@@ -139,6 +258,46 @@ function isOpen(id) {
   font-weight: 600;
   color: #1F2937;
   margin: 0 0 16px 0;
+}
+
+.chart-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1F2937;
+  margin: 0 0 12px 0;
+  text-align: center;
+}
+
+.charts-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 24px;
+}
+
+.chart-wrapper {
+  background: #F8FAFC;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #E2E8F0;
+  min-height: 320px;
+}
+
+.chart-wrapper canvas {
+  height: 300px !important;
+  max-height: 350px;
+}
+
+.chart-legend {
+  text-align: center;
+  margin-top: 16px;
+  padding: 12px;
+  background: #F1F5F9;
+  border-radius: 8px;
+}
+
+.chart-legend small {
+  color: #64748B;
+  font-size: 14px;
 }
 
 .table-container {
@@ -188,6 +347,43 @@ function isOpen(id) {
   color: #991B1B;
 }
 
+.details-btn {
+  margin-left: 8px;
+  padding: 4px 8px;
+  background: #3B82F6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.details-btn:hover {
+  background: #2563EB;
+}
+
+.tx-details-row {
+  background: #F8FAFC;
+}
+
+.tx-details {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.items ul {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+}
+
 .empty-message {
   text-align: center;
   color: #9CA3AF;
@@ -207,7 +403,7 @@ function isOpen(id) {
   width: 40px;
   height: 40px;
   border: 3px solid #E5E7EB;
-  border-top: 3px solid #0066FF;
+  border-top: 3px solid #3B82F6;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 12px;
@@ -218,22 +414,14 @@ function isOpen(id) {
   100% { transform: rotate(360deg); }
 }
 
-.reports-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-}
-
-.report-card {
-  padding: 20px;
-  border: 1px solid #E5E7EB;
-  border-radius: 8px;
-  background: #F9FAFB;
-}
-
-.report-card h3 {
-  margin: 0 0 8px 0;
-  color: #1F2937;
-  font-size: 16px;
+@media (max-width: 768px) {
+  .charts-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .chart-wrapper canvas {
+    height: 250px !important;
+  }
 }
 </style>
+

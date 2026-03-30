@@ -3,9 +3,11 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\JwtAuthController;
 use App\Http\Controllers\OwnerDashboardController;
 use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\AdminFinanceController;
 use App\Http\Controllers\Manager\ManagerDashboardController;
 use App\Http\Controllers\Manager\InventoryController;
 use App\Http\Controllers\Manager\StaffManagementController;
@@ -18,6 +20,15 @@ use Illuminate\Support\Str;
 use App\Models\User;
 use App\Http\Controllers\Api\ProductCommentController;
 use App\Http\Controllers\Api\ConfigController;
+
+// ==========================================
+// JWT AUTHENTICATION ROUTES (Cross-Domain)
+// ==========================================
+Route::post('/jwt/login', [JwtAuthController::class, 'login']);
+Route::post('/jwt/refresh', [JwtAuthController::class, 'refresh']);
+Route::post('/jwt/logout', [JwtAuthController::class, 'logout']);
+Route::post('/jwt/logout-all', [JwtAuthController::class, 'logoutAll'])->middleware('jwt_token');
+Route::get('/jwt/me', [JwtAuthController::class, 'me'])->middleware('jwt_token');
 
 // API routes using session (web guard)
 Route::middleware('web')->group(function () {
@@ -137,6 +148,17 @@ Route::middleware('web')->group(function () {
     Route::get('/superadmin/cashier/transactions',[\App\Http\Controllers\Api\CashierController::class, 'transactions'])->middleware(['auth','permission:cashier']);
 
     // ==========================================
+    // PRICE MARKUP PERCENTAGE MANAGEMENT
+    // Finance manager requests, main finance approves, owner approves
+    // ==========================================
+    Route::get('/price-markup/current/{branchId?}', [\App\Http\Controllers\Api\PriceMarkupController::class, 'getCurrentPercentage'])->middleware('auth');
+    Route::post('/price-markup/request', [\App\Http\Controllers\Api\PriceMarkupController::class, 'requestPercentageChange'])->middleware('auth');
+    Route::get('/price-markup/pending/{branchId?}', [\App\Http\Controllers\Api\PriceMarkupController::class, 'getPendingRequests'])->middleware('auth');
+    Route::post('/price-markup/{requestId}/main-finance-approve', [\App\Http\Controllers\Api\PriceMarkupController::class, 'mainFinanceApprove'])->middleware('auth');
+    Route::post('/price-markup/{requestId}/owner-approve', [\App\Http\Controllers\Api\PriceMarkupController::class, 'ownerApprove'])->middleware('auth');
+    Route::get('/price-markup/history/{branchId}', [\App\Http\Controllers\Api\PriceMarkupController::class, 'getHistory'])->middleware('auth');
+
+    // ==========================================
     // ORDERS - KITCHEN STAFF
     // ==========================================
     Route::patch('/orders/{id}/mark-completed', [\App\Http\Controllers\Api\OrderController::class, 'markCompleted'])->middleware('auth');
@@ -145,7 +167,7 @@ Route::middleware('web')->group(function () {
     Route::get('/owner-dashboard', [OwnerDashboardController::class, 'index']);
 
     // HR Messaging routes
-        Route::prefix('hr')->middleware(['auth','permission:hr'])->group(function () {
+    Route::prefix('hr')->middleware('auth')->group(function () {
         Route::get('/messages/users', [\App\Http\Controllers\HRMessageController::class, 'users']);
         Route::get('/messages/conversation/{userId}', [\App\Http\Controllers\HRMessageController::class, 'conversation']);
         Route::post('/messages/send', [\App\Http\Controllers\HRMessageController::class, 'send']);
@@ -165,6 +187,13 @@ Route::middleware('web')->group(function () {
         Route::get('/branches',         [StaffController::class, 'apiBranches']);
         Route::get('/attendance', [\App\Http\Controllers\Admin\AttendanceController::class, 'index']);
 
+        // Admin Finance Routes
+        Route::prefix('finance')->group(function () {
+            Route::get('/dashboard',    [AdminFinanceController::class, 'dashboard']);
+            Route::get('/transactions', [AdminFinanceController::class, 'transactions']);
+            Route::get('/reports',      [AdminFinanceController::class, 'reports']);
+        });
+
         // Config endpoint for default password (requires authentication)
         Route::get('/config/default-password', [ConfigController::class, 'defaultPassword']);
     });
@@ -178,10 +207,17 @@ Route::middleware('auth:sanctum,web')->group(function () {
     Route::apiResource('procurement-requests', \App\Http\Controllers\Api\ProcurementRequestController::class)->except(['show']);
     Route::get('procurement-requests/requested-products', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'requestedProducts']);
     Route::get('procurement-requests/receipt-submissions', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'receiptSubmissions']);
+    Route::get('procurement-requests/{id}/confirmed-suppliers', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'confirmedSuppliers']);
     Route::post('procurement-requests/{id}/status', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'updateStatus']);
     Route::post('procurement-requests/{id}/complete', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'completeOrder']);
     Route::post('procurement-requests/{id}/confirm-receipt', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'confirmReceipt']);
     Route::post('procurement-requests/{id}/broadcast', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'broadcastToSuppliers']);
+
+    // Product Request Workflow (Logistics requests new products for approval by Owner)
+    Route::apiResource('product-requests', \App\Http\Controllers\Api\ProductRequestController::class)->except(['show', 'update', 'destroy']);
+    Route::get('product-requests/pending', [\App\Http\Controllers\Api\ProductRequestController::class, 'getPendingRequests']);
+    Route::post('product-requests/{id}/approve', [\App\Http\Controllers\Api\ProductRequestController::class, 'approveRequest']);
+    Route::post('product-requests/{id}/reject', [\App\Http\Controllers\Api\ProductRequestController::class, 'rejectRequest']);
 
     Route::apiResource('procurement.products', \App\Http\Controllers\Api\ProcurementProductController::class)->only(['index']);
     Route::post('procurement.products/{productId}/place-order', [\App\Http\Controllers\Api\ProcurementProductController::class, 'placeOrder']);
@@ -231,9 +267,6 @@ Route::prefix('manager')->middleware('auth:sanctum,web')->group(function () {
 
         Route::get('/finance/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'financeProfile']);
         Route::put('/finance/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'updateFinanceProfile']);
-        Route::get('/finance/dashboard', [\App\Http\Controllers\Api\ManagerProfileController::class, 'financeDashboard']);
-        Route::get('/finance/reports', [\App\Http\Controllers\Api\ManagerProfileController::class, 'financeReports']);
-        Route::get('/finance/transactions', [\App\Http\Controllers\Api\ManagerProfileController::class, 'financeTransactions']);
 
         Route::get('/logistics/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'logisticsProfile']);
         Route::put('/logistics/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'updateLogisticsProfile']);
@@ -267,6 +300,12 @@ Route::prefix('manager')->middleware('auth:sanctum,web')->group(function () {
         Route::put('/finance/budget/{id}/reject', [\App\Http\Controllers\Manager\BudgetRequestController::class, 'rejectRequest']);
         // Mark budget as handed to procurement (finance confirms physical handover)
         Route::put('/finance/budget/{id}/given', [\App\Http\Controllers\Manager\BudgetRequestController::class, 'markGiven']);
+
+        // Finance Manager Dashboard & Reports (ManagerFinanceController) - PRIMARY endpoints for panel
+        Route::get('/finance/profile', [\App\Http\Controllers\Api\ManagerFinanceController::class, 'profile']);
+        Route::get('/finance/dashboard', [\App\Http\Controllers\Api\ManagerFinanceController::class, 'dashboard']);
+        Route::get('/finance/reports', [\App\Http\Controllers\Api\ManagerFinanceController::class, 'reports']);
+        Route::get('/finance/transactions', [\App\Http\Controllers\Api\ManagerFinanceController::class, 'transactions']);
 
         // Branch budget management (Finance Manager) - list and update branch budgets
         Route::get('/finance/branches', [\App\Http\Controllers\Api\ManagerFinanceController::class, 'branches']);
@@ -355,13 +394,27 @@ Route::prefix('manager')->middleware('auth:sanctum,web')->group(function () {
             Route::post('/clock-out',       [AttendanceController::class, 'clockOut']);
             Route::get('/attendance/status', [AttendanceController::class, 'status']);
             Route::get('/attendance/history', [AttendanceController::class, 'history']);
+
+            // Dish Approval Workflow - Owner must approve new dishes before they appear in logistics
+            Route::get('/dishes/pending', [\App\Http\Controllers\Admin\DishApprovalController::class, 'pendingDishes']);
+            Route::get('/dishes/approved', [\App\Http\Controllers\Admin\DishApprovalController::class, 'approvedDishes']);
+            Route::post('/dishes/{id}/approve', [\App\Http\Controllers\Admin\DishApprovalController::class, 'approveDish']);
+            Route::post('/dishes/{id}/reject', [\App\Http\Controllers\Admin\DishApprovalController::class, 'rejectDish']);
+
+            // Product Request Approval Workflow - Owner must approve new product requests from logistics
+            Route::get('/product-requests/pending', [\App\Http\Controllers\Api\ProductRequestController::class, 'getPendingRequests']);
+            Route::post('/product-requests/{id}/approve', [\App\Http\Controllers\Api\ProductRequestController::class, 'approveRequest']);
+            Route::post('/product-requests/{id}/reject', [\App\Http\Controllers\Api\ProductRequestController::class, 'rejectRequest']);
         });
     });
 
     // PRODUCT COMMENTS API
+    Route::get('/products-for-comments', [ProductCommentController::class, 'listProducts']);
     Route::get('/product-comments', [ProductCommentController::class, 'index']);
+    Route::get('/product-comments/all', [ProductCommentController::class, 'allComments'])->middleware('auth');
     Route::post('/product-comments', [ProductCommentController::class, 'store']);
     Route::post('/product-comment-replies', [ProductCommentController::class, 'storeReply']);
+    Route::delete('/product-comments/{id}', [ProductCommentController::class, 'destroy'])->middleware('auth');
 
     Route::post('/auth/send-verification', [AuthController::class, 'sendVerification']);
     Route::post('/auth/verify-code', [AuthController::class, 'verifyCode']);

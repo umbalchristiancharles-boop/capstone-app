@@ -870,6 +870,11 @@ function canCompleteTransaction(order) {
     if (!order || order.status !== 'pending') return false
     if (!order.product || !order.product.id) return false
 
+    // Only show "Transaction complete" for actual placed orders (is_broadcast = false)
+    // NOT for initial submission broadcasts (is_broadcast = true)
+    // This ensures only the selected supplier sees the complete button
+    if (order.is_broadcast !== false) return false
+
     // Supplier can complete transaction only after procurement/finance flow has
     // reached order-ready or delivery states for the linked request.
     const reqStatus = order.procurementRequest?.status || ''

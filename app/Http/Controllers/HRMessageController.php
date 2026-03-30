@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Branch;
 use App\Models\Message;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -77,24 +78,31 @@ class HRMessageController extends Controller
     {
         $request->validate([
             'to_user_id' => 'required|integer|exists:users,id',
-            'body' => 'required|string',
+            'body' => 'required|string|min:1|max:5000',
         ]);
 
         $me = $this->currentUser();
         if (! $me) {
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
+        
+        // Prevent messaging self
+        if ((int)$request->to_user_id === (int)$me->id) {
+            return response()->json(['error' => 'Cannot message yourself'], 400);
+        }
+        
         $to = User::findOrFail($request->to_user_id);
 
+        // Strict authorization check
         if (! $this->canChatWith($me, $to)) {
-            return response()->json(['error' => 'User not in same branch'], 403);
+            return response()->json(['error' => 'Not authorized to message this user'], 403);
         }
 
         $msg = Message::create([
             'branch_id' => $me->branch_id ?? null,
             'from_user_id' => $me->id,
             'to_user_id' => $to->id,
-            'body' => $request->body,
+            'body' => trim($request->body),
         ]);
 
         return response()->json(['message' => $msg]);
@@ -102,184 +110,71 @@ class HRMessageController extends Controller
 
     private function resolveChatUsersFor(User $user)
     {
-        // For HR users: surface people in their branch plus anyone they already have messages with.
-        if ($this->isHrUser($user)) {
-            $partnerIds = Message::where('from_user_id', $user->id)
-                ->orWhere('to_user_id', $user->id)
-                ->get(['from_user_id', 'to_user_id'])
-                ->flatMap(function ($m) {
-                    return [$m->from_user_id, $m->to_user_id];
-                })
-                ->filter()
-                ->unique()
-                ->reject(fn ($id) => (int) $id === (int) $user->id)
-                ->values();
-
-            $query = User::query()->where('id', '!=', $user->id);
-
-            if ($user->branch_id) {
-                $query->where(function ($q) use ($user, $partnerIds) {
-                    $q->where('branch_id', $user->branch_id);
-                    if ($partnerIds->isNotEmpty()) {
-                        $q->orWhereIn('id', $partnerIds);
-                    }
-                });
-            } elseif ($partnerIds->isNotEmpty()) {
-                $query->whereIn('id', $partnerIds);
-            } else {
-                $query->whereIn('role', ['STAFF', 'MANAGER', 'BRANCH_MANAGER', 'BRANCH MANAGER']);
-            }
-
-            return $query->selectRaw("id, COALESCE(full_name, username, CONCAT('User #', id)) as name, role, branch_id")
-                ->orderBy('name')->distinct()->get();
+        $meRole = strtoupper($user->role ?? '');
+        $adminRoles = ['SUPER_ADMIN', 'ADMIN', 'OWNER'];
+        $meBranch = $user->branch_id ?? null;
+        
+        // Check if user is in main branch
+        $isMainBranchUser = false;
+        if ($meBranch) {
+            $myBranch = Branch::find($meBranch);
+            $isMainBranchUser = $myBranch && $myBranch->is_main_branch;
         }
 
-        // For staff/manager: prefer HR in same branch; fallback to global HR.
-        if ($user->branch_id) {
-            $sameBranchHr = User::query()
-                ->where(function ($q) {
-                    $q->whereRaw("UPPER(role) LIKE '%HR%'")
-                        ->orWhereRaw("UPPER(COALESCE(department, '')) = 'HR'");
-                })
-                ->where('branch_id', $user->branch_id)
+        // Owner, Admin, Super Admin, or main branch users: show all users except self
+        if (in_array($meRole, $adminRoles) || $isMainBranchUser) {
+            $users = User::where('id', '!=', $user->id)
                 ->selectRaw("id, COALESCE(full_name, username, CONCAT('User #', id)) as name, role, branch_id")
                 ->orderBy('name')
                 ->get();
-
-            // Also include CUSTOM accounts with HR module permission in same branch
-            $customHrUsers = User::where('role', 'CUSTOM')
-                ->where('branch_id', $user->branch_id)
-                ->get(['id', 'full_name', 'username', 'role', 'branch_id', 'permissions']);
-            
-            foreach ($customHrUsers as $cu) {
-                try {
-                    $perms = $cu->permissions ?? [];
-                    if (is_string($perms)) $perms = json_decode($perms, true) ?: [];
-                    if (is_array($perms) && isset($perms['modules']) && is_array($perms['modules'])) {
-                        foreach ($perms['modules'] as $m) {
-                            if (strtoupper(trim((string)$m)) === 'HR') {
-                                $sameBranchHr->push((object)[
-                                    'id' => $cu->id,
-                                    'name' => $cu->full_name ?? $cu->username ?? ('User #' . $cu->id),
-                                    'role' => $cu->role,
-                                    'branch_id' => $cu->branch_id,
-                                ]);
-                                break;
-                            }
-                        }
-                    }
-                } catch (\Throwable $e) { /* ignore */ }
-            }
-
-            if ($sameBranchHr->isNotEmpty()) {
-                return $sameBranchHr->sortBy('name')->values();
-            }
+            return $users;
         }
 
-        $globalHr = User::query()
-            ->where(function ($q) {
-                $q->whereRaw("UPPER(role) LIKE '%HR%'")
-                    ->orWhereRaw("UPPER(COALESCE(department, '')) = 'HR'");
-            })
-            ->whereNull('branch_id')
-            ->selectRaw("id, COALESCE(full_name, username, CONCAT('User #', id)) as name, role, branch_id")
-            ->orderBy('name')
-            ->get();
-
-        // Also include global CUSTOM accounts with HR module permission
-        $customGlobalHrUsers = User::where('role', 'CUSTOM')
-            ->whereNull('branch_id')
-            ->get(['id', 'full_name', 'username', 'role', 'branch_id', 'permissions']);
-        
-        foreach ($customGlobalHrUsers as $cu) {
-            try {
-                $perms = $cu->permissions ?? [];
-                if (is_string($perms)) $perms = json_decode($perms, true) ?: [];
-                if (is_array($perms) && isset($perms['modules']) && is_array($perms['modules'])) {
-                    foreach ($perms['modules'] as $m) {
-                        if (strtoupper(trim((string)$m)) === 'HR') {
-                            $globalHr->push((object)[
-                                'id' => $cu->id,
-                                'name' => $cu->full_name ?? $cu->username ?? ('User #' . $cu->id),
-                                'role' => $cu->role,
-                                'branch_id' => $cu->branch_id,
-                            ]);
-                            break;
-                        }
-                    }
-                }
-            } catch (\Throwable $e) { /* ignore */ }
+        // CUSTOM or other branch users: show only users in their branch except self
+        if ($meBranch) {
+            $users = User::where('id', '!=', $user->id)
+                ->where('branch_id', $meBranch)
+                ->selectRaw("id, COALESCE(full_name, username, CONCAT('User #', id)) as name, role, branch_id")
+                ->orderBy('name')
+                ->get();
+            return $users;
         }
 
-        if ($globalHr->isNotEmpty()) {
-            return $globalHr->sortBy('name')->values();
-        }
-
-        // Fallback so the widget never shows an empty list: pick admins/owners in same branch.
-        $fallback = User::where('id', '!=', $user->id)
-            ->when($user->branch_id, function ($q) use ($user) {
-                $q->where('branch_id', $user->branch_id);
-            })
-            ->whereIn('role', ['ADMIN', 'OWNER'])
-            ->selectRaw("id, COALESCE(full_name, username, CONCAT('User #', id)) as name, role, branch_id")
-            ->orderBy('name')
-            ->get();
-
-        return $fallback;
+        // Fallback for users with no branch assigned: return nothing
+        return collect();
     }
 
     private function canChatWith(User $me, User $other): bool
     {
-        // Allow admins/owners/super-admins to view any conversation
         $meRole = strtoupper($me->role ?? '');
         $otherRole = strtoupper($other->role ?? '');
         $adminRoles = ['SUPER_ADMIN', 'ADMIN', 'OWNER'];
+        
+        // Owner, Admin, Super Admin can message anyone
         if (in_array($meRole, $adminRoles) || in_array($otherRole, $adminRoles)) {
             return true;
         }
+
         $meBranch = $me->branch_id ?? null;
         $otherBranch = $other->branch_id ?? null;
 
-        if ($this->isHrUser($me) || $this->isHrUser($other)) {
-            // HR chats are branch-scoped unless one side is global (no branch).
-            if ($meBranch === null || $otherBranch === null) {
+        // Check if current user is in main branch
+        if ($meBranch && $otherBranch) {
+            $myBranch = Branch::find($meBranch);
+            if ($myBranch && $myBranch->is_main_branch) {
+                // Main branch users can message anyone
                 return true;
             }
 
-            return (int) $meBranch === (int) $otherBranch;
+            // Check if other user is in main branch (if so, they can be messaged from anywhere)
+            $otherUserBranch = Branch::find($otherBranch);
+            if ($otherUserBranch && $otherUserBranch->is_main_branch) {
+                return true;
+            }
         }
 
-        return $meBranch === $otherBranch;
-    }
-
-    private function isHrRole(string $role): bool
-    {
-        return $role === 'HR' || str_contains($role, 'HR');
-    }
-
-    private function isHrUser(User $user): bool
-    {
-        $role = strtoupper($user->role ?? '');
-        $department = strtoupper($user->department ?? '');
-
-        if ($this->isHrRole($role) || $department === 'HR') {
-            return true;
-        }
-
-        // Check CUSTOM accounts with HR module permission
-        if ($role === 'CUSTOM') {
-            try {
-                $perms = $user->permissions ?? [];
-                if (is_string($perms)) $perms = json_decode($perms, true) ?: [];
-                if (is_array($perms) && isset($perms['modules']) && is_array($perms['modules'])) {
-                    foreach ($perms['modules'] as $m) {
-                        if (strtoupper(trim((string)$m)) === 'HR') return true;
-                    }
-                }
-            } catch (\Throwable $e) { /* ignore */ }
-        }
-
-        return false;
+        // Both must be in the same branch (handles CUSTOM, STAFF, MANAGER, etc. uniformly)
+        return (int)$meBranch === (int)$otherBranch && $meBranch !== null;
     }
 
     private function currentUser(): User

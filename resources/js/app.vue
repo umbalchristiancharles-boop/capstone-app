@@ -1,5 +1,5 @@
 <template>
-  <div id="app">
+  <div id="app" data-v-app>
     <router-view v-slot="{ Component, route }">
       <transition :name="transitionName" mode="out-in" :key="route ? route.fullPath : ''">
         <div class="route-view">
@@ -7,7 +7,7 @@
         </div>
       </transition>
     </router-view>
-    <div id="page-blur" aria-hidden="true"></div>
+    <div id="page-blur" aria-hidden="true" inert></div>
     <message-widget />
   </div>
 </template>

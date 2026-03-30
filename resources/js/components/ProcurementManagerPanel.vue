@@ -181,7 +181,7 @@
                     <button class="btn-small btn-primary" @click="acknowledgeRequest(p)">Acknowledge</button>
                   </template>
                   <template v-else-if="(p.procurement_status === 'pending' || p.status === 'pending') && p.needs_supplier">
-                    <button class="btn-small btn-warning" @click="requestSupplier(p)">Request Supplier for Product</button>
+                    <button class="btn-small btn-warning" @click="requestSupplier(p)" :disabled="requestingSupplierIds[(p.procurement_request_id || p.id)]">{{ requestingSupplierIds[(p.procurement_request_id || p.id)] ? 'Requesting...' : 'Request Supplier for Product' }}</button>
                   </template>
                   <template v-else-if="p.procurement_status === 'budget_pending' || p.status === 'budget_pending'">
                     <button class="btn-small btn-outline" disabled>Budget to be received</button>
@@ -373,25 +373,37 @@
       </div>
     </div>
   </transition>
-  <!-- Supplier selection modal -->
+  <!-- Supplier selection modal - shown during Acknowledge button -->
   <transition name="fade">
     <div v-if="supplierModalVisible" class="modal-backdrop" @click.self="closeSupplierModal">
       <div class="modal">
         <div class="modal-card">
           <div class="modal-header">
-            <h3>Select Supplier</h3>
+            <h3>{{ showingConfirmedSuppliersOnly ? 'Select Confirmed Supplier' : 'Select Supplier' }}</h3>
           </div>
           <div class="modal-body">
             <div class="form-group full-span">
               <label>Choose a supplier to fulfill: <strong>{{ pendingOrderProduct?.name || '' }}</strong></label>
             </div>
-              <div class="form-group full-span">
+            <div v-if="showingConfirmedSuppliersOnly" class="form-note mb-1">
+              <strong style="color: #28a745;">✓ These suppliers have confirmed they have this product available.</strong>
+            </div>
+            <div class="form-group full-span">
               <div v-if="supplierLoading">Loading suppliers...</div>
               <div v-else-if="!supplierList.length">No suppliers available.</div>
               <div v-else class="supplier-list-scroll">
                 <div v-for="s in supplierList" :key="s.id" class="supplier-row">
                   <input type="radio" :id="'sup-'+s.id" :value="s.id" v-model="selectedSupplierId" />
-                  <label :for="'sup-'+s.id">{{ s.full_name || s.username }} ({{ s.email || 'no-email' }})</label>
+                  <label :for="'sup-'+s.id" class="supplier-label">
+                    <div class="supplier-name">{{ s.full_name || s.username }}</div>
+                    <div class="supplier-contact">{{ s.email || 'no-email' }}</div>
+                    <div v-if="showingConfirmedSuppliersOnly && confirmedSuppliers" class="supplier-details">
+                      <template v-for="cs in confirmedSuppliers.filter(x => x.supplier_id === s.id)" :key="cs.order_id">
+                        <div class="detail-line">Price: {{ formatPrice(cs.product_price) }} | Stock: {{ cs.product_stock }} | Expires: {{ formatDate(cs.product_expiry) }}</div>
+                        <div v-if="cs.per_pack_or_individual" class="detail-line">Type: {{ formatPricingType(cs.per_pack_or_individual) }}</div>
+                      </template>
+                    </div>
+                  </label>
                 </div>
               </div>
             </div>
@@ -402,7 +414,7 @@
           </div>
           <div class="modal-footer">
             <button class="btn-outline" @click="closeSupplierModal">Cancel</button>
-            <button class="btn-primary" @click="confirmSupplierSelection">Confirm</button>
+            <button class="btn-primary" @click="confirmSupplierSelection">{{ pendingAcknowledgeProduct ? 'Select & Acknowledge' : 'Confirm' }}</button>
           </div>
         </div>
       </div>
@@ -479,9 +491,14 @@ const placingOrderIds = ref({})
 const orderPlacedIds = ref({})
 const completingDeliveryIds = ref({})
 const receiptPendingIds = ref({})
+const requestingSupplierIds = ref({})
 
 function setPlacingFlag(id, val) {
   placingOrderIds.value = { ...(placingOrderIds.value || {}), [id]: val }
+}
+
+function setRequestingFlag(id, val) {
+  requestingSupplierIds.value = { ...(requestingSupplierIds.value || {}), [id]: val }
 }
 
 function setOrderPlacedFlag(id, val) {
@@ -755,30 +772,99 @@ async function loadRequestedProducts() {
 }
 
 async function acknowledgeRequest(product) {
+  // Check if there are multiple confirmed suppliers to choose from
+  if (product.procurement_request_id) {
+    try {
+      const confirmedRes = await axios.get(`/api/procurement-requests/${product.procurement_request_id}/confirmed-suppliers`, { withCredentials: true })
+      if (confirmedRes.data && confirmedRes.data.ok && confirmedRes.data.suppliers) {
+        const confirmedList = confirmedRes.data.suppliers
+        // Treat entries with zero stock/price as not confirmed yet
+        const filteredConfirmed = confirmedList.filter(s => Number(s.product_stock || 0) > 0 || Number(s.product_price || 0) > 0)
+        // If there are multiple confirmed suppliers, open modal for selection
+        if (filteredConfirmed.length > 1) {
+          pendingAcknowledgeProduct.value = product  // Store for later when user selects supplier
+          openSupplierModal(product, true)  // true = isForAcknowledge
+          return
+        }
+        // If exactly one supplier confirmed, auto-assign it and skip modal
+        if (filteredConfirmed.length === 1) {
+          const onlySupplier = filteredConfirmed[0]
+          product.supplier_id = onlySupplier.supplier_id
+          product.supplier_name = onlySupplier.supplier_name
+        }
+        // If none have confirmed and none is already set, block acknowledgement
+        if (filteredConfirmed.length === 0 && !product.supplier_id) {
+          alert('This product has no supplier yet. Please request a supplier or wait for confirmation.')
+          return
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to check confirmed suppliers', e)
+      // Continue with acknowledgement regardless
+    }
+  }
+  
   if (!(await window.swalConfirm(`Acknowledge logistics request for ${product.name}? (Sends to finance for budget)`))) return
+  
   try {
     const requestId = product.procurement_request_id || product.id
-    const res = await axios.post(`/api/procurement-requests/${requestId}/status`, { }, { withCredentials: true })
-    alert('Request acknowledged and sent to finance')
+    const payload = {}
+    // Send selected supplier_id if available (for single confirmed supplier scenario)
+    if (product.supplier_id) {
+      payload.supplier_id = product.supplier_id
+    }
+    
+    const res = await axios.post(`/api/procurement-requests/${requestId}/status`, payload, { withCredentials: true })
+    
+    // Use message from backend if available
+    const successMsg = res.data?.message || '✓ Request acknowledged and sent to Finance for budget approval!'
+    alert(successMsg)
+    
     await loadRequestedProducts()
     await loadProducts()
+    await refreshAllData()  // Refresh to show updated status
   } catch (e) {
-    alert('Failed to acknowledge request')
+    // Show actual error message from backend
+    const errorMsg = e.response?.data?.error || e.response?.data?.message || 'Failed to acknowledge request'
+    console.error('acknowledgeRequest error:', errorMsg, e)
+    
+    // If error is about needing supplier selection
+    if (errorMsg.includes('supplier selection')) {
+      alert('✓ Multiple suppliers available - please select one from the list')
+      // Modal should already be open if this was called from multi-supplier flow
+      return
+    }
+    
+    // If error is about missing supplier, offer to broadcast
+    if (errorMsg.includes('supplier') || errorMsg.includes('price')) {
+      const shouldBroadcast = await window.swalConfirm(`${errorMsg}\n\nWould you like to request suppliers to provide this product?`)
+      if (shouldBroadcast) {
+        await requestSupplier(product)
+      }
+    } else {
+      alert('❌ ' + errorMsg)
+    }
   }
 }
 
 async function requestSupplier(product) {
+  const productId = product.procurement_request_id || product.id
+  if (requestingSupplierIds.value[productId]) return
+  
   if (!(await window.swalConfirm(`Request suppliers to provide ${product.name}?`))) return
+  
+  setRequestingFlag(productId, true)
   try {
-    const requestId = product.procurement_request_id || product.id
-    const res = await axios.post(`/api/procurement-requests/${requestId}/broadcast`, {}, { withCredentials: true })
-    alert(res.data?.message || 'Supplier request broadcasted')
+    const res = await axios.post(`/api/procurement-requests/${productId}/broadcast`, {}, { withCredentials: true })
+    alert('✓ ' + (res.data?.message || 'Supplier request broadcasted successfully!\n\nSuppliers will receive the request and can submit their products.'))
     await loadRequestedProducts()
     await loadProducts()
     await refreshAllData()
   } catch (e) {
     console.error('requestSupplier failed', e)
-    alert(e.response?.data?.message || 'Failed to request supplier')
+    const errorMsg = e.response?.data?.error || e.response?.data?.message || 'Failed to request supplier'
+    alert('❌ ' + errorMsg)
+    setRequestingFlag(productId, false)
   }
 }
 
@@ -817,19 +903,57 @@ const supplierLoading = ref(false)
 const selectedSupplierId = ref(null)
 const pendingOrderProduct = ref(null)
 const pendingOrderQty = ref(null)
+const confirmedSuppliers = ref([])
+const showingConfirmedSuppliersOnly = ref(false)
+const pendingAcknowledgeProduct = ref(null)  // Track product waiting for acknowledgement after supplier selection
 
-function openSupplierModal(product) {
+async function openSupplierModal(product, isForAcknowledge = false) {
   pendingOrderProduct.value = product
   pendingOrderQty.value = null
   selectedSupplierId.value = null
+  pendingAcknowledgeProduct.value = isForAcknowledge ? product : null
   supplierModalVisible.value = true
   supplierLoading.value = true
-  axios.get('/api/manager/logistics/suppliers', { withCredentials: true })
-    .then(res => {
-      supplierList.value = (res.data && res.data.suppliers) || []
-    }).catch(() => {
-      supplierList.value = []
-    }).finally(() => { supplierLoading.value = false })
+  
+  try {
+    // First, try to fetch suppliers who have already confirmed they have the product
+    confirmedSuppliers.value = []
+    showingConfirmedSuppliersOnly.value = false
+    
+    if (product.procurement_request_id) {
+      try {
+        const confirmedRes = await axios.get(`/api/procurement-requests/${product.procurement_request_id}/confirmed-suppliers`, { withCredentials: true })
+        if (confirmedRes.data && confirmedRes.data.ok && confirmedRes.data.suppliers) {
+          const confirmedList = confirmedRes.data.suppliers
+          // Treat entries with zero stock/price as not confirmed yet
+          const filteredConfirmed = confirmedList.filter(s => Number(s.product_stock || 0) > 0 || Number(s.product_price || 0) > 0)
+          if (filteredConfirmed.length > 0) {
+            confirmedSuppliers.value = filteredConfirmed
+            // Convert the confirmed suppliers to the same format as regular suppliers
+            supplierList.value = filteredConfirmed.map(s => ({
+              id: s.supplier_id,
+              full_name: s.supplier_name,
+              username: s.supplier_username,
+              email: s.supplier_email
+            }))
+            showingConfirmedSuppliersOnly.value = true
+            return
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to fetch confirmed suppliers, falling back to all suppliers', e)
+      }
+    }
+    
+    // If no confirmed suppliers or failed to fetch, get all available suppliers
+    const res = await axios.get('/api/manager/logistics/suppliers', { withCredentials: true })
+    supplierList.value = (res.data && res.data.suppliers) || []
+  } catch (e) {
+    console.error('openSupplierModal error:', e)
+    supplierList.value = []
+  } finally {
+    supplierLoading.value = false
+  }
 }
 
 function closeSupplierModal() {
@@ -837,31 +961,171 @@ function closeSupplierModal() {
   pendingOrderProduct.value = null
   pendingOrderQty.value = null
   selectedSupplierId.value = null
+  pendingAcknowledgeProduct.value = null
 }
 
 async function confirmSupplierSelection() {
   if (!pendingOrderProduct.value) return
-  if (!selectedSupplierId.value) { alert('Please select a supplier'); return }
-  // mark this product id as placing
-  setPlacingFlag(pendingOrderProduct.value.id, true)
+  
+  // Ensure a supplier is selected
+  if (!selectedSupplierId.value) { 
+    alert('Please select a supplier'); 
+    return 
+  }
+  
+  // Save product data before we close the modal (which clears pendingOrderProduct)
+  const product = pendingOrderProduct.value
+  const isAcknowledge = pendingAcknowledgeProduct.value !== null
+  
+  // Get the selected supplier ID (should be a number from radio button)
+  const supplierId = parseInt(selectedSupplierId.value) || selectedSupplierId.value
+  
+  console.log('[confirmSupplierSelection] Starting', {
+    isAcknowledge,
+    productId: product.id,
+    productName: product.name,
+    procurementRequestId: product.procurement_request_id,
+    selectedSupplierId: supplierId,
+    selectedSupplierIdType: typeof supplierId
+  })
+  
+  // mark this product id as placing/acknowledging
+  setPlacingFlag(product.id, true)
   try {
-    // Note: Quantity is locked to what logistics requested and cannot be changed
-    const payload = { supplier_id: selectedSupplierId.value }
-    const res = await axios.post(`/api/manager/procurement/products/${pendingOrderProduct.value.id}/place-order`, payload, { withCredentials: true })
-    const supplierOrder = res.data.supplier_order
-    const procReq = res.data.procurement_request
-    alert(res.data.message || 'Order placed successfully')
-    setOrderPlacedFlag(pendingOrderProduct.value.id, true)
-    // update local lists
-    await loadProducts()
-    await loadRequestedProducts()
-    await refreshAllData()
+    // DIFFERENT FLOWS BASED ON WHETHER THIS IS ACKNOWLEDGE OR PLACE ORDER
+    
+    if (isAcknowledge) {
+      // ===== ACKNOWLEDGE FLOW (with supplier selection) =====
+      const confirmed = await window.swalConfirm(`Acknowledge logistics request for ${product.name}?\n(Sends to finance for budget)\n\nSupplier: ${selectedSupplierId.value}`)
+      if (!confirmed) {
+        setPlacingFlag(product.id, false)
+        return
+      }
+      
+      // Call acknowledge endpoint with supplier_id
+      const requestId = product.procurement_request_id || product.id
+      
+      console.log('[confirmSupplierSelection] Sending acknowledge request', {
+        url: `/api/procurement-requests/${requestId}/status`,
+        payload: { supplier_id: supplierId }
+      })
+      
+      const res = await axios.post(`/api/procurement-requests/${requestId}/status`, {
+        supplier_id: supplierId
+      }, { withCredentials: true })
+      
+      const successMsg = res.data?.message || '✓ Request acknowledged! Budget request sent to Finance.'
+      console.log('[confirmSupplierSelection] Acknowledge succeeded', {
+        message: successMsg,
+        supplierId,
+        procReqId: requestId
+      })
+      alert(successMsg)
+      
+      closeSupplierModal()
+      
+      // Update local UI to show supplier was selected
+      product.supplier_id = supplierId
+      product.procurement_status = 'budget_pending'
+      product.status = 'budget_pending'
+      
+      // Refresh to get updated state from server
+      await loadRequestedProducts()
+      await loadProducts()
+      await refreshAllData()
+      
+    } else {
+      // ===== PLACE ORDER FLOW =====
+      // Note: Quantity is locked to what logistics requested and cannot be changed
+      const payload = { 
+        supplier_id: supplierId,
+        procurement_request_id: product.procurement_request_id
+      }
+      
+      console.log('[confirmSupplierSelection] Sending place-order request', {
+        url: `/api/manager/procurement/products/${product.id}/place-order`,
+        payload
+      })
+      
+      const res = await axios.post(`/api/manager/procurement/products/${product.id}/place-order`, payload, { withCredentials: true })
+      const supplierOrder = res.data.supplier_order
+      const procReq = res.data.procurement_request
+      
+      // Check if budget is still pending (202 Accepted response)
+      if (res.data.budget_pending) {
+        // Backend returned 202: Budget request created, waiting for approval
+        closeSupplierModal()
+        alert('✓ Request acknowledged! Budget request sent to Finance.\n\nPlease wait for Finance to approve the budget before placing the order.')
+        
+        // Update UI to show budget pending state
+        product.supplier_id = supplierId
+        product.procurement_status = 'budget_pending'
+        product.status = 'budget_pending'
+        product.waiting_for_budget_approval = true
+        
+        await loadRequestedProducts()
+        await loadProducts()
+        return  // Exit early - don't proceed with order placement
+      }
+      
+      // Order placed successfully
+      alert(res.data.message || 'Order placed successfully')
+      setOrderPlacedFlag(product.id, true)
+      
+      // Optimistically update local product entries so the Place Order button hides
+      try {
+        // Update products list
+        const idx = products.value.findIndex(p => p.id === product.id)
+        if (idx > -1) {
+          if (supplierOrder) products.value[idx].existingOrder = supplierOrder
+          if (procReq && procReq.status) {
+            products.value[idx].procurement_status = procReq.status
+            products.value[idx].status = procReq.status
+          }
+        }
+
+        // Update requestedProducts list (if present)
+        const ridx = requestedProducts.value.findIndex(p => p.id === product.id)
+        if (ridx > -1) {
+          if (supplierOrder) requestedProducts.value[ridx].existingOrder = supplierOrder
+          if (procReq && procReq.status) {
+            requestedProducts.value[ridx].procurement_status = procReq.status
+            requestedProducts.value[ridx].status = procReq.status
+          }
+        }
+      } catch (e) {
+        // ignore local update failures
+      }
+
+      // Refresh lists to ensure server canonical state (non-blocking)
+      await loadProducts()
+      await loadRequestedProducts()
+      await refreshAllData()
+    }
   } catch (e) {
     console.error('confirmSupplierSelection failed', e)
-    alert(e.response?.data?.error || e.response?.data?.message || 'Failed to place order')
+    const errorData = e.response?.data
+    let errorMsg = errorData?.message || errorData?.error || 'Failed to complete action'
+    const debugInfo = errorData?.debug ? ` [Debug: ${JSON.stringify(errorData.debug)}]` : ''
+    
+    // Better error message for multi-supplier scenario
+    if (errorData?.need_supplier_selection && errorData?.confirmed_suppliers > 1) {
+      errorMsg = `Please select a supplier from the list. There are ${errorData.confirmed_suppliers} suppliers available for this product.`
+    }
+    
+    console.error('[confirmSupplierSelection] Error details', {
+      status: e.response?.status,
+      error: errorMsg,
+      needSelection: errorData?.need_supplier_selection,
+      confirmedCount: errorData?.confirmed_suppliers,
+      isAcknowledge: isAcknowledge,
+      selectedSupplierId: selectedSupplierId.value
+    })
+    
+    alert('❌ ' + errorMsg + debugInfo)
   } finally {
     // clear placing flag
-    setPlacingFlag(pendingOrderProduct.value.id, false)
+    setPlacingFlag(product.id, false)
     closeSupplierModal()
   }
 }
@@ -958,13 +1222,8 @@ async function placeOrder(product) {
 
   try {
     // Note: Quantity is locked to what logistics requested and cannot be changed by procurement
+    // Product should always have supplier_id by this point (set during acknowledge with supplier selection)
     const payload = {}
-    // If product has an assigned supplier, include it so Manager endpoint
-    // creates a SupplierOrder (transaction pending) instead of auto-publishing.
-    if (!product.supplier_id) {
-      openSupplierModal(product)
-      return
-    }
     if (product.supplier_id) payload.supplier_id = product.supplier_id
 
     // Use manager procurement endpoint which creates the SupplierOrder record
@@ -1553,6 +1812,13 @@ button:focus, a:focus, input:focus, select:focus { outline: 3px solid rgba(3,37,
 .header-profile-dropdown { position:absolute; right:0; top:46px; background:#fff; border-radius:8px; box-shadow:0 8px 24px rgba(16,24,40,0.12); padding:6px; min-width:160px; z-index:100200 }
 .dropdown-item { display:block; width:100%; text-align:left; padding:8px 12px; background:transparent; border:none; color:#374151; cursor:pointer }
 .dropdown-item:hover { background:#f7f7f8 }
+
+/* Supplier selection modal styles */
+.supplier-label { display:flex; flex-direction:column; gap:0.25rem; align-items:flex-start; cursor:pointer; flex:1 }
+.supplier-name { font-weight:700; color:#111827; font-size:0.95rem }
+.supplier-contact { font-size:0.85rem; color:#6b7280 }
+.supplier-details { display:flex; flex-direction:column; gap:0.25rem; margin-top:0.5rem; padding-top:0.5rem; border-top:1px solid #e5e7eb; width:100% }
+.detail-line { font-size:0.8rem; color:#374151; margin:0; padding:0 }
 
 /* Hide the small account ID in the left profile column for Procurement panel
    — the account ID will be visible inside the Info modal only. */

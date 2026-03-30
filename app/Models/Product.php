@@ -64,5 +64,10 @@ class Product extends Model
     {
         return $this->hasMany(ProcurementRequest::class);
     }
+
+    public function dishIngredients(): HasMany
+    {
+        return $this->hasMany(DishIngredient::class);
+    }
 }
 

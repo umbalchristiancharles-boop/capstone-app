@@ -48,6 +48,33 @@ Route::get('/main-branch/branches', function () {
         ->header('Expires', '0');
 })->name('mainbranch.branches')->middleware(['web', 'auth']);
 
+// Main Branch Finance Manager Panel
+Route::get('/main-branch/finance', function () {
+    return response()
+        ->view('dashboard')
+        ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        ->header('Pragma', 'no-cache')
+        ->header('Expires', '0');
+})->name('mainbranch.finance')->middleware(['web', 'auth']);
+
+// Main Branch Logistics Manager Panel
+Route::get('/main-branch/logistics', function () {
+    return response()
+        ->view('dashboard')
+        ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        ->header('Pragma', 'no-cache')
+        ->header('Expires', '0');
+})->name('mainbranch.logistics')->middleware(['web', 'auth']);
+
+// Main Branch HR Manager Panel
+Route::get('/main-branch/hr', function () {
+    return response()
+        ->view('dashboard')
+        ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        ->header('Pragma', 'no-cache')
+        ->header('Expires', '0');
+})->name('mainbranch.hr')->middleware(['web', 'auth']);
+
 Route::get('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // ==========================================
@@ -84,6 +111,15 @@ Route::get('/owner/staff-management', function () {
         ->header('Pragma', 'no-cache')
         ->header('Expires', '0');
 })->name('owner.staff-management')->middleware(['web', 'auth', \App\Http\Middleware\OwnerOnly::class]);
+
+// OWNER PRICE MARKUP APPROVALS ROUTE (for OwnerPriceMarkupPanel.vue)
+Route::get('/owner/price-markup-approvals', function () {
+    return response()
+        ->view('dashboard')
+        ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        ->header('Pragma', 'no-cache')
+        ->header('Expires', '0');
+})->name('owner.price-markup-approvals')->middleware(['web', 'auth', \App\Http\Middleware\OwnerOnly::class]);
 
 // MANAGER STAFF MANAGEMENT
 Route::get('/manager/staff', function () {
@@ -197,29 +233,92 @@ Route::prefix('test')->group(function () {
             'note' => 'Login as this user then access the API',
         ]);
     });
+});
 
-    Route::get('/routes', function () {
-        $routes = [
-            'manager_routes' => [
-                'GET /api/manager/dashboard',
-                'GET /api/manager/inventory',
-                'GET /api/manager/staff',
-                'GET /api/manager/reports/sales',
-            ],
-            'staff_routes' => [
-                'GET /api/staff/dashboard',
-                'POST /api/staff/clock-in',
-                'POST /api/staff/clock-out',
-                'GET /api/staff/attendance/status',
-            ],
-        ];
+// ==========================================
+// DEBUG ROUTES (Development Only)
+// ==========================================
+Route::prefix('debug')->group(function () {
+    // Check products status for comments
+    Route::get('/products-status', function () {
+        $total = \App\Models\Product::count();
+        $active = \App\Models\Product::where('is_active', 1)->count();
+        $published = \App\Models\Product::where('is_published', 1)->count();
+        $activeAndPublished = \App\Models\Product::where('is_active', 1)->where('is_published', 1)->count();
+
+        $publishedProducts = \App\Models\Product::where('is_active', 1)
+            ->where('is_published', 1)
+            ->select('id', 'name', 'is_active', 'is_published')
+            ->limit(20)
+            ->get();
 
         return response()->json([
-            'message' => 'Available API routes',
-            'routes' => $routes,
-            'note' => 'All routes require authentication',
+            'summary' => [
+                'total' => $total,
+                'active' => $active,
+                'published' => $published,
+                'active_and_published' => $activeAndPublished,
+            ],
+            'published_products' => $publishedProducts,
         ]);
     });
+
+    // Check comments
+    Route::get('/comments-count', function () {
+        $total = \App\Models\ProductComment::count();
+        $latestComments = \App\Models\ProductComment::with('product')
+            ->latest('created_at')
+            ->limit(10)
+            ->get();
+
+        return response()->json([
+            'total' => $total,
+            'latest' => $latestComments,
+        ]);
+    });
+
+    // Test comment validation
+    Route::post('/test-comment-validation', function (\Illuminate\Http\Request $request) {
+        $productId = $request->input('product_id');
+        
+        $product = \App\Models\Product::find($productId);
+        $exists = \App\Models\Product::where('id', $productId)->where('is_active', 1)->where('is_published', 1)->exists();
+        
+        return response()->json([
+            'product_id' => $productId,
+            'exists_in_db' => $product ? true : false,
+            'product_data' => $product ? [
+                'name' => $product->name,
+                'is_active' => $product->is_active,
+                'is_published' => $product->is_published,
+            ] : null,
+            'validation_pass' => $exists,
+            'notes' => 'For validation to pass, product must have is_active=1 AND is_published=1'
+        ]);
+    });
+});
+
+Route::get('/routes', function () {
+    $routes = [
+        'manager_routes' => [
+            'GET /api/manager/dashboard',
+            'GET /api/manager/inventory',
+            'GET /api/manager/staff',
+            'GET /api/manager/reports/sales',
+        ],
+        'staff_routes' => [
+            'GET /api/staff/dashboard',
+            'POST /api/staff/clock-in',
+            'POST /api/staff/clock-out',
+            'GET /api/staff/attendance/status',
+        ],
+    ];
+
+    return response()->json([
+        'message' => 'Available API routes',
+        'routes' => $routes,
+        'note' => 'All routes require authentication',
+    ]);
 });
 
 /* HR messaging routes removed - use /api/hr/* instead */

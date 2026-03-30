@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Dish extends Model
 {
@@ -14,11 +15,29 @@ class Dish extends Model
         'name',
         'created_by',
         'branch_id',
-        'status'
+        'status',
+        'approval_status',
+        'approved_by',
+        'approved_at',
+        'approval_notes'
+    ];
+
+    protected $casts = [
+        'approved_at' => 'datetime',
     ];
 
     public function ingredients(): HasMany
     {
         return $this->hasMany(DishIngredient::class);
+    }
+
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 }

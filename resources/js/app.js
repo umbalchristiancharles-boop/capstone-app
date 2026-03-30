@@ -3,7 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import App from './app.vue'
 import CustomerIndex from './components/CustomerIndex.vue'
 import StaffIndex from './components/StaffIndex.vue'
-import AdminPanel from './components/adminpanel.vue'
+import AdminPanel from './components/AdminPanel.vue'
 import adminlogin from './components/adminlogin.vue'
 import StaffList from './components/StaffList.vue'
 import OwnerStaffManagement from './components/OwnerStaffManagement.vue'
@@ -182,6 +182,7 @@ const router = createRouter({
     { path: '/main-branch/hr', component: () => import('./components/MainBranchHrPanel.vue'), meta: { requiresAuth: true } },
     { path: '/main-branch/finance', component: () => import('./components/MainBranchFinancePanel.vue'), meta: { requiresAuth: true } },
     { path: '/main-branch/logistics', component: () => import('./components/MainBranchLogisticsPanel.vue'), meta: { requiresAuth: true } },
+    { path: '/main-branch/crm', component: () => import('./components/MainBranchCRMPanel.vue'), meta: { requiresAuth: true } },
     { path: '/main-branch/branches', component: () => import('./components/OwnerAddBranches.vue'), meta: { requiresAuth: true } },
     // Accessible by Super Admin as a dedicated route (reuses OwnerAddBranches component)
     { path: '/super-admin/branches', component: () => import('./components/OwnerAddBranches.vue'), meta: { requiresAuth: true } },
@@ -209,6 +210,16 @@ const router = createRouter({
     {
       path: '/owner/staff-management',
       component: OwnerStaffManagement,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/owner/dish-approval',
+      component: () => import('./components/OwnerDishApprovalPanel.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/owner/price-markup-approvals',
+      component: () => import('./components/OwnerPriceMarkupPanel.vue'),
       meta: { requiresAuth: true },
     },
     {
@@ -433,6 +444,38 @@ router.onError(() => {
 router.beforeEach(async (to, from, next) => {
   // Public routes - allow always (including unauthorized and staff landing)
   if (to.path === '/' || to.path === '/admin-login' || to.path === '/login' || to.path === '/staff-landing' || to.path === '/unauthorized') {
+    // If already authenticated and heading to landing/login/root, redirect to role home
+    try {
+      const u = JSON.parse(localStorage.getItem('user') || 'null')
+      const branchId = Number(u?.branch_id || u?.branchId || u?.branch || 0)
+      const branchName = (u?.branch_name || u?.branch || '').toString().toUpperCase()
+      const username = (u?.username || '').toString().toUpperCase()
+      const isMainBranch = branchId === 1 || branchName.includes('MAIN') || username.includes('MAIN_BRANCH') || username.includes('MAINBRANCH')
+      const role = (u?.role || '').toString().toLowerCase()
+      const dept = (u?.department || '').toString().toLowerCase()
+      if (u && to.path !== '/unauthorized') {
+        if (role === 'custom') return next('/custom-panel')
+        if (role === 'owner') return next('/owner-panel')
+        if (role === 'admin') return next(isMainBranch ? '/main-branch/admin' : '/admin-panel')
+        if (role === 'manager') {
+          if (dept === 'hr') return next('/manager/hr')
+          if (dept === 'finance') return next('/manager/finance')
+          if (dept === 'inventory') return next('/manager/inventory')
+          if (dept === 'logistics') return next('/manager/logistics')
+          if (dept === 'procurement') return next('/manager/procurement')
+          return next('/manager-panel')
+        }
+        if (role === 'supplier') return next('/supplier-panel')
+        if (role === 'staff') {
+          if (dept === 'cashier') return next('/staff/cashier')
+          if (dept === 'finance') return next('/staff/finance')
+          if (dept === 'inventory') return next('/staff/inventory')
+          if (dept === 'kitchen') return next('/staff/kitchen')
+          if (dept === 'logistics') return next('/staff/logistics')
+          return next('/staff-panel')
+        }
+      }
+    } catch (e) {}
     return next()
   }
 
@@ -449,7 +492,7 @@ router.beforeEach(async (to, from, next) => {
   }
 
   // Protected panel routes - require authentication
-  const protectedRoutes = ['/admin-panel', '/manager-panel', '/staff-panel', '/hr-panel', '/staff-management', '/owner/staff-management', '/admin/deleted-staff', '/manager/staff', '/super-admin', '/supplier-panel']
+  const protectedRoutes = ['/admin-panel', '/manager-panel', '/staff-panel', '/hr-panel', '/staff-management', '/owner/staff-management', '/admin/deleted-staff', '/manager/staff', '/super-admin', '/supplier-panel', '/main-branch']
   const isProtectedRoute = protectedRoutes.some(route => to.path.startsWith(route)) || to.meta.requiresAuth
 
   if (isProtectedRoute) {
@@ -527,10 +570,17 @@ router.beforeEach(async (to, from, next) => {
       }
     }
 
-    // Admin panel - authenticated but not admin → redirect to unauthorized
+    // Admin panel - route main-branch admins to their dedicated panel
     if (to.path === '/admin-panel') {
-      if (user.role === 'admin') { }
-      else if (user.role === 'custom' && hasModule('admin')) { }
+      const branchId = Number(user.branch_id || user.branchId || user.branch || 0)
+      const branchName = (user.branch_name || user.branch || '').toString().toUpperCase()
+      const username = (user.username || '').toString().toUpperCase()
+      const isMainBranch = branchId === 1 || branchName.includes('MAIN') || username.includes('MAIN_BRANCH') || username.includes('MAINBRANCH')
+      if (user.role === 'admin' && isMainBranch) {
+        return next('/main-branch/admin')
+      }
+      if (user.role === 'admin') { /* allowed */ }
+      else if (user.role === 'custom' && hasModule('admin')) { /* allowed */ }
       else {
         return next('/unauthorized');
       }
@@ -538,6 +588,11 @@ router.beforeEach(async (to, from, next) => {
 
     // Main Branch role pages
     if (to.path.startsWith('/main-branch/admin')) {
+      if (user.role !== 'admin') {
+        return next('/unauthorized');
+      }
+    }
+    if (to.path.startsWith('/main-branch/crm')) {
       if (user.role !== 'admin') {
         return next('/unauthorized');
       }
@@ -607,6 +662,25 @@ axios
     const app = createApp(App)
     app.use(router)
     app.mount('#app')
+
+    // Prevent Vue from setting aria-hidden on the root app element
+    // This fixes accessibility warning about aria-hidden on focused elements
+    // Use a MutationObserver to remove aria-hidden if it gets added
+    const appElement = document.getElementById('app')
+    if (appElement) {
+      // Remove if already set
+      appElement.removeAttribute('aria-hidden')
+      
+      // Monitor and remove if Vue or transitions try to set it
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach(mutation => {
+          if (mutation.attributeName === 'aria-hidden' && appElement.hasAttribute('aria-hidden')) {
+            appElement.removeAttribute('aria-hidden')
+          }
+        })
+      })
+      observer.observe(appElement, { attributes: true })
+    }
 
     // If we saved a preReloadPath, navigate there now to restore user's location
     try {

@@ -193,6 +193,24 @@ class ManagerProfileController extends Controller
         return (int) $branch->id === 1 || str_contains($branchName, 'MAIN BRANCH');
     }
 
+    /**
+     * Main branch HR manager can view/manage across all branches.
+     */
+    private function isMainBranchHrManager($user)
+    {
+        if (!$user || !$this->allowManagerDept($user, 'hr')) {
+            return false;
+        }
+
+        $branch = $this->resolveUserBranch($user);
+        if (!$branch) {
+            return false;
+        }
+
+        $branchName = strtoupper(trim((string) ($branch->name ?? '')));
+        return (int) $branch->id === 1 || str_contains($branchName, 'MAIN BRANCH');
+    }
+
     // ==========================================
     // HR Manager Profile Endpoints
     // ==========================================
@@ -208,6 +226,8 @@ class ManagerProfileController extends Controller
             ], 401);
         }
 
+        $branch = $this->resolveUserBranch($user);
+
         return response()->json([
             'ok' => true,
             'user' => [
@@ -218,6 +238,7 @@ class ManagerProfileController extends Controller
                 'role' => $user->role,
                 'department' => $user->department,
                 'branch_id' => $user->branch_id,
+                'branch_name' => $branch->name ?? null,
                 'must_change_password' => (bool) $user->must_change_password,
             ]
         ]);
@@ -263,17 +284,52 @@ class ManagerProfileController extends Controller
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
-        // Get HR-specific dashboard data - filtered by branch
-        // Get HR-specific dashboard data - filtered by branch
+        $isMainBranchHr = $this->isMainBranchHrManager($user);
         $branchId = $user->branch_id;
 
-        $totalStaff = User::where('role', 'STAFF')
+        if ($isMainBranchHr) {
+            $branches = Branch::orderBy('name', 'asc')->get(['id', 'name']);
+
+            $counts = User::whereNotIn('role', ['OWNER', 'SUPER_ADMIN'])
+                ->whereNull('deleted_at')
+                ->select(
+                    'branch_id',
+                    DB::raw('COUNT(*) as total_staff'),
+                    DB::raw("SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active_staff")
+                )
+                ->groupBy('branch_id')
+                ->get()
+                ->keyBy('branch_id');
+
+            $branchStats = $branches->map(function ($branch) use ($counts) {
+                $c = $counts->get($branch->id);
+                return [
+                    'branch_id' => $branch->id,
+                    'branch_name' => $branch->name,
+                    'total_staff' => (int) ($c->total_staff ?? 0),
+                    'active_staff' => (int) ($c->active_staff ?? 0),
+                ];
+            })->values();
+
+            return response()->json([
+                'ok' => true,
+                'totalStaff' => (int) $branchStats->sum('total_staff'),
+                'activeStaff' => (int) $branchStats->sum('active_staff'),
+                'onLeave' => 0,
+                'branches' => $branchStats,
+            ]);
+        }
+
+        $totalStaff = User::whereNotIn('role', ['OWNER', 'SUPER_ADMIN'])
             ->where('branch_id', $branchId)
-            ->where('is_active', 1)
             ->whereNull('deleted_at')
             ->count();
 
-        $activeStaff = $totalStaff; // Could be enhanced with attendance data
+        $activeStaff = User::whereNotIn('role', ['OWNER', 'SUPER_ADMIN'])
+            ->where('branch_id', $branchId)
+            ->whereNull('deleted_at')
+            ->where('is_active', 1)
+            ->count();
 
         return response()->json([
             'ok' => true,
@@ -294,28 +350,58 @@ class ManagerProfileController extends Controller
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
-        // Filter by branch_id - get all staff in the branch (excluding OWNER and SUPER_ADMIN)
+        $isMainBranchHr = $this->isMainBranchHrManager($user);
         $branchId = $user->branch_id;
 
-        $staff = User::where('branch_id', $branchId)
-            ->whereNotIn('role', ['OWNER', 'SUPER_ADMIN'])
+        $branchNames = Branch::pluck('name', 'id');
+
+        $staffQuery = User::whereNotIn('role', ['OWNER', 'SUPER_ADMIN'])
             ->whereNull('deleted_at')
-            ->orderBy('full_name', 'asc')
-            ->get()
-            ->map(function ($s) {
+            ->orderBy('full_name', 'asc');
+
+        if (!$isMainBranchHr) {
+            $staffQuery->where('branch_id', $branchId);
+        }
+
+        $staff = $staffQuery->get()->map(function ($s) use ($branchNames) {
+            return [
+                'id' => $s->id,
+                'username' => $s->username,
+                'full_name' => $s->full_name,
+                'email' => $s->email,
+                'phone_number' => $s->phone_number,
+                'role' => $s->role,
+                'department' => $s->department,
+                'is_active' => $s->is_active,
+                'branch_id' => $s->branch_id,
+                'branch_name' => $branchNames[$s->branch_id] ?? null,
+                'created_at' => $s->created_at,
+            ];
+        });
+
+        if ($isMainBranchHr) {
+            $grouped = $staff->groupBy('branch_id');
+            $branches = Branch::orderBy('name', 'asc')->get(['id', 'name']);
+
+            $branchPayload = $branches->map(function ($branch) use ($grouped) {
+                $list = $grouped->get($branch->id, collect());
                 return [
-                    'id' => $s->id,
-                    'username' => $s->username,
-                    'full_name' => $s->full_name,
-                    'email' => $s->email,
-                    'phone_number' => $s->phone_number,
-                    'role' => $s->role,
-                    'department' => $s->department,
-                    'is_active' => $s->is_active,
-                    'branch_id' => $s->branch_id,
-                    'created_at' => $s->created_at,
+                    'branch_id' => $branch->id,
+                    'branch_name' => $branch->name,
+                    'total_staff' => $list->count(),
+                    'active_staff' => $list->where('is_active', 1)->count(),
+                    'staff' => $list->values(),
                 ];
-            });
+            })->values();
+
+            return response()->json([
+                'ok' => true,
+                'staff' => $staff->values(),
+                'branches' => $branchPayload,
+                'total_staff' => $staff->count(),
+                'total_active' => $staff->where('is_active', 1)->count(),
+            ]);
+        }
 
         return response()->json([
             'ok' => true,
@@ -571,183 +657,7 @@ class ManagerProfileController extends Controller
         ]);
     }
 
-    public function financeDashboard(Request $request)
-    {
-        $user = $this->getAuthenticatedManager($request);
 
-        if (!$this->allowManagerDept($user, 'finance')) {
-            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
-        }
-
-        // Determine date range
-        $range = $request->get('range', 'today');
-        $now = Carbon::now();
-        switch ($range) {
-            case 'today':
-                $start = $now->copy()->startOfDay();
-                $end = $now->copy()->endOfDay();
-                break;
-            case 'yesterday':
-                $start = $now->copy()->subDay()->startOfDay();
-                $end = $now->copy()->subDay()->endOfDay();
-                break;
-            case 'thisWeek':
-                $start = $now->copy()->startOfWeek();
-                $end = $now->copy()->endOfWeek();
-                break;
-            case 'thisMonth':
-                $start = $now->copy()->startOfMonth();
-                $end = $now->copy()->endOfMonth();
-                break;
-            case 'lastMonth':
-                $start = $now->copy()->subMonth()->startOfMonth();
-                $end = $now->copy()->subMonth()->endOfMonth();
-                break;
-            case 'all':
-                $start = null;
-                $end = null;
-                break;
-            default:
-                $start = $now->copy()->startOfDay();
-                $end = $now->copy()->endOfDay();
-        }
-
-        $branchId = $user->branch_id;
-
-        // Base query for orders; if manager has no branch assigned, query across all branches
-        $ordersQuery = Order::query();
-        if ($branchId) {
-            $ordersQuery->where('branch_id', $branchId);
-        }
-
-        // If a date range is provided, filter by either ordered_at or created_at
-        if ($start && $end) {
-            $ordersQuery->where(function ($q) use ($start, $end) {
-                $q->whereBetween('ordered_at', [$start, $end])
-                  ->orWhereBetween('created_at', [$start, $end]);
-            });
-        }
-
-        // Consider completed/approved statuses as revenue-contributing (case-insensitive)
-        $revenueStatuses = ['completed', 'approved'];
-
-        // Total sales: sum of revenue-contributing orders' grand_total (case-insensitive status match)
-        $totalSales = (clone $ordersQuery)
-            ->whereIn(DB::raw('LOWER(status)'), $revenueStatuses)
-            ->sum('grand_total');
-
-        // Total orders in range
-        $totalOrders = (clone $ordersQuery)->count();
-
-        // Pending approvals: count of budget requests with status Pending (filter by branch if available)
-        $pendingApprovalsQuery = BudgetRequest::where('status', 'Pending');
-        if ($branchId) {
-            $pendingApprovalsQuery->where('branch_id', $branchId);
-        }
-        $pendingApprovals = $pendingApprovalsQuery->count();
-
-        // No expenses table yet; set totalExpenses to 0 for now
-        $totalExpenses = 0;
-
-        $netProfit = $totalSales - $totalExpenses;
-
-        return response()->json([
-            'ok' => true,
-            'totalRevenue' => $totalSales,
-            'totalExpenses' => $totalExpenses,
-            'netProfit' => $netProfit,
-            'pendingApprovals' => $pendingApprovals,
-            'totalOrders' => $totalOrders,
-        ]);
-    }
-
-    public function financeReports(Request $request)
-    {
-        $user = $this->getAuthenticatedManager($request);
-
-        if (!$this->allowManagerDept($user, 'finance')) {
-            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
-        }
-
-        return response()->json([
-            'ok' => true,
-            'reports' => []
-        ]);
-    }
-
-    public function financeTransactions(Request $request)
-    {
-        $user = $this->getAuthenticatedManager($request);
-
-        if (!$this->allowManagerDept($user, 'finance')) {
-            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
-        }
-
-        $branchId = $user->branch_id;
-
-        // Return recent transactions for this branch; if unassigned, return across all branches.
-        $transactionsQuery = Order::query();
-        if ($branchId) {
-            $transactionsQuery->where('branch_id', $branchId);
-        }
-
-        $transactions = $transactionsQuery
-            ->orderBy('ordered_at', 'desc')
-            ->limit(10)
-            ->get()
-            ->map(function ($order) {
-                return [
-                    'id' => $order->id,
-                    'order_code' => $order->order_code ?? ('CT-' . str_pad($order->id, 4, '0', STR_PAD_LEFT)),
-                    'branch_id' => $order->branch_id,
-                    'cashier_id' => $order->cashier_id,
-                    'customer' => $order->customer_name ?? 'Walk-in',
-                    // Detailed items array for finance to inspect line items
-                    'items' => $order->items->map(function ($i) {
-                        return [
-                            'product_id' => $i->product_id,
-                            'product_name' => $i->product_name,
-                            'unit_price' => (float) $i->unit_price,
-                            'quantity' => (int) $i->quantity,
-                            'subtotal' => (float) $i->subtotal,
-                        ];
-                    })->values(),
-                    'items_bought' => $order->items->map(fn($i)=>($i->quantity . 'x ' . $i->product_name))->join(', '),
-                    // Financial breakdown
-                    'subtotal' => (float) $order->subtotal,
-                    'discount_type' => $order->discount_type ?? 'none',
-                    'discount_percent' => (float) $order->discount_percent,
-                    'discount_amount' => (float) $order->discount_amount,
-                    'vat_percent' => (float) $order->vat_percent,
-                    'vat_amount' => (float) $order->vat_amount,
-                    // keep formatted keys for frontend compatibility
-                    'total' => number_format($order->grand_total, 2),
-                    'paid' => number_format($order->amount_paid, 2),
-                    // keep numeric versions as well
-                    'amount_paid' => (float) $order->amount_paid,
-                    'change' => (float) ($order->change_amount ?? 0),
-                    // Approval / status metadata
-                    'status' => $order->status,
-                    'approved_by' => $order->approved_by,
-                    'approved_at' => $order->approved_at ? $order->approved_at->toDateTimeString() : null,
-                    'ordered_at' => $order->ordered_at ? $order->ordered_at->format('M d, Y H:i:s') : null,
-                    'created_at' => $order->created_at ? $order->created_at->toDateTimeString() : null,
-                    'updated_at' => $order->updated_at ? $order->updated_at->toDateTimeString() : null,
-                ];
-            });
-
-        $totalOrdersQuery = Order::query();
-        if ($branchId) {
-            $totalOrdersQuery->where('branch_id', $branchId);
-        }
-        $totalOrders = $totalOrdersQuery->count();
-
-        return response()->json([
-            'ok' => true,
-            'transactions' => $transactions,
-            'totalOrders' => $totalOrders,
-        ]);
-    }
 
     // ==========================================
     // Logistics Manager Profile Endpoints
@@ -941,13 +851,35 @@ public function logisticsProducts(Request $request)
 
         $products = Product::where('branch_id', $branchId)
             ->where('is_active', 1)
-            ->where(function($q) {
-                $q->whereNull('is_kitchen_dish')
-                  ->orWhere('is_kitchen_dish', false);
-            })
-            ->select('id', 'name', 'slug', 'price', 'stock', 'sku', 'branch_id', 'supplier_name', 'is_published', 'created_at', 'updated_at')
+            ->with(['dishIngredients.dish'])
+            ->select('id', 'name', 'slug', 'price', 'stock', 'sku', 'branch_id', 'supplier_name', 'is_published', 'created_at', 'updated_at', 'is_kitchen_dish')
             ->orderBy('name', 'asc')
             ->get();
+
+        // Filter out products from unapproved kitchen dishes
+        // Only show kitchen dish products if the dish has been approved by the owner
+        $products = $products->filter(function ($product) {
+            if (!$product->is_kitchen_dish) {
+                // Non-kitchen dishes are always shown
+                return true;
+            }
+
+            // For kitchen dishes, check if all related dishes are approved
+            $dishIngredients = $product->dishIngredients;
+            if ($dishIngredients->isEmpty()) {
+                // No dish associations, show it
+                return true;
+            }
+
+            // Only show if at least one associated dish is approved
+            return $dishIngredients->some(function ($dishIng) {
+                $dish = $dishIng->dish;
+                return $dish && $dish->approval_status === 'approved';
+            });
+        });
+
+        // Reindex the collection
+        $products = $products->values();
 
         return response()->json([
             'ok' => true,
@@ -1150,49 +1082,189 @@ public function logisticsProducts(Request $request)
         }
 
         $validated = $request->validate([
-            'supplier_id' => 'nullable|exists:users,id'
+            'supplier_id' => 'nullable|exists:users,id',
+            'procurement_request_id' => 'nullable|exists:procurement_requests,id'
         ]);
 
-        // If supplier_id is provided, create a SupplierOrder to request this product from that supplier
-        if (!empty($validated['supplier_id'])) {
-            $supplierId = $validated['supplier_id'];
+        \Illuminate\Support\Facades\Log::info('placeOrderProduct validation result', [
+            'supplier_id' => $validated['supplier_id'] ?? 'not_provided',
+            'procurement_request_id' => $validated['procurement_request_id'] ?? 'not_provided',
+            'product_id_from_url' => $id,
+            'user_branch' => $branchId
+        ]);
 
+        // Try to get procurement request to check for stored supplier_id
+        $procReqForSupplierCheck = null;
+        if (!empty($validated['procurement_request_id'])) {
+            $procReqForSupplierCheck = ProcurementRequest::find($validated['procurement_request_id']);
+        } else {
+            // Try to find by product_id for backward compatibility
+            $procReqForSupplierCheck = ProcurementRequest::where('product_id', $product->id)
+                ->where('branch_id', $branchId)
+                ->first();
+        }
+
+        // Use supplier_id from request, or fall back to stored supplier_id on ProcurementRequest
+        $supplierId = ($validated['supplier_id'] ?? null) ?: ($procReqForSupplierCheck?->supplier_id ?? null);
+
+        \Illuminate\Support\Facades\Log::info('placeOrderProduct: supplier resolution', [
+            'requested_supplier_id' => $validated['supplier_id'] ?? null,
+            'stored_supplier_id' => $procReqForSupplierCheck?->supplier_id ?? null,
+            'final_supplier_id' => $supplierId,
+            'product_id' => $product->id
+        ]);
+
+        // If supplier_id is provided/found, create a SupplierOrder to request this product from that supplier
+        if (!empty($supplierId)) {
             \Illuminate\Support\Facades\Log::info('placeOrderProduct SPECIFIC SUPPLIER: starting', [
                 'product_id' => $product->id,
                 'supplier_id' => $supplierId,
                 'branch_id' => $branchId,
+                'procurement_request_id' => $validated['procurement_request_id'] ?? null,
             ]);
 
-            // Find pending procurement request for this product in this branch
-            $procReq = ProcurementRequest::where('product_id', $product->id)
-                ->where('branch_id', $branchId)
-                ->whereIn('status', ['pending', 'pending_order_to_supplier'])
-                ->first();
+            // If procurement_request_id provided, use it directly (for multi-supplier scenarios)
+            if (!empty($validated['procurement_request_id'])) {
+                $procReq = ProcurementRequest::where('id', $validated['procurement_request_id'])
+                    ->where('branch_id', $branchId)
+                    ->whereIn('status', ['pending', 'budget_pending', 'pending_order_to_supplier', 'awaiting_inventory_confirmation'])
+                    ->first();
+            } else {
+                // Fallback: try to find by product_id for backward compatibility
+                $procReq = ProcurementRequest::where('product_id', $product->id)
+                    ->where('branch_id', $branchId)
+                    ->whereIn('status', ['pending', 'pending_order_to_supplier', 'awaiting_inventory_confirmation'])
+                    ->first();
+            }
 
             if (!$procReq) {
-                \Illuminate\Support\Facades\Log::warning('placeOrderProduct SPECIFIC SUPPLIER: no procurement request found', ['product_id' => $product->id]);
-                return response()->json(['ok' => false, 'message' => 'No pending procurement request found for this product'], 400);
+                \Illuminate\Support\Facades\Log::warning('placeOrderProduct SPECIFIC SUPPLIER: no procurement request found', [
+                    'product_id' => $product->id,
+                    'procurement_request_id' => $validated['procurement_request_id'] ?? null,
+                    'branch_id' => $branchId,
+                    'searches' => [
+                        'by_id' => $validated['procurement_request_id'] ?? 'not_provided',
+                        'by_product' => $product->id
+                    ]
+                ]);
+                
+                $message = 'No pending procurement request found';
+                if (!empty($validated['procurement_request_id'])) {
+                    // Check if request exists at all
+                    $anyReq = ProcurementRequest::find($validated['procurement_request_id']);
+                    if (!$anyReq) {
+                        $message = 'Procurement request not found';
+                    } elseif ($anyReq->branch_id != $branchId) {
+                        $message = 'Procurement request is in a different branch';
+                    } else {
+                        $message = "Procurement request status is '{$anyReq->status}', expected one of: pending, budget_pending, pending_order_to_supplier, awaiting_inventory_confirmation";
+                    }
+                }
+                return response()->json(['ok' => false, 'message' => $message, 'debug' => config('app.debug') ? ['request_id' => $validated['procurement_request_id'] ?? null, 'product_id' => $product->id, 'branch_id' => $branchId] : null], 400);
             }
 
             // Ensure budget approved before ordering
             if (!$procReq->budget_approved) {
-                \Illuminate\Support\Facades\Log::warning('placeOrderProduct SPECIFIC SUPPLIER: budget not approved', ['proc_id' => $procReq->id]);
-                return response()->json(['ok' => false, 'message' => 'Budget must be approved before ordering'], 400);
+                // If status is 'pending', auto-acknowledge first (which creates BudgetRequest for Finance)
+                if ($procReq->status === 'pending') {
+                    try {
+                        DB::transaction(function () use ($procReq, $user) {
+                            $procReq->update([
+                                'procurement_user_id' => $user->id,
+                                'status' => 'budget_pending'
+                            ]);
+
+                            // Check if BudgetRequest already exists
+                            $existingBudget = \App\Models\BudgetRequest::where('branch_id', $procReq->branch_id)
+                                ->where('purpose', 'LIKE', "%Procurement Request #{$procReq->id}%")
+                                ->first();
+
+                            if (!$existingBudget) {
+                                \App\Models\BudgetRequest::create([
+                                    'branch_id' => $procReq->branch_id,
+                                    'user_id' => $user->id,
+                                    'purpose' => "Procurement Request #{$procReq->id}: {$procReq->product->name} x{$procReq->quantity}",
+                                    'requested_amount' => $procReq->total_amount,
+                                    'status' => 'Pending',
+                                    'date_requested' => now()->toDateString(),
+                                ]);
+                            }
+                        });
+                        $procReq->refresh();
+                        \Illuminate\Support\Facades\Log::info('placeOrderProduct: auto-acknowledged request', ['proc_id' => $procReq->id]);
+                        
+                        // CRITICAL: Return early and tell user to wait for budget approval
+                        // Do NOT continue to place order until budget is actually approved
+                        return response()->json([
+                            'ok' => false,
+                            'message' => 'Request acknowledged! Budget request has been sent to Finance for approval. Please wait for approval before placing the order.',
+                            'procurement_request' => $procReq->fresh()->load('product'),
+                            'budget_pending' => true
+                        ], 202);  // 202 Accepted - acknowledged but waiting for budget approval
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::error('placeOrderProduct: auto-acknowledge failed', ['error' => $e->getMessage()]);
+                        return response()->json(['ok' => false, 'message' => 'Failed to acknowledge request: ' . $e->getMessage()], 500);
+                    }
+                } elseif ($procReq->status === 'budget_pending') {
+                    // Budget request was created but not yet approved by Finance
+                    \Illuminate\Support\Facades\Log::info('placeOrderProduct: budget still pending', ['proc_id' => $procReq->id]);
+                    return response()->json([
+                        'ok' => false,
+                        'message' => 'Budget approval is still pending from Finance. Please wait for approval before placing the order.',
+                        'procurement_request' => $procReq,
+                        'budget_pending' => true
+                    ], 202);
+                } else {
+                    // Status is not pending and budget not approved - can't proceed
+                    \Illuminate\Support\Facades\Log::warning('placeOrderProduct SPECIFIC SUPPLIER: budget not approved', ['proc_id' => $procReq->id, 'status' => $procReq->status]);
+                    return response()->json(['ok' => false, 'message' => 'Budget must be approved before ordering'], 400);
+                }
             }
 
             // Use the quantity requested by logistics (cannot be changed by procurement manager)
             $quantity = $procReq->quantity;
 
             try {
-                $supplierOrder = DB::transaction(function () use ($procReq, $supplierId, $quantity, $user) {
-                    $order = SupplierOrder::create([
-                        'procurement_request_id' => $procReq->id,
-                        'product_id' => $procReq->product_id,
-                        'supplier_id' => $supplierId,
-                        'quantity' => $quantity,
-                        'status' => 'pending',
-                        'branch_id' => $procReq->branch_id,
-                    ]);
+                $supplierOrder = DB::transaction(function () use ($procReq, $supplierId, $quantity, $user, $product) {
+                    // FIX: Find the EXISTING SupplierOrder for this supplier + procurement request
+                    // (created during broadcast when supplier submitted their product)
+                    $existingOrder = SupplierOrder::where('procurement_request_id', $procReq->id)
+                        ->where('supplier_id', $supplierId)
+                        ->whereNotNull('product_id')  // Only if supplier has confirmed
+                        ->first();
+                    
+                    if ($existingOrder) {
+                        // Use the existing order which already has the correct supplier product
+                        \Illuminate\Support\Facades\Log::info('placeOrderProduct SPECIFIC SUPPLIER: using existing SupplierOrder', [
+                            'order_id' => $existingOrder->id,
+                            'supplier_id' => $supplierId,
+                            'product_id' => $existingOrder->product_id,
+                            'product_id_submitted_by_supplier' => $existingOrder->product_id
+                        ]);
+                        
+                        // Update status and mark as non-broadcast so supplier can see it
+                        $existingOrder->update([
+                            'status' => 'pending',
+                            'is_broadcast' => 0  // CRITICAL: Mark as specific order, not broadcast
+                        ]);
+                        $order = $existingOrder;
+                    } else {
+                        // Fallback: create new order if no existing one found (shouldn't happen in normal flow)
+                        \Illuminate\Support\Facades\Log::warning('placeOrderProduct SPECIFIC SUPPLIER: no existing order found, creating new', [
+                            'supplier_id' => $supplierId,
+                            'proc_req_id' => $procReq->id
+                        ]);
+                        
+                        $order = SupplierOrder::create([
+                            'procurement_request_id' => $procReq->id,
+                            'product_id' => $product->id,  // Original product
+                            'supplier_id' => $supplierId,
+                            'quantity' => $quantity,
+                            'status' => 'pending',
+                            'is_broadcast' => 0,  // Specific order to one supplier
+                            'branch_id' => $procReq->branch_id,
+                        ]);
+                    }
 
                     $procReq->update([
                         'procurement_user_id' => $user->id,
@@ -1251,6 +1323,22 @@ public function logisticsProducts(Request $request)
                     'proc_id' => $procReq->id,
                 ]);
 
+                // Check if a broadcast supplier order already exists for this procurement request
+                // Prevent duplicate broadcast orders (fix for: 1 product, 2 suppliers showing duplicate entries)
+                $existingBroadcast = SupplierOrder::where('procurement_request_id', $procReq->id)
+                    ->where('is_broadcast', true)
+                    ->first();
+
+                if ($existingBroadcast) {
+                    \Illuminate\Support\Facades\Log::info('placeOrderProduct BROADCAST: broadcast order already exists', [
+                        'proc_id' => $procReq->id,
+                        'existing_order_id' => $existingBroadcast->id,
+                    ]);
+                    
+                    // Return the existing broadcast order instead of creating a duplicate
+                    return $existingBroadcast;
+                }
+
                 // Use the quantity requested by logistics (cannot be changed by procurement manager)
                 $qty = $procReq->quantity;
 
@@ -1275,6 +1363,7 @@ public function logisticsProducts(Request $request)
                 ]);
 
                 // Deduct branch budget if applicable
+                // Only deduct when creating NEW order (not when returning existing one)
                 try {
                     $branch = Branch::where('id', $procReq->branch_id)->lockForUpdate()->first();
                     $deductAmount = $procReq->budget_amount ?? $procReq->total_amount ?? ($procReq->price * $qty);
@@ -1420,19 +1509,63 @@ public function logisticsInventory(Request $request)
         return response()->json(['ok' => false, 'message' => 'No branch assigned'], 400);
     }
 
-    $products = Product::where('branch_id', $branchId)
+    $allProducts = Product::where('branch_id', $branchId)
         ->where('is_active', 1)
-        ->where(function($q) {
-            $q->whereNull('is_kitchen_dish')
-              ->orWhere('is_kitchen_dish', false);
-        })
-        ->select('id', 'name', 'category', 'price', 'stock', 'min_stock', 'expires_at', 'branch_id')
+        ->with(['dishIngredients.dish'])
+        ->select('id', 'name', 'category', 'price', 'stock', 'min_stock', 'expires_at', 'branch_id', 'is_kitchen_dish')
         ->get()
-        ->map(function ($p) {
-            $status = ($p->stock <= ($p->min_stock ?? 10)) ? 'LOW STOCK' : 'OK';
-            $p->status = $status;
-            return $p;
+        ->filter(function ($product) {
+            // Filter out products from unapproved kitchen dishes
+            // Only show kitchen dish products if the dish has been approved by the owner
+            if (!$product->is_kitchen_dish) {
+                // Non-kitchen dishes are always shown
+                return true;
+            }
+
+            // For kitchen dishes, check if all related dishes are approved
+            $dishIngredients = $product->dishIngredients;
+            if ($dishIngredients->isEmpty()) {
+                // No dish associations, show it
+                return true;
+            }
+
+            // Only show if at least one associated dish is approved
+            return $dishIngredients->some(function ($dishIng) {
+                $dish = $dishIng->dish;
+                return $dish && $dish->approval_status === 'approved';
+            });
         });
+
+    // Group products by name to avoid showing duplicates when multiple suppliers submit the same product
+    $groupedProducts = [];
+    
+    foreach ($allProducts as $product) {
+        $productName = $product->name;
+        
+        if (!isset($groupedProducts[$productName])) {
+            // First product with this name - use it as base
+            $groupedProducts[$productName] = $product->toArray();
+            $groupedProducts[$productName]['stock'] = (int) $product->stock;
+            $groupedProducts[$productName]['min_stock'] = (int) $product->min_stock > 0 ? (int) $product->min_stock : 10;
+            $groupedProducts[$productName]['related_products'] = 1; // Track how many products are grouped
+        } else {
+            // Subsequent products with same name - combine stock and track variants
+            $groupedProducts[$productName]['stock'] += (int) $product->stock;
+            $groupedProducts[$productName]['related_products'] += 1;
+            
+            // Update expiry to the earliest (most urgent)
+            $currentExpiry = $groupedProducts[$productName]['expires_at'];
+            if ($product->expires_at && (!$currentExpiry || $product->expires_at < $currentExpiry)) {
+                $groupedProducts[$productName]['expires_at'] = $product->expires_at;
+            }
+        }
+    }
+
+    // Convert to array and add status
+    $products = collect($groupedProducts)->map(function ($p) {
+        $status = ($p['stock'] <= $p['min_stock']) ? 'LOW STOCK' : 'OK';
+        return array_merge($p, ['status' => $status]);
+    })->values();
 
     return response()->json([
         'ok' => true,

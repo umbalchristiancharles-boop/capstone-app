@@ -178,7 +178,7 @@
                     <button class="btn-primary" @click="acknowledgeRequest(p)" style="padding:6px 10px; border-radius:8px">Acknowledge</button>
                   </template>
                   <template v-else-if="(p.procurement_status === 'pending' || p.status === 'pending') && (Number(p.price) === 0)">
-                    <button class="btn-primary" @click="requestSupplier(p)" style="padding:6px 10px; border-radius:8px; background:#f59e0b;">Request Supplier for Product</button>
+                    <button class="btn-primary" @click="requestSupplier(p)" :disabled="requestingSupplierIds[(p.procurement_request_id || p.id)]" style="padding:6px 10px; border-radius:8px; background:#f59e0b;">{{ requestingSupplierIds[(p.procurement_request_id || p.id)] ? 'Requesting...' : 'Request Supplier for Product' }}</button>
                   </template>
                   <template v-else-if="p.procurement_status === 'budget_pending' || p.status === 'budget_pending'">
                     <button class="btn-outline" disabled style="padding:6px 10px; border-radius:8px">Budget Pending</button>
@@ -277,6 +277,7 @@ const requestedProductsLoading = ref(false)
 // per-item flags to prevent double submissions
 const placingOrderIds = ref({})
 const completingDeliveryIds = ref({})
+const requestingSupplierIds = ref({})
 
 function setPlacingFlag(id, val) {
   placingOrderIds.value = { ...(placingOrderIds.value || {}), [id]: val }
@@ -284,6 +285,10 @@ function setPlacingFlag(id, val) {
 
 function setCompletingFlag(id, val) {
   completingDeliveryIds.value = { ...(completingDeliveryIds.value || {}), [id]: val }
+}
+
+function setRequestingFlag(id, val) {
+  requestingSupplierIds.value = { ...(requestingSupplierIds.value || {}), [id]: val }
 }
 
 // Procurement requests history (branch-scoped)
@@ -396,11 +401,15 @@ async function acknowledgeRequest(product) {
 }
 
 async function requestSupplier(product) {
+  const productId = product.procurement_request_id || product.id
+  if (requestingSupplierIds.value[productId]) return
+  
   if (!(await window.swalConfirm(`Request suppliers to provide ${product.name} for branch ${branchName.value}?`))) return
+  
+  setRequestingFlag(productId, true)
   try {
-    const requestId = product.procurement_request_id || product.id
     const payload = { branch_id: selectedBranch.value }
-    const res = await axios.post(`/api/procurement-requests/${requestId}/broadcast`, payload, { withCredentials: true })
+    const res = await axios.post(`/api/procurement-requests/${productId}/broadcast`, payload, { withCredentials: true })
     alert(res.data?.message || 'Supplier request broadcasted')
     await loadRequestedProducts()
     await loadProducts()
@@ -408,6 +417,7 @@ async function requestSupplier(product) {
   } catch (e) {
     console.error('requestSupplier failed', e)
     alert(e.response?.data?.message || 'Failed to request supplier')
+    setRequestingFlag(productId, false)
   }
 }
 

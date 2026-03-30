@@ -1,12 +1,27 @@
-<! DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Admin Dashboard</title>
-    @vite(['resources/css/app.css', 'resources/js/app. js'])
+    <script>
+        const __authFlag = '{{ auth()->check() ? "1" : "0" }}';
+        const __userIdRaw = '{{ auth()->id() ?? "" }}';
+        window.Laravel = {
+            csrfToken: '{{ csrf_token() }}',
+            authenticated: __authFlag === '1',
+            userId: __userIdRaw === '' ? null : Number(__userIdRaw)
+        };
+    </script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>
+        #__chikin_msg_btn { z-index: 10000 !important; }
+        #__chikin_msg_modal { z-index: 10001 !important; }
+    </style>
 </head>
 <body class="bg-gray-100">
+    @include('partials.messaging_button')
     <div class="min-h-screen">
         <!-- Header -->
         <nav class="bg-white shadow-lg">
@@ -60,7 +75,7 @@
                 </div>
             </div>
         </div>
-    </div>
     @include('partials.messaging_button')
+    </div>
 </body>
 </html>

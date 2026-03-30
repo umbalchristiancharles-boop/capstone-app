@@ -38,15 +38,17 @@ class KitchenDishController extends Controller
             'ingredients.*.product_id' => 'nullable|integer',
         ]);
 
-        // Create dish
+        // Create dish with pending_approval status - requires owner confirmation before appearing in logistics
         $dish = Dish::create([
             'name' => $validated['name'],
             'created_by' => $user->id ?? null,
             'branch_id' => $user->branch_id ?? null,
-            'status' => 'active',
+            'status' => 'draft',
+            'approval_status' => 'pending_approval',
         ]);
 
-        // Create ingredients and placeholder products when necessary
+        // Create ingredients without creating placeholder products or flagging for logistics yet
+        // The products and logistics requests will be handled after owner approves the dish
         $ingredients = $validated['ingredients'] ?? [];
         foreach ($ingredients as $ing) {
             $productId = $ing['product_id'] ?? null;
@@ -58,43 +60,8 @@ class KitchenDishController extends Controller
                 }
             }
 
-            if (!$productId) {
-                try {
-                    $slug = Str::slug($ing['name'] . '-' . time());
-                    $product = Product::create([
-                        'name' => $ing['name'],
-                        'slug' => $slug,
-                        'price' => 0,
-                        'cost_price' => 0,
-                        'stock' => 0,
-                        'min_stock' => 0,
-                        'sku' => 'KITCHEN-'.time().'-'.mt_rand(100,999),
-                        'branch_id' => $user->branch_id ?? null,
-                        'supplier_name' => 'KITCHEN',
-                        'supplier_id' => null,
-                        'is_published' => false,
-                        'is_active' => true,
-                        'is_kitchen_dish' => false,
-                        'has_been_ordered' => false,
-                        'logistics_request_available' => true,
-                    ]);
-                    $productId = $product->id;
-                } catch (\Exception $e) {
-                    Log::error('Failed to create placeholder product for dish ingredient', ['ingredient' => $ing, 'error' => $e->getMessage()]);
-                    // continue without a product; ingredient will be created with null product_id
-                    $product = null;
-                    $productId = null;
-                }
-
-                // Flag product so logistics can review and create procurement requests as needed
-                try {
-                    if ($product) {
-                        $product->update(['logistics_request_available' => true]);
-                    }
-                } catch (\Exception $e) {
-                    Log::warning('Failed to flag product for logistics request', ['product_id' => $product?->id ?? null, 'error' => $e->getMessage()]);
-                }
-            }
+            // Only create existing products, don't create placeholder products yet
+            // Placeholders will be created when owner approves the dish
 
             DishIngredient::create([
                 'dish_id' => $dish->id,

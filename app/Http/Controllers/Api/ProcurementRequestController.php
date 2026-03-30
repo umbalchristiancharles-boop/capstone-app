@@ -410,7 +410,14 @@ public function requestedProducts(Request $request)
                 ->unique()
                 ->toArray();
 
-            $products = $products->map(function ($p) use ($requestsByProduct, $broadcastedProcReqIds) {
+            // Precompute which procurement requests have confirmed suppliers (have product_id in SupplierOrder)
+            $confirmedSupplierProcReqIds = \App\Models\SupplierOrder::whereIn('procurement_request_id', $requests->pluck('id')->toArray())
+                ->whereNotNull('product_id')
+                ->pluck('procurement_request_id')
+                ->unique()
+                ->toArray();
+
+            $products = $products->map(function ($p) use ($requestsByProduct, $broadcastedProcReqIds, $confirmedSupplierProcReqIds) {
                 $req = $requestsByProduct->get($p->id);
                 $p->procurement_request_id = $req ? $req->id : null;
                 $p->procurement_status = $req ? $req->status : null;
@@ -437,8 +444,12 @@ public function requestedProducts(Request $request)
                 // Determine if procurement can acknowledge this request. If the product
                 // has no supplier or a non-positive price, procurement should NOT
                 // acknowledge and must request supplier input first.
+                // BUT if suppliers have already confirmed (have products), no need to request them
                 $p->needs_supplier = true;
                 if (!empty($p->supplier_id) && (float)($p->price ?? 0) > 0) {
+                    $p->needs_supplier = false;
+                } elseif ($req && in_array($req->id, $confirmedSupplierProcReqIds)) {
+                    // Suppliers have confirmed - don't need to request more suppliers
                     $p->needs_supplier = false;
                 }
 
@@ -535,21 +546,86 @@ public function requestedProducts(Request $request)
         // Allow either explicit PROCUREMENT_MANAGER role or a branch Manager in PROCUREMENT or CUSTOM with procurement
         $canAccessProcurement = $role === 'PROCUREMENT_MANAGER' || ($role === 'MANAGER' && $dept === 'PROCUREMENT') || $this->canAccessProcurement($user);
         if ($canAccessProcurement && $procRequest->status === 'pending') {
-            // Prevent procurement from acknowledging if there's no supplier price
-            // Supplier must submit product/price first so Finance can approve a budget.
-            $product = $procRequest->product;
-            if (!$product || empty($product->supplier_id) || (float)($product->price ?? 0) <= 0) {
-                Log::info('Procurement acknowledge blocked: missing supplier or price', ['proc_id' => $procRequest->id, 'product_id' => $product?->id ?? null, 'supplier_id' => $product->supplier_id ?? null, 'price' => $product->price ?? null]);
-                return response()->json(['error' => 'Cannot acknowledge procurement: product has no supplier or price. Request suppliers to submit product and set price first.'], 400);
+            // Handle multi-supplier scenarios:
+            // 1. Get confirmed suppliers (those who submitted products)
+            $confirmedSuppliers = SupplierOrder::where('procurement_request_id', $procRequest->id)
+                ->whereNotNull('product_id')
+                ->with(['supplier', 'product'])
+                ->get();
+
+            // Accept optional supplier_id from request for multi-supplier selection
+            $selectedSupplierId = $request->input('supplier_id');
+
+            Log::info('updateStatus multi-supplier check', [
+                'proc_id' => $procRequest->id,
+                'confirmed_count' => $confirmedSuppliers->count(),
+                'selectedSupplierId_input' => $selectedSupplierId,
+                'selectedSupplierId_type' => gettype($selectedSupplierId),
+                'request_body' => $request->all(),
+                'is_empty' => empty($selectedSupplierId)
+            ]);
+
+            if ($confirmedSuppliers->count() > 1 && !$selectedSupplierId) {
+                // Multiple suppliers exist but none selected
+                Log::info('Multi-supplier acknowledge: need supplier selection', ['proc_id' => $procRequest->id, 'confirmed_count' => $confirmedSuppliers->count()]);
+                return response()->json([
+                    'error' => 'Multiple suppliers have confirmed this product. Please select one.',
+                    'confirmed_suppliers' => $confirmedSuppliers->count(),
+                    'need_supplier_selection' => true
+                ], 400);
+            }
+
+            // Determine the supplier order to use for pricing
+            $selectedOrder = null;
+            $selectedProduct = null;
+
+            if ($selectedSupplierId) {
+                // User selected a specific supplier from confirmed list
+                $selectedOrder = $confirmedSuppliers->firstWhere('supplier_id', $selectedSupplierId);
+                if (!$selectedOrder) {
+                    return response()->json(['error' => 'Selected supplier not found in confirmed suppliers'], 400);
+                }
+                $selectedProduct = $selectedOrder->product;
+                Log::info('Acknowledge with multi-supplier selection', ['proc_id' => $procRequest->id, 'selected_supplier' => $selectedSupplierId, 'selected_product_id' => $selectedProduct->id]);
+            } elseif ($confirmedSuppliers->count() === 1) {
+                // Single confirmed supplier, use it automatically
+                $selectedOrder = $confirmedSuppliers->first();
+                $selectedProduct = $selectedOrder->product;
+                $selectedSupplierId = $selectedOrder->supplier_id;
+                Log::info('Acknowledge with single confirmed supplier', ['proc_id' => $procRequest->id, 'supplier_id' => $selectedSupplierId]);
+            } else {
+                // No confirmed suppliers yet, check original product
+                $product = $procRequest->product;
+                if (!$product || empty($product->supplier_id) || (float)($product->price ?? 0) <= 0) {
+                    Log::info('Procurement acknowledge blocked: missing supplier or price', ['proc_id' => $procRequest->id, 'product_id' => $product?->id ?? null, 'supplier_id' => $product?->supplier_id ?? null, 'price' => $product?->price ?? null]);
+                    return response()->json(['error' => 'Cannot acknowledge procurement: product has no supplier or price. Request suppliers to submit product and set price first.'], 400);
+                }
+                $selectedProduct = $product;
+            }
+
+            if (!$selectedProduct) {
+                return response()->json(['error' => 'Could not determine product for budget request'], 400);
             }
 
             try {
                 // Procurement acknowledges and auto-creates BudgetRequest for Finance panel
-                DB::transaction(function () use ($procRequest, $user) {
-                    $procRequest->update([
+                $budgetCreated = false;
+                DB::transaction(function () use ($procRequest, $user, $selectedProduct, $selectedSupplierId, &$budgetCreated) {
+                    $updateData = [
                         'procurement_user_id' => $user->id,
-                        'status' => 'budget_pending'
-                    ]);
+                        'status' => 'budget_pending',
+                        'supplier_confirmed' => true  // Mark that supplier is confirmed
+                    ];
+                    
+                    // Store the selected supplier if available
+                    if ($selectedSupplierId) {
+                        $updateData['supplier_id'] = $selectedSupplierId;
+                    }
+                    
+                    $procRequest->update($updateData);
+
+                    // Use price from selected product (either supplier's or original)
+                    $budgetAmount = $selectedProduct->price * max(1, $procRequest->quantity);
 
                     // Check if BudgetRequest already exists for this procurement request
                     $existingBudget = BudgetRequest::where('branch_id', $procRequest->branch_id)
@@ -560,20 +636,27 @@ public function requestedProducts(Request $request)
                         BudgetRequest::create([
                             'branch_id' => $procRequest->branch_id,
                             'user_id' => $user->id, // procurement manager as requester
-                            'purpose' => "Procurement Request #{$procRequest->id}: {$procRequest->product->name} x{$procRequest->quantity}",
-                            'requested_amount' => $procRequest->total_amount,
+                            'purpose' => "Procurement Request #{$procRequest->id}: {$selectedProduct->name} x{$procRequest->quantity}",
+                            'requested_amount' => $budgetAmount,
                             'status' => 'Pending',
                             'date_requested' => now()->toDateString(),
                         ]);
+                        $budgetCreated = true;
 
                         Log::info('Auto-created BudgetRequest from ProcurementRequest', [
                             'proc_req_id' => $procRequest->id,
                             'budget_user_id' => $user->id,
-                            'branch_id' => $procRequest->branch_id
+                            'branch_id' => $procRequest->branch_id,
+                            'budget_amount' => $budgetAmount
+                        ]);
+                    } else {
+                        Log::info('BudgetRequest already exists, skipping creation', [
+                            'proc_req_id' => $procRequest->id,
+                            'budget_id' => $existingBudget->id
                         ]);
                     }
                 });
-                Log::info('Procurement acknowledgment successful', ['proc_req_id' => $procRequest->id]);
+                Log::info('Procurement acknowledgment successful', ['proc_req_id' => $procRequest->id, 'budget_created' => $budgetCreated, 'supplier_id' => $selectedSupplierId]);
             } catch (\Exception $e) {
                 Log::error('Procurement acknowledgment failed', [
                     'proc_req_id' => $procRequest->id,
@@ -615,7 +698,24 @@ public function requestedProducts(Request $request)
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        return response()->json($procRequest->fresh()->load(['product', 'logisticsUser', 'procurementUser', 'financeUser']));
+        // Prepare success response with clear message
+        $response = $procRequest->fresh()->load(['product', 'logisticsUser', 'procurementUser', 'financeUser']);
+        $message = 'Procurement request updated';
+        
+        // Add context about budget request if status changed to budget_pending
+        if ($response->status === 'budget_pending') {
+            $message = '✓ Request acknowledged! Budget request has been sent to Finance. Waiting for Finance Manager approval.';
+        } elseif ($response->status === 'cash_in_transit') {
+            $message = '✓ Budget approved by Finance! Ready for order placement.';
+        } elseif ($response->status === 'pending_order_to_supplier') {
+            $message = '✓ Cash confirmed! Procurement can now place orders with suppliers.';
+        }
+        
+        return response()->json([
+            'ok' => true,
+            'message' => $message,
+            'procurement_request' => $response
+        ]);
     }
 
     public function completeOrder(Request $request, $id)
@@ -813,6 +913,67 @@ public function requestedProducts(Request $request)
         }
 
         return response()->json(['ok' => true, 'message' => 'Receipt confirmed. Status set to ongoing_delivery.', 'request' => $procRequest->fresh()]);
+    }
+
+    /**
+     * Get suppliers who have confirmed they have the product for a procurement request.
+     * This is used when multiple suppliers submit products and procurement needs to choose one.
+     * GET /api/procurement-requests/{id}/confirmed-suppliers
+     */
+    public function confirmedSuppliers(Request $request, $id)
+    {
+        $user = $request->user();
+        if (!$user) return response()->json(['error' => 'Unauthenticated'], 401);
+
+        $procRequest = ProcurementRequest::with('product')->findOrFail($id);
+
+        // Get all SupplierOrders for this procurement request where supplier has confirmed (via submitProduct)
+        // Only include orders that have product_id (meaning supplier confirmed availability)
+        $supplierOrders = SupplierOrder::where('procurement_request_id', $procRequest->id)
+            ->whereNotNull('product_id')
+            ->with(['supplier', 'product'])
+            ->get();
+
+        if ($supplierOrders->isEmpty()) {
+            return response()->json([
+                'ok' => true,
+                'confirmed_count' => 0,
+                'suppliers' => []
+            ]);
+        }
+
+        // Build supplier list with relevant info from SupplierOrder and linked products
+        $suppliers = $supplierOrders->map(function ($order) {
+            $supplier = $order->supplier;
+            $product = $order->product;
+            
+            return [
+                'supplier_id' => $supplier->id,
+                'supplier_name' => $supplier->full_name ?? $supplier->username,
+                'supplier_username' => $supplier->username,
+                'supplier_email' => $supplier->email,
+                'supplier_phone' => $supplier->phone_number,
+                'order_id' => $order->id,
+                'order_status' => $order->status,
+                'product_name' => $product?->name ?? 'Unknown',
+                'product_price' => $product?->price ?? 0,
+                'product_stock' => $product?->stock ?? 0,
+                'product_expiry' => $product?->expires_at ?? null,
+                'product_category' => $product?->category ?? 'Uncategorized',
+                'per_pack_or_individual' => $product?->per_pack_or_individual,
+            ];
+        })->values();
+
+        Log::info('confirmedSuppliers retrieved', [
+            'proc_request_id' => $procRequest->id,
+            'count' => $suppliers->count()
+        ]);
+
+        return response()->json([
+            'ok' => true,
+            'confirmed_count' => $suppliers->count(),
+            'suppliers' => $suppliers
+        ]);
     }
 }
 

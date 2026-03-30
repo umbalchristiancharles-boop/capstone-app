@@ -649,10 +649,11 @@ async function onAvatarChange(event) {
 
 /* When a headerLeft slot is used, make it span full width so
   the title sits below the left content (e.g., back button). */
-.header-left-slot { flex-basis: 100%; display: block; margin-bottom: 0.5rem; }
+.header-left-slot { flex-basis: 100%; display: block; margin-bottom: 0.5rem; position: relative; z-index: 130; }
 
 .admin-layout--wider {
-  max-width: 64rem;
+  display: grid;
+  grid-template-columns: 1fr;
   width: 100%;
   min-height: 100vh;
   border-radius: 0;
@@ -663,6 +664,10 @@ async function onAvatarChange(event) {
 
 .admin-layout--wider .admin-main {
   width: 100%;
+}
+
+.admin-layout--wider .admin-side {
+  display: none;
 }
 
 .announcements-panel {

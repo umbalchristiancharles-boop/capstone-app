@@ -60,15 +60,27 @@ class SupplierOrderController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
-            'category' => 'required|string|max:255',
+            'category' => 'required|string|max:255|not_in:,null',
             'per_pack_or_individual' => 'required|in:individual,per_pack,both',
             'expires_at' => 'required|date_format:Y-m-d\TH:i',
             'stock' => 'nullable|integer|min:0',
             'sku' => 'nullable|string|max:255'
         ]);
 
+        // Additional check: ensure category is not empty after trimming
+        if (empty(trim($validated['category'] ?? ''))) {
+            return response()->json(['error' => 'Category cannot be empty'], 422);
+        }
+
         try {
             DB::beginTransaction();
+
+            Log::info('submitProduct: validated data', [
+                'name' => $validated['name'],
+                'category' => $validated['category'],
+                'price' => $validated['price'],
+                'expires_at' => $validated['expires_at'],
+            ]);
 
             // Create or update product for supplier to fulfill the order
             $isDish = \App\Models\Dish::whereRaw('TRIM(UPPER(name)) = ?', [trim(strtoupper($validated['name']))])
@@ -78,18 +90,28 @@ class SupplierOrderController extends Controller
             $generatedSku = $validated['sku'] ?? ('sku-' . time() . '-' . rand(1000, 9999));
             $ProductModel = \App\Models\Product::class;
 
-            // Prefer updating the product already attached to the order
+            // Generate unique slug - handle duplicates
+            $slug = \Illuminate\Support\Str::slug($validated['name']);
+            $originalSlug = $slug;
+            $counter = 1;
+            while (\App\Models\Product::where('slug', $slug)->where('id', '!=', $order->product_id ?? 0)->exists()) {
+                $slug = $originalSlug . '-' . $counter;
+                $counter++;
+            }
+
+            // Each supplier should have their own product instance
+            // Do NOT use the order's existing product_id as that belongs to procurement request, not this supplier
             $existingProduct = null;
-            if (!empty($order->product_id)) {
-                $existingProduct = $ProductModel::find($order->product_id);
+
+            // Try to find by SKU if provided (supplier-specific)
+            if (!empty($validated['sku'])) {
+                $existingProduct = $ProductModel::where('sku', $validated['sku'])
+                    ->where('supplier_id', $user->id)
+                    ->where('branch_id', $order->branch_id)
+                    ->first();
             }
 
-            // If no product attached, try to find by SKU if provided
-            if (!$existingProduct && !empty($validated['sku'])) {
-                $existingProduct = $ProductModel::where('sku', $validated['sku'])->first();
-            }
-
-            // If still not found, try matching by name + supplier + branch (avoid duplicates)
+            // If still not found, try matching by name + supplier + branch (avoid duplicates per supplier)
             if (!$existingProduct) {
                 $existingProduct = $ProductModel::whereRaw('TRIM(UPPER(name)) = ?', [trim(strtoupper($validated['name']))])
                     ->where('branch_id', $order->branch_id)
@@ -99,9 +121,10 @@ class SupplierOrderController extends Controller
 
             if ($existingProduct) {
                 // Update existing product fields
+                Log::info('submitProduct: updating existing product', ['product_id' => $existingProduct->id, 'category' => $validated['category']]);
                 $existingProduct->update([
                     'name' => $validated['name'],
-                    'slug' => \Illuminate\Support\Str::slug($validated['name']),
+                    'slug' => $slug,
                     'category' => $validated['category'],
                     'per_pack_or_individual' => $validated['per_pack_or_individual'],
                     'price' => $validated['price'],
@@ -118,11 +141,13 @@ class SupplierOrderController extends Controller
                 ]);
 
                 $product = $existingProduct;
+                Log::info('submitProduct: product updated successfully', ['product_id' => $product->id, 'saved_category' => $product->fresh()->category]);
             } else {
                 // Create new product
+                Log::info('submitProduct: creating new product', ['category' => $validated['category']]);
                 $product = $ProductModel::create([
                     'name' => $validated['name'],
-                    'slug' => \Illuminate\Support\Str::slug($validated['name']),
+                    'slug' => $slug,
                     'category' => $validated['category'],
                     'per_pack_or_individual' => $validated['per_pack_or_individual'],
                     'price' => $validated['price'],
@@ -137,21 +162,25 @@ class SupplierOrderController extends Controller
                     'is_active' => 1,
                     'is_kitchen_dish' => $isDish,
                 ]);
+                Log::info('submitProduct: product created successfully', ['product_id' => $product->id, 'saved_category' => $product->category]);
             }
 
             // Attach product to supplier order
             $order->update(['product_id' => $product->id]);
 
-            // Update linked procurement request to point to this product and set price/total
+            // Update linked procurement request with price/total only on first confirmation
+            // Do NOT update product_id - each SupplierOrder has their own product
             if ($order->procurement_request_id) {
                 $proc = $order->procurementRequest;
                 if ($proc) {
-                    $proc->update([
-                        'product_id' => $product->id,
-                        'price' => $validated['price'],
-                        'total_amount' => ($validated['price'] * max(1, $order->quantity)),
-                        'supplier_confirmed' => true,
-                    ]);
+                    // Only update if not already confirmed (first supplier confirmation)
+                    if (!$proc->supplier_confirmed) {
+                        $proc->update([
+                            'price' => $validated['price'],
+                            'total_amount' => ($validated['price'] * max(1, $order->quantity)),
+                            'supplier_confirmed' => true,
+                        ]);
+                    }
                 }
             }
 

@@ -9,12 +9,31 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Dish;
 use App\Models\DishIngredient;
+use App\Models\PriceMarkupPercentage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class CashierController extends Controller
 {
+    /**
+     * Get the price markup multiplier for a branch
+     * E.g., 20% markup returns 1.20
+     */
+    private function getMarkupMultiplier($branchId): float
+    {
+        $markup = PriceMarkupPercentage::where('branch_id', $branchId)
+            ->where('is_active', true)
+            ->first();
+
+        if (!$markup) {
+            // Default to 20% if not configured
+            return 1.20;
+        }
+
+        return $markup->getMultiplier();
+    }
+
     /**
      * List active branches.
      */
@@ -46,9 +65,11 @@ class CashierController extends Controller
         }
 
         // Product IDs used as ingredients for this branch (exclude from cashier as raw items)
+        // Only consider ingredients from approved dishes so pending recipes don't hide regular products
         $ingredientIds = DishIngredient::whereNotNull('product_id')
             ->whereHas('dish', function ($q) use ($branchId) {
-                $q->where('branch_id', $branchId);
+                $q->where('branch_id', $branchId)
+                    ->where('approval_status', 'approved');
             })
             ->pluck('product_id')
             ->filter()
@@ -72,8 +93,12 @@ class CashierController extends Controller
         $out = $regularProductsQuery->orderBy('name')->get()->toArray();
 
         // 2) Dishes from dishes table with computed price/cost and computed available servings
+        // Show only approved dishes; older records with null status are still allowed
         $dishes = Dish::where('branch_id', $branchId)
-            ->where('status', 'active')
+            ->where('approval_status', 'approved')
+            ->where(function ($q) {
+                $q->whereNull('status')->orWhere('status', 'active');
+            })
             ->with(['ingredients.product'])
             ->orderBy('name')
             ->get();
@@ -104,7 +129,8 @@ class CashierController extends Controller
                 continue;
             }
 
-            $sellingPrice = round($costSum * 1.20, 2);
+            $markup = $this->getMarkupMultiplier($branchId);
+            $sellingPrice = round($costSum * $markup, 2);
 
             // Ensure a dish product exists so checkout can keep using product_id
             $dishProduct = Product::where('branch_id', $branchId)
@@ -242,7 +268,8 @@ class CashierController extends Controller
                         $costSum += ($unitCost * ($ing->per_serving ?? 0));
                     }
 
-                    $sellingPrice = round($costSum * 1.20, 2);
+                    $markup = $this->getMarkupMultiplier($request->branch_id);
+                    $sellingPrice = round($costSum * $markup, 2);
                     $unitPrice = $sellingPrice;
                     $subtotal = $sellingPrice * $item['quantity'];
                 } else {

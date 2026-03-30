@@ -15,6 +15,7 @@ class ProcurementRequest extends Model
         'logistics_user_id',
         'procurement_user_id',
         'finance_user_id',
+        'supplier_id',
         'product_id',
         'quantity',
         'price',

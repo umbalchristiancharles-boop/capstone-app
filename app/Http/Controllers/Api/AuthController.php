@@ -207,9 +207,6 @@ class AuthController extends Controller
 
         // ADMIN
         if ($role === 'ADMIN') {
-            if ($isMainBranchUser) {
-                return '/main-branch/admin';
-            }
             return '/admin-panel';
         }
 
@@ -242,10 +239,8 @@ class AuthController extends Controller
                 if ($isMainBranchUser) {
                     return '/main-branch/hr';
                 }
-                return '/manager/hr';
+                return '/manager-panel';
             }
-            // Default manager panel
-            return '/manager-panel';
         }
 
         // STAFF - check department for specific panel

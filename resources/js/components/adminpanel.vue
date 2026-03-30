@@ -110,6 +110,22 @@
                   >
                     Staff Management
                   </button>
+                  <!-- Dish Approval Button (Owner only) -->
+                  <button
+                    v-if="ownerProfile.role === 'OWNER'"
+                    class="primary-action-btn"
+                    @click="goToDishApproval"
+                  >
+                    🍽️ Dish Approval
+                  </button>
+                  <!-- Price Markup Approvals Button (Owner only) -->
+                  <button
+                    v-if="ownerProfile.role === 'OWNER'"
+                    class="primary-action-btn"
+                    @click="goToPriceMarkupApprovals"
+                  >
+                    💰 Price Markup Approvals
+                  </button>
                   <!-- Add Branch Button (Main Branch Admin only) -->
                   <button
                     v-if="ownerProfile.role === 'ADMIN'"
@@ -210,7 +226,7 @@
             </div>
           </header>
 
-          <!-- Overview cards -->
+          <!-- Overview cards - Operational Metrics -->
           <section class="overview-grid">
             <div class="overview-card">
               <span class="overview-label">
@@ -237,6 +253,48 @@
               <span class="overview-value">
                 &nbsp;{{ dashboardTotals.pending }}
               </span>
+            </div>
+          </section>
+
+          <!-- Financial Metrics -->
+          <section class="financial-metrics-grid">
+            <div class="financial-card">
+              <div class="financial-card-icon financing-icon">₱</div>
+              <div class="financial-card-content">
+                <span class="financial-card-label">Total Sales</span>
+                <span class="financial-card-value">{{ financialData.totalSales }}</span>
+              </div>
+            </div>
+            <div class="financial-card">
+              <div class="financial-card-icon expenses-icon">📊</div>
+              <div class="financial-card-content">
+                <span class="financial-card-label">Total Expenses</span>
+                <span class="financial-card-value">{{ financialData.totalExpenses }}</span>
+              </div>
+            </div>
+            <div class="financial-card highlight">
+              <div class="financial-card-icon profit-icon">📈</div>
+              <div class="financial-card-content">
+                <span class="financial-card-label">Net Profit</span>
+                <span class="financial-card-value">{{ financialData.netProfit }}</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Admin Finance Charts -->
+          <section class="panel-block" style="min-height:360px;">
+            <div class="panel-header">
+              <h2>Financial Reports</h2>
+              <button class="panel-action" @click="loadAdminReports(activeRange)">Refresh</button>
+            </div>
+            <div class="panel-body" style="padding:16px 20px;">
+              <div v-if="isLoadingReports" style="display:flex;align-items:center;justify-content:center;height:260px;">
+                <div class="loading-spinner"></div>
+              </div>
+              <div v-else style="height:320px;">
+                <Chart v-if="adminReports.length" :type="'line'" :data="adminChartData" :options="adminChartOptions" />
+                <div v-else style="display:flex;align-items:center;justify-content:center;height:260px;color:#9CA3AF;">No report data available.</div>
+              </div>
             </div>
           </section>
 
@@ -676,6 +734,29 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import '../css/adminpanel.css'
+import { Chart } from 'vue-chartjs'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Colors
+} from 'chart.js'
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Colors
+)
 
 const router = useRouter()
 const activeRange = ref('today')
@@ -686,6 +767,70 @@ const dashboardTotals = ref({
   sales: '₱0',
   pending: 0,
 })
+
+// Financial metrics
+const financialData = ref({
+  totalSales: '₱0',
+  totalExpenses: '₱0',
+  netProfit: '₱0'
+})
+const isLoadingFinancials = ref(false)
+
+// Admin finance reports (for charts)
+const adminReports = ref([])
+const isLoadingReports = ref(false)
+
+const adminChartData = computed(() => {
+  if (!adminReports.value || adminReports.value.length === 0) return { labels: [], datasets: [] }
+  const rpt = adminReports.value[0].data || {}
+  const labels = rpt.months || []
+  return {
+    labels,
+    datasets: [
+      {
+        label: 'Income',
+        data: rpt.income || [],
+        borderColor: '#10B981',
+        backgroundColor: 'rgba(16,185,129,0.08)',
+        tension: 0.3,
+        fill: true,
+        pointRadius: 3
+      },
+      {
+        label: 'Expenses',
+        data: rpt.expenses || [],
+        borderColor: '#F59E0B',
+        backgroundColor: 'rgba(245,158,11,0.08)',
+        tension: 0.3,
+        fill: true,
+        pointRadius: 3
+      },
+      {
+        label: 'Net Profit',
+        data: rpt.netProfit || [],
+        borderColor: '#3B82F6',
+        backgroundColor: 'rgba(59,130,246,0.08)',
+        tension: 0.3,
+        fill: true,
+        pointRadius: 3
+      }
+    ]
+  }
+})
+
+const adminChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { position: 'top' },
+    tooltip: { mode: 'index', intersect: false }
+  },
+  interaction: { mode: 'nearest', axis: 'x', intersect: false },
+  scales: {
+    x: { display: true },
+    y: { display: true, beginAtZero: true }
+  }
+}
 
 // Initialize summaryTotals with default value (will be updated after profile loads)
 const summaryTotals = ref({ totalBranches: 0, totalEmployees: 0 })
@@ -960,9 +1105,68 @@ async function loadDashboard(range) {
 async function changeRange(range) {
   if (activeRange.value === range) return
   activeRange.value = range
-  await loadDashboard(range)
+  try {
+    await Promise.all([
+      loadDashboard(range),
+      loadFinancialData(range)
+    ])
+  } catch (err) {
+    console.error('Error changing range:', err)
+    await loadDashboard(range)
+  }
   // reload admin attendance for new range
   try { await loadAdminAttendance(range) } catch (e) {}
+}
+
+async function loadFinancialData(range = 'all') {
+  try {
+    isLoadingFinancials.value = true
+    const res = await axios.get('/api/admin/finance/dashboard', {
+      params: { range },
+      withCredentials: true,
+    })
+    if (res.data && res.data.ok) {
+      const formatCurrency = (amount) => {
+        if (!amount) return '₱0'
+        const num = parseFloat(amount)
+        if (isNaN(num)) return '₱0'
+        return '₱' + num.toLocaleString('en-PH', { minimumFractionDigits: 2 })
+      }
+      financialData.value = {
+        totalSales: formatCurrency(res.data.totalRevenue),
+        totalExpenses: formatCurrency(res.data.totalExpenses),
+        netProfit: formatCurrency(res.data.netProfit)
+      }
+    }
+  } catch (err) {
+    console.error('Financial data error:', err.message)
+    // Set default values if there's an error
+    financialData.value = {
+      totalSales: '₱0',
+      totalExpenses: '₱0',
+      netProfit: '₱0'
+    }
+  } finally {
+    isLoadingFinancials.value = false
+  }
+}
+
+// Load admin finance reports for charts
+async function loadAdminReports(range = 'all') {
+  isLoadingReports.value = true
+  try {
+    const res = await axios.get('/api/admin/finance/reports', { params: { range }, withCredentials: true })
+    if (res.data && res.data.ok) {
+      adminReports.value = res.data.reports || []
+    } else {
+      adminReports.value = []
+    }
+  } catch (e) {
+    console.error('Error loading admin finance reports:', e)
+    adminReports.value = []
+  } finally {
+    isLoadingReports.value = false
+  }
 }
 
 async function openInfoModal() {
@@ -1094,7 +1298,19 @@ onMounted(async () => {
   }
 
   // Now load dashboard after initial mount flag is set
-  await loadDashboard(activeRange.value)
+  try {
+    await loadDashboard(activeRange.value)
+  } catch (err) {
+    console.error('Dashboard load failed:', err)
+  }
+
+  // Load financial data separately
+  try {
+    await loadFinancialData(activeRange.value)
+    await loadAdminReports(activeRange.value)
+  } catch (err) {
+    console.error('Financial data load failed:', err)
+  }
 
   // Remove loading overlay after content is loaded
   try {
@@ -1236,6 +1452,66 @@ function goToStaffManagement() {
   }
 }
 
+function goToDishApproval() {
+  if (ownerProfile.value.role !== 'OWNER') return
+  try {
+    if (window.__chikin_temp_overlay) return
+    const overlay = document.createElement('div')
+    overlay.className = 'loading-overlay __chikin_temp_overlay'
+    overlay.style.zIndex = '9999'
+    overlay.style.backdropFilter = 'blur(8px)'
+    overlay.style.webkitBackdropFilter = 'blur(8px)'
+    overlay.innerHTML = `
+      <div class="logo-loading-box">
+        <img src="${logoImg}" alt="Chikin Tayo" class="logo-loading-img" />
+        <p>Opening Dish Approval...</p>
+      </div>
+    `
+    document.body.appendChild(overlay)
+    window.__chikin_temp_overlay = overlay
+    try { if (window.pageBlur && typeof window.pageBlur.show === 'function') window.pageBlur.show() } catch (e) {}
+    setTimeout(() => {
+      try {
+        window.location.href = '/owner/dish-approval'
+      } catch (e) {
+        try { router.push('/owner/dish-approval') } catch (err) {}
+      }
+    }, 220)
+  } catch (e) {
+    try { router.push('/owner/dish-approval') } catch (err) {}
+  }
+}
+
+function goToPriceMarkupApprovals() {
+  if (ownerProfile.value.role !== 'OWNER') return
+  try {
+    if (window.__chikin_temp_overlay) return
+    const overlay = document.createElement('div')
+    overlay.className = 'loading-overlay __chikin_temp_overlay'
+    overlay.style.zIndex = '9999'
+    overlay.style.backdropFilter = 'blur(8px)'
+    overlay.style.webkitBackdropFilter = 'blur(8px)'
+    overlay.innerHTML = `
+      <div class="logo-loading-box">
+        <img src="${logoImg}" alt="Chikin Tayo" class="logo-loading-img" />
+        <p>Opening Price Markup Approvals...</p>
+      </div>
+    `
+    document.body.appendChild(overlay)
+    window.__chikin_temp_overlay = overlay
+    try { if (window.pageBlur && typeof window.pageBlur.show === 'function') window.pageBlur.show() } catch (e) {}
+    setTimeout(() => {
+      try {
+        window.location.href = '/owner/price-markup-approvals'
+      } catch (e) {
+        try { router.push('/owner/price-markup-approvals') } catch (err) {}
+      }
+    }, 220)
+  } catch (e) {
+    try { router.push('/owner/price-markup-approvals') } catch (err) {}
+  }
+}
+
 function goToAddBranches() {
   if (ownerProfile.value.role !== 'ADMIN') return
   try {
@@ -1251,6 +1527,8 @@ onMounted(() => {
   loadBranches()
   loadAdminAttendance(activeRange.value)
   loadAttendanceSettings()
+  // load admin finance charts
+  loadAdminReports(activeRange.value)
   axios
     .get('/api/owner-profile', { withCredentials: true })
     .then(res => {
@@ -1375,6 +1653,72 @@ h1, h2 {
   font-family: 'Inter', 'Poppins', sans-serif;
   letter-spacing: -0.5px;
   margin-bottom: 8px;
+}
+
+/* Financial Metrics Styles */
+.financial-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 24px;
+  margin-top: 16px;
+}
+
+.financial-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  background: linear-gradient(135deg, #FCE8E0 0%, #FBF3ED 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 122, 24, 0.15);
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.financial-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 122, 24, 0.12);
+  border-color: rgba(255, 122, 24, 0.25);
+}
+
+.financial-card.highlight {
+  background: linear-gradient(135deg, #FFF8F3 0%, #FFFBF7 100%);
+  border-left: 4px solid #FF9F43;
+  border-color: rgba(255, 159, 67, 0.3);
+}
+
+.financial-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  background: rgba(255, 122, 24, 0.1);
+  color: #ff7a18;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.financial-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.financial-card-label {
+  font-size: 12px;
+  color: #8B6F47;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.financial-card-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #4b2a06;
 }
 
 </style>

@@ -66,7 +66,19 @@ const routes = [
   {
     path: '/owner/staff-management',
     name: 'OwnerStaffManagement',
-    component: () => import('../components/OwnerStaffManagement.vue'),
+    component: () => import('../OwnerStaffManagement.vue'),
+    meta: { requiresAuth: true, role: 'OWNER' }
+  },
+  {
+    path: '/owner/dish-approval',
+    name: 'OwnerDishApproval',
+    component: () => import('../OwnerDishApprovalPanel.vue'),
+    meta: { requiresAuth: true, role: 'OWNER' }
+  },
+  {
+    path: '/owner/price-markup-approvals',
+    name: 'OwnerPriceMarkupApprovals',
+    component: () => import('../OwnerPriceMarkupPanel.vue'),
     meta: { requiresAuth: true, role: 'OWNER' }
   },
   {

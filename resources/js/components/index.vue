@@ -504,7 +504,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import axios from 'axios'
 import { useRouter, RouterLink } from 'vue-router'
 
@@ -564,20 +564,18 @@ const commonEmojis = {
   'Symbols': ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '💕', '💞', '💓', '💗', '💖', '💝', '💟', '👑', '💍', '💎', '📱', '📲', '💻', '⌨️', '🖥️', '🖨️', '🖱️', '🖲️', '🕹️', '🗜️', '💽', '💾', '💿', '📀', '🧮', '🎥', '🎬', '📺', '📷', '📸', '📼', '🔍', '🔎', '🕯️', '💡', '🔦', '🏮', '📔', '📕', '📖', '📗', '📘', '📙', '📚', '📓', '📒', '📑', '🧷', '🪃', '📎', '🖇️', '📐', '📏', '📌', '📍', '✂️', '🖊️', '🖋️', '✒️', '🖌️', '🖍️', '📝', '✏️', '🔏', '🔐', '🔒', '🔓', '❌', '✅', '✔️', '☑️', '⚠️', '🚨', '🚫', '⛔', '🆘', '🚩', '🏁', '⚡', '☄️', '💥', '✨', '🌟', '⭐', '🌠', '💫', '🔥', '💨', '💧', '🌪️', '☔', '🍀', '🎈', '🎊', '🎉', '🎁', '🎀', '🎯', '🏆', '🥇', '🥈', '🥉', '🏅', '⚽', '⚾', '🥎', '🎾', '🏀', '🏐', '🏈', '🏉', '🥏', '🎳', '🏓', '🏸', '🏒', '🏑', '🥍', '🏏', '🥅', '⛳', '⛸️', '🎣', '🎽', '🎿', '⛷️', '🏂', '🪂', '🛹']
 }
 
-const products = ref([
-  { id: 1, name: 'Yangyeom', img: yangyeomImg, comments: [] },
-  { id: 2, name: 'Snow Cheese', img: snowcheeseImg, comments: [] },
-  { id: 3, name: 'Corndog', img: corndogImg, comments: [] },
-  { id: 4, name: 'Pastries', img: pastriesImg, comments: [] },
-  { id: 5, name: 'Ramen', img: ramenImg, comments: [] },
-  { id: 6, name: 'Ice Cream', img: icecreamImg, comments: [] }
-])
+const products = ref([])
 
-const newComments = ref(
-  Object.fromEntries(
-    products.value.map(product => [product.id, { author: '', text: '', rating: 5 }])
-  )
-)
+const newComments = ref({})
+
+// Watch products and ensure newComments is synchronized
+watch(products, (newProducts) => {
+  newProducts.forEach(product => {
+    if (!(product.id in newComments.value)) {
+      newComments.value[product.id] = { author: '', text: '', rating: 5 }
+    }
+  })
+}, { immediate: true })
 
 function handleScroll() {
   showScrollTop.value = window.scrollY > 400
@@ -608,6 +606,7 @@ onMounted(() => {
 
   handleScroll()
   window.addEventListener('scroll', handleScroll, { passive: true })
+  loadProducts()
   loadComments()
   loadGoogleUser()
 })
@@ -615,6 +614,48 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
 })
+
+async function loadProducts() {
+  try {
+    const { data } = await axios.get('/api/products-for-comments')
+    
+    console.debug('[PRODUCTS] Loaded from API:', data)
+    
+    if (!Array.isArray(data) || data.length === 0) {
+      console.warn('[PRODUCTS] No products returned from API!')
+      alert('⚠️ No products available for comments. Please contact support.')
+      return
+    }
+    
+    // Map product names to images (case-insensitive)
+    const imageMap = {
+      'yangyeom': yangyeomImg,
+      'snow cheese': snowcheeseImg,
+      'corndog': corndogImg,
+      'pastries': pastriesImg,
+      'ramen': ramenImg,
+      'ice cream': icecreamImg,
+    }
+    
+    products.value = data.map(product => ({
+      ...product,
+      comments: [],
+      img: imageMap[product.name.toLowerCase()] || chikintayoImg // Use mapped image or fallback to logo
+    }))
+    
+    console.debug('[PRODUCTS] Processed products:', products.value.map(p => ({ id: p.id, name: p.name })))
+    
+    // Initialize newComments for each product
+    newComments.value = Object.fromEntries(
+      products.value.map(product => [product.id, { author: '', text: '', rating: 5 }])
+    )
+    
+    console.debug('[PRODUCTS] newComments initialized with keys:', Object.keys(newComments.value))
+  } catch (error) {
+    console.error('[PRODUCTS] Failed to load:', error)
+    alert('❌ Failed to load products: ' + (error.message || 'Unknown error'))
+  }
+}
 
 async function loadComments() {
   try {
@@ -646,24 +687,50 @@ async function submitComment(productId) {
   }
 
   try {
-    const { data } = await axios.post('/api/product-comments', {
+    // Truncate author to 60 characters (database constraint)
+    // Prefer using name, but fallback to email and truncate if necessary
+    let author = googleUser.value.name || googleUser.value.email
+    if (author && author.length > 60) {
+      author = author.substring(0, 60)
+    }
+
+    const payload = {
       product_id: productId,
-      author: googleUser.value.email,
+      author: author,
       text: comment.text.trim(),
       rating: comment.rating
-    })
+    }
+
+    console.debug('[COMMENT] Submitting payload:', payload)
+
+    const { data } = await axios.post('/api/product-comments', payload)
 
     const product = products.value.find(p => p.id === productId)
     if (product) {
       product.comments.unshift(data)
     }
 
-    newComments.value[productId] = { author: googleUser.value.email, text: '', rating: 5 }
+    newComments.value[productId] = { author: '', text: '', rating: 5 }
+    alert('Comment posted successfully!')
   } catch (error) {
-    console.error('Failed to submit comment:', error)
-    alert('Unable to post comment right now. Please try again.')
+    console.error('[COMMENT] Failed to submit:', error)
+    
+    // Show detailed error message from validation
+    let errorMsg = 'Unable to post comment right now. Please try again.'
+    if (error.response?.status === 422 && error.response?.data?.errors) {
+      const errors = error.response.data.errors
+      const errorField = Object.keys(errors)[0]
+      if (errorField) {
+        errorMsg = `Validation error: ${errors[errorField][0]}`
+      }
+    } else if (error.response?.data?.message) {
+      errorMsg = error.response.data.message
+    }
+    
+    alert(errorMsg)
   }
 }
+
 
 function setRating(productId, rating) {
   newComments.value[productId].rating = rating

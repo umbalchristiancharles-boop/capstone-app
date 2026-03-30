@@ -8,6 +8,8 @@
     :canEditProfile="userProfile.role === 'OWNER'"
     :canChangePassword="true"
     :showProfileColumn="false"
+    :showAnnouncements="false"
+    :fullWidth="true"
     @logout="askLogout"
     @profile-updated="onProfileUpdated"
   >
@@ -17,6 +19,15 @@
 
 
     <div class="filter-bar">
+      <div class="filter-group">
+        <label>Branch:</label>
+        <select v-model="selectedBranchId" @change="onBranchChange">
+          <option value="">All Branches</option>
+          <option v-for="branch in availableBranches" :key="branch.id" :value="branch.id">
+            {{ branch.name }}
+          </option>
+        </select>
+      </div>
       <div class="filter-group">
         <label>Date Range:</label>
         <select v-model="selectedRange" @change="onRangeChange">
@@ -92,6 +103,42 @@
         </div>
       </div>
     </div>
+
+    <!-- Financial Reports Chart -->
+    <section class="panel-section" style="margin-top:16px;">
+      <div class="panel-header">
+        <h2>Financial Reports</h2>
+        <button class="panel-action" @click="refreshDashboard">Refresh</button>
+      </div>
+      <div class="panel-body" style="padding:16px 20px; min-height:320px;">
+        <div v-if="!financeReports || financeReports.length === 0" style="display:flex;align-items:center;justify-content:center;height:260px;color:#9CA3AF;">
+          <div style="text-align: center;">
+            <p>No report data available.</p>
+            <p style="font-size: 12px; margin-top: 8px;">Try clicking Refresh or check your branch data.</p>
+          </div>
+        </div>
+        <div v-else-if="!managerChartData || !managerChartData.labels || managerChartData.labels.length === 0" style="display:flex;align-items:center;justify-content:center;height:260px;color:#9CA3AF;">
+          <p>No chart data to display.</p>
+        </div>
+        <div v-else style="height:320px;">
+          <Chart :type="'line'" :data="managerChartData" :options="managerChartOptions" />
+        </div>
+      </div>
+    </section>
+
+    <!-- Price Markup Panel (kept below reports) -->
+    <PriceMarkupManagerPanel 
+      v-if="userProfile && userProfile.branch_id" 
+      :branchId="userProfile.branch_id"
+      :isMainBranchFinance="props.isMainBranchFinance || isMainBranchFinanceManager"
+    />
+
+    <!-- Price Markup Percentage Management -->
+    <PriceMarkupPanel
+      :branchId="userProfile.branch_id"
+      :userRole="userProfile.role"
+      :isMainBranchUser="isMainBranchFinanceManager"
+    />
 
     <!-- Budget Requests Section (keeps existing functionality) -->
     <div class="branch-stats panel-section">
@@ -306,7 +353,40 @@
 import { ref, onMounted, computed, onUnmounted } from 'vue'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import FinancePanelContent from './finance/FinancePanelContent.vue'
+import PriceMarkupPanel from './PriceMarkupPanel.vue'
+import PriceMarkupManagerPanel from './finance/PriceMarkupManagerPanel.vue'
 import axios from 'axios'
+import { Chart } from 'vue-chartjs'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Colors
+} from 'chart.js'
+
+// Define props from wrapper components
+const props = defineProps({
+  isMainBranchFinance: {
+    type: Boolean,
+    default: false
+  }
+})
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Colors
+)
 
 // Logo image
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
@@ -393,8 +473,83 @@ const editBudgetValue = ref(null)
 const financeReports = ref([])
 const transactions = ref([])
 
+// Chart data computed from financeReports
+const managerChartData = computed(() => {
+  if (!financeReports.value || financeReports.value.length === 0) return { labels: [], datasets: [] }
+  const rpt = financeReports.value[0].data || {}
+  const labels = rpt.months || []
+  return {
+    labels,
+    datasets: [
+      {
+        label: 'Income',
+        data: rpt.income || [],
+        borderColor: '#10B981',
+        backgroundColor: 'rgba(16,185,129,0.08)',
+        tension: 0.25,
+        fill: true,
+        pointRadius: 3
+      },
+      {
+        label: 'Expenses',
+        data: rpt.expenses || [],
+        borderColor: '#F59E0B',
+        backgroundColor: 'rgba(245,158,11,0.08)',
+        tension: 0.25,
+        fill: true,
+        pointRadius: 3
+      },
+      {
+        label: 'Net Profit',
+        data: rpt.netProfit || [],
+        borderColor: '#3B82F6',
+        backgroundColor: 'rgba(59,130,246,0.08)',
+        tension: 0.25,
+        fill: true,
+        pointRadius: 3
+      }
+    ]
+  }
+})
+
+const managerChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: { legend: { position: 'top' }, tooltip: { mode: 'index', intersect: false } },
+  interaction: { mode: 'nearest', axis: 'x', intersect: false },
+  scales: { x: { display: true }, y: { display: true, beginAtZero: true } }
+}
+
+// Available branches computed property - show if user can see multiple branches
+const availableBranches = computed(() => {
+  return branches.value
+})
+
+// Check if user can view multiple branches (OWNER, SUPER_ADMIN, or Main Branch user)
+const canViewMultipleBranches = computed(() => {
+  const userRole = (userProfile.value?.role || '').toUpperCase()
+  const branchName = (userProfile.value?.branch_name || userProfile.value?.branch || '').toUpperCase()
+  const isBranchOwner = ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN'].includes(userRole)
+  const isMainBranchUser = branchName.includes('MAIN')
+  
+  return isBranchOwner || isMainBranchUser
+})
+
+// Check if user is assigned to Main Branch
+const isMainBranchFinanceManager = computed(() => {
+  const branchName = (userProfile.value?.branch_name || userProfile.value?.branch || '').toUpperCase()
+  const result = branchName.includes('MAIN')
+  console.log('[ManagerFinancePanel] isMainBranchFinanceManager check:', {
+    branchName,
+    result,
+    userProfile: userProfile.value
+  })
+  return result
+})
+
 // UI filter state (used by new layout controls)
 const selectedRange = ref('all')
+const selectedBranchId = ref('')
 
 // Budget requests state
 const budgetRequests = ref([])
@@ -467,8 +622,10 @@ async function fetchBranches() {
   branchesLoading.value = true
   try {
     const res = await axios.get('/api/manager/finance/branches', { withCredentials: true })
+    console.log('Branches API Response:', res.data)
     if (res.data && res.data.ok) {
       branches.value = res.data.branches || []
+      console.log('Loaded branches:', branches.value)
     }
   } catch (err) {
     console.error('Error fetching branches:', err)
@@ -604,21 +761,32 @@ onMounted(() => {
 // Extract initial load into separate function
 async function loadInitialData() {
   try {
+    const params = { range: selectedRange.value }
+    if (selectedBranchId.value) {
+      params.branch_id = selectedBranchId.value
+    }
+    
     const [profileRes, dashRes, reportsRes, txRes] = await Promise.all([
       axios.get('/api/manager/finance/profile', { withCredentials: true }),
-      axios.get('/api/manager/finance/dashboard', { params: { range: selectedRange.value }, withCredentials: true }),
-      axios.get('/api/manager/finance/reports', { withCredentials: true }),
+      axios.get('/api/manager/finance/dashboard', { params, withCredentials: true }),
+      axios.get('/api/manager/finance/reports', { params, withCredentials: true }),
       axios.get('/api/manager/finance/transactions', { withCredentials: true })
     ])
 
     userProfile.value = profileRes.data.user
+    console.log('User Profile:', userProfile.value)
+    console.log('User Branch ID:', userProfile.value?.branch_id)
     dashboardTotals.value = {
       totalSales: dashRes.data.totalRevenue ? '₱' + Number(dashRes.data.totalRevenue).toLocaleString('en-PH', { minimumFractionDigits: 2 }) : '₱0',
       pendingApprovals: dashRes.data.pendingApprovals || 0,
       revenue: dashRes.data.netProfit ? '₱' + Number(dashRes.data.netProfit).toLocaleString('en-PH', { minimumFractionDigits: 2 }) : '₱0',
       totalOrders: dashRes.data.totalOrders || 0
     }
+    
+    console.log('Reports API Response:', reportsRes.data)
     financeReports.value = extractArray(reportsRes.data, 'reports')
+    console.log('Extracted financeReports:', financeReports.value)
+    
     transactions.value = extractArray(txRes.data, 'transactions')
     await fetchBudgetRequests()
     await fetchBranches()
@@ -696,9 +864,15 @@ onUnmounted(() => {
 // Refresh dashboard / re-fetch data for current filter (used by button + polling)
 async function refreshDashboard() {
   try {
-    const [dashRes, txRes] = await Promise.all([
-      axios.get('/api/manager/finance/dashboard', { params: { range: selectedRange.value }, withCredentials: true }),
+    const params = { range: selectedRange.value }
+    if (selectedBranchId.value) {
+      params.branch_id = selectedBranchId.value
+    }
+    
+    const [dashRes, txRes, reportsRes] = await Promise.all([
+      axios.get('/api/manager/finance/dashboard', { params, withCredentials: true }),
       axios.get('/api/manager/finance/transactions', { withCredentials: true }),
+      axios.get('/api/manager/finance/reports', { params, withCredentials: true }),
       fetchBudgetRequests(),
       fetchBranches()
     ])
@@ -710,12 +884,20 @@ async function refreshDashboard() {
       totalOrders: dashRes.data.totalOrders || 0
     }
     transactions.value = extractArray(txRes.data, 'transactions')
+    
+    console.log('Refresh - Reports API Response:', reportsRes.data)
+    financeReports.value = extractArray(reportsRes.data, 'reports')
+    console.log('Refresh - Extracted financeReports:', financeReports.value)
   } catch (err) {
     console.error('Error refreshing dashboard:', err)
   }
 }
 
 function onRangeChange() {
+  refreshDashboard()
+}
+
+function onBranchChange() {
   refreshDashboard()
 }
 

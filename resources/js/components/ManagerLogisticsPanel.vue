@@ -202,6 +202,110 @@
         </div>
       </div>
 
+      <!-- Product Request Section (Request new products) -->
+      <div class="panel-section">
+        <h2 class="section-title">Request New Products</h2>
+        <p class="section-description">
+          Request new products to be added to the inventory. Requests must be approved by the owner and main branch logistics before the product becomes available for procurement.
+        </p>
+
+        <!-- Create New Product Request Button -->
+        <button v-if="!showProductRequestForm && canRequestProcurement" class="btn-primary" @click="showProductRequestForm = true">
+          + Request New Product
+        </button>
+
+        <!-- Product Request Form -->
+        <div v-if="showProductRequestForm && canRequestProcurement" class="form-container">
+          <h3>Request New Product</h3>
+          <form @submit.prevent="submitProductRequest">
+            <div class="form-group">
+              <label>Product Name*</label>
+              <input
+                v-model="productRequestForm.name"
+                type="text"
+                placeholder="e.g., Organic Chicken Breast"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label>Description</label>
+              <textarea
+                v-model="productRequestForm.description"
+                placeholder="Optional details about the product (specifications, notes, etc.)"
+                rows="3"
+              ></textarea>
+            </div>
+            <div class="form-group">
+              <label>Unit of Measurement</label>
+              <select v-model="productRequestForm.unit">
+                <option value="">-- Select unit (optional) --</option>
+                <option value="pcs">Pieces (pcs)</option>
+                <option value="g">Grams (g)</option>
+                <option value="kg">Kilograms (kg)</option>
+                <option value="ml">Milliliters (ml)</option>
+                <option value="l">Liters (l)</option>
+                <option value="pack">Pack</option>
+                <option value="box">Box</option>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn-secondary" @click="cancelProductRequest">Cancel</button>
+              <button type="submit" class="btn-primary" :disabled="productRequestSubmitting">
+                {{ productRequestSubmitting ? 'Submitting...' : 'Submit Request' }}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Product Requests Table -->
+        <div class="requests-list">
+          <h3>My Product Requests</h3>
+          <div v-if="productRequestsLoading" class="loading-container small">
+            <div class="loading-spinner"></div>
+          </div>
+          <div v-else class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Product Name</th>
+                  <th>Unit</th>
+                  <th>Status</th>
+                  <th>Requested</th>
+                  <th>Approved By</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="req in productRequests" :key="req.id">
+                  <td>
+                    <div class="product-name">{{ req.name }}</div>
+                    <div v-if="req.description" class="product-description">{{ req.description }}</div>
+                  </td>
+                  <td>{{ req.unit || 'N/A' }}</td>
+                  <td>
+                    <span :class="['status-badge', getProductReqStatusClass(req.approval_status)]">
+                      {{ formatProductReqStatus(req.approval_status) }}
+                    </span>
+                  </td>
+                  <td>{{ formatDate(req.created_at) }}</td>
+                  <td>
+                    <div v-if="req.approver">{{ req.approver.full_name }}</div>
+                    <div v-else class="muted">-</div>
+                  </td>
+                  <td>
+                    <div v-if="req.approval_notes" class="approval-notes">{{ req.approval_notes }}</div>
+                    <div v-else class="muted">-</div>
+                  </td>
+                </tr>
+                <tr v-if="productRequests.length === 0">
+                  <td colspan="6" class="empty-message">No product requests yet.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <!-- Budget Request Section (legacy - keep for now) -->
       <div class="panel-section">
         <h2 class="section-title">Budget Requests (Legacy)</h2>
@@ -287,6 +391,13 @@ const procRequestsLoading = ref(false)
 const procRequestForm = ref({ product_id: '', quantity: 1 })
 const procRequestSubmitting = ref(false)
 const showProcRequestForm = ref(false)
+
+// Product Request state
+const productRequests = ref([])
+const productRequestsLoading = ref(false)
+const productRequestForm = ref({ name: '', description: '', unit: '' })
+const productRequestSubmitting = ref(false)
+const showProductRequestForm = ref(false)
 
 // legacy budget request form toggle (used in template)
 const showRequestForm = ref(false)
@@ -519,9 +630,10 @@ async function fetchProcRequests() {
 function updateDashboardTotals() {
   const inv = inventory.value || []
   const procs = procurementRequests.value || []
+  const prodReqs = productRequests.value || []
   dashboardTotals.value.totalProducts = inv.length
   dashboardTotals.value.lowStock = inv.filter(i => (i.status || '').toString().toLowerCase() !== 'ok').length
-  dashboardTotals.value.pendingRequests = procs.filter(r => (r.status || '').toString().toLowerCase() === 'pending').length
+  dashboardTotals.value.pendingRequests = procs.filter(r => (r.status || '').toString().toLowerCase() === 'pending').length + prodReqs.filter(r => (r.approval_status || '').toString().toLowerCase() === 'pending_approval').length
 }
 
 async function fetchBranches() {
@@ -658,11 +770,11 @@ onMounted(async () => {
   // React to branch changes to reload tables
   watch(selectedBranch, async (newVal, oldVal) => {
     // fetch updated data for the selected branch
-    await Promise.all([fetchInventory(), loadProducts(), fetchProcRequests()])
+    await Promise.all([fetchInventory(), loadProducts(), fetchProcRequests(), fetchProductRequests()])
   })
 
   // initial load
-  await Promise.all([fetchInventory(), loadProducts(), fetchProcRequests()])
+  await Promise.all([fetchInventory(), loadProducts(), fetchProcRequests(), fetchProductRequests()])
 })
 
 // Handle profile updates emitted from OwnerPanelLayout
@@ -755,6 +867,75 @@ async function askLogout() {
     if (ok) await confirmLogout()
   } catch (e) { console.error('askLogout failed', e) }
 }
+
+// Product Request Functions
+async function fetchProductRequests() {
+  productRequestsLoading.value = true
+  try {
+    const res = await requestWithFallback('get', '/api/product-requests', { withCredentials: true })
+    const data = res.data?.data ?? res.data ?? []
+    productRequests.value = Array.isArray(data) ? data : []
+  } catch (e) {
+    console.error('Product requests fetch error:', e)
+    productRequests.value = []
+  } finally {
+    productRequestsLoading.value = false
+  }
+}
+
+async function submitProductRequest() {
+  if (!canRequestProcurement.value) {
+    showToast('Main Branch logistics cannot request new products.', 'warning')
+    return
+  }
+
+  productRequestSubmitting.value = true
+  try {
+    const payload = {
+      name: productRequestForm.value.name,
+      description: productRequestForm.value.description || null,
+      unit: productRequestForm.value.unit || null
+    }
+    await requestWithFallbackPost('/api/product-requests', payload, { withCredentials: true })
+    showToast('Product request submitted for approval', 'success')
+    showProductRequestForm.value = false
+    productRequestForm.value = { name: '', description: '', unit: '' }
+    try {
+      await fetchProductRequests()
+    } catch (fetchErr) {
+      console.error('Error refreshing product requests', fetchErr)
+    }
+  } catch (e) {
+    console.error('submitProductRequest error', e)
+    showToast(e.response?.data?.error || 'Failed to submit product request', 'error')
+  } finally {
+    productRequestSubmitting.value = false
+  }
+}
+
+function cancelProductRequest() {
+  showProductRequestForm.value = false
+  productRequestForm.value = { name: '', description: '', unit: '' }
+}
+
+function getProductReqStatusClass(status) {
+  switch ((status || '').toLowerCase()) {
+    case 'approved': return 'status-approved'
+    case 'rejected': return 'status-rejected'
+    case 'pending_approval': return 'status-pending'
+    default: return 'status-pending'
+  }
+}
+
+function formatProductReqStatus(status) {
+  const statusMap = {
+    'pending_approval': 'PENDING APPROVAL',
+    'approved': 'APPROVED',
+    'rejected': 'REJECTED'
+  }
+  return statusMap[status] || (status || '').toUpperCase()
+}
+
 </script>
 
 <style scoped>
@@ -1272,4 +1453,29 @@ async function askLogout() {
 .header-avatar { width:36px; height:36px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; background:#f3f4f6; margin-right:8px }
 .header-avatar-img { width:100%; height:100%; background-size:cover; background-position:center }
 .header-avatar-initials { font-weight:700; color:#374151 }
+
+/* Product request specific styles */
+.product-description {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.approval-notes {
+  font-size: 12px;
+  color: #666;
+  max-width: 300px;
+  word-wrap: break-word;
+}
+
+.muted {
+  color: #999;
+  font-style: italic;
+}
+
+.muted-note {
+  color: #999;
+  font-size: 12px;
+}
 </style>
