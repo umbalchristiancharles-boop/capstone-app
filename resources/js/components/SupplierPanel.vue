@@ -256,6 +256,19 @@
               <label>Expiration Date</label>
               <input v-model="submitForm.expires_at" type="datetime-local" />
             </div>
+            <div v-if="submitForm.per_pack_or_individual === 'per_pack'" class="form-group">
+              <label>Pack details</label>
+              <div style="display:flex;gap:8px">
+                <input v-model.number="submitForm.pack_quantity" type="number" min="0" step="0.01" placeholder="Quantity (e.g. 6 or 250)" />
+                <select v-model="submitForm.pack_unit">
+                  <option value="">Unit</option>
+                  <option value="pcs">pcs</option>
+                  <option value="g">g</option>
+                  <option value="kg">kg</option>
+                </select>
+              </div>
+              <div class="muted" style="margin-top:6px">If selling per pack, enter how many pieces or how many grams are in a pack.</div>
+            </div>
             <div v-if="submitError" class="error-msg">{{ submitError }}</div>
           </div>
           <div class="modal-footer">
@@ -416,7 +429,7 @@ const receiptData = ref({})
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
 // Supplier submit modal state
 const supplierSubmitModalVisible = ref(false)
-const submitForm = ref({ name: '', price: null, category: '', per_pack_or_individual: '', expires_at: '' })
+const submitForm = ref({ name: '', price: null, category: '', per_pack_or_individual: '', expires_at: '', pack_quantity: null, pack_unit: '' })
 const submitSubmitting = ref(false)
 const submitError = ref('')
 const currentSubmitOrderId = ref(null)
@@ -678,7 +691,7 @@ async function completeTransaction(id) {
 function openSupplierSubmitModal(order) {
   // Prefill product name if procurement request provides it
   submitError.value = ''
-  submitForm.value = { name: '', price: null, category: '', per_pack_or_individual: '', expires_at: '' }
+  submitForm.value = { name: '', price: null, category: '', per_pack_or_individual: '', expires_at: '', pack_quantity: null, pack_unit: '' }
   currentSubmitOrderId.value = null
   if (!order) return
   currentSubmitOrderId.value = order.id
@@ -692,7 +705,7 @@ function closeSupplierSubmitModal() {
   if (submitSubmitting.value) return
   supplierSubmitModalVisible.value = false
   submitError.value = ''
-  submitForm.value = { name: '', price: null, category: '', per_pack_or_individual: '', expires_at: '' }
+  submitForm.value = { name: '', price: null, category: '', per_pack_or_individual: '', expires_at: '', pack_quantity: null, pack_unit: '' }
   currentSubmitOrderId.value = null
 }
 
@@ -772,6 +785,11 @@ async function submitProductForm() {
   if (!submitForm.value.name) { submitError.value = 'Product name is required'; return }
   if (!submitForm.value.category) { submitError.value = 'Category is required'; return }
   if (!submitForm.value.per_pack_or_individual) { submitError.value = 'Pricing type is required'; return }
+  // If per-pack, require pack quantity and unit
+  if (submitForm.value.per_pack_or_individual === 'per_pack') {
+    if (submitForm.value.pack_quantity === null || submitForm.value.pack_quantity === undefined || Number(submitForm.value.pack_quantity) <= 0) { submitError.value = 'Pack quantity is required and must be greater than 0'; return }
+    if (!submitForm.value.pack_unit) { submitError.value = 'Pack unit is required'; return }
+  }
   if (submitForm.value.price === null || submitForm.value.price === undefined) { submitError.value = 'Price is required'; return }
   if (!submitForm.value.expires_at) { submitError.value = 'Expiration date is required'; return }
   submitSubmitting.value = true
@@ -782,6 +800,8 @@ async function submitProductForm() {
       price: submitForm.value.price,
       category: submitForm.value.category,
       per_pack_or_individual: submitForm.value.per_pack_or_individual,
+      pack_quantity: submitForm.value.pack_quantity,
+      pack_unit: submitForm.value.pack_unit,
       expires_at: submitForm.value.expires_at
     }
     const res = await axios.post(`/api/supplier-orders/${currentSubmitOrderId.value}/submit-product`, payload, { withCredentials: true })

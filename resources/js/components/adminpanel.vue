@@ -256,47 +256,7 @@
             </div>
           </section>
 
-          <!-- Financial Metrics -->
-          <section class="financial-metrics-grid">
-            <div class="financial-card">
-              <div class="financial-card-icon financing-icon">₱</div>
-              <div class="financial-card-content">
-                <span class="financial-card-label">Total Sales</span>
-                <span class="financial-card-value">{{ financialData.totalSales }}</span>
-              </div>
-            </div>
-            <div class="financial-card">
-              <div class="financial-card-icon expenses-icon">📊</div>
-              <div class="financial-card-content">
-                <span class="financial-card-label">Total Expenses</span>
-                <span class="financial-card-value">{{ financialData.totalExpenses }}</span>
-              </div>
-            </div>
-            <div class="financial-card highlight">
-              <div class="financial-card-icon profit-icon">📈</div>
-              <div class="financial-card-content">
-                <span class="financial-card-label">Net Profit</span>
-                <span class="financial-card-value">{{ financialData.netProfit }}</span>
-              </div>
-            </div>
-          </section>
-
-          <!-- Admin Finance Charts -->
-          <section class="panel-block" style="min-height:360px;">
-            <div class="panel-header">
-              <h2>Financial Reports</h2>
-              <button class="panel-action" @click="loadAdminReports(activeRange)">Refresh</button>
-            </div>
-            <div class="panel-body" style="padding:16px 20px;">
-              <div v-if="isLoadingReports" style="display:flex;align-items:center;justify-content:center;height:260px;">
-                <div class="loading-spinner"></div>
-              </div>
-              <div v-else style="height:320px;">
-                <Chart v-if="adminReports.length" :type="'line'" :data="adminChartData" :options="adminChartOptions" />
-                <div v-else style="display:flex;align-items:center;justify-content:center;height:260px;color:#9CA3AF;">No report data available.</div>
-              </div>
-            </div>
-          </section>
+          <!-- Financial Metrics (moved to Attendance column) -->
 
           <!-- Orders table -->
           <section class="panel-block">
@@ -381,6 +341,8 @@
               </div>
             </div>
           </section>
+
+          
         </main>
 
         <!-- RIGHT: SIDE PANELS -->
@@ -537,6 +499,76 @@
                 </div>
               </div>
             </section>
+
+          <!-- Additional admin panels moved under Attendance Monitoring -->
+          <!-- Branch Products (branch admins only) -->
+          <section class="panel-block branch-products" v-if="isBranchAdmin">
+            <div class="panel-header">
+              <h2>Branch Products</h2>
+              <button class="panel-action" @click="refreshBranchProducts">Refresh</button>
+            </div>
+            <div class="panel-body" style="padding:12px 16px;">
+              <div class="branch-products-inner">
+                <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+                  <button class="btn-primary" @click="openPublishModal">Publish Products</button>
+                </div>
+                <ProductList
+                  ref="productListRef"
+                  :fetchUrl="branchProductsFetchUrl"
+                  :compact="true"
+                  :showPublishControls="true"
+                  @toggle-publish="handleAdminTogglePublish"
+                />
+
+                <PublishProductsModal v-if="showPublishModal" :branch-id="(typeof ownerProfile.branch === 'object' && ownerProfile.branch.id) ? ownerProfile.branch.id : ownerProfile.branch" @close="showPublishModal = false" @published="handlePublishedFromModal" />
+              </div>
+            </div>
+          </section>
+
+          <!-- Inventory Monitor removed per request -->
+
+          <!-- Financial Metrics -->
+          <section class="financial-metrics-grid">
+            <div class="financial-card">
+              <div class="financial-card-icon financing-icon">₱</div>
+              <div class="financial-card-content">
+                <span class="financial-card-label">Total Sales</span>
+                <span class="financial-card-value">{{ financialData.totalSales }}</span>
+              </div>
+            </div>
+            <div class="financial-card">
+              <div class="financial-card-icon expenses-icon">📊</div>
+              <div class="financial-card-content">
+                <span class="financial-card-label">Total Expenses</span>
+                <span class="financial-card-value">{{ financialData.totalExpenses }}</span>
+              </div>
+            </div>
+            <div class="financial-card highlight">
+              <div class="financial-card-icon profit-icon">📈</div>
+              <div class="financial-card-content">
+                <span class="financial-card-label">Net Profit</span>
+                <span class="financial-card-value">{{ financialData.netProfit }}</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Admin Finance Charts -->
+          <section class="panel-block" style="min-height:360px;">
+            <div class="panel-header">
+              <h2>Financial Reports</h2>
+              <button class="panel-action" @click="loadAdminReports(activeRange)">Refresh</button>
+            </div>
+            <div class="panel-body panel-body--center" style="padding:16px 20px;">
+              <div v-if="isLoadingReports" style="display:flex;align-items:center;justify-content:center;height:260px;">
+                <div class="loading-spinner"></div>
+              </div>
+              <div v-else style="height:320px;">
+                <Chart v-if="adminReports.length" :type="'line'" :data="adminChartData" :options="adminChartOptions" />
+                <div v-else style="display:flex;align-items:center;justify-content:center;height:260px;color:#9CA3AF;">No report data available.</div>
+              </div>
+            </div>
+          </section>
+
         </aside>
       </section>
 
@@ -728,6 +760,9 @@ import { useRouter } from 'vue-router'
 import axios from 'axios'
 import '../css/adminpanel.css'
 import LoadingOverlay from './LoadingOverlay.vue'
+import ProductList from './inventory/ProductList.vue'
+import PublishProductsModal from './inventory/PublishProductsModal.vue'
+import { showToast } from './toastStore'
 import { Chart } from 'vue-chartjs'
 import {
   Chart as ChartJS,
@@ -868,6 +903,39 @@ const ownerProfile = ref({
   accountId: '',
   avatarUrl: '',
 })
+
+// ProductList ref + helpers for branch admin publish controls
+const productListRef = ref(null)
+const showPublishModal = ref(false)
+// Treat OWNER and ADMIN as branch admin roles for showing branch product controls.
+// Previously, ADMIN required an assigned branch which hid the UI for unassigned admins.
+// Allow ADMIN to view publish controls even if `ownerProfile.branch` is not set.
+const isBranchAdmin = computed(() => {
+  const role = (ownerProfile.value.role || '').toString().toUpperCase()
+  return role === 'OWNER' || role === 'ADMIN'
+})
+
+const branchProductsFetchUrl = computed(() => {
+  // Staff endpoints return branch-scoped products; include unpublished for management
+  let base = '/api/staff/inventory/products?include_unpublished=1'
+  const b = ownerProfile.value.branch
+  const branchId = (b && typeof b === 'object') ? b.id : b
+  if (branchId) base += `&branch_id=${encodeURIComponent(branchId)}`
+  return base
+})
+
+function openPublishModal() {
+  showPublishModal.value = true
+}
+
+async function handlePublishedFromModal() {
+  showPublishModal.value = false
+  try {
+    if (productListRef.value && typeof productListRef.value.fetchProducts === 'function') {
+      await productListRef.value.fetchProducts()
+    }
+  } catch (e) { console.error('refresh after publish failed', e) }
+}
 
 const isEditingInfo = ref(false)
 
@@ -1504,6 +1572,38 @@ function goToAddBranches() {
   }
 }
 
+async function refreshBranchProducts() {
+  try {
+    if (productListRef.value && typeof productListRef.value.fetchProducts === 'function') {
+      await productListRef.value.fetchProducts()
+    }
+  } catch (e) {
+    console.error('Failed to refresh branch products', e)
+  }
+}
+
+async function handleAdminTogglePublish(payload) {
+  if (!payload || !payload.id) return
+  // only allow branch ADMINs to toggle
+  if (!isBranchAdmin.value) {
+    showToast('Only branch admins can publish or unpublish products', 'error')
+    return
+  }
+  const ok = window.swalConfirm ? await window.swalConfirm(`Are you sure you want to ${payload.publish ? 'publish' : 'unpublish'} this product?`) : true
+  if (!ok) return
+  try {
+    await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
+  } catch (e) {}
+  try {
+    await axios.put(`/api/staff/inventory/products/${payload.id}`, { is_published: payload.publish ? 1 : 0 }, { withCredentials: true })
+    showToast(payload.publish ? 'Product published' : 'Product unpublished', 'success')
+    await refreshBranchProducts()
+  } catch (e) {
+    console.error('admin publish toggle error', e)
+    showToast(e.response?.data?.message || 'Failed to update product visibility', 'error')
+  }
+}
+
 onMounted(() => {
   loadDashboard(activeRange.value)
   // load branches + attendance overview for admin
@@ -1600,6 +1700,32 @@ h1, h2 {
   color: #64748B !important;
 }
 
+/* Center branch products list inside admin main area */
+.branch-products .branch-products-inner {
+  display: block;
+  width: 100%;
+  max-width: 820px; /* limit width so list doesn't span full page */
+  margin: 0 auto; /* center */
+}
+
+/* Ensure the panel-body centers its content so the inner max-width centers reliably */
+.branch-products .panel-body {
+  display: flex;
+  justify-content: center;
+}
+
+/* (removed aggressive overrides) */
+
+/* Allow a wider max-width on very large screens so the list doesn't look too narrow */
+.branch-products .branch-products-inner {
+  max-width: 1100px;
+}
+
+/* On narrow screens allow full width */
+@media (max-width: 900px) {
+  .branch-products .branch-products-inner { max-width: 100%; padding: 0 8px; }
+}
+
 .avatar-change-text {
   color: var(--text-dark) !important;
 }
@@ -1645,6 +1771,28 @@ h1, h2 {
   gap: 20px;
   margin-bottom: 24px;
   margin-top: 16px;
+}
+
+/* Center financial metrics so they appear in the middle column */
+.financial-metrics-grid {
+  max-width: 1100px;
+  margin: 0 auto 24px auto;
+}
+
+.panel-body--center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.panel-body--center > div {
+  width: 100%;
+  max-width: 1100px;
+}
+
+/* Specifically center the branch-products panel contents */
+.branch-products {
+  /* keep earlier centering rules for inner content */
 }
 
 .financial-card {

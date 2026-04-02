@@ -105,18 +105,52 @@ class KitchenDishController extends Controller
 
                 if ($ing->product) {
                     $product = $ing->product;
-                    $have = (float)($product->stock ?? 0);
-                    if ($have >= $required) {
-                        $product->decrement('stock', $required);
+
+                    // If product is supplied per-pack, track piece-level consumption
+                    $perPackMode = in_array($product->per_pack_or_individual, ['per_pack', 'both']);
+                    $packQty = (float)($product->pack_quantity ?? 0);
+
+                    if ($perPackMode && $packQty > 0) {
+                        $openUsed = (float)($product->open_pack_used ?? 0);
+                        // Total pieces available = (stock * packQty) - already consumed pieces from open pack
+                        $totalPiecesAvailable = ($product->stock * $packQty) - $openUsed;
+
+                        if ($totalPiecesAvailable >= $required) {
+                            $totalAfter = $openUsed + $required;
+                            $packsToConsume = (int)floor($totalAfter / $packQty);
+                            $remainingOpenUsed = $totalAfter - ($packsToConsume * $packQty);
+
+                            if ($packsToConsume > 0) {
+                                $product->decrement('stock', $packsToConsume);
+                            }
+
+                            $product->open_pack_used = $remainingOpenUsed;
+                            $product->save();
+                        } else {
+                            $product->update(['logistics_request_available' => true]);
+                            $shortages[] = [
+                                'product_id' => $product->id,
+                                'name' => $product->name,
+                                'required' => $required,
+                                'available' => max(0, $totalPiecesAvailable),
+                                'short' => max(0, $required - $totalPiecesAvailable),
+                            ];
+                        }
                     } else {
-                        $product->update(['logistics_request_available' => true]);
-                        $shortages[] = [
-                            'product_id' => $product->id,
-                            'name' => $product->name,
-                            'required' => $required,
-                            'available' => $have,
-                            'short' => max(0, $required - $have),
-                        ];
+                        // Individual mode: stock stored as pieces
+                        $have = (float)($product->stock ?? 0);
+                        if ($have >= $required) {
+                            $product->decrement('stock', $required);
+                        } else {
+                            $product->update(['logistics_request_available' => true]);
+                            $shortages[] = [
+                                'product_id' => $product->id,
+                                'name' => $product->name,
+                                'required' => $required,
+                                'available' => $have,
+                                'short' => max(0, $required - $have),
+                            ];
+                        }
                     }
                 } else {
                     $shortages[] = [

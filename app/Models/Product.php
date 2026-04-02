@@ -13,10 +13,14 @@ class Product extends Model
     use HasFactory;
 
     protected $fillable = [
+        'dish_id',
+        'is_dish_product',
         'name',
         'slug',
         'category',
         'per_pack_or_individual',
+        'pack_quantity',
+        'pack_unit',
         'price',
         'cost_price',
         'stock',
@@ -32,11 +36,15 @@ class Product extends Model
         'logistics_request_available',
         'expires_at',
         'real_stock',
+        'open_pack_used',
+        'published_by',
+        'published_at',
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
         'cost_price' => 'decimal:2',
+        'pack_quantity' => 'decimal:2',
         'stock' => 'integer',
         'min_stock' => 'integer',
         'is_published' => 'boolean',
@@ -46,6 +54,11 @@ class Product extends Model
         'logistics_request_available' => 'boolean',
         'expires_at' => 'datetime',
         'real_stock' => 'integer',
+        'open_pack_used' => 'decimal:4',
+        'published_at' => 'datetime',
+        'dish_id' => 'integer',
+        'published_by' => 'integer',
+        'is_dish_product' => 'boolean',
     ];
 
     // Expose aggregated real stock (sum across supplier/product duplicates) to API consumers

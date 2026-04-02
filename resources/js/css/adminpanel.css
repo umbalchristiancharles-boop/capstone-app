@@ -91,7 +91,9 @@ h1, h2, h3, h4, h5, h6, .section-subtitle, .admin-name, .admin-role {
 
 @media (min-width: 1024px) {
   .admin-layout {
-    grid-template-columns: minmax(240px, 320px) 1fr minmax(260px, 360px);
+    /* Keep grid but constrain center column to a reasonable max width and center the grid */
+    grid-template-columns: minmax(240px, 320px) minmax(0, 1100px) minmax(260px, 360px);
+    justify-content: center;
     padding: 20px;
     gap: 20px;
     min-height: calc(100vh - 40px);

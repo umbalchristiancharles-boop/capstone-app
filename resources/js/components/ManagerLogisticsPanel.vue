@@ -350,8 +350,8 @@
         </div>
       </div>
 
-      <!-- Budget Request Section (legacy - keep for now) -->
-      <div class="panel-section">
+      <!-- Budget Request Section (legacy - hidden for logistics minimal view) -->
+      <div class="panel-section" v-if="false">
         <h2 class="section-title">Budget Requests (Legacy)</h2>
         <!-- existing budget form/table code unchanged -->
         <button v-if="!showRequestForm" class="btn-primary" @click="showRequestForm = true">

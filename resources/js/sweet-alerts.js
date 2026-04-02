@@ -48,8 +48,14 @@ export async function swalPrompt(message, title = '', input = 'text') {
 }
 
 export async function swalConfirmLogout({ useApi = true, message = 'You will be logged out of your session.', title = 'Confirm logout' } = {}) {
+  // Prevent multiple simultaneous logout confirmations
+  if (window.__swalLogoutPending) return false
+  window.__swalLogoutPending = true
   const ok = await swalConfirm(message, title)
-  if (!ok) return false
+  if (!ok) {
+    window.__swalLogoutPending = false
+    return false
+  }
 
   try {
     if (useApi) {
@@ -62,6 +68,9 @@ export async function swalConfirmLogout({ useApi = true, message = 'You will be 
     }
   } catch (e) {
     console.error('swalConfirmLogout failed', e)
+  }
+  finally {
+    window.__swalLogoutPending = false
   }
   return true
 }

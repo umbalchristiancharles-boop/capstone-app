@@ -198,6 +198,7 @@ const router = createRouter({
     { path: '/staff/cashier', component: StaffCashierPanel, meta: { requiresAuth: true } },
     { path: '/staff/finance', component: () => import('./components/StaffFinancePanel.vue'), meta: { requiresAuth: true } },
     { path: '/staff/inventory', component: () => import('./components/inventory/InventoryStaffPanel.vue'), meta: { requiresAuth: true } },
+    { path: '/inventory', component: () => import('./components/inventory/InventoryStaffPanel.vue'), meta: { requiresAuth: true } },
     { path: '/staff/kitchen', component: () => import('./components/KitchenStaffPanel.vue'), meta: { requiresAuth: true } },
     { path: '/supplier-panel', component: SupplierPanel, meta: { requiresAuth: true } },
     { path: '/owner-panel', component: AdminPanel },
@@ -498,7 +499,7 @@ router.beforeEach(async (to, from, next) => {
         if (role === 'staff') {
           if (dept === 'cashier') return next('/staff/cashier')
           if (dept === 'finance') return next('/staff/finance')
-          if (dept === 'inventory') return next('/staff/inventory')
+          if (dept === 'inventory') return next('/inventory')
           if (dept === 'kitchen') return next('/staff/kitchen')
           if (dept === 'logistics') return next('/staff/logistics')
           return next('/staff-panel')
@@ -572,7 +573,7 @@ router.beforeEach(async (to, from, next) => {
         return next('/unauthorized');
       }
     }
-    if (to.path.startsWith('/staff/inventory')) {
+    if (to.path.startsWith('/staff/inventory') || to.path.startsWith('/inventory')) {
       if (user.role === 'manager' && user.department === 'inventory') { /* ok */ }
       else if (user.role === 'custom' && hasModule('inventory')) { /* ok */ }
       else if (user.role === 'staff' && user.department === 'inventory') { /* ok */ }

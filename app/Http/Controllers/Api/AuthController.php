@@ -218,7 +218,7 @@ class AuthController extends Controller
         // MANAGER - check department for specific panel
         if ($role === 'MANAGER') {
             if ($department === 'INVENTORY') {
-                return '/staff/inventory';
+                return '/inventory';
             }
             if ($department === 'FINANCE') {
                 if ($isMainBranchUser) {
@@ -249,7 +249,7 @@ class AuthController extends Controller
                 return '/staff/kitchen';
             }
             if ($department === 'INVENTORY') {
-                return '/staff/inventory';
+                return '/inventory';
             }
             if ($department === 'CASHIER') {
                 return '/staff/cashier';

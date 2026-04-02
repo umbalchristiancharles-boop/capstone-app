@@ -28,7 +28,9 @@
                     <div v-for="(ing, idx) in form.ingredients" :key="idx" class="ingredient-row">
                       <select v-model="ing.product_id" @change="onProductSelect(idx)">
                         <option value="">-- choose from stock (or leave blank to type new) --</option>
-                        <option v-for="p in products" :key="p.id" :value="p.id">{{ p.name }} ({{ p.stock }} in stock)</option>
+                        <option v-for="p in products" :key="p.id" :value="p.id">
+                          {{ p.name }} ({{ p.stock }} in stock) <span v-if="!p.is_published">— unpublished</span>
+                        </option>
                       </select>
 
                       <input v-if="!ing.product_id" v-model="ing.name" placeholder="Ingredient name" required />
@@ -77,6 +79,10 @@
                           <div class="ingredient-info">
                             <div class="ingredient-name">{{ ing.name }}</div>
                             <div class="ingredient-per" v-if="ing.unit"><em>- per serving: {{ formatPerServing(ing.per_serving) }} {{ ing.unit }}</em></div>
+                            <div class="ingredient-publish" v-if="ing.product">
+                              <small v-if="ing.product && !ing.product.is_published" style="color:#b91c1c">(product unpublished)</small>
+                              <small v-else style="color:#059669">(product published)</small>
+                            </div>
                           </div>
                           <div class="ingredient-actions">
                             <button class="mark-low-btn" @click.prevent="showLowStock(ing)">Mark Low Stock</button>

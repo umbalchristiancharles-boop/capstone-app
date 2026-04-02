@@ -401,6 +401,7 @@ Route::prefix('manager')->middleware('auth:sanctum,web')->group(function () {
             Route::get('/dishes/approved', [\App\Http\Controllers\Admin\DishApprovalController::class, 'approvedDishes']);
             Route::post('/dishes/{id}/approve', [\App\Http\Controllers\Admin\DishApprovalController::class, 'approveDish']);
             Route::post('/dishes/{id}/reject', [\App\Http\Controllers\Admin\DishApprovalController::class, 'rejectDish']);
+            Route::post('/dishes/{id}/publish', [\App\Http\Controllers\Admin\DishApprovalController::class, 'publishDish']);
 
             // Product Request Approval Workflow - Owner must approve new product requests from logistics
             Route::get('/product-requests/pending', [\App\Http\Controllers\Api\ProductRequestController::class, 'getPendingRequests']);

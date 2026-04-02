@@ -65,21 +65,43 @@
                       rows="3"
                     ></textarea>
 
-                    <div class="approval-actions">
-                      <button
-                        class="btn-approve"
-                        @click="approveDish(dish.id)"
-                        :disabled="approvingId === dish.id || rejectingId === dish.id"
-                      >
-                        {{ approvingId === dish.id ? '⏳ Approving...' : '✅ Approve' }}
-                      </button>
-                      <button
-                        class="btn-reject"
-                        @click="showRejectForm(dish.id)"
-                        :disabled="approvingId === dish.id || rejectingId === dish.id"
-                      >
-                        {{ rejectingId === dish.id ? '⏳ Rejecting...' : '❌ Reject' }}
-                      </button>
+                    <div class="publish-controls">
+                      <div v-if="userProfile.role && userProfile.role.toString().toUpperCase() === 'ADMIN'">
+                        <label style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.6rem;">
+                          <input type="checkbox" v-model="publishProducts[dish.id]" />
+                          <strong>Publish products for this dish</strong>
+                        </label>
+
+                        <div v-if="publishProducts[dish.id]" style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin-bottom:0.6rem;">
+                          <select v-model="perPackOrIndividual[dish.id]" style="padding:0.6rem;border:1px solid #d1d5db;border-radius:6px;">
+                            <option value="individual">Sell as Individual</option>
+                            <option value="per_pack">Sell as Pack</option>
+                            <option value="both">Both</option>
+                          </select>
+                          <input type="text" v-model="packUnit[dish.id]" placeholder="Pack unit (e.g., pcs)" style="padding:0.6rem;border:1px solid #d1d5db;border-radius:6px;" />
+                        </div>
+
+                        <div v-if="publishProducts[dish.id] && (perPackOrIndividual[dish.id] === 'per_pack' || perPackOrIndividual[dish.id] === 'both')" style="margin-bottom:0.6rem;">
+                          <input type="number" min="1" v-model.number="packQuantity[dish.id]" placeholder="Pack quantity (e.g., 6)" style="width:200px;padding:0.6rem;border:1px solid #d1d5db;border-radius:6px;" />
+                        </div>
+                      </div>
+
+                      <div class="approval-actions">
+                        <button
+                          class="btn-approve"
+                          @click="approveDish(dish.id)"
+                          :disabled="approvingId === dish.id || rejectingId === dish.id"
+                        >
+                          {{ approvingId === dish.id ? '⏳ Approving...' : '✅ Approve' }}
+                        </button>
+                        <button
+                          class="btn-reject"
+                          @click="showRejectForm(dish.id)"
+                          :disabled="approvingId === dish.id || rejectingId === dish.id"
+                        >
+                          {{ rejectingId === dish.id ? '⏳ Rejecting...' : '❌ Reject' }}
+                        </button>
+                      </div>
                     </div>
 
                     <div v-if="showRejectReason[dish.id]" class="reject-reason-form">
@@ -343,6 +365,11 @@ const showProfileDropdown = ref(false)
 const approvalNotes = ref({})
 const rejectReason = ref({})
 const showRejectReason = ref({})
+// Publish controls per-dish
+const publishProducts = ref({})
+const perPackOrIndividual = ref({})
+const packQuantity = ref({})
+const packUnit = ref({})
 
 // Product Request state
 const pendingProductRequests = ref([])
@@ -417,9 +444,15 @@ function approveDish(dishId) {
   approvingId.value = dishId
   const notes = approvalNotes.value[dishId] || ''
 
-  axios.post(`/api/owner/dishes/${dishId}/approve`, {
-    notes: notes
-  })
+  const payload = { notes: notes }
+  if (userProfile.value.role && userProfile.value.role.toString().toUpperCase() === 'ADMIN') {
+    payload.publish_products = publishProducts.value[dishId] || false
+    payload.per_pack_or_individual = perPackOrIndividual.value[dishId] || null
+    payload.pack_quantity = packQuantity.value[dishId] || null
+    payload.pack_unit = packUnit.value[dishId] || null
+  }
+
+  axios.post(`/api/owner/dishes/${dishId}/approve`, payload)
     .then(response => {
       // Remove from pending and add to approved
       pendingDishes.value = pendingDishes.value.filter(d => d.id !== dishId)
@@ -496,6 +529,15 @@ function handleLogoutClick() {
 }
 
 function confirmLogout() {
+  // Use the centralized swalConfirmLogout helper to show a single confirmation
+  try {
+    if (typeof window.swalConfirmLogout === 'function') {
+      window.swalConfirmLogout({ useApi: true })
+      return
+    }
+  } catch (e) {}
+
+  // Fallback if helper missing
   if (window.confirm('Are you sure you want to logout?')) {
     axios.post('/logout')
       .then(() => {

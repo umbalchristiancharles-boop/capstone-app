@@ -111,7 +111,17 @@ class StaffInventoryController extends Controller
         $query = Product::where('branch_id', $branchId)->where('is_active', 1);
 
         // Allow callers to request unpublished products as well (useful for internal staff views)
+        // Branch ADMIN/OWNER/SUPER_ADMIN should be able to see unpublished products by default
         $includeUnpublished = $request->boolean('include_unpublished', false);
+        $roleUpper = strtoupper($user->role ?? '');
+        if (in_array($roleUpper, ['ADMIN', 'OWNER', 'SUPER_ADMIN', 'SUPERADMIN'])) {
+            $includeUnpublished = true;
+        }
+
+        // Exclude representative dish products from the inventory list (only ingredients should show)
+        $query->where(function($q) {
+            $q->whereNull('is_dish_product')->orWhere('is_dish_product', 0);
+        });
 
         // Suppliers should only see products they own; other roles see published products.
         if (strtoupper($user->role ?? '') === 'SUPPLIER') {
@@ -131,7 +141,43 @@ class StaffInventoryController extends Controller
             ->orderBy('name')
             ->get();
 
-        return response()->json($products);
+        // Deduplicate by normalized name: prefer published items, otherwise most recently updated.
+        try {
+            $map = [];
+            foreach ($products as $p) {
+                $key = trim(strtolower($p->name ?? ''));
+                if ($key === '') continue;
+                if (!isset($map[$key])) {
+                    $map[$key] = $p;
+                    continue;
+                }
+                $existing = $map[$key];
+                $existingPublished = !empty($existing->is_published);
+                $curPublished = !empty($p->is_published);
+                if ($curPublished && !$existingPublished) {
+                    $map[$key] = $p;
+                    continue;
+                }
+                if ($curPublished === $existingPublished) {
+                    $existingTime = strtotime($existing->updated_at ?? $existing->created_at ?? 0);
+                    $curTime = strtotime($p->updated_at ?? $p->created_at ?? 0);
+                    if ($curTime > $existingTime) {
+                        $map[$key] = $p;
+                    }
+                }
+            }
+
+            $deduped = array_values($map);
+            // keep alphabetical order by name
+            usort($deduped, function ($a, $b) {
+                return strcasecmp($a->name ?? '', $b->name ?? '');
+            });
+            return response()->json($deduped);
+        } catch (\Exception $e) {
+            // If dedupe fails for any reason, return original list to avoid breaking clients
+            Log::warning('Product dedupe failed in StaffInventoryController:index', ['error' => $e->getMessage()]);
+            return response()->json($products);
+        }
     }
 
     // Alias for backward compatibility
@@ -149,7 +195,9 @@ class StaffInventoryController extends Controller
             'stock' => 'nullable|integer|min:0',
             'category' => 'required|string|max:255',
             'per_pack_or_individual' => 'required|in:individual,per_pack,both',
-            'expires_at' => 'required|date_format:Y-m-d\TH:i',
+            'pack_quantity' => 'sometimes|required_if:per_pack_or_individual,per_pack|nullable|numeric|min:0',
+            'pack_unit' => 'sometimes|required_if:per_pack_or_individual,per_pack|nullable|string|max:50',
+            'expires_at' => 'required|date_format:Y-m-d\\TH:i',
             'sku' => 'nullable|string|unique:products,sku',
         ]);
 
@@ -186,9 +234,12 @@ class StaffInventoryController extends Controller
             $supplierName = $user->full_name ?? $user->username ?? $user->email ?? null;
         }
 
-        $isPublished = 1;
-        if ($user && strtoupper($user->role) === 'SUPPLIER') {
-            // Supplier-submitted products stay unpublished until procurement places order
+        // By default new products are unpublished. Branch `ADMIN`, `OWNER`, and super-admins
+        // may create published products immediately.
+        $roleUpper = strtoupper($user->role ?? '');
+        $isPublished = in_array($roleUpper, ['ADMIN', 'OWNER', 'SUPER_ADMIN', 'SUPERADMIN']) ? 1 : 0;
+        // Ensure supplier-submitted products remain unpublished
+        if ($roleUpper === 'SUPPLIER') {
             $isPublished = 0;
         }
 
@@ -212,6 +263,8 @@ class StaffInventoryController extends Controller
             'sku' => $sku,
             'category' => $validated['category'],
             'per_pack_or_individual' => $validated['per_pack_or_individual'],
+            'pack_quantity' => $validated['pack_quantity'] ?? null,
+            'pack_unit' => $validated['pack_unit'] ?? null,
             'expires_at' => $validated['expires_at'],
             'branch_id' => $branchId,
             'supplier_id' => $user->id,
@@ -256,12 +309,46 @@ class StaffInventoryController extends Controller
             'sku' => 'sometimes|string|unique:products,sku,' . $id,
             'category' => 'sometimes|string|max:255',
             'per_pack_or_individual' => 'sometimes|in:individual,per_pack,both',
-            'expires_at' => 'sometimes|date_format:Y-m-d\TH:i',
+            'pack_quantity' => 'sometimes|required_if:per_pack_or_individual,per_pack|nullable|numeric|min:0',
+            'pack_unit' => 'sometimes|required_if:per_pack_or_individual,per_pack|nullable|string|max:50',
+            'expires_at' => 'sometimes|date_format:Y-m-d\\TH:i',
+            // allow branch-level Admins to toggle publish state
+            'is_published' => 'sometimes|boolean',
         ]);
 
         // Additional protection: ensure stock is never negative
         if (isset($validated['stock']) && $validated['stock'] < 0) {
             $validated['stock'] = 0;
+        }
+
+        // Only allow changing publish state if the actor is a branch Admin
+        if (array_key_exists('is_published', $validated)) {
+            if (strtoupper($user->role) === 'ADMIN') {
+                $wasPublished = (bool) $product->is_published;
+                $nowPublished = (bool) $validated['is_published'];
+                $product->is_published = $nowPublished;
+                // Record audit info when publishing
+                if ($nowPublished && !$wasPublished) {
+                    $product->published_by = $user->id;
+                    $product->published_at = now();
+                }
+                // Clear audit info when unpublishing
+                if (!$nowPublished && $wasPublished) {
+                    $product->published_by = null;
+                    $product->published_at = null;
+                }
+                unset($validated['is_published']);
+            }
+        }
+
+        // Persist pack fields when provided
+        if (array_key_exists('pack_quantity', $validated)) {
+            $product->pack_quantity = $validated['pack_quantity'];
+            unset($validated['pack_quantity']);
+        }
+        if (array_key_exists('pack_unit', $validated)) {
+            $product->pack_unit = $validated['pack_unit'];
+            unset($validated['pack_unit']);
         }
 
         $product->update($validated);

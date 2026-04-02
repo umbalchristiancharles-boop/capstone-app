@@ -68,26 +68,8 @@
           <button class="btn-retry" @click="fetchInventory">Retry</button>
         </div>
 
-        <div v-else class="inventory-list">
-          <div v-for="product in inventory" :key="product.id" class="inventory-item">
-            <div class="item-left">
-              <div class="item-name">{{ product.name }}</div>
-              <div class="item-meta">{{ product.category || 'N/A' }} · <span :class="['pricing-type-badge', 'type-' + product.per_pack_or_individual]">{{ formatPricingType(product.per_pack_or_individual) }}</span></div>
-            </div>
-            <div class="item-right">
-              <div class="item-stats">
-                <div class="stat"><div class="stat-label">Stock</div><div class="stat-value">{{ product.real_stock ?? product.stock }}</div></div>
-                <div class="stat"><div class="stat-label">Min</div><div class="stat-value">{{ product.min_stock }}</div></div>
-                <div class="stat"><div class="stat-label">Expires</div><div class="stat-value"> <span v-if="product.expires_at" :class="['expiry-date', isExpired(product.expires_at) ? 'expired' : isExpiringSoon(product.expires_at) ? 'expiring-soon' : '']">{{ formatDate(product.expires_at) }}</span><span v-else class="muted">N/A</span></div></div>
-                <div class="stat"><div class="stat-label">Status</div><div class="stat-value"><span :class="['status-badge', product.status === 'OK' ? 'status-ok' : 'status-low']">{{ product.status }}</span></div></div>
-              </div>
-              <div class="item-action">
-                <button v-if="product.status !== 'OK' && canRequestProcurement" class="btn-primary btn-small" :disabled="requesting[product.id]" @click="requestProcurement(product)">{{ requesting[product.id] ? 'Requesting...' : 'Request Procurement' }}</button>
-                <span v-else-if="product.status !== 'OK'" class="muted-note">Not allowed</span>
-              </div>
-            </div>
-          </div>
-          <div v-if="inventory.length === 0" class="empty-message">No products found in your branch.</div>
+        <div v-else>
+          <ProductList :fetchUrl="fetchUrl" :compact="true" :showPublishControls="(staffProfile.role || '').toUpperCase() === 'ADMIN'" ref="productListRef" @edit="handleEdit" @delete="deleteProduct" @toggle-publish="handleTogglePublish" @open-add="showProductRequestForm = true" @request-procurement="requestProcurement" />
         </div>
       </div>
 
@@ -136,54 +118,42 @@
         </div>
       </div>
 
-      <!-- Product Request Section (Staff) -->
-      <div class="panel-section">
-        <h2 class="section-title">Request New Products</h2>
-        <p class="section-description">Request new products to be added to inventory. Requires owner/main approval.</p>
-
-        <button v-if="!showProductRequestForm" class="btn-primary" @click="showProductRequestForm = true">+ Request New Product</button>
-
-        <div v-if="showProductRequestForm" class="form-container">
-          <h3>Request New Product</h3>
-          <form @submit.prevent="submitProductRequest">
-            <div class="form-group">
-              <label>Product Name*</label>
-              <input v-model="productRequestForm.name" type="text" placeholder="e.g., Organic Chicken Breast" required />
-            </div>
-            <div class="form-group">
-              <label>Description</label>
-              <textarea v-model="productRequestForm.description" rows="3" placeholder="Optional details"></textarea>
-            </div>
-            <div class="form-group">
-              <label>Unit of Measurement</label>
-              <select v-model="productRequestForm.unit"><option value="">-- Select unit (optional) --</option><option value="pcs">Pieces (pcs)</option><option value="g">Grams (g)</option><option value="kg">Kilograms (kg)</option><option value="ml">Milliliters (ml)</option><option value="l">Liters (l)</option><option value="pack">Pack</option><option value="box">Box</option></select>
-            </div>
-            <div class="form-actions">
-              <button type="button" class="btn-secondary" @click="cancelProductRequest">Cancel</button>
-              <button type="submit" class="btn-primary" :disabled="productRequestSubmitting">{{ productRequestSubmitting ? 'Submitting...' : 'Submit Request' }}</button>
-            </div>
-          </form>
-        </div>
-
-        <div class="requests-list">
-          <h3>My Product Requests</h3>
-          <div v-if="productRequestsLoading" class="loading-container small"><div class="loading-spinner"></div></div>
-          <div v-else class="requests-list-items">
-            <div v-for="req in productRequests" :key="req.id" class="request-item">
-              <div class="request-left">
-                <div class="item-name">{{ req.name }}</div>
-                <div v-if="req.description" class="product-description">{{ req.description }}</div>
+      <!-- Product Request Modal (opened by ProductList "Add Product") -->
+      <transition name="fade">
+        <div v-if="showProductRequestForm" class="modal-backdrop">
+          <div class="modal-panel">
+            <h3>Request New Product</h3>
+            <p class="modal-sub">Request new products to be added to inventory. Requires owner/main approval.</p>
+            <form @submit.prevent="submitProductRequest">
+              <div class="form-group">
+                <label>Product Name*</label>
+                <input v-model="productRequestForm.name" type="text" placeholder="e.g., Organic Chicken Breast" required />
               </div>
-              <div class="request-mid">{{ req.unit || 'N/A' }}</div>
-              <div class="request-right">
-                <div><span :class="['status-badge', getProductReqStatusClass(req.approval_status)]">{{ formatProductReqStatus(req.approval_status) }}</span></div>
-                <div class="request-updated">{{ formatDate(req.created_at) }}</div>
+              <div class="form-group">
+                <label>Description</label>
+                <textarea v-model="productRequestForm.description" rows="3" placeholder="Optional details"></textarea>
               </div>
-            </div>
-            <div v-if="productRequests.length === 0" class="empty-message">No product requests yet.</div>
+              <div class="form-group">
+                <label>Unit of Measurement</label>
+                <select v-model="productRequestForm.unit">
+                  <option value="">-- Select unit (optional) --</option>
+                  <option value="pcs">Pieces (pcs)</option>
+                  <option value="g">Grams (g)</option>
+                  <option value="kg">Kilograms (kg)</option>
+                  <option value="ml">Milliliters (ml)</option>
+                  <option value="l">Liters (l)</option>
+                  <option value="pack">Pack</option>
+                  <option value="box">Box</option>
+                </select>
+              </div>
+              <div class="form-actions" style="margin-top:12px; display:flex; gap:8px; justify-content:flex-end;">
+                <button type="button" class="btn-secondary" @click="cancelProductRequest">Cancel</button>
+                <button type="submit" class="btn-primary">Submit Request</button>
+              </div>
+            </form>
           </div>
         </div>
-      </div>
+      </transition>
     </template>
 
     <template #side>
@@ -368,7 +338,7 @@ const canClockOut = computed(() => {
 const props = defineProps({
   products: { type: Array, default: () => [] },
   fetchUrl: { type: String, default: '/api/staff/inventory/products' },
-  pageTitle: { type: String, default: 'Staff Inventory' },
+  pageTitle: { type: String, default: 'Inventory' },
   isSuperAdmin: { type: Boolean, default: false }
 });
 
@@ -520,7 +490,8 @@ function cancelProcRequest() {
 
 async function requestProcurement(product) {
   if (!product) return
-  if (!(await window.swalConfirm ? window.swalConfirm(`Create procurement request for ${product.name}?`) : Promise.resolve(true))) return
+  const ok = window.swalConfirm ? await window.swalConfirm(`Create procurement request for ${product.name}?`) : true
+  if (!ok) return
   requesting.value = { ...requesting.value, [product.id]: true }
   try {
     const minStock = Number(product.min_stock) > 0 ? Number(product.min_stock) : 10
@@ -990,6 +961,27 @@ async function deleteProduct(prod) {
   }
 }
 
+async function handleTogglePublish(payload) {
+  if (!payload || !payload.id) return
+  // Only allow branch ADMIN to toggle publish from this panel
+  if (!staffProfile.value || (staffProfile.value.role || '').toUpperCase() !== 'ADMIN') {
+    showToast('Only branch admins can publish or unpublish products', 'error')
+    return
+  }
+  const ok = await window.swalConfirm ? await window.swalConfirm(`Are you sure you want to ${payload.publish ? 'publish' : 'unpublish'} this product?`) : true
+  if (!ok) return
+  const okCsrf = await ensureCsrf()
+  if (!okCsrf) { showToast('Unable to refresh CSRF token', 'error'); return }
+  try {
+    await axios.put(endpoints.value.update(payload.id), { is_published: payload.publish ? 1 : 0 }, { withCredentials: true })
+    showToast(payload.publish ? 'Product published' : 'Product unpublished', 'success')
+    await refreshList()
+  } catch (e) {
+    console.error('publish toggle error', e)
+    showToast(e.response?.data?.message || 'Failed to update product visibility', 'error')
+  }
+}
+
 // Ensure a fresh CSRF cookie/header is present before mutating requests
 async function ensureCsrf() {
   try {
@@ -1184,6 +1176,41 @@ async function performClockOut() {
   }
 }
 </script>
+
+<style>
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+}
+.modal-panel {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 18px 20px;
+  width: min(760px, 95%);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+  z-index: 1201;
+  max-height: 90vh;
+  overflow: auto;
+}
+.modal-panel h3 { margin: 0 0 6px 0; font-size: 18px; }
+.modal-sub { color: #666; margin-bottom: 10px; }
+.modal-panel .form-group { margin-bottom: 10px; }
+.modal-panel .form-group label { display:block; font-weight:600; margin-bottom:6px; }
+.modal-panel .form-group input,
+.modal-panel .form-group textarea,
+.modal-panel .form-group select { width:100%; padding:8px 10px; border:1px solid #e2e8f0; border-radius:6px; font-size:14px; }
+.modal-panel .form-actions { display:flex; gap:8px; justify-content:flex-end; }
+.modal-panel .btn-secondary { background:#f3f4f6; border:1px solid #d1d5db; padding:8px 12px; border-radius:6px; }
+.modal-panel .btn-primary { background:#ff8a00; color:#fff; padding:8px 12px; border-radius:6px; border: none; }
+
+/* Ensure the ProductList header stays visible under modal backdrop layering issues */
+.pl-root, .pl-right-column { position: relative; }
+</style>
 
 <style scoped>
 .inventory-table th, .inventory-table td {

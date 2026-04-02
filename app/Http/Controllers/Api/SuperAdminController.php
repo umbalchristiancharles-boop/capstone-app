@@ -665,6 +665,8 @@ class SuperAdminController extends Controller
             'branch_id' => $validated['branch_id'],
             'is_active' => true,
             'is_kitchen_dish' => $isDish,
+            // Super admin-created products are published by default
+            'is_published' => true,
         ]);
 
         return response()->json([

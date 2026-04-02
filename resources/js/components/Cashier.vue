@@ -40,8 +40,8 @@
             v-for="p in filteredProducts"
             :key="p.id"
             class="product-card"
-            :class="{ 'out-of-stock': p.stock <= 0 }"
-                    @click="p.stock > 0 && addToCart(p)"
+            :class="{ 'out-of-stock': availablePieces(p) <= 0 }"
+                    @click="availablePieces(p) > 0 && addToCart(p)"
           >
             <div class="product-name">{{ p.name }}</div>
             <div v-if="p.per_pack_or_individual" class="product-type" :class="'type-' + p.per_pack_or_individual">
@@ -50,7 +50,13 @@
             <div class="product-price">₱{{ fmt(p.price) }}</div>
             <div v-if="p.computed_cost" class="product-cost">Cost: ₱{{ fmt(p.computed_cost) }}</div>
             <div class="product-stock" :class="{ 'stock-zero': p.stock <= 0 }">
-              {{ p.stock > 0 ? 'Stock: ' + p.stock : 'Out of stock' }}
+              <template v-if="p.per_pack_or_individual && (p.per_pack_or_individual === 'per_pack' || p.per_pack_or_individual === 'both') && p.pack_quantity">
+                <span v-if="(availablePieces(p) || 0) > 0">Stock: {{ p.stock }} packs ({{ availablePieces(p) }} pcs)</span>
+                <span v-else>Out of stock</span>
+              </template>
+              <template v-else>
+                {{ p.stock > 0 ? 'Stock: ' + p.stock : 'Out of stock' }}
+              </template>
             </div>
           </div>
         </div>
@@ -295,6 +301,21 @@ const filteredProducts = computed(() => {
   )
 })
 
+// Return total available pieces for a product when sold per-pack
+function availablePieces(product) {
+  try {
+    if (!product) return 0
+    const mode = product.per_pack_or_individual || 'individual'
+    if ((mode === 'per_pack' || mode === 'both') && product.pack_quantity) {
+      const packQty = Number(product.pack_quantity) || 0
+      const openUsed = Number(product.open_pack_used || 0) || 0
+      const packs = Number(product.stock || 0) || 0
+      return Math.max(0, Math.floor(packs * packQty - openUsed))
+    }
+    return Number(product.stock || 0) || 0
+  } catch (e) { return Number(product.stock || 0) || 0 }
+}
+
 const totalItems = computed(() => cart.value.reduce((s, i) => s + i.quantity, 0))
 const subtotal = computed(() => cart.value.reduce((s, i) => s + i.subtotal, 0))
 
@@ -386,8 +407,9 @@ function addToCart(product) {
     }
 
     const existing = cart.value.find(i => i.product_id === chosen.id)
+    const maxPieces = availablePieces(chosen)
     if (existing) {
-      if (existing.quantity < (chosen.real_stock ?? chosen.stock)) {
+      if (existing.quantity < maxPieces) {
         existing.quantity++
         existing.subtotal = existing.unit_price * existing.quantity
       }
@@ -401,8 +423,10 @@ function addToCart(product) {
       computed_cost: chosen.computed_cost || null,
       quantity: 1,
       subtotal: Number(chosen.price) || 0,
-      max_stock: chosen.real_stock ?? chosen.stock,
+      max_stock: maxPieces,
     })
+
+  }
 
 
   function getSupplierOptionsFor(product) {

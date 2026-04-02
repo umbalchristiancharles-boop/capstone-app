@@ -650,15 +650,21 @@ public function requestedProducts(Request $request)
                 $budgetCreated = false;
                 DB::transaction(function () use ($procRequest, $user, $selectedProduct, $selectedSupplierId, &$budgetCreated) {
                     $updateData = [
-                        'procurement_user_id' => $user->id,
-                        'status' => 'budget_pending',
-                        'supplier_confirmed' => true  // Mark that supplier is confirmed
-                    ];
-                    
-                    // Store the selected supplier if available
-                    if ($selectedSupplierId) {
-                        $updateData['supplier_id'] = $selectedSupplierId;
-                    }
+                            'procurement_user_id' => $user->id,
+                            'status' => 'budget_pending',
+                            'supplier_confirmed' => true  // Mark that supplier is confirmed
+                        ];
+
+                        // Store the selected supplier if available
+                        if ($selectedSupplierId) {
+                            $updateData['supplier_id'] = $selectedSupplierId;
+                        }
+
+                        // Persist the selected product (could be supplier-specific product)
+                        // so downstream inventory confirmation updates the correct product row.
+                        if (!empty($selectedProduct->id)) {
+                            $updateData['product_id'] = $selectedProduct->id;
+                        }
                     
                     $procRequest->update($updateData);
 

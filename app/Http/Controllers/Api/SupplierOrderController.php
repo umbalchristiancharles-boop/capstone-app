@@ -63,6 +63,10 @@ class SupplierOrderController extends Controller
             'price' => 'required|numeric|min:0',
             'category' => 'required|string|max:255|not_in:,null',
             'per_pack_or_individual' => 'required|in:individual,per_pack,both',
+            // If front-end always sends the field, allow null when not per_pack by using nullable.
+            // Keep required_if to force presence when per_pack is selected.
+            'pack_quantity' => 'sometimes|required_if:per_pack_or_individual,per_pack|nullable|numeric|min:0',
+            'pack_unit' => 'sometimes|required_if:per_pack_or_individual,per_pack|nullable|string|max:50',
             'expires_at' => 'required|date_format:Y-m-d\TH:i',
             'stock' => 'nullable|integer|min:0',
             'sku' => 'nullable|string|max:255'
@@ -128,6 +132,8 @@ class SupplierOrderController extends Controller
                     'slug' => $slug,
                     'category' => $validated['category'],
                     'per_pack_or_individual' => $validated['per_pack_or_individual'],
+                    'pack_quantity' => $validated['pack_quantity'] ?? null,
+                    'pack_unit' => $validated['pack_unit'] ?? null,
                     'price' => $validated['price'],
                     'cost_price' => $validated['price'],
                     'stock' => $validated['stock'] ?? $existingProduct->stock ?? 0,
@@ -151,6 +157,8 @@ class SupplierOrderController extends Controller
                     'slug' => $slug,
                     'category' => $validated['category'],
                     'per_pack_or_individual' => $validated['per_pack_or_individual'],
+                    'pack_quantity' => $validated['pack_quantity'] ?? null,
+                    'pack_unit' => $validated['pack_unit'] ?? null,
                     'price' => $validated['price'],
                     'cost_price' => $validated['price'],
                     'stock' => $validated['stock'] ?? 0,

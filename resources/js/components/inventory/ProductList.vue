@@ -82,7 +82,8 @@
                       <span v-else class="expiry-none">—</span>
                     </td>
                     <td class="col-actions">
-                      <button class="btn btn-icon btn-danger" @click="$emit('delete', p)" :aria-label="`Delete ${p.name}`">Delete</button>
+                      <button v-if="props.showPublishControls && p.is_published" type="button" class="btn btn-icon" @click="$emit('toggle-publish', { id: p.id, publish: false })">Unpublish</button>
+                      <button v-else-if="props.showPublishControls" type="button" class="btn btn-icon btn-primary" @click="$emit('toggle-publish', { id: p.id, publish: true })">Publish</button>
                     </td>
                   </tr>
                 </tbody>
@@ -119,7 +120,7 @@
                     <td class="expiry-cell"><span class="expiry-date">{{ formatDate(p.expires_at) }}</span></td>
                     <td><span :class="['status-badge', statusClass(p)]">{{ statusLabel(p) }}</span></td>
                     <td>
-                      <button v-if="(p.stock == null ? 0 : p.stock) <= (p.low_stock_threshold ?? 10)" class="btn-primary btn-small">Request Procurement</button>
+                      <button v-if="(p.stock == null ? 0 : p.stock) <= (p.low_stock_threshold ?? 10)" class="btn-primary btn-small" type="button" @click="$emit('request-procurement', p)">Request Procurement</button>
                     </td>
                   </tr>
                 </tbody>
@@ -160,9 +161,10 @@
                     <span v-if="p.expires_at" :class="getExpiryClass(p)">{{ formatDate(p.expires_at) }}</span>
                     <span v-else class="expiry-none">—</span>
                   </td>
-                  <td class="col-actions">
-                    <button class="btn btn-icon btn-danger" @click="$emit('delete', p)" :aria-label="`Delete ${p.name}`">Delete</button>
-                  </td>
+                    <td class="col-actions">
+                      <button v-if="props.showPublishControls && p.is_published" type="button" class="btn btn-icon" @click="$emit('toggle-publish', { id: p.id, publish: false })">Unpublish</button>
+                      <button v-else-if="props.showPublishControls" type="button" class="btn btn-icon btn-primary" @click="$emit('toggle-publish', { id: p.id, publish: true })">Publish</button>
+                    </td>
                 </tr>
               </tbody>
             </table>
@@ -197,7 +199,8 @@
               <div class="card-sub">SKU: <span class="sku">{{ p.sku || '-' }}</span></div>
               <div class="card-meta">{{ formatCurrency(p.price) }} · <span :class="stockClass(p.stock)">{{ p.stock }}</span></div>
               <div class="card-actions">
-                <button class="btn btn-small btn-danger" @click="$emit('delete', p)">Delete</button>
+                <button v-if="props.showPublishControls && p.is_published" type="button" class="btn btn-small" @click="$emit('toggle-publish', { id: p.id, publish: false })">Unpublish</button>
+                <button v-else-if="props.showPublishControls" type="button" class="btn btn-small btn-primary" @click="$emit('toggle-publish', { id: p.id, publish: true })">Publish</button>
               </div>
             </div>
           </article>
@@ -233,10 +236,11 @@ import { ref, computed, watch, onMounted } from 'vue'
 const props = defineProps({
   products: { type: Array, default: () => [] },
   fetchUrl: { type: String, default: '' }, // optional API endpoint to fetch products
-  compact: { type: Boolean, default: false } // when true hide header/sidebar for embedding
+  compact: { type: Boolean, default: false }, // when true hide header/sidebar for embedding
+  showPublishControls: { type: Boolean, default: true }
 })
 
-const emit = defineEmits(['open-add', 'edit', 'delete', 'count', 'adjust'])
+const emit = defineEmits(['open-add', 'edit', 'delete', 'count', 'adjust', 'toggle-publish', 'request-procurement'])
 
 const q = ref('')
 const stockFilter = ref('all')
@@ -251,6 +255,39 @@ const sidebarCollapsed = ref(false)
 const internal = ref(props.products ? props.products.slice() : [])
 
 watch(() => props.products, (v) => { internal.value = v ? v.slice() : [] })
+// Deduplicate products by normalized name: prefer published, otherwise most recently updated
+function dedupeProducts(arr) {
+  if (!Array.isArray(arr)) return []
+  const nameMap = {}
+  arr.forEach(p => {
+    if (!p || !p.name) return
+    const key = String(p.name || '').trim().toLowerCase()
+    const existing = nameMap[key]
+    if (!existing) {
+      nameMap[key] = p
+      return
+    }
+    const existingPublished = !!existing.is_published
+    const curPublished = !!p.is_published
+    if (curPublished && !existingPublished) {
+      nameMap[key] = p
+      return
+    }
+    if (curPublished === existingPublished) {
+      try {
+        const eTime = new Date(existing.updated_at || existing.created_at || 0).getTime()
+        const pTime = new Date(p.updated_at || p.created_at || 0).getTime()
+        if (pTime > eTime) nameMap[key] = p
+      } catch (e) {
+        // ignore
+      }
+    }
+  })
+  return Object.values(nameMap)
+}
+
+// apply dedupe when parent passes products prop
+watch(() => props.products, (v) => { internal.value = dedupeProducts(v ? v.slice() : []) })
 
 // optional fetch from API
 async function fetchProducts() {
@@ -279,12 +316,12 @@ async function fetchProducts() {
     const data = await res.json()
     console.debug('[ProductList] Response data:', data, 'Length:', Array.isArray(data) ? data.length : 'not array')
     if (Array.isArray(data)) {
-      internal.value = data
-      console.debug('[ProductList] Set products array, count:', data.length)
+      internal.value = dedupeProducts(data)
+      console.debug('[ProductList] Set products array, count:', internal.value.length)
     }
     else if (data && Array.isArray(data.products)) {
-      internal.value = data.products
-      console.debug('[ProductList] Set products from data.products, count:', data.products.length)
+      internal.value = dedupeProducts(data.products)
+      console.debug('[ProductList] Set products from data.products, count:', internal.value.length)
     }
     else {
       console.warn('[ProductList] Unexpected response format:', data)
