@@ -147,10 +147,27 @@ import axios from 'axios'
 import '../css/adminpanel.css'
 import OwnerStaffModal from './OwnerStaffModal.vue'
 
-function onStaffModalSuccess() {
+async function onStaffModalSuccess(payload) {
   showAddStaffModal.value = false
-  resetForm()
-  loadStaff()
+  // If payload contains form data, send to API
+  try {
+    if (payload && payload.form) {
+      const baseUrl = isBranchManager.value ? '/api/manager/staff' : '/api/admin/staff'
+      if (payload.isEdit && payload.staffId) {
+        await axios.put(`${baseUrl}/${payload.staffId}`, payload.form, { withCredentials: true })
+        alert('Staff updated successfully')
+      } else {
+        await axios.post(baseUrl, payload.form, { withCredentials: true })
+        alert('Staff added successfully')
+      }
+    }
+  } catch (e) {
+    console.error('Failed to save staff:', e)
+    alert(e.response?.data?.message || 'Failed to save staff')
+  } finally {
+    resetForm()
+    loadStaff()
+  }
 }
 
 const router = useRouter()

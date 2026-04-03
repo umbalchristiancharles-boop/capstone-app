@@ -10,6 +10,17 @@
 
           <div class="form-grid">
             <div class="form-group">
+              <label class="form-label">Create custom account?</label>
+              <div>
+                <label style="display:inline-flex;align-items:center;gap:8px">
+                  <input type="checkbox" v-model="form.custom_account" :disabled="isViewOnly" />
+                  <span style="font-weight:600">Enable custom username/password</span>
+                </label>
+                <div class="form-hint">When disabled, the system will create account credentials automatically.</div>
+              </div>
+            </div>
+
+            <div class="form-group" v-if="form.custom_account">
               <label for="username" class="form-label">Username {{ !isEdit ? '*' : '' }}</label>
               <input
                 v-model="form.username"
@@ -17,9 +28,14 @@
                 class="form-input"
                 :class="{ 'read-only': isEdit || isViewOnly }"
                 :placeholder="!isEdit ? 'Enter username' : ''"
-                :required="!isEdit"
+                :required="form.custom_account && !isEdit"
                 :disabled="isEdit || isViewOnly"
               />
+            </div>
+
+            <div class="form-group" v-else>
+              <label class="form-label">Username</label>
+              <input class="form-input" disabled placeholder="Will be auto-generated" />
             </div>
 
             <div class="form-group">
@@ -32,6 +48,22 @@
               <input v-model="form.email" id="email" class="form-input" :disabled="isViewOnly" />
             </div>
 
+            <div class="form-group">
+              <label for="role" class="form-label">Role</label>
+              <select v-model="form.role" id="role" class="form-input" :disabled="isViewOnly">
+                <option value="">Select role</option>
+                <option value="STAFF_INVENTORY">Inventory Staff</option>
+                <option value="MANAGER_LOGISTICS">Logistics Manager</option>
+                <option value="MANAGER_FINANCE">Finance Manager</option>
+                <option value="MANAGER_PROCUREMENT">Procurement Manager</option>
+                <option value="STAFF_CASHIER">Cashier Staff</option>
+              </select>
+            </div>
+
+            <div class="form-group" v-if="form.custom_account && !isViewOnly">
+              <label for="password" class="form-label">Password {{ !isEdit ? '*' : '' }}</label>
+              <input v-model="form.password" id="password" class="form-input" type="password" :required="form.custom_account && !isEdit" />
+            </div>
           </div>
 
           <div class="modal-footer">
@@ -67,7 +99,8 @@ export default {
         email: '',
         phone_number: '',
         password: '',
-        roleDepartment: '',
+            role: '',
+            custom_account: false,
         branch_id: '',
         address: '',
         province: '',
@@ -82,24 +115,28 @@ export default {
     }
   },
   watch: {
-    staff: {
-      immediate: true,
-      handler(newStaff) {
-        if (this.isEdit && newStaff) {
-          this.form.username = newStaff.username || ''
-          this.form.full_name = newStaff.full_name || ''
-          this.form.email = newStaff.email || ''
-          this.form.branch_id = newStaff.branch_id || ''
-        } else {
-          this.form.username = ''
-          this.form.full_name = ''
-          this.form.email = ''
-          this.form.branch_id = ''
+      staff: {
+        immediate: true,
+        handler(newStaff) {
+          if (this.isEdit && newStaff) {
+            this.form.username = newStaff.username || ''
+            this.form.full_name = newStaff.full_name || ''
+            this.form.email = newStaff.email || ''
+            this.form.branch_id = newStaff.branch_id || ''
+            this.form.role = newStaff.role || ''
+            this.form.custom_account = !!(newStaff.username)
+          } else {
+            this.form.username = ''
+            this.form.full_name = ''
+            this.form.email = ''
+            this.form.branch_id = ''
+            this.form.role = ''
+            this.form.custom_account = false
+          }
+          this.errorMessage = ''
+          this.documentFiles = {}
         }
-        this.errorMessage = ''
-        this.documentFiles = {}
       }
-    }
   },
   methods: {
     closeModal() {
@@ -112,8 +149,21 @@ export default {
         return
       }
 
-      // Minimal submit: emit success with form payload
-      this.$emit('success', { form: Object.assign({}, this.form) })
+      // Validate minimal constraints
+      if (this.form.custom_account && !this.isEdit) {
+        if (!this.form.username || !this.form.password) {
+          this.errorMessage = 'Username and password are required when creating a custom account.'
+          return
+        }
+      }
+
+      // Emit success with extra context (isEdit and staffId) so parent can call API
+      const payload = {
+        form: Object.assign({}, this.form),
+        isEdit: this.isEdit,
+        staffId: this.staff && this.staff.id ? this.staff.id : null
+      }
+      this.$emit('success', payload)
       this.closeModal()
     }
   }

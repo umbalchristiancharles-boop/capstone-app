@@ -11,8 +11,17 @@
           <!-- Basic Info Form Grid -->
           <div class="form-grid">
 
-            <!-- Username (Create only, readonly in edit) -->
+            <!-- Username / Custom Account toggle -->
             <div class="form-group">
+              <label class="form-label">Create custom account?</label>
+              <label style="display:inline-flex;align-items:center;gap:8px">
+                <input type="checkbox" v-model="form.custom_account" :disabled="isEdit" />
+                <span style="font-weight:600">Enable custom username/password</span>
+              </label>
+              <div class="form-hint">When disabled, credentials are auto-generated and the default password card is shown.</div>
+            </div>
+
+            <div class="form-group" v-if="form.custom_account">
               <label for="username" class="form-label">Username {{ !isEdit ? '*' : '' }}</label>
               <input
                 v-model="form.username"
@@ -20,13 +29,12 @@
                 class="form-input"
                 :class="{ 'read-only': isEdit }"
                 :placeholder="!isEdit ? 'Enter username' : ''"
-                :required="!isEdit"
+                :required="form.custom_account && !isEdit"
                 :disabled="isEdit"
               />
             </div>
 
-            <!-- Email field removed - will be set after password change verification -->
-            <div class="form-hint">
+            <div class="form-hint" v-else>
               <small>📧 Email will be set after staff member completes password change and verification</small>
             </div>
 
@@ -54,7 +62,7 @@
                 placeholder="Enter phone number"
               />
             </div>
-            <div class="form-group password-group" v-if="!isEdit">
+            <div class="form-group password-group" v-if="!isEdit && !form.custom_account">
               <label for="password" class="form-label">Password <span style="font-weight:400">*</span></label>
 
               <div class="password-display-container">
@@ -119,17 +127,16 @@
               </div>
             </div>
 
-            <!-- Role/Department -->
+            <!-- Role/Department (restricted list) -->
             <div class="form-group">
               <label for="roleDepartment" class="form-label">Role / Department *</label>
               <select v-model="form.roleDepartment" id="roleDepartment" class="form-input" :required="!isEdit">
                 <option value="">-- Select Role / Department --</option>
-                <optgroup label="Staff">
-                  <option value="STAFF cashier">Staff Cashier</option>
-                  <option v-if="!isHrUser" value="STAFF finance">Staff Finance</option>
-                  <option value="STAFF inventory">Staff Inventory</option>
-                  <option value="STAFF kitchen">Staff Kitchen</option>
-                </optgroup>
+                <option value="STAFF inventory">Inventory Staff</option>
+                <option value="MANAGER logistics">Logistics Manager</option>
+                <option value="MANAGER finance">Finance Manager</option>
+                <option value="MANAGER procurement">Procurement Manager</option>
+                <option value="STAFF cashier">Cashier Staff</option>
               </select>
             </div>
 
@@ -351,6 +358,7 @@ export default {
         phone_number: '',
         password: '',
         roleDepartment: '',
+        custom_account: false,
         branch_id: '',
         address: '',
         region: '',
@@ -632,9 +640,15 @@ export default {
 
       if (!this.isEdit) {
         // Create mode validation
-        if (!this.form.username || this.form.username.trim() === '') {
-          this.errorMessage = 'Username is required'
-          return
+        if (this.form.custom_account) {
+          if (!this.form.username || this.form.username.trim() === '') {
+            this.errorMessage = 'Username is required when creating a custom account'
+            return
+          }
+          if (!this.form.password || this.form.password.trim() === '') {
+            this.errorMessage = 'Password is required when creating a custom account'
+            return
+          }
         }
         if (!this.form.roleDepartment) {
           this.errorMessage = 'Please select role and department'
@@ -919,6 +933,7 @@ export default {
             phone_number: newStaff.phone_number || '',
             password: '',
             roleDepartment: reconstructedRoleDept,
+            custom_account: !!newStaff.username,
             branch_id: newStaff.branch_id || '',
             address: newStaff.address || '',
             region: newStaff.region || '',
@@ -940,6 +955,7 @@ export default {
             phone_number: '',
             password: '',
             roleDepartment: '',
+            custom_account: false,
             branch_id: '',
             address: '',
             province: '',
@@ -970,6 +986,7 @@ export default {
             phone_number: '',
             password: '',
             roleDepartment: '',
+            custom_account: false,
             branch_id: this.preSelectedBranchId || '',
             address: '',
             province: '',
