@@ -416,6 +416,12 @@ function hideRouteOverlay() {
   } catch (e) {}
 }
 
+// Expose helpers to global window so SPA components can hide the overlay
+try {
+  window.showRouteOverlay = showRouteOverlay
+  window.hideRouteOverlay = hideRouteOverlay
+} catch (e) {}
+
 // show blur right when navigation starts; hide after a delay so transition persists
 router.beforeEach((to, from, next) => {
   const skipOverlay = sessionStorage.getItem('skipRouteOverlay') === '1'
@@ -700,7 +706,7 @@ axios
     if (appElement) {
       // Remove if already set
       appElement.removeAttribute('aria-hidden')
-      
+
       // Monitor and remove if Vue or transitions try to set it
       const observer = new MutationObserver((mutations) => {
         mutations.forEach(mutation => {

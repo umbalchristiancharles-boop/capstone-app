@@ -39,6 +39,12 @@ class Product extends Model
         'open_pack_used',
         'published_by',
         'published_at',
+        'status',
+        'requires_logistics',
+        'approved_by_logistics_main',
+        'approved_by_owner',
+        'rejection_reason',
+        'approved_at',
     ];
 
     protected $casts = [
@@ -59,6 +65,10 @@ class Product extends Model
         'dish_id' => 'integer',
         'published_by' => 'integer',
         'is_dish_product' => 'boolean',
+        'requires_logistics' => 'boolean',
+        'approved_by_logistics_main' => 'integer',
+        'approved_by_owner' => 'integer',
+        'approved_at' => 'datetime',
     ];
 
     // Expose aggregated real stock (sum across supplier/product duplicates) to API consumers
@@ -123,6 +133,16 @@ class Product extends Model
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(User::class, 'supplier_id');
+    }
+
+    public function logisticsApprover(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by_logistics_main');
+    }
+
+    public function ownerApprover(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by_owner');
     }
 
     public function branch(): BelongsTo

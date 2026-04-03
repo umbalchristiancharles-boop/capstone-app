@@ -108,7 +108,13 @@ class StaffInventoryController extends Controller
         $user = Auth::user();
         $branchId = $user->branch_id;
 
-        $query = Product::where('branch_id', $branchId)->where('is_active', 1);
+        $query = Product::where('branch_id', $branchId)
+            ->where('is_active', 1)
+            ->where(function($q) {
+                // Show all active products including pending approval; exclude only rejected
+                $q->whereNull('status')
+                  ->orWhereNotIn('status', ['rejected']);
+            });
 
         // Allow callers to request unpublished products as well (useful for internal staff views)
         // Branch ADMIN/OWNER/SUPER_ADMIN should be able to see unpublished products by default
@@ -137,7 +143,7 @@ class StaffInventoryController extends Controller
         // been accepted/placed into inventory by procurement.
         // (Procurement will still mark products as published when placed.)
 
-        $products = $query->select('id', 'name', 'slug', 'price', 'stock', 'sku', 'branch_id', 'is_published', 'created_at', 'updated_at')
+        $products = $query->select('id', 'name', 'slug', 'price', 'stock', 'sku', 'branch_id', 'is_published', 'created_at', 'updated_at', 'status')
             ->orderBy('name')
             ->get();
 
@@ -199,11 +205,12 @@ class StaffInventoryController extends Controller
             'pack_unit' => 'sometimes|required_if:per_pack_or_individual,per_pack|nullable|string|max:50',
             'expires_at' => 'required|date_format:Y-m-d\\TH:i',
             'sku' => 'nullable|string|unique:products,sku',
+            'requires_logistics' => 'boolean', // Whether product requires logistics approval
         ]);
 
         // Default stock to 0 if not provided
         $stock = $validated['stock'] ?? 0;
-        
+
         // Additional protection: ensure stock is never negative
         if ($stock < 0) {
             $stock = 0;
@@ -254,6 +261,10 @@ class StaffInventoryController extends Controller
             $isKitchenDish = false;
         }
 
+        // Determine initial status based on approval workflow
+        $requiresLogistics = $validated['requires_logistics'] ?? false;
+        $initialStatus = $requiresLogistics ? 'pending_logistics_main' : 'pending_owner';
+
         $product = Product::create([
             'name' => $validated['name'],
             'slug' => Str::slug($validated['name']),
@@ -272,6 +283,8 @@ class StaffInventoryController extends Controller
             'is_published' => $isPublished,
             'is_active' => true,
             'is_kitchen_dish' => $isKitchenDish,
+            'status' => $initialStatus,
+            'requires_logistics' => $requiresLogistics,
         ]);
 
         // Recompute persisted real_stock for the group (branch + sku/name)

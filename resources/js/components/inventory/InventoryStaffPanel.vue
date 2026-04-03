@@ -57,6 +57,7 @@
       <div class="panel-section">
         <h2 class="section-title">Inventory Monitor</h2>
         <p class="section-description">Current stock levels for your branch (Read-only)</p>
+        <p class="section-note" style="color: #666; font-size: 13px; margin-top: 8px;">💡 <strong>Request Procurement:</strong> Click the button in the table to automatically request <strong>minimum 10 units</strong> of any low-stock product.</p>
 
         <div v-if="inventoryLoading" class="loading-container">
           <div class="loading-spinner"></div>
@@ -78,25 +79,33 @@
         <h2 class="section-title">Procurement Requests</h2>
         <p class="section-description">Create and view procurement requests for items needing replenishment.</p>
 
-        <button v-if="!showProcRequestForm" class="btn-primary" @click="showProcRequestForm = true">+ New Procurement Request</button>
+        <button v-if="!showProcRequestForm" class="btn-primary" @click="showProcRequestForm = true" style="margin-bottom: 16px;">+ Custom Procurement Request</button>
 
-        <div v-if="showProcRequestForm" class="form-container">
-          <h3>Create New Procurement Request</h3>
+        <div v-if="showProcRequestForm" class="form-container" style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="margin: 0; font-size: 18px; color: #1f2937;">Create Custom Procurement Request</h3>
+            <button type="button" @click="cancelProcRequest" style="background: none; border: none; color: #9ca3af; font-size: 20px; cursor: pointer; padding: 0;">✕</button>
+          </div>
+          <p class="form-note" style="color: #6b7280; font-size: 13px; margin: 0 0 16px 0; line-height: 1.5;">
+            📝 <strong>Set a custom quantity</strong> for a specific product below. For quick replenishment of low-stock items, use the <strong>'Request Procurement'</strong> button in the Inventory Monitor table (which automatically requests minimum 10 units).
+          </p>
           <form @submit.prevent="submitProcRequest">
-            <div class="form-group">
-              <label>Product</label>
-              <select v-model="procRequestForm.product_id" required>
-                <option value="">Select product...</option>
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label style="display: block; font-weight: 500; color: #374151; margin-bottom: 6px; font-size: 14px;">Product *</label>
+              <select v-model="procRequestForm.product_id" required style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; background-color: white; cursor: pointer;">
+                <option value="">— Select a product —</option>
                 <option v-for="p in internalProducts" :key="p.id" :value="p.id">{{ p.name }} (₱{{ formatCurrency(p.price) }})</option>
               </select>
             </div>
-            <div class="form-group">
-              <label>Quantity</label>
-              <input type="number" v-model="procRequestForm.quantity" min="1" required />
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label style="display: block; font-weight: 500; color: #374151; margin-bottom: 6px; font-size: 14px;">Quantity *</label>
+              <input type="number" v-model="procRequestForm.quantity" min="1" required style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box;" />
+              <small style="color: #9ca3af; display: block; margin-top: 4px; font-size: 12px;">Any quantity you need for this product</small>
             </div>
-            <div class="form-actions">
-              <button type="button" class="btn-secondary" @click="cancelProcRequest">Cancel</button>
-              <button type="submit" class="btn-primary" :disabled="procRequestSubmitting">{{ procRequestSubmitting ? 'Submitting...' : 'Submit Request' }}</button>
+            <div v-if="procRequestFormError" class="error-message" style="color: #dc2626; background: #fee2e2; padding: 10px 12px; border-radius: 6px; margin-bottom: 16px; font-size: 13px; border-left: 3px solid #dc2626;">{{ procRequestFormError }}</div>
+            <div class="form-actions" style="display: flex; gap: 10px; justify-content: flex-end;">
+              <button type="button" class="btn-secondary" @click="cancelProcRequest" style="padding: 8px 16px; background: white; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; font-size: 14px; color: #374151; transition: all 0.2s;">Cancel</button>
+              <button type="submit" class="btn-primary" :disabled="procRequestSubmitting" style="padding: 8px 20px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; transition: background 0.2s;" :style="procRequestSubmitting ? 'opacity: 0.7; cursor: not-allowed;' : 'hover: { background: #2563eb }'">{{ procRequestSubmitting ? '⏳ Submitting...' : '✓ Submit Request' }}</button>
             </div>
           </form>
         </div>
@@ -384,6 +393,7 @@ const procRequestsLoading = ref(false)
 const procRequestForm = ref({ product_id: '', quantity: 1 })
 const procRequestSubmitting = ref(false)
 const showProcRequestForm = ref(false)
+const procRequestFormError = ref('')
 
 const productRequests = ref([])
 const productRequestsLoading = ref(false)
@@ -451,12 +461,26 @@ async function fetchProcRequests() {
 }
 
 async function submitProcRequest() {
+  procRequestFormError.value = ''
+
+  // Validation
+  if (!procRequestForm.value.product_id) {
+    procRequestFormError.value = 'Please select a product'
+    return
+  }
+
+  const quantity = Number(procRequestForm.value.quantity)
+  if (!quantity || quantity <= 0) {
+    procRequestFormError.value = 'Please enter a quantity greater than 0'
+    return
+  }
+
   procRequestSubmitting.value = true
   try {
     await ensureCsrf()
     // If the product has an associated supplier, include it so procurement managers
     // can acknowledge without requiring supplier-order submissions.
-    const payload = { product_id: procRequestForm.value.product_id, quantity: procRequestForm.value.quantity }
+    const payload = { product_id: procRequestForm.value.product_id, quantity: quantity }
     try {
       const prodRes = await axios.get(`/api/staff/inventory/products`, { withCredentials: true, params: { include_unpublished: 1 } })
       const allProducts = Array.isArray(prodRes.data) ? prodRes.data : (prodRes.data?.data || [])
@@ -471,57 +495,84 @@ async function submitProcRequest() {
     if (created && created.id) {
       procurementRequests.value = [created, ...procurementRequests.value.filter(r => r.id !== created.id)]
     }
-    showToast('Procurement request created', 'success')
+    showToast(`✓ Procurement request created for ${quantity} units`, 'success')
     showProcRequestForm.value = false
     procRequestForm.value = { product_id: '', quantity: 1 }
-      await refreshList()
+    procRequestFormError.value = ''
+    // Add timeout to prevent hanging indefinitely
+    try {
+      await Promise.race([
+        refreshList(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('refresh timeout')), 5000))
+      ])
+    } catch (e) {
+      // If refresh times out or fails, just continue - request was created successfully
+      console.warn('refreshList timeout/error (non-blocking):', e.message)
+    }
   } catch (e) {
     console.error('submitProcRequest error', e)
     showToast(e.response?.data?.message || 'Failed to create procurement request', 'error')
   } finally {
     procRequestSubmitting.value = false
+    try { if (window.hideRouteOverlay) window.hideRouteOverlay() } catch (e) {}
+    try { if (window.pageBlur && typeof window.pageBlur.hide === 'function') window.pageBlur.hide() } catch (e) {}
   }
 }
 
 function cancelProcRequest() {
   showProcRequestForm.value = false
   procRequestForm.value = { product_id: '', quantity: 1 }
+  procRequestFormError.value = ''
 }
 
 async function requestProcurement(product) {
   if (!product) return
-  const ok = window.swalConfirm ? await window.swalConfirm(`Create procurement request for ${product.name}?`) : true
+  const ok = window.swalConfirm ? await window.swalConfirm(`Create procurement request for ${product.name}?\n\n(Minimum 10 units will be requested)`) : true
   if (!ok) return
   requesting.value = { ...requesting.value, [product.id]: true }
   try {
+    // Ensure minimum 10 units for quick procurement requests
     const minStock = Number(product.min_stock) > 0 ? Number(product.min_stock) : 10
     const currentStock = Number(product.real_stock ?? product.stock ?? 0) || 0
     const diff = Math.ceil(minStock - currentStock)
-    const qty = Math.max(diff, 1)
+    const quantity = Math.max(diff, 10)  // Ensure at least 10 units
     await ensureCsrf()
-    const res = await axios.post('/api/procurement-requests', { product_id: product.id, quantity: qty }, { withCredentials: true })
+    const res = await axios.post('/api/procurement-requests', { product_id: product.id, quantity: quantity }, { withCredentials: true })
     const created = res.data?.data ?? res.data ?? null
     if (created && created.id) {
       procurementRequests.value = [created, ...procurementRequests.value.filter(r => r.id !== created.id)]
     }
-    showToast('Procurement request created', 'success')
-    await refreshList()
+    showToast(`✓ Procurement request created for ${quantity} units`, 'success')
+    // Add timeout to prevent hanging indefinitely
+    try {
+      await Promise.race([
+        refreshList(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('refresh timeout')), 5000))
+      ])
+    } catch (e) {
+      // If refresh times out or fails, just continue - request was created successfully
+      console.warn('refreshList timeout/error (non-blocking):', e.message)
+    }
   } catch (e) {
     console.error('requestProcurement error', e)
     showToast(e.response?.data?.message || 'Failed to create procurement request', 'error')
   } finally {
     requesting.value = { ...requesting.value, [product.id]: false }
+    try { if (window.hideRouteOverlay) window.hideRouteOverlay() } catch (e) {}
+    try { if (window.pageBlur && typeof window.pageBlur.hide === 'function') window.pageBlur.hide() } catch (e) {}
   }
 }
 
 async function fetchProductRequests() {
   productRequestsLoading.value = true
   try {
+    console.log('[ProductRequests] Fetching...')
     const res = await axios.get('/api/product-requests', { withCredentials: true })
     const data = res.data?.data ?? res.data ?? []
+    console.log('[ProductRequests] Fetch complete, count:', Array.isArray(data) ? data.length : 'not-array')
     productRequests.value = Array.isArray(data) ? data : []
   } catch (e) {
-    console.error('fetchProductRequests error', e)
+    console.error('[ProductRequests] Fetch error:', e.message)
     productRequests.value = []
   } finally {
     productRequestsLoading.value = false
@@ -531,18 +582,40 @@ async function fetchProductRequests() {
 async function submitProductRequest() {
   productRequestSubmitting.value = true
   try {
+    console.log('[ProductRequest] Starting submission...')
     await ensureCsrf()
     const payload = { name: productRequestForm.value.name, description: productRequestForm.value.description || null, unit: productRequestForm.value.unit || null }
-    await axios.post('/api/product-requests', payload, { withCredentials: true })
+    console.log('[ProductRequest] Payload:', payload)
+
+    const res = await axios.post('/api/product-requests', payload, { withCredentials: true })
+    console.log('[ProductRequest] Response:', res.data)
+
     showToast('Product request submitted for approval', 'success')
     showProductRequestForm.value = false
     productRequestForm.value = { name: '', description: '', unit: '' }
-    await fetchProductRequests()
+
+    console.log('[ProductRequest] Fetching updated product requests...')
+    // Add timeout to prevent hanging indefinitely
+    try {
+      await Promise.race([
+        fetchProductRequests(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('fetch timeout')), 5000))
+      ])
+    } catch (e) {
+      // If fetch times out or fails, just continue - request was created successfully
+      console.warn('fetchProductRequests timeout/error (non-blocking):', e.message)
+    }
+    console.log('[ProductRequest] Submission complete!')
   } catch (e) {
-    console.error('submitProductRequest error', e)
-    showToast(e.response?.data?.error || 'Failed to submit product request', 'error')
+    console.error('[ProductRequest] Error:', e)
+    console.error('[ProductRequest] Response data:', e.response?.data)
+    console.error('[ProductRequest] Status:', e.response?.status)
+    const msg = e.response?.data?.error || e.response?.data?.message || e.message || 'Failed to submit product request'
+    showToast(msg, 'error')
   } finally {
     productRequestSubmitting.value = false
+    try { if (window.hideRouteOverlay) window.hideRouteOverlay() } catch (e) {}
+    try { if (window.pageBlur && typeof window.pageBlur.hide === 'function') window.pageBlur.hide() } catch (e) {}
   }
 }
 
@@ -601,6 +674,8 @@ async function requestWithFallback(method, url, options = {}) {
       }
     }
     throw e
+            try { if (window.hideRouteOverlay) window.hideRouteOverlay() } catch (e) {}
+            try { if (window.pageBlur && typeof window.pageBlur.hide === 'function') window.pageBlur.hide() } catch (e) {}
   }
 }
 

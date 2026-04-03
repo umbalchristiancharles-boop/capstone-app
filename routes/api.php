@@ -220,6 +220,22 @@ Route::middleware('auth:sanctum,web')->group(function () {
     Route::post('product-requests/{id}/approve', [\App\Http\Controllers\Api\ProductRequestController::class, 'approveRequest']);
     Route::post('product-requests/{id}/reject', [\App\Http\Controllers\Api\ProductRequestController::class, 'rejectRequest']);
 
+    // Multi-level Product Request Approval Workflow
+    Route::get('product-requests/pending/logistics', [\App\Http\Controllers\Api\ProductRequestController::class, 'getPendingLogisticsApproval']);
+    Route::get('product-requests/pending/owner', [\App\Http\Controllers\Api\ProductRequestController::class, 'getPendingOwnerApproval']);
+    Route::post('product-requests/{id}/approve-logistics', [\App\Http\Controllers\Api\ProductRequestController::class, 'approveAtLogistics']);
+    Route::post('product-requests/{id}/reject-logistics', [\App\Http\Controllers\Api\ProductRequestController::class, 'rejectAtLogistics']);
+    Route::post('product-requests/{id}/approve-owner', [\App\Http\Controllers\Api\ProductRequestController::class, 'approveAtOwner']);
+    Route::post('product-requests/{id}/reject-owner', [\App\Http\Controllers\Api\ProductRequestController::class, 'rejectAtOwner']);
+
+    // Product Approval Workflow (Multi-level product approval: Branch -> Logistics -> Owner)
+    Route::get('products/approvals/pending-logistics', [\App\Http\Controllers\Api\ProductApprovalController::class, 'getPendingLogisticsApproval']);
+    Route::get('products/approvals/pending-owner', [\App\Http\Controllers\Api\ProductApprovalController::class, 'getPendingOwnerApproval']);
+    Route::post('products/{productId}/approvals/logistics/approve', [\App\Http\Controllers\Api\ProductApprovalController::class, 'approveAtLogistics']);
+    Route::post('products/{productId}/approvals/logistics/reject', [\App\Http\Controllers\Api\ProductApprovalController::class, 'rejectAtLogistics']);
+    Route::post('products/{productId}/approvals/owner/approve', [\App\Http\Controllers\Api\ProductApprovalController::class, 'approveAtOwner']);
+    Route::post('products/{productId}/approvals/owner/reject', [\App\Http\Controllers\Api\ProductApprovalController::class, 'rejectAtOwner']);
+
     Route::apiResource('procurement.products', \App\Http\Controllers\Api\ProcurementProductController::class)->only(['index']);
     Route::post('procurement.products/{productId}/place-order', [\App\Http\Controllers\Api\ProcurementProductController::class, 'placeOrder']);
 
@@ -402,11 +418,6 @@ Route::prefix('manager')->middleware('auth:sanctum,web')->group(function () {
             Route::post('/dishes/{id}/approve', [\App\Http\Controllers\Admin\DishApprovalController::class, 'approveDish']);
             Route::post('/dishes/{id}/reject', [\App\Http\Controllers\Admin\DishApprovalController::class, 'rejectDish']);
             Route::post('/dishes/{id}/publish', [\App\Http\Controllers\Admin\DishApprovalController::class, 'publishDish']);
-
-            // Product Request Approval Workflow - Owner must approve new product requests from logistics
-            Route::get('/product-requests/pending', [\App\Http\Controllers\Api\ProductRequestController::class, 'getPendingRequests']);
-            Route::post('/product-requests/{id}/approve', [\App\Http\Controllers\Api\ProductRequestController::class, 'approveRequest']);
-            Route::post('/product-requests/{id}/reject', [\App\Http\Controllers\Api\ProductRequestController::class, 'rejectRequest']);
         });
     });
 
