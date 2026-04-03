@@ -162,18 +162,29 @@
         <div v-if="checkoutSuccess" class="success-msg">{{ checkoutSuccess }}</div>
 
         <!-- Announcements -->
-            <div class="announcements-card" style="margin:12px 0;padding:10px;border-radius:8px;background:var(--surface-card);border:1px solid rgba(255,211,107,0.4)">
-              <h3 style="margin:0 0 8px;color:var(--text-dark);font-size:0.95rem">Announcements</h3>
-          <div v-if="loadingAnnouncements" class="loading-text">Loading announcements...</div>
-          <div v-else>
-            <div v-if="announcements.length">
-              <div v-for="a in announcements" :key="a.id" style="margin-bottom:8px;padding:8px;border-radius:6px;background:var(--surface-card)">
-                <div style="font-weight:700;color:var(--text-dark)">{{ a.title }}</div>
-                <div style="color:rgba(66,33,11,0.9)">{{ a.message }}</div>
-                <div style="font-size:0.75rem;color:rgba(66,33,11,0.7);margin-top:6px">{{ formatDate(a.created_at) }}</div>
+            <div class="announcements-card">
+              <h3 class="announcements-title">Announcements</h3>
+              <div class="announcements-list">
+                <div v-if="loadingAnnouncements" class="loading-text">Loading announcements...</div>
+                <div v-else>
+                  <div v-if="announcements.length">
+                    <div v-for="a in announcements" :key="a.id" class="announcement-item">
+                      <div class="announcement-title">{{ a.title }}</div>
+                      <div class="announcement-message">{{ a.message }}</div>
+                      <div class="announcement-meta">{{ formatDate(a.created_at) }}</div>
+                    </div>
+                  </div>
+                  <div v-else class="empty-text">No announcements</div>
+                </div>
               </div>
             </div>
-            <div v-else class="empty-text">No announcements</div>
+
+        <!-- Branch Budget Card (placed under Announcements) -->
+        <div v-if="selectedBranch" class="branch-budget-card" style="margin-top:12px;">
+          <h3 style="margin:0 0 8px;color:var(--text-dark);font-size:0.95rem">Branch Budget</h3>
+          <div style="background:#ffffff;padding:12px;border-radius:8px;box-shadow:0 4px 12px rgba(2,6,23,0.04);">
+            <div style="font-weight:700;color:#065f46;font-size:1.1rem">₱{{ fmt(currentBranchBudget) }}</div>
+            <div style="color:#6b7280;margin-top:6px">Selected branch: {{ branches.find(b => String(b.id) === String(selectedBranch))?.name || '-' }}</div>
           </div>
         </div>
 
@@ -344,6 +355,12 @@ const canCheckout = computed(() =>
   cart.value.length > 0 && amountPaid.value >= grandTotal.value && grandTotal.value > 0
 )
 
+// Currently selected branch budget (number)
+const currentBranchBudget = computed(() => {
+  const b = branches.value.find(x => String(x.id) === String(selectedBranch.value))
+  return b ? Number(b.budget || 0) : 0
+})
+
 // Navigation
 function goBack() {
   router.push('/super-admin-panel')
@@ -351,15 +368,28 @@ function goBack() {
 
 // Fetch branches on mount
 onMounted(async () => {
+  await loadBranches()
+  // load announcements for cashier/staff
+  fetchAnnouncements()
+})
+
+// Load branches (and budgets)
+async function loadBranches() {
   try {
     const res = await axios.get('/api/superadmin/cashier/branches')
-    branches.value = res.data
-    // load announcements for cashier/staff
-    fetchAnnouncements()
+    branches.value = res.data || []
+    // If no branch selected yet, default to the first branch so the UI (budget, products)
+    // is visible immediately for single-branch terminals.
+    if (!selectedBranch.value && branches.value.length > 0) {
+      selectedBranch.value = String(branches.value[0].id)
+      // trigger initial load for products/transactions
+      await loadProducts()
+    }
   } catch (e) {
     console.error('Failed to load branches', e)
+    branches.value = []
   }
-})
+}
 
 // Load products when branch changes
 async function loadProducts() {
@@ -526,6 +556,8 @@ async function processCheckout() {
 
     // Refresh products so updated stocks are reflected immediately in the UI
     await loadProducts()
+    // Refresh branches to pick up updated budget values
+    await loadBranches()
   } catch (e) {
     const msg = e.response?.data?.message || e.response?.data?.error || e.message || 'Checkout failed'
     checkoutError.value = msg
@@ -644,6 +676,18 @@ textarea:focus {
 
 .branch-filter { display:flex; align-items:center; gap:12px; margin-bottom:18px; }
 .branch-filter label { font-weight:600; color:var(--text-dark); font-size:0.95rem; }
+
+.branch-budget-card h3 { margin: 0 0 6px; }
+.branch-budget-card div { background: #ffffff; border-radius:8px; padding:12px; }
+
+/* Announcements responsive card */
+.announcements-card { margin:12px 0; padding:12px; border-radius:8px; background:var(--surface-card); border:1px solid rgba(255,211,107,0.4); width:100%; box-sizing:border-box; }
+.announcements-title { margin:0 0 8px; color:var(--text-dark); font-size:0.95rem }
+.announcements-list { max-height:320px; overflow:auto; padding-right:6px }
+.announcement-item { margin-bottom:8px; padding:10px; border-radius:6px; background:var(--surface-card) }
+.announcement-title { font-weight:700; color:var(--text-dark) }
+.announcement-message { color:rgba(66,33,11,0.9); margin-top:6px }
+.announcement-meta { font-size:0.75rem; color:rgba(66,33,11,0.7); margin-top:6px }
 
 .cashier-body { display:grid; grid-template-columns: 1fr 440px; gap:24px; margin-bottom:24px; }
 

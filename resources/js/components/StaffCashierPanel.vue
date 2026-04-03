@@ -6,6 +6,7 @@
     :enableProfileUpdate="false"
     :canChangePassword="false"
     :showProfileColumn="false"
+    :showAnnouncements="false"
     @logout="confirmLogout"
   >
     <template #main>
@@ -97,6 +98,33 @@
       <button class="logout-btn" @click="confirmLogout">Logout</button>
     </template>
     <template #side>
+      <!-- Branch Budget Card -->
+      <div v-if="branchId" style="margin-bottom:12px;">
+        <h3 style="margin:0 0 8px;color:#7a2b00;font-size:0.95rem">Branch Budget</h3>
+        <div style="background:#ffffff;padding:12px;border-radius:8px;box-shadow:0 4px 12px rgba(2,6,23,0.04);">
+          <div style="font-weight:700;color:#065f46;font-size:1.05rem">₱{{ fmt(branchBudget) }}</div>
+          <div style="color:#6b7280;margin-top:6px">{{ branchName }}</div>
+        </div>
+      </div>
+
+      <!-- Announcements (moved below Branch Budget) -->
+      <div class="announcements-card" style="margin-bottom:12px;" v-if="branchId">
+        <h3 class="announcements-title">Announcements</h3>
+        <div class="announcements-list">
+          <div v-if="loadingAnnouncements" class="loading-text">Loading announcements...</div>
+          <div v-else>
+            <div v-if="announcements.length">
+              <div v-for="a in announcements" :key="a.id" class="announcement-item">
+                <div class="announcement-title">{{ a.title }}</div>
+                <div class="announcement-message">{{ a.message }}</div>
+                <div class="announcement-meta">{{ formatDate(a.created_at) }}</div>
+              </div>
+            </div>
+            <div v-else class="empty-text">No announcements</div>
+          </div>
+        </div>
+      </div>
+
       <section class="cart-section">
         <h2>Current Order</h2>
 
@@ -233,6 +261,7 @@ const pendingOrderCode = ref(null)
 const checkoutError = ref('')
 const checkoutSuccess = ref('')
 const transactions = ref([])
+const branchBudget = ref(0)
 // track refunding state per transaction
 // we will set `tx.isRefunding = true` temporarily when refund is in progress
 
@@ -364,6 +393,7 @@ async function loadStaffProfile() {
       if (branchId.value) {
         await loadProducts()
         await loadTransactions()
+        await loadBranchBudget()
       }
     }
   } catch (e) {
@@ -403,6 +433,20 @@ async function loadTransactions() {
   }
 }
 
+// Load branch budget by querying branches endpoint and picking matching id
+async function loadBranchBudget() {
+  if (!branchId.value) return
+  try {
+    const res = await axios.get('/api/superadmin/cashier/branches')
+    const list = res.data || []
+    const b = list.find(x => String(x.id) === String(branchId.value))
+    branchBudget.value = b ? Number(b.budget || 0) : 0
+  } catch (e) {
+    console.error('Failed to load branch budget', e)
+    branchBudget.value = 0
+  }
+}
+
 async function refundOrder(tx) {
   if (!(await window.swalConfirm(`Refund order ${tx.order_code}? You will be asked for a reason.`))) return
   const reason = await window.swalPrompt('Enter refund reason (required):', '', 'text')
@@ -420,6 +464,7 @@ async function refundOrder(tx) {
     })
     alert(res.data?.message || 'Order refunded')
     await loadTransactions()
+    await loadBranchBudget()
   } catch (e) {
     const msg = e.response?.data?.error || e.response?.data?.message || e.message || 'Refund failed'
     alert(msg)
@@ -564,6 +609,7 @@ async function processCheckout() {
     discountPercent.value = 0
 
     await loadTransactions()
+    await loadBranchBudget()
   } catch (e) {
     const msg = e.response?.data?.message || e.response?.data?.error || e.message || 'Checkout failed'
     checkoutError.value = msg
@@ -1049,6 +1095,49 @@ async function performLogout() {
   .cashier-body {
     grid-template-columns: 1fr;
   }
+}
+</style>
+<style scoped>
+/* Override OwnerPanelLayout announcements styles for this panel to match Cashier look */
+:deep(.announcements-panel) {
+  background: var(--surface-card);
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid rgba(255,211,107,0.4);
+  box-sizing: border-box;
+}
+:deep(.announcements-panel .panel-header h2) {
+  margin: 0 0 8px;
+  color: var(--text-dark);
+  font-size: 0.95rem;
+}
+:deep(.announcements-panel .panel-body) {
+  padding: 0;
+}
+:deep(.announcements-panel .announcement-list) {
+  max-height: 320px;
+  overflow: auto;
+  padding-right: 6px;
+  margin: 0;
+}
+:deep(.announcements-panel .announcement-item) {
+  margin-bottom: 8px;
+  padding: 10px;
+  border-radius: 6px;
+  background: var(--surface-card);
+}
+:deep(.announcements-panel .announcement-title) {
+  font-weight: 700;
+  color: var(--text-dark);
+}
+:deep(.announcements-panel .announcement-message) {
+  color: rgba(66,33,11,0.9);
+  margin-top: 6px;
+}
+:deep(.announcements-panel .announcement-meta) {
+  font-size: 0.75rem;
+  color: rgba(66,33,11,0.7);
+  margin-top: 6px;
 }
 </style>
 
