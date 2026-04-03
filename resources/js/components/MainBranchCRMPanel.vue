@@ -1,5 +1,10 @@
 <template>
   <div class="main-branch-page">
+    <button class="back-btn" aria-label="Back" @click="goBack">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M15 18l-6-6 6-6" stroke="#111827" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
     <section class="panel-layout">
       <aside class="profile-col">
         <div class="profile-card">
@@ -41,9 +46,9 @@
           <div class="comments-header">
             <h3 style="margin: 0;">All Customer Comments</h3>
             <div class="comment-filters">
-              <input 
-                v-model="searchQuery" 
-                type="text" 
+              <input
+                v-model="searchQuery"
+                type="text"
                 placeholder="Search comments..."
                 class="search-input"
               />
@@ -76,11 +81,11 @@
             <div v-if="financeLoading" class="loading-state" style="margin-top: 8px;">Loading financial reports...</div>
             <div v-else-if="financeError" class="empty-state" style="margin-top: 8px; color:#ef4444;">{{ financeError }}</div>
             <div v-else class="finance-wrapper">
-              <FinancePanelContent 
-                :reports="financeReports" 
-                :transactions="financeTransactions" 
-                :transactionsLoading="financeLoading" 
-                :chartLoading="financeLoading" 
+              <FinancePanelContent
+                :reports="financeReports"
+                :transactions="financeTransactions"
+                :transactionsLoading="financeLoading"
+                :chartLoading="financeLoading"
               />
             </div>
           </section>
@@ -106,8 +111,8 @@
                       {{ '★'.repeat(comment.rating) }}{{ '☆'.repeat(5 - comment.rating) }}
                     </span>
                   </div>
-                  <button 
-                    class="delete-btn" 
+                  <button
+                    class="delete-btn"
                     @click="deleteComment(comment.id)"
                     title="Delete this comment"
                   >🗑️</button>
@@ -136,8 +141,8 @@
 
             <!-- Pagination -->
             <div v-if="totalPages > 1" class="pagination">
-              <button 
-                :disabled="currentPage === 1" 
+              <button
+                :disabled="currentPage === 1"
                 @click="currentPage--"
                 class="pagination-btn"
               >
@@ -146,8 +151,8 @@
               <span class="pagination-info">
                 Page {{ currentPage }} of {{ totalPages }}
               </span>
-              <button 
-                :disabled="currentPage === totalPages" 
+              <button
+                :disabled="currentPage === totalPages"
                 @click="currentPage++"
                 class="pagination-btn"
               >
@@ -189,6 +194,10 @@ import axios from 'axios'
 import FinancePanelContent from './finance/FinancePanelContent.vue'
 
 const router = useRouter()
+
+function goBack() {
+  try { router.back() } catch (e) { try { router.push('/main-branch/admin') } catch (e) {} }
+}
 const profile = ref({})
 const showLogoutConfirm = ref(false)
 const isLoggingOut = ref(false)
@@ -301,11 +310,11 @@ async function loadProfile() {
 async function loadComments() {
   isLoading.value = true
   try {
-    const res = await axios.get('/api/product-comments/all', { 
+    const res = await axios.get('/api/product-comments/all', {
       params: {
         per_page: 1000 // Get all comments at once for easier filtering
       },
-      withCredentials: true 
+      withCredentials: true
     })
     if (res.data?.data) {
       comments.value = res.data.data
@@ -330,10 +339,10 @@ async function deleteComment(commentId) {
     if (!ok) return
 
     await axios.delete(`/api/product-comments/${commentId}`, { withCredentials: true })
-    
+
     // Remove comment from local state
     comments.value = comments.value.filter(c => c.id !== commentId)
-    
+
     // Show success message
     if (window.swalAlert) {
       await window.swalAlert('Comment deleted successfully', 'Success', 'success')
@@ -352,7 +361,7 @@ const filteredComments = computed(() => {
   // Filter by search query
   if (searchQuery.value.trim()) {
     const query = searchQuery.value.toLowerCase()
-    filtered = filtered.filter(c => 
+    filtered = filtered.filter(c =>
       (c.author && c.author.toLowerCase().includes(query)) ||
       (c.text && c.text.toLowerCase().includes(query)) ||
       (c.product && c.product.name && c.product.name.toLowerCase().includes(query))
@@ -414,6 +423,25 @@ onMounted(async () => {
   font-size: 15px;
 }
 
+/* Back button top-left */
+.back-btn {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  border: 1px solid #eef2f7;
+  border-radius: 8px;
+  box-shadow: 0 6px 14px rgba(16,24,40,0.06);
+  cursor: pointer;
+  z-index: 40;
+}
+.back-btn:hover { transform: translateY(-2px); }
+.back-btn svg { display:block }
+
 .panel-layout { display: grid; grid-template-columns: 300px 1fr 260px; gap: 20px; align-items: start; }
 .profile-card, .panel-block, .overview-card, .panel-header { background: #ffffff; border-radius: 12px; padding: 18px; box-shadow: 0 4px 14px rgba(16,24,40,0.04); border: 1px solid #eef2f7; }
 
@@ -437,8 +465,10 @@ onMounted(async () => {
 .panel-block li { margin: 8px 0; color: rgba(66,33,11,0.9); }
 
 .link-btn {
-  border: 0; border-radius: 10px; background: var(--color-royal-blue); color: #fff; cursor: pointer; 
-  box-shadow: 0 8px 24px rgba(224,88,24,0.08); display: block; width: 100%; text-align: left; 
+  border: 0; border-radius: 10px; background: var(--color-royal-blue); color: #fff; cursor: pointer;
+  box-shadow: 0 8px 24px rgba(224,88,24,0.08);
+  /* default: full-width blocks in side panels */
+  display: block; width: 100%; text-align: left;
   padding: 8px 12px; margin-bottom: 10px;
 }
 .link-btn:hover { filter: brightness(0.98); }
@@ -461,8 +491,8 @@ onMounted(async () => {
 .loading-state, .empty-state { text-align: center; padding: 32px 16px; color: #6b7280; }
 
 .comments-list { display: grid; gap: 14px; }
-.comment-card { 
-  background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; 
+.comment-card {
+  background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px;
   transition: all 0.24s ease;
 }
 .comment-card:hover { background: #ffffff; border-color: #d1d5db; box-shadow: 0 2px 8px rgba(16,24,40,0.06); }
@@ -474,8 +504,8 @@ onMounted(async () => {
 .comment-actions { display: flex; align-items: center; gap: 12px; }
 .comment-rating { display: flex; align-items: center; }
 .rating-stars { font-size: 14px; color: #fbbf24; }
-.delete-btn { 
-  background: none; border: none; font-size: 14px; cursor: pointer; padding: 4px 6px; 
+.delete-btn {
+  background: none; border: none; font-size: 14px; cursor: pointer; padding: 4px 6px;
   border-radius: 4px; transition: all 0.2s ease;
 }
 .delete-btn:hover { background: rgba(239, 68, 68, 0.1); transform: scale(1.1); }
@@ -517,4 +547,9 @@ onMounted(async () => {
   .search-input { width: 100%; }
   .rating-filter { width: 100%; }
 }
+
+/* Keep finance action controls inline and spaced */
+.finance-actions { display:flex; gap:12px; align-items:center }
+.finance-actions .branch-filter { min-width: 140px; height:40px; padding:8px 12px; border-radius:8px; }
+.finance-actions .link-btn { display:inline-flex; width:auto; padding:8px 14px; align-items:center; height:40px; margin-bottom:0 }
 </style>
