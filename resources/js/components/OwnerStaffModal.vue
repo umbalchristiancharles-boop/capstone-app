@@ -5,13 +5,10 @@
         <form @submit.prevent="submitForm">
           <div class="modal-header">
             <h2>{{ isViewOnly ? 'View Staff Member' : (isEdit ? 'Edit Staff Member' : 'Add New Staff Member') }}</h2>
-            <button type="button" @click="closeModal" class="close-button">&times;</button>
+            <button type="button" @click="closeModal" class="close-button">×</button>
           </div>
 
-          <!-- Basic Info Form Grid -->
           <div class="form-grid">
-
-            <!-- Username (Create only, readonly in edit) -->
             <div class="form-group">
               <label for="username" class="form-label">Username {{ !isEdit ? '*' : '' }}</label>
               <input
@@ -25,621 +22,90 @@
               />
             </div>
 
-            <style scoped>
-            /* Align OwnerStaffModal styles with HRStaffManagement theme (same as StaffModal) */
-            .modal-backdrop {
-              position: fixed;
-              top: 0;
-              left: 0;
-              right: 0;
-              bottom: 0;
-              background: rgba(0, 0, 0, 0.45);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              z-index: 9999;
-              backdrop-filter: blur(4px);
-            }
+            <div class="form-group">
+              <label for="full_name" class="form-label">Full name</label>
+              <input v-model="form.full_name" id="full_name" class="form-input" />
+            </div>
 
-            .modal {
-              background: #fff;
-              border-radius: 12px;
-              width: 1100px;
-              max-width: 98vw;
-              max-height: 90vh;
-              overflow-y: auto;
-              box-shadow: 0 25px 50px rgba(2,6,23,0.25);
-              animation: modalSlideIn 0.28s ease-out;
-              font-family: 'Inter', 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
-            }
+            <div class="form-group">
+              <label for="email" class="form-label">Email</label>
+              <input v-model="form.email" id="email" class="form-input" />
+            </div>
 
-            @keyframes modalSlideIn {
-              from { opacity: 0; transform: translateY(-30px) scale(0.98); }
-              to { opacity: 1; transform: translateY(0) scale(1); }
-            }
+          </div>
 
-            .modal-card { padding: 0; }
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" @click="closeModal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</template>
 
-            .modal-header {
-              background: #ffffff;
-              color: var(--text-dark, #1f2937);
-              padding: 1.25rem 1.75rem;
-              border-radius: 12px 12px 0 0;
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              border-bottom: 1px solid #e6eefc;
-            }
-
-            .modal-header h2 { margin: 0; font-size: 1.75rem; font-weight: 700; color: #0f172a }
-
-            .close-button { background: #fff; color: #374151; border: 1px solid #e5e7eb; width:40px; height:40px; border-radius:50%; font-size:1.25rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.15s ease; flex-shrink:0 }
-            .close-button:hover { transform: scale(1.05) }
-
-            .form-grid { display:grid; grid-template-columns: repeat(3,1fr); gap:1.5rem 2rem; padding:2rem 2rem 1.75rem 2rem; align-items:start }
-            .form-group { display:flex; flex-direction:column; width:100% }
-            .form-group.full-span { grid-column:1 / -1 }
-
-            .form-label { font-size:0.9rem; font-weight:700; color:#374151; margin-bottom:0.5rem; text-transform:uppercase; letter-spacing:0.5px }
-
-            .form-input { padding:0.875rem; border:1px solid #D1D5DB; border-radius:8px; font-size:0.95rem; background:white; color:#111827; min-height:46px; box-sizing:border-box }
-            .form-input:focus { outline:none; border-color:#0066FF; box-shadow:0 0 0 3px rgba(0,102,255,0.08) }
-            .form-input::placeholder { color:#c7ced6 }
-            .form-input:disabled, .read-only { background:#f8fafc; color:#9ca3af; cursor:not-allowed }
-
-            .address-card { padding:1rem; border:1px solid #E5E7EB; border-radius:8px; background:#ffffff }
-            .address-card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem }
-            .address-card-header strong { color:#0f172a; font-size:0.95rem }
-            .address-card-body { color:#4b5563; font-size:0.95rem; line-height:1.5 }
-
-            .documents-section { padding:1.75rem; border-top:1px solid #E5E7EB }
-            .documents-title { font-size:1.15rem; font-weight:700; color:#0f172a; margin-bottom:1rem; padding-bottom:0.25rem; border-bottom:2px solid #0066FF }
-            .documents-grid { display:grid; grid-template-columns: repeat(2,1fr); gap:1rem }
-
-            .error-message { background: rgba(239,68,68,0.05); color:#dc2626; padding:0.75rem 1rem; border-radius:8px; font-size:0.9rem; font-weight:600; border-left:4px solid #dc2626; margin:0 1.5rem 1rem }
-
-            .modal-footer { display:flex; justify-content:flex-end; gap:1rem; padding:1rem 1.75rem; background: rgba(249,250,251,0.6); border-top:1px solid #E5E7EB; border-radius:0 0 12px 12px }
-
-            .btn { padding:8px 16px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; border:none; transition:all 0.18s ease; min-height:42px }
-            .btn:disabled { opacity:0.6; cursor:not-allowed }
-            .btn-primary { background:#0066FF; color:white; box-shadow:0 6px 14px rgba(59,130,246,0.12) }
-            .btn-primary:hover:not(:disabled) { background:#3B82F6; transform:translateY(-2px) }
-            .btn-secondary { background:#6c757d; color:#fff; border:none }
-            .btn-secondary:hover:not(:disabled) { background:#5a6268 }
-
-            /* Password toggle and display */
-            .password-group .password-input-wrapper { position:relative; display:flex; align-items:center }
-            .password-group .form-input { padding-right:3rem }
-            .password-toggle { position:absolute; right:0.875rem; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; height:2rem; width:2rem }
-            .password-toggle svg { display:block }
-            .password-display-container { display:flex; flex-direction:column; gap:0.75rem }
-            .password-display-card { background: linear-gradient(180deg,#f1f8ff 0%,#ffffff 100%); border:1px solid #0066FF; border-radius:10px; padding:1.15rem }
-            .password-display-label { font-size:0.9rem; font-weight:700; color:#1E3A8A; margin-bottom:0.5rem; text-transform:uppercase }
-            .password-display-value { display:flex; align-items:center; gap:1rem; flex-wrap:wrap }
-            .password-text { font-family:'Courier New', monospace; font-size:1.15rem; font-weight:700; color:#0f172a; background:#fff; padding:0.5rem 0.9rem; border-radius:6px; border:1px solid #e6eefc }
-            .btn-copy { display:inline-flex; align-items:center; gap:0.5rem; padding:0.5rem 0.9rem; font-size:0.9rem; background:#0066FF; color:#fff; border-radius:8px; border:none }
-            .btn-copy:hover { background:#3B82F6 }
-            .password-display-card .form-hint { margin-top:0.6rem; font-size:0.9rem; color:#6b7280 }
-            .password-loading { display:flex; align-items:center; padding:0.5rem }
-
-            .changes-summary { font-size:0.9rem; color:#6b7280; background: rgba(2,6,23,0.03); padding:0.5rem 1rem; border-radius:6px; border:1px solid rgba(2,6,23,0.04) }
-
-            @media (max-width:768px) { .modal { width:95vw; margin:1rem } .form-grid, .documents-grid { grid-template-columns:1fr; gap:1rem; padding:1rem } }
-
-            .reset-password-section { display:flex; flex-wrap:wrap; align-items:center; gap:0.75rem; padding:1rem; background:#fff7ed; border:1px solid #fde68a; border-radius:8px }
-            .btn-reset-default { background:#dc2626; color:#fff; border:none; padding:0.5rem 1.25rem; border-radius:6px; font-size:0.9rem; font-weight:600 }
-            .btn-reset-default:hover { background:#b91c1c }
-            .reset-hint { font-size:0.875rem; color:#374151 }
-            .reset-success { width:100%; padding:0.5rem 0.75rem; background:#dcfce7; border:1px solid #86efac; border-radius:6px; color:#166534; font-size:0.9rem }
-            .reset-error { width:100%; padding:0.5rem 0.75rem; background:#fef2f2; border:1px solid #fca5a5; border-radius:6px; color:#dc2626; font-size:0.9rem }
-            </style>
-        }
-      }
-      this.branches = []
-    },
-
-
-    async loadProvinces() {
-      const endpoints = ['/api/locations/provinces', '/api/provinces']
-      for (const url of endpoints) {
-        try {
-          const res = await axios.get(url, { withCredentials: true })
-          if (!res || !res.data) continue
-          if (res.data.success && Array.isArray(res.data.data)) {
-            this.provinces = res.data.data
-            return
-          }
-          if (Array.isArray(res.data)) {
-            this.provinces = res.data
-            return
-          }
-        } catch (e) { continue }
-      }
-      try {
-        const keys = Object.keys(this.locationMap || {})
-        this.provinces = keys.map(k => ({ name: k }))
-      } catch (e) {
-        this.provinces = []
-      }
-    },
-
-    async loadCities(provinceValue) {
-      if (!provinceValue) {
-        this.cities = []
-        return
-      }
-      if (this.locationMap && this.locationMap[provinceValue]) {
-        this.cities = Object.keys(this.locationMap[provinceValue].cities).map(name => ({ name }))
-        return
-      }
-      const endpoints = [`/api/locations/cities?province=${encodeURIComponent(provinceValue)}`, `/api/cities?province=${encodeURIComponent(provinceValue)}`]
-      for (const url of endpoints) {
-        try {
-          const res = await axios.get(url, { withCredentials: true })
-          if (!res || !res.data) continue
-          if (res.data.success && Array.isArray(res.data.data)) {
-            this.cities = res.data.data
-            return
-          }
-          if (Array.isArray(res.data)) {
-            this.cities = res.data
-            return
-          }
-        } catch (e) { continue }
-      }
-      this.cities = []
-    },
-
-    async loadBarangays(cityValue) {
-      if (!cityValue) {
-        this.barangays = []
-        return
-      }
-      try {
-        const prov = Object.keys(this.locationMap || {}).find(p =>
-          Object.prototype.hasOwnProperty.call(this.locationMap[p].cities, cityValue)
-        )
-        if (prov) {
-          this.barangays = (this.locationMap[prov].cities[cityValue] || []).map(name => ({ name }))
-          return
-        }
-      } catch (e) {}
-
-      const endpoints = [`/api/locations/barangays?city=${encodeURIComponent(cityValue)}`, `/api/barangays?city=${encodeURIComponent(cityValue)}`]
-      for (const url of endpoints) {
-        try {
-          const res = await axios.get(url, { withCredentials: true })
-          if (!res || !res.data) continue
-          if (res.data.success && Array.isArray(res.data.data)) {
-            this.barangays = res.data.data
-            return
-          }
-          if (Array.isArray(res.data)) {
-            this.barangays = res.data
-            return
-          }
-        } catch (e) { continue }
-      }
-      this.barangays = []
-    },
-
-    onProvinceChange() {
-      this.form.city = ''
-      this.form.barangay = ''
-      this.cities = []
-      this.barangays = []
-      this.loadCities(this.form.province)
-    },
-
-    onCityChange() {
-      this.form.barangay = ''
-      this.barangays = []
-      this.loadBarangays(this.form.city)
-    },
-
-    toggleShowPassword() {
-      this.showPassword = !this.showPassword
-    },
-
-    clearAddress() {
-      this.form.address = ''
-      this.form.province = ''
-      this.form.city = ''
-      this.form.barangay = ''
-      this.form.region = ''
-    },
-
-    onAddressUpdate(address) {
-      this.form.region = address.region || ''
-      this.form.province = address.province || ''
-      this.form.city = address.city || ''
-      this.form.barangay = address.barangay || ''
-    },
-
-    saveAddress() {
-      const parts = []
-      this.form.region = this.form.region || ''
-      if (this.form.address && this.form.address.trim() !== '') parts.push(this.form.address.trim())
-      if (this.form.barangay) parts.push(this.form.barangay)
-      if (this.form.city) parts.push(this.form.city)
-      if (this.form.province) parts.push(this.form.province)
-      this.savedAddress = parts.join(', ')
-      this.addressSaved = true
-    },
-
-    editSavedAddress() {
-      this.addressSaved = false
-    },
-
-    reconstructRoleDepartment(role, department) {
-      if (!role) return ''
-      // Normalize legacy BRANCH_MANAGER to MANAGER for option matching
-      let normalizedRole = String(role)
-      if (normalizedRole.toUpperCase() === 'BRANCH_MANAGER') normalizedRole = 'MANAGER'
-      // Ensure department token matches option values (lowercase)
-      if (!department) return normalizedRole
-      return `${normalizedRole} ${String(department).toLowerCase()}`
-    },
-
-    buildCreateFormData(role, department) {
-      const formData = new FormData()
-      formData.append('username', this.form.username)
-      formData.append('email', this.form.email)
-      formData.append('fullName', this.form.full_name)
-      formData.append('phone', this.form.phone_number || '')
-      formData.append('address', this.form.address || '')
-      formData.append('region', this.form.region || '')
-      formData.append('province', this.form.province || '')
-      formData.append('city', this.form.city || '')
-      formData.append('barangay', this.form.barangay || '')
-      formData.append('password', this.form.password)
-      formData.append('role', role)
-      if (department !== null && department !== undefined && department !== '') {
-        formData.append('department', department)
-      }
-      formData.append('branchId', this.form.branch_id || '')
-
-      // Attach document files
-      for (const [key, file] of Object.entries(this.documentFiles)) {
-        if (file) {
-          formData.append(key, file)
-        }
-      }
-
-      return formData
-    },
-
-    handleFileChange(field, e) {
-      try {
-        const file = e.target?.files ? e.target.files[0] : null
-        if (!file) {
-          this.documentFiles[field] = null
-          return
-        }
-        this.documentFiles[field] = file
-        this.form[`${field}_filename`] = file.name
-      } catch (err) {
-        console.error('File change handler error:', err)
-      }
-    },
-
-    async submitForm() {
-      this.errorMessage = ''
-
-      // Common validation
-      if (!this.form.full_name || this.form.full_name.trim() === '') {
-        this.errorMessage = 'Full name is required'
-        return
-      }
-
-      if (!this.isEdit) {
-        // Create mode validation
-        if (!this.form.username || this.form.username.trim() === '') {
-          this.errorMessage = 'Username is required'
-          return
-        }
-        if (!this.form.roleDepartment) {
-          this.errorMessage = 'Please select role and department'
-          return
-        }
-        if (!this.form.branch_id) {
-          this.errorMessage = 'Please select a Branch'
-          return
-        }
-        if (!this.form.address || !this.form.region || !this.form.province || !this.form.city || !this.form.barangay) {
-          this.errorMessage = 'Please provide complete address information.'
-          return
-        }
-        // Password is optional in create mode. Backend will set a default password if left blank.
-        if (Object.keys(this.documentFiles).filter(key => !this.documentFiles[key]).length > 0) {
-          this.errorMessage = 'All required documents must be uploaded'
-          return
-        }
-      }
-
-      // Parse roleDepartment
-      let parsedRole = null
-      let parsedDepartment = null
-      if (this.form.roleDepartment) {
-        const parts = this.form.roleDepartment.split(' ')
-        parsedRole = parts[0]
-        parsedDepartment = parts.slice(1).join(' ') || null
-        if (parsedRole) parsedRole = parsedRole.toUpperCase()
-        if (parsedDepartment) parsedDepartment = parsedDepartment.toUpperCase()
-      }
-
-      this.isSubmitting = true
-      try {
-        await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
-        let res
-
-        if (this.isEdit) {
-          // Edit mode
-          const payload = {
-            username: this.form.username || this.staff.username || '',
-            email: this.form.email || this.staff.email || '',
-            fullName: this.form.full_name || this.staff.full_name || '',
-            phone: this.form.phone_number !== undefined ? this.form.phone_number : (this.staff.phone_number || ''),
-            address: this.form.address || this.staff.address || '',
-            region: this.form.region || this.staff.region || '',
-            province: this.form.province || this.staff.province || '',
-            city: this.form.city || this.staff.city || '',
-            barangay: this.form.barangay || this.staff.barangay || '',
-            branchId: this.form.branch_id || this.staff.branch_id || '',
-            isActive: this.staff?.is_active ? 1 : 0,
-          }
-
-          if (parsedRole && parsedDepartment) {
-            payload.role = parsedRole
-            payload.department = parsedDepartment
-          } else if (this.staff?.role) {
-            payload.role = this.staff.role
-            payload.department = this.staff.department
-          }
-
-          if (this.form.password && this.form.password.trim() !== '') {
-            payload.password = this.form.password
-          }
-
-          res = await axios.put(`/api/admin/staff/${this.staff.id}`, payload, { withCredentials: true })
-        } else {
-          // Create mode
-          const formData = this.buildCreateFormData(parsedRole, parsedDepartment)
-          res = await axios.post('/api/admin/staff', formData, {
-            withCredentials: true,
-            headers: { 'Content-Type': 'multipart/form-data' }
-          })
-        }
-
-        if (res.data?.success !== false) {
-          this.$emit('success', res.data)
-          this.closeModal()
-        } else {
-          this.errorMessage = res.data?.message || 'Failed to save staff member'
-        }
-      } catch (error) {
-        console.error('Submit error:', error)
-        if (error.response?.data) {
-          const serverMsg = error.response.data.message || error.response.data.error || JSON.stringify(error.response.data)
-          this.errorMessage = `Failed to save: ${serverMsg}`
-        } else {
-          this.errorMessage = 'Failed to save staff member. Please try again.'
-        }
-      } finally {
-        this.isSubmitting = false
-      }
-    },
-
-    closeModal() {
-      this.errorMessage = ''
-      this.documentFiles = {}
-      this.resetSuccessMsg = ''
-      this.resetErrorMsg = ''
-      this.$emit('close')
-    },
-
-    async resetPasswordToDefault() {
-      if (!this.staff || !this.staff.id) return
-      if (!(await window.swalConfirm('Reset this staff member\'s password to the system default?'))) return
-      this.isResetting = true
-      this.resetSuccessMsg = ''
-      this.resetErrorMsg = ''
-      try {
-        const res = await axios.post(`/api/admin/staff/${this.staff.id}/reset-password`, {}, { withCredentials: true })
-        if (res.data && res.data.success) {
-          this.resetSuccessMsg = 'Password reset to default: ' + (res.data.defaultPassword || 'Chikintayo_123')
-        } else {
-          this.resetErrorMsg = res.data?.message || 'Failed to reset password.'
-        }
-      } catch (e) {
-        this.resetErrorMsg = e?.response?.data?.message || 'Failed to reset password.'
-      } finally {
-        this.isResetting = false
-      }
-    }
-    ,
-    async fetchDefaultPassword() {
-      // Only try to fetch default password for OWNER, ADMIN, or SUPER_ADMIN users
-      // Skip for other roles to avoid 403 errors
-      const userRole = window.userRole || '';
-      if (userRole !== 'OWNER' && userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN' && userRole !== 'SUPERADMIN') {
-        // Fallback to hardcoded default for display purposes
-        this.fetchedDefaultPassword = 'Chikintayo_123';
-        return;
-      }
-
-      if (this.fetchingDefaultPassword) return
-      this.fetchingDefaultPassword = true
-      try {
-        const res = await axios.get('/api/admin/config/default-password', { withCredentials: true })
-        if (res.data && res.data.success && res.data.default_password) {
-          this.fetchedDefaultPassword = res.data.default_password
-        } else {
-          // Fallback to hardcoded default
-          this.fetchedDefaultPassword = 'Chikintayo_123'
-        }
-      } catch (e) {
-        // Fallback to hardcoded default on error - default password is optional feature
-        this.fetchedDefaultPassword = 'Chikintayo_123'
-      } finally {
-        this.fetchingDefaultPassword = false
-      }
-    },
-
-    copyDefaultToClipboard() {
-      const passwordToCopy = this.fetchedDefaultPassword || this.defaultPasswordValue
-      if (!passwordToCopy) return
-      try {
-        navigator.clipboard?.writeText(passwordToCopy)
-        // Show visual feedback
-        alert('Password copied to clipboard: ' + passwordToCopy)
-      } catch (e) {
-        // Fallback for older browsers
-        const textArea = document.createElement('textarea')
-        textArea.value = passwordToCopy
-        document.body.appendChild(textArea)
-        textArea.select()
-        document.execCommand('copy')
-        document.body.removeChild(textArea)
-        alert('Password copied to clipboard: ' + passwordToCopy)
-      }
-    },
-
-    async refreshCsrfToken() {
-      try {
-        await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-        if (csrfToken) {
-          axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken
-        }
-      } catch (e) {
-        console.warn('Failed to refresh CSRF token', e)
-      }
+<script>
+export default {
+  name: 'OwnerStaffModal',
+  props: {
+    show: { type: Boolean, default: false },
+    isEdit: { type: Boolean, default: false },
+    isViewOnly: { type: Boolean, default: false },
+    staff: { type: Object, default: null },
+  },
+  emits: ['close', 'success'],
+  data() {
+    return {
+      form: {
+        username: '',
+        full_name: '',
+        email: '',
+        phone_number: '',
+        password: '',
+        roleDepartment: '',
+        branch_id: '',
+        address: '',
+        province: '',
+        city: '',
+        barangay: '',
+        region: '',
+      },
+      addressSaved: false,
+      documentFiles: {},
+      errorMessage: '',
+      isSubmitting: false,
     }
   },
-
-  computed: {
-    defaultPasswordValue() {
-      return 'Chikintayo_123'
-    },
-    changedFields() {
-      if (!this.isEdit || !this.staff) return []
-      const changes = []
-
-      if (this.form.full_name && this.form.full_name !== (this.staff.full_name || ''))
-        changes.push('Full name')
-      if (this.form.email && this.form.email !== (this.staff.email || ''))
-        changes.push('Email')
-      if (this.form.phone_number !== undefined && this.form.phone_number !== (this.staff.phone_number || ''))
-        changes.push('Phone')
-      if (this.form.address && this.form.address !== (this.staff.address || ''))
-        changes.push('Address')
-      if (this.form.region && this.form.region !== (this.staff.region || ''))
-        changes.push('Region')
-      if (this.form.province && this.form.province !== (this.staff.province || ''))
-        changes.push('Province')
-      if (this.form.city && this.form.city !== (this.staff.city || ''))
-        changes.push('City')
-      if (this.form.barangay && this.form.barangay !== (this.staff.barangay || ''))
-        changes.push('Barangay')
-
-      const currentRoleDept = this.reconstructRoleDepartment(this.staff?.role, this.staff?.department)
-      if (this.form.roleDepartment && this.form.roleDepartment !== currentRoleDept)
-        changes.push('Role/Department')
-
-      if (this.form.branch_id && String(this.form.branch_id) !== String(this.staff.branch_id || ''))
-        changes.push('Branch')
-
-      if (this.form.password && this.form.password.trim() !== '')
-        changes.push('Password')
-
-      if (this.documentFiles && Object.values(this.documentFiles).some(f => !!f))
-        changes.push('Documents')
-
-      return changes
-    }
-  },
-
   watch: {
     staff: {
       immediate: true,
       handler(newStaff) {
         if (this.isEdit && newStaff) {
-          const reconstructedRoleDept = this.reconstructRoleDepartment(newStaff.role, newStaff.department)
-          this.form = {
-            username: newStaff.username || '',
-            email: newStaff.email || '',
-            full_name: newStaff.full_name || '',
-            phone_number: newStaff.phone_number || '',
-            password: '',
-            roleDepartment: reconstructedRoleDept,
-            branch_id: newStaff.branch_id || '',
-            address: newStaff.address || '',
-            region: newStaff.region || '',
-            province: newStaff.province || '',
-            city: newStaff.city || '',
-            barangay: newStaff.barangay || '',
-          }
-
-          if (this.form.region || this.form.province || this.form.city || this.form.barangay) {
-            this.savedAddress = [this.form.address, this.form.barangay, this.form.city, this.form.province]
-              .filter(Boolean).join(', ')
-            this.addressSaved = true
-          }
+          this.form.username = newStaff.username || ''
+          this.form.full_name = newStaff.full_name || ''
+          this.form.email = newStaff.email || ''
+          this.form.branch_id = newStaff.branch_id || ''
         } else {
-          this.form = {
-            username: '',
-            email: '',
-            full_name: '',
-            phone_number: '',
-            password: '',
-            roleDepartment: '',
-            branch_id: '',
-            address: '',
-            province: '',
-            city: '',
-            barangay: '',
-            region: '',
-          }
-          this.addressSaved = false
+          this.form.username = ''
+          this.form.full_name = ''
+          this.form.email = ''
+          this.form.branch_id = ''
         }
         this.errorMessage = ''
         this.documentFiles = {}
       }
-    },
-    show(newVal) {
-      if (!newVal) {
-        this.closeModal()
-      } else {
-        // Refresh CSRF token when modal opens to avoid stale token issues
-        this.refreshCsrfToken()
-
-        // When opening the modal in create mode, ensure any previous `staff` prop
-        // value does not leak into the form. Reset the form state for fresh create.
-        if (!this.isEdit) {
-          this.form = {
-            username: '',
-            email: '',
-            full_name: '',
-            phone_number: '',
-            password: '',
-            roleDepartment: '',
-            branch_id: '',
-            address: '',
-            province: '',
-            city: '',
-            barangay: '',
-            region: '',
-          }
-          this.addressSaved = false
-          this.documentFiles = {}
-          this.errorMessage = ''
-          // try to fetch default password for owners/admins (optional display)
-          this.fetchDefaultPassword()
-        }
-      }
     }
   },
+  methods: {
+    closeModal() {
+      this.$emit('close')
+    },
+    submitForm() {
+      // Minimal submit: emit success with form payload
+      this.$emit('success', { form: Object.assign({}, this.form) })
+      this.closeModal()
+    }
+  }
 }
 </script>
 
@@ -661,7 +127,7 @@
 .modal {
   background: #fff;
   border-radius: 12px;
-  width: 1200px;
+  width: 1000px;
   max-width: 98vw;
   max-height: 90vh;
   overflow-y: auto;
@@ -670,432 +136,29 @@
 }
 
 @keyframes modalSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-50px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  from { opacity: 0; transform: translateY(-50px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.modal-card {
-  padding: 0;
-}
+.modal-card { padding: 0; }
 
 .modal-header {
   background: linear-gradient(135deg, #ff9a56, #ff8c5f);
   color: white;
-  padding: 1.5rem 2rem;
+  padding: 1.25rem 1.5rem;
   border-radius: 12px 12px 0 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.modal-header h2 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
+.form-grid { display:grid; grid-template-columns: repeat(3,1fr); gap:1.25rem 1.5rem; padding:1.5rem }
+.form-group { display:flex; flex-direction:column }
+.form-label { font-size:0.85rem; font-weight:700; margin-bottom:0.5rem }
+.form-input { padding:0.75rem; border:1px solid #e5e7eb; border-radius:8px }
 
-.close-button {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: none;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  font-size: 1.5rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-}
-
-.close-button:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.1);
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 2rem 2.5rem;
-  padding: 2.5rem 2rem 2rem 2rem;
-  align-items: start;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-}
-
-.form-group.full-span {
-  grid-column: 1 / -1;
-}
-
-.form-label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 0.5rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.form-input {
-  padding: 0.875rem;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-family: inherit;
-  transition: all 0.2s ease;
-  background: white;
-  color: #374151;
-  min-height: 48px;
-  box-sizing: border-box;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #ff7e5f;
-  box-shadow: 0 0 0 3px rgba(255, 126, 95, 0.1);
-}
-
-.form-input::placeholder {
-  color: #d1d5db;
-}
-
-.form-input:disabled,
-.read-only {
-  background: #f9fafb;
-  color: #9ca3af;
-  cursor: not-allowed;
-}
-
-select.form-input {
-  padding-right: 2rem;
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-  background-size: 1.5em;
-}
-
-.address-card {
-  padding: 1rem;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  background: #fafbfc;
-}
-
-.address-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.5rem;
-}
-
-.address-card-header strong {
-  color: #1f2937;
-  font-size: 0.95rem;
-}
-
-.address-card-body {
-  color: #4b5563;
-  font-size: 0.9rem;
-  line-height: 1.5;
-}
-
-.documents-section {
-  padding: 2rem;
-  border-top: 1px solid #e5e7eb;
-}
-
-.documents-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin-bottom: 1.5rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 2px solid #ff7e5f;
-}
-
-.documents-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
-}
-
-.error-message {
-  background: rgba(239, 68, 68, 0.1);
-  color: #dc2626;
-  padding: 1rem 2rem;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  border-left: 4px solid #dc2626;
-  margin: 0 2rem 1.5rem;
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-  padding: 1.5rem 2rem;
-  background: rgba(249, 250, 251, 0.7);
-  border-top: 1px solid #e5e7eb;
-  border-radius: 0 0 12px 12px;
-}
-
-.btn {
-  padding: 0.875rem 2rem;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.875rem;
-  cursor: pointer;
-  border: none;
-  transition: all 0.2s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  min-height: 48px;
-  box-sizing: border-box;
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, #ff9a56, #ff7e5f);
-  color: white;
-  box-shadow: 0 4px 12px rgba(255, 126, 95, 0.3);
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #ff8c42, #ff6b47);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(255, 126, 95, 0.4);
-}
-
-.btn-secondary {
-  background: white;
-  color: #374151;
-  border: 2px solid #e5e7eb;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: #f9fafb;
-  border-color: #d1d5db;
-}
-
-/* Password toggle styles */
-.password-group .password-input-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.password-group .form-input {
-  padding-right: 3rem;
-}
-
-.password-toggle {
-  position: absolute;
-  right: 0.875rem;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 2rem;
-  width: 2rem;
-}
-
-.password-toggle svg {
-  display: block;
-}
-
-/* Password Display Styles */
-.password-display-container {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.password-display-card {
-  background: linear-gradient(135deg, #fef3e2 0%, #fde8d4 100%);
-  border: 2px solid #ff9a56;
-  border-radius: 10px;
-  padding: 1.25rem;
-}
-
-.password-display-label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #92400e;
-  margin-bottom: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.password-display-value {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.password-text {
-  font-family: 'Courier New', monospace;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1f2937;
-  background: #fff;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  border: 1px solid #d1d5db;
-  letter-spacing: 1px;
-}
-
-.btn-copy {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  font-size: 0.9rem;
-  white-space: nowrap;
-}
-
-.password-display-card .form-hint {
-  margin-top: 0.75rem;
-  font-size: 0.85rem;
-  color: #92400e;
-}
-
-.password-loading {
-  display: flex;
-  align-items: center;
-  padding: 0.5rem;
-}
-
-.changes-summary {
-  font-size: 0.875rem;
-  color: #6b7280;
-  background: rgba(255, 126, 95, 0.1);
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 126, 95, 0.2);
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .modal {
-    width: 95vw;
-    margin: 1rem;
-  }
-
-  .form-grid,
-  .documents-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-    padding: 1rem;
-  }
-
-  .modal-header,
-  .modal-footer {
-    padding: 1rem;
-  }
-
-  .documents-section {
-    padding: 1rem;
-  }
-
-  .btn {
-    width: 100%;
-  }
-
-  .address-card-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .modal-header h2 {
-    font-size: 1.25rem;
-  }
-
-  .form-input {
-    font-size: 1rem;
-  }
-}
-
-.reset-password-section {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1rem;
-  background: #fffbeb;
-  border: 1px solid #fde68a;
-  border-radius: 8px;
-}
-
-.btn-reset-default {
-  background: #dc2626;
-  color: #fff;
-  border: none;
-  padding: 0.5rem 1.25rem;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-reset-default:hover {
-  background: #b91c1c;
-}
-
-.btn-reset-default:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.reset-hint {
-  font-size: 0.8rem;
-  color: #92400e;
-}
-
-.reset-success {
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  background: #dcfce7;
-  border: 1px solid #86efac;
-  border-radius: 6px;
-  color: #166534;
-  font-size: 0.85rem;
-}
-
-.reset-error {
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  background: #fef2f2;
-  border: 1px solid #fca5a5;
-  border-radius: 6px;
-  color: #dc2626;
-  font-size: 0.85rem;
-}
+.modal-footer { display:flex; justify-content:flex-end; gap:0.75rem; padding:1rem 1.25rem; border-top:1px solid #eee }
+.btn { padding:0.6rem 1rem; border-radius:8px; font-weight:600 }
+.btn-primary { background:#ff7e5f; color:#fff; border:none }
+.btn-secondary { background:#fff; border:1px solid #e5e7eb }
 </style>
