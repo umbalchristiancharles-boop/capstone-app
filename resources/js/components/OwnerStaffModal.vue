@@ -24,19 +24,24 @@
 
             <div class="form-group">
               <label for="full_name" class="form-label">Full name</label>
-              <input v-model="form.full_name" id="full_name" class="form-input" />
+              <input v-model="form.full_name" id="full_name" class="form-input" :disabled="isViewOnly" />
             </div>
 
             <div class="form-group">
               <label for="email" class="form-label">Email</label>
-              <input v-model="form.email" id="email" class="form-input" />
+              <input v-model="form.email" id="email" class="form-input" :disabled="isViewOnly" />
             </div>
 
           </div>
 
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" @click="closeModal">Cancel</button>
-            <button type="submit" class="btn btn-primary">Save</button>
+            <template v-if="isViewOnly">
+              <button type="button" class="btn btn-primary" @click="closeModal">Close</button>
+            </template>
+            <template v-else>
+              <button type="button" class="btn btn-secondary" @click="closeModal">Cancel</button>
+              <button type="submit" class="btn btn-primary">Save</button>
+            </template>
           </div>
         </form>
       </div>
@@ -101,6 +106,12 @@ export default {
       this.$emit('close')
     },
     submitForm() {
+      // If view-only, do not submit; just close
+      if (this.isViewOnly) {
+        this.closeModal()
+        return
+      }
+
       // Minimal submit: emit success with form payload
       this.$emit('success', { form: Object.assign({}, this.form) })
       this.closeModal()

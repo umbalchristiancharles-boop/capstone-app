@@ -101,12 +101,13 @@
                 <td>{{ formatDate(member.created_at) }}</td>
                 <td class="actions">
                   <button
-                    @click="editStaff(member)"
-                    class="btn-sm btn-info"
-                    title="Edit"
-                  >
-                    Edit
-                  </button>
+                      v-if="canEdit"
+                      @click="editStaff(member)"
+                      class="btn-sm btn-info"
+                      title="Edit"
+                    >
+                      Edit
+                    </button>
                   <button
                     @click="toggleStatus(member)"
                     :class="['btn-sm', member.is_active ? 'btn-danger' : 'btn-success']"
@@ -132,6 +133,7 @@
       :show="showAddStaffModal"
       :staff="isEditingStaff ? staff.find(s => s.id === editingStaffId) : null"
       :isEdit="isEditingStaff"
+      :isViewOnly="isViewOnly"
       @close="showAddStaffModal = false"
       @success="onStaffModalSuccess"
     />
@@ -200,6 +202,15 @@ const searchQuery = ref('')
 const currentUserRole = ref(null)
 const currentUserId = ref(null)
 const isBranchManager = computed(() => (currentUserRole.value || '').toUpperCase() === 'BRANCH_MANAGER')
+// Whether current user can edit staff in this view. Deny by default until role is known.
+const canEdit = computed(() => {
+  const r = (currentUserRole.value || '').toString().toUpperCase()
+  if (!r) return false
+  return r !== 'OWNER'
+})
+
+// When opening the modal, indicate view-only mode for users who cannot edit
+const isViewOnly = ref(false)
 
 // Staff Data
 const staff = ref([])
@@ -442,8 +453,18 @@ function resetForm() {
 }
 
 function editStaff(member) {
+  // If user cannot edit, open modal in view-only mode
+  if (!canEdit.value) {
+    isEditingStaff.value = true
+    editingStaffId.value = member.id
+    isViewOnly.value = true
+    showAddStaffModal.value = true
+    return
+  }
+
   isEditingStaff.value = true
   editingStaffId.value = member.id
+  isViewOnly.value = false
   newStaff.value = {
     username: member.username,
     email: member.email,

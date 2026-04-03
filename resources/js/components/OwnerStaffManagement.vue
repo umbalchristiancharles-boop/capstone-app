@@ -100,14 +100,6 @@
                 </td>
                 <td>{{ formatDate(member.created_at) }}</td>
                 <td class="actions">
-                  <button
-                    @click="viewStaff(member)"
-                    class="btn-sm btn-info"
-                    title="View"
-                  >
-                    View
-                  </button>
-
                 </td>
               </tr>
             </tbody>
@@ -164,6 +156,16 @@ const searchQuery = ref('')
 
 // Current Owner Data
 const currentOwnerId = ref(null)
+// Current logged-in user's role (e.g. OWNER, BRANCH_MANAGER, STAFF)
+const currentUserRole = ref('')
+
+// Whether the current logged-in user can perform edits in this view
+const canEdit = computed(() => {
+  const r = (currentUserRole.value || '').toString().toUpperCase()
+  // Deny edits by default until we know the user's role.
+  if (!r) return false
+  return r !== 'OWNER'
+})
 
 // Staff Data
 const staff = ref([])
@@ -348,6 +350,8 @@ async function loadCurrentOwner() {
     if (res.data && res.data.ok && res.data.user) {
       // Get the owner ID - could be accountId or id
       currentOwnerId.value = res.data.user.accountId || res.data.user.account_id || res.data.user.id
+      // Set current user's role when available so we can guard edit actions
+      currentUserRole.value = (res.data.user.role || res.data.user.account_role || '').toString()
     }
   } catch (error) {
     console.error('Error loading owner profile:', error)
@@ -428,6 +432,11 @@ function resetForm() {
 }
 
 function editStaff(member) {
+  if (!canEdit.value) {
+    alert('You do not have permission to edit staff from this account.')
+    return
+  }
+
   isEditingStaff.value = true
   isViewOnly.value = false
   editingStaffId.value = member.id
@@ -458,11 +467,20 @@ function viewStaff(member) {
 }
 
 function openAddStaffModal() {
+  if (!canEdit.value) {
+    alert('You do not have permission to add staff from this account.')
+    return
+  }
+
   resetForm()
   showAddStaffModal.value = true
 }
 
 async function submitStaffForm() {
+  if (!canEdit.value) {
+    alert('You do not have permission to save changes from this account.')
+    return
+  }
   // Validation
   if (!newStaff.value.full_name || !newStaff.value.email) {
     alert('Please fill in all required fields')
@@ -522,6 +540,10 @@ async function submitStaffForm() {
 }
 
 async function toggleStatus(member) {
+  if (!canEdit.value) {
+    alert('You do not have permission to change staff status from this account.')
+    return
+  }
   try {
     const res = await axios.put(`/api/admin/staff/${member.id}`, {
       is_active: !member.is_active,
