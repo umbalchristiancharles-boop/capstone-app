@@ -330,6 +330,7 @@ class BudgetRequestController extends Controller
 
     /**
      * Reject a budget request (Finance Manager)
+     * When a budget request is rejected, update the linked procurement request status to 'rejected'
      */
     public function rejectRequest(Request $request, $id)
     {
@@ -357,6 +358,23 @@ class BudgetRequestController extends Controller
                 'processed_by' => $user->id,
                 'date_processed' => now()->toDateString(),
             ]);
+
+            // If this budget request was created for a procurement request, update
+            // the linked procurement request status to 'rejected'
+            try {
+                if (preg_match('/Procurement Request #(\d+)/i', $budgetRequest->purpose, $matches)) {
+                    $procId = intval($matches[1] ?? 0);
+                    if ($procId > 0) {
+                        $proc = ProcurementRequest::find($procId);
+                        if ($proc) {
+                            $proc->update(['status' => 'rejected']);
+                            Log::info('BudgetRequest rejected -> set ProcurementRequest to rejected', ['budget_request_id' => $budgetRequest->id, 'procurement_request_id' => $procId]);
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::warning('Failed to update ProcurementRequest status after budget rejection', ['budget_request_id' => $budgetRequest->id, 'error' => $e->getMessage()]);
+            }
 
             Log::info('Budget request rejected', ['id' => $id, 'processor_id' => $user->id]);
 

@@ -239,7 +239,7 @@ class AuthController extends Controller
                 if ($isMainBranchUser) {
                     return '/main-branch/hr';
                 }
-                return '/manager-panel';
+                return '/manager/hr';
             }
         }
 
