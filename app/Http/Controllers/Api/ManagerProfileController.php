@@ -704,10 +704,10 @@ public function logisticsBranches(Request $request)
         Log::debug('Auth::check(): ' . (Auth::check() ? 'YES' : 'NO'));
         Log::debug('Auth::user(): ' . json_encode(Auth::user() ? Auth::user() : null));
         Log::debug('Raw Bearer token present: ' . ($request->bearerToken() ? 'YES' : 'NO'));
-        
+
         $user = $this->getAuthenticatedManager($request);
         Log::debug('getAuthenticatedManager result: ' . json_encode($user ? $user : null));
-        
+
         if (!$this->allowManagerDept($user, 'logistics')) {
             Log::warning('logisticsBranches 401 BLOCKED', [
                 'user' => $user ? $user->only(['id', 'username', 'role', 'department']) : null,
@@ -802,7 +802,7 @@ public function logisticsBranches(Request $request)
             $branchId = (int) $request->input('branch_id');
         }
         // Match supplier role case-insensitively and ensure active users
-        $suppliers = \App\Models\User::whereRaw('UPPER(COALESCE(role, "")) = ?', ['SUPPLIER'])
+        $suppliers = User::whereRaw('UPPER(COALESCE(role, "")) = ?', ['SUPPLIER'])
             ->when($branchId, function ($q) use ($branchId) { return $q->where('branch_id', $branchId); })
             ->whereNull('deleted_at')
             ->where('is_active', 1)
@@ -827,10 +827,10 @@ public function logisticsProducts(Request $request)
         $authUser = Auth::user();
         Log::debug('Auth::user(): ' . json_encode($authUser ?? null));
         Log::debug('Raw Bearer token present: ' . ($request->bearerToken() ? 'YES' : 'NO'));
-        
+
         $user = $this->getAuthenticatedManager($request);
         Log::debug('getAuthenticatedManager result: ' . json_encode($user ?? null));
-        
+
         if (!$this->allowManagerDept($user, 'logistics')) {
             Log::warning('logisticsProducts 401 BLOCKED', [
                 'user' => $user ? $user->only(['id', 'username', 'role', 'department']) : null,
@@ -1004,7 +1004,7 @@ public function logisticsProducts(Request $request)
 
         $branchId = $user->branch_id;
 
-        \Illuminate\Support\Facades\Log::info('procurementProducts DEBUG', [
+        Log::info('procurementProducts DEBUG', [
             'user_id' => $user->id,
             'user_role' => $user->role,
             'branch_id' => $branchId,
@@ -1013,7 +1013,7 @@ public function logisticsProducts(Request $request)
         // All users (including CUSTOM accounts) see products from their assigned branch
         // If no branch assigned, show no products (require branch assignment)
         if (!$branchId) {
-            \Illuminate\Support\Facades\Log::warning('procurementProducts: user has no branch assigned', ['user_id' => $user->id]);
+            Log::warning('procurementProducts: user has no branch assigned', ['user_id' => $user->id]);
             return response()->json(['ok' => true, 'data' => []]);
         }
 
@@ -1021,11 +1021,11 @@ public function logisticsProducts(Request $request)
             ->where('branch_id', $branchId)
             ->select('id', 'name', 'slug', 'price', 'stock', 'sku', 'branch_id', 'supplier_name', 'supplier_id', 'is_published', 'created_at', 'updated_at');
 
-        \Illuminate\Support\Facades\Log::info('procurementProducts: filtering by branch_id', ['branch_id' => $branchId]);
+        Log::info('procurementProducts: filtering by branch_id', ['branch_id' => $branchId]);
 
         $products = $query->orderBy('name', 'asc')->get();
 
-        \Illuminate\Support\Facades\Log::info('procurementProducts: products count', ['count' => $products->count()]);
+        Log::info('procurementProducts: products count', ['count' => $products->count()]);
 
         // For each product, determine if procurement can acknowledge any pending request
         $products = $products->map(function ($p) use ($branchId) {
@@ -1036,7 +1036,7 @@ public function logisticsProducts(Request $request)
             }
 
             // find a pending procurement request for this product in this branch
-            $proc = \App\Models\ProcurementRequest::where('product_id', $p->id)
+            $proc = ProcurementRequest::where('product_id', $p->id)
                 ->where('branch_id', $branchId)
                 ->where('status', 'pending')
                 ->first(['id', 'status', 'budget_approved']);
@@ -1089,7 +1089,7 @@ public function logisticsProducts(Request $request)
             'procurement_request_id' => 'nullable|exists:procurement_requests,id'
         ]);
 
-        \Illuminate\Support\Facades\Log::info('placeOrderProduct validation result', [
+        Log::info('placeOrderProduct validation result', [
             'supplier_id' => $validated['supplier_id'] ?? 'not_provided',
             'procurement_request_id' => $validated['procurement_request_id'] ?? 'not_provided',
             'product_id_from_url' => $id,
@@ -1110,7 +1110,7 @@ public function logisticsProducts(Request $request)
         // Use supplier_id from request, or fall back to stored supplier_id on ProcurementRequest
         $supplierId = ($validated['supplier_id'] ?? null) ?: ($procReqForSupplierCheck?->supplier_id ?? null);
 
-        \Illuminate\Support\Facades\Log::info('placeOrderProduct: supplier resolution', [
+        Log::info('placeOrderProduct: supplier resolution', [
             'requested_supplier_id' => $validated['supplier_id'] ?? null,
             'stored_supplier_id' => $procReqForSupplierCheck?->supplier_id ?? null,
             'final_supplier_id' => $supplierId,
@@ -1119,7 +1119,7 @@ public function logisticsProducts(Request $request)
 
         // If supplier_id is provided/found, create a SupplierOrder to request this product from that supplier
         if (!empty($supplierId)) {
-            \Illuminate\Support\Facades\Log::info('placeOrderProduct SPECIFIC SUPPLIER: starting', [
+            Log::info('placeOrderProduct SPECIFIC SUPPLIER: starting', [
                 'product_id' => $product->id,
                 'supplier_id' => $supplierId,
                 'branch_id' => $branchId,
@@ -1141,7 +1141,7 @@ public function logisticsProducts(Request $request)
             }
 
             if (!$procReq) {
-                \Illuminate\Support\Facades\Log::warning('placeOrderProduct SPECIFIC SUPPLIER: no procurement request found', [
+                Log::warning('placeOrderProduct SPECIFIC SUPPLIER: no procurement request found', [
                     'product_id' => $product->id,
                     'procurement_request_id' => $validated['procurement_request_id'] ?? null,
                     'branch_id' => $branchId,
@@ -1150,7 +1150,7 @@ public function logisticsProducts(Request $request)
                         'by_product' => $product->id
                     ]
                 ]);
-                
+
                 $message = 'No pending procurement request found';
                 if (!empty($validated['procurement_request_id'])) {
                     // Check if request exists at all
@@ -1178,24 +1178,24 @@ public function logisticsProducts(Request $request)
                             ]);
 
                             // Check if BudgetRequest already exists
-                            $existingBudget = \App\Models\BudgetRequest::where('branch_id', $procReq->branch_id)
-                                ->where('purpose', 'LIKE', "%Procurement Request #{$procReq->id}%")
-                                ->first();
+                                $existingBudget = BudgetRequest::where('branch_id', $procReq->branch_id)
+                                    ->where('purpose', 'LIKE', "%Procurement Request #{$procReq->id}%")
+                                    ->first();
 
-                            if (!$existingBudget) {
-                                \App\Models\BudgetRequest::create([
-                                    'branch_id' => $procReq->branch_id,
-                                    'user_id' => $user->id,
-                                    'purpose' => "Procurement Request #{$procReq->id}: {$procReq->product->name} x{$procReq->quantity}",
-                                    'requested_amount' => $procReq->total_amount,
-                                    'status' => 'Pending',
-                                    'date_requested' => now()->toDateString(),
-                                ]);
-                            }
+                                if (!$existingBudget) {
+                                    BudgetRequest::create([
+                                        'branch_id' => $procReq->branch_id,
+                                        'user_id' => $user->id,
+                                        'purpose' => "Procurement Request #{$procReq->id}: {$procReq->product->name} x{$procReq->quantity}",
+                                        'requested_amount' => $procReq->total_amount,
+                                        'status' => 'Pending',
+                                        'date_requested' => now()->toDateString(),
+                                    ]);
+                                }
                         });
                         $procReq->refresh();
-                        \Illuminate\Support\Facades\Log::info('placeOrderProduct: auto-acknowledged request', ['proc_id' => $procReq->id]);
-                        
+                        Log::info('placeOrderProduct: auto-acknowledged request', ['proc_id' => $procReq->id]);
+
                         // CRITICAL: Return early and tell user to wait for budget approval
                         // Do NOT continue to place order until budget is actually approved
                         return response()->json([
@@ -1205,12 +1205,12 @@ public function logisticsProducts(Request $request)
                             'budget_pending' => true
                         ], 202);  // 202 Accepted - acknowledged but waiting for budget approval
                     } catch (\Exception $e) {
-                        \Illuminate\Support\Facades\Log::error('placeOrderProduct: auto-acknowledge failed', ['error' => $e->getMessage()]);
+                        Log::error('placeOrderProduct: auto-acknowledge failed', ['error' => $e->getMessage()]);
                         return response()->json(['ok' => false, 'message' => 'Failed to acknowledge request: ' . $e->getMessage()], 500);
                     }
                 } elseif ($procReq->status === 'budget_pending') {
                     // Budget request was created but not yet approved by Finance
-                    \Illuminate\Support\Facades\Log::info('placeOrderProduct: budget still pending', ['proc_id' => $procReq->id]);
+                    Log::info('placeOrderProduct: budget still pending', ['proc_id' => $procReq->id]);
                     return response()->json([
                         'ok' => false,
                         'message' => 'Budget approval is still pending from Finance. Please wait for approval before placing the order.',
@@ -1219,7 +1219,7 @@ public function logisticsProducts(Request $request)
                     ], 202);
                 } else {
                     // Status is not pending and budget not approved - can't proceed
-                    \Illuminate\Support\Facades\Log::warning('placeOrderProduct SPECIFIC SUPPLIER: budget not approved', ['proc_id' => $procReq->id, 'status' => $procReq->status]);
+                    Log::warning('placeOrderProduct SPECIFIC SUPPLIER: budget not approved', ['proc_id' => $procReq->id, 'status' => $procReq->status]);
                     return response()->json(['ok' => false, 'message' => 'Budget must be approved before ordering'], 400);
                 }
             }
@@ -1235,16 +1235,16 @@ public function logisticsProducts(Request $request)
                         ->where('supplier_id', $supplierId)
                         ->whereNotNull('product_id')  // Only if supplier has confirmed
                         ->first();
-                    
+
                     if ($existingOrder) {
                         // Use the existing order which already has the correct supplier product
-                        \Illuminate\Support\Facades\Log::info('placeOrderProduct SPECIFIC SUPPLIER: using existing SupplierOrder', [
+                        Log::info('placeOrderProduct SPECIFIC SUPPLIER: using existing SupplierOrder', [
                             'order_id' => $existingOrder->id,
                             'supplier_id' => $supplierId,
                             'product_id' => $existingOrder->product_id,
                             'product_id_submitted_by_supplier' => $existingOrder->product_id
                         ]);
-                        
+
                         // Update status and mark as non-broadcast so supplier can see it
                         $existingOrder->update([
                             'status' => 'pending',
@@ -1253,11 +1253,11 @@ public function logisticsProducts(Request $request)
                         $order = $existingOrder;
                     } else {
                         // Fallback: create new order if no existing one found (shouldn't happen in normal flow)
-                        \Illuminate\Support\Facades\Log::warning('placeOrderProduct SPECIFIC SUPPLIER: no existing order found, creating new', [
+                        Log::warning('placeOrderProduct SPECIFIC SUPPLIER: no existing order found, creating new', [
                             'supplier_id' => $supplierId,
                             'proc_req_id' => $procReq->id
                         ]);
-                        
+
                         $order = SupplierOrder::create([
                             'procurement_request_id' => $procReq->id,
                             'product_id' => $product->id,  // Original product
@@ -1302,7 +1302,7 @@ public function logisticsProducts(Request $request)
 
         try {
             $supplierOrder = DB::transaction(function () use ($product, $branchId, $user) {
-                \Illuminate\Support\Facades\Log::info('placeOrderProduct BROADCAST: starting', [
+                Log::info('placeOrderProduct BROADCAST: starting', [
                     'product_id' => $product->id,
                     'branch_id' => $branchId,
                     'user_id' => $user->id,
@@ -1315,14 +1315,14 @@ public function logisticsProducts(Request $request)
                     ->first();
 
                 if (!$procReq) {
-                    \Illuminate\Support\Facades\Log::warning('placeOrderProduct BROADCAST: no procurement request found', [
+                    Log::warning('placeOrderProduct BROADCAST: no procurement request found', [
                         'product_id' => $product->id,
                         'branch_id' => $branchId,
                     ]);
                     throw new \Exception('No pending procurement request found for this product');
                 }
 
-                \Illuminate\Support\Facades\Log::info('placeOrderProduct BROADCAST: found procurement request', [
+                Log::info('placeOrderProduct BROADCAST: found procurement request', [
                     'proc_id' => $procReq->id,
                 ]);
 
@@ -1333,11 +1333,11 @@ public function logisticsProducts(Request $request)
                     ->first();
 
                 if ($existingBroadcast) {
-                    \Illuminate\Support\Facades\Log::info('placeOrderProduct BROADCAST: broadcast order already exists', [
+                    Log::info('placeOrderProduct BROADCAST: broadcast order already exists', [
                         'proc_id' => $procReq->id,
                         'existing_order_id' => $existingBroadcast->id,
                     ]);
-                    
+
                     // Return the existing broadcast order instead of creating a duplicate
                     return $existingBroadcast;
                 }
@@ -1355,7 +1355,7 @@ public function logisticsProducts(Request $request)
                     'branch_id' => $procReq->branch_id,
                 ]);
 
-                \Illuminate\Support\Facades\Log::info('placeOrderProduct BROADCAST: created supplier order', [
+                Log::info('placeOrderProduct BROADCAST: created supplier order', [
                     'order_id' => $order->id,
                 ]);
 
@@ -1381,7 +1381,7 @@ public function logisticsProducts(Request $request)
                 return $order;
             });
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Manager placeOrderProduct broadcast supplier-order failed', ['error' => $e->getMessage()]);
+            Log::error('Manager placeOrderProduct broadcast supplier-order failed', ['error' => $e->getMessage()]);
             return response()->json(['ok' => false, 'message' => $e->getMessage() ?: 'Failed to create broadcast supplier order'], 500);
         }
 
@@ -1487,10 +1487,10 @@ public function logisticsInventory(Request $request)
     Log::debug('Auth::check(): ' . (Auth::check() ? 'YES' : 'NO'));
     Log::debug('Auth::user(): ' . json_encode(Auth::user() ?? null));
     Log::debug('Raw Bearer token present: ' . ($request->bearerToken() ? 'YES' : 'NO'));
-    
+
     $user = $this->getAuthenticatedManager($request);
     Log::debug('getAuthenticatedManager result: ' . json_encode($user ?? null));
-    
+
     if (!$this->allowManagerDept($user, 'logistics')) {
         Log::warning('logisticsInventory 401 BLOCKED', [
             'user' => $user ? $user->only(['id', 'username', 'role', 'department']) : null,
@@ -1541,13 +1541,19 @@ public function logisticsInventory(Request $request)
 
     // Group products by name to avoid showing duplicates when multiple suppliers submit the same product
     $groupedProducts = [];
-    
+
     foreach ($allProducts as $product) {
         $productName = $product->name;
-        
+
         if (!isset($groupedProducts[$productName])) {
             // First product with this name - use it as base
-            $groupedProducts[$productName] = $product->toArray();
+            // Ensure we can convert the item to an array even if it's a stdClass
+            if (is_object($product) && method_exists($product, 'toArray')) {
+                $base = $product->toArray();
+            } else {
+                $base = (array) $product;
+            }
+            $groupedProducts[$productName] = $base;
             $groupedProducts[$productName]['stock'] = (int) $product->stock;
             $groupedProducts[$productName]['min_stock'] = (int) $product->min_stock > 0 ? (int) $product->min_stock : 10;
             $groupedProducts[$productName]['related_products'] = 1; // Track how many products are grouped
@@ -1555,7 +1561,7 @@ public function logisticsInventory(Request $request)
             // Subsequent products with same name - combine stock and track variants
             $groupedProducts[$productName]['stock'] += (int) $product->stock;
             $groupedProducts[$productName]['related_products'] += 1;
-            
+
             // Update expiry to the earliest (most urgent)
             $currentExpiry = $groupedProducts[$productName]['expires_at'];
             if ($product->expires_at && (!$currentExpiry || $product->expires_at < $currentExpiry)) {

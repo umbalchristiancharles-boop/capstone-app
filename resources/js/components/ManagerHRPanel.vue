@@ -18,7 +18,8 @@
     </template>
     <template #main>
       <!-- Bento-style Stats Cards -->
-      <div class="hr-stats-grid">
+      <div class="manager-hr-main-wrapper">
+        <div class="hr-stats-grid">
         <div class="hr-stat-card hr-stat-card--total">
           <div class="hr-stat-icon">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
@@ -45,6 +46,7 @@
             <span class="hr-stat-label">On Leave</span>
             <span class="hr-stat-value">{{ dashboardTotals.onLeave }}</span>
           </div>
+        </div>
         </div>
       </div>
     </template>
@@ -285,6 +287,32 @@ defineExpose({ refreshAllData, onProfileUpdated })
 
 <style scoped>
 .hr-panel-content { padding: 1rem; }
+/* HR stats grid: keep cards in a responsive row and avoid overlapping other panels */
+.hr-stats-grid {
+  display: flex;
+  gap: 1rem;
+  align-items: stretch;
+  flex-wrap: wrap;
+  margin: 0 0 1.25rem 0;
+}
+.hr-stat-card {
+  background: white;
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  box-shadow: 0 2px 6px rgba(16,24,40,0.04);
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  min-width: 180px;
+  flex: 0 0 200px;
+}
+.hr-stat-icon { width:48px; height:48px; display:flex; align-items:center; justify-content:center; border-radius:8px; background: #fff5ee; color: #ff9f43; }
+.hr-stat-content { display:flex; flex-direction:column; }
+.hr-stat-label { font-size:0.85rem; color:#666; }
+.hr-stat-value { font-size:1.35rem; font-weight:700; color:#333; }
+
+/* Ensure main content area in this component sits above any sticky side panels */
+.manager-hr-main-wrapper { position: relative; z-index: 1; }
 .staff-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
 .staff-header h2 { margin: 0; color: #333; font-size: 1.5rem; }
 .hr-header-actions { display: flex; gap: 0.75rem; align-items: center; }

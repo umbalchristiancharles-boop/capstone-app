@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ProductComment;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class ProductCommentController extends Controller
 {
@@ -21,7 +22,7 @@ class ProductCommentController extends Controller
             ->orderBy('name')
             ->get();
 
-        \Illuminate\Support\Facades\Log::info('ProductCommentController::listProducts', [
+        Log::info('ProductCommentController::listProducts', [
             'count' => $products->count(),
             'products' => $products->pluck('id')->toArray()
         ]);
@@ -40,7 +41,7 @@ class ProductCommentController extends Controller
         }
 
         $comments = $query->get();
-        
+
         // Load replies for each parent comment
         $comments->load('replies');
 
@@ -49,7 +50,7 @@ class ProductCommentController extends Controller
 
     public function store(Request $request)
     {
-        \Illuminate\Support\Facades\Log::info('ProductCommentController::store - incoming request', [
+        Log::info('ProductCommentController::store - incoming request', [
             'payload' => $request->all()
         ]);
 
@@ -60,7 +61,7 @@ class ProductCommentController extends Controller
             'rating' => ['required', 'integer', 'min:1', 'max:5'],
         ]);
 
-        \Illuminate\Support\Facades\Log::info('ProductCommentController::store - validation passed', [
+        Log::info('ProductCommentController::store - validation passed', [
             'product_id' => $data['product_id'],
             'author' => $data['author'],
             'text_length' => strlen($data['text']),
@@ -116,10 +117,10 @@ class ProductCommentController extends Controller
     {
         $comment = ProductComment::findOrFail($id);
         $commentId = $comment->id;
-        
+
         // Permanently delete all replies to this comment
         ProductComment::where('parent_comment_id', $commentId)->forceDelete();
-        
+
         // Permanently delete the comment itself
         $comment->forceDelete();
 

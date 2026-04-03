@@ -143,10 +143,11 @@
             <!-- Branch Selection -->
             <div class="form-group">
               <label for="branch_id" class="form-label">Branch *</label>
-              <select v-model="form.branch_id" id="branch_id" class="form-input" :required="!isEdit">
+              <select v-model="form.branch_id" id="branch_id" class="form-input" :required="!isEdit" :disabled="branchReadOnly || isEdit">
                 <option value="">-- Select Branch --</option>
                 <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
               </select>
+              <div class="form-hint" v-if="branchReadOnly">Branch is locked to your assigned branch and cannot be changed.</div>
             </div>
 
             <!-- Password (Edit mode - optional) -->
@@ -366,6 +367,7 @@ export default {
         city: '',
         barangay: '',
       },
+      branchReadOnly: false,
       // documentFiles stores selected files for upload
       documentFiles: {},
       branches: [],
@@ -427,6 +429,13 @@ export default {
 
           if (res.data.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
             this.branches = res.data.data
+            // If this modal was opened with a preSelectedBranchId for an HR user,
+            // restrict branches to that branch and make the select read-only.
+            if (this.preSelectedBranchId && this.isHrUser) {
+              this.branches = this.branches.filter(b => String(b.id) === String(this.preSelectedBranchId))
+              this.form.branch_id = this.preSelectedBranchId
+              this.branchReadOnly = true
+            }
             return
           }
           if (Array.isArray(res.data) && res.data.length > 0) {
@@ -435,6 +444,11 @@ export default {
           }
           if (res.data.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
             this.branches = res.data.data
+            if (this.preSelectedBranchId && this.isHrUser) {
+              this.branches = this.branches.filter(b => String(b.id) === String(this.preSelectedBranchId))
+              this.form.branch_id = this.preSelectedBranchId
+              this.branchReadOnly = true
+            }
             return
           }
         } catch (e) {
