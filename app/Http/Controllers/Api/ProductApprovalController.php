@@ -43,15 +43,22 @@ class ProductApprovalController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        // Only owner role can approve
-        if (!$this->isOwner($user)) {
-            return response()->json(['error' => 'Only Owner can access this'], 403);
+
+        // Allow OWNER, SUPER_ADMIN, or branch ADMIN to view pending owner approvals
+        $role = strtoupper($user->role ?? '');
+        if (!in_array($role, ['OWNER', 'SUPER_ADMIN', 'ADMIN'])) {
+            return response()->json(['error' => 'Only Owner or branch Admin can access this'], 403);
         }
 
-        $products = Product::where('status', 'pending_owner')
-            ->with(['supplier', 'branch', 'logisticsApprover', 'ownerApprover'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
+        $query = Product::where('status', 'pending_owner')
+            ->with(['supplier', 'branch', 'logisticsApprover', 'ownerApprover']);
+
+        // Scope to branch for OWNER and ADMIN
+        if (in_array($role, ['OWNER', 'ADMIN']) && $user->branch_id) {
+            $query->where('branch_id', $user->branch_id);
+        }
+
+        $products = $query->orderBy('created_at', 'desc')->paginate(20);
 
         return response()->json($products);
     }
@@ -164,9 +171,10 @@ class ProductApprovalController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        // Only owner can approve
-        if (!$this->isOwner($user)) {
-            return response()->json(['error' => 'Only Owner can approve at this stage'], 403);
+        // Only OWNER, SUPER_ADMIN, or branch ADMIN can approve
+        $role = strtoupper($user->role ?? '');
+        if (!in_array($role, ['OWNER', 'SUPER_ADMIN', 'ADMIN'])) {
+            return response()->json(['error' => 'Only Owner or branch Admin can approve at this stage'], 403);
         }
 
         $product = Product::find($productId);
@@ -179,13 +187,22 @@ class ProductApprovalController extends Controller
             return response()->json(['error' => 'Product is not pending owner approval'], 400);
         }
 
+        // Branch-level restriction for OWNER/ADMIN
+        if (in_array($role, ['OWNER', 'ADMIN']) && $user->branch_id && $product->branch_id !== $user->branch_id) {
+            return response()->json(['error' => 'Unauthorized to approve product from another branch'], 403);
+        }
+
         try {
-            $product->update([
+            $update = [
                 'status' => 'approved',
                 'approved_by_owner' => $user->id,
                 'approved_at' => now(),
-                'is_published' => true, // Mark as published when approved
-            ]);
+            ];
+
+            // When approved by an owner/admin, mark published so it becomes available
+            $update['is_published'] = true;
+
+            $product->update($update);
 
             Log::info('Product approved by owner', [
                 'product_id' => $product->id,
@@ -212,9 +229,10 @@ class ProductApprovalController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        // Only owner can reject
-        if (!$this->isOwner($user)) {
-            return response()->json(['error' => 'Only Owner can reject at this stage'], 403);
+        // Only OWNER, SUPER_ADMIN, or branch ADMIN can reject
+        $role = strtoupper($user->role ?? '');
+        if (!in_array($role, ['OWNER', 'SUPER_ADMIN', 'ADMIN'])) {
+            return response()->json(['error' => 'Only Owner or branch Admin can reject at this stage'], 403);
         }
 
         $validated = $request->validate([
@@ -229,6 +247,11 @@ class ProductApprovalController extends Controller
         // Product must be pending owner approval
         if ($product->status !== 'pending_owner') {
             return response()->json(['error' => 'Product is not pending owner approval'], 400);
+        }
+
+        // Branch-level restriction for OWNER/ADMIN
+        if (in_array($role, ['OWNER', 'ADMIN']) && $user->branch_id && $product->branch_id !== $user->branch_id) {
+            return response()->json(['error' => 'Unauthorized to reject product from another branch'], 403);
         }
 
         try {

@@ -135,8 +135,8 @@ class ProductRequestController extends Controller
         $user = $request->user();
         $role = strtoupper($user->role ?? '');
 
-        // Only owner or SUPER_ADMIN can approve
-        if ($role !== 'OWNER' && $role !== 'SUPER_ADMIN') {
+        // Allow OWNER, SUPER_ADMIN, or branch ADMIN to view pending requests
+        if (!in_array($role, ['OWNER', 'SUPER_ADMIN', 'ADMIN'])) {
             return response()->json(['error' => 'Unauthorized to approve product requests'], 403);
         }
 
@@ -161,8 +161,8 @@ class ProductRequestController extends Controller
         $user = $request->user();
         $role = strtoupper($user->role ?? '');
 
-        // Only owner or SUPER_ADMIN can approve
-        if ($role !== 'OWNER' && $role !== 'SUPER_ADMIN') {
+        // Only OWNER, SUPER_ADMIN, or branch ADMIN can approve
+        if (!in_array($role, ['OWNER', 'SUPER_ADMIN', 'ADMIN'])) {
             return response()->json(['error' => 'Unauthorized to approve product requests'], 403);
         }
 
@@ -173,8 +173,8 @@ class ProductRequestController extends Controller
         try {
             $productRequest = ProductRequest::findOrFail($id);
 
-            // Check branch access for owner
-            if ($role === 'OWNER' && $user->branch_id && $productRequest->branch_id !== $user->branch_id) {
+            // Branch-level access: OWNER and ADMIN are scoped to their branch
+            if (in_array($role, ['OWNER', 'ADMIN']) && $user->branch_id && $productRequest->branch_id !== $user->branch_id) {
                 return response()->json(['error' => 'Unauthorized'], 403);
             }
 
@@ -455,9 +455,9 @@ class ProductRequestController extends Controller
         $user = $request->user();
         $role = strtoupper($user->role ?? '');
 
-        // Only owner or SUPER_ADMIN
-        if ($role !== 'OWNER' && $role !== 'SUPER_ADMIN') {
-            return response()->json(['error' => 'Unauthorized - owner required'], 403);
+        // Only OWNER, SUPER_ADMIN, or branch ADMIN
+        if (!in_array($role, ['OWNER', 'SUPER_ADMIN', 'ADMIN'])) {
+            return response()->json(['error' => 'Unauthorized - owner or branch admin required'], 403);
         }
 
         $validated = $request->validate([
@@ -467,8 +467,8 @@ class ProductRequestController extends Controller
         try {
             $productRequest = ProductRequest::findOrFail($id);
 
-            // Check branch access for owner
-            if ($role === 'OWNER' && $user->branch_id && $productRequest->branch_id !== $user->branch_id) {
+            // Branch-level access: OWNER and ADMIN are scoped to their branch
+            if (in_array($role, ['OWNER', 'ADMIN']) && $user->branch_id && $productRequest->branch_id !== $user->branch_id) {
                 return response()->json(['error' => 'Unauthorized'], 403);
             }
 

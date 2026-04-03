@@ -665,8 +665,9 @@ class SuperAdminController extends Controller
             'branch_id' => $validated['branch_id'],
             'is_active' => true,
             'is_kitchen_dish' => $isDish,
-            // Super admin-created products are published by default
-            'is_published' => true,
+            // Super admin-created products should NOT be visible in cashier
+            // until a branch Admin publishes them. Keep unpublished by default.
+            'is_published' => false,
         ]);
 
         return response()->json([

@@ -255,28 +255,31 @@ async function submit() {
 .force-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(16,24,40,0.06); /* subtle dim to match StaffIndex page */
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 60;
+  z-index: 9999; /* ensure overlay sits above other UI elements */
   padding: 1rem;
 }
 
 .force-modal-card {
   width: 100%;
   max-width: 520px;
-  background: #fff;
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(14px);
   border-radius: 18px;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(255, 106, 61, 0.35);
-  border: 1px solid rgba(255, 154, 74, 0.4);
+  position: relative;
+  z-index: 10000; /* ensure the card is above the overlay and other elements */
+  box-shadow: 0 12px 30px rgba(16,24,40,0.06);
+  border: 1px solid var(--border-stroke, rgba(240,233,224,0.9));
 }
 
 .force-modal-header {
   padding: 1.25rem 1.5rem;
-  background: linear-gradient(135deg, #ff9a4a, #ff6a3d);
-  color: #fff;
+  background: transparent;
+  color: var(--text-primary, #42210b);
 }
 
 .force-modal-header h3 {
@@ -307,15 +310,15 @@ async function submit() {
   width: 100%;
   padding: 0.7rem 2.8rem 0.7rem 0.85rem;
   border-radius: 10px;
-  border: 1px solid #f0c1a8;
-  background: #fff;
+  border: 1px solid var(--border-stroke, #f0e9e0);
+  background: var(--surface-card, #fff);
   outline: none;
   box-sizing: border-box;
 }
 
 .form-input:focus {
-  border-color: #ff8c5f;
-  box-shadow: 0 0 0 3px rgba(255, 154, 74, 0.2);
+  border-color: var(--color-royal-blue, #ff6b1c);
+  box-shadow: 0 6px 20px rgba(16,24,40,0.06);
 }
 
 .read-only {
@@ -325,7 +328,7 @@ async function submit() {
 .hint {
   display: block;
   margin-top: 0.35rem;
-  color: #8b5d4a;
+  color: var(--text-secondary, rgba(66,33,11,0.6));
 }
 
 .strength-meter {
@@ -358,13 +361,13 @@ async function submit() {
 
 .strength-label.medium,
 .strength-bar span.medium {
-  color: #c27a1d;
+  color: var(--alert, #FF9800);
   background: #f2b04b;
 }
 
 .strength-label.strong,
 .strength-bar span.strong {
-  color: #1c7c54;
+  color: var(--success, #4CAF50);
   background: #36c186;
 }
 
@@ -406,34 +409,34 @@ async function submit() {
   justify-content: space-between;
   gap: 1rem;
 }
-
 .btn-secondary {
-  background: #fff;
-  color: #ff6a3d;
-  border: 2px solid #ff9a4a;
-  padding: 0.75rem 1.5rem;
-  border-radius: 10px;
-  font-weight: 700;
+  background: transparent;
+  color: var(--text-primary, #42210b);
+  border: 1px solid rgba(66,33,11,0.12);
+  padding: 0.6rem 1.2rem;
+  border-radius: 999px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.18s ease;
 }
 
 .btn-secondary:hover {
-  background: #fff7f1;
+  background: rgba(255,255,255,0.04);
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #ff9a4a, #ff6a3d);
-  color: #fff;
+  background: var(--dirty-white, #fff4e6);
+  color: var(--text-dark, #42210b);
   border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 10px;
+  padding: 0.6rem 1.2rem;
+  border-radius: 999px;
   font-weight: 700;
   cursor: pointer;
+  transition: all 0.18s ease;
 }
 
 .btn-primary:disabled {
-  opacity: 0.7;
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
@@ -462,13 +465,13 @@ async function submit() {
 }
 
 .password-toggle:hover {
-  background: rgba(255, 154, 74, 0.2);
-  color: #ff6a3d;
+  background: rgba(66,33,11,0.04);
+  color: var(--text-primary, #42210b);
 }
 
 .password-toggle svg {
   width: 18px;
   height: 18px;
 }
-</style>  
+</style>
 

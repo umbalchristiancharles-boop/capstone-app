@@ -73,7 +73,7 @@
                   </div>
                   <div class="form-hint">This password will be assigned to the new staff member. They will be required to change it upon first login.</div>
                 </div>
-                
+
                 <!-- Loading state -->
                 <div v-if="fetchingDefaultPassword" class="password-loading">
                   <span style="color:#6b7280; font-size:0.9rem;">Loading default password...</span>
@@ -105,10 +105,10 @@
 
                 <!-- Address Cascader (Region → Province → City → Barangay) -->
                 <div style="margin-top:0.5rem;">
-                  <AddressCascader 
-                    :initialAddress="{ province: form.province, city: form.city, barangay: form.barangay }" 
-                    :showSaveButton="false" 
-                    @update:address="onAddressUpdate" 
+                  <AddressCascader
+                    :initialAddress="{ province: form.province, city: form.city, barangay: form.barangay }"
+                    :showSaveButton="false"
+                    @update:address="onAddressUpdate"
                   />
                 </div>
 
@@ -317,7 +317,7 @@
             <button type="submit" class="btn btn-primary" :disabled="isSubmitting">
               {{ isSubmitting ? 'Saving...' : (isEdit ? 'Update Staff' : 'Add Staff') }}
             </button>
-            
+
           </div>
         </form>
       </div>
@@ -435,7 +435,7 @@ export default {
       }
       this.branches = []
     },
-    
+
 
     async loadProvinces() {
       const endpoints = ['/api/locations/provinces', '/api/provinces']
@@ -462,9 +462,9 @@ export default {
     },
 
     async loadCities(provinceValue) {
-      if (!provinceValue) { 
-        this.cities = [] 
-        return 
+      if (!provinceValue) {
+        this.cities = []
+        return
       }
       if (this.locationMap && this.locationMap[provinceValue]) {
         this.cities = Object.keys(this.locationMap[provinceValue].cities).map(name => ({ name }))
@@ -489,12 +489,12 @@ export default {
     },
 
     async loadBarangays(cityValue) {
-      if (!cityValue) { 
-        this.barangays = [] 
-        return 
+      if (!cityValue) {
+        this.barangays = []
+        return
       }
       try {
-        const prov = Object.keys(this.locationMap || {}).find(p => 
+        const prov = Object.keys(this.locationMap || {}).find(p =>
           Object.prototype.hasOwnProperty.call(this.locationMap[p].cities, cityValue)
         )
         if (prov) {
@@ -623,7 +623,7 @@ export default {
 
     async submitForm() {
       this.errorMessage = ''
-      
+
       // Common validation
       if (!this.form.full_name || this.form.full_name.trim() === '') {
         this.errorMessage = 'Full name is required'
@@ -673,7 +673,7 @@ export default {
 
         // Use the correct API endpoint based on user role
         const apiBaseUrl = this.staffApiBaseUrl
-        
+
         if (this.isEdit) {
           // Edit mode
           const payload = {
@@ -714,16 +714,16 @@ export default {
               phone: this.form.phone_number || '',
               department: parsedDepartment || 'Staff',
               password: this.form.password || this.defaultPasswordValue,
-            }, { 
-              withCredentials: true, 
-              headers: { 'Content-Type': 'application/json' } 
+            }, {
+              withCredentials: true,
+              headers: { 'Content-Type': 'application/json' }
             })
           } else {
             // Admin endpoint uses FormData for full staff creation with documents
             const formData = this.buildCreateFormData(parsedRole, parsedDepartment)
-            res = await axios.post(`${apiBaseUrl}/staff`, formData, { 
-              withCredentials: true, 
-              headers: { 'Content-Type': 'multipart/form-data' } 
+            res = await axios.post(`${apiBaseUrl}/staff`, formData, {
+              withCredentials: true,
+              headers: { 'Content-Type': 'multipart/form-data' }
             })
           }
         }
@@ -784,7 +784,7 @@ export default {
         this.fetchedDefaultPassword = 'Chikintayo_123';
         return;
       }
-      
+
       if (this.fetchingDefaultPassword) return
       this.fetchingDefaultPassword = true
       try {
@@ -842,13 +842,13 @@ export default {
     staffApiBaseUrl() {
       const userRole = window.userRole || ''
       const role = userRole.toUpperCase()
-      
+
       if (role === 'BRANCH_MANAGER' || role === 'MANAGER' || role === 'HR') {
         return '/api/manager/hr'
       }
       return '/api/admin'
     },
-    
+
     // Check if user can use the manager HR endpoint for create/update
     isManagerHrUser() {
       const userRole = window.userRole || ''
@@ -859,49 +859,49 @@ export default {
       const userRole = window.userRole || ''
       return String(userRole).toUpperCase() === 'HR'
     },
-    
+
     // Reset password always uses admin endpoint (only exists there)
     resetPasswordApiUrl() {
       return '/api/admin'
     },
-    
+
     defaultPasswordValue() {
       return 'Chikintayo_123'
     },
     changedFields() {
       if (!this.isEdit || !this.staff) return []
       const changes = []
-      
-      if (this.form.full_name && this.form.full_name !== (this.staff.full_name || '')) 
+
+      if (this.form.full_name && this.form.full_name !== (this.staff.full_name || ''))
         changes.push('Full name')
-      if (this.form.email && this.form.email !== (this.staff.email || '')) 
+      if (this.form.email && this.form.email !== (this.staff.email || ''))
         changes.push('Email')
-      if (this.form.phone_number !== undefined && this.form.phone_number !== (this.staff.phone_number || '')) 
+      if (this.form.phone_number !== undefined && this.form.phone_number !== (this.staff.phone_number || ''))
         changes.push('Phone')
-      if (this.form.address && this.form.address !== (this.staff.address || '')) 
+      if (this.form.address && this.form.address !== (this.staff.address || ''))
         changes.push('Address')
-      if (this.form.region && this.form.region !== (this.staff.region || '')) 
+      if (this.form.region && this.form.region !== (this.staff.region || ''))
         changes.push('Region')
-      if (this.form.province && this.form.province !== (this.staff.province || '')) 
+      if (this.form.province && this.form.province !== (this.staff.province || ''))
         changes.push('Province')
-      if (this.form.city && this.form.city !== (this.staff.city || '')) 
+      if (this.form.city && this.form.city !== (this.staff.city || ''))
         changes.push('City')
-      if (this.form.barangay && this.form.barangay !== (this.staff.barangay || '')) 
+      if (this.form.barangay && this.form.barangay !== (this.staff.barangay || ''))
         changes.push('Barangay')
-      
+
       const currentRoleDept = this.reconstructRoleDepartment(this.staff?.role, this.staff?.department)
-      if (this.form.roleDepartment && this.form.roleDepartment !== currentRoleDept) 
+      if (this.form.roleDepartment && this.form.roleDepartment !== currentRoleDept)
         changes.push('Role/Department')
-      
-      if (this.form.branch_id && String(this.form.branch_id) !== String(this.staff.branch_id || '')) 
+
+      if (this.form.branch_id && String(this.form.branch_id) !== String(this.staff.branch_id || ''))
         changes.push('Branch')
-      
-      if (this.form.password && this.form.password.trim() !== '') 
+
+      if (this.form.password && this.form.password.trim() !== '')
         changes.push('Password')
-      
-      if (this.documentFiles && Object.values(this.documentFiles).some(f => !!f)) 
+
+      if (this.documentFiles && Object.values(this.documentFiles).some(f => !!f))
         changes.push('Documents')
-      
+
       return changes
     }
   },
@@ -926,7 +926,7 @@ export default {
             city: newStaff.city || '',
             barangay: newStaff.barangay || '',
           }
-          
+
           if (this.form.region || this.form.province || this.form.city || this.form.barangay) {
             this.savedAddress = [this.form.address, this.form.barangay, this.form.city, this.form.province]
               .filter(Boolean).join(', ')
@@ -959,7 +959,7 @@ export default {
       } else {
         // Refresh CSRF token when modal opens to avoid stale token issues
         this.refreshCsrfToken()
-        
+
         // When opening the modal in create mode, ensure any previous `staff` prop
         // value does not leak into the form. Reset the form state for fresh create.
         if (!this.isEdit) {
@@ -990,13 +990,14 @@ export default {
 </script>
 
 <style scoped>
+/* Update: align StaffModal styles with HRStaffManagement color scheme and typography */
 .modal-backdrop {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1007,18 +1008,19 @@ export default {
 .modal {
   background: #fff;
   border-radius: 12px;
-  width: 1200px;
+  width: 1100px;
   max-width: 98vw;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 25px 50px rgba(0,0,0,0.25);
-  animation: modalSlideIn 0.3s ease-out;
+  box-shadow: 0 25px 50px rgba(2,6,23,0.25);
+  animation: modalSlideIn 0.28s ease-out;
+  font-family: 'Inter', 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
 }
 
 @keyframes modalSlideIn {
   from {
     opacity: 0;
-    transform: translateY(-50px) scale(0.95);
+    transform: translateY(-30px) scale(0.98);
   }
   to {
     opacity: 1;
@@ -1026,69 +1028,58 @@ export default {
   }
 }
 
-.modal-card {
-  padding: 0;
-}
+.modal-card { padding: 0; }
 
 .modal-header {
-  background: linear-gradient(135deg, #ff9a56, #ff8c5f);
-  color: white;
-  padding: 1.5rem 2rem;
+  background: #ffffff;
+  color: var(--text-dark, #1f2937);
+  padding: 1.25rem 1.75rem;
   border-radius: 12px 12px 0 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  border-bottom: 1px solid #e6eefc;
 }
 
 .modal-header h2 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   font-weight: 700;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  color: #0f172a;
 }
 
 .close-button {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: none;
+  background: #fff;
+  color: #374151;
+  border: 1px solid #e5e7eb;
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   flex-shrink: 0;
 }
 
-.close-button:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.1);
-}
+.close-button:hover { transform: scale(1.05); }
 
 .form-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 2rem 2.5rem;
-  padding: 2.5rem 2rem 2rem 2rem;
+  gap: 1.5rem 2rem;
+  padding: 2rem 2rem 1.75rem 2rem;
   align-items: start;
 }
 
-.form-group {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-}
-
-.form-group.full-span {
-  grid-column: 1 / -1;
-}
+.form-group { display: flex; flex-direction: column; width: 100%; }
+.form-group.full-span { grid-column: 1 / -1; }
 
 .form-label {
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: 0.9rem;
+  font-weight: 700;
   color: #374151;
   margin-bottom: 0.5rem;
   text-transform: uppercase;
@@ -1097,323 +1088,143 @@ export default {
 
 .form-input {
   padding: 0.875rem;
-  border: 2px solid #e5e7eb;
+  border: 1px solid #D1D5DB;
   border-radius: 8px;
-  font-size: 0.875rem;
+  font-size: 0.95rem;
   font-family: inherit;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   background: white;
-  color: #374151;
-  min-height: 48px;
+  color: #111827;
+  min-height: 46px;
   box-sizing: border-box;
 }
 
 .form-input:focus {
   outline: none;
-  border-color: #ff7e5f;
-  box-shadow: 0 0 0 3px rgba(255, 126, 95, 0.1);
+  border-color: #0066FF;
+  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.08);
 }
 
-.form-input::placeholder {
-  color: #d1d5db;
-}
+.form-input::placeholder { color: #c7ced6; }
 
-.form-input:disabled,
-.read-only {
-  background: #f9fafb;
-  color: #9ca3af;
-  cursor: not-allowed;
-}
+.form-input:disabled, .read-only { background: #f8fafc; color: #9ca3af; cursor: not-allowed; }
 
 select.form-input {
   padding-right: 2rem;
   background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
   background-repeat: no-repeat;
   background-position: right 0.75rem center;
-  background-size: 1.5em;
+  background-size: 1.2em;
 }
 
-.address-card {
-  padding: 1rem;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  background: #fafbfc;
-}
+.address-card { padding: 1rem; border: 1px solid #E5E7EB; border-radius: 8px; background: #ffffff; }
+.address-card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem }
+.address-card-header strong { color:#0f172a; font-size:0.95rem }
+.address-card-body { color:#4b5563; font-size:0.95rem; line-height:1.5 }
 
-.address-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.5rem;
-}
-
-.address-card-header strong {
-  color: #1f2937;
-  font-size: 0.95rem;
-}
-
-.address-card-body {
-  color: #4b5563;
-  font-size: 0.9rem;
-  line-height: 1.5;
-}
-
-.documents-section {
-  padding: 2rem;
-  border-top: 1px solid #e5e7eb;
-}
+.documents-section { padding: 1.75rem; border-top: 1px solid #E5E7EB; }
 
 .documents-title {
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 700;
-  color: #1f2937;
-  margin-bottom: 1.5rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 2px solid #ff7e5f;
+  color: #0f172a;
+  margin-bottom: 1rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 2px solid #0066FF;
 }
 
-.documents-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
-}
+.documents-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
 
 .error-message {
-  background: rgba(239, 68, 68, 0.1);
+  background: rgba(239, 68, 68, 0.05);
   color: #dc2626;
-  padding: 1rem 2rem;
+  padding: 0.75rem 1rem;
   border-radius: 8px;
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   font-weight: 600;
   border-left: 4px solid #dc2626;
-  margin: 0 2rem 1.5rem;
+  margin: 0 1.5rem 1rem;
 }
 
 .modal-footer {
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
-  padding: 1.5rem 2rem;
-  background: rgba(249, 250, 251, 0.7);
-  border-top: 1px solid #e5e7eb;
+  padding: 1rem 1.75rem;
+  background: rgba(249,250,251,0.6);
+  border-top: 1px solid #E5E7EB;
   border-radius: 0 0 12px 12px;
 }
 
 .btn {
-  padding: 0.875rem 2rem;
+  padding: 8px 16px;
   border-radius: 8px;
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   cursor: pointer;
   border: none;
-  transition: all 0.2s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  min-height: 48px;
+  transition: all 0.18s ease;
+  text-transform: none;
+  letter-spacing: 0.2px;
+  min-height: 42px;
   box-sizing: border-box;
 }
 
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+.btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .btn-primary {
-  background: linear-gradient(135deg, #ff9a56, #ff7e5f);
+  background: #0066FF;
   color: white;
-  box-shadow: 0 4px 12px rgba(255, 126, 95, 0.3);
+  box-shadow: 0 6px 14px rgba(59,130,246,0.12);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #ff8c42, #ff6b47);
+  background: #3B82F6;
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(255, 126, 95, 0.4);
 }
 
 .btn-secondary {
-  background: white;
-  color: #374151;
-  border: 2px solid #e5e7eb;
+  background: #6c757d;
+  color: #fff;
+  border: none;
 }
 
-.btn-secondary:hover:not(:disabled) {
-  background: #f9fafb;
-  border-color: #d1d5db;
-}
+.btn-secondary:hover:not(:disabled) { background: #5a6268; }
 
 /* Password toggle styles */
-.password-group .password-input-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
+.password-group .password-input-wrapper { position: relative; display: flex; align-items: center; }
+.password-group .form-input { padding-right: 3rem; }
 
-.password-group .form-input {
-  padding-right: 3rem;
-}
+.password-toggle { position: absolute; right: 0.875rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center; height: 2rem; width: 2rem; }
+.password-toggle svg { display: block; }
 
-.password-toggle {
-  position: absolute;
-  right: 0.875rem;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 2rem;
-  width: 2rem;
-}
+/* Password Display Styles - adapted to HR blue accent */
+.password-display-container { display:flex; flex-direction:column; gap:0.75rem }
+.password-display-card { background: linear-gradient(180deg, #f1f8ff 0%, #ffffff 100%); border: 1px solid #0066FF; border-radius: 10px; padding: 1.15rem; }
+.password-display-label { font-size: 0.9rem; font-weight:700; color:#1E3A8A; margin-bottom:0.5rem; text-transform:uppercase; letter-spacing:0.5px }
+.password-display-value { display:flex; align-items:center; gap:1rem; flex-wrap:wrap }
+.password-text { font-family: 'Courier New', monospace; font-size:1.15rem; font-weight:700; color:#0f172a; background:#fff; padding:0.5rem 0.9rem; border-radius:6px; border:1px solid #e6eefc; letter-spacing:1px }
+.btn-copy { display:inline-flex; align-items:center; gap:0.5rem; padding:0.5rem 0.9rem; font-size:0.9rem; background:#0066FF; color:#fff; border-radius:8px; border:none }
+.btn-copy:hover { background:#3B82F6 }
+.password-display-card .form-hint { margin-top:0.6rem; font-size:0.9rem; color:#6b7280 }
+.password-loading { display:flex; align-items:center; padding:0.5rem }
 
-.password-toggle svg {
-  display: block;
-}
-
-/* Password Display Styles */
-.password-display-container {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.password-display-card {
-  background: linear-gradient(135deg, #fef3e2 0%, #fde8d4 100%);
-  border: 2px solid #ff9a56;
-  border-radius: 10px;
-  padding: 1.25rem;
-}
-
-.password-display-label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #92400e;
-  margin-bottom: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.password-display-value {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.password-text {
-  font-family: 'Courier New', monospace;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1f2937;
-  background: #fff;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  border: 1px solid #d1d5db;
-  letter-spacing: 1px;
-}
-
-.btn-copy {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  font-size: 0.9rem;
-  white-space: nowrap;
-}
-
-.password-display-card .form-hint {
-  margin-top: 0.75rem;
-  font-size: 0.85rem;
-  color: #92400e;
-}
-
-.password-loading {
-  display: flex;
-  align-items: center;
-  padding: 0.5rem;
-}
-
-.changes-summary {
-  font-size: 0.875rem;
-  color: #6b7280;
-  background: rgba(255, 126, 95, 0.1);
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 126, 95, 0.2);
-}
+.changes-summary { font-size:0.9rem; color:#6b7280; background: rgba(2,6,23,0.03); padding:0.5rem 1rem; border-radius:6px; border:1px solid rgba(2,6,23,0.04) }
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .modal {
-    width: 95vw;
-    margin: 1rem;
-  }
-  
-  .form-grid,
-  .documents-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-    padding: 1rem;
-  }
+  .modal { width: 95vw; margin: 1rem; }
+  .form-grid, .documents-grid { grid-template-columns: 1fr; gap: 1rem; padding: 1rem; }
 }
 
-.reset-password-section {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1rem;
-  background: #fffbeb;
-  border: 1px solid #fde68a;
-  border-radius: 8px;
-}
+.reset-password-section { display:flex; flex-wrap:wrap; align-items:center; gap:0.75rem; padding:1rem; background:#fff7ed; border:1px solid #fde68a; border-radius:8px }
 
-.btn-reset-default {
-  background: #dc2626;
-  color: #fff;
-  border: none;
-  padding: 0.5rem 1.25rem;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
+.btn-reset-default { background:#dc2626; color:#fff; border:none; padding:0.5rem 1.25rem; border-radius:6px; font-size:0.9rem; font-weight:600; cursor:pointer }
+.btn-reset-default:hover { background:#b91c1c }
+.btn-reset-default:disabled { opacity:0.6; cursor:not-allowed }
 
-.btn-reset-default:hover {
-  background: #b91c1c;
-}
-
-.btn-reset-default:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.reset-hint {
-  font-size: 0.8rem;
-  color: #92400e;
-}
-
-.reset-success {
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  background: #dcfce7;
-  border: 1px solid #86efac;
-  border-radius: 6px;
-  color: #166534;
-  font-size: 0.85rem;
-}
-
-.reset-error {
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  background: #fef2f2;
-  border: 1px solid #fca5a5;
-  border-radius: 6px;
-  color: #dc2626;
-  font-size: 0.85rem;
-}
+.reset-hint { font-size:0.875rem; color:#374151 }
+.reset-success { width:100%; padding:0.5rem 0.75rem; background:#dcfce7; border:1px solid #86efac; border-radius:6px; color:#166534; font-size:0.9rem }
+.reset-error { width:100%; padding:0.5rem 0.75rem; background:#fef2f2; border:1px solid #fca5a5; border-radius:6px; color:#dc2626; font-size:0.9rem }
 </style>
-  
+

@@ -1,12 +1,14 @@
 <template>
   <div class="change-password-page">
-    <ForcePasswordChangeModal
-      :show="true"
-      :username="username"
-      :defaultPassword="defaultPassword"
-      @completed="handleCompleted"
-      @cancel="handleCancel"
-    />
+    <div class="change-password-panel">
+      <ForcePasswordChangeModal
+        :show="true"
+        :username="username"
+        :defaultPassword="defaultPassword"
+        @completed="handleCompleted"
+        @cancel="handleCancel"
+      />
+    </div>
   </div>
 </template>
 
@@ -56,6 +58,20 @@ function handleCancel() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(120deg, #ff9a4a 0%, #ff6a3d 100%);
+  background: var(--bg-main, radial-gradient(circle at center, #FFFFFF 0%, #FCFCFC 40%, #EFEFEF 100%));
+  color: var(--text-primary, #42210b);
+  font-family: 'Inter', 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.change-password-panel {
+  width: 100%;
+  max-width: 560px;
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 16px;
+  padding: 36px 28px;
+  box-shadow: 0 12px 30px rgba(16,24,40,0.06);
+  box-sizing: border-box;
 }
 </style>
