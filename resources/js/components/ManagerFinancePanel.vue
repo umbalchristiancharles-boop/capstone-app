@@ -15,8 +15,7 @@
   >
     <template #main>
 
-
-
+    <div class="manager-finance">
 
     <div class="filter-bar">
       <div class="filter-group">
@@ -120,15 +119,15 @@
         <div v-else-if="!managerChartData || !managerChartData.labels || managerChartData.labels.length === 0" style="display:flex;align-items:center;justify-content:center;height:260px;color:#9CA3AF;">
           <p>No chart data to display.</p>
         </div>
-        <div v-else style="height:320px;">
+        <div v-else class="chart-wrap">
           <Chart :type="'line'" :data="managerChartData" :options="managerChartOptions" />
         </div>
       </div>
     </section>
 
     <!-- Price Markup Panel (kept below reports) -->
-    <PriceMarkupManagerPanel 
-      v-if="userProfile && userProfile.branch_id" 
+    <PriceMarkupManagerPanel
+      v-if="userProfile && userProfile.branch_id"
       :branchId="userProfile.branch_id"
       :isMainBranchFinance="props.isMainBranchFinance || isMainBranchFinanceManager"
     />
@@ -328,6 +327,7 @@
         </div>
       </div>
     </transition>
+    </div> <!-- /.manager-finance -->
     </template>
 
     <template #headerActions>
@@ -531,7 +531,7 @@ const canViewMultipleBranches = computed(() => {
   const branchName = (userProfile.value?.branch_name || userProfile.value?.branch || '').toUpperCase()
   const isBranchOwner = ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN'].includes(userRole)
   const isMainBranchUser = branchName.includes('MAIN')
-  
+
   return isBranchOwner || isMainBranchUser
 })
 
@@ -765,7 +765,7 @@ async function loadInitialData() {
     if (selectedBranchId.value) {
       params.branch_id = selectedBranchId.value
     }
-    
+
     const [profileRes, dashRes, reportsRes, txRes] = await Promise.all([
       axios.get('/api/manager/finance/profile', { withCredentials: true }),
       axios.get('/api/manager/finance/dashboard', { params, withCredentials: true }),
@@ -782,11 +782,11 @@ async function loadInitialData() {
       revenue: dashRes.data.netProfit ? '₱' + Number(dashRes.data.netProfit).toLocaleString('en-PH', { minimumFractionDigits: 2 }) : '₱0',
       totalOrders: dashRes.data.totalOrders || 0
     }
-    
+
     console.log('Reports API Response:', reportsRes.data)
     financeReports.value = extractArray(reportsRes.data, 'reports')
     console.log('Extracted financeReports:', financeReports.value)
-    
+
     transactions.value = extractArray(txRes.data, 'transactions')
     await fetchBudgetRequests()
     await fetchBranches()
@@ -868,7 +868,7 @@ async function refreshDashboard() {
     if (selectedBranchId.value) {
       params.branch_id = selectedBranchId.value
     }
-    
+
     const [dashRes, txRes, reportsRes] = await Promise.all([
       axios.get('/api/manager/finance/dashboard', { params, withCredentials: true }),
       axios.get('/api/manager/finance/transactions', { withCredentials: true }),
@@ -884,7 +884,7 @@ async function refreshDashboard() {
       totalOrders: dashRes.data.totalOrders || 0
     }
     transactions.value = extractArray(txRes.data, 'transactions')
-    
+
     console.log('Refresh - Reports API Response:', reportsRes.data)
     financeReports.value = extractArray(reportsRes.data, 'reports')
     console.log('Refresh - Extracted financeReports:', financeReports.value)
@@ -1168,6 +1168,81 @@ async function markBudgetGiven(id) {
     margin-top: 200px !important;
   }
 }
+
+/* Responsive tweaks for smaller screens */
+@media (max-width: 900px) {
+  .manager-finance { padding: 16px; }
+  .filter-bar { flex-wrap: wrap; gap: 12px; padding: 12px; }
+  .filter-group { flex: 1 1 180px; min-width: 140px; }
+  .btn-refresh { align-self: center; }
+  .panel-body { padding: 12px; }
+  .kpi-grid { gap:12px; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); }
+  .kpi-card { padding:14px }
+  .kpi-icon { width:48px; height:48px }
+  .kpi-value { font-size:18px }
+  .chart-wrap { width:100%; height:260px }
+  .chart-wrap canvas { max-width:100% !important; height:100% !important; display:block }
+
+  /* Constrain the main content to avoid large whitespace when zooming */
+  .manager-finance {
+    box-sizing: border-box;
+    width: calc(100% - 40px);
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  /* Ensure panels and tables respect container width */
+  .panel-section, .branch-stats, .table-container, .receipt-preview-modal {
+    box-sizing: border-box;
+    max-width: 100%;
+  }
+
+  /* Prevent any large fixed min-width from overflowing */
+  .panel-section * , .branch-stats * { max-width: 100%; }
+
+  /* Price markup card / donut chart responsiveness */
+  .price-markup-card, .current-markup {
+    box-sizing: border-box;
+  }
+  .price-markup-card .card-header { display:flex; justify-content:space-between; align-items:center; padding-bottom:8px }
+  .price-markup-card .chart-wrapper {
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding: 12px 8px 20px;
+  }
+  .price-markup-card .chart-wrapper canvas {
+    width: min(360px, 100%) !important;
+    height: auto !important;
+    max-width: 100%;
+    aspect-ratio: 1 / 1;
+    display: block;
+  }
+  .price-markup-card .chart-wrapper .chart-info {
+    text-align:center;
+    margin-top: 12px;
+  }
+  .price-markup-card .chart-wrapper .chart-value { font-size: 20px; font-weight:700 }
+  .price-markup-card .chart-wrapper .chart-label { font-size:12px; color:#9CA3AF; margin-top:6px }
+
+  @media (max-width: 520px) {
+    .price-markup-card .chart-wrapper canvas { width: min(260px, 100%) !important; }
+    .price-markup-card .chart-wrapper .chart-value { font-size:18px }
+  }
+  .receipt-preview-modal { width: 95vw }
+}
+
+@media (max-width: 540px) {
+  .filter-group { flex: 1 1 100%; }
+  .kpi-grid { grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); }
+  .chart-wrap { height:220px }
+}
+
+/* Ensure charts and panels don't cause horizontal overflow */
+html, body { overflow-x: hidden; }
+.panel-section, .branch-stats { overflow: hidden }
+
 
 </style>
 

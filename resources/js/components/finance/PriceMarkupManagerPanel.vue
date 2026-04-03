@@ -73,9 +73,13 @@
           <div class="loading-spinner"></div>
         </div>
         <div v-else class="chart-wrapper">
-          <Chart type="doughnut" :data="markupChartData" :options="markupChartOptions" />
+          <div class="chart-canvas-wrap">
+            <Chart type="doughnut" :data="markupChartData" :options="markupChartOptions" />
+            <div class="chart-center-overlay">
+              <p class="center-value" style="color: #8B5CF6;">{{ currentPercentage }}%</p>
+            </div>
+          </div>
           <div class="chart-info">
-            <p class="chart-value" style="color: #8B5CF6;">{{ currentPercentage }}%</p>
             <p class="chart-label">Markup Multiplier: ×{{ currentMultiplier }}</p>
           </div>
         </div>
@@ -393,7 +397,7 @@ async function fetchFinancialData() {
 // Methods - Price Markup
 async function fetchCurrentPercentage() {
   if (!props.branchId || isNaN(props.branchId)) return
-  
+
   isLoadingCurrent.value = true
   try {
     const res = await axios.get(`/api/price-markup/current/${props.branchId}`)
@@ -410,7 +414,7 @@ async function fetchCurrentPercentage() {
 
 async function fetchPendingRequest() {
   if (!props.branchId || isNaN(props.branchId)) return
-  
+
   try {
     const res = await axios.get(`/api/price-markup/pending/${props.branchId}`)
     if (res.data.ok && res.data.requests.length > 0) {
@@ -562,7 +566,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  height: 280px;
+  height: 420px; /* increased to allow larger donut and center label */
 }
 
 .chart-wrapper > div:first-child {
@@ -606,7 +610,48 @@ onUnmounted(() => {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 280px;
+  height: 420px;
+}
+
+/* Ensure Chart.js canvas scales responsively even when Chart sets inline sizes */
+.chart-wrapper > div:first-child {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0; /* allow shrinking in flex */
+}
+.chart-wrapper > div:first-child canvas,
+.chart-wrapper > div:first-child canvas[data-v-06192ab6] {
+  max-width: 100% !important;
+  width: 100% !important;
+  height: auto !important;
+  display: block !important;
+  box-sizing: border-box !important;
+}
+
+/* Also target canvas inside our canvas wrapper to ensure it never exceeds the wrapper */
+.chart-canvas-wrap canvas,
+.chart-canvas-wrap canvas[data-v-06192ab6] {
+  max-width: 100% !important;
+  width: 100% !important;
+  height: auto !important;
+  display: block !important;
+}
+
+@media (max-width: 520px) {
+  .chart-wrapper { height: 300px !important; }
+  .chart-loading-container { height: 300px !important; }
+  .price-markup-card .chart-wrapper canvas { width: min(260px, 100%) !important; }
+}
+
+/* Make chart-info stick below the chart area and avoid overlap */
+.chart-info {
+  text-align: center;
+  padding: 12px 0;
+  border-top: 1px solid #F3F4F6;
+  position: relative;
+  z-index: 1;
 }
 
 /* Markup Section Styles */
@@ -616,7 +661,15 @@ onUnmounted(() => {
   border-radius: 12px;
   padding: 24px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  overflow: hidden; /* prevent chart from overflowing the card */
 }
+
+/* Center overlay inside donut chart */
+.chart-canvas-wrap { position: relative; width: 100%; display:flex; align-items:center; justify-content:center; max-width:420px; margin:0 auto }
+.chart-center-overlay { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 3; pointer-events: none; display:flex; align-items:center; justify-content:center }
+.center-value { font-size: 28px; font-weight: 800; margin:0; }
+
+.chart-info { margin-top: 8px }
 
 .card-header {
   display: flex;
