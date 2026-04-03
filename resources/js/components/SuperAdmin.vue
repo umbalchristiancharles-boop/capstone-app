@@ -2,7 +2,110 @@
   <div class="min-h-screen bg-gradient-to-b from-[#FF9A4A] to-[#FF6A3D]">
     <div class="admin-page">
       <section class="admin-layout">
-        <!-- LEFT: SUPER ADMIN PROFILE COLUMN -->
+        <!-- LEFT: SIDE PANELS (Super Admin only) -->
+        <aside class="admin-side">
+          <section class="panel-block">
+            <div class="panel-header"><h2>Top Products (All Branches)</h2></div>
+            <div class="panel-body panel-body--list">
+              <div v-if="topProducts.length === 0" class="side-item"><span>No data for this range.</span></div>
+              <div v-else v-for="prod in topProducts" :key="prod.id" class="side-item"><span>{{ prod.name }}</span><span class="side-value">{{ prod.orders }} orders</span></div>
+            </div>
+          </section>
+
+          <section class="panel-block">
+            <div class="panel-header"><h2>Low Stock Alerts</h2></div>
+            <div class="panel-body panel-body--list">
+              <div v-if="lowStockItems.length === 0" class="side-item side-item--alert"><span>All items above minimum stock.</span></div>
+              <div v-else v-for="item in lowStockItems" :key="item.id" class="side-item side-item--alert"><span>{{ item.name }}</span><span class="side-value">{{ item.stock }}</span></div>
+            </div>
+          </section>
+
+          <section class="panel-block">
+            <div class="panel-header"><h2>Staff Attendance (All Branches)</h2></div>
+            <div class="panel-body panel-body--table">
+              <div class="table-header"><span>Staff</span><span>Branch</span><span>Status</span></div>
+              <div v-if="adminAttendance.length === 0" class="table-row"><span>No records.</span><span></span><span></span></div>
+              <div v-else v-for="att in adminAttendance.slice(0, 10)" :key="att.id" class="table-row">
+                <span>{{ att.user_name }}</span>
+                <span>{{ att.branch_name || '-' }}</span>
+                <span>
+                  <span class="badge" :class="{
+                    'badge--success': att.status === 'present',
+                    'badge--warning': att.status === 'late',
+                    'badge--info': att.status === 'absent'
+                  }">{{ att.status || '-' }}</span>
+                </span>
+              </div>
+            </div>
+          </section>
+        </aside>
+
+        <!-- MIDDLE: MAIN DASHBOARD -->
+        <main class="admin-main">
+          <header class="admin-main-header">
+            <div class="admin-main-header-top">
+              <div>
+                <h1>{{ panelTitle }}</h1>
+                <p>{{ panelDescription }}</p>
+                <p v-if="isLoadingDashboard && !isInitialMount" class="small-hint">Loading dashboard…</p>
+                <p v-else-if="dashboardError" class="small-hint small-hint--error">{{ dashboardError }}</p>
+              </div>
+
+              <div class="range-tabs">
+                <button class="range-tab" :class="{ 'range-tab--active': activeRange === 'today' }" @click="changeRange('today')">Today</button>
+                <button class="range-tab" :class="{ 'range-tab--active': activeRange === 'yesterday' }" @click="changeRange('yesterday')">Yesterday</button>
+                <button class="range-tab" :class="{ 'range-tab--active': activeRange === 'thisWeek' }" @click="changeRange('thisWeek')">This Week</button>
+                <button class="range-tab" :class="{ 'range-tab--active': activeRange === 'thisMonth' }" @click="changeRange('thisMonth')">This Month</button>
+              </div>
+            </div>
+          </header>
+
+          <section class="overview-grid">
+            <div class="overview-card"><span class="overview-label">Total Orders:</span><span class="overview-value">&nbsp;{{ dashboardTotals.orders }}</span></div>
+            <div class="overview-card"><span class="overview-label">Completed: </span><span class="overview-value">&nbsp;{{ dashboardTotals.completed }}</span></div>
+            <div class="overview-card"><span class="overview-label">Total Sales:</span><span class="overview-value">&nbsp;{{ dashboardTotals.sales }}</span></div>
+            <div class="overview-card"><span class="overview-label">Pending:</span><span class="overview-value">&nbsp;{{ dashboardTotals.pending }}</span></div>
+          </section>
+
+          <section class="panel-block">
+            <div class="panel-header">
+              <h2>System Overview by Branch</h2>
+            </div>
+            <div class="panel-body panel-body--table">
+              <div class="table-header"><span>Branch</span><span>Orders</span><span>Sales</span><span>Staff</span><span>Status</span></div>
+              <div v-if="branchStats.length === 0" class="table-row"><span>No branch data for this range.</span><span></span><span></span><span></span><span></span></div>
+              <div v-else v-for="branch in branchStats" :key="branch.id" class="table-row">
+                <span>{{ branch.name }}</span>
+                <span>{{ branch.orders }}</span>
+                <span>{{ branch.sales }}</span>
+                <span>{{ branch.staff_count }}</span>
+                <span>
+                  <span class="badge" :class="branch.is_active ? 'badge--success' : 'badge--warning'">
+                    {{ branch.is_active ? 'Active' : 'Inactive' }}
+                  </span>
+                </span>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel-block">
+            <div class="panel-header">
+              <h2>Recent System Activity</h2>
+            </div>
+            <div class="panel-body panel-body--list">
+              <div v-if="systemActivity.length === 0" class="queue-item"><div class="queue-title">No recent activity.</div></div>
+              <div v-else v-for="activity in systemActivity" :key="activity.id" class="queue-item">
+                <div>
+                  <div class="queue-title">{{ activity.title }}</div>
+                  <div class="queue-meta">{{ activity.description }}</div>
+                </div>
+                <span class="badge" :class="activity.badgeClass">{{ activity.status }}</span>
+              </div>
+            </div>
+          </section>
+        </main>
+
+        <!-- RIGHT: SUPER ADMIN PROFILE COLUMN -->
         <aside class="admin-profile-column">
           <div v-if="!isProfileLoading" class="admin-card admin-card--stacked">
             <!-- PROFILE PICTURE + NAME + ROLE -->
@@ -90,7 +193,7 @@
 
               <!-- Module Navigation -->
               <div class="admin-actions-row">
-<button class="staff-btn staff-btn--center" @click="openModule('hr')"> HR Staff Management</button>
+                <button class="staff-btn staff-btn--center" @click="openModule('hr')"> HR Staff Management</button>
                 <button class="staff-btn staff-btn--center" @click="openModule('finance')">Finance</button>
                 <button class="staff-btn staff-btn--center" @click="openModule('cashier')">Cashier</button>
               </div>
@@ -120,109 +223,6 @@
               </div>
             </div>
           </div>
-        </aside>
-
-        <!-- MIDDLE: MAIN DASHBOARD -->
-        <main class="admin-main">
-          <header class="admin-main-header">
-            <div class="admin-main-header-top">
-              <div>
-                <h1>{{ panelTitle }}</h1>
-                <p>{{ panelDescription }}</p>
-                <p v-if="isLoadingDashboard && !isInitialMount" class="small-hint">Loading dashboard…</p>
-                <p v-else-if="dashboardError" class="small-hint small-hint--error">{{ dashboardError }}</p>
-              </div>
-
-              <div class="range-tabs">
-                <button class="range-tab" :class="{ 'range-tab--active': activeRange === 'today' }" @click="changeRange('today')">Today</button>
-                <button class="range-tab" :class="{ 'range-tab--active': activeRange === 'yesterday' }" @click="changeRange('yesterday')">Yesterday</button>
-                <button class="range-tab" :class="{ 'range-tab--active': activeRange === 'thisWeek' }" @click="changeRange('thisWeek')">This Week</button>
-                <button class="range-tab" :class="{ 'range-tab--active': activeRange === 'thisMonth' }" @click="changeRange('thisMonth')">This Month</button>
-              </div>
-            </div>
-          </header>
-
-          <section class="overview-grid">
-            <div class="overview-card"><span class="overview-label">Total Orders:</span><span class="overview-value">&nbsp;{{ dashboardTotals.orders }}</span></div>
-            <div class="overview-card"><span class="overview-label">Completed: </span><span class="overview-value">&nbsp;{{ dashboardTotals.completed }}</span></div>
-            <div class="overview-card"><span class="overview-label">Total Sales:</span><span class="overview-value">&nbsp;{{ dashboardTotals.sales }}</span></div>
-            <div class="overview-card"><span class="overview-label">Pending:</span><span class="overview-value">&nbsp;{{ dashboardTotals.pending }}</span></div>
-          </section>
-
-          <section class="panel-block">
-            <div class="panel-header">
-              <h2>System Overview by Branch</h2>
-            </div>
-            <div class="panel-body panel-body--table">
-              <div class="table-header"><span>Branch</span><span>Orders</span><span>Sales</span><span>Staff</span><span>Status</span></div>
-              <div v-if="branchStats.length === 0" class="table-row"><span>No branch data for this range.</span><span></span><span></span><span></span><span></span></div>
-              <div v-else v-for="branch in branchStats" :key="branch.id" class="table-row">
-                <span>{{ branch.name }}</span>
-                <span>{{ branch.orders }}</span>
-                <span>{{ branch.sales }}</span>
-                <span>{{ branch.staff_count }}</span>
-                <span>
-                  <span class="badge" :class="branch.is_active ? 'badge--success' : 'badge--warning'">
-                    {{ branch.is_active ? 'Active' : 'Inactive' }}
-                  </span>
-                </span>
-              </div>
-            </div>
-          </section>
-
-          <section class="panel-block">
-            <div class="panel-header">
-              <h2>Recent System Activity</h2>
-            </div>
-            <div class="panel-body panel-body--list">
-              <div v-if="systemActivity.length === 0" class="queue-item"><div class="queue-title">No recent activity.</div></div>
-              <div v-else v-for="activity in systemActivity" :key="activity.id" class="queue-item">
-                <div>
-                  <div class="queue-title">{{ activity.title }}</div>
-                  <div class="queue-meta">{{ activity.description }}</div>
-                </div>
-                <span class="badge" :class="activity.badgeClass">{{ activity.status }}</span>
-              </div>
-            </div>
-          </section>
-        </main>
-
-        <!-- RIGHT: SIDE PANELS -->
-        <aside class="admin-side">
-          <section class="panel-block">
-            <div class="panel-header"><h2>Top Products (All Branches)</h2></div>
-            <div class="panel-body panel-body--list">
-              <div v-if="topProducts.length === 0" class="side-item"><span>No data for this range.</span></div>
-              <div v-else v-for="prod in topProducts" :key="prod.id" class="side-item"><span>{{ prod.name }}</span><span class="side-value">{{ prod.orders }} orders</span></div>
-            </div>
-          </section>
-
-          <section class="panel-block">
-            <div class="panel-header"><h2>Low Stock Alerts</h2></div>
-            <div class="panel-body panel-body--list">
-              <div v-if="lowStockItems.length === 0" class="side-item side-item--alert"><span>All items above minimum stock.</span></div>
-              <div v-else v-for="item in lowStockItems" :key="item.id" class="side-item side-item--alert"><span>{{ item.name }}</span><span class="side-value">{{ item.stock }}</span></div>
-            </div>
-          </section>
-
-          <section class="panel-block">
-            <div class="panel-header"><h2>Staff Attendance (All Branches)</h2></div>
-            <div class="panel-body panel-body--table">
-              <div class="table-header"><span>Staff</span><span>Branch</span><span>Status</span></div>
-              <div v-if="adminAttendance.length === 0" class="table-row"><span>No records.</span><span></span><span></span></div>
-              <div v-else v-for="att in adminAttendance.slice(0, 10)" :key="att.id" class="table-row">
-                <span>{{ att.user_name }}</span>
-                <span>{{ att.branch_name || '-' }}</span>
-                <span>
-                  <span class="badge" :class="{
-                    'badge--success': att.status === 'present',
-                    'badge--warning': att.status === 'late',
-                    'badge--info': att.status === 'absent'
-                  }">{{ att.status || '-' }}</span>
-                </span>
-              </div>
-            </div>
-          </section>
         </aside>
       </section>
 
