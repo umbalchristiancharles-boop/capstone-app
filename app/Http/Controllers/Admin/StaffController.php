@@ -103,10 +103,10 @@ class StaffController extends Controller
                 // Keep a single representative as branch_manager (frontend still expects a single manager)
                 $branchManager = $managers->first();
 
-                // Get staff for this branch (STAFF only)
+                // Get staff for this branch (include STAFF and CUSTOM accounts)
                 $staff = DB::table('users')
                     ->where('branch_id', $branch->id)
-                    ->where('role', 'STAFF')
+                    ->whereIn('role', ['STAFF', 'CUSTOM'])
                     ->where('is_active', 1)
                     ->whereNull('deleted_at') // Exclude soft deleted
                     ->get();
@@ -283,7 +283,7 @@ class StaffController extends Controller
         $staff = DB::table('users')
             ->leftJoin('branches', 'users.branch_id', '=', 'branches.id')
             ->where('users.id', $id)
-            ->whereIn('users.role', ['BRANCH_MANAGER', 'MANAGER', 'STAFF', 'HR'])
+            ->whereIn('users.role', ['BRANCH_MANAGER', 'MANAGER', 'STAFF', 'HR', 'CUSTOM'])
             ->whereNull('users.deleted_at') // Exclude soft deleted
             ->select(
                 'users.id',
@@ -406,17 +406,24 @@ class StaffController extends Controller
         try {
             $allowedRoles = [];
             if (in_array($user->role, ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN'])) {
-                // Allow owners/superadmins to create owner, branch managers, HR, and staff accounts
-                $allowedRoles = ['OWNER', 'BRANCH_MANAGER', 'MANAGER', 'HR', 'STAFF'];
+                // Allow owners/superadmins to create owner, branch managers, HR, staff and custom accounts
+                $allowedRoles = ['OWNER', 'BRANCH_MANAGER', 'MANAGER', 'HR', 'STAFF', 'CUSTOM'];
             } elseif ($user->role === 'ADMIN') {
-                // ADMIN is per-branch, can create branch-level staff only
-                $allowedRoles = ['BRANCH_MANAGER', 'MANAGER', 'HR', 'STAFF'];
+                // ADMIN is per-branch, can create branch-level staff and custom accounts
+                $allowedRoles = ['BRANCH_MANAGER', 'MANAGER', 'HR', 'STAFF', 'CUSTOM'];
             } elseif (in_array($user->role, ['BRANCH_MANAGER', 'MANAGER'])) {
                 // Branch managers and department managers (HR, Finance, etc.) can create HR and staff
                 $allowedRoles = ['HR', 'STAFF'];
-            } elseif ($user->role === 'HR') {
-                // HR can create staff accounts within their branch
-                $allowedRoles = ['STAFF'];
+                // If the current user is a Manager of HR, allow them to create other Managers
+                // (e.g., HR manager creating department managers like Procurement, Finance)
+                if (strtoupper($user->role) === 'MANAGER' && strtoupper($user->department ?? '') === 'HR') {
+                    // HR managers should also be allowed to create CUSTOM accounts
+                    $allowedRoles = ['MANAGER', 'HR', 'STAFF', 'CUSTOM'];
+                }
+            } elseif (strtoupper($user->role) === 'HR') {
+                // HR users can create staff, department managers, and custom accounts within their branch
+                // (Allow creating MANAGER so HR can add managers for departments)
+                $allowedRoles = ['MANAGER', 'HR', 'STAFF', 'CUSTOM'];
             } else {
                 return response()->json([
                     'success' => false,
@@ -442,8 +449,13 @@ class StaffController extends Controller
                 }
             }
 
+            // Log allowed roles and incoming requested role to debug validation issues
+            Log::debug('apiStore allowedRoles', ['allowedRoles' => $allowedRoles, 'session_user_role' => $user->role ?? null]);
+
             // Build validation rules dynamically so OWNER role does not require a branch
             $requestedRole = $request->input('role');
+
+            Log::debug('apiStore requestedRole before normalization', ['requestedRole_raw' => $requestedRole]);
 
             // Accept both camelCase and snake_case field names
             $fullName = $request->input('fullName') ?? $request->input('full_name') ?? '';
@@ -453,7 +465,8 @@ class StaffController extends Controller
             $password = $request->input('password');
 
 $rules = [
-                'username' => 'required|string|max:50|unique:users,username',
+                // Username may be omitted from the SPA (auto-generated server-side)
+                'username' => 'nullable|string|max:50|unique:users,username',
                 'email' => 'nullable|email|max:120|unique:users,email',
                 'full_name' => 'nullable|string|max:150',
                 'fullName' => 'nullable|string|max:150',
@@ -488,6 +501,12 @@ $rules = [
                 'branch_id.required' => 'The branch field is required.',
             ];
 
+            // Require department when creating Managers or Staff
+            if (in_array(strtoupper($requestedRole), ['MANAGER', 'STAFF'])) {
+                $rules['department'] = 'required|in:HR,FINANCE,INVENTORY,LOGISTICS,CASHIER,KITCHEN,PROCUREMENT';
+                $messages['department.required'] = 'The department field is required.';
+            }
+
             $request->validate($rules, $messages);
 
             $role = strtoupper($requestedRole);
@@ -496,22 +515,43 @@ $rules = [
             $defaultPassword = !empty($password) ? $password : config('chikintayo.default_password');
             $branchId = $branchId ?? null;
 
-            // Check if branch already has a manager (if creating BRANCH_MANAGER)
-            if (in_array($role, ['BRANCH_MANAGER', 'MANAGER']) && $branchId) {
-                $existingManager = DB::table('users')
-                    ->where('branch_id', $branchId)
-                    ->whereIn('role', ['BRANCH_MANAGER', 'MANAGER'])
-                    ->where('is_active', 1)
-                    ->whereNull('deleted_at') // Exclude soft deleted
-                    ->exists();
-
-                if ($existingManager) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'This branch already has a manager'
-                    ], 400);
-                }
+            // If the creator is an HR user, enforce that created staff belong to the HR's branch
+            // (HR should not be able to create staff in other branches)
+            if (strtoupper($user->role) === 'HR' && $user->branch_id) {
+                $branchId = $user->branch_id;
             }
+
+            // If username was not provided by the SPA, generate a unique one server-side.
+            $username = $request->input('username');
+            if (! $username || trim($username) === '') {
+                // Build a base from the first name if available, fallback to 'user'
+                $firstName = '';
+                if (! empty($fullName)) {
+                    $parts = preg_split('/\s+/', trim($fullName));
+                    $firstName = strtolower($parts[0] ?? '');
+                }
+                $base = preg_replace('/[^a-z0-9]/', '', $firstName) ?: 'user';
+                $base = substr($base, 0, 8);
+
+                // Try candidates until unique
+                $candidate = strtoupper($base) . rand(100, 999);
+                $tries = 0;
+                while (DB::table('users')->where('username', $candidate)->exists() && $tries < 10) {
+                    $candidate = strtoupper($base) . rand(100, 999);
+                    $tries++;
+                }
+                // As a fallback append timestamp
+                if (DB::table('users')->where('username', $candidate)->exists()) {
+                    $candidate = strtoupper($base) . substr(time(), -6);
+                }
+
+                $username = $candidate;
+            }
+
+            // Ensure request has username for later insert
+            $request->merge(['username' => $username]);
+
+            // Allow multiple managers per branch — no uniqueness check here.
 
             if (in_array($user->role, ['HR', 'ADMIN']) && $user->branch_id && $branchId && (int) $branchId !== (int) $user->branch_id) {
                 return response()->json([
@@ -544,13 +584,77 @@ $rules = [
             $transactionStarted = true;
 
             // Fix: department must be NULL for OWNER, or if not set/invalid
-            $departmentValue = $request->input('department');
+            $originalDept = $request->input('department');
+            $departmentValue = $originalDept;
             if (is_string($departmentValue) && $departmentValue !== '') {
                 $departmentValue = strtoupper($departmentValue);
             }
-            if ($role === 'OWNER' || $departmentValue === null || $departmentValue === '' || !in_array($departmentValue, ['HR', 'FINANCE', 'INVENTORY', 'LOGISTICS', 'CASHIER', 'KITCHEN'])) {
+            $validDepartments = ['HR', 'FINANCE', 'INVENTORY', 'LOGISTICS', 'CASHIER', 'KITCHEN', 'PROCUREMENT'];
+            if ($role === 'OWNER' || $departmentValue === null || $departmentValue === '' || !in_array($departmentValue, $validDepartments)) {
+                // If the client provided a department but it was dropped, log for visibility
+                if (!empty($originalDept) && strtoupper($originalDept) !== ($departmentValue ?? '')) {
+                    Log::warning('Department normalized to null during staff creation', [
+                        'requested_department' => $originalDept,
+                        'normalized' => null,
+                        'role' => $role,
+                        'request_user_id' => $user->id ?? null,
+                    ]);
+                }
                 $departmentValue = null;
             }
+            // If creating CUSTOM account via Admin endpoint, normalize modules/functions from FormData
+            $permissionsPayload = null;
+            if ($role === 'CUSTOM') {
+                Log::debug('admin apiStore raw modules/functions', [
+                    'modules_raw' => $request->input('modules'),
+                    'functions_raw' => $request->input('functions'),
+                    'all' => $request->all() ? 'present' : 'empty'
+                ]);
+
+                $allowedModules = [
+                    'admin', 'finance', 'logistics', 'inventory', 'procurement', 'kitchen', 'cashier', 'hr', 'reports'
+                ];
+                $allowedFunctions = [
+                    'admin.users', 'admin.branches', 'admin.settings',
+                    'finance.dashboard', 'finance.budget', 'finance.reports', 'finance.expenses',
+                    'logistics.dispatch', 'logistics.receiving', 'logistics.transfers',
+                    'inventory.products', 'inventory.counts', 'inventory.adjustments',
+                    'procurement.purchase_orders', 'procurement.suppliers', 'procurement.approvals',
+                    'kitchen.orders', 'kitchen.production', 'kitchen.waste',
+                    'cashier.pos', 'cashier.refunds', 'cashier.shifts',
+                    'hr.attendance', 'hr.scheduling', 'hr.payroll',
+                    'reports.sales', 'reports.inventory', 'reports.finance',
+                ];
+
+                $rawModulesInput = $request->input('modules') ?? $request->input('modules[]') ?? [];
+                $rawFunctionsInput = $request->input('functions') ?? $request->input('functions[]') ?? [];
+
+                if (is_string($rawModulesInput) && strpos($rawModulesInput, ',') !== false) {
+                    $rawModulesInput = array_map('trim', explode(',', $rawModulesInput));
+                }
+                if (is_string($rawFunctionsInput) && strpos($rawFunctionsInput, ',') !== false) {
+                    $rawFunctionsInput = array_map('trim', explode(',', $rawFunctionsInput));
+                }
+
+                $rawModulesInput = is_array($rawModulesInput) ? $rawModulesInput : [$rawModulesInput];
+                $rawFunctionsInput = is_array($rawFunctionsInput) ? $rawFunctionsInput : [$rawFunctionsInput];
+
+                $rawModules = array_filter($rawModulesInput, fn($m) => is_string($m) && in_array(strtolower($m), $allowedModules, true));
+                $rawFunctions = array_filter($rawFunctionsInput, fn($f) => is_string($f) && in_array(strtolower($f), array_map('strtolower', $allowedFunctions), true));
+
+                $modules = array_values(array_unique(array_map('strtolower', $rawModules)));
+                $functions = array_values(array_unique(array_map('strtolower', $rawFunctions)));
+
+                if (!empty($modules) || !empty($functions)) {
+                    $permissionsPayload = [
+                        'modules' => $modules,
+                        'functions' => $functions,
+                    ];
+                }
+
+                Log::debug('admin apiStore normalized permissions', ['permissions' => $permissionsPayload]);
+            }
+
             $insertData = [
                 'username' => $request->input('username'),
                 'email' => $request->input('email'),
@@ -566,6 +670,10 @@ $rules = [
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
+            if ($permissionsPayload) {
+                // Ensure permissions are stored as JSON string for direct DB insert
+                $insertData['permissions'] = is_string($permissionsPayload) ? $permissionsPayload : json_encode($permissionsPayload);
+            }
             Log::debug('Inserting staff with data:', $insertData);
             $staffId = DB::table('users')->insertGetId($insertData);
 
@@ -675,7 +783,7 @@ $rules = [
                 'branchId' => 'nullable|exists:branches,id',
                 'branch_id' => 'nullable|exists:branches,id',
                 // allow OWNER, ADMIN, and SUPER_ADMIN as well so these accounts can be edited here
-                'role' => 'required|in:BRANCH_MANAGER,MANAGER,STAFF,HR,OWNER,ADMIN,SUPER_ADMIN,SUPERADMIN',
+                'role' => 'required|in:BRANCH_MANAGER,MANAGER,STAFF,HR,OWNER,ADMIN,SUPER_ADMIN,SUPERADMIN,CUSTOM',
                 'isActive' => 'required|boolean',
             ]);
 
@@ -722,23 +830,7 @@ $rules = [
                 ], 403);
             }
 
-            // Check if branch already has a manager (if changing to BRANCH_MANAGER)
-            if (in_array(($request->input('role') ?? $staff->role), ['BRANCH_MANAGER', 'MANAGER'])) {
-                $existingManager = DB::table('users')
-                    ->where('branch_id', $branchId)
-                    ->whereIn('role', ['BRANCH_MANAGER', 'MANAGER'])
-                    ->where('is_active', 1)
-                    ->where('id', '!=', $id)
-                    ->whereNull('deleted_at') // Exclude soft deleted
-                    ->exists();
-
-                if ($existingManager) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'This branch already has a manager'
-                    ], 400);
-                }
-            }
+            // Allow multiple managers per branch — no uniqueness check on update.
 
             if (in_array($user->role, ['HR', 'ADMIN', 'MANAGER']) && $user->branch_id && $staff->branch_id !== $user->branch_id) {
                 return response()->json([
@@ -818,7 +910,7 @@ $rules = [
             }
 
             // Check if user is BRANCH_MANAGER, STAFF or HR
-            if (! in_array($user->role, ['BRANCH_MANAGER', 'MANAGER', 'STAFF', 'HR'])) {
+            if (! in_array($user->role, ['BRANCH_MANAGER', 'MANAGER', 'STAFF', 'HR', 'CUSTOM'])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Invalid user role'

@@ -201,7 +201,7 @@ const router = createRouter({
     { path: '/inventory', component: () => import('./components/inventory/InventoryStaffPanel.vue'), meta: { requiresAuth: true } },
     { path: '/staff/kitchen', component: () => import('./components/KitchenStaffPanel.vue'), meta: { requiresAuth: true } },
     { path: '/supplier-panel', component: SupplierPanel, meta: { requiresAuth: true } },
-    { path: '/owner-panel', component: AdminPanel },
+    { path: '/owner-panel', component: () => import('./components/OwnerPanel.vue'), meta: { requiresAuth: true } },
     { path: '/custom-panel', component: CustomPanel, meta: { requiresAuth: true } },
     { path: '/hr-panel', component: DeletedStaffList},
     {

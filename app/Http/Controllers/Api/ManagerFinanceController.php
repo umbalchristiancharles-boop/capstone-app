@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Models\BudgetRequest;
 use App\Models\SupplierOrder;
 use App\Models\ProcurementRequest;
+use Laravel\Sanctum\PersonalAccessToken;
 
 /**
  * Manager Finance Controller
@@ -28,9 +29,28 @@ class ManagerFinanceController extends Controller
     private function resolveAuthenticatedUser(Request $request)
     {
         if (Auth::check()) {
+            Log::debug('[ManagerFinance] Auth::check() true, user id: ' . (Auth::id() ?? 'null'));
             return Auth::user();
         }
+        // Support Bearer token authentication (Sanctum personal access tokens)
+        try {
+            $authHeader = $request->header('Authorization');
+            $token = $request->bearerToken();
+            Log::debug('[ManagerFinance] Authorization header: ' . ($authHeader ?? 'none') . ', bearerToken: ' . ($token ? '[present]' : '[none]'));
+            if ($token) {
+                $pat = PersonalAccessToken::findToken($token);
+                if ($pat && $pat->tokenable) {
+                    Log::debug('[ManagerFinance] PersonalAccessToken matched tokenable id: ' . ($pat->tokenable->id ?? 'unknown'));
+                    return $pat->tokenable;
+                }
+                Log::debug('[ManagerFinance] PersonalAccessToken findToken returned no tokenable');
+            }
+        } catch (\Throwable $e) {
+            Log::error('[ManagerFinance] Token lookup error: ' . $e->getMessage());
+            // ignore and fallback to session-based lookup
+        }
         $sessionUserId = $request->session()->get('user_id');
+        Log::debug('[ManagerFinance] session user_id: ' . ($sessionUserId ?? 'null') . ', cookies: ' . json_encode($request->cookies->all()));
         if ($sessionUserId) {
             return User::find($sessionUserId);
         }
@@ -44,7 +64,37 @@ class ManagerFinanceController extends Controller
     {
         if (!$user) return false;
         $role = strtoupper($user->role ?? '');
-        return in_array($role, ['FINANCE_MANAGER', 'MANAGER', 'OWNER', 'SUPER_ADMIN', 'SUPERADMIN']);
+        if (in_array($role, ['FINANCE_MANAGER', 'MANAGER', 'OWNER', 'SUPER_ADMIN', 'SUPERADMIN'])) {
+            return true;
+        }
+
+        // Support CUSTOM role users who have the finance module enabled in their
+        // permissions payload (some accounts are created with role 'CUSTOM' and
+        // a JSON 'permissions' field listing enabled modules).
+        if ($role === 'CUSTOM') {
+            $perms = $user->permissions ?? [];
+            if (is_string($perms)) {
+                try { $decoded = json_decode($perms, true); if (is_array($decoded)) $perms = $decoded; } catch (\Throwable $e) { $perms = []; }
+            }
+            if (is_array($perms)) {
+                // Check for modules list
+                if (isset($perms['modules']) && is_array($perms['modules'])) {
+                    foreach ($perms['modules'] as $m) {
+                        if (strtolower((string)$m) === 'finance') return true;
+                    }
+                }
+                // Check for explicit finance flag
+                if (isset($perms['finance']) && ($perms['finance'] === true || $perms['finance'] === '1' || $perms['finance'] === 1)) {
+                    return true;
+                }
+                // Fallback: flat list containing 'finance'
+                foreach ($perms as $v) {
+                    if (is_string($v) && strtolower($v) === 'finance') return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -120,7 +170,8 @@ class ManagerFinanceController extends Controller
         }
 
         // Orders/Expenses queries - if user has no branch_id (owner/admin), get ALL branches
-        $completedQuery = Order::whereIn('status', ['completed', 'approved']);
+        // Include in_kitchen orders as they are paid at checkout (dishes are queued for kitchen)
+        $completedQuery = Order::whereIn('status', ['completed', 'approved', 'in_kitchen']);
         $cancelledQuery = Order::whereIn('status', ['cancelled']);
         $ordersQuery = Order::query();
 
@@ -303,8 +354,8 @@ class ManagerFinanceController extends Controller
             $monthEnd = $monthStart->copy()->endOfMonth();
             $monthLabel = $monthStart->format('M Y');
 
-            // Income: completed orders
-            $incomeQuery = Order::whereIn('status', ['completed', 'approved'])
+            // Income: include completed, approved, and in_kitchen orders (dishes are paid at checkout)
+            $incomeQuery = Order::whereIn('status', ['completed', 'approved', 'in_kitchen'])
                 ->whereBetween('created_at', [$monthStart, $monthEnd]);
             if ($branchId) {
                 $incomeQuery->where('branch_id', $branchId);

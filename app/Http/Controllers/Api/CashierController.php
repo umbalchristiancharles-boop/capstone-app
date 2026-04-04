@@ -399,7 +399,7 @@ class CashierController extends Controller
 
                 $unitPrice = (float) $product->price;
 
-                // If this is a kitchen dish, validate ingredient stocks and compute price from ingredients
+                // If this is a kitchen dish, compute availability and cost using shared helper
                 if ($product->is_kitchen_dish) {
                     $dish = Dish::whereRaw('TRIM(UPPER(name)) = ?', [trim(strtoupper($product->name))])
                         ->where('branch_id', $request->branch_id)
@@ -422,82 +422,14 @@ class CashierController extends Controller
                         abort(422, "Dish definition for {$product->name} not found.");
                     }
 
-                    $costSum = 0.0;
-                    $maxServings = null;
-                    foreach ($dish->ingredients as $ing) {
-                        // Aggregate across all products in this branch that match this ingredient
-                        $perServing = (float) ($ing->per_serving ?? 1);
-                        if ($perServing <= 0) $perServing = 1;
+                    [$maxServings, $costSum] = $this->computeDishAvailability($dish, $request->branch_id);
 
-                        $nameRaw = trim((string) $ing->name);
-                        $nameUpper = strtoupper($nameRaw);
-                        $normalized = preg_replace('/[^A-Z0-9]+/', '', $nameUpper);
-                        $skuKey = $ing->product?->sku ?? null;
-
-                        // Narrow candidates by SKU or name-like first, then refine in PHP
-                        $candidateQuery = Product::where('branch_id', $request->branch_id)->where('is_active', 1)
-                            ->where(function ($q) use ($skuKey, $nameRaw) {
-                                if ($skuKey) $q->orWhere('sku', $skuKey);
-                                $q->orWhere('name', 'like', '%' . str_replace(' ', '%', $nameRaw) . '%');
-                            });
-
-                        $candidateProducts = $candidateQuery->get();
-
-                        if ($candidateProducts->isEmpty()) {
-                            $available = false;
-                            break;
-                        }
-
-                        // Normalize candidate names and prefer exact normalized matches or soundex, otherwise use candidates as-is
-                        $filtered = $candidateProducts->filter(function ($p) use ($normalized) {
-                            $pn = strtoupper($p->name ?? '');
-                            $pnNorm = preg_replace('/[^A-Z0-9]+/', '', $pn);
-                            if ($pnNorm === $normalized) return true;
-                            // soundex compare as fallback
-                            if (soundex($pn) === soundex($normalized)) return true;
-                            return false;
-                        });
-
-                        if ($filtered->isNotEmpty()) {
-                            $candidateProducts = $filtered;
-                        }
-
-                        // Sum total pieces available across candidate products, considering pack-mode and open_pack_used
-                        $totalPiecesAvailable = 0;
-                        $totalCost = 0.0;
-                        $isCondiment = false;
-                        foreach ($candidateProducts as $cp) {
-                            $cat = strtolower(trim($cp->category ?? ''));
-                            if ($cat === 'condiment') {
-                                $isCondiment = true;
-                            }
-
-                            $perPackModeCp = in_array($cp->per_pack_or_individual, ['per_pack', 'both']);
-                            $packQtyCp = (float) ($cp->pack_quantity ?? 0);
-                            if ($perPackModeCp && $packQtyCp > 0) {
-                                $openUsedCp = (float) ($cp->open_pack_used ?? 0);
-                                $totalPiecesAvailable += (($cp->stock ?? 0) * $packQtyCp) - $openUsedCp;
-                            } else {
-                                $totalPiecesAvailable += (float) ($cp->stock ?? 0);
-                            }
-
-                            $totalCost += ((float) ($cp->cost_price ?? $cp->price ?? 0)) * 1; // cost per piece assumed
-                        }
-
-                        // If condiment only, treat as non-blocking but include cost
-                        if ($isCondiment && $totalPiecesAvailable <= 0) {
-                            $costSum += ($totalCost * $perServing);
-                            continue;
-                        }
-
-                        $possibleByIng = (int) floor($totalPiecesAvailable / max(1, $perServing));
-                        $maxServings = is_null($maxServings) ? $possibleByIng : min($maxServings, $possibleByIng);
-                        $costSum += ($totalCost * $perServing);
+                    if ($maxServings <= 0) {
+                        abort(422, "Insufficient ingredients/stock for {$product->name}.");
                     }
 
-                    // After processing ingredients, compute selling price from cost
                     $markup = $this->getMarkupMultiplier($request->branch_id);
-                    $sellingPrice = round($costSum * $markup, 2);
+                    $sellingPrice = $costSum > 0 ? round($costSum * $markup, 2) : (float) $product->price;
                     $unitPrice = $sellingPrice;
                     $subtotal = $sellingPrice * $item['quantity'];
                 } else {

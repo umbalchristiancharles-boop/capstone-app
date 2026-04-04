@@ -132,12 +132,39 @@
               <label for="roleDepartment" class="form-label">Role / Department *</label>
               <select v-model="form.roleDepartment" id="roleDepartment" class="form-input" :required="!isEdit">
                 <option value="">-- Select Role / Department --</option>
-                <option value="STAFF inventory">Inventory Staff</option>
                 <option value="MANAGER logistics">Logistics Manager</option>
                 <option value="MANAGER finance">Finance Manager</option>
                 <option value="MANAGER procurement">Procurement Manager</option>
                 <option value="STAFF cashier">Cashier Staff</option>
+                <option value="STAFF inventory">Inventory Staff</option>
+                <option value="CUSTOM">Custom Account</option>
               </select>
+            </div>
+
+            <!-- Custom Account Permissions (visible when CUSTOM selected) -->
+            <div class="form-group full-span" v-if="form.roleDepartment === 'CUSTOM'">
+              <div class="custom-account-card">
+                <div class="custom-account-header">
+                  <strong>Custom Account Permissions</strong>
+                  <label style="display:inline-flex;align-items:center;gap:8px">
+                    <input type="checkbox" v-model="form.enable_custom_permissions" />
+                    <span style="font-weight:600">Enable custom permissions</span>
+                  </label>
+                </div>
+                <div class="custom-account-body" v-if="form.enable_custom_permissions">
+                  <div class="permission-grid">
+                    <div v-for="module in permissionTemplates" :key="module.key" class="permission-card">
+                      <div class="permission-card-header">
+                        <label style="display:flex;align-items:center;gap:8px">
+                          <input type="checkbox" v-model="form.custom_permissions.modules[module.key]" />
+                          <span style="font-weight:700; text-transform:capitalize">{{ module.label }}</span>
+                        </label>
+                      </div>
+                      <!-- Panel-level only: functions removed per request -->
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- Branch Selection -->
@@ -360,6 +387,8 @@ export default {
         password: '',
         roleDepartment: '',
         custom_account: false,
+        enable_custom_permissions: false,
+        custom_permissions: null,
         branch_id: '',
         address: '',
         region: '',
@@ -408,10 +437,62 @@ export default {
           }
         }
       },
+      // Permission templates copied from OwnerAddBranches for custom accounts
+      permissionTemplates: [
+        { key: 'admin', label: 'Admin', functions: [
+          { key: 'admin.users', label: 'User Management' },
+          { key: 'admin.branches', label: 'Branch Settings' },
+          { key: 'admin.settings', label: 'System Settings' },
+        ]},
+        { key: 'finance', label: 'Finance', functions: [
+          { key: 'finance.dashboard', label: 'Dashboard & KPIs' },
+          { key: 'finance.budget', label: 'Branch Budgets' },
+          { key: 'finance.reports', label: 'Reports' },
+          { key: 'finance.expenses', label: 'Expenses' },
+        ]},
+        { key: 'logistics', label: 'Logistics', functions: [
+          { key: 'logistics.dispatch', label: 'Dispatch / Delivery' },
+          { key: 'logistics.receiving', label: 'Receiving' },
+          { key: 'logistics.transfers', label: 'Transfers' },
+        ]},
+        { key: 'inventory', label: 'Inventory', functions: [
+          { key: 'inventory.products', label: 'Products' },
+          { key: 'inventory.counts', label: 'Stock Counts' },
+          { key: 'inventory.adjustments', label: 'Adjustments' },
+        ]},
+        { key: 'procurement', label: 'Procurement', functions: [
+          { key: 'procurement.purchase_orders', label: 'Purchase Orders' },
+          { key: 'procurement.suppliers', label: 'Suppliers' },
+          { key: 'procurement.approvals', label: 'Approvals' },
+        ]},
+        { key: 'kitchen', label: 'Kitchen Staff', functions: [
+          { key: 'kitchen.orders', label: 'Orders Queue' },
+          { key: 'kitchen.production', label: 'Production' },
+          { key: 'kitchen.waste', label: 'Waste / Spoilage' },
+        ]},
+        { key: 'cashier', label: 'Cashier', functions: [
+          { key: 'cashier.pos', label: 'POS' },
+          { key: 'cashier.refunds', label: 'Refunds / Voids' },
+          { key: 'cashier.shifts', label: 'Shift Closure' },
+        ]},
+        { key: 'hr', label: 'HR', functions: [
+          { key: 'hr.attendance', label: 'Attendance' },
+          { key: 'hr.scheduling', label: 'Scheduling' },
+          { key: 'hr.payroll', label: 'Payroll Export' },
+        ]},
+        { key: 'reports', label: 'Reports', functions: [
+          { key: 'reports.sales', label: 'Sales Reports' },
+          { key: 'reports.inventory', label: 'Inventory Reports' },
+          { key: 'reports.finance', label: 'Finance Reports' },
+        ]},
+      ],
     }
   },
   mounted() {
     this.loadBranches()
+    if (!this.form.custom_permissions) {
+      this.form.custom_permissions = this.buildPermissionState()
+    }
     if (this.isEdit && this.staff) {
       this.$nextTick(() => {
         if (this.form.province) this.loadCities(this.form.province)
@@ -422,6 +503,15 @@ export default {
   methods: {
     async loadBranches() {
       const endpoints = ['/api/admin/branches', '/api/owner/branches', '/api/branches']
+      // Determine enforced branch id: prefer explicit prop, fallback to localStorage.user.branch_id for HR users
+      let enforcedBranchId = this.preSelectedBranchId || ''
+      if ((!enforcedBranchId || String(enforcedBranchId) === '') && this.isHrUser) {
+        try {
+          const stored = JSON.parse(localStorage.getItem('user') || 'null') || null
+          if (stored && stored.branch_id) enforcedBranchId = stored.branch_id
+        } catch (e) { enforcedBranchId = enforcedBranchId }
+      }
+
       for (const url of endpoints) {
         try {
           const res = await axios.get(url, { withCredentials: true })
@@ -429,24 +519,28 @@ export default {
 
           if (res.data.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
             this.branches = res.data.data
-            // If this modal was opened with a preSelectedBranchId for an HR user,
-            // restrict branches to that branch and make the select read-only.
-            if (this.preSelectedBranchId && this.isHrUser) {
-              this.branches = this.branches.filter(b => String(b.id) === String(this.preSelectedBranchId))
-              this.form.branch_id = this.preSelectedBranchId
+            // If this modal was opened for HR (or preSelectedBranchId provided), restrict branches to enforcedBranchId and make readonly
+            if (enforcedBranchId && (this.isHrUser || this.preSelectedBranchId)) {
+              this.branches = this.branches.filter(b => String(b.id) === String(enforcedBranchId))
+              this.form.branch_id = enforcedBranchId
               this.branchReadOnly = true
             }
             return
           }
           if (Array.isArray(res.data) && res.data.length > 0) {
             this.branches = res.data
+            if (enforcedBranchId && (this.isHrUser || this.preSelectedBranchId)) {
+              this.branches = this.branches.filter(b => String(b.id) === String(enforcedBranchId))
+              this.form.branch_id = enforcedBranchId
+              this.branchReadOnly = true
+            }
             return
           }
           if (res.data.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
             this.branches = res.data.data
-            if (this.preSelectedBranchId && this.isHrUser) {
-              this.branches = this.branches.filter(b => String(b.id) === String(this.preSelectedBranchId))
-              this.form.branch_id = this.preSelectedBranchId
+            if (enforcedBranchId && (this.isHrUser || this.preSelectedBranchId)) {
+              this.branches = this.branches.filter(b => String(b.id) === String(enforcedBranchId))
+              this.form.branch_id = enforcedBranchId
               this.branchReadOnly = true
             }
             return
@@ -626,6 +720,16 @@ export default {
         }
       }
 
+      // If creating a custom account, include selected modules/functions as arrays
+      try {
+        if (String(role).toUpperCase() === 'CUSTOM' && this.form.custom_permissions) {
+          const mods = Object.entries(this.form.custom_permissions.modules || {}).filter(([k,v]) => v).map(([k]) => k)
+          const fns = Object.entries(this.form.custom_permissions.functions || {}).filter(([k,v]) => v).map(([k]) => k)
+          mods.forEach(m => formData.append('modules[]', m))
+          fns.forEach(f => formData.append('functions[]', f))
+        }
+      } catch (e) {}
+
       return formData
     },
 
@@ -641,6 +745,20 @@ export default {
       } catch (err) {
         console.error('File change handler error:', err)
       }
+    },
+
+    buildPermissionState() {
+      const modules = {}
+      const functions = {}
+      try {
+        (this.permissionTemplates || []).forEach(mod => {
+          modules[mod.key] = false
+          (mod.functions || []).forEach(fn => { functions[fn.key] = false })
+        })
+      } catch (e) {
+        // ignore
+      }
+      return { modules, functions }
     },
 
     async submitForm() {
@@ -735,14 +853,23 @@ export default {
           // Create mode - build form data based on user role
           if (this.isManagerHrUser) {
             // Manager/HR endpoint uses JSON format
-            res = await axios.post(`${apiBaseUrl}/staff`, {
+            const payload = {
               username: this.form.username,
               email: this.form.email,
               fullName: this.form.full_name,
               phone: this.form.phone_number || '',
-              department: parsedDepartment || 'Staff',
               password: this.form.password || this.defaultPasswordValue,
-            }, {
+            }
+            if (parsedRole) payload.role = parsedRole
+            if (parsedDepartment) payload.department = parsedDepartment
+            // include custom permissions when creating CUSTOM accounts
+            if (parsedRole === 'CUSTOM' && this.form.custom_permissions) {
+              const mods = Object.entries(this.form.custom_permissions.modules || {}).filter(([k,v]) => v).map(([k]) => k)
+              const fns = Object.entries(this.form.custom_permissions.functions || {}).filter(([k,v]) => v).map(([k]) => k)
+              if (mods.length > 0) payload.modules = mods
+              if (fns.length > 0) payload.functions = fns
+            }
+            res = await axios.post(`${apiBaseUrl}/staff`, payload, {
               withCredentials: true,
               headers: { 'Content-Type': 'application/json' }
             })
@@ -884,8 +1011,19 @@ export default {
       return role === 'BRANCH_MANAGER' || role === 'MANAGER' || role === 'HR'
     },
     isHrUser() {
-      const userRole = window.userRole || ''
-      return String(userRole).toUpperCase() === 'HR'
+      // Treat explicit HR role, or a Manager whose department is HR, as HR user
+      try {
+        const stored = JSON.parse(localStorage.getItem('user') || 'null') || null
+        const role = (stored && stored.role) ? String(stored.role).toUpperCase() : (window.userRole || '').toUpperCase()
+        const dept = (stored && stored.department) ? String(stored.department).toUpperCase() : ''
+        if (role === 'HR') return true
+        if (role === 'MANAGER' && dept === 'HR') return true
+        if (role === 'BRANCH_MANAGER' && dept === 'HR') return true
+        return false
+      } catch (e) {
+        const userRole = window.userRole || ''
+        return String(userRole).toUpperCase() === 'HR'
+      }
     },
 
     // Reset password always uses admin endpoint (only exists there)
@@ -961,6 +1099,23 @@ export default {
               .filter(Boolean).join(', ')
             this.addressSaved = true
           }
+
+          // If editing a custom account, populate permissions
+          try {
+            if (String(newStaff.role).toUpperCase() === 'CUSTOM') {
+              this.form.enable_custom_permissions = true
+              this.form.custom_permissions = this.buildPermissionState()
+              const perms = (newStaff.permissions && typeof newStaff.permissions === 'string') ? JSON.parse(newStaff.permissions) : (newStaff.permissions || {})
+              (perms.modules || []).forEach(m => { if (this.form.custom_permissions.modules.hasOwnProperty(m)) this.form.custom_permissions.modules[m] = true })
+              (perms.functions || []).forEach(f => { if (this.form.custom_permissions.functions.hasOwnProperty(f)) this.form.custom_permissions.functions[f] = true })
+            } else {
+              this.form.enable_custom_permissions = false
+              if (!this.form.custom_permissions) this.form.custom_permissions = this.buildPermissionState()
+            }
+          } catch (e) {
+            this.form.enable_custom_permissions = false
+            if (!this.form.custom_permissions) this.form.custom_permissions = this.buildPermissionState()
+          }
         } else {
           this.form = {
             username: '',
@@ -1008,6 +1163,7 @@ export default {
             barangay: '',
             region: '',
           }
+          if (!this.form.custom_permissions) this.form.custom_permissions = this.buildPermissionState()
           this.addressSaved = false
           this.documentFiles = {}
           this.errorMessage = ''

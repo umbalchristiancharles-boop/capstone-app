@@ -40,6 +40,30 @@ Route::middleware('web')->group(function () {
     // Add missing password change route for modal (require session auth)
     Route::post('/change-password', [AuthController::class, 'changePassword'])->middleware('auth');
 
+    // Temporary debug endpoint - returns auth and header/cookie info for troubleshooting
+    Route::get('/debug/auth-check', function (\Illuminate\Http\Request $request) {
+        $user = null;
+        try { $user = \Illuminate\Support\Facades\Auth::user(); } catch (\Throwable $_) { }
+        $u = null;
+        if ($user) {
+            $u = [
+                'id' => $user->id ?? null,
+                'username' => $user->username ?? null,
+                'role' => $user->role ?? null,
+                'department' => $user->department ?? null,
+                'branch_id' => $user->branch_id ?? null,
+                'permissions' => $user->permissions ?? null,
+            ];
+        }
+        return response()->json([
+            'auth_check' => \Illuminate\Support\Facades\Auth::check(),
+            'user' => $u,
+            'bearer' => $request->bearerToken(),
+            'headers' => $request->headers->all(),
+            'cookies' => $request->cookies->all(),
+        ]);
+    });
+
     // FIXED: Forgot Password Routes (no auth needed)
     Route::post('/forgot-password', function (Request $request) {
         $request->validate(['email' => 'required|email']);
@@ -227,6 +251,12 @@ Route::middleware('auth:sanctum,web')->group(function () {
     Route::post('product-requests/{id}/reject-logistics', [\App\Http\Controllers\Api\ProductRequestController::class, 'rejectAtLogistics']);
     Route::post('product-requests/{id}/approve-owner', [\App\Http\Controllers\Api\ProductRequestController::class, 'approveAtOwner']);
     Route::post('product-requests/{id}/reject-owner', [\App\Http\Controllers\Api\ProductRequestController::class, 'rejectAtOwner']);
+
+    // Backwards-compatible owner-prefixed endpoints used by frontend
+    Route::get('owner/product-requests/pending', [\App\Http\Controllers\Api\ProductRequestController::class, 'getPendingOwnerApproval']);
+    Route::get('owner/product-requests/approved', [\App\Http\Controllers\Api\ProductRequestController::class, 'getOwnerApprovedRequests']);
+    Route::post('owner/product-requests/{id}/approve', [\App\Http\Controllers\Api\ProductRequestController::class, 'approveAtOwner']);
+    Route::post('owner/product-requests/{id}/reject', [\App\Http\Controllers\Api\ProductRequestController::class, 'rejectAtOwner']);
 
     // Product Approval Workflow (Multi-level product approval: Branch -> Logistics -> Owner)
     Route::get('products/approvals/pending-logistics', [\App\Http\Controllers\Api\ProductApprovalController::class, 'getPendingLogisticsApproval']);

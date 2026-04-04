@@ -133,6 +133,7 @@
       :show="showAddStaffModal"
       :staff="isEditingStaff ? staff.find(s => s.id === editingStaffId) : null"
       :isEdit="isEditingStaff"
+      :preSelectedBranchId="currentBranchId"
       @close="showAddStaffModal = false"
       @success="onStaffModalSuccess"
     />
@@ -158,6 +159,9 @@ function onStaffModalSuccess() {
 const loading = ref(false)
 const errorMessage = ref('')
 const searchQuery = ref('')
+
+// Current user's branch id (used to restrict branch selection for HR)
+const currentBranchId = ref(null)
 
 // Staff Data
 const staff = ref([])
@@ -407,6 +411,15 @@ onMounted(async () => {
     console.log('[HRStaffManagement] CSRF refreshed successfully')
   } catch (e) {
     console.warn('[HRStaffManagement] CSRF refresh failed, proceeding anyway:', e)
+  }
+
+  // Read current user's branch id from localStorage if available so the modal
+  // can restrict branch selection when HR creates staff.
+  try {
+    const stored = JSON.parse(localStorage.getItem('user') || 'null') || null
+    if (stored && stored.branch_id) currentBranchId.value = stored.branch_id
+  } catch (e) {
+    currentBranchId.value = null
   }
 
   await loadBranches()

@@ -334,9 +334,9 @@ class StaffInventoryController extends Controller
             $validated['stock'] = 0;
         }
 
-        // Only allow changing publish state if the actor is a branch Admin
+        // Only allow changing publish state if the actor is a branch Admin/Owner/SuperAdmin
         if (array_key_exists('is_published', $validated)) {
-            if (strtoupper($user->role) === 'ADMIN') {
+            if (in_array(strtoupper($user->role), ['ADMIN', 'OWNER', 'SUPER_ADMIN', 'SUPERADMIN'])) {
                 $wasPublished = (bool) $product->is_published;
                 $nowPublished = (bool) $validated['is_published'];
                 $product->is_published = $nowPublished;

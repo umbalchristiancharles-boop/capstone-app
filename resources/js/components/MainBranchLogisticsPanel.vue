@@ -85,89 +85,97 @@
               </tbody>
             </table>
           </div>
-        </section>
+          <section class="panel-section">
+            <h2 class="section-title">Product Requests (Logistics Approval)</h2>
+            <p class="section-description">New product requests awaiting logistics approval from Main Branch.</p>
 
-        <section class="panel-section">
-          <h2 class="section-title">Procurement Requests</h2>
-          <p class="section-description">Read-only procurement requests originating from Main Branch logistics</p>
+            <div v-if="prLoading" class="loading-container small">
+              <div class="loading-spinner"></div>
+              <p>Loading product requests...</p>
+            </div>
 
-          <div v-if="procRequestsLoading" class="loading-container small">
-            <div class="loading-spinner"></div>
-          </div>
+            <div v-else-if="prError" class="error-container">
+              <p class="error-message">{{ prError }}</p>
+              <button class="btn-retry" @click="fetchPendingProductRequests">Retry</button>
+            </div>
 
-          <div v-else class="table-container">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Product</th>
-                  <th>Supplier</th>
-                  <th>Qty</th>
-                  <th>Total</th>
-                  <th>Status</th>
-                  <th>Updated</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="req in procurementRequests" :key="req.id">
-                  <td><div class="product-name">{{ req.product?.name || '(no product)' }}</div></td>
-                  <td>{{ req.supplier?.name || req.supplier?.full_name || req.supplier_name || '(no supplier)' }}</td>
-                  <td>{{ req.quantity }}</td>
-                  <td class="amount">{{ formatPrice(req.total_amount) }}</td>
-                  <td><span :class="['status-badge', getProcStatusClass(req.status)]">{{ formatProcStatus(req.status, req.budget_approved) }}</span></td>
-                  <td>{{ formatDate(req.updated_at) }}</td>
-                </tr>
-                <tr v-if="procurementRequests.length === 0">
-                  <td colspan="6" class="empty-message">No procurement requests.</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-        <section class="panel-section">
-          <h2 class="section-title">Suppliers</h2>
-          <p class="section-description">Suppliers available for the selected branch (read-only)</p>
+            <div v-else class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Product Name</th>
+                    <th>Requested By</th>
+                    <th>Branch</th>
+                    <th>Requested</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="r in pendingProductRequests" :key="r.id">
+                    <td>{{ r.name }}</td>
+                    <td>{{ r.requester?.full_name || r.requester?.username || '(user)' }}</td>
+                    <td>{{ r.branch?.name || '(branch)' }}</td>
+                    <td>{{ formatDate(r.created_at) }}</td>
+                    <td>
+                      <button class="action-btn" @click="approvePendingRequest(r.id)">Approve</button>
+                      <button class="link-btn" style="margin-left:8px;background:#ef4444" @click="rejectPendingRequest(r.id)">Reject</button>
+                    </td>
+                  </tr>
+                  <tr v-if="pendingProductRequests.length === 0">
+                    <td colspan="5" class="empty-message">No product requests awaiting logistics approval.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
 
-          <div v-if="suppliersLoading" class="loading-container small">
-            <div class="loading-spinner"></div>
-            <p>Loading suppliers...</p>
-          </div>
+          <section class="panel-section">
+            <h2 class="section-title">Suppliers</h2>
+            <p class="section-description">Suppliers available for the selected branch (read-only)</p>
 
-          <div v-else-if="suppliersError" class="error-container">
-            <p class="error-message">{{ suppliersError }}</p>
-            <button class="btn-retry" @click="fetchSuppliers">Retry</button>
-          </div>
+            <div v-if="suppliersLoading" class="loading-container small">
+              <div class="loading-spinner"></div>
+              <p>Loading suppliers...</p>
+            </div>
 
-          <div v-else class="table-container">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Supplier Name</th>
-                  <th>Contact</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="s in suppliers" :key="s.id">
-                  <td>{{ s.name || s.full_name || s.username || '(no name)' }}</td>
-                  <td>
-                    <div v-if="s.email">{{ s.email }}</div>
-                    <div v-else-if="s.phone">{{ s.phone }}</div>
-                    <div v-else class="muted-note">(no contact)</div>
-                  </td>
-                  <td>
-                    <span :class="['status-badge', (s.is_active || s.active) ? 'status-ok' : 'status-low']">
-                      {{ (s.is_active || s.active) ? 'ACTIVE' : (s.status || 'INACTIVE') }}
-                    </span>
-                  </td>
-                  <td><span class="muted-note">View-only</span></td>
-                </tr>
-                <tr v-if="suppliers.length === 0">
-                  <td colspan="4" class="empty-message">No suppliers found for this branch.</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+            <div v-else-if="suppliersError" class="error-container">
+              <p class="error-message">{{ suppliersError }}</p>
+              <button class="btn-retry" @click="fetchSuppliers">Retry</button>
+            </div>
+
+            <div v-else class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Supplier Name</th>
+                    <th>Contact</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="s in suppliers" :key="s.id">
+                    <td>{{ s.name || s.full_name || s.username || '(no name)' }}</td>
+                    <td>
+                      <div v-if="s.email">{{ s.email }}</div>
+                      <div v-else-if="s.phone">{{ s.phone }}</div>
+                      <div v-else class="muted-note">(no contact)</div>
+                    </td>
+                    <td>
+                      <span :class="['status-badge', (s.is_active || s.active) ? 'status-ok' : 'status-low']">
+                        {{ (s.is_active || s.active) ? 'ACTIVE' : (s.status || 'INACTIVE') }}
+                      </span>
+                    </td>
+                    <td><span class="muted-note">View-only</span></td>
+                  </tr>
+                  <tr v-if="suppliers.length === 0">
+                    <td colspan="4" class="empty-message">No suppliers found for this branch.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
         </section>
       </main>
 
@@ -212,6 +220,11 @@ const inventoryError = ref('')
 
 const procurementRequests = ref([])
 const procRequestsLoading = ref(false)
+
+// Product requests pending logistics approval
+const pendingProductRequests = ref([])
+const prLoading = ref(false)
+const prError = ref('')
 
 // Suppliers for selected branch (read-only)
 const suppliers = ref([])
@@ -363,6 +376,8 @@ onMounted(async () => {
   })
 
   await Promise.all([fetchInventory().catch(()=>{}), fetchProcRequests().catch(()=>{}), fetchSuppliers().catch(()=>{})])
+  // fetch pending product requests for logistics approval
+  await fetchPendingProductRequests().catch(()=>{})
 })
 
 async function fetchSuppliers() {
@@ -382,6 +397,56 @@ async function fetchSuppliers() {
     suppliersLoading.value = false
   }
 }
+
+async function fetchPendingProductRequests() {
+  prLoading.value = true
+  prError.value = ''
+  try {
+    const params = {}
+    if (selectedBranch.value) params.branch_id = selectedBranch.value
+    const res = await axios.get('/api/product-requests/pending/logistics', { params, withCredentials: true })
+    const data = res.data?.data ?? res.data ?? []
+    pendingProductRequests.value = Array.isArray(data) ? data : (data?.data ?? [])
+  } catch (e) {
+    prError.value = 'Failed to load product requests'
+    pendingProductRequests.value = []
+  } finally {
+    prLoading.value = false
+  }
+}
+
+async function approvePendingRequest(id) {
+  try {
+    const notes = window.prompt('Optional notes for approval (leave blank to skip):', '')
+    if (notes === null) return // cancelled
+    const res = await axios.post(`/api/product-requests/${id}/approve-logistics`, { notes }, { withCredentials: true })
+    // remove from list
+    pendingProductRequests.value = pendingProductRequests.value.filter(r => r.id !== id)
+    try { if (window.showToast) window.showToast('Request approved', 'success') } catch(e) { alert('Request approved') }
+  } catch (e) {
+    console.error('approvePendingRequest failed', e)
+    try { if (window.showToast) window.showToast('Failed to approve request', 'error') } catch(e) { alert('Failed to approve request') }
+  }
+}
+
+async function rejectPendingRequest(id) {
+  try {
+    const notes = window.prompt('Provide rejection reason (required):', '')
+    if (notes === null) return // cancelled
+    if (!notes || notes.trim().length === 0) { alert('Rejection requires a reason'); return }
+    const res = await axios.post(`/api/product-requests/${id}/reject-logistics`, { notes }, { withCredentials: true })
+    pendingProductRequests.value = pendingProductRequests.value.filter(r => r.id !== id)
+    try { if (window.showToast) window.showToast('Request rejected', 'success') } catch(e) { alert('Request rejected') }
+  } catch (e) {
+    console.error('rejectPendingRequest failed', e)
+    try { if (window.showToast) window.showToast('Failed to reject request', 'error') } catch(e) { alert('Failed to reject request') }
+  }
+}
+
+// watch branch selection to refresh pending requests
+watch(selectedBranch, async () => {
+  await fetchPendingProductRequests().catch(()=>{})
+})
 </script>
 
 <style scoped>

@@ -421,11 +421,17 @@ class ManagerProfileController extends Controller
         }
 
         $validated = $request->validate([
-            'username' => 'required|string|unique:users,username',
+            'username' => 'nullable|string|unique:users,username',
             'email' => 'nullable|email|unique:users,email',
             'fullName' => 'required|string|max:255',
             'phone' => 'nullable|string|max:20',
             'password' => 'nullable|string|min:8',
+            'role' => 'nullable|in:BRANCH_MANAGER,MANAGER,STAFF,HR,CUSTOM',
+            'department' => 'nullable|string',
+            'modules' => 'nullable|array',
+            'modules.*' => 'string',
+            'functions' => 'nullable|array',
+            'functions.*' => 'string',
         ]);
 
         // Force branch_id to manager's branch
@@ -441,18 +447,120 @@ class ManagerProfileController extends Controller
         // Use default password if not provided
         $password = $validated['password'] ?? 'Chikintayo_123';
 
-        $staff = User::create([
-            'username' => $validated['username'],
-            'email' => $validated['email'],
+        // Generate username server-side if not provided
+        $username = $validated['username'] ?? null;
+        if (! $username || trim($username) === '') {
+            $firstName = '';
+            if (! empty($validated['fullName'])) {
+                $parts = preg_split('/\s+/', trim($validated['fullName']));
+                $firstName = strtolower($parts[0] ?? '');
+            }
+            $base = preg_replace('/[^a-z0-9]/', '', $firstName) ?: 'user';
+            $base = substr($base, 0, 8);
+            $candidate = strtoupper($base) . rand(100, 999);
+            $tries = 0;
+            while (DB::table('users')->where('username', $candidate)->exists() && $tries < 10) {
+                $candidate = strtoupper($base) . rand(100, 999);
+                $tries++;
+            }
+            if (DB::table('users')->where('username', $candidate)->exists()) {
+                $candidate = strtoupper($base) . substr(time(), -6);
+            }
+            $username = $candidate;
+        }
+
+        // Determine role (allow manager to create MANAGER if requested)
+        $role = strtoupper($validated['role'] ?? 'STAFF');
+
+        // Normalize department value
+        $department = isset($validated['department']) && is_string($validated['department']) ? strtoupper($validated['department']) : null;
+
+        // If creating MANAGER or STAFF require a valid department
+        if (in_array($role, ['MANAGER', 'STAFF'])) {
+            $validDepts = ['HR','FINANCE','INVENTORY','LOGISTICS','CASHIER','KITCHEN','PROCUREMENT'];
+            if (! $department || ! in_array($department, $validDepts)) {
+                return response()->json(['ok' => false, 'message' => 'Department is required and must be valid for Manager/Staff'], 422);
+            }
+        } else {
+            // For non-manager/staff roles, clear department
+            $department = null;
+        }
+
+        // If creating a CUSTOM account, validate and normalize provided modules/functions
+        $permissionsPayload = null;
+        if ($role === 'CUSTOM') {
+            // Log incoming raw payload for debugging
+            Log::debug('createHrStaff incoming raw modules/functions', [
+                'modules_raw' => $request->input('modules'),
+                'functions_raw' => $request->input('functions'),
+                'modules_array_key' => $request->input('modules[]'),
+            ]);
+
+            // Allowed permission catalog (keep in sync with frontend templates)
+            $allowedModules = [
+                'admin', 'finance', 'logistics', 'inventory', 'procurement', 'kitchen', 'cashier', 'hr', 'reports',
+            ];
+            $allowedFunctions = [
+                'admin.users', 'admin.branches', 'admin.settings',
+                'finance.dashboard', 'finance.budget', 'finance.reports', 'finance.expenses',
+                'logistics.dispatch', 'logistics.receiving', 'logistics.transfers',
+                'inventory.products', 'inventory.counts', 'inventory.adjustments',
+                'procurement.purchase_orders', 'procurement.suppliers', 'procurement.approvals',
+                'kitchen.orders', 'kitchen.production', 'kitchen.waste',
+                'cashier.pos', 'cashier.refunds', 'cashier.shifts',
+                'hr.attendance', 'hr.scheduling', 'hr.payroll',
+                'reports.sales', 'reports.inventory', 'reports.finance',
+            ];
+
+            // Accept modules/functions from different possible payload shapes
+            $rawModulesInput = $validated['modules'] ?? $request->input('modules') ?? $request->input('modules[]') ?? [];
+            $rawFunctionsInput = $validated['functions'] ?? $request->input('functions') ?? $request->input('functions[]') ?? [];
+
+            // Normalize single comma-separated strings into arrays
+            if (is_string($rawModulesInput) && strpos($rawModulesInput, ',') !== false) {
+                $rawModulesInput = array_map('trim', explode(',', $rawModulesInput));
+            }
+            if (is_string($rawFunctionsInput) && strpos($rawFunctionsInput, ',') !== false) {
+                $rawFunctionsInput = array_map('trim', explode(',', $rawFunctionsInput));
+            }
+
+            $rawModulesInput = is_array($rawModulesInput) ? $rawModulesInput : [$rawModulesInput];
+            $rawFunctionsInput = is_array($rawFunctionsInput) ? $rawFunctionsInput : [$rawFunctionsInput];
+
+            $rawModules = array_filter($rawModulesInput, fn ($m) => is_string($m) && in_array(strtolower($m), $allowedModules, true));
+            $rawFunctions = array_filter($rawFunctionsInput, fn ($f) => is_string($f) && in_array(strtolower($f), array_map('strtolower', $allowedFunctions), true));
+
+            $modules = array_values(array_unique(array_map('strtolower', $rawModules)));
+            $functions = array_values(array_unique(array_map('strtolower', $rawFunctions)));
+
+            if (!empty($modules) || !empty($functions)) {
+                $permissionsPayload = [
+                    'modules' => $modules,
+                    'functions' => $functions,
+                ];
+            }
+
+            Log::debug('createHrStaff normalized permissions', ['permissions' => $permissionsPayload]);
+        }
+
+        $staffData = [
+            'username' => $username,
+            'email' => $validated['email'] ?? null,
             'password' => Hash::make($password),
             'full_name' => $validated['fullName'],
             'phone_number' => $validated['phone'] ?? '',
-            'department' => $validated['department'] ?? 'Staff',
-            'role' => 'STAFF',
+            'department' => $department,
+            'role' => $role,
             'branch_id' => $branchId,
             'is_active' => 1,
             'must_change_password' => true,
-        ]);
+        ];
+
+        if ($permissionsPayload) {
+            $staffData['permissions'] = $permissionsPayload;
+        }
+
+        $staff = User::create($staffData);
 
         return response()->json([
             'ok' => true,

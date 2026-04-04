@@ -309,6 +309,30 @@ class ProductRequestController extends Controller
     }
 
     /**
+     * Get approved product requests for owner view
+     */
+    public function getOwnerApprovedRequests(Request $request)
+    {
+        $user = $request->user();
+        $role = strtoupper($user->role ?? '');
+
+        if ($role !== 'OWNER' && $role !== 'SUPER_ADMIN') {
+            return response()->json(['error' => 'Unauthorized - owner required'], 403);
+        }
+
+        $query = ProductRequest::where('status', 'approved')
+            ->with('requester', 'logisticsApprover', 'ownerApprover', 'product', 'branch')
+            ->orderBy('approved_at', 'desc');
+
+        if ($role === 'OWNER' && $user->branch_id) {
+            $query->where('branch_id', $user->branch_id);
+        }
+
+        $requests = $query->paginate(20);
+        return response()->json($requests);
+    }
+
+    /**
      * Approve at logistics level - moves to pending_owner
      */
     public function approveAtLogistics(Request $request, $id)
