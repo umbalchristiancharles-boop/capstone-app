@@ -178,6 +178,7 @@ const router = createRouter({
 { path: '/super-admin/supplier', component: () => import('./components/SuperAdminSupplier.vue'), meta: { requiresAuth: true } },
   { path: '/super-admin/procurement', component: () => import('./components/SuperAdminProcurement.vue'), meta: { requiresAuth: true } },
     { path: '/super-admin/finance', component: () => import('./components/SuperAdminFinance.vue'), meta: { requiresAuth: true } },
+  { path: '/super-admin/kitchen-staff', component: () => import('./components/SuperAdminKitchenStaff.vue'), meta: { requiresAuth: true } },
     { path: '/super-admin/cashier', component: () => import('./components/Cashier.vue'), meta: { requiresAuth: true } },
     { path: '/main-branch/admin', component: () => import('./components/MainBranchAdminPanel.vue'), meta: { requiresAuth: true } },
     { path: '/main-branch/hr', component: () => import('./components/MainBranchHrPanel.vue'), meta: { requiresAuth: true } },

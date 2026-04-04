@@ -193,6 +193,7 @@
               <!-- Module Navigation -->
               <div class="admin-actions-row">
                 <button class="staff-btn staff-btn--center" @click="openModule('hr')"> HR Staff Management</button>
+                <button class="staff-btn staff-btn--center" @click="openModule('kitchen')">Kitchen Staff Monitoring</button>
                 <button class="staff-btn staff-btn--center" @click="openModule('finance')">Finance</button>
                 <button class="staff-btn staff-btn--center" @click="openModule('cashier')">Cashier</button>
               </div>
@@ -649,6 +650,8 @@ function openModule(name) {
       sessionStorage.setItem('forceHrReload', '1')
       window.location.href = '/super-admin/hr'
       return
+    case 'kitchen':
+      return router.push('/super-admin/kitchen-staff')
     case 'finance': return router.push('/super-admin/finance')
     case 'cashier': return router.push('/super-admin/cashier')
     case 'logistics': return router.push('/super-admin/logistics')
