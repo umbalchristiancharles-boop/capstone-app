@@ -21,6 +21,7 @@
   min-height: 100vh;
   background: var(--bg-main);
   display: flex;
+  flex-direction: column;
   align-items: stretch;
   justify-content: stretch;
   padding: 8px;
@@ -114,10 +115,85 @@ h1, h2, h3, h4, h5, h6, .section-subtitle, .admin-name, .admin-role {
   order: 1;
 }
 
+.admin-left {
+  display: block;
+  width: 100%;
+}
+
 @media (min-width: 768px) {
   .admin-profile-column {
     width: auto;
   }
+
+  .admin-left {
+    width: auto;
+  }
+}
+
+/* Top header bar */
+.admin-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 6px 6px 8px;
+  grid-column: 1 / -1;
+  margin-bottom: 2px;
+}
+
+.admin-topbar-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--text-primary);
+}
+
+.admin-topbar-heading {
+  font-size: 1.5rem;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.admin-topbar-sub {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+}
+
+.admin-topbar-hint {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.admin-topbar-hint--error {
+  color: #b42318;
+}
+
+.admin-topbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+@media (max-width: 640px) {
+  .admin-topbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-topbar-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* Make header panel more roomy so it doesn't feel cramped */
+.admin-main-header .panel-block {
+  padding: 20px 22px;
+  border-radius: 12px;
+  margin-bottom: 18px;
 }
 
 /* PROFILE CARD */
@@ -418,6 +494,7 @@ h1, h2, h3, h4, h5, h6, .section-subtitle, .admin-name, .admin-role {
   order: 0;
   width: 100%;
   overflow-x: hidden;
+  margin-top: 0;
 }
 
 @media (min-width: 768px) {
@@ -443,6 +520,10 @@ h1, h2, h3, h4, h5, h6, .section-subtitle, .admin-name, .admin-role {
 .admin-main-header h1 .brand-text {
   color: var(--text-dark) !important;
   display: inline-block !important;
+
+  .admin-main {
+    margin-top: 0;
+  }
   margin-right: 10px;
   vertical-align: baseline;
   font-weight: 900;
@@ -458,6 +539,23 @@ h1, h2, h3, h4, h5, h6, .section-subtitle, .admin-name, .admin-role {
 .admin-main-header p {
   font-size: 0.9rem;
   color: var(--text-secondary);
+}
+
+/* Full-width header styles to match the example layout */
+.admin-main-header .header-title {
+  font-size: 2.1rem;
+  font-weight: 900;
+  color: var(--text-primary);
+  margin: 0 0 8px 0;
+}
+.admin-main-header .header-sub {
+  margin: 0 0 12px 0;
+  font-size: 1rem;
+  color: var(--text-secondary);
+}
+
+@media (min-width: 1200px) {
+  .admin-main-header .header-title { font-size: 2.4rem; }
 }
 
 /* RANGE TABS */
@@ -770,7 +868,32 @@ h1, h2, h3, h4, h5, h6, .section-subtitle, .admin-name, .admin-role {
 
 @media (min-width: 1024px) {
   .admin-side {
-    margin-top: 96px;
+    margin-top: 0;
+  }
+}
+
+/* ANNOUNCEMENTS: pin to top-left on large screens, inline on small screens */
+.announcements-panel {
+  /* default: let it flow in document for small screens */
+  position: static;
+  width: 100%;
+  max-height: none;
+}
+
+@media (min-width: 1024px) {
+  .announcements-panel {
+    /* keep announcements inline below the header on wide screens */
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    max-height: none;
+    overflow: visible;
+    z-index: auto;
+    border-radius: 12px;
+    box-shadow: none;
+    background: transparent;
+    border: 1px solid var(--border-stroke);
   }
 }
 
@@ -1977,4 +2100,56 @@ h1[style*="orange"] {
   white-space: normal;
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+
+/* Keep header contents on a single line on wide screens and free up room */
+@media (min-width: 1024px) {
+  .admin-main-header-top {
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 18px;
+  }
+
+  .admin-main-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 22px 24px;
+    position: static; /* ensure header scrolls with the page */
+    top: auto;
+    left: auto;
+    z-index: auto;
+  }
+
+  .admin-main-header h1 {
+    white-space: nowrap; /* prevent title from wrapping */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0;
+    display: inline-block;
+  }
+
+  .admin-main-header p {
+    margin: 0 0 0 12px;
+    white-space: nowrap;
+    opacity: 0.9;
+  }
+
+  /* Keep range tabs aligned with header instead of forcing new line */
+  .admin-main-header-top .range-tabs {
+    order: initial;
+    width: auto;
+    margin-top: 0;
+  }
+}
+
+/* Force header and side panels to scroll with the page (important overrides) */
+.admin-main-header,
+.admin-left,
+.admin-side,
+.announcements-panel {
+  position: static !important;
+  top: auto !important;
+  left: auto !important;
+  z-index: auto !important;
 }
