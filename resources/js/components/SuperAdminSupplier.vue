@@ -70,7 +70,7 @@
 
           <!-- Deliveries / Supplier list -->
           <div class="panel-section" style="margin-top:12px">
-            <h3 style="margin:0 0 12px 0">Deliveries</h3>
+            <h3 style="margin:0 0 12px 0">Deliveries & Logistics Transactions</h3>
             <div v-if="deliveriesLoading" class="loading-container"><div class="loading-spinner"></div><p>Loading deliveries...</p></div>
             <div v-else>
               <div v-if="deliveries.length === 0" class="empty-message">No deliveries found.</div>
@@ -78,9 +78,16 @@
                 <button v-if="showDeliveriesArrows" class="scroll-btn scroll-btn--left" @click="scrollContainer(deliveriesTableRef, -1)">◀</button>
                 <div ref="deliveriesTableRef" class="table-container">
                   <table class="data-table">
-                    <thead><tr><th>Delivery ID</th><th>Supplier</th><th>Branch</th><th>Status</th></tr></thead>
+                    <thead><tr><th>Transaction ID</th><th>Product</th><th>Quantity</th><th>Branch</th><th>Status</th><th>Initiated</th></tr></thead>
                     <tbody>
-                      <tr v-for="d in deliveries" :key="d.id"><td>{{ d.id }}</td><td>{{ d.supplier?.name || d.supplier_name }}</td><td>{{ d.branch?.name || d.branch_name }}</td><td><span :class="['status-badge', d.status === 'delivered' ? 'status-ok' : 'status-pending']">{{ d.status }}</span></td></tr>
+                      <tr v-for="d in deliveries" :key="d.id">
+                        <td>{{ d.id }}</td>
+                        <td>{{ d.product?.name || 'N/A' }}</td>
+                        <td>{{ d.quantity }} {{ d.unit || '' }}</td>
+                        <td>{{ d.branch?.name || 'N/A' }}</td>
+                        <td><span :class="['status-badge', d.status === 'completed' ? 'status-ok' : d.status === 'cancelled' ? 'status-rejected' : 'status-pending']">{{ d.status }}</span></td>
+                        <td>{{ new Date(d.initiated_at).toLocaleDateString() }}</td>
+                      </tr>
                     </tbody>
                   </table>
                 </div>
@@ -242,7 +249,7 @@ async function loadDeliveries() {
   deliveriesLoading.value = true
   try {
       const params = selectedBranchId.value ? { branch_id: Number(selectedBranchId.value) } : {}
-    const res = await axios.get('/api/logistics/deliveries', { params, withCredentials: true })
+    const res = await axios.get('/api/superadmin/logistics/deliveries', { params, withCredentials: true })
     const raw = res.data.data || res.data || []
     deliveries.value = Array.isArray(raw) ? raw : []
   } catch (e) {

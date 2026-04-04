@@ -127,6 +127,14 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        'supplier_audit' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/supplier_audit.log'),
+            'level' => env('LOG_LEVEL', 'info'),
+            'days' => env('LOG_SUPPLIER_AUDIT_DAYS', 90),
+            'replace_placeholders' => true,
+        ],
+
     ],
 
 ];

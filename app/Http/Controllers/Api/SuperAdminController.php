@@ -1333,5 +1333,368 @@ class SuperAdminController extends Controller
             return response()->json(['ok' => false, 'message' => 'Failed to delete branch: ' . $e->getMessage()], 500);
         }
     }
+
+    /**
+     * Get all logistics transactions (deliveries) across all branches
+     * GET /api/superadmin/logistics/deliveries
+     */
+    public function logisticsDeliveries(Request $request)
+    {
+        $user = $this->resolveAuthenticatedUser($request);
+
+        if (!$user) {
+            return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
+        }
+
+        $allowed = Permission::allowed($user, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER'], ['admin']);
+        if (!$allowed) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        try {
+            $branchId = $request->query('branch_id');
+            $status = $request->query('status'); // Filter by status (pending, in_transit, delivered, etc)
+            $perPage = (int) $request->query('per_page', 50);
+
+            $query = \App\Models\LogisticsTransaction::with([
+                'procurementRequest',
+                'product',
+                'branch'
+            ])
+            ->orderBy('created_at', 'desc');
+
+            if ($branchId) {
+                $query->where('branch_id', (int) $branchId);
+            }
+
+            if ($status) {
+                $query->where('status', $status);
+            }
+
+            $transactions = $query->paginate($perPage);
+
+            return response()->json([
+                'data' => $transactions->items(),
+                'pagination' => [
+                    'current_page' => $transactions->currentPage(),
+                    'per_page' => $transactions->perPage(),
+                    'total' => $transactions->total(),
+                    'last_page' => $transactions->lastPage(),
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('logisticsDeliveries failed', ['error' => $e->getMessage()]);
+            return response()->json(['ok' => false, 'message' => 'Failed to load deliveries'], 500);
+        }
+    }
+
+    /**
+     * Get all suppliers across all branches with comprehensive data validation
+     * GET /api/superadmin/suppliers
+     */
+    public function suppliers(Request $request)
+    {
+        $user = $this->resolveAuthenticatedUser($request);
+
+        if (!$user) {
+            return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
+        }
+
+        $allowed = Permission::allowed($user, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER'], ['admin']);
+        if (!$allowed) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        try {
+            $branchId = $request->query('branch_id');
+            $includeDetails = $request->query('details', false);
+
+            // Use SupplierService for data validation and consistency checking
+            $suppliers = \App\Services\SupplierService::getAllSuppliers($branchId ? (int) $branchId : null);
+
+            if ($includeDetails) {
+                // Include detailed validation information
+                $suppliers = $suppliers->map(function ($supplier) {
+                    $detailed = \App\Services\SupplierService::getSupplierDetail($supplier['id']);
+                    return $detailed;
+                });
+            }
+
+            return response()->json([
+                'ok' => true,
+                'data' => $suppliers,
+                'count' => $suppliers->count(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('suppliers endpoint error', ['error' => $e->getMessage()]);
+            return response()->json(['ok' => false, 'message' => 'Failed to load suppliers'], 500);
+        }
+    }
+
+    /**
+     * Get detailed supplier profile with full consistency verification
+     * GET /api/superadmin/suppliers/{id}
+     */
+    public function supplierDetail(Request $request, $id)
+    {
+        $user = $this->resolveAuthenticatedUser($request);
+
+        if (!$user) {
+            return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
+        }
+
+        $allowed = Permission::allowed($user, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER'], ['admin']);
+        if (!$allowed) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        try {
+            $supplier = \App\Services\SupplierService::getSupplierDetail((int) $id);
+
+            if (!$supplier) {
+                return response()->json(['ok' => false, 'message' => 'Supplier not found'], 404);
+            }
+
+            // Get additional validation data
+            $orderValidation = \App\Services\SupplierService::validateSupplierOrders((int) $id);
+            $pricingValidation = \App\Services\SupplierService::verifyProductPricingConsistency((int) $id);
+            $activityHistory = \App\Services\SupplierService::getSupplierActivityHistory((int) $id, 50);
+
+            return response()->json([
+                'ok' => true,
+                'supplier' => $supplier,
+                'validations' => [
+                    'orders' => $orderValidation,
+                    'pricing' => $pricingValidation,
+                ],
+                'activity_history' => $activityHistory,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('supplierDetail error', ['supplier_id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['ok' => false, 'message' => 'Failed to load supplier details'], 500);
+        }
+    }
+
+    /**
+     * Validate supplier data consistency and identify issues
+     * GET /api/superadmin/suppliers/{id}/validate
+     */
+    public function validateSupplier(Request $request, $id)
+    {
+        $user = $this->resolveAuthenticatedUser($request);
+
+        if (!$user) {
+            return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
+        }
+
+        $allowed = Permission::allowed($user, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER'], ['admin']);
+        if (!$allowed) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        try {
+            $supplier = User::find((int) $id);
+            if (!$supplier || strtoupper($supplier->role ?? '') !== 'SUPPLIER') {
+                return response()->json(['ok' => false, 'message' => 'Supplier not found'], 404);
+            }
+
+            $orderValidation = \App\Services\SupplierService::validateSupplierOrders((int) $id);
+            $pricingValidation = \App\Services\SupplierService::verifyProductPricingConsistency((int) $id);
+            $hasDuplicates = \App\Services\SupplierService::hasDuplicateEntries((int) $id);
+
+            return response()->json([
+                'ok' => true,
+                'supplier_id' => (int) $id,
+                'supplier_name' => $supplier->full_name,
+                'validations' => [
+                    'orders' => $orderValidation,
+                    'pricing' => $pricingValidation,
+                    'has_duplicate_entries' => $hasDuplicates,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('validateSupplier error', ['supplier_id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['ok' => false, 'message' => 'Validation failed'], 500);
+        }
+    }
+
+    /**
+     * Check for duplicate supplier entries
+     * GET /api/superadmin/suppliers/{id}/duplicates
+     */
+    public function checkDuplicates(Request $request, $id)
+    {
+        $user = $this->resolveAuthenticatedUser($request);
+
+        if (!$user) {
+            return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
+        }
+
+        $allowed = Permission::allowed($user, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER'], ['admin']);
+        if (!$allowed) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        try {
+            $supplier = User::find((int) $id);
+            if (!$supplier || strtoupper($supplier->role ?? '') !== 'SUPPLIER') {
+                return response()->json(['ok' => false, 'message' => 'Supplier not found'], 404);
+            }
+
+            $duplicates = \App\Services\SupplierService::findPotentialDuplicates($supplier);
+
+            return response()->json([
+                'ok' => true,
+                'supplier_id' => (int) $id,
+                'duplicates_found' => $duplicates->count(),
+                'duplicates' => $duplicates->map(function ($dup) {
+                    return [
+                        'id' => $dup->id,
+                        'name' => $dup->full_name,
+                        'email' => $dup->email,
+                        'phone' => $dup->phone_number,
+                        'branch_id' => $dup->branch_id,
+                    ];
+                }),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('checkDuplicates error', ['supplier_id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['ok' => false, 'message' => 'Check failed'], 500);
+        }
+    }
+
+    /**
+     * Update supplier status (active/inactive)
+     * PUT /api/superadmin/suppliers/{id}/status
+     */
+    public function updateSupplierStatus(Request $request, $id)
+    {
+        $user = $this->resolveAuthenticatedUser($request);
+
+        if (!$user) {
+            return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
+        }
+
+        $allowed = Permission::allowed($user, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER'], ['admin']);
+        if (!$allowed) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'is_active' => 'required|boolean',
+        ]);
+
+        try {
+            $result = \App\Services\SupplierService::updateSupplierStatus(
+                (int) $id,
+                (bool) $validated['is_active'],
+                $user->id
+            );
+
+            if ($result['status'] !== 'success') {
+                return response()->json($result, 400);
+            }
+
+            return response()->json([
+                'ok' => true,
+                'message' => $result['message'],
+                'data' => $result,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('updateSupplierStatus error', ['supplier_id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['ok' => false, 'message' => 'Failed to update supplier status'], 500);
+        }
+    }
+
+    /**
+     * Get supplier activity history/audit log
+     * GET /api/superadmin/suppliers/{id}/activity
+     */
+    public function supplierActivityHistory(Request $request, $id)
+    {
+        $user = $this->resolveAuthenticatedUser($request);
+
+        if (!$user) {
+            return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
+        }
+
+        $allowed = Permission::allowed($user, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER'], ['admin']);
+        if (!$allowed) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        try {
+            $limit = (int) $request->query('limit', 100);
+            $history = \App\Services\SupplierService::getSupplierActivityHistory((int) $id, $limit);
+
+            return response()->json([
+                'ok' => true,
+                'supplier_id' => (int) $id,
+                'activity_count' => $history->count(),
+                'activities' => $history,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('supplierActivityHistory error', ['supplier_id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['ok' => false, 'message' => 'Failed to load activity history'], 500);
+        }
+    }
+
+    /**
+     * Get supplier audit logs with filtering
+     * GET /api/superadmin/suppliers/audit/logs
+     */
+    public function supplierAuditLogs(Request $request)
+    {
+        $user = $this->resolveAuthenticatedUser($request);
+
+        if (!$user) {
+            return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
+        }
+
+        $allowed = Permission::allowed($user, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER'], ['admin']);
+        if (!$allowed) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        try {
+            $supplierId = $request->query('supplier_id');
+            $action = $request->query('action');
+            $severity = $request->query('severity'); // info, warning, critical
+            $daysBack = (int) $request->query('days', 30);
+            $limit = (int) $request->query('limit', 100);
+
+            $query = \App\Models\SupplierAuditLog::query();
+
+            if ($supplierId) {
+                $query->where('supplier_id', (int) $supplierId);
+            }
+
+            if ($action) {
+                $query->where('action', $action);
+            }
+
+            if ($severity) {
+                $query->where('severity', $severity);
+            }
+
+            if ($daysBack > 0) {
+                $query->where('created_at', '>=', now()->subDays($daysBack));
+            }
+
+            $logs = $query->with(['supplier', 'triggeredBy'])
+                ->orderBy('created_at', 'desc')
+                ->limit($limit)
+                ->get();
+
+            return response()->json([
+                'ok' => true,
+                'logs' => $logs,
+                'count' => $logs->count(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('supplierAuditLogs error', ['error' => $e->getMessage()]);
+            return response()->json(['ok' => false, 'message' => 'Failed to load audit logs'], 500);
+        }
+    }
 }
 

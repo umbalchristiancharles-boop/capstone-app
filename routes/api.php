@@ -124,10 +124,22 @@ Route::middleware('web')->group(function () {
     Route::get('/superadmin/logistics/supplier-orders', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsSupplierOrders'])->middleware(['auth','permission:logistics']);
     Route::get('/superadmin/logistics/branches', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsBranches'])->middleware(['auth','permission:logistics']);
 
+    // SuperAdmin Supplier Management - Comprehensive supplier data monitoring and validation
+    Route::prefix('superadmin/suppliers')->middleware(['auth','permission:admin'])->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\SuperAdminController::class, 'suppliers']);
+        Route::get('audit/logs', [\App\Http\Controllers\Api\SuperAdminController::class, 'supplierAuditLogs']);
+        Route::get('{id}', [\App\Http\Controllers\Api\SuperAdminController::class, 'supplierDetail']);
+        Route::get('{id}/validate', [\App\Http\Controllers\Api\SuperAdminController::class, 'validateSupplier']);
+        Route::get('{id}/duplicates', [\App\Http\Controllers\Api\SuperAdminController::class, 'checkDuplicates']);
+        Route::get('{id}/activity', [\App\Http\Controllers\Api\SuperAdminController::class, 'supplierActivityHistory']);
+        Route::put('{id}/status', [\App\Http\Controllers\Api\SuperAdminController::class, 'updateSupplierStatus']);
+    });
+
     // SuperAdmin Logistics Monitoring - Real-time tracking and monitoring
     Route::prefix('superadmin/logistics')->middleware('auth')->group(function () {
         Route::get('/dashboard', [\App\Http\Controllers\Api\LogisticsMonitoringController::class, 'dashboard']);
         Route::get('/transactions', [\App\Http\Controllers\Api\LogisticsMonitoringController::class, 'transactions']);
+        Route::get('/deliveries', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsDeliveries']);
         Route::get('/pending-verification', [\App\Http\Controllers\Api\LogisticsMonitoringController::class, 'pendingVerification']);
         Route::get('/variances', [\App\Http\Controllers\Api\LogisticsMonitoringController::class, 'variances']);
         Route::get('/report', [\App\Http\Controllers\Api\LogisticsMonitoringController::class, 'report']);

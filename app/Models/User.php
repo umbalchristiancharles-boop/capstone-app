@@ -98,6 +98,14 @@ class User extends Authenticatable implements CanResetPassword
     }
 
     /**
+     * Relationship: Supplier has many supply orders (if user is a supplier)
+     */
+    public function supplierOrders(): HasMany
+    {
+        return $this->hasMany(SupplierOrder::class, 'supplier_id');
+    }
+
+    /**
      * Relationship: User has one customer account
      */
     public function customerAccount(): HasOne
