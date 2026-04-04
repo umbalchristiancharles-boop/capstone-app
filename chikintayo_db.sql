@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 04, 2026 at 02:54 PM
+-- Generation Time: Apr 04, 2026 at 03:28 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -71,7 +71,9 @@ CREATE TABLE `attendance` (
 --
 
 INSERT INTO `attendance` (`id`, `user_id`, `date`, `time_in`, `time_out`, `hours_worked`, `status`, `notes`, `created_at`, `updated_at`) VALUES
-(4, 154, '2026-03-29', '22:50:47', NULL, 0, 'late', NULL, '2026-03-29 14:50:47', '2026-03-29 14:50:47');
+(4, 154, '2026-03-29', '22:50:47', NULL, 0, 'late', NULL, '2026-03-29 14:50:47', '2026-03-29 14:50:47'),
+(5, 154, '2026-04-04', '21:11:50', NULL, 0, 'late', NULL, '2026-04-04 13:11:50', '2026-04-04 13:11:50'),
+(6, 151, '2026-04-04', '21:14:14', NULL, 0, 'late', NULL, '2026-04-04 13:14:14', '2026-04-04 13:14:14');
 
 -- --------------------------------------------------------
 
@@ -2877,7 +2879,14 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (2199, 'App\\Models\\User', 187, 'auth-token', 'e99386c9b1a14ba1696e452ba263e30938b887cf030f9672b3a458a6e5f8cc35', '[\"*\"]', NULL, NULL, '2026-04-04 12:17:56', '2026-04-04 12:17:56'),
 (2200, 'App\\Models\\User', 147, 'auth-token', '501d92ae5644ecb17816982d1cb5b7a285844ad9cf32d066cd82d3bfd449cc89', '[\"*\"]', NULL, NULL, '2026-04-04 12:19:13', '2026-04-04 12:19:13'),
 (2201, 'App\\Models\\User', 28, 'auth-token', 'ec3c237170a3caa47c9ecf8a49fb4f2f86eb9d39baa713c2cf6b4f7668dfdfb6', '[\"*\"]', NULL, NULL, '2026-04-04 12:24:59', '2026-04-04 12:24:59'),
-(2202, 'App\\Models\\User', 148, 'auth-token', '72d05c30cbb4030764653ac694fbb57950d7d6fe06aa3982d947fee0d816dd42', '[\"*\"]', NULL, NULL, '2026-04-04 12:25:57', '2026-04-04 12:25:57');
+(2202, 'App\\Models\\User', 148, 'auth-token', '72d05c30cbb4030764653ac694fbb57950d7d6fe06aa3982d947fee0d816dd42', '[\"*\"]', NULL, NULL, '2026-04-04 12:25:57', '2026-04-04 12:25:57'),
+(2203, 'App\\Models\\User', 147, 'auth-token', '126df05472c1c26cc069198aed5dd41f7472ad4f64ce9c262bfb5c47fad143d3', '[\"*\"]', NULL, NULL, '2026-04-04 13:02:10', '2026-04-04 13:02:10'),
+(2204, 'App\\Models\\User', 150, 'auth-token', 'c2defb657d3c155d9e27021195e8b03f0bba1ad2f97e3edd54e61d96ea75f893', '[\"*\"]', NULL, NULL, '2026-04-04 13:03:32', '2026-04-04 13:03:32'),
+(2205, 'App\\Models\\User', 154, 'auth-token', '7baf2ff659f4abb1e3edebb697fe0b0ee337bc067e1bb2923f4b3148c6405c26', '[\"*\"]', NULL, NULL, '2026-04-04 13:09:57', '2026-04-04 13:09:57'),
+(2206, 'App\\Models\\User', 151, 'auth-token', '58e3fff9722428427c3cc416f156766010e72b9b4fed9b776a03cac04eb59444', '[\"*\"]', NULL, NULL, '2026-04-04 13:12:06', '2026-04-04 13:12:06'),
+(2207, 'App\\Models\\User', 148, 'auth-token', '345c8de0916211e60b133bd08dede8e5ec4ffde054102bc15e9539e9bad24dcc', '[\"*\"]', NULL, NULL, '2026-04-04 13:24:09', '2026-04-04 13:24:09'),
+(2208, 'App\\Models\\User', 187, 'auth-token', '57877470d09ae4574dc788ef617c18144056134f52fc21dcf393c253b20ab663', '[\"*\"]', NULL, NULL, '2026-04-04 13:24:37', '2026-04-04 13:24:37'),
+(2209, 'App\\Models\\User', 28, 'auth-token', '5b4d423194b6df53ace28f4f7117d792877c8d1f850d6198116dc38969c5c22f', '[\"*\"]', NULL, NULL, '2026-04-04 13:24:58', '2026-04-04 13:24:58');
 
 -- --------------------------------------------------------
 
@@ -3188,8 +3197,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('HKtHPNprOs1zOsOuT2wWu4kEx4bcNW6kqoKk7a6U', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.114.0 Chrome/142.0.7444.265 Electron/39.8.3 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiWXRyQzhLWWFwdXNGdGJ0SlZYWUpXb3MyaDR6NW9yb1pVblJ3ZHhBUSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvZGVidWcvYXV0aC1jaGVjayI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1775301194),
-('oScBTtFbETEaPnS0n5mWp0NdNwSWwuxxgDtmjUNP', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiOUZFbnRLc1JITDdJRXVXMnNGamNkVUp1NUZuZTVTR1ZxVUUyd2h0YSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO319', 1775307200);
+('MAhwvf9Ozer6LjLtpxIZQsRZPDpLF8mbYUOA7UA7', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoiUjU5TkVpSDVvdEJmeXdManpKQjkweTBvMlpYUEphNklCemlWaUd5ayI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1775309068),
+('vmSZBkPAz2UzzTZyMUV7NrTG6a1OpjXFcSd6B3su', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoieUIzZjl0VG01QjZWTmVOUlhTd3VxMXRDMFJTaDdhQmo5RTA2OGM5dCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO319', 1775309107);
 
 -- --------------------------------------------------------
 
@@ -3643,7 +3652,7 @@ ALTER TABLE `announcements`
 -- AUTO_INCREMENT for table `attendance`
 --
 ALTER TABLE `attendance`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `attendance_settings`
@@ -3733,7 +3742,7 @@ ALTER TABLE `order_items`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2203;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2210;
 
 --
 -- AUTO_INCREMENT for table `price_audits`
