@@ -9,6 +9,7 @@
     profileEndpoint="/api/profile"
     updateEndpoint="/api/profile/update"
     avatarEndpoint="/api/profile/avatar"
+    @logout="handleLogout"
   >
     <template #main>
       <section class="owner-dashboard">
@@ -39,6 +40,7 @@
 import { ref, onMounted } from 'vue'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import axios from 'axios'
+import Swal from 'sweetalert2'
 
 const userProfile = ref({})
 
@@ -64,6 +66,32 @@ onMounted(async () => {
     console.warn('OwnerPanel: failed to load profile', e)
   }
 })
+
+const handleLogout = async () => {
+  const result = await Swal.fire({
+    title: 'Confirm logout',
+    text: 'This will end your current session for Chikin Tayo.',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Yes',
+    cancelButtonText: 'Cancel',
+    confirmButtonColor: '#FF6A3D',
+    cancelButtonColor: '#636B7B',
+  })
+
+  if (result.isConfirmed) {
+    try {
+      await axios.post('/logout', {}, { withCredentials: true })
+    } catch (e) {
+      console.warn('Logout request failed:', e)
+    }
+    // Clear local storage
+    localStorage.removeItem('user')
+    localStorage.removeItem('token')
+    // Redirect to login
+    window.location.href = '/login'
+  }
+}
 </script>
 
 <style scoped>
