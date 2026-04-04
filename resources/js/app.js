@@ -174,6 +174,7 @@ const router = createRouter({
     { path: '/super-admin-panel', component: SuperAdmin, meta: { requiresAuth: true } },
     { path: '/super-admin/dashboard', redirect: '/super-admin-panel' },
 { path: '/super-admin/hr', component: () => import('./components/HRStaffManagement.vue'), meta: { requiresAuth: true } },
+{ path: '/super-admin/staff-management', component: () => import('./components/SuperAdminStaffManagement.vue'), meta: { requiresAuth: true } },
 { path: '/super-admin/logistics', component: () => import('./components/SuperAdminLogisticsPanel.vue'), meta: { requiresAuth: true } },
 { path: '/super-admin/supplier', component: () => import('./components/SuperAdminSupplier.vue'), meta: { requiresAuth: true } },
   { path: '/super-admin/procurement', component: () => import('./components/SuperAdminProcurement.vue'), meta: { requiresAuth: true } },

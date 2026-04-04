@@ -54,6 +54,12 @@ const routes = [
   {
     path: '/super-admin/hr',
     name: 'SuperAdminHRStaffManagement',
+    component: () => import('../components/HRStaffManagement.vue'),
+    meta: { requiresAuth: true, role: 'superadmin' }
+  },
+  {
+    path: '/super-admin/staff-management',
+    name: 'SuperAdminStaffManagement',
     component: () => import('../components/SuperAdminStaffManagement.vue'),
     meta: { requiresAuth: true, role: 'superadmin' }
   },

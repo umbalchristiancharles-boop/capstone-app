@@ -192,6 +192,7 @@
 
               <!-- Module Navigation -->
               <div class="admin-actions-row">
+                <button v-if="superAdminProfile.role && superAdminProfile.role.toUpperCase().includes('SUPER')" class="staff-btn staff-btn--center" @click="goToSuperAdminStaff">Staff Management</button>
                 <button class="staff-btn staff-btn--center" @click="openModule('hr')"> HR Staff Management</button>
                 <button class="staff-btn staff-btn--center" @click="openModule('kitchen')">Kitchen Staff Monitoring</button>
                 <button class="staff-btn staff-btn--center" @click="openModule('finance')">Finance</button>
@@ -667,6 +668,16 @@ function ownerAddBranches() {
   // so the branches page can return to the Super Admin panel when needed.
   // Use dedicated super-admin route so the branches page can detect Super Admin
   router.push({ path: '/super-admin/branches', query: { from: 'superadmin' } })
+}
+
+function goToSuperAdminStaff() {
+  try {
+    // open dedicated Super Admin staff management route
+    sessionStorage.setItem('forceHrReload', '1')
+    router.push('/super-admin/staff-management')
+  } catch (e) {
+    console.error('Navigation to Super Admin Staff failed', e)
+  }
 }
 
 async function sendAnnouncement() {
