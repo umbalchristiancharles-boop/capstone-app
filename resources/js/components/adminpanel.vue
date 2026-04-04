@@ -2,8 +2,8 @@
   <div class="min-h-screen bg-gradient-to-b from-[#FF9A4A] to-[#FF6A3D]">
     <div class="admin-page">
       <section class="admin-layout">
-        <!-- LEFT:  ADMIN PROFILE COLUMN -->
-        <aside class="admin-profile-column">
+        <!-- LEFT:  ADMIN PROFILE COLUMN (moved to header) -->
+        <aside v-if="false" class="admin-profile-column">
           <div v-if="!isProfileLoading" class="admin-card admin-card--stacked">
             <!-- PROFILE PICTURE + NAME + ROLE -->
             <div class="admin-card__header admin-card__header--stacked">
@@ -162,7 +162,7 @@
 
         <!-- MIDDLE: MAIN DASHBOARD -->
         <main class="admin-main">
-          <header class="admin-main-header">
+          <header :class="['admin-main-header', { 'admin-main-header--left': ((ownerProfile.role || '').toString().toUpperCase().includes('SUPER') && (ownerProfile.role || '').toString().toUpperCase().includes('ADMIN')) }]">
             <div class="admin-main-header-top">
               <div>
                 <h1>
@@ -178,53 +178,57 @@
                 </p>
               </div>
 
-              <!-- Date range tabs -->
-              <div class="range-tabs">
-                <button
-                  class="range-tab"
-                  :class="{ 'range-tab--active': activeRange === 'today' }"
-                  @click="changeRange('today')"
-                >
-                  Today
-                </button>
-                <button
-                  class="range-tab"
-                  :class="{ 'range-tab--active': activeRange === 'yesterday' }"
-                  @click="changeRange('yesterday')"
-                >
-                  Yesterday
-                </button>
-                <button
-                  class="range-tab"
-                  :class="{ 'range-tab--active': activeRange === 'thisWeek' }"
-                  @click="changeRange('thisWeek')"
-                >
-                  This Week
-                </button>
-                <button
-                  class="range-tab"
-                  :class="{ 'range-tab--active': activeRange === 'lastWeek' }"
-                  @click="changeRange('lastWeek')"
-                >
-                  Last Week
-                </button>
-                <button
-                  class="range-tab"
-                  :class="{ 'range-tab--active': activeRange === 'thisMonth' }"
-                  @click="changeRange('thisMonth')"
-                >
-                  This Month
-                </button>
-                <button
-                  class="range-tab"
-                  :class="{ 'range-tab--active': activeRange === 'lastMonth' }"
-                  @click="changeRange('lastMonth')"
-                >
-                  Last Month
-                </button>
-              </div>
+              <!-- Header profile (moved to right column on large screens) -->
+
+              <!-- Date range tabs moved below header -->
             </div>
           </header>
+
+          <!-- Date range tabs (moved out of header) -->
+          <div class="range-tabs">
+            <button
+              class="range-tab"
+              :class="{ 'range-tab--active': activeRange === 'today' }"
+              @click="changeRange('today')"
+            >
+              Today
+            </button>
+            <button
+              class="range-tab"
+              :class="{ 'range-tab--active': activeRange === 'yesterday' }"
+              @click="changeRange('yesterday')"
+            >
+              Yesterday
+            </button>
+            <button
+              class="range-tab"
+              :class="{ 'range-tab--active': activeRange === 'thisWeek' }"
+              @click="changeRange('thisWeek')"
+            >
+              This Week
+            </button>
+            <button
+              class="range-tab"
+              :class="{ 'range-tab--active': activeRange === 'lastWeek' }"
+              @click="changeRange('lastWeek')"
+            >
+              Last Week
+            </button>
+            <button
+              class="range-tab"
+              :class="{ 'range-tab--active': activeRange === 'thisMonth' }"
+              @click="changeRange('thisMonth')"
+            >
+              This Month
+            </button>
+            <button
+              class="range-tab"
+              :class="{ 'range-tab--active': activeRange === 'lastMonth' }"
+              @click="changeRange('lastMonth')"
+            >
+              Last Month
+            </button>
+          </div>
 
           <!-- Overview cards - Operational Metrics -->
           <section class="overview-grid">
@@ -342,11 +346,99 @@
             </div>
           </section>
 
-          
-        </main>
+          <!-- Branch Products (branch admins only) - moved here so it appears in middle column -->
+          <section class="panel-block branch-products" v-if="isBranchAdmin">
+            <div class="panel-header">
+              <h2>Branch Products</h2>
+              <button class="panel-action" @click="refreshBranchProducts">Refresh</button>
+            </div>
+            <div class="panel-body" style="padding:12px 16px;">
+              <div class="branch-products-inner">
+                <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+                  <button class="btn-primary" @click="openPublishModal">Publish Products</button>
+                </div>
+                <ProductList
+                  ref="productListRef"
+                  :fetchUrl="branchProductsFetchUrl"
+                  :compact="true"
+                  :showPublishControls="true"
+                  @toggle-publish="handleAdminTogglePublish"
+                />
 
+                <PublishProductsModal v-if="showPublishModal" :branch-id="(typeof ownerProfile.branch === 'object' && ownerProfile.branch.id) ? ownerProfile.branch.id : ownerProfile.branch" @close="showPublishModal = false" @published="handlePublishedFromModal" />
+              </div>
+            </div>
+          </section>
+
+
+          <!-- Financial Metrics (moved to middle column per request) -->
+          <section class="financial-metrics-grid">
+            <div class="financial-card">
+              <div class="financial-card-icon financing-icon">₱</div>
+              <div class="financial-card-content">
+                <span class="financial-card-label">Total Sales</span>
+                <span class="financial-card-value">{{ financialData.totalSales }}</span>
+              </div>
+            </div>
+            <div class="financial-card">
+              <div class="financial-card-icon expenses-icon">📊</div>
+              <div class="financial-card-content">
+                <span class="financial-card-label">Total Expenses</span>
+                <span class="financial-card-value">{{ financialData.totalExpenses }}</span>
+              </div>
+            </div>
+            <div class="financial-card highlight">
+              <div class="financial-card-icon profit-icon">📈</div>
+              <div class="financial-card-content">
+                <span class="financial-card-label">Net Profit</span>
+                <span class="financial-card-value">{{ financialData.netProfit }}</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Admin Finance Charts -->
+          <section class="panel-block" style="min-height:360px;">
+            <div class="panel-header">
+              <h2>Financial Reports</h2>
+              <button class="panel-action" @click="loadAdminReports(activeRange)">Refresh</button>
+            </div>
+            <div class="panel-body panel-body--center" style="padding:16px 20px;">
+              <div v-if="isLoadingReports" style="display:flex;align-items:center;justify-content:center;height:260px;">
+                <div class="loading-spinner"></div>
+              </div>
+              <div v-else style="height:320px;">
+                <Chart v-if="adminReports.length" :type="'line'" :data="adminChartData" :options="adminChartOptions" />
+                <div v-else style="display:flex;align-items:center;justify-content:center;height:260px;color:#9CA3AF;">No report data available.</div>
+              </div>
+            </div>
+          </section>
+
+        </main>
         <!-- RIGHT: SIDE PANELS -->
         <aside class="admin-side">
+          <!-- Header profile placed above Top Products for large screens -->
+          <div class="header-actions-top header-actions-side">
+            <div class="header-profile-wrapper" @click.stop>
+              <button class="header-profile-btn" @click="toggleProfileDropdown">
+                <div class="header-avatar">
+                  <div v-if="ownerProfile.avatarUrl" class="header-avatar-img" :style="{ backgroundImage: 'url('+ownerProfile.avatarUrl+')' }"></div>
+                  <div v-else class="header-avatar-initials">{{ (ownerProfile.fullName || 'L').charAt(0).toUpperCase() }}</div>
+                </div>
+                <div class="header-name">{{ ((ownerProfile.role || 'ADMIN') + (typeof ownerProfile.branch === 'object' && ownerProfile.branch?.name ? ' - ' + ownerProfile.branch.name : (ownerProfile.branch ? ' - ' + ownerProfile.branch : ''))) }}</div>
+              </button>
+              <div v-if="profileDropdownVisible" class="header-profile-dropdown" @click.stop>
+                <button class="dropdown-item" @click="openInfoModal">Info</button>
+                <button
+                  v-if="(ownerProfile.role || '').toString().toUpperCase() !== 'STAFF'"
+                  class="dropdown-item"
+                  @click="goToStaffManagement"
+                >
+                  Staff Management
+                </button>
+                <button class="dropdown-item" @click="askLogout">Logout</button>
+              </div>
+            </div>
+          </div>
           <!-- Top products -->
           <section class="panel-block">
             <div class="panel-header">
@@ -500,74 +592,8 @@
               </div>
             </section>
 
-          <!-- Additional admin panels moved under Attendance Monitoring -->
-          <!-- Branch Products (branch admins only) -->
-          <section class="panel-block branch-products" v-if="isBranchAdmin">
-            <div class="panel-header">
-              <h2>Branch Products</h2>
-              <button class="panel-action" @click="refreshBranchProducts">Refresh</button>
-            </div>
-            <div class="panel-body" style="padding:12px 16px;">
-              <div class="branch-products-inner">
-                <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
-                  <button class="btn-primary" @click="openPublishModal">Publish Products</button>
-                </div>
-                <ProductList
-                  ref="productListRef"
-                  :fetchUrl="branchProductsFetchUrl"
-                  :compact="true"
-                  :showPublishControls="true"
-                  @toggle-publish="handleAdminTogglePublish"
-                />
-
-                <PublishProductsModal v-if="showPublishModal" :branch-id="(typeof ownerProfile.branch === 'object' && ownerProfile.branch.id) ? ownerProfile.branch.id : ownerProfile.branch" @close="showPublishModal = false" @published="handlePublishedFromModal" />
-              </div>
-            </div>
-          </section>
-
           <!-- Inventory Monitor removed per request -->
-
-          <!-- Financial Metrics -->
-          <section class="financial-metrics-grid">
-            <div class="financial-card">
-              <div class="financial-card-icon financing-icon">₱</div>
-              <div class="financial-card-content">
-                <span class="financial-card-label">Total Sales</span>
-                <span class="financial-card-value">{{ financialData.totalSales }}</span>
-              </div>
-            </div>
-            <div class="financial-card">
-              <div class="financial-card-icon expenses-icon">📊</div>
-              <div class="financial-card-content">
-                <span class="financial-card-label">Total Expenses</span>
-                <span class="financial-card-value">{{ financialData.totalExpenses }}</span>
-              </div>
-            </div>
-            <div class="financial-card highlight">
-              <div class="financial-card-icon profit-icon">📈</div>
-              <div class="financial-card-content">
-                <span class="financial-card-label">Net Profit</span>
-                <span class="financial-card-value">{{ financialData.netProfit }}</span>
-              </div>
-            </div>
-          </section>
-
-          <!-- Admin Finance Charts -->
-          <section class="panel-block" style="min-height:360px;">
-            <div class="panel-header">
-              <h2>Financial Reports</h2>
-              <button class="panel-action" @click="loadAdminReports(activeRange)">Refresh</button>
-            </div>
-            <div class="panel-body panel-body--center" style="padding:16px 20px;">
-              <div v-if="isLoadingReports" style="display:flex;align-items:center;justify-content:center;height:260px;">
-                <div class="loading-spinner"></div>
-              </div>
-              <div v-else style="height:320px;">
-                <Chart v-if="adminReports.length" :type="'line'" :data="adminChartData" :options="adminChartOptions" />
-                <div v-else style="display:flex;align-items:center;justify-content:center;height:260px;color:#9CA3AF;">No report data available.</div>
-              </div>
-            </div>
-          </section>
+          <!-- Admin Finance Charts (moved to middle column) -->
 
         </aside>
       </section>
@@ -755,7 +781,7 @@
 </template>
 
 <script setup>
-import { createApp, h, ref, onMounted, computed } from 'vue'
+import { createApp, h, ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import '../css/adminpanel.css'
@@ -938,6 +964,17 @@ async function handlePublishedFromModal() {
 }
 
 const isEditingInfo = ref(false)
+
+// Header profile dropdown state (moved from side column)
+const profileDropdownVisible = ref(false)
+
+function toggleProfileDropdown() {
+  profileDropdownVisible.value = !profileDropdownVisible.value
+}
+
+function onDocumentClick() {
+  try { if (profileDropdownVisible.value) profileDropdownVisible.value = false } catch (e) {}
+}
 
 // Early clock-out override toggle
 const earlyClockoutOverride = ref(false)
@@ -1604,25 +1641,33 @@ async function handleAdminTogglePublish(payload) {
   }
 }
 
-onMounted(() => {
-  loadDashboard(activeRange.value)
-  // load branches + attendance overview for admin
-  loadBranches()
-  loadAdminAttendance(activeRange.value)
-  loadAttendanceSettings()
-  // load admin finance charts
-  loadAdminReports(activeRange.value)
-  axios
-    .get('/api/owner-profile', { withCredentials: true })
-    .then(res => {
-      if (res.data.ok) {
-        ownerProfile.value = normalizeUser(res.data.user)
-      }
-    })
-    .catch(() => {})
-  // load announcements for side panel
-  fetchAnnouncements()
-})
+  onMounted(() => {
+    loadDashboard(activeRange.value)
+    // load branches + attendance overview for admin
+    loadBranches()
+    loadAdminAttendance(activeRange.value)
+    loadAttendanceSettings()
+    // load admin finance charts
+    loadAdminReports(activeRange.value)
+    axios
+      .get('/api/owner-profile', { withCredentials: true })
+      .then(res => {
+        if (res.data.ok) {
+          ownerProfile.value = normalizeUser(res.data.user)
+        }
+      })
+      .catch(() => {})
+
+    // Close profile dropdown when clicking outside
+    try { window.addEventListener('click', onDocumentClick) } catch (e) {}
+
+    // load announcements for side panel
+    fetchAnnouncements()
+  })
+
+  onUnmounted(() => {
+    try { window.removeEventListener('click', onDocumentClick) } catch (e) {}
+  })
 
 </script>
 
@@ -1764,6 +1809,147 @@ h1, h2 {
   margin-bottom: 8px;
 }
 
+/* Default: left-align the main header and its tabs for Admin Panel */
+.admin-main-header {
+  padding: 18px 24px;
+  position: relative;
+}
+.admin-main-header .admin-main-header-top {
+  display: block;
+  position: relative;
+  min-height: 100px;
+  margin: 0;
+}
+.admin-main-header .admin-main-header-top > div:first-child {
+  text-align: left;
+  max-width: 800px;
+}
+  .admin-main-header .admin-main-header-top .header-actions-top {
+  position: absolute;
+  top: -10px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 0;
+  z-index: 100;
+}
+.admin-main-header .admin-main-header-top .range-tabs {
+  display: flex;
+  justify-content: flex-start;
+  gap: 12px;
+  margin-top: 16px;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+}
+
+/* Header profile button styling */
+.header-profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: none;
+  background: white;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.header-profile-btn:hover {
+  background: #F9FAFB;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.header-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #FF9A4A, #FF6A3D);
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.header-avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center;
+}
+
+.header-avatar-initials {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #FF9A4A, #FF6A3D);
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.header-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1F2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.header-profile-wrapper {
+  position: relative;
+}
+
+.header-profile-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  border: 1px solid #E5E7EB;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  margin-top: 4px;
+  min-width: 160px;
+}
+
+.dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-size: 13px;
+  color: #374151;
+  transition: all 0.2s;
+}
+
+.dropdown-item:first-child {
+  border-radius: 6px 6px 0 0;
+}
+
+.dropdown-item:last-child {
+  border-radius: 0 0 6px 6px;
+}
+
+.dropdown-item:hover {
+  background: #F3F4F6;
+}
+
 /* Financial Metrics Styles */
 .financial-metrics-grid {
   display: grid;
@@ -1850,6 +2036,124 @@ h1, h2 {
   font-size: 18px;
   font-weight: 700;
   color: #4b2a06;
+}
+
+/* Large-screen adjustments: ensure center column layout and center the range-tabs */
+@media (min-width: 1024px) {
+  /* Force main column to occupy center grid slot */
+  .admin-main { grid-column: 2; }
+
+  /* Range tabs: keep them left-aligned inside the center column */
+  .admin-main-header-top .range-tabs {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    display: flex;
+    justify-content: flex-start; /* left-align the tabs */
+    margin-top: 0;
+    gap: 12px;
+  }
+
+  .range-tab { min-width: 90px; }
+
+  /* Ensure side panels (Top Products, Low Stock, Staff Activity, Announcements)
+     are visually positioned in the right column. */
+  .admin-side { grid-column: 3; }
+  .admin-profile-column { grid-column: 3; }
+
+  /* Keep right side panels visually pinned to the top-right on large screens */
+  .admin-side {
+    align-self: start;
+  }
+
+  /* Make the first panel in the right column (Top Products) sticky to the viewport */
+  .admin-side .panel:first-child {
+    position: sticky;
+    top: 18px;
+    z-index: 105;
+  }
+  /* Style for header profile when rendered in the right column */
+  .admin-side .header-actions-top {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 12px;
+    /* Keep profile inside the right column so it scrolls with the page */
+    position: relative;
+    top: 0;
+    right: 0;
+    z-index: 1100;
+    background: transparent;
+  }
+
+  .admin-side .header-actions-top .header-profile-wrapper {
+    position: relative;
+  }
+
+  /* Strong rule to ensure profile stays fixed and doesn't scroll */
+  .header-actions-side {
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    z-index: auto !important;
+  }
+
+  /* Pin the main header to the top-left on large screens */
+  .admin-main-header {
+    position: fixed;
+    top: 12px;
+    left: 16px;
+    width: 320px;
+    z-index: 1200;
+    background: transparent;
+    padding: 8px 12px;
+    border-radius: 8px;
+  }
+
+  /* Prevent overlap: push down the main column */
+  .admin-main {
+    margin-top: 120px;
+  }
+}
+
+/* Left-align header when viewing as SUPERADMIN only */
+.admin-main-header--left {
+  padding: 18px 24px;
+  position: relative;
+}
+.admin-main-header--left .admin-main-header-top {
+  display: block !important;
+  position: relative !important;
+  min-height: 100px !important;
+  margin: 0 !important;
+}
+.admin-main-header--left .admin-main-header-top > div:first-child {
+  text-align: left !important;
+  max-width: 900px !important;
+  margin-bottom: 0 !important;
+}
+.admin-main-header--left .admin-main-header-top .header-actions-top {
+  position: fixed !important;
+  top: -10px !important;
+  right: 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  flex-shrink: 0 !important;
+  padding: 0 !important;
+  z-index: 100 !important;
+}
+.admin-main-header--left .admin-main-header-top .range-tabs {
+  position: absolute !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  width: auto !important;
+  display: flex !important;
+  justify-content: flex-start !important;
+  gap: 8px !important;
+  margin-top: 0 !important;
+}
+.admin-main-header--left .admin-main-header-top .range-tabs .range-tab {
+  min-width: 80px;
 }
 
 </style>

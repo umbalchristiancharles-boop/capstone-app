@@ -1098,7 +1098,7 @@ h1, h2, h3, h4, h5, h6, .section-subtitle, .admin-name, .admin-role {
   .admin-page {
     padding: 8px;
   }
-  
+
   .admin-layout {
     grid-template-columns: 1fr;
     padding: 10px;
@@ -1106,83 +1106,83 @@ h1, h2, h3, h4, h5, h6, .section-subtitle, .admin-name, .admin-role {
     border-radius: 8px;
     min-height: calc(100vh - 16px);
   }
-  
+
   .admin-profile-column {
     order: -1;
     width: 100%;
   }
-  
+
   .admin-main {
     order: 0;
   }
-  
+
   .admin-side {
     order: 1;
     margin-top: 0;
   }
-  
+
   .admin-card {
     padding: 12px;
     border-radius: 10px;
   }
-  
+
   .admin-name {
     font-size: 0.95rem;
   }
-  
+
   .admin-avatar {
     width: 70px;
     height: 70px;
   }
-  
+
   .overview-grid {
     grid-template-columns: 1fr;
     gap: 10px;
   }
-  
+
   .overview-card {
     padding: 8px 10px;
   }
-  
+
   .admin-main-header h1 {
     font-size: 1.3rem;
   }
-  
+
   .admin-main-header-top .range-tabs {
     width: 100%;
     flex-wrap: wrap;
     gap: 4px;
     margin-top: 10px;
   }
-  
+
   .range-tab {
     padding: 4px 8px;
     font-size: 0.7rem;
     min-width: 70px;
     flex: 1 1 auto;
   }
-  
+
   .modal {
     width: 95%;
     max-width: 100%;
     margin: 20px auto;
   }
-  
+
   button, .btn, .staff-btn, .logout-btn {
     width: 100%;
     padding: 10px 12px;
     font-size: 0.875rem;
   }
-  
+
   .admin-metrics-row {
     gap: 20px;
     flex-wrap: wrap;
   }
-  
+
   .panel-block {
     padding: 10px 12px;
   }
-  
+
   .table-header,
   .table-row {
     grid-template-columns: 1fr;
@@ -1195,53 +1195,53 @@ h1, h2, h3, h4, h5, h6, .section-subtitle, .admin-name, .admin-role {
   .admin-page {
     padding: 10px;
   }
-  
+
   .admin-layout {
     grid-template-columns: 1fr;
     padding: 12px;
     gap: 12px;
     border-radius: 10px;
   }
-  
+
   .admin-profile-column {
     order: -1;
     width: 100%;
     margin-bottom: 8px;
   }
-  
+
   .admin-main {
     order: 0;
   }
-  
+
   .admin-side {
     order: 1;
     margin-top: 0;
   }
-  
+
   .overview-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
   }
-  
+
   .admin-avatar {
     width: 75px;
     height: 75px;
   }
-  
+
   .admin-main-header h1 {
     font-size: 1.4rem;
   }
-  
+
   .range-tab {
     padding: 5px 10px;
     font-size: 0.75rem;
   }
-  
+
   .modal {
     width: 92%;
     max-width: calc(100% - 20px);
   }
-  
+
   .modal-body {
     grid-template-columns: 1fr;
   }
@@ -1255,35 +1255,35 @@ h1, h2, h3, h4, h5, h6, .section-subtitle, .admin-name, .admin-role {
     gap: 14px;
     border-radius: 10px;
   }
-  
+
   .admin-profile-column {
     order: -1;
     width: 100%;
   }
-  
+
   .admin-main {
     order: 0;
   }
-  
+
   .admin-side {
     order: 1;
     margin-top: 0;
   }
-  
+
   .overview-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
   }
-  
+
   .admin-avatar {
     width: 80px;
     height: 80px;
   }
-  
+
   .admin-main-header h1 {
     font-size: 1.5rem;
   }
-  
+
   .range-tab {
     padding: 6px 12px;
     font-size: 0.8rem;
@@ -1298,36 +1298,36 @@ h1, h2, h3, h4, h5, h6, .section-subtitle, .admin-name, .admin-role {
     gap: 16px;
     border-radius: 12px;
   }
-  
+
   .admin-side {
     display: block;
     order: 3;
     grid-column: 1 / -1;
   }
-  
+
   .admin-profile-column {
     order: 1;
   }
-  
+
   .admin-main {
     order: 2;
   }
-  
+
   .overview-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
   }
-  
+
   .financial-metrics-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
   }
-  
+
   .modal {
     width: 90%;
     max-width: 700px;
   }
-  
+
   .modal-body {
     grid-template-columns: 1fr;
   }
@@ -1340,7 +1340,7 @@ h1, h2, h3, h4, h5, h6, .section-subtitle, .admin-name, .admin-role {
     padding: 16px;
     gap: 16px;
   }
-  
+
   .overview-grid {
     grid-template-columns: repeat(3, 1fr);
     gap: 12px;
@@ -1354,7 +1354,7 @@ h1, h2, h3, h4, h5, h6, .section-subtitle, .admin-name, .admin-role {
     gap: 20px;
     padding: 20px;
   }
-  
+
   .overview-grid {
     grid-template-columns: repeat(4, 1fr);
     gap: 12px;
@@ -1368,12 +1368,12 @@ h1, h2, h3, h4, h5, h6, .section-subtitle, .admin-name, .admin-role {
     gap: 24px;
     padding: 24px;
   }
-  
+
   .overview-grid {
     grid-template-columns: repeat(4, 1fr);
     gap: 16px;
   }
-  
+
   .admin-card {
     padding: 20px;
   }
@@ -1385,21 +1385,21 @@ h1, h2, h3, h4, h5, h6, .section-subtitle, .admin-name, .admin-role {
     grid-template-columns: 1fr;
     min-height: 0;
   }
-  
+
   .admin-main-header-top {
     flex-direction: column;
     gap: 10px;
   }
-  
+
   .admin-main-header-top .range-tabs {
     width: 100%;
     order: 2;
   }
-  
+
   .table-header {
     display: none;
   }
-  
+
   .table-row {
     display: block;
     margin-bottom: 12px;
@@ -1407,21 +1407,21 @@ h1, h2, h3, h4, h5, h6, .section-subtitle, .admin-name, .admin-role {
     border-radius: 8px;
     padding: 12px;
   }
-  
+
   .table-row::before {
     content: '';
     display: block;
     margin-bottom: 8px;
   }
-  
+
   .overview-card {
     padding: 12px;
   }
-  
+
   .panel-body--table {
     padding: 0;
   }
-  
+
   .info-modal {
     width: 90vw;
     max-width: 420px;

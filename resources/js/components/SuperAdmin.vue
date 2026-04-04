@@ -2,6 +2,16 @@
   <div class="min-h-screen bg-gradient-to-b from-[#FF9A4A] to-[#FF6A3D]">
     <div class="admin-page">
       <section class="admin-layout">
+        <!-- HEADER AT TOP (spans all columns) -->
+        <div class="page-header-top">
+          <div>
+            <h1>{{ panelTitle }}</h1>
+            <p>{{ panelDescription }}</p>
+            <p v-if="isLoadingDashboard && !isInitialMount" class="small-hint">Loading dashboard…</p>
+            <p v-else-if="dashboardError" class="small-hint small-hint--error">{{ dashboardError }}</p>
+          </div>
+        </div>
+
         <!-- LEFT: SIDE PANELS (Super Admin only) -->
         <aside class="admin-side">
           <section class="panel-block">
@@ -42,23 +52,12 @@
 
         <!-- MIDDLE: MAIN DASHBOARD -->
         <main class="admin-main">
-          <header class="admin-main-header">
-            <div class="admin-main-header-top">
-              <div>
-                <h1>{{ panelTitle }}</h1>
-                <p>{{ panelDescription }}</p>
-                <p v-if="isLoadingDashboard && !isInitialMount" class="small-hint">Loading dashboard…</p>
-                <p v-else-if="dashboardError" class="small-hint small-hint--error">{{ dashboardError }}</p>
-              </div>
-
-              <div class="range-tabs">
-                <button class="range-tab" :class="{ 'range-tab--active': activeRange === 'today' }" @click="changeRange('today')">Today</button>
-                <button class="range-tab" :class="{ 'range-tab--active': activeRange === 'yesterday' }" @click="changeRange('yesterday')">Yesterday</button>
-                <button class="range-tab" :class="{ 'range-tab--active': activeRange === 'thisWeek' }" @click="changeRange('thisWeek')">This Week</button>
-                <button class="range-tab" :class="{ 'range-tab--active': activeRange === 'thisMonth' }" @click="changeRange('thisMonth')">This Month</button>
-              </div>
-            </div>
-          </header>
+          <div class="range-tabs">
+            <button class="range-tab" :class="{ 'range-tab--active': activeRange === 'today' }" @click="changeRange('today')">Today</button>
+            <button class="range-tab" :class="{ 'range-tab--active': activeRange === 'yesterday' }" @click="changeRange('yesterday')">Yesterday</button>
+            <button class="range-tab" :class="{ 'range-tab--active': activeRange === 'thisWeek' }" @click="changeRange('thisWeek')">This Week</button>
+            <button class="range-tab" :class="{ 'range-tab--active': activeRange === 'thisMonth' }" @click="changeRange('thisMonth')">This Month</button>
+          </div>
 
           <section class="overview-grid">
             <div class="overview-card"><span class="overview-label">Total Orders:</span><span class="overview-value">&nbsp;{{ dashboardTotals.orders }}</span></div>
@@ -831,6 +830,62 @@ textarea.info-input {
   font-family: 'Inter', 'Poppins', sans-serif;
   letter-spacing: -0.5px;
   margin-bottom: 8px;
+}
+
+/* Header at the top of layout - spans all columns */
+.page-header-top {
+  grid-column: 1 / -1;
+  width: 100%;
+  padding: 12px 0;
+  background: white;
+  border-bottom: 1px solid #F0E9E0;
+  box-shadow: 0 2px 4px rgba(16,24,40,0.04);
+  margin-bottom: 4px;
+}
+
+.page-header-top div {
+  padding: 0;
+}
+
+.page-header-top h1 {
+  color: var(--text-dark);
+  font-weight: 800;
+  font-family: 'Inter', 'Poppins', sans-serif;
+  letter-spacing: -0.5px;
+  margin: 0 0 8px 0;
+  font-size: 1.5rem;
+  word-break: break-word;
+}
+
+.page-header-top p {
+  font-size: 0.9rem;
+  color: rgba(66,33,11,0.6);
+  margin: 4px 0;
+}
+
+.page-header-top .small-hint {
+  font-size: 0.8rem;
+  margin-top: 4px;
+}
+
+.page-header-top .small-hint--error {
+  color: #dc2626;
+}
+
+@media (max-width: 479px) {
+  .page-header-top h1 {
+    font-size: 1.2rem;
+  }
+}
+
+/* Reduce top spacing for side panels so left side panels move up
+   and maximize available space at the top on wide screens. */
+@media (min-width: 1024px) {
+  .admin-side {
+    margin-top: 8px !important;
+    position: static !important;
+    top: auto !important;
+  }
 }
 </style>
 
