@@ -271,29 +271,34 @@ export default {
 </script>
 
 <style scoped>
-.msg-fab{position:fixed;right:18px;bottom:18px;z-index:9999;width:56px;height:56px;border-radius:999px;background:#2563eb;color:#fff;border:none;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(37,99,235,0.2);cursor:pointer}
-.msg-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;z-index:9998}
-.msg-modal{width:920px;max-width:96%;height:72vh;background:#fff;border-radius:8px;display:flex;overflow:hidden}
-.msg-left{width:260px;border-right:1px solid #eee;display:flex;flex-direction:column}
-.msg-left-header{padding:12px;font-weight:600;border-bottom:1px solid #f2f5f8}
+/* Improve message widget layout and contrast for logistics panel */
+.msg-fab{position:fixed;right:18px;bottom:18px;z-index:10010;width:56px;height:56px;border-radius:999px;background:#2563eb;color:#fff;border:none;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 22px rgba(37,99,235,0.22);cursor:pointer}
+.msg-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:10000}
+.msg-modal{width:980px;max-width:98%;height:78vh;background:#ffffff;border-radius:10px;display:flex;overflow:hidden;box-shadow:0 10px 40px rgba(2,6,23,0.2)}
+.msg-left{width:280px;min-width:220px;border-right:1px solid #eef2f7;display:flex;flex-direction:column;background:#fbfeff}
+.msg-left-header{padding:14px;font-weight:700;border-bottom:1px solid #f3f6f9;color:#0f172a}
 .msg-users{overflow:auto;padding:8px}
-.msg-user{padding:10px;border-radius:6px;margin-bottom:6px;cursor:pointer}
-.msg-user.active{background:#eef8ff}
-.msg-user-name{font-weight:600;color:#0f172a}
-.msg-user-role{font-size:12px;color:#64748b;margin-top:2px}
-.msg-right{flex:1;display:flex;flex-direction:column}
-.msg-right-header{display:flex;justify-content:space-between;padding:12px;border-bottom:1px solid #f2f5f8}
-.close-btn{background:#ef4444;color:#fff;border:none;padding:6px 8px;border-radius:6px}
-.msg-messages{flex:1;padding:12px;overflow:auto;background:#f7fbff}
+.msg-user{padding:10px;border-radius:8px;margin-bottom:8px;cursor:pointer;border:1px solid transparent}
+.msg-user.active{background:#eef8ff;border-color:#dbeffd}
+.msg-user-name{font-weight:700;color:#0f172a}
+.msg-user-role{font-size:12px;color:#64748b;margin-top:4px}
+.msg-right{flex:1;display:flex;flex-direction:column;background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%)}
+.msg-right-header{display:flex;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #f3f6f9}
+.close-btn{background:#ef4444;color:#fff;border:none;padding:6px 10px;border-radius:6px}
+.msg-messages{flex:1;padding:16px;overflow:auto;background:transparent}
 .msg-thread{display:flex;flex-direction:column;gap:10px}
-.msg-bubble{max-width:72%;padding:10px;border-radius:8px;display:block;word-break:break-word}
+.msg-bubble{max-width:78%;padding:12px;border-radius:10px;display:block;word-break:break-word;border:1px solid rgba(15,23,42,0.04);box-shadow:0 2px 6px rgba(2,6,23,0.04)}
 .msg-bubble.mine{background:#dcfce7;align-self:flex-end;margin-left:auto}
-.msg-bubble.theirs{background:#fff;align-self:flex-start;margin-right:auto}
-.msg-sender{font-size:12px;color:#334155;font-weight:600;margin-bottom:6px}
-.msg-ts{font-size:11px;color:#666;margin-top:6px}
-.msg-composer{padding:10px;border-top:1px solid #f0f3f6;background:#fff}
-.msg-composer textarea{width:100%;height:72px;padding:8px;border:1px solid #e2e8f0;border-radius:6px}
-.composer-actions{display:flex;justify-content:flex-end;margin-top:6px}
-.composer-actions button{background:#2563eb;color:#fff;border:none;padding:8px 12px;border-radius:6px}
-.msg-empty{color:#777;padding:20px}
+.msg-bubble.theirs{background:#ffffff;align-self:flex-start;margin-right:auto}
+.msg-sender{font-size:12px;color:#1f2937;font-weight:700;margin-bottom:6px}
+.msg-ts{font-size:11px;color:#6b7280;margin-top:8px;text-align:right}
+.msg-composer{padding:12px;border-top:1px solid #eef2f7;background:#ffffff}
+.msg-composer textarea{width:100%;height:80px;padding:10px;border:1px solid #e6eef7;border-radius:8px;resize:vertical}
+.composer-actions{display:flex;justify-content:flex-end;margin-top:8px}
+.composer-actions button{background:#2563eb;color:#fff;border:none;padding:8px 14px;border-radius:8px}
+.msg-empty{color:#6b7280;padding:20px}
+
+/* Ensure messages wrap long words and code-like content */
+.msg-body{white-space:pre-wrap;word-wrap:break-word;overflow-wrap:break-word}
+
 </style>

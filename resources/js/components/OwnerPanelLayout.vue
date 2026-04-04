@@ -83,7 +83,30 @@
             </div>
           </section>
 
-          <slot name="side"></slot>
+          <template v-if="hasSideSlot">
+            <slot name="side"></slot>
+          </template>
+          <template v-else>
+            <div class="attendance-card" style="margin-top:12px; background:#ffffff;">
+              <div class="attendance-header">
+                <span class="attendance-title">Attendance</span>
+                <span :class="['attendance-status-badge', attendanceStatus.is_clocked_in ? 'status-on-duty' : 'status-off-duty']">
+                  {{ attendanceStatus.is_clocked_in ? 'On Duty' : 'Off Duty' }}
+                </span>
+              </div>
+              <div class="attendance-times" v-if="attendanceStatus.clock_in_time || attendanceStatus.clock_out_time">
+                <div class="time-row"><span class="time-label">Clock In:</span><span class="time-value">{{ attendanceStatus.clock_in_time || '-' }}</span></div>
+                <div class="time-row"><span class="time-label">Clock Out:</span><span class="time-value">{{ attendanceStatus.clock_out_time || '-' }}</span></div>
+                <div class="time-row" v-if="attendanceStatus.hours_worked > 0"><span class="time-label">Hours:</span><span class="time-value">{{ attendanceStatus.hours_worked }} hrs</span></div>
+              </div>
+              <div class="attendance-buttons">
+                <button @click="performClockIn" :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing" class="btn-clock-in">{{ isAttendanceProcessing ? '...' : 'Clock In' }}</button>
+                <button @click="performClockOut" :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockOut" class="btn-clock-out" :class="{ 'btn-disabled': !canClockOut && attendanceStatus.is_clocked_in }">{{ isAttendanceProcessing ? '...' : 'Clock Out' }}</button>
+              </div>
+              <div v-if="!canClockOut && attendanceStatus.is_clocked_in" class="clockout-restriction"><span class="restriction-icon">🔒</span><span>Cannot clock out before {{ scheduledTimeOut }}</span></div>
+              <div v-if="attendanceMessage" :class="['attendance-message', attendanceMessageType]">{{ attendanceMessage }}</div>
+            </div>
+          </template>
         </aside>
       </section>
     </div>
@@ -272,6 +295,111 @@ const isCustomAccount = computed(() => {
 // current route contains `?from=custom-panel`, or when the logged-in account is
 // of type custom (so modules always have a way back).
 const slots = useSlots()
+const hasSideSlot = computed(() => {
+  try { return Boolean(slots.side && slots.side().length) } catch (e) { return false }
+})
+
+// Attendance card state (default side when child doesn't supply one)
+const attendanceStatus = ref({ is_clocked_in: false, clock_in_time: null, clock_out_time: null, hours_worked: 0 })
+const isAttendanceProcessing = ref(false)
+const attendanceMessage = ref('')
+const attendanceMessageType = ref('')
+const attendanceSettings = ref({ early_clockout_override: false, scheduled_time_out: '17:00:00' })
+
+const scheduledTimeOut = computed(() => {
+  const time = attendanceSettings.value.scheduled_time_out || '17:00:00'
+  const [hours, minutes] = time.split(':')
+  const hour = parseInt(hours)
+  const ampm = hour >= 12 ? 'PM' : 'AM'
+  const hour12 = hour % 12 || 12
+  return `${hour12}:${minutes} ${ampm}`
+})
+
+const canClockOut = computed(() => {
+  if (!attendanceStatus.value.is_clocked_in) return false
+  if (attendanceSettings.value.early_clockout_override) return true
+  const now = new Date()
+  const currentTotalMinutes = now.getHours() * 60 + now.getMinutes()
+  const [scheduledHours, scheduledMinutes] = (attendanceSettings.value.scheduled_time_out || '17:00:00').split(':')
+  const scheduledTotalMinutes = parseInt(scheduledHours) * 60 + parseInt(scheduledMinutes)
+  return currentTotalMinutes >= scheduledTotalMinutes
+})
+
+async function loadAttendanceStatus() {
+  try {
+    const role = (localProfile.value.role || props.userProfile?.role || '').toString().toUpperCase()
+    const prefix = role.includes('MANAGER') ? '/api/manager' : (role === 'OWNER' ? '/api/owner' : '/api/staff')
+    const res = await axios.get(`${prefix}/attendance/status`, { withCredentials: true })
+    if (res.data && res.data.success) {
+      attendanceStatus.value = {
+        is_clocked_in: !!res.data.clocked_in,
+        clock_in_time: res.data.time_in || res.data.status?.clock_in_time || null,
+        clock_out_time: res.data.time_out || res.data.status?.clock_out_time || null,
+        hours_worked: res.data.status?.hours_worked || 0
+      }
+    }
+  } catch (e) {
+    // ignore - non-critical
+  }
+}
+
+async function loadAttendanceSettings() {
+  try {
+    const res = await axios.get('/api/attendance/settings', { withCredentials: true })
+    if (res.data && res.data.ok && res.data.data) {
+      attendanceSettings.value = {
+        early_clockout_override: res.data.data.early_clockout_override || false,
+        scheduled_time_out: res.data.data.scheduled_time_out || '17:00:00'
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+}
+
+async function performClockIn() {
+  if (isAttendanceProcessing.value) return
+  isAttendanceProcessing.value = true
+  attendanceMessage.value = ''
+  try {
+    const role = (localProfile.value.role || props.userProfile?.role || '').toString().toUpperCase()
+    const prefix = role.includes('MANAGER') ? '/api/manager' : (role === 'OWNER' ? '/api/owner' : '/api/staff')
+    const res = await axios.post(`${prefix}/clock-in`, {}, { withCredentials: true })
+    if (res.data && res.data.success) {
+      attendanceMessage.value = 'Clocked in successfully!'
+      attendanceMessageType.value = 'success'
+      await loadAttendanceStatus()
+    } else {
+      attendanceMessage.value = res.data.message || 'Failed to clock in'
+      attendanceMessageType.value = 'error'
+    }
+  } catch (e) {
+    attendanceMessage.value = e.response?.data?.message || 'Error clocking in'
+    attendanceMessageType.value = 'error'
+  } finally { isAttendanceProcessing.value = false; setTimeout(() => { attendanceMessage.value = '' }, 3000) }
+}
+
+async function performClockOut() {
+  if (isAttendanceProcessing.value) return
+  isAttendanceProcessing.value = true
+  attendanceMessage.value = ''
+  try {
+    const role = (localProfile.value.role || props.userProfile?.role || '').toString().toUpperCase()
+    const prefix = role.includes('MANAGER') ? '/api/manager' : (role === 'OWNER' ? '/api/owner' : '/api/staff')
+    const res = await axios.post(`${prefix}/clock-out`, {}, { withCredentials: true })
+    if (res.data && res.data.success) {
+      attendanceMessage.value = 'Clocked out successfully!'
+      attendanceMessageType.value = 'success'
+      await loadAttendanceStatus()
+    } else {
+      attendanceMessage.value = res.data.message || 'Failed to clock out'
+      attendanceMessageType.value = 'error'
+    }
+  } catch (e) {
+    attendanceMessage.value = e.response?.data?.message || 'Error clocking out'
+    attendanceMessageType.value = 'error'
+  } finally { isAttendanceProcessing.value = false; setTimeout(() => { attendanceMessage.value = '' }, 3000) }
+}
 
 const showBackComputed = computed(() => {
   try {
@@ -352,6 +480,9 @@ onMounted(() => {
     })()
 
     Promise.resolve(loadAnnouncements()).catch(() => {})
+    // Load attendance status/settings for default side attendance card
+    Promise.resolve(loadAttendanceStatus()).catch(() => {})
+    Promise.resolve(loadAttendanceSettings()).catch(() => {})
   } catch (e) {}
   // If parent did not provide a populated `userProfile` prop, try fetching the
   // authoritative current user so the profile column is not empty after SPA

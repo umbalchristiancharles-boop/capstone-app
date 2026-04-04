@@ -6,6 +6,47 @@
   --text-dark: #42210b;
 }
 
+/* Global Attendance Card (used by multiple panels) */
+.attendance-card {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+.attendance-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.attendance-title {
+  font-weight: 700;
+  color: #333;
+}
+.attendance-status-badge {
+  font-size: 0.82rem;
+  padding: 6px 10px;
+  border-radius: 16px;
+  font-weight: 700;
+}
+.status-on-duty { background:#d4edda; color:#155724 }
+.status-off-duty { background:#f8d7da; color:#721c24 }
+.attendance-times { margin-bottom: 8px }
+.time-row { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #f1f1f1 }
+.time-label { color:#6b6b6b; font-weight:600 }
+.time-value { color:#222; font-weight:700 }
+.attendance-buttons { display:flex; gap:8px; margin-top:8px }
+.btn-clock-in, .btn-clock-out { flex:1; padding:8px 10px; border-radius:8px; font-weight:700; border:none; cursor:pointer }
+.btn-clock-in { background: linear-gradient(135deg,#28a745,#20c997); color:#fff }
+.btn-clock-out { background: linear-gradient(135deg,#dc3545,#ff6b6b); color:#fff }
+.btn-clock-in:disabled, .btn-clock-out:disabled { background:#ddd; color:#888; cursor:not-allowed }
+.clockout-restriction { margin-top:8px; background:#fff3cd; border:1px solid #ffd966; padding:8px; border-radius:8px; color:#856404; display:flex; gap:8px; align-items:center }
+.attendance-message { margin-top:8px; padding:8px; border-radius:6px; font-weight:600; text-align:center }
+.attendance-message.success { background:#d4edda; color:#155724 }
+.attendance-message.error { background:#f8d7da; color:#721c24 }
+
+
 /* Full-page fade on navigation for non-SPA page loads */
 html.page-exit {
   opacity: 0;

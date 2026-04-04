@@ -10,8 +10,8 @@ class Attendance extends Model
     protected $fillable = ['user_id', 'date', 'time_in', 'time_out', 'hours_worked', 'status', 'notes'];
     protected $casts = [
         'date' => 'date',
-        'time_in' => 'datetime:H:i',
-        'time_out' => 'datetime:H:i',
+        'time_in' => 'datetime',
+        'time_out' => 'datetime',
     ];
 
     public function user()
