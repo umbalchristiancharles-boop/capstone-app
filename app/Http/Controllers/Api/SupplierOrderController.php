@@ -8,6 +8,7 @@ use App\Models\SupplierOrder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Events\ProcurementRequestUpdated;
 
 class SupplierOrderController extends Controller
 {
@@ -258,23 +259,25 @@ class SupplierOrderController extends Controller
                     $proc = $order->procurementRequest;
                     if ($proc) {
                         Log::info('ProcurementRequest found', ['proc_id' => $proc->id, 'current_status' => $proc->status]);
-                        
+
                         try {
+                            $oldStatus = $proc->status;
                             if ($newStatus === 'fulfilled') {
                                 // Supplier marked order fulfilled. Do NOT increment product stock here.
                                 // Inventory should only be updated when logistics staff confirm delivered quantities.
-                                if ($proc) {
-                                    Log::info('Marking procurement awaiting inventory confirmation (supplier fulfilled)', ['proc_id' => $proc->id]);
-                                    $proc->update(['status' => 'awaiting_inventory_confirmation']);
-                                } else {
-                                    Log::warning('No procurement found for supplier order', ['order_id' => $order->id]);
-                                }
+                                Log::info('Marking procurement awaiting inventory confirmation (supplier fulfilled)', ['proc_id' => $proc->id]);
+                                $proc->update(['status' => 'awaiting_inventory_confirmation']);
+                                // dispatch update event
+                                try { event(new ProcurementRequestUpdated($proc->fresh())); } catch (\Throwable $_e) { Log::debug('Failed to dispatch ProcurementRequestUpdated', ['error' => $_e->getMessage()]); }
+                                Log::info('ProcurementRequest status changed', ['proc_id' => $proc->id, 'old_status' => $oldStatus, 'new_status' => $proc->status]);
                             } else {
                                 // Supplier indicates items are on delivery -> map to an allowed procurement status
                                 // Map supplier's 'on_delivery' to procurement status 'ongoing_delivery'
                                 $procNewStatus = 'ongoing_delivery';
                                 $proc->update(['status' => $procNewStatus]);
-                                Log::info('ProcurementRequest set to mapped status for on_delivery', ['proc_id' => $proc->id, 'mapped_status' => $procNewStatus]);
+                                // dispatch update event
+                                try { event(new ProcurementRequestUpdated($proc->fresh())); } catch (\Throwable $_e) { Log::debug('Failed to dispatch ProcurementRequestUpdated', ['error' => $_e->getMessage()]); }
+                                Log::info('ProcurementRequest set to mapped status for on_delivery', ['proc_id' => $proc->id, 'mapped_status' => $procNewStatus, 'old_status' => $oldStatus]);
                             }
                         } catch (\Exception $procError) {
                             Log::error('ProcurementRequest update failed', [

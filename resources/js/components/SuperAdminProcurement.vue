@@ -7,7 +7,7 @@
     :canEditProfile="false"
     :canChangePassword="true"
     :showProfileColumn="false"
-    :showAnnouncements="selectedBranch"
+    :showAnnouncements="!!selectedBranch"
     :showBackButton="true"
     @back="() => router.back()"
     @logout="askLogout"
@@ -403,9 +403,9 @@ async function acknowledgeRequest(product) {
 async function requestSupplier(product) {
   const productId = product.procurement_request_id || product.id
   if (requestingSupplierIds.value[productId]) return
-  
+
   if (!(await window.swalConfirm(`Request suppliers to provide ${product.name} for branch ${branchName.value}?`))) return
-  
+
   setRequestingFlag(productId, true)
   try {
     const payload = { branch_id: selectedBranch.value }

@@ -765,6 +765,13 @@ public function requestedProducts(Request $request)
             $message = '✓ Cash confirmed! Procurement can now place orders with suppliers.';
         }
 
+        // Broadcast procurement update for real-time UIs (if broadcasting configured)
+        try {
+            event(new \App\Events\ProcurementRequestUpdated($response));
+        } catch (\Throwable $e) {
+            Log::debug('Failed to dispatch ProcurementRequestUpdated event', ['error' => $e->getMessage()]);
+        }
+
         return response()->json([
             'ok' => true,
             'message' => $message,
@@ -977,7 +984,9 @@ public function requestedProducts(Request $request)
             return response()->json(['error' => 'Failed to confirm receipt', 'message' => $e->getMessage()], 500);
         }
 
-        return response()->json(['ok' => true, 'message' => 'Receipt confirmed. Status set to ongoing_delivery.', 'request' => $procRequest->fresh()]);
+        $fresh = $procRequest->fresh();
+        $status = $fresh->status ?? 'unknown';
+        return response()->json(['ok' => true, 'message' => "Receipt confirmed. Status set to {$status}.", 'request' => $fresh]);
     }
 
     /**

@@ -6,6 +6,8 @@ use App\Models\LogisticsTransaction;
 use App\Models\ProcurementRequest;
 use App\Models\SupplierOrder;
 use App\Models\Product;
+use App\Events\LogisticsTransactionUpdated;
+use App\Events\ProcurementRequestUpdated;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -76,10 +78,16 @@ class LogisticsService
                 );
             }
 
+            // Capture previous status for accurate logging
+            $previousStatus = $transaction->status;
+
             // Update status and timestamp
             $transaction->status = $newStatus;
             $fieldName = $newStatus . '_at';
-            $transaction->{$fieldName} = now();
+            // Only set timestamp field if that cast exists on model
+            if ($transaction->hasCast($fieldName)) {
+                $transaction->{$fieldName} = now();
+            }
 
             // Update quantity verified if provided
             if (isset($details['actual_quantity'])) {
@@ -97,6 +105,7 @@ class LogisticsService
                 $transaction->variance_reason = $details['variance_reason'];
             }
 
+
             // Track who made the update
             if ($userId) {
                 $transaction->updated_by_user_id = $userId;
@@ -109,10 +118,17 @@ class LogisticsService
 
             Log::info('Updated logistics transaction status', [
                 'transaction_id' => $transactionId,
-                'old_status' => $transaction->status,
+                'old_status' => $previousStatus,
                 'new_status' => $newStatus,
                 'user_id' => $userId,
             ]);
+
+            // Broadcast event so frontends can react in real-time if broadcasting is configured
+            try {
+                event(new LogisticsTransactionUpdated($transaction->fresh()));
+            } catch (\Throwable $e) {
+                Log::debug('Failed to dispatch LogisticsTransactionUpdated event', ['error' => $e->getMessage()]);
+            }
 
             return $transaction;
         });
@@ -162,8 +178,9 @@ class LogisticsService
 
             $this->updateTransactionStatus($transaction->id, 'at_destination', $userId);
 
+            // Align procurement request status with supplier 'on_delivery' mapping
             $procurementRequest->update([
-                'status' => 'delivery_pending',
+                'status' => 'ongoing_delivery',
             ]);
 
             return $transaction;
@@ -226,6 +243,12 @@ class LogisticsService
                 throw new \Exception("No logistics transaction found for procurement {$procurementRequest->id}");
             }
 
+            // Idempotency: if procurement already completed, skip processing
+            if ($procurementRequest->status === 'completed' || $transaction->completed_at !== null) {
+                Log::info('completeProcurement skipped: already completed', ['procurement_id' => $procurementRequest->id]);
+                return $transaction;
+            }
+
             // Use verified quantity if available, otherwise use expected
             $quantityToAdd = $actualQuantity ?? $transaction->quantity_verified ?? $transaction->expected_quantity;
 
@@ -257,6 +280,13 @@ class LogisticsService
             $procurementRequest->update([
                 'status' => 'completed',
             ]);
+
+            // Broadcast procurement update
+            try {
+                event(new ProcurementRequestUpdated($procurementRequest->fresh()));
+            } catch (\Throwable $e) {
+                Log::debug('Failed to dispatch ProcurementRequestUpdated event', ['error' => $e->getMessage()]);
+            }
 
             // Mark supplier order as fulfilled
             try {
