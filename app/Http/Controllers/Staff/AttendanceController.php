@@ -13,13 +13,24 @@ class AttendanceController extends Controller
 {
     /**
      * Clock In - Staff records arrival
-     * Works for all roles: STAFF, BRANCH_MANAGER, OWNER, ADMIN, HR
+     * Works for: STAFF, BRANCH_MANAGER, OWNER, ADMIN, HR
+     * Restricted for: Super Admin Logistics role
      */
     public function clockIn(Request $request)
     {
         $user = Auth::user();
         if (!$user) {
             return response()->json(['ok' => false, 'success' => false, 'message' => 'Not authenticated'], 401);
+        }
+
+        // Reject clock-in requests from Super Admin with Logistics module
+        if ($this->isLogisticsAdmin($user)) {
+            return response()->json([
+                'ok' => false,
+                'success' => false,
+                'message' => 'Super Admin Logistics role cannot perform clock in/out operations',
+                'restricted_role' => 'logistics_admin'
+            ], 403);
         }
 
         $today = Carbon::now()->toDateString();
@@ -63,13 +74,24 @@ class AttendanceController extends Controller
 
     /**
      * Clock Out - Staff records departure
-     * Works for all roles: STAFF, BRANCH_MANAGER, OWNER, ADMIN, HR
+     * Works for: STAFF, BRANCH_MANAGER, OWNER, ADMIN, HR
+     * Restricted for: Super Admin Logistics role
      */
     public function clockOut(Request $request)
     {
         $user = Auth::user();
         if (!$user) {
             return response()->json(['ok' => false, 'success' => false, 'message' => 'Not authenticated'], 401);
+        }
+
+        // Reject clock-out requests from Super Admin with Logistics module
+        if ($this->isLogisticsAdmin($user)) {
+            return response()->json([
+                'ok' => false,
+                'success' => false,
+                'message' => 'Super Admin Logistics role cannot perform clock in/out operations',
+                'restricted_role' => 'logistics_admin'
+            ], 403);
         }
 
         $today = Carbon::now()->toDateString();
@@ -313,5 +335,35 @@ class AttendanceController extends Controller
         }
 
         return 'present';
+    }
+
+    /**
+     * Check if user is a Super Admin with Logistics module
+     * Super Admin Logistics role is restricted from clock in/out operations
+     */
+    private function isLogisticsAdmin($user)
+    {
+        if (!$user) {
+            return false;
+        }
+
+        // Check if user has SUPER_ADMIN or ADMIN role
+        $isSuperAdmin = in_array(strtoupper($user->role ?? ''), ['SUPER_ADMIN', 'ADMIN']);
+
+        // Check if user has 'logistics' in modules permissions
+        $permissions = $user->permissions ?? [];
+        if (is_string($permissions)) {
+            try {
+                $permissions = json_decode($permissions, true) ?: [];
+            } catch (\Throwable $e) {
+                return false;
+            }
+        }
+
+        $modules = $permissions['modules'] ?? [];
+        $hasLogisticsModule = in_array('logistics', array_map('strtolower', $modules));
+
+        // User is logistics admin if they are SUPER_ADMIN/ADMIN AND have logistics module
+        return $isSuperAdmin && $hasLogisticsModule;
     }
 }

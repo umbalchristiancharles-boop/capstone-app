@@ -254,6 +254,14 @@ const fetchDashboard = async () => {
       // tolerate both snake_case and camelCase keys for transactions
       recentTransactions.value = response.data.recent_transactions || response.data.recentTransactions || []
 
+      // Validate dashboard data - ensure no negative values except refunds
+      if (dashboard.value.total_revenue < 0) {
+        console.warn('Warning: Total revenue is negative, this may indicate data inconsistency')
+      }
+      if (dashboard.value.total_net_profit === undefined) {
+        dashboard.value.total_net_profit = dashboard.value.total_revenue - (dashboard.value.total_expenses || 0) - (dashboard.value.total_refunds || 0)
+      }
+
       // Fetch branch stats with the same filters
       const branchResponse = await axios.get('/api/superadmin/finance/branches', {
         params,
@@ -271,11 +279,21 @@ const fetchDashboard = async () => {
           // fallback: try common keys
           return { id: b.branch_id || b.id || null, name: b.branch_name || b.name || b.code || 'Unknown' }
         }).filter(b => b.id !== null)
+
+        // Validate branch stats - warn if totals don't match
+        if (branchStats.value.length > 0) {
+          const branchSum = branchStats.value.reduce((sum, b) => sum + (b.total_sales || 0), 0)
+          if (Math.abs(branchSum - (dashboard.value.total_revenue || 0)) > 0.01) {
+            console.warn('Warning: Branch totals do not match dashboard total revenue')
+          }
+        }
       }
+    } else {
+      error.value = response.data.message || 'Failed to load finance data'
     }
   } catch (err) {
     console.error('Error fetching finance dashboard:', err)
-    error.value = err.response?.data?.message || 'Failed to load finance data'
+    error.value = err.response?.data?.message || err.message || 'Failed to load finance data'
   } finally {
     loading.value = false
   }

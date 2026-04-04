@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Models\Order;
 use App\Models\Branch;
+use App\Models\Expense;
 
 /**
  * SuperAdmin Finance Controller
@@ -18,59 +19,7 @@ use App\Models\Branch;
  */
 class SuperAdminFinanceController extends Controller
 {
-    /**
-     * Resolve authenticated user - same approach as SuperAdminController
-     */
-    private function resolveAuthenticatedUser($request)
-    {
-        if (Auth::check()) {
-            return Auth::user();
-        }
-
-        $sessionUserId = $request->session()->get('user_id');
-        if ($sessionUserId) {
-            return \App\Models\User::find($sessionUserId);
-        }
-
-        return null;
-    }
-
-    /**
-     * Check if user is Super Admin
-     */
-    private function isSuperAdmin($user)
-    {
-        if (!$user) {
-            return false;
-        }
-        $roleUpper = strtoupper($user->role ?? '');
-        return $roleUpper === 'SUPER_ADMIN' || $roleUpper === 'SUPERADMIN';
-    }
-
-    /**
-     * Get date range based on filter
-     */
-    private function getDateRange($range)
-    {
-        $now = now();
-
-        switch ($range) {
-            case 'today':
-                return [$now->copy()->startOfDay(), $now->copy()->endOfDay()];
-            case 'yesterday':
-                return [$now->copy()->subDay()->startOfDay(), $now->copy()->subDay()->endOfDay()];
-            case 'thisWeek':
-                return [$now->copy()->startOfWeek(), $now->copy()->endOfWeek()];
-            case 'thisMonth':
-                return [$now->copy()->startOfMonth(), $now->copy()->endOfMonth()];
-            case 'lastMonth':
-                return [$now->copy()->subMonth()->startOfMonth(), $now->copy()->subMonth()->endOfMonth()];
-            case 'all':
-                return [null, null]; // No date filter - return null dates
-            default:
-                return [$now->copy()->startOfDay(), $now->copy()->endOfDay()];
-        }
-    }
+    use FinancialTrait;
 
     /**
      * GET /api/superadmin/finance/dashboard
@@ -81,12 +30,17 @@ class SuperAdminFinanceController extends Controller
      * - range: Date range filter (today, yesterday, thisWeek, thisMonth, lastMonth, all)
      * - branch_id: Filter by specific branch
      *
-     * KPIs:
-     * - total_revenue: SUM of grand_total from completed orders
-     * - total_orders: COUNT of completed orders only (for accurate financial reporting)
-     * - total_expenses: 0 (placeholder - no expenses table yet)
-     * - total_refunds: SUM of grand_total from cancelled/refunded orders
+     * KPIs Calculation:
+     * - total_revenue: SUM of grand_total from completed orders only
+     * - total_orders: COUNT of completed orders (accurate financial reporting)
+     * - total_expenses: SUM of all expenses (approved status)
+     * - total_refunds: SUM of grand_total from cancelled orders
      * - total_net_profit: total_revenue - total_expenses - total_refunds
+     *
+     * Data Consistency:
+     * - Only 'completed' orders count as revenue (NOT 'approved' or 'pending')
+     * - Only 'cancelled' orders count as refunds (NOT pending)
+     * - Expenses are from the expenses table, not orders
      */
     public function dashboard(Request $request)
     {
@@ -100,61 +54,53 @@ class SuperAdminFinanceController extends Controller
         $branchId = $request->query('branch_id');
         $dateRange = $this->getDateRange($range);
 
-        // Build base query conditions
-        $dateCondition = fn($query) => $query->whereBetween('created_at', $dateRange);
-        
-        // Build query with optional date and branch filters
-$completedQuery = Order::whereIn('status', ['completed', 'approved']);
-$cancelledQuery = Order::whereIn('status', ['cancelled', 'pending']);
-        $ordersQuery = Order::query();
+        // Helper to apply date and branch filters
+        $applyFilters = function($query) use ($dateRange, $branchId) {
+            if ($dateRange[0] !== null && $dateRange[1] !== null) {
+                $query->whereBetween('created_at', $dateRange);
+            }
+            if ($branchId) {
+                $query->where('branch_id', $branchId);
+            }
+            return $query;
+        };
 
-        // Apply date filter
-        if ($dateRange[0] !== null && $dateRange[1] !== null) {
-            $completedQuery->whereBetween('created_at', $dateRange);
-            $cancelledQuery->whereBetween('created_at', $dateRange);
-            $ordersQuery->whereBetween('created_at', $dateRange);
-        }
+        // === REVENUE ===
+        // Only completed orders count as revenue (accurate financial reporting)
+        $revenueQuery = Order::where('status', 'completed');
+        $revenueQuery = $applyFilters($revenueQuery);
+        $totalRevenue = (float) $revenueQuery->sum('grand_total');
 
-        // Apply branch filter if specified
-        if ($branchId) {
-            $completedQuery->where('branch_id', $branchId);
-            $cancelledQuery->where('branch_id', $branchId);
-            $ordersQuery->where('branch_id', $branchId);
-        }
+        // === ORDER COUNT ===
+        // Count only completed orders
+        $ordersQuery = Order::where('status', 'completed');
+        $ordersQuery = $applyFilters($ordersQuery);
+        $totalOrders = (int) $ordersQuery->count();
 
-        // Total Revenue - SUM of grand_total from completed orders
-        $totalRevenue = (float) $completedQuery->sum('grand_total');
+        // === REFUNDS ===
+        // Only cancelled orders count as refunds
+        $refundsQuery = Order::where('status', 'cancelled');
+        $refundsQuery = $applyFilters($refundsQuery);
+        $totalRefunds = (float) $refundsQuery->sum('grand_total');
 
-        // Total Orders - COUNT of completed orders only (for accurate financial reporting)
-        $totalOrders = (int) $ordersQuery->where('status', 'completed')->count();
+        // === EXPENSES ===
+        // Sum all approved expenses
+        $expensesQuery = Expense::where('status', 'approved');
+        $expensesQuery = $applyFilters($expensesQuery);
+        $totalExpenses = (float) $expensesQuery->sum('amount');
 
-        // Total Refunds - SUM of grand_total from cancelled orders
-        $totalRefunds = (float) $cancelledQuery->sum('grand_total');
-
-        // Total Expenses - placeholder (0 for now)
-        $totalExpenses = 0.0;
-
+        // === NET PROFIT ===
         // Net Profit = total_revenue - total_expenses - total_refunds
         $netProfit = $totalRevenue - $totalExpenses - $totalRefunds;
 
-        // Get branch count (filtered or all)
-        if ($branchId) {
-            $totalBranches = 1;
-        } else {
-            $totalBranches = Branch::count();
-        }
+        // === BRANCH COUNT ===
+        $totalBranches = $branchId ? 1 : Branch::where('is_active', true)->count();
 
-        // Get recent transactions (last 10 completed orders within date range and branch)
+        // === RECENT TRANSACTIONS ===
+        // Get last 10 completed orders for recent activity
         $recentTransactionsQuery = Order::with('branch')
             ->where('status', 'completed');
-        
-        if ($dateRange[0] !== null) {
-            $recentTransactionsQuery->whereBetween('created_at', $dateRange);
-        }
-        
-        if ($branchId) {
-            $recentTransactionsQuery->where('branch_id', $branchId);
-        }
+        $recentTransactionsQuery = $applyFilters($recentTransactionsQuery);
 
         $recentTransactions = $recentTransactionsQuery
             ->orderBy('created_at', 'desc')
@@ -173,20 +119,17 @@ $cancelledQuery = Order::whereIn('status', ['cancelled', 'pending']);
                 ];
             });
 
-        // Get order status breakdown
-        $orderStatusQuery = Order::query();
-        if ($dateRange[0] !== null) {
-            $orderStatusQuery->whereBetween('created_at', $dateRange);
-        }
-        if ($branchId) {
-            $orderStatusQuery->where('branch_id', $branchId);
-        }
+        // === ORDER STATUS BREAKDOWN ===
+        // Count orders by status for visibility
+        $baseStatusQuery = Order::query();
+        $baseStatusQuery = $applyFilters($baseStatusQuery);
 
         $orderStatusBreakdown = [
-            'completed' => (int) (clone $orderStatusQuery)->where('status', 'completed')->count(),
-            'pending' => (int) (clone $orderStatusQuery)->where('status', 'pending')->count(),
-            'in_kitchen' => (int) (clone $orderStatusQuery)->where('status', 'in_kitchen')->count(),
-            'cancelled' => (int) (clone $orderStatusQuery)->where('status', 'cancelled')->count(),
+            'completed' => (int) (clone $baseStatusQuery)->where('status', 'completed')->count(),
+            'pending' => (int) (clone $baseStatusQuery)->where('status', 'pending')->count(),
+            'in_kitchen' => (int) (clone $baseStatusQuery)->where('status', 'in_kitchen')->count(),
+            'cancelled' => (int) (clone $baseStatusQuery)->where('status', 'cancelled')->count(),
+            'approved' => (int) (clone $baseStatusQuery)->where('status', 'approved')->count(),
         ];
 
         return response()->json([
@@ -253,33 +196,37 @@ $cancelledQuery = Order::whereIn('status', ['cancelled', 'pending']);
         }
 
         $branches = $branchesQuery->get()->map(function ($branch) use ($dateRange, $range) {
-            // Build query base
+            // Build query base for this branch
             $orderQuery = Order::where('branch_id', $branch->id);
-            
+            $expenseQuery = Expense::where('branch_id', $branch->id);
+
             // Only apply date filter if range is not 'all' and dates are valid
             $applyDateFilter = ($range !== 'all' && $dateRange[0] !== null && $dateRange[1] !== null);
-            
+
             if ($applyDateFilter) {
                 $orderQuery->whereBetween('created_at', $dateRange);
+                $expenseQuery->whereBetween('created_at', $dateRange);
             }
 
-            // Total Sales (completed orders)
-            $totalSales = (clone $orderQuery)
+            // Total Sales (completed orders only)
+            $totalSales = (float) (clone $orderQuery)
                 ->where('status', 'completed')
                 ->sum('grand_total');
 
-            // Total Orders - count only completed orders (for accurate financial reporting)
-            $totalOrders = (clone $orderQuery)
+            // Total Orders - count only completed orders
+            $totalOrders = (int) (clone $orderQuery)
                 ->where('status', 'completed')
                 ->count();
 
-            // Total Refunds (cancelled orders)
-            $totalRefunds = (clone $orderQuery)
+            // Total Refunds (cancelled orders only)
+            $totalRefunds = (float) (clone $orderQuery)
                 ->where('status', 'cancelled')
                 ->sum('grand_total');
 
-            // Expenses (placeholder - 0)
-            $totalExpenses = 0.0;
+            // Total Expenses (approved expenses only)
+            $totalExpenses = (float) (clone $expenseQuery)
+                ->where('status', 'approved')
+                ->sum('amount');
 
             // Net Profit = total_sales - total_expenses - total_refunds
             $netProfit = $totalSales - $totalExpenses - $totalRefunds;
@@ -290,7 +237,7 @@ $cancelledQuery = Order::whereIn('status', ['cancelled', 'pending']);
                 'branch_code' => $branch->code,
                 'total_sales' => (float) $totalSales,
                 'total_orders' => (int) $totalOrders,
-                'total_expenses' => $totalExpenses,
+                'total_expenses' => (float) $totalExpenses,
                 'total_refunds' => (float) $totalRefunds,
                 'net_profit' => (float) $netProfit,
                 'is_active' => (bool) $branch->is_active,

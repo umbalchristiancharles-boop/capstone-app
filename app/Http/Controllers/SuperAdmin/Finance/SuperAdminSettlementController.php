@@ -13,54 +13,30 @@ use App\Models\Settlement;
  */
 class SuperAdminSettlementController extends Controller
 {
-    /**
-     * Resolve authenticated user
-     */
-    private function resolveAuthenticatedUser($request)
-    {
-        if (Auth::check()) {
-            return Auth::user();
-        }
-
-        $sessionUserId = $request->session()->get('user_id');
-        if ($sessionUserId) {
-            return \App\Models\User::find($sessionUserId);
-        }
-
-        return null;
-    }
-
-    /**
-     * Check if user is Super Admin
-     */
-    private function isSuperAdmin($user)
-    {
-        if (!$user) {
-            return false;
-        }
-        $roleUpper = strtoupper($user->role ?? '');
-        return $roleUpper === 'SUPER_ADMIN' || $roleUpper === 'SUPERADMIN';
-    }
+    use FinancialTrait;
 
     /**
      * GET /api/superadmin/finance/settlements
      *
-     * Return settlement or payout records
+     * Return settlement or payout records with validation
      */
     public function index(Request $request)
     {
         $user = $this->resolveAuthenticatedUser($request);
 
         if (!$user || !$this->isSuperAdmin($user)) {
-            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
+            return $this->unauthorizedResponse();
         }
 
         $branchId = $request->query('branch_id');
         $status = $request->query('status');
+        $fromDate = $request->query('from_date');
+        $toDate = $request->query('to_date');
         $perPage = (int) $request->query('per_page', 15);
         $page = (int) $request->query('page', 1);
 
-        $perPage = min(max($perPage, 1), 100);
+        // Validate pagination
+        [$page, $perPage] = $this->validatePagination($page, $perPage);
 
         // Build query with filters
         $query = Settlement::with(['branch', 'processor']);
@@ -70,11 +46,22 @@ class SuperAdminSettlementController extends Controller
         }
 
         if ($status) {
-            $query->where('status', $status);
+            // Validate settlement status
+            $validStatuses = ['pending', 'completed', 'cancelled'];
+            if (in_array($status, $validStatuses)) {
+                $query->where('status', $status);
+            }
         }
 
-        // Get total amount
-        $totalAmount = (float) $query->sum('amount');
+        // Apply date range filter if provided
+        if ($fromDate && $toDate) {
+            $dateRange = $this->getDateRangeFromDates($fromDate, $toDate);
+            $query = $this->applyDateRangeFilter($query, $dateRange);
+        }
+
+        // Get total amount - only completed settlements count
+        $completedQuery = (clone $query)->where('status', 'completed');
+        $totalAmount = (float) $completedQuery->sum('amount');
 
         // Paginate
         $settlements = $query->orderBy('created_at', 'desc')
@@ -91,12 +78,12 @@ class SuperAdminSettlementController extends Controller
                     'id' => $settlement->id,
                     'branch_id' => $settlement->branch_id,
                     'branch_name' => $settlement->branch ? $settlement->branch->name : null,
-                    'amount' => $settlement->amount,
+                    'amount' => (float) $settlement->amount,
                     'description' => $settlement->description,
                     'status' => $settlement->status,
                     'processed_by' => $settlement->processed_by,
                     'processor_name' => $settlement->processor ? $settlement->processor->full_name : null,
-                    'created_at' => $settlement->created_at,
+                    'created_at' => $settlement->created_at->toISOString(),
                 ];
             }),
             'pagination' => [
@@ -108,22 +95,24 @@ class SuperAdminSettlementController extends Controller
             'filters' => [
                 'branch_id' => $branchId,
                 'status' => $status,
+                'from_date' => $fromDate,
+                'to_date' => $toDate,
             ],
-            'total_amount' => $totalAmount,
+            'total_completed_amount' => $totalAmount,
         ]);
     }
 
     /**
      * GET /api/superadmin/finance/settlements/summary
      *
-     * Get settlement summary
+     * Get settlement summary with status breakdown
      */
     public function summary(Request $request)
     {
         $user = $this->resolveAuthenticatedUser($request);
 
         if (!$user || !$this->isSuperAdmin($user)) {
-            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
+            return $this->unauthorizedResponse();
         }
 
         $branchId = $request->query('branch_id');
@@ -137,10 +126,10 @@ class SuperAdminSettlementController extends Controller
         return response()->json([
             'ok' => true,
             'summary' => [
-                'total_settlements' => (float) $query->sum('amount'),
-                'pending' => (int) $query->where('status', 'pending')->count(),
-                'completed' => (int) $query->where('status', 'completed')->count(),
-                'cancelled' => (int) $query->where('status', 'cancelled')->count(),
+                'total_settlements' => (float) (clone $query)->where('status', 'completed')->sum('amount'),
+                'pending' => (int) (clone $query)->where('status', 'pending')->count(),
+                'completed' => (int) (clone $query)->where('status', 'completed')->count(),
+                'cancelled' => (int) (clone $query)->where('status', 'cancelled')->count(),
             ],
         ]);
     }

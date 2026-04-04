@@ -1,5 +1,11 @@
 <template>
   <div class="clock-page">
+    <!-- Logistics Admin Restriction Notice -->
+    <div v-if="isLogisticsAdmin" class="alert alert-warning" style="max-width: 600px; margin: 2rem auto;">
+      <strong>⚠️ Access Restricted</strong><br>
+      Super Admin Logistics role cannot perform clock in/out operations. You can only monitor logistics operations.
+    </div>
+
     <!-- Clock Status Card -->
     <div class="clock-card">
       <div class="clock-display">
@@ -28,7 +34,7 @@
         </div>
       </div>
 
-      <div class="button-group">
+      <div v-if="!isLogisticsAdmin" class="button-group">
         <button
           @click="performClockIn"
           :disabled="status?.is_clocked_in || isProcessing"
@@ -48,7 +54,7 @@
         </button>
       </div>
 
-      <div v-if="!canClockOut && status?.is_clocked_in" class="clockout-restriction">
+      <div v-if="!canClockOut && status?.is_clocked_in && !isLogisticsAdmin" class="clockout-restriction">
         <span class="restriction-icon">🔒</span>
         <span>You cannot clock out before your scheduled time ({{ scheduledTimeOut }})</span>
       </div>
@@ -114,6 +120,7 @@ const isProcessing = ref(false)
 const historyLoading = ref(false)
 const message = ref('')
 const messageType = ref('')
+const isLogisticsAdmin = ref(false)  // Track if user is logistics admin
 
 // Attendance settings state
 const attendanceSettings = ref({
@@ -256,11 +263,23 @@ async function performClockIn() {
       showMessage('Clocked in successfully! ✓', 'success')
       await loadStatus()
     } else {
-      showMessage(res.data.message || 'Failed to clock in', 'danger')
+      // Check if this is a logistics admin restriction
+      if (res.data.restricted_role === 'logistics_admin') {
+        isLogisticsAdmin.value = true
+        showMessage(res.data.message, 'warning')
+      } else {
+        showMessage(res.data.message || 'Failed to clock in', 'danger')
+      }
     }
   } catch (error) {
-    console.error('Clock in error:', error)
-    showMessage('Error clocking in. Please try again.', 'danger')
+    // Check error response for logistics admin restriction
+    if (error.response?.status === 403 && error.response?.data?.restricted_role === 'logistics_admin') {
+      isLogisticsAdmin.value = true
+      showMessage(error.response.data.message || 'Super Admin Logistics cannot perform clock operations', 'warning')
+    } else {
+      console.error('Clock in error:', error)
+      showMessage('Error clocking in. Please try again.', 'danger')
+    }
   } finally {
     isProcessing.value = false
   }
@@ -281,11 +300,23 @@ async function performClockOut() {
       await loadStatus()
       await loadHistory()
     } else {
-      showMessage(res.data.message || 'Failed to clock out', 'danger')
+      // Check if this is a logistics admin restriction
+      if (res.data.restricted_role === 'logistics_admin') {
+        isLogisticsAdmin.value = true
+        showMessage(res.data.message, 'warning')
+      } else {
+        showMessage(res.data.message || 'Failed to clock out', 'danger')
+      }
     }
   } catch (error) {
-    console.error('Clock out error:', error)
-    showMessage('Error clocking out. Please try again.', 'danger')
+    // Check error response for logistics admin restriction
+    if (error.response?.status === 403 && error.response?.data?.restricted_role === 'logistics_admin') {
+      isLogisticsAdmin.value = true
+      showMessage(error.response.data.message || 'Super Admin Logistics cannot perform clock operations', 'warning')
+    } else {
+      console.error('Clock out error:', error)
+      showMessage('Error clocking out. Please try again.', 'danger')
+    }
   } finally {
     isProcessing.value = false
   }

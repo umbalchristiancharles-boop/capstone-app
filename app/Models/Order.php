@@ -82,4 +82,102 @@ class Order extends Model
     {
         return $this->belongsTo(User::class, 'cancelled_by');
     }
+
+    // ============ FINANCIAL SCOPES ============
+
+    /**
+     * Scope: Get only completed orders (actual revenue)
+     */
+    public function scopeCompleted($query)
+    {
+        return $query->where('status', 'completed');
+    }
+
+    /**
+     * Scope: Get only cancelled orders (refunds)
+     */
+    public function scopeCancelled($query)
+    {
+        return $query->where('status', 'cancelled');
+    }
+
+    /**
+     * Scope: Get orders in kitchen or pending (not finalized)
+     */
+    public function scopeUnfinalized($query)
+    {
+        return $query->whereIn('status', ['pending', 'in_kitchen', 'approved']);
+    }
+
+    /**
+     * Scope: Sum total revenue (completed orders only)
+     */
+    public function scopeTotalRevenue($query)
+    {
+        return $query->completed()->sum('grand_total');
+    }
+
+    /**
+     * Scope: Sum total refunds (cancelled orders only)
+     */
+    public function scopeTotalRefunds($query)
+    {
+        return $query->cancelled()->sum('grand_total');
+    }
+
+    /**
+     * Scope: Get orders by branch
+     */
+    public function scopeByBranch($query, $branchId)
+    {
+        return $query->where('branch_id', $branchId);
+    }
+
+    /**
+     * Scope: Get orders within a date range
+     */
+    public function scopeInDateRange($query, $startDate, $endDate)
+    {
+        return $query->whereBetween('created_at', [$startDate, $endDate]);
+    }
+
+    /**
+     * Check if this order has a duplicate in recent records
+     *
+     * @param int $minutesWindow
+     * @return bool
+     */
+    public function hasDuplicate($minutesWindow = 5)
+    {
+        $count = static::where('order_code', $this->order_code)
+            ->where('branch_id', $this->branch_id)
+            ->where('id', '!=', $this->id)
+            ->whereBetween('created_at', [
+                now()->subMinutes($minutesWindow),
+                now()
+            ])
+            ->count();
+
+        return $count > 0;
+    }
+
+    /**
+     * Verify order calculations are correct
+     *
+     * @return array ['valid' => bool, 'errors' => array]
+     */
+    public function verifyCalculations()
+    {
+        return \App\Services\FinancialConsistencyValidator::validateOrderCalculations($this);
+    }
+
+    /**
+     * Verify refund data is complete (for cancelled orders)
+     *
+     * @return array ['valid' => bool, 'errors' => array]
+     */
+    public function verifyRefundData()
+    {
+        return \App\Services\FinancialConsistencyValidator::validateRefundData($this);
+    }
 }

@@ -313,11 +313,11 @@ class SuperAdminController extends Controller
         $attendance = \App\Models\Attendance::whereBetween('date', [
             $dateRange[0]->format('Y-m-d'),
             $dateRange[1]->format('Y-m-d')
-        ])->with('user', 'branch')->latest()->limit(20)->get()->map(function ($att) {
+        ])->with(['user', 'user.branch'])->latest()->limit(20)->get()->map(function ($att) {
             return [
                 'id' => $att->id,
                 'user_name' => $att->user ? $att->user->full_name : 'Unknown',
-                'branch_name' => $att->branch ? $att->branch->name : 'N/A',
+                'branch_name' => $att->user && $att->user->branch ? $att->user->branch->name : 'N/A',
                 'status' => $att->status ?? 'present',
             ];
         });

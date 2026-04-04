@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Models\User;
 use App\Models\Branch;
 use App\Models\BudgetRequest;
+use App\Services\LogisticsService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
@@ -332,6 +333,15 @@ class ProcurementRequestController extends Controller
             Log::info('Product updated');
         } catch (\Exception $e) {
             Log::error('PRODUCT UPDATE FAILED', ['error' => $e->getMessage()]);
+        }
+
+        // Create logistics transaction to track this procurement
+        try {
+            $logisticsService = new LogisticsService();
+            $logisticsService->createProcurementTransaction($procRequest, 'procurement', $user->id);
+            Log::info('Logistics transaction created for procurement', ['proc_req_id' => $procRequest->id]);
+        } catch (\Exception $e) {
+            Log::warning('Failed to create logistics transaction', ['error' => $e->getMessage(), 'proc_req_id' => $procRequest->id]);
         }
 
         $result = $procRequest->load(['product', 'logisticsUser']);
@@ -665,7 +675,7 @@ public function requestedProducts(Request $request)
                         if (!empty($selectedProduct->id)) {
                             $updateData['product_id'] = $selectedProduct->id;
                         }
-                    
+
                     $procRequest->update($updateData);
 
                     // Use price from selected product (either supplier's or original)
@@ -745,7 +755,7 @@ public function requestedProducts(Request $request)
         // Prepare success response with clear message
         $response = $procRequest->fresh()->load(['product', 'logisticsUser', 'procurementUser', 'financeUser']);
         $message = 'Procurement request updated';
-        
+
         // Add context about budget request if status changed to budget_pending
         if ($response->status === 'budget_pending') {
             $message = '✓ Request acknowledged! Budget request has been sent to Finance. Waiting for Finance Manager approval.';
@@ -754,7 +764,7 @@ public function requestedProducts(Request $request)
         } elseif ($response->status === 'pending_order_to_supplier') {
             $message = '✓ Cash confirmed! Procurement can now place orders with suppliers.';
         }
-        
+
         return response()->json([
             'ok' => true,
             'message' => $message,
@@ -936,6 +946,17 @@ public function requestedProducts(Request $request)
                 // Refresh model instance
                 $procRequest->refresh();
 
+                // Update logistics transaction to mark at_destination
+                try {
+                    $logisticsService = new LogisticsService();
+                    $logisticsService->markAtDestination($procRequest, $user->id);
+                } catch (\Exception $e) {
+                    Log::warning('Failed to update logistics transaction on receipt confirmation', [
+                        'error' => $e->getMessage(),
+                        'proc_req_id' => $procRequest->id
+                    ]);
+                }
+
                 // if there's a linked supplier order, mark it on_delivery (guard if table exists)
                 if (Schema::hasTable('supplier_orders')) {
                     try {
@@ -990,7 +1011,7 @@ public function requestedProducts(Request $request)
         $suppliers = $supplierOrders->map(function ($order) {
             $supplier = $order->supplier;
             $product = $order->product;
-            
+
             return [
                 'supplier_id' => $supplier->id,
                 'supplier_name' => $supplier->full_name ?? $supplier->username,

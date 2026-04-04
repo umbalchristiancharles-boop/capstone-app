@@ -171,6 +171,103 @@
             </div>
           </div>
         </div>
+
+        <!-- Logistics Transactions Section (NEW) -->
+        <div class="panel-section">
+          <h2 class="section-title">Real-Time Logistics Tracking</h2>
+          <p class="section-description">Monitor all stock movements, deliveries, and transfers across branches</p>
+
+          <!-- Logistics Dashboard Summary -->
+          <div v-if="!logisticsDashboardLoading && logisticsDashboard" class="logistics-summary-grid">
+            <div class="logistics-card">
+              <div class="card-value">{{ logisticsDashboard.summary?.pending || 0 }}</div>
+              <div class="card-label">Pending Operations</div>
+            </div>
+            <div class="logistics-card">
+              <div class="card-value">{{ logisticsDashboard.summary?.in_progress || 0 }}</div>
+              <div class="card-label">In Progress</div>
+            </div>
+            <div class="logistics-card">
+              <div class="card-value">{{ logisticsDashboard.summary?.requires_verification || 0 }}</div>
+              <div class="card-label">Requires Verification</div>
+            </div>
+            <div class="logistics-card warning">
+              <div class="card-value">{{ logisticsDashboard.summary?.with_variance || 0 }}</div>
+              <div class="card-label">Variances Detected</div>
+            </div>
+          </div>
+
+          <!-- Logistics Transactions Table -->
+          <div v-if="logisticsDashboardLoading" class="loading-container">
+            <div class="loading-spinner"></div>
+            <p>Loading logistics data...</p>
+          </div>
+
+          <div v-else-if="logisticsTransactions.length > 0" class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Reference</th>
+                  <th>Product</th>
+                  <th>Type</th>
+                  <th>Qty (Expected/Actual)</th>
+                  <th>Status</th>
+                  <th>From → To</th>
+                  <th>Created</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="transaction in logisticsTransactions.slice(0, 10)" :key="transaction.id"
+                    :class="transaction.is_duplicate ? 'row-duplicate' : ''">
+                  <td><strong>{{ transaction.reference_number }}</strong></td>
+                  <td>{{ transaction.product?.name || transaction.description }}</td>
+                  <td>
+                    <span :class="['badge', 'type-' + transaction.type]">
+                      {{ transaction.type }}
+                    </span>
+                  </td>
+                  <td>
+                    <span :class="(transaction.actual_quantity && transaction.actual_quantity !== transaction.expected_quantity) ? 'variance-warning' : ''">
+                      {{ transaction.expected_quantity }}{{ transaction.actual_quantity ? '/' + transaction.actual_quantity : '' }}
+                    </span>
+                  </td>
+                  <td>
+                    <span :class="['status-badge', 'status-' + transaction.status]">
+                      {{ formatTransactionStatus(transaction.status) }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="branch-flow">
+                      <span v-if="transaction.source_branch_id">{{ transaction.sourceBranch?.name || 'Unknown' }}</span>
+                      <span v-else>—</span>
+                      <span class="flow-arrow">→</span>
+                      <span v-if="transaction.destination_branch_id">{{ transaction.destinationBranch?.name || 'Unknown' }}</span>
+                      <span v-else>—</span>
+                    </div>
+                  </td>
+                  <td>{{ formatDate(transaction.created_at) }}</td>
+                  <td>
+                    <button v-if="transaction.status !== 'completed' && !transaction.is_duplicate"
+                            class="btn-link" @click="openUpdateStatus(transaction)">
+                      Update
+                    </button>
+                    <span v-else class="text-muted">—</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="text-center mt-3">
+              <button class="btn-secondary" @click="loadMoreTransactions">
+                Load More Transactions
+              </button>
+            </div>
+          </div>
+
+          <div v-else class="empty-message">
+            No logistics transactions recorded yet.
+          </div>
+        </div>
       </template>
     </OwnerPanelLayout>
 
@@ -183,6 +280,38 @@
           <div class="logout-actions">
             <button class="btn-cancel" @click="cancelLogout" :disabled="isLoggingOut">Cancel</button>
             <button class="btn-confirm" @click="confirmLogout" :disabled="isLoggingOut">Yes, logout</button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- UPDATE LOGISTICS STATUS MODAL (NEW) -->
+    <transition name="fade">
+      <div v-if="showTransactionModal" class="logout-confirm-backdrop">
+        <div class="logout-confirm-box">
+          <h3>Update Logistics Status</h3>
+          <p v-if="selectedTransaction">
+            Update <strong>{{ selectedTransaction.reference_number }}</strong>
+            from <strong>{{ formatTransactionStatus(selectedTransaction.status) }}</strong>
+          </p>
+          <div class="logistics-status-buttons">
+            <button v-if="selectedTransaction?.status === 'pending'"
+                    class="btn-status" @click="updateTransactionStatus('in_transit')">
+              Mark In Transit
+            </button>
+            <button v-if="selectedTransaction?.status === 'in_transit'"
+                    class="btn-status" @click="updateTransactionStatus('at_destination')">
+              Mark At Destination
+            </button>
+            <button v-if="selectedTransaction?.status === 'at_destination'"
+                    class="btn-status" @click="updateTransactionStatus('verified')">
+              Mark Verified
+            </button>
+            <button v-if="['verified', 'confirmed'].includes(selectedTransaction?.status)"
+                    class="btn-status" @click="updateTransactionStatus('completed')">
+              Mark Completed
+            </button>
+            <button class="btn-secondary" @click="showTransactionModal = false">Cancel</button>
           </div>
         </div>
       </div>
@@ -223,6 +352,14 @@ const showProcRequestForm = ref(false)
 // Modals
 const showLogoutConfirm = ref(false)
 const isLoggingOut = ref(false)
+
+// Logistics monitoring
+const logisticsDashboard = ref(null)
+const logisticsDashboardLoading = ref(false)
+const logisticsTransactions = ref([])
+const logisticsPage = ref(1)
+const selectedTransaction = ref(null)
+const showTransactionModal = ref(false)
 
 // Utils
 function formatPrice(n) {
@@ -267,6 +404,8 @@ function handleBranchChange() {
   fetchInventory()
   loadProducts()
   fetchProcRequests()
+  fetchLogisticsDashboard()
+  fetchLogisticsTransactions()
 }
 
 // Inventory (superadmin endpoints)
@@ -344,6 +483,77 @@ function cancelProcRequest() {
   procRequestForm.value = { branch_id: selectedBranchId.value, product_id: '', quantity: 1 }
 }
 
+// Logistics monitoring functions
+async function fetchLogisticsDashboard() {
+  logisticsDashboardLoading.value = true
+  try {
+    const params = selectedBranchId.value ? { branch_id: selectedBranchId.value } : {}
+    const res = await axios.get('/api/superadmin/logistics/dashboard', { params, withCredentials: true })
+    logisticsDashboard.value = res.data?.data || {}
+  } catch (e) {
+    console.error('Failed to fetch logistics dashboard:', e)
+  } finally {
+    logisticsDashboardLoading.value = false
+  }
+}
+
+async function fetchLogisticsTransactions() {
+  logisticsDashboardLoading.value = true
+  try {
+    const params = {
+      branch_id: selectedBranchId.value || null,
+      per_page: 25,
+      page: logisticsPage.value,
+    }
+    const res = await axios.get('/api/superadmin/logistics/transactions', { params, withCredentials: true })
+    logisticsTransactions.value = res.data?.data?.data || []
+  } catch (e) {
+    console.error('Failed to fetch logistics transactions:', e)
+    logisticsTransactions.value = []
+  } finally {
+    logisticsDashboardLoading.value = false
+  }
+}
+
+function loadMoreTransactions() {
+  logisticsPage.value++
+  fetchLogisticsTransactions()
+}
+
+function formatTransactionStatus(status) {
+  const statusMap = {
+    'pending': 'Pending',
+    'in_transit': 'In Transit',
+    'at_destination': 'At Destination',
+    'verified': 'Verified',
+    'confirmed': 'Confirmed',
+    'completed': 'Completed',
+    'cancelled': 'Cancelled',
+  }
+  return statusMap[status] || status.toUpperCase()
+}
+
+function openUpdateStatus(transaction) {
+  selectedTransaction.value = transaction
+  showTransactionModal.value = true
+}
+
+async function updateTransactionStatus(newStatus) {
+  if (!selectedTransaction.value) return
+  try {
+    await axios.post(`/api/superadmin/logistics/transactions/${selectedTransaction.value.id}/update-status`,
+      { status: newStatus, notes: `Updated to ${newStatus}` },
+      { withCredentials: true }
+    )
+    alert('Logistics status updated successfully')
+    showTransactionModal.value = false
+    fetchLogisticsDashboard()
+    fetchLogisticsTransactions()
+  } catch (e) {
+    alert('Failed to update logistics status: ' + (e.response?.data?.error || e.message))
+  }
+}
+
 async function requestProcurement(product) {
   if (!confirm(`Create procurement request for ${product.name}?`)) return
 
@@ -399,7 +609,9 @@ onMounted(async () => {
       fetchBranches().catch(e => { console.error('fetchBranches failed:', e); }),
       fetchInventory().catch(e => { console.error('fetchInventory failed:', e); }),
       loadProducts().catch(e => { console.error('loadProducts failed:', e); }),
-      fetchProcRequests().catch(e => { console.error('fetchProcRequests failed:', e); })
+      fetchProcRequests().catch(e => { console.error('fetchProcRequests failed:', e); }),
+      fetchLogisticsDashboard().catch(e => { console.error('fetchLogisticsDashboard failed:', e); }),
+      fetchLogisticsTransactions().catch(e => { console.error('fetchLogisticsTransactions failed:', e); }),
     ])
   } catch (error) {
     console.error('SuperAdminLogisticsPanel mount error:', error)
@@ -939,6 +1151,182 @@ defineExpose({ fetchInventory })
     padding: 8px 12px !important;
     display: inline-flex !important;
   }
+}
+
+/* Logistics Monitoring Styles */
+.logistics-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.logistics-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  padding: 20px;
+  color: white;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.logistics-card.warning {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.card-value {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.card-label {
+  font-size: 14px;
+  opacity: 0.9;
+  font-weight: 500;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.type-procurement {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.type-transfer {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.type-delivery {
+  background: #e0f2f1;
+  color: #00796b;
+}
+
+.type-incoming {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.type-outgoing {
+  background: #fce4ec;
+  color: #c2185b;
+}
+
+.status-pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-in_transit {
+  background: #cce5ff;
+  color: #004085;
+}
+
+.status-at_destination {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.status-verified {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-confirmed {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-completed {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-cancelled {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.branch-flow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #666;
+}
+
+.flow-arrow {
+  color: #999;
+  font-weight: bold;
+}
+
+.variance-warning {
+  color: #dc3545;
+  font-weight: 600;
+}
+
+.row-duplicate {
+  opacity: 0.6;
+  background-color: #f5f5f5;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #667eea;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 0;
+}
+
+.btn-link:hover {
+  text-decoration: underline;
+  color: #764ba2;
+}
+
+.text-muted {
+  color: #999;
+  font-size: 12px;
+}
+
+.mt-3 {
+  margin-top: 20px;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.logistics-status-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.btn-status {
+  padding: 12px 16px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-status:hover {
+  background: #5568d3;
 }
 </style>
 

@@ -33,5 +33,55 @@ class Settlement extends Model
     {
         return $this->belongsTo(User::class, 'processed_by');
     }
+
+    // ============ FINANCIAL SCOPES ============
+
+    /**
+     * Scope: Get only completed settlements (count toward financial totals)
+     */
+    public function scopeCompleted($query)
+    {
+        return $query->where('status', 'completed');
+    }
+
+    /**
+     * Scope: Get pending settlements
+     */
+    public function scopePending($query)
+    {
+        return $query->where('status', 'pending');
+    }
+
+    /**
+     * Scope: Get cancelled settlements
+     */
+    public function scopeCancelled($query)
+    {
+        return $query->where('status', 'cancelled');
+    }
+
+    /**
+     * Scope: Sum total settlements by status
+     */
+    public function scopeTotalSettlements($query)
+    {
+        return $query->completed()->sum('amount');
+    }
+
+    /**
+     * Scope: Get settlements by branch
+     */
+    public function scopeByBranch($query, $branchId)
+    {
+        return $query->where('branch_id', $branchId);
+    }
+
+    /**
+     * Scope: Get settlements within date range
+     */
+    public function scopeInDateRange($query, $startDate, $endDate)
+    {
+        return $query->whereBetween('created_at', [$startDate, $endDate]);
+    }
 }
 

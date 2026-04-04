@@ -33,5 +33,76 @@ class Expense extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    // ============ FINANCIAL SCOPES ============
+
+    /**
+     * Scope: Get only approved expenses (count toward financial totals)
+     */
+    public function scopeApproved($query)
+    {
+        return $query->where('status', 'approved');
+    }
+
+    /**
+     * Scope: Get expenses pending approval
+     */
+    public function scopePending($query)
+    {
+        return $query->where('status', 'pending');
+    }
+
+    /**
+     * Scope: Get rejected expenses
+     */
+    public function scopeRejected($query)
+    {
+        return $query->where('status', 'rejected');
+    }
+
+    /**
+     * Scope: Sum total expenses by status
+     */
+    public function scopeTotalExpenses($query)
+    {
+        return $query->approved()->sum('amount');
+    }
+
+    /**
+     * Scope: Get expenses by branch
+     */
+    public function scopeByBranch($query, $branchId)
+    {
+        return $query->where('branch_id', $branchId);
+    }
+
+    /**
+     * Scope: Get expenses within date range
+     */
+    public function scopeInDateRange($query, $startDate, $endDate)
+    {
+        return $query->whereBetween('created_at', [$startDate, $endDate]);
+    }
+
+    /**
+     * Check if this expense is a potential duplicate
+     *
+     * @param int $minutesWindow
+     * @return bool
+     */
+    public function isPotentialDuplicate($minutesWindow = 5)
+    {
+        $count = static::where('branch_id', $this->branch_id)
+            ->where('amount', $this->amount)
+            ->where('description', $this->description)
+            ->where('id', '!=', $this->id ?? null)
+            ->whereBetween('created_at', [
+                now()->subMinutes($minutesWindow),
+                now()
+            ])
+            ->count();
+
+        return $count > 0;
+    }
 }
 

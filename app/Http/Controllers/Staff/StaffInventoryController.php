@@ -608,6 +608,17 @@ class StaffInventoryController extends Controller
                     'updated_at' => now()
                 ]);
 
+                // Update logistics transaction to verified and completed
+                try {
+                    $logisticsService = new \App\Services\LogisticsService();
+                    $logisticsService->completeProcurement($proc, $user->id, $incrementBy);
+                } catch (\Exception $e) {
+                    Log::warning('Failed to update logistics transaction on stock confirmation', [
+                        'error' => $e->getMessage(),
+                        'proc_req_id' => $proc->id
+                    ]);
+                }
+
                 // Mark supplier order fulfilled if exists
                 try {
                     $supplierOrder = SupplierOrder::where('procurement_request_id', $proc->id)->first();

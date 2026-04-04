@@ -15,57 +15,32 @@ use App\Models\Expense;
  */
 class SuperAdminExpenseController extends Controller
 {
-    /**
-     * Resolve authenticated user
-     */
-    private function resolveAuthenticatedUser($request)
-    {
-        if (Auth::check()) {
-            return Auth::user();
-        }
-
-        $sessionUserId = $request->session()->get('user_id');
-        if ($sessionUserId) {
-            return \App\Models\User::find($sessionUserId);
-        }
-
-        return null;
-    }
-
-    /**
-     * Check if user is Super Admin
-     */
-    private function isSuperAdmin($user)
-    {
-        if (!$user) {
-            return false;
-        }
-        $roleUpper = strtoupper($user->role ?? '');
-        return $roleUpper === 'SUPER_ADMIN' || $roleUpper === 'SUPERADMIN';
-    }
+    use FinancialTrait;
 
     /**
      * GET /api/superadmin/finance/expenses
      *
-     * Return all recorded expenses
+     * Return all recorded expenses with proper filtering
+     * Only approved expenses count toward financial reporting
      */
     public function index(Request $request)
     {
         $user = $this->resolveAuthenticatedUser($request);
 
         if (!$user || !$this->isSuperAdmin($user)) {
-            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
+            return $this->unauthorizedResponse();
         }
 
         // Get filter parameters
         $branchId = $request->query('branch_id');
         $fromDate = $request->query('from_date');
         $toDate = $request->query('to_date');
+        $status = $request->query('status'); // pending, approved, rejected
         $perPage = (int) $request->query('per_page', 15);
         $page = (int) $request->query('page', 1);
 
-        // Validate per_page
-        $perPage = min(max($perPage, 1), 100);
+        // Validate pagination
+        [$page, $perPage] = $this->validatePagination($page, $perPage);
 
         // Build query with filters
         $query = Expense::with(['branch', 'creator']);
@@ -74,16 +49,26 @@ class SuperAdminExpenseController extends Controller
             $query->where('branch_id', $branchId);
         }
 
-        if ($fromDate) {
-            $query->whereDate('created_at', '>=', $fromDate);
+        // Use date range helper for consistent filtering
+        $dateRange = $this->getDateRangeFromDates($fromDate, $toDate);
+        $query = $this->applyDateRangeFilter($query, $dateRange);
+
+        if ($status) {
+            // Validate status
+            $validStatuses = ['pending', 'approved', 'rejected'];
+            if (in_array($status, $validStatuses)) {
+                $query->where('status', $status);
+            }
         }
 
-        if ($toDate) {
-            $query->whereDate('created_at', '<=', $toDate);
-        }
+        // Get total amount - only approved expenses count
+        $approvedQuery = (clone $query)->where('status', 'approved');
+        $totalAmount = (float) $approvedQuery->sum('amount');
 
-        // Get total amount
-        $totalAmount = (float) $query->sum('amount');
+        // Get counts by status
+        $pendingCount = (int) (clone $query)->where('status', 'pending')->count();
+        $approvedCount = (int) (clone $query)->where('status', 'approved')->count();
+        $rejectedCount = (int) (clone $query)->where('status', 'rejected')->count();
 
         // Paginate
         $expenses = $query->orderBy('created_at', 'desc')
@@ -100,12 +85,12 @@ class SuperAdminExpenseController extends Controller
                     'id' => $expense->id,
                     'branch_id' => $expense->branch_id,
                     'branch_name' => $expense->branch ? $expense->branch->name : null,
-                    'amount' => $expense->amount,
+                    'amount' => (float) $expense->amount,
                     'description' => $expense->description,
                     'status' => $expense->status,
                     'created_by' => $expense->created_by,
                     'creator_name' => $expense->creator ? $expense->creator->full_name : null,
-                    'created_at' => $expense->created_at,
+                    'created_at' => $expense->created_at->toISOString(),
                 ];
             }),
             'pagination' => [
@@ -114,29 +99,38 @@ class SuperAdminExpenseController extends Controller
                 'total' => $total,
                 'total_pages' => ceil($total / $perPage),
             ],
+            'summary' => [
+                'pending' => $pendingCount,
+                'approved' => $approvedCount,
+                'rejected' => $rejectedCount,
+            ],
             'filters' => [
                 'from_date' => $fromDate,
                 'to_date' => $toDate,
                 'branch_id' => $branchId,
+                'status' => $status,
             ],
-            'total_amount' => $totalAmount,
+            'total_approved_amount' => $totalAmount,
         ]);
     }
 
     /**
      * GET /api/superadmin/finance/expenses/summary
      *
-     * Get expense summary
+     * Get expense summary with status breakdown
+     * Only approved expenses are included in financial calculations
      */
     public function summary(Request $request)
     {
         $user = $this->resolveAuthenticatedUser($request);
 
         if (!$user || !$this->isSuperAdmin($user)) {
-            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
+            return $this->unauthorizedResponse();
         }
 
         $branchId = $request->query('branch_id');
+        $fromDate = $request->query('from_date');
+        $toDate = $request->query('to_date');
 
         $query = Expense::query();
 
@@ -144,13 +138,19 @@ class SuperAdminExpenseController extends Controller
             $query->where('branch_id', $branchId);
         }
 
+        // Apply date range filter
+        if ($fromDate && $toDate) {
+            $dateRange = $this->getDateRangeFromDates($fromDate, $toDate);
+            $query = $this->applyDateRangeFilter($query, $dateRange);
+        }
+
         return response()->json([
             'ok' => true,
             'summary' => [
-                'total_expenses' => (float) $query->sum('amount'),
-                'pending_approval' => (int) $query->where('status', 'pending')->count(),
-                'approved' => (int) $query->where('status', 'approved')->count(),
-                'rejected' => (int) $query->where('status', 'rejected')->count(),
+                'total_expenses' => (float) (clone $query)->where('status', 'approved')->sum('amount'),
+                'pending_approval' => (int) (clone $query)->where('status', 'pending')->count(),
+                'approved' => (int) (clone $query)->where('status', 'approved')->count(),
+                'rejected' => (int) (clone $query)->where('status', 'rejected')->count(),
             ],
         ]);
     }

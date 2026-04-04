@@ -11,45 +11,14 @@ use App\Models\Branch;
 
 class SuperAdminRefundController extends Controller
 {
-    private function resolveAuthenticatedUser($request)
-    {
-        if (Auth::check()) {
-            return Auth::user();
-        }
-        $sessionUserId = $request->session()->get('user_id');
-        if ($sessionUserId) {
-            return \App\Models\User::find($sessionUserId);
-        }
-        return null;
-    }
-
-    private function isSuperAdmin($user)
-    {
-        if (!$user) {
-            return false;
-        }
-        $roleUpper = strtoupper($user->role ?? '');
-        return $roleUpper === 'SUPER_ADMIN' || $roleUpper === 'SUPERADMIN';
-    }
-
-    private function getDateRange($fromDate, $toDate)
-    {
-        if ($fromDate && $toDate) {
-            return [
-                \Carbon\Carbon::parse($fromDate)->startOfDay(),
-                \Carbon\Carbon::parse($toDate)->endOfDay(),
-            ];
-        }
-        $now = now();
-        return [$now->copy()->startOfDay(), $now->copy()->endOfDay()];
-    }
+    use FinancialTrait;
 
     public function index(Request $request)
     {
         $user = $this->resolveAuthenticatedUser($request);
 
         if (!$user || !$this->isSuperAdmin($user)) {
-            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
+            return $this->unauthorizedResponse();
         }
 
         $branchId = $request->query('branch_id');
@@ -58,9 +27,13 @@ class SuperAdminRefundController extends Controller
         $perPage = (int) $request->query('per_page', 15);
         $page = (int) $request->query('page', 1);
 
-        $perPage = min(max($perPage, 1), 100);
-        $dateRange = $this->getDateRange($fromDate, $toDate);
+        // Validate pagination
+        [$page, $perPage] = $this->validatePagination($page, $perPage);
 
+        // Get date range
+        $dateRange = $this->getDateRangeFromDates($fromDate, $toDate);
+
+        // Query only cancelled orders (actual refunds)
         $query = Order::with('branch')
             ->whereBetween('created_at', $dateRange)
             ->where('status', 'cancelled');
@@ -84,12 +57,12 @@ class SuperAdminRefundController extends Controller
                     'branch_id' => $order->branch_id,
                     'branch_name' => $order->branch ? $order->branch->name : 'N/A',
                     'amount' => (float) $order->grand_total,
-                    'reason' => 'Order cancelled',
-                    'status' => 'completed',
-                    'processed_by' => $order->cashier_id ? 'Cashier #' . $order->cashier_id : 'System',
-                    'processed_at' => $order->updated_at->toISOString(),
+                    'reason' => $order->refund_reason ?? 'Order cancelled',
+                    'status' => 'completed', // Cancelled orders are complete refunds
+                    'processed_by' => $order->cancelled_by ? 'User #' . $order->cancelled_by : 'System',
+                    'processed_at' => ($order->cancelled_at ?? $order->updated_at)->toISOString(),
                     'original_order_code' => $order->order_code,
-                    'customer_name' => $order->customer_name,
+                    'customer_name' => $order->customer_name ?? 'N/A',
                     'created_at' => $order->created_at->toISOString(),
                 ];
             });
@@ -117,14 +90,15 @@ class SuperAdminRefundController extends Controller
         $user = $this->resolveAuthenticatedUser($request);
 
         if (!$user || !$this->isSuperAdmin($user)) {
-            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
+            return $this->unauthorizedResponse();
         }
 
         $branchId = $request->query('branch_id');
         $fromDate = $request->query('from_date');
         $toDate = $request->query('to_date');
-        $dateRange = $this->getDateRange($fromDate, $toDate);
+        $dateRange = $this->getDateRangeFromDates($fromDate, $toDate);
 
+        // Query only cancelled orders
         $query = Order::whereBetween('created_at', $dateRange)
             ->where('status', 'cancelled');
 
@@ -136,7 +110,8 @@ class SuperAdminRefundController extends Controller
         $totalAmount = (float) $query->sum('grand_total');
         $averageRefund = $totalRefunds > 0 ? $totalAmount / $totalRefunds : 0;
 
-        $byBranch = Order::select('branch_id', DB::raw('COUNT(*) as count'), DB::raw('SUM(grand_total) as total'))
+        // Breakdown by branch
+        $byBranch = Order::select('branch_id', \Illuminate\Support\Facades\DB::raw('COUNT(*) as count'), \Illuminate\Support\Facades\DB::raw('SUM(grand_total) as total'))
             ->whereBetween('created_at', $dateRange)
             ->where('status', 'cancelled')
             ->when($branchId, fn($q) => $q->where('branch_id', $branchId))

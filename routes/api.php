@@ -124,6 +124,16 @@ Route::middleware('web')->group(function () {
     Route::get('/superadmin/logistics/supplier-orders', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsSupplierOrders'])->middleware(['auth','permission:logistics']);
     Route::get('/superadmin/logistics/branches', [\App\Http\Controllers\Api\SuperAdminController::class, 'logisticsBranches'])->middleware(['auth','permission:logistics']);
 
+    // SuperAdmin Logistics Monitoring - Real-time tracking and monitoring
+    Route::prefix('superadmin/logistics')->middleware('auth')->group(function () {
+        Route::get('/dashboard', [\App\Http\Controllers\Api\LogisticsMonitoringController::class, 'dashboard']);
+        Route::get('/transactions', [\App\Http\Controllers\Api\LogisticsMonitoringController::class, 'transactions']);
+        Route::get('/pending-verification', [\App\Http\Controllers\Api\LogisticsMonitoringController::class, 'pendingVerification']);
+        Route::get('/variances', [\App\Http\Controllers\Api\LogisticsMonitoringController::class, 'variances']);
+        Route::get('/report', [\App\Http\Controllers\Api\LogisticsMonitoringController::class, 'report']);
+        Route::post('/transactions/{id}/update-status', [\App\Http\Controllers\Api\LogisticsMonitoringController::class, 'updateStatus']);
+    });
+
     // SuperAdmin Branch Management
     Route::get('/superadmin/branches', [\App\Http\Controllers\Api\SuperAdminController::class, 'branchesWithAccounts'])->middleware(['auth', 'permission:admin']);
     Route::post('/superadmin/branches', [\App\Http\Controllers\Api\SuperAdminController::class, 'storeBranch'])->middleware(['auth', 'permission:admin,admin.branches']);

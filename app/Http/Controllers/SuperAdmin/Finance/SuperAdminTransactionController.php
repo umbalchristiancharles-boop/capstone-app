@@ -17,56 +17,14 @@ use App\Models\Branch;
  */
 class SuperAdminTransactionController extends Controller
 {
-    /**
-     * Resolve authenticated user
-     */
-    private function resolveAuthenticatedUser($request)
-    {
-        if (Auth::check()) {
-            return Auth::user();
-        }
-
-        $sessionUserId = $request->session()->get('user_id');
-        if ($sessionUserId) {
-            return \App\Models\User::find($sessionUserId);
-        }
-
-        return null;
-    }
-
-    /**
-     * Check if user is Super Admin
-     */
-    private function isSuperAdmin($user)
-    {
-        if (!$user) {
-            return false;
-        }
-        $roleUpper = strtoupper($user->role ?? '');
-        return $roleUpper === 'SUPER_ADMIN' || $roleUpper === 'SUPERADMIN';
-    }
-
-    /**
-     * Get date range based on filter
-     */
-    private function getDateRange($fromDate, $toDate)
-    {
-        if ($fromDate && $toDate) {
-            return [
-                \Carbon\Carbon::parse($fromDate)->startOfDay(),
-                \Carbon\Carbon::parse($toDate)->endOfDay(),
-            ];
-        }
-
-        // Default to today
-        $now = now();
-        return [$now->copy()->startOfDay(), $now->copy()->endOfDay()];
-    }
+    use FinancialTrait;
 
     /**
      * GET /api/superadmin/finance/transactions
      *
      * Return a list of financial transactions across all branches
+     * Filters by date range, branch, and status
+     * Validates for data consistency and completeness
      *
      * Query Parameters:
      * - from_date: Start date (optional)
@@ -74,25 +32,22 @@ class SuperAdminTransactionController extends Controller
      * - branch_id: Filter by specific branch (optional)
      * - status: Filter by order status (optional)
      * - page: Page number (optional, default 1)
-     * - per_page: Items per page (optional, default 15)
+     * - per_page: Items per page (optional, default 15, max 100)
      *
-     * Fields returned:
-     * - transaction_id
-     * - branch_id
-     * - order_id
-     * - type
-     * - amount
-     * - fee
-     * - status
-     * - provider
-     * - created_at
+     * Returns:
+     * - transaction_id: Unique transaction ID
+     * - branch_id, order_id, order_code: Order identifiers
+     * - type: Transaction type (sale, refund, pending, processing)
+     * - amount, amount_paid, change_amount: Financial amounts
+     * - status: Order status
+     * - provider: Payment provider
      */
     public function index(Request $request)
     {
         $user = $this->resolveAuthenticatedUser($request);
 
         if (!$user || !$this->isSuperAdmin($user)) {
-            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
+            return $this->unauthorizedResponse();
         }
 
         // Get filter parameters
@@ -103,14 +58,15 @@ class SuperAdminTransactionController extends Controller
         $perPage = (int) $request->query('per_page', 15);
         $page = (int) $request->query('page', 1);
 
-        // Validate per_page
-        $perPage = min(max($perPage, 1), 100);
+        // Validate pagination
+        [$page, $perPage] = $this->validatePagination($page, $perPage);
 
         // Get date range
-        $dateRange = $this->getDateRange($fromDate, $toDate);
+        $dateRange = $this->getDateRangeFromDates($fromDate, $toDate);
 
         // Build query
-        $query = Order::with(['branch', 'cancelledBy'])->whereBetween('created_at', $dateRange);
+        $query = Order::with(['branch', 'cancelledBy'])
+            ->whereBetween('created_at', $dateRange);
 
         // Apply filters
         if ($branchId) {
@@ -118,7 +74,11 @@ class SuperAdminTransactionController extends Controller
         }
 
         if ($status) {
-            $query->where('status', $status);
+            // Validate status - only allow known statuses
+            $validStatuses = ['completed', 'cancelled', 'pending', 'in_kitchen', 'approved'];
+            if (in_array($status, $validStatuses)) {
+                $query->where('status', $status);
+            }
         }
 
         // Get total count
@@ -136,6 +96,7 @@ class SuperAdminTransactionController extends Controller
                     'cancelled' => 'refund',
                     'pending' => 'pending',
                     'in_kitchen' => 'processing',
+                    'approved' => 'approved',
                     default => 'other',
                 };
 
