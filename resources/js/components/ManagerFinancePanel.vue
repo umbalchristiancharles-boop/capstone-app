@@ -451,6 +451,8 @@ const isCustomAccount = computed(() => {
 
 const hideAttendanceCard = computed(() => {
   try {
+    // Hide attendance card in main branch finance view (shown in sidebar instead)
+    if (props.isMainBranchFinance) return true
     return new URLSearchParams(window.location.search).get('from') === 'custom-panel' || isCustomAccount.value
   } catch (e) {
     return isCustomAccount.value

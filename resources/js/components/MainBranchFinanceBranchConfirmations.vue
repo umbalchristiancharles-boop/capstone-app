@@ -189,11 +189,12 @@ onMounted(loadPending)
 
 <style scoped>
 .finance-confirmation {
-  margin: 0 0 20px;
-  padding: 16px 18px 24px;
-  background: #fff7ed;
-  border-radius: 18px;
-  box-shadow: 0 16px 28px rgba(0,0,0,0.08);
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #E5E7EB;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  margin-bottom: 24px;
 }
 
 .finance-confirmation__header {
@@ -206,45 +207,77 @@ onMounted(loadPending)
 
 .finance-confirmation__header h2 {
   margin: 0 0 4px;
-  font-size: 1.4rem;
-  color: #3b2f2a;
+  font-size: 1.1rem;
+  color: #1F2937;
+  font-weight: 700;
   position: relative;
 }
 
-.panel-badge { position:absolute; top:-8px; right:-18px; min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:#ef4444; color:#ffffff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(239,68,68,0.35) }
+.panel-badge {
+  position: absolute;
+  top: -8px;
+  right: -18px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(239,68,68,0.35);
+}
 
 .finance-confirmation__header p {
   margin: 0;
-  color: rgba(59,47,42,0.7);
+  color: #6B7280;
+  font-size: 0.9rem;
 }
 
 .refresh-btn {
-  padding: 10px 18px;
-  border-radius: 999px;
+  padding: 8px 16px;
+  border-radius: 6px;
   border: none;
-  background: #fff;
-  color: #3b2f2a;
-  font-weight: 700;
+  background: #F3F4F6;
+  color: #374151;
+  font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 10px 18px rgba(0,0,0,0.08);
+  font-size: 0.9rem;
+  transition: background 0.2s ease;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  background: #E5E7EB;
+}
+
+.refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .muted {
-  color: rgba(59,47,42,0.7);
-  padding: 8px 0;
+  color: #6B7280;
+  padding: 12px 0;
+  font-size: 0.9rem;
 }
 
 .empty-state {
-  padding: 12px 0;
-  color: #3b2f2a;
+  padding: 16px 0;
+  color: #9CA3AF;
+  text-align: center;
+  font-style: italic;
 }
 
 .alert-error {
-  background: #fee2e2;
-  border: 1px solid #fecaca;
-  color: #991b1b;
+  background: #FEE2E2;
+  border: 1px solid #FECACA;
+  color: #991B1B;
   padding: 12px 16px;
-  border-radius: 10px;
+  border-radius: 8px;
+  margin-bottom: 16px;
 }
 
 .request-grid {
@@ -254,10 +287,10 @@ onMounted(loadPending)
 }
 
 .request-card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 16px;
-  box-shadow: 0 12px 24px rgba(0,0,0,0.06);
+  background: #F9FAFB;
+  border-radius: 8px;
+  padding: 14px;
+  border: 1px solid #E5E7EB;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -277,14 +310,15 @@ onMounted(loadPending)
 
 .request-title h3 {
   margin: 0;
-  font-size: 1.1rem;
-  color: #3b2f2a;
+  font-size: 1rem;
+  color: #1F2937;
+  font-weight: 600;
 }
 
 .request-meta {
   margin: 6px 0 0;
-  color: rgba(59,47,42,0.7);
-  font-size: 0.9rem;
+  color: #6B7280;
+  font-size: 0.85rem;
 }
 
 .dot {
@@ -292,12 +326,86 @@ onMounted(loadPending)
 }
 
 .request-id {
-  font-weight: 700;
-  color: rgba(59,47,42,0.5);
+  font-weight: 600;
+  color: #9CA3AF;
+  font-size: 0.85rem;
+}
+
+.request-card__body {
+  margin: 8px 0;
 }
 
 .address-block .label {
+  font-size: 0.8rem;
+  color: #6B7280;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.address-block .value {
+  color: #374151;
+  font-size: 0.9rem;
+}
+
+.request-card__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.btn-approve,
+.btn-reject {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-approve {
+  background: #27ae60;
+  color: white;
+}
+
+.btn-approve:hover:not(:disabled) {
+  background: #229954;
+}
+
+.btn-approve:disabled {
+  background: #95a5a6;
+  cursor: not-allowed;
+}
+
+.btn-reject {
+  background: #e74c3c;
+  color: white;
+}
+
+.btn-reject:hover:not(:disabled) {
+  background: #c0392b;
+}
+
+.btn-reject:disabled {
+  background: #95a5a6;
+  cursor: not-allowed;
+}
+
+.badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
   font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-pending {
+  background: #FEF3C7;
+  color: #92400E;
+}
+</style>
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: rgba(59,47,42,0.5);
