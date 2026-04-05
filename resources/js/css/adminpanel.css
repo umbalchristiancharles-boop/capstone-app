@@ -263,13 +263,14 @@ textarea {
 
 /* Dark mode - Modal and overlay styles */
 .dark-mode .logout-confirm-backdrop {
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.75);
 }
 
 .dark-mode .logout-confirm-box {
-  background: var(--surface-card);
-  border-color: var(--border-stroke);
+  background: linear-gradient(180deg, rgba(30,30,30,0.98) 0%, var(--surface-card) 100%);
+  border-color: rgba(255,255,255,0.04);
   color: var(--text-primary);
+  box-shadow: 0 16px 40px rgba(2,6,23,0.7);
 }
 
 .dark-mode .modal-close-btn {
@@ -344,6 +345,213 @@ textarea {
 
 .dark-mode .logout-btn:hover {
   background: #b91c1c;
+}
+
+/* Make logout confirm buttons readable in dark mode */
+.dark-mode .logout-confirm-box p {
+  color: var(--text-secondary);
+}
+
+.dark-mode .logout-confirm-box .btn-cancel {
+  background: rgba(255,255,255,0.04);
+  color: var(--text-primary);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.dark-mode .logout-confirm-box .btn-cancel:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+.dark-mode .logout-confirm-box .btn-confirm {
+  background: linear-gradient(90deg,#ef4444 0%,#dc2626 100%) !important;
+  color: #fff !important;
+  border: none;
+}
+
+.dark-mode .logout-confirm-box .btn-confirm:disabled,
+.dark-mode .logout-confirm-box .btn-cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* SweetAlert2 dark-mode overrides
+   SweetAlert2 appends its popup to <body>, and `useTheme` applies
+   the `dark-mode` class to both <html> and <body>, so targeting
+   `body.dark-mode` and `.dark-mode .swal2-popup` ensures the popup
+   matches the app theme when dark mode is active. */
+.dark-mode .swal2-container,
+.dark-mode .swal2-popup,
+body.dark-mode .swal2-popup {
+  background: linear-gradient(180deg, #161616 0%, #222222 100%);
+  color: var(--text-primary);
+  border: 1px solid rgba(255,255,255,0.04);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.75);
+}
+
+.dark-mode .swal2-title,
+.dark-mode .swal2-popup h2.swal2-title,
+body.dark-mode .swal2-title {
+  color: var(--text-primary);
+}
+
+.dark-mode .swal2-html-container,
+body.dark-mode .swal2-html-container {
+  color: var(--text-secondary);
+}
+
+.dark-mode .swal2-icon.swal2-question,
+body.dark-mode .swal2-icon.swal2-question {
+  background: rgba(255,255,255,0.03);
+  color: var(--text-primary);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.dark-mode .swal2-styled.swal2-confirm,
+body.dark-mode .swal2-styled.swal2-confirm {
+  background: linear-gradient(90deg,#ef4444 0%,#dc2626 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+.dark-mode .swal2-styled.swal2-cancel,
+body.dark-mode .swal2-styled.swal2-cancel {
+  background: rgba(255,255,255,0.04) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+}
+
+.dark-mode .swal2-styled:disabled,
+body.dark-mode .swal2-styled:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+}
+
+/* Floating messaging button and modal - dark mode overrides */
+.dark-mode #__chikin_msg_btn {
+  background: rgba(255,255,255,0.03) !important;
+  color: var(--text-primary) !important;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.65) !important;
+  border: 1px solid rgba(255,255,255,0.04) !important;
+}
+
+.dark-mode #__chikin_msg_btn:hover {
+  background: rgba(255,255,255,0.06) !important;
+}
+
+/* SVG uses currentColor for stroke; ensure it matches */
+.dark-mode #__chikin_msg_btn svg {
+  color: var(--text-primary) !important;
+}
+
+/* Messaging modal inner card overrides (inline styles exist, use !important)
+   Keep a readable dark surface and adjust text colors inside. */
+.dark-mode #__chikin_msg_modal {
+  background: rgba(0,0,0,0.6) !important;
+}
+
+.dark-mode #__chikin_msg_modal > div {
+  background: var(--surface-card) !important;
+  color: var(--text-primary) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6) !important;
+}
+
+.dark-mode #__chikin_msg_modal #__chikin_msg_users_list {
+  background: rgba(255,255,255,0.02) !important;
+  border-right: 1px solid rgba(255,255,255,0.04) !important;
+  color: var(--text-secondary) !important;
+}
+
+.dark-mode #__chikin_msg_modal #__chikin_msg_header,
+.dark-mode #__chikin_msg_modal div[style*="background:#fff"] {
+  background: transparent !important;
+  color: var(--text-primary) !important;
+}
+
+.dark-mode #__chikin_msg_modal textarea,
+.dark-mode #__chikin_msg_modal input,
+.dark-mode #__chikin_msg_modal button {
+  background: #3a3a3a !important;
+  color: var(--text-primary) !important;
+  border-color: rgba(255,255,255,0.06) !important;
+}
+
+/* Message list items */
+.dark-mode #__chikin_msg_users_list li {
+  background: rgba(255,255,255,0.02) !important;
+  border: 1px solid rgba(255,255,255,0.04) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark-mode #__chikin_msg_users_list li:hover {
+  background: rgba(255,255,255,0.04) !important;
+}
+
+/* Message bubbles: override inline backgrounds. Use attribute selector for align-self to distinguish sent vs received */
+.dark-mode #__chikin_msg_pane > div[style*="align-self:flex-end"],
+.dark-mode #__chikin_msg_pane > div[style*="align-self: flex-end"] {
+  background: linear-gradient(90deg, rgba(34,197,94,0.12), rgba(16,185,129,0.06)) !important;
+  color: var(--text-primary) !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(255,255,255,0.03) !important;
+}
+
+.dark-mode #__chikin_msg_pane > div[style*="align-self:flex-start"],
+.dark-mode #__chikin_msg_pane > div[style*="align-self: flex-start"] {
+  background: rgba(255,255,255,0.02) !important;
+  color: var(--text-primary) !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(255,255,255,0.03) !important;
+}
+
+/* Loading/placeholder text */
+.dark-mode #__chikin_msg_pane em,
+.dark-mode #__chikin_msg_pane .empty {
+  color: var(--text-secondary) !important;
+}
+
+/* Conversation header */
+.dark-mode #__chikin_msg_header {
+  background: transparent !important;
+  color: var(--text-primary) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.04) !important;
+}
+
+/* Send button accent in dark mode */
+.dark-mode #__chikin_msg_modal button[type="submit"] {
+  background: linear-gradient(90deg,#2563eb 0%,#1d4ed8 100%) !important;
+  color: #fff !important;
+}
+
+/* Override inline light backgrounds inside the modal (conversation pane and input area) */
+.dark-mode #__chikin_msg_pane,
+.dark-mode #__chikin_msg_modal [style*="background:#f6f9fc"],
+.dark-mode #__chikin_msg_modal [style*="background: #f6f9fc"],
+.dark-mode #__chikin_msg_modal [style*="background:#fff"],
+.dark-mode #__chikin_msg_modal [style*="background: #fff"] {
+  background: transparent !important;
+  color: var(--text-primary) !important;
+}
+
+/* Thin separators inside modal */
+.dark-mode #__chikin_msg_modal [style*="border-bottom:1px solid #eee"],
+.dark-mode #__chikin_msg_modal [style*="border-top:1px solid #eee"] {
+  border-color: rgba(255,255,255,0.04) !important;
+}
+
+/* Ensure textarea placeholder and input text are readable */
+.dark-mode #__chikin_msg_body,
+.dark-mode #__chikin_msg_body:focus {
+  background: #2f2f2f !important;
+  color: var(--text-primary) !important;
+  border-color: rgba(255,255,255,0.06) !important;
+}
+.dark-mode #__chikin_msg_body::placeholder { color: rgba(229,231,235,0.5) !important; }
+
+/* Message pane empty text */
+.dark-mode #__chikin_msg_pane > div[style*="color:#999"],
+.dark-mode #__chikin_msg_pane > div[style*="color: #999"] {
+  color: var(--text-secondary) !important;
 }
 
 /* DARK MODE - TEXT CONTRAST & READABILITY IMPROVEMENTS */
