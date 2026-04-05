@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <section class="finance-confirmation">
     <div class="finance-confirmation__header">
       <div>
@@ -404,79 +404,5 @@ onMounted(loadPending)
 .badge-pending {
   background: #FEF3C7;
   color: #92400E;
-}
-</style>
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: rgba(59,47,42,0.5);
-}
-
-.address-block .value {
-  font-size: 0.95rem;
-  color: #3b2f2a;
-  margin-top: 6px;
-}
-
-.request-card__actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.btn-approve,
-.btn-reject {
-  flex: 1;
-  padding: 10px 14px;
-  border-radius: 999px;
-  border: none;
-  font-weight: 700;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.btn-approve {
-  background: #16a34a;
-  color: #fff;
-  box-shadow: 0 10px 18px rgba(22,163,74,0.25);
-}
-
-.btn-reject {
-  background: #dc2626;
-  color: #fff;
-  box-shadow: 0 10px 18px rgba(220,38,38,0.2);
-}
-
-.btn-approve:hover,
-.btn-reject:hover {
-  transform: translateY(-1px);
-}
-
-.badge {
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-
-.badge-pending {
-  background: #fde7d9;
-  color: #ff6a3d;
-}
-
-@media (max-width: 640px) {
-  .finance-confirmation__header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .request-card__top {
-    flex-direction: column;
-  }
-
-  .btn-approve,
-  .btn-reject {
-    width: 100%;
-  }
 }
 </style>
