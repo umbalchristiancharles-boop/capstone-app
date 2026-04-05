@@ -20,9 +20,9 @@
 
       <template #main>
         <!-- Branch Selector (matches procurement UI placement) -->
-        <div class="branch-selector-section" style="margin-bottom: 1rem; display: flex; align-items: center;">
-          <label style="font-weight:600; color:#1e293b; margin-right:0.75rem; font-size:0.95rem;">Select Branch:</label>
-          <select v-model="selectedBranchId" @change="handleBranchChange" style="padding:0.45rem 0.6rem; border:1px solid #CBD5E1; border-radius:6px; background:white; font-size:0.9rem; min-width:220px;">
+        <div class="branch-selector-section">
+          <label class="branch-label">Select Branch:</label>
+          <select class="branch-select" v-model="selectedBranchId" @change="handleBranchChange">
             <option value="">All Branches</option>
             <option v-for="branch in branches" :key="branch.id" :value="branch.id">{{ branch.name }} (ID: {{ branch.id }})</option>
           </select>
@@ -324,7 +324,9 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
+import { useTheme } from '../composables/useTheme'
 const router = useRouter()
+const { initializeTheme } = useTheme()
 
 // Profile (superadmin) - removed, not used in this panel
 
@@ -598,6 +600,7 @@ async function confirmLogout() {
 }
 
 onMounted(async () => {
+  initializeTheme()
   try {
     await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
   } catch (e) {
@@ -664,12 +667,14 @@ defineExpose({ fetchInventory })
   gap: 12px;
   max-width: 520px;
   align-self: start;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .branch-selector-section label {
   font-weight: 600;
   color: #4b2a06;
   white-space: nowrap;
+  transition: color 0.3s ease;
 }
 
 .branch-selector-section select {
@@ -679,12 +684,40 @@ defineExpose({ fetchInventory })
   border-radius: 8px;
   font-size: 14px;
   background: white;
+  color: #333;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 .branch-selector-section select:focus {
   outline: none;
   border-color: #ff7a18;
   box-shadow: 0 0 0 3px rgba(255,159,67,0.2);
+}
+
+/* Dark Mode Styles */
+:global(.dark-mode) .branch-selector-section {
+  background: #2d2d2d !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
+}
+
+:global(.dark-mode) .branch-selector-section .branch-label {
+  color: #e5e7eb !important;
+}
+
+:global(.dark-mode) .branch-selector-section .branch-select {
+  background: #1a1a1a !important;
+  color: #e5e7eb !important;
+  border-color: #ff8a50 !important;
+}
+
+:global(.dark-mode) .branch-selector-section .branch-select:focus {
+  border-color: #ffa86b !important;
+  box-shadow: 0 0 0 3px rgba(255,138,80,0.2) !important;
+}
+
+:global(.dark-mode) .branch-selector-section .branch-select option {
+  background: #1a1a1a !important;
+  color: #e5e7eb !important;
 }
 
 /* Layout adjustments for OwnerPanelLayout */
@@ -704,6 +737,12 @@ defineExpose({ fetchInventory })
   padding: 24px;
   margin-bottom: 24px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+:global(.dark-mode) .panel-section {
+  background: rgba(45, 45, 45, 0.95);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .section-title {
@@ -711,12 +750,22 @@ defineExpose({ fetchInventory })
   font-weight: 600;
   color: #4b2a06;
   margin: 0 0 8px 0;
+  transition: color 0.3s ease;
+}
+
+:global(.dark-mode) .section-title {
+  color: #e5e7eb;
 }
 
 .section-description {
   font-size: 14px;
   color: #666;
   margin: 0 0 16px 0;
+  transition: color 0.3s ease;
+}
+
+:global(.dark-mode) .section-description {
+  color: #9ca3af;
 }
 
 .loading-container {

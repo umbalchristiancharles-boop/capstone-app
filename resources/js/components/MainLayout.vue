@@ -25,8 +25,17 @@
 </template>
 
 <script setup>
+import { onMounted } from 'vue'
+import { useTheme } from '../composables/useTheme'
+
 defineProps({
   fullWidth: { type: Boolean, default: false }
+})
+
+// Ensure theme is initialized for all pages using MainLayout
+const { initializeTheme } = useTheme()
+onMounted(() => {
+  try { initializeTheme() } catch (e) { /* no-op */ }
 })
 </script>
 

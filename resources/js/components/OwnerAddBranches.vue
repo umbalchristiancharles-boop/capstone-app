@@ -282,6 +282,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import '../css/adminpanel.css'
+import { useTheme } from '../composables/useTheme'
 
 const router = useRouter()
 const route = useRoute()
@@ -613,6 +614,7 @@ async function submitBranch() {
 }
 
 onMounted(async () => {
+  try { const { initializeTheme } = useTheme(); initializeTheme() } catch (e) {}
   await Promise.all([loadBranches(), loadDefaultPassword()])
 })
 

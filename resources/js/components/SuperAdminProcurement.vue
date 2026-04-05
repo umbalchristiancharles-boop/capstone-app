@@ -24,9 +24,10 @@
 
     <template #main>
 
-      <div class="branch-selector-section" style="margin-bottom:1rem; display:flex; align-items:center;">
-        <label style="font-weight: 600; color: #1e293b; margin-right: 0.75rem; font-size: 0.95rem;">Select Branch:</label>
-        <select v-model="selectedBranch" @change="onBranchChange" style="padding: 0.45rem 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; background: white; font-size: 0.9rem; min-width: 220px;">
+      <div class="branch-selector-section">
+        <label class="branch-label">Select Branch:</label>
+        <select class="branch-select" v-model="selectedBranch" @change="onBranchChange">
+          <option value="" disabled>-- Choose a branch --</option>
           <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }} (ID: {{ b.id }})</option>
         </select>
       </div>
@@ -243,8 +244,10 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import axios from 'axios'
+import { useTheme } from '../composables/useTheme'
 
 const router = useRouter()
+const { initializeTheme } = useTheme()
 const userProfile = ref({})
 const dashboardTotals = ref({ totalSuppliers: 0, activeSuppliers: 0, pendingRequests: 0 })
 const showLogoutConfirm = ref(false)
@@ -252,7 +255,7 @@ const isLoggingOut = ref(false)
 
 // Branch management
 const branches = ref([])
-const selectedBranch = ref(null)
+const selectedBranch = ref('')
 const branchName = computed(() => {
   const b = branches.value.find(x => x.id === selectedBranch.value)
   return b ? b.name : 'No branch selected'
@@ -531,6 +534,7 @@ async function markDeliveryComplete(product) {
 }
 
 onMounted(async () => {
+  initializeTheme()
   try {
     await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
   } catch (e) {}
@@ -753,17 +757,34 @@ watch(selectedBranch, onBranchChange)
   padding: 1.5rem;
   margin-bottom: 1.5rem;
   box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+:global(.dark-mode) .panel-section {
+  background: rgba(45, 45, 45, 0.95);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
 }
 .section-title {
   color: #1e293b;
   font-size: 1.3rem;
   margin: 0 0 0.75rem 0;
   font-weight: 700;
+  transition: color 0.3s ease;
 }
+
+:global(.dark-mode) .section-title {
+  color: #e5e7eb;
+}
+
 .section-description {
   color: #64748b;
   margin-bottom: 1.5rem;
   font-size: 0.95rem;
+  transition: color 0.3s ease;
+}
+
+:global(.dark-mode) .section-description {
+  color: #9ca3af;
 }
 
 /* Loading */
@@ -877,6 +898,21 @@ watch(selectedBranch, onBranchChange)
   z-index: 2;
   box-shadow: 0 2px 6px rgba(0,0,0,0.04);
 }
+
+/* Dark mode overrides for requests history table (global so it applies despite scoped styles) */
+:global(.dark-mode) .requests-scroll .data-table thead th {
+  background: rgba(34,34,34,0.95) !important;
+  color: #e5e7eb !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.6) !important;
+}
+
+:global(.dark-mode) .requests-scroll .data-table,
+:global(.dark-mode) .requests-scroll .data-table tbody td,
+:global(.dark-mode) .requests-scroll .data-table tbody tr {
+  background: transparent !important;
+  color: #d1d5db !important;
+  border-color: rgba(255,255,255,0.04) !important;
+}
 </style>
 
 <style scoped>
@@ -910,15 +946,47 @@ watch(selectedBranch, onBranchChange)
 }
 
 /* Branch selector appearance */
-.branch-selector-section label { color: var(--text-dark); font-weight: 600; }
+.branch-selector-section label {
+  color: var(--text-dark);
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
 .branch-selector-section select {
   border: 1px solid #e6edf3;
   background: #ffffff;
   color: var(--text-dark);
   padding: 0.45rem 0.6rem;
   min-width: 200px;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
-.branch-selector-section span { color: rgba(66,33,11,0.6); }
+.branch-selector-section span {
+  color: rgba(66,33,11,0.6);
+  transition: color 0.3s ease;
+}
+
+/* Dark Mode - Branch Selector */
+:global(.dark-mode) .branch-selector-section {
+  background: #2d2d2d !important;
+}
+
+:global(.dark-mode) .branch-selector-section label {
+  color: #e5e7eb !important;
+}
+
+:global(.dark-mode) .branch-selector-section select {
+  background: #1a1a1a !important;
+  color: #e5e7eb !important;
+  border-color: #444 !important;
+}
+
+:global(.dark-mode) .branch-selector-section select option {
+  background: #1a1a1a !important;
+  color: #e5e7eb !important;
+}
+
+:global(.dark-mode) .branch-selector-section span {
+  color: rgba(229, 231, 235, 0.6) !important;
+}
 
 /* Reduce large empty feeling by tightening top margins */
 .hr-stats-grid { margin-top: 0.6rem; }

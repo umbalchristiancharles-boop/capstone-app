@@ -90,8 +90,10 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import '../css/adminpanel.css'
+import { useTheme } from '../composables/useTheme'
 
 const router = useRouter()
+const { initializeTheme } = useTheme()
 const loading = ref(false)
 const errorMessage = ref('')
 const searchQuery = ref('')
@@ -204,6 +206,7 @@ async function refreshAll() {
 }
 
 onMounted(async () => {
+  initializeTheme()
   await loadBranches()
   await refreshAll()
   // Poll every 10s for updates to approximate realtime

@@ -1,6 +1,6 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-b from-[#FF9A4A] to-[#FF6A3D]">
-    <div class="admin-page">
+  <div class="min-h-screen bg-gradient-to-b from-[#FF9A4A] to-[#FF6A3D]" :class="{ 'dark-mode': theme === 'dark' }">
+    <div class="admin-page" :class="{ 'dark-mode': theme === 'dark' }">
       <section class="admin-layout">
         <!-- HEADER AT TOP (spans all columns) -->
         <div class="page-header-top">
@@ -220,6 +220,16 @@
               </div>
 
               <div class="admin-actions-row">
+                <button
+                  class="secondary-action-btn"
+                  @click="toggleTheme"
+                  :title="theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
+                >
+                  {{ theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode' }}
+                </button>
+              </div>
+
+              <div class="admin-actions-row">
                 <button class="logout-btn logout-btn--center" @click.prevent="askLogout">Logout</button>
               </div>
             </div>
@@ -399,9 +409,13 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import '../css/adminpanel.css'
+import { useTheme } from '../composables/useTheme'
 
 const router = useRouter()
 const route = useRoute()
+
+// Theme composable
+const { theme, initializeTheme, toggleTheme } = useTheme()
 
 // Profile state
 const superAdminProfile = ref({
@@ -766,6 +780,9 @@ async function askLogout() {
 }
 
 onMounted(async () => {
+  // Initialize theme first
+  initializeTheme()
+
   isInitialMount.value = false
   superAdminProfile.value = { fullName: '', role: 'SUPER_ADMIN', email: '', contact: '', accountId: '', avatarUrl: '' }
   await loadProfile()
@@ -855,6 +872,13 @@ textarea.info-input {
   border-bottom: 1px solid #F0E9E0;
   box-shadow: 0 2px 4px rgba(16,24,40,0.04);
   margin-bottom: 4px;
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dark-mode .page-header-top {
+  background: var(--surface-card);
+  border-bottom-color: var(--border-stroke);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .page-header-top div {
@@ -869,21 +893,40 @@ textarea.info-input {
   margin: 0 0 8px 0;
   font-size: 1.5rem;
   word-break: break-word;
+  transition: color 0.3s ease;
+}
+
+.dark-mode .page-header-top h1 {
+  color: #ffffff;
 }
 
 .page-header-top p {
   font-size: 0.9rem;
   color: rgba(66,33,11,0.6);
   margin: 4px 0;
+  transition: color 0.3s ease;
+}
+
+.dark-mode .page-header-top p {
+  color: #a0aafb;
 }
 
 .page-header-top .small-hint {
   font-size: 0.8rem;
   margin-top: 4px;
+  transition: color 0.3s ease;
+}
+
+.dark-mode .page-header-top .small-hint {
+  color: #d1d5db;
 }
 
 .page-header-top .small-hint--error {
   color: #dc2626;
+}
+
+.dark-mode .page-header-top .small-hint--error {
+  color: #ff7b7b;
 }
 
 @media (max-width: 479px) {

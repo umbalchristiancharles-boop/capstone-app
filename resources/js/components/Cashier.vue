@@ -1,5 +1,5 @@
 <template>
-  <div class="cashier-page">
+  <div class="cashier-page" :class="{ 'dark-mode': theme === 'dark' }">
     <!-- Back to Dashboard Button - Same as Finance Panel -->
     <button @click="router.push('/super-admin-panel')" class="btn-secondary back-to-dashboard-btn">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="back-icon">
@@ -245,8 +245,10 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
+import { useTheme } from '../composables/useTheme'
 
 const router = useRouter()
+const { theme, initializeTheme } = useTheme()
 
 // State
 const branches = ref([])
@@ -368,6 +370,7 @@ function goBack() {
 
 // Fetch branches on mount
 onMounted(async () => {
+  initializeTheme()
   await loadBranches()
   // load announcements for cashier/staff
   fetchAnnouncements()
@@ -758,4 +761,296 @@ textarea:focus {
 .loading-text, .empty-text { color:#6b7280; text-align:center; padding:20px 0; font-size:0.98rem }
 
 @media (max-width:860px) { .cashier-body { grid-template-columns: 1fr; } }
+
+/* ===== DARK MODE STYLES ===== */
+.cashier-page.dark-mode,
+.cashier-page.dark-mode .cashier-container {
+  background-color: #1a1a1a;
+  color: #e5e7eb;
+}
+
+.cashier-page.dark-mode h1,
+.cashier-page.dark-mode h2,
+.cashier-page.dark-mode h3 {
+  color: #ffffff;
+}
+
+.cashier-page.dark-mode h1 {
+  color: #ffffff !important;
+}
+
+.cashier-page.dark-mode button {
+  background: linear-gradient(135deg, #ff8a50, #ff6b1c);
+  color: white;
+}
+
+.cashier-page.dark-mode button:hover {
+  background: linear-gradient(135deg, #ff6b1c, #e55a00);
+}
+
+.cashier-page.dark-mode .btn-secondary,
+.cashier-page.dark-mode .btn-cancel {
+  background: #4a5568;
+  color: #e5e7eb;
+}
+
+.cashier-page.dark-mode .btn-secondary:hover,
+.cashier-page.dark-mode .btn-cancel:hover {
+  background: #5a6278;
+}
+
+.cashier-page.dark-mode .btn-confirm {
+  background: linear-gradient(135deg, #ff8a50, #ff6b1c);
+  color: white;
+}
+
+.cashier-page.dark-mode input,
+.cashier-page.dark-mode select,
+.cashier-page.dark-mode textarea {
+  background: #2d2d2d;
+  color: #e5e7eb;
+  border-color: #3f3f3f;
+}
+
+.cashier-page.dark-mode input::placeholder,
+.cashier-page.dark-mode textarea::placeholder {
+  color: rgba(229, 231, 235, 0.5);
+}
+
+.cashier-page.dark-mode input:focus,
+.cashier-page.dark-mode select:focus,
+.cashier-page.dark-mode textarea:focus {
+  outline: none;
+  border-color: #ff8a50;
+}
+
+.cashier-page.dark-mode .product-catalogue,
+.cashier-page.dark-mode .cart-section,
+.cashier-page.dark-mode .transactions-section,
+.cashier-page.dark-mode .branch-filter,
+.cashier-page.dark-mode .totals-box,
+.cashier-page.dark-mode .announcements-card,
+.cashier-page.dark-mode .product-card {
+  background: #2d2d2d;
+  border-color: #3f3f3f;
+  color: #e5e7eb;
+}
+
+.cashier-page.dark-mode .cashier-card,
+.cashier-page.dark-mode .cart-panel,
+.cashier-page.dark-mode .product-panel {
+  background: #2d2d2d;
+  color: #e5e7eb;
+}
+
+.cashier-page.dark-mode .branch-filter label {
+  color: #e5e7eb;
+}
+
+.cashier-page.dark-mode .announcements-card {
+  background: #2d2d2d;
+  border-color: #3f3f3f;
+}
+
+.cashier-page.dark-mode .announcement-item {
+  background: #3a3a3a;
+  border-color: #3f3f3f;
+}
+
+.cashier-page.dark-mode .announcement-title,
+.cashier-page.dark-mode .product-name {
+  color: #ffffff;
+}
+
+.cashier-page.dark-mode .announcement-message,
+.cashier-page.dark-mode .product-stock {
+  color: #a0aafb;
+}
+
+.cashier-page.dark-mode .product-price {
+  color: #ffffff;
+}
+
+.cashier-page.dark-mode .product-card:hover {
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
+  border-color: #ff8a50;
+}
+
+.cashier-page.dark-mode .cart-item {
+  border-bottom-color: #3f3f3f;
+}
+
+.cashier-page.dark-mode .cart-item-name {
+  color: #ffffff;
+}
+
+.cashier-page.dark-mode .cart-item-price {
+  color: #a0aafb;
+}
+
+.cashier-page.dark-mode .qty-btn {
+  background: #3a3a3a;
+  color: #e5e7eb;
+  border-color: #3f3f3f;
+}
+
+.cashier-page.dark-mode .qty-btn:hover {
+  background: #4a4a4a;
+}
+
+.cashier-page.dark-mode .cart-item-subtotal {
+  color: #ff8a50;
+}
+
+.cashier-page.dark-mode .total-row {
+  color: #d1d5db;
+}
+
+.cashier-page.dark-mode .total-grand {
+  color: #ff8a50;
+  border-top-color: rgba(255, 138, 80, 0.2);
+}
+
+.cashier-page.dark-mode .form-group label {
+  color: #e5e7eb;
+}
+
+.cashier-page.dark-mode .change-display {
+  background: rgba(16, 185, 129, 0.15);
+  color: #86efac;
+}
+
+.cashier-page.dark-mode .insufficient-display {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+}
+
+.cashier-page.dark-mode .error-msg {
+  color: #fca5a5;
+  background: rgba(220, 38, 38, 0.2);
+}
+
+.cashier-page.dark-mode .success-msg {
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.2);
+}
+
+.cashier-page.dark-mode .tx-table th {
+  background: #2d2d2d;
+  color: #e5e7eb;
+  border-bottom-color: #3f3f3f;
+}
+
+.cashier-page.dark-mode .tx-table td {
+  color: #d1d5db;
+  border-bottom-color: #3f3f3f;
+}
+
+.cashier-page.dark-mode .tx-table tbody tr:hover {
+  background: #333333;
+}
+
+.cashier-page.dark-mode .item-badge {
+  background: rgba(255, 138, 80, 0.15);
+  color: #e5e7eb;
+}
+
+.cashier-page.dark-mode .loading-text,
+.cashier-page.dark-mode .empty-text {
+  color: #a0aafb;
+}
+
+/* Dark mode text color overrides ensuring readability */
+.cashier-page.dark-mode .cashier-header {
+  color: #e5e7eb;
+}
+
+.cashier-page.dark-mode .header-title {
+  color: #e5e7eb;
+}
+
+.cashier-page.dark-mode .cashier-header p,
+.cashier-page.dark-mode .header-title p {
+  color: #d1d5db;
+}
+
+.cashier-page.dark-mode .cashier-header h1,
+.cashier-page.dark-mode .header-title h1 {
+  color: #ffffff !important;
+}
+
+.cashier-page.dark-mode .branch-filter label {
+  color: #e5e7eb;
+}
+
+.cashier-page.dark-mode .product-cost {
+  color: #a0aafb;
+}
+
+.cashier-page.dark-mode .cart-item-cost {
+  color: #a0aafb;
+}
+
+.cashier-page.dark-mode .announcements-title {
+  color: #e5e7eb;
+}
+
+.cashier-page.dark-mode .announcement-meta {
+  color: #a0aafb;
+}
+
+/* Ensure all select options are readable */
+.cashier-page.dark-mode select option {
+  background: #2d2d2d;
+  color: #e5e7eb;
+}
+
+/* Search input placeholder */
+.cashier-page.dark-mode .search-bar input::placeholder {
+  color: rgba(229, 231, 235, 0.5);
+}
+
+/* Branch budget card text */
+.cashier-page.dark-mode .branch-budget-card div {
+  background: #3a3a3a !important;
+  color: #e5e7eb !important;
+}
+
+.cashier-page.dark-mode .branch-budget-card h3 {
+  color: #e5e7eb !important;
+}
+
+/* Budget amount display */
+.cashier-page.dark-mode .branch-budget-card div div:first-child {
+  color: #ff8a50 !important;
+  font-weight: 700 !important;
+  font-size: 1.1rem !important;
+}
+
+/* Branch name/info text */
+.cashier-page.dark-mode .branch-budget-card div div:last-child {
+  color: #a0aafb !important;
+}
+
+/* Ensure all paragraphs are readable */
+.cashier-page.dark-mode p,
+.cashier-page.dark-mode span {
+  color: inherit;
+}
+
+/* Quantity input value */
+.cashier-page.dark-mode .qty-input {
+  background: #3a3a3a;
+  color: #e5e7eb;
+}
+
+/* Form group text */
+.cashier-page.dark-mode .form-group {
+  color: #e5e7eb;
+}
+
+/* Checkout actions button text */
+.cashier-page.dark-mode .checkout-actions button {
+  color: #ffffff;
+}
 </style>

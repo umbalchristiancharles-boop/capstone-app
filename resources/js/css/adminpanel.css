@@ -16,6 +16,782 @@
   --text-secondary: rgba(66,33,11,0.6);
 }
 
+/* DARK MODE VARIABLES - Applied when .dark-mode class is present */
+:root.dark-mode,
+.dark-mode {
+  --color-royal-blue: #ff8a50; /* Lighter orange for dark mode */
+  --color-golden-yellow: #ffc766;
+  --color-deep-navy: #e5e7eb;
+  --bg-main: radial-gradient(circle at center, #1a1a1a 0%, #1f1f1f 40%, #0a0a0a 100%);
+  --surface-card: #2d2d2d;
+  --border-stroke: #3f3f3f;
+  --success: #66bb6a;
+  --alert: #ffb74d;
+  /* Ensure components using --text-dark keep readable in dark mode */
+  --text-dark: #e5e7eb;
+  --text-primary: #e5e7eb;
+  --text-secondary: rgba(229, 231, 235, 0.6);
+}
+
+/* Override OwnerPanelLayout tailwind gradient and header text in dark mode */
+.dark-mode .min-h-screen {
+  background: var(--bg-main) !important;
+}
+
+/* Force-remove OwnerPanelLayout orange gradient when dark mode is active */
+/* Force-remove OwnerPanelLayout orange gradient when dark theme is active.
+   Apply to several possible dark-mode markers so it works whether the app
+   uses `.dark-mode`, `body.dark`, `html.dark`, `[data-theme="dark"]`,
+   or the user's OS prefers dark mode. */
+.dark-mode .min-h-screen.bg-gradient-to-b,
+.dark-mode .min-h-screen[class*="bg-gradient-to-b"],
+body.dark .min-h-screen.bg-gradient-to-b,
+html.dark .min-h-screen.bg-gradient-to-b,
+[data-theme="dark"] .min-h-screen.bg-gradient-to-b,
+:root.dark .min-h-screen.bg-gradient-to-b {
+  background-image: none !important;
+  background: var(--bg-main) !important;
+}
+
+/* Also use prefers-color-scheme as a fallback for systems-level dark mode */
+@media (prefers-color-scheme: dark) {
+  .min-h-screen.bg-gradient-to-b,
+  .min-h-screen[class*="bg-gradient-to-b"] {
+    background-image: none !important;
+    background: var(--bg-main) !important;
+  }
+}
+
+/* Ensure admin wrappers don't retain the brown tint under the same selectors */
+.dark-mode .admin-page,
+.dark-mode .admin-layout,
+body.dark .admin-page,
+html.dark .admin-page,
+[data-theme="dark"] .admin-page,
+:root.dark .admin-page {
+  background: transparent !important;
+}
+
+.dark-mode .admin-main-header h1 {
+  color: var(--text-primary) !important;
+}
+
+.dark-mode .admin-main-header p {
+  color: var(--text-secondary) !important;
+}
+
+/* Attendance card uses inline background; ensure dark mode surface applies */
+.dark-mode .attendance-card {
+  background: var(--surface-card) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-stroke) !important;
+}
+
+/* Back button contrast in dark mode */
+.dark-mode .back-to-dashboard-btn {
+  background: linear-gradient(90deg,#374151 0%,#111827 100%) !important;
+  color: #ffffff !important;
+}
+
+/* HR stat cards (top summary cards) - ensure readable in dark mode */
+.dark-mode .hr-stats-grid {
+  gap: 0.75rem;
+}
+
+.dark-mode .hr-stat-card {
+  background: var(--surface-card) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-stroke) !important;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.4) !important;
+}
+
+.dark-mode .hr-stat-card .hr-stat-icon {
+  background: transparent !important;
+  color: var(--text-primary) !important;
+}
+
+.dark-mode .hr-stat-card .hr-stat-label {
+  color: var(--text-secondary) !important;
+}
+
+.dark-mode .hr-stat-card .hr-stat-value {
+  color: var(--text-primary) !important;
+  font-weight: 700 !important;
+}
+
+.dark-mode .hr-stat-card--total { border-left-color: rgba(59,130,246,0.9) !important; }
+.dark-mode .hr-stat-card--active { border-left-color: rgba(16,185,129,0.9) !important; }
+.dark-mode .hr-stat-card--leave { border-left-color: rgba(249,115,22,0.9) !important; }
+
+/* Product card / request card dark-mode fixes */
+.dark-mode .product-grid {
+  gap: 0.75rem;
+}
+
+.dark-mode .product-card {
+  background: var(--surface-card) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-stroke) !important;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.45) !important;
+}
+
+.dark-mode .product-card .product-name {
+  color: var(--text-primary) !important;
+}
+
+.dark-mode .product-card .product-price {
+  color: #9ee7b8 !important;
+  font-weight: 700 !important;
+}
+
+.dark-mode .supplier-badge {
+  background: rgba(255,255,255,0.03) !important;
+  color: var(--text-secondary) !important;
+  border: 1px solid rgba(255,255,255,0.03) !important;
+  padding: 6px 8px !important;
+  border-radius: 8px !important;
+}
+
+.dark-mode .btn-primary {
+  background: linear-gradient(90deg,#10b981 0%,#059669 100%) !important;
+  color: #fff !important;
+  border: none !important;
+}
+
+.dark-mode .btn-outline,
+.dark-mode .btn-secondary {
+  background: transparent !important;
+  color: var(--text-primary) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+}
+
+.dark-mode .status-badge {
+  color: #fff !important;
+}
+
+/* SMOOTH THEME TRANSITIONS */
+.dark-mode,
+.light-mode,
+.admin-page,
+.admin-layout,
+.admin-card,
+.panel-block,
+input,
+button,
+select,
+textarea {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* DARK MODE - Specific element overrides */
+.dark-mode .info-backdrop {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.dark-mode .info-modal {
+  background: var(--surface-card);
+  border-color: var(--border-stroke);
+  color: var(--text-primary);
+}
+
+.dark-mode .admin-card {
+  background: var(--surface-card);
+  color: var(--text-primary);
+}
+
+.dark-mode .admin-card__header,
+.dark-mode .admin-card__body,
+.dark-mode .admin-card__footer {
+  color: var(--text-primary);
+}
+
+.dark-mode input,
+.dark-mode textarea,
+.dark-mode select {
+  background: #3a3a3a;
+  color: var(--text-primary);
+  border-color: var(--border-stroke);
+}
+
+.dark-mode input::placeholder,
+.dark-mode textarea::placeholder {
+  color: rgba(229, 231, 235, 0.5);
+}
+
+.dark-mode input:focus,
+.dark-mode textarea:focus,
+.dark-mode select:focus {
+  border-color: #ff8a50;
+  outline: none;
+}
+
+.dark-mode button,
+.dark-mode .btn {
+  background: linear-gradient(135deg, #ff8a50, #ff6b1c);
+  color: #fff;
+}
+
+.dark-mode button:hover,
+.dark-mode .btn:hover {
+  background: linear-gradient(135deg, #ff6b1c, #e55a00);
+}
+
+.dark-mode .badge,
+.dark-mode .badge--success {
+  background: rgba(102, 187, 106, 0.2);
+  color: #66bb6a;
+}
+
+.dark-mode .badge--warning {
+  background: rgba(255, 184, 77, 0.2);
+  color: #ffb84d;
+}
+
+.dark-mode .badge--info {
+  background: rgba(100, 149, 237, 0.2);
+  color: #a0aafb;
+}
+
+.dark-mode .side-item,
+.dark-mode .queue-item {
+  border-color: var(--border-stroke);
+}
+
+.dark-mode .table-row {
+  border-bottom-color: var(--border-stroke);
+}
+
+/* Dark mode - Modal and overlay styles */
+.dark-mode .logout-confirm-backdrop {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.dark-mode .logout-confirm-box {
+  background: var(--surface-card);
+  border-color: var(--border-stroke);
+  color: var(--text-primary);
+}
+
+.dark-mode .modal-close-btn {
+  color: var(--text-primary);
+}
+
+.dark-mode h3,
+.dark-mode h2,
+.dark-mode h1 {
+  color: var(--text-primary);
+}
+
+.dark-mode .info-label {
+  color: var(--text-primary);
+}
+
+.dark-mode .info-value {
+  color: var(--text-secondary);
+}
+
+.dark-mode .info-error {
+  background: rgba(220, 38, 38, 0.2);
+  color: #ff7b7b;
+  border-color: #ff7b7b;
+}
+
+.dark-mode .info-success {
+  background: rgba(102, 187, 106, 0.2);
+  color: #66bb6a;
+  border-color: #66bb6a;
+}
+
+.dark-mode .form-group-custom label {
+  color: var(--text-primary);
+}
+
+.dark-mode .btn-outline {
+  background: transparent;
+  border: 2px solid var(--border-stroke);
+  color: var(--text-primary);
+}
+
+.dark-mode .btn-outline:hover {
+  background: var(--surface-card);
+  border-color: #ff8a50;
+}
+
+.dark-mode .btn-primary {
+  background: linear-gradient(135deg, #ff8a50, #ff6b1c);
+  color: #fff;
+}
+
+.dark-mode .btn-primary:hover {
+  background: linear-gradient(135deg, #ff6b1c, #e55a00);
+}
+
+.dark-mode .secondary-action-btn {
+  background: #4a4a4a;
+  color: var(--text-primary);
+  border: 1px solid var(--border-stroke);
+}
+
+.dark-mode .secondary-action-btn:hover {
+  background: #5a5a5a;
+  border-color: #ff8a50;
+}
+
+.dark-mode .logout-btn {
+  background: #dc2626;
+  color: white;
+}
+
+.dark-mode .logout-btn:hover {
+  background: #b91c1c;
+}
+
+/* DARK MODE - TEXT CONTRAST & READABILITY IMPROVEMENTS */
+.dark-mode h1,
+.dark-mode h2,
+.dark-mode h3,
+.dark-mode h4,
+.dark-mode h5,
+.dark-mode h6 {
+  color: #ffffff !important;
+}
+
+.dark-mode .panel-header h2 {
+  color: #e5e7eb;
+}
+
+.dark-mode .panel-header {
+  color: #e5e7eb;
+}
+
+.dark-mode .overview-label {
+  color: #a0aafb;
+}
+
+.dark-mode .overview-label span {
+  color: #c7d2fe;
+  font-weight: 600;
+}
+
+.dark-mode .overview-value {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.dark-mode .table-header {
+  background: rgba(45, 45, 45, 0.8);
+  border-bottom: 1px solid #4a4a4a;
+  color: #e5e7eb;
+  font-weight: 700;
+  font-size: 0.78rem;
+}
+
+/* Data table header overrides from responsive.css (light defaults) */
+.dark-mode .data-table thead th {
+  background: rgba(255,255,255,0.02);
+  color: var(--text-primary);
+  border-bottom-color: var(--border-stroke);
+}
+
+/* Ensure mobile stacked table labels are readable */
+.dark-mode .data-table td::before {
+  color: var(--text-secondary);
+}
+
+/* Branch selector overrides for components using inline white styles */
+.dark-mode .superadmin-logistics-wrapper .branch-selector-section label,
+.dark-mode .superadmin-logistics-wrapper .branch-selector-section .section-description {
+  color: var(--text-primary);
+}
+
+.dark-mode .superadmin-logistics-wrapper .branch-selector-section select {
+  background: #2d2d2d !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-stroke) !important;
+}
+
+/* Ensure panel sections inherit dark surface */
+.dark-mode .superadmin-logistics-wrapper .panel-section {
+  background: var(--surface-card);
+  color: var(--text-primary);
+  border-color: var(--border-stroke);
+}
+
+/* Strong overrides for Super Admin Logistics inline styles (some use inline color/background) */
+.dark-mode .superadmin-logistics-wrapper {
+  color: var(--text-primary);
+}
+
+.dark-mode .superadmin-logistics-wrapper .branch-selector-section label {
+  color: var(--text-primary) !important;
+}
+
+.dark-mode .superadmin-logistics-wrapper .branch-selector-section select {
+  background: #2d2d2d !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-stroke) !important;
+}
+
+.dark-mode .superadmin-logistics-wrapper .section-title,
+.dark-mode .superadmin-logistics-wrapper .section-description {
+  color: var(--text-primary) !important;
+}
+
+/* Table text and separators */
+.dark-mode .superadmin-logistics-wrapper .data-table td,
+.dark-mode .superadmin-logistics-wrapper .data-table th {
+  color: var(--text-secondary) !important;
+  border-bottom-color: rgba(255,255,255,0.04) !important;
+}
+
+.dark-mode .superadmin-logistics-wrapper .data-table thead th {
+  color: var(--text-secondary) !important;
+  background: rgba(255,255,255,0.02) !important;
+}
+
+.dark-mode .superadmin-logistics-wrapper .status-badge {
+  color: #fff !important;
+}
+
+.dark-mode .superadmin-logistics-wrapper .btn-primary,
+.dark-mode .superadmin-logistics-wrapper .btn-retry,
+.dark-mode .superadmin-logistics-wrapper .btn-secondary {
+  color: #fff !important;
+}
+
+/* Empty / muted messages */
+.dark-mode .superadmin-logistics-wrapper .empty-message,
+.dark-mode .superadmin-logistics-wrapper .error-message,
+.dark-mode .superadmin-logistics-wrapper .loading-container p {
+  color: var(--text-secondary) !important;
+}
+
+/* Ensure badges for status variants are readable */
+.dark-mode .superadmin-logistics-wrapper .status-ok { background: rgba(102,187,106,0.2); color: #66bb6a !important; }
+.dark-mode .superadmin-logistics-wrapper .status-low { background: rgba(255,99,71,0.12); color: #ff6b6b !important; }
+
+/* Dark mode - Announcements Panel */
+.dark-mode .announcements-panel {
+  background: var(--surface-card);
+  border-color: var(--border-stroke);
+}
+
+/* Strong, specific dark-mode fixes for procurement requests table */
+.dark-mode .requests-container {
+  background: var(--surface-card) !important;
+  border: 1px solid var(--border-stroke) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark-mode .requests-scroll {
+  background: transparent !important;
+}
+
+.dark-mode .requests-scroll .data-table thead th {
+  background: rgba(28,28,28,0.98) !important;
+  color: #e5e7eb !important;
+  box-shadow: none !important;
+  border-bottom-color: #444 !important;
+}
+
+.dark-mode .requests-scroll .data-table,
+.dark-mode .requests-scroll .data-table tbody td,
+.dark-mode .requests-scroll .data-table tbody tr {
+  background: transparent !important;
+  color: #d1d5db !important;
+  border-color: rgba(255,255,255,0.04) !important;
+}
+
+.dark-mode .requests-scroll .data-table .status-badge {
+  background: rgba(255,255,255,0.04) !important;
+  color: #f3f4f6 !important;
+  border: 1px solid rgba(255,255,255,0.03) !important;
+}
+
+.dark-mode .announcements-panel .panel-header {
+  border-bottom-color: var(--border-stroke);
+}
+
+.dark-mode .announcements-panel .panel-header h2 {
+  color: var(--text-primary) !important;
+}
+
+.dark-mode .announcements-panel .panel-body {
+  background: var(--surface-card);
+}
+
+.dark-mode .announcement-item {
+  background: rgba(255,255,255,0.02);
+  border-bottom-color: var(--border-stroke);
+}
+
+.dark-mode .announcement-title {
+  color: #ffffff !important;
+  font-weight: 700;
+}
+
+.dark-mode .announcement-meta {
+  color: var(--text-secondary) !important;
+}
+
+/* Global dark-mode table header & row overrides to ensure readability */
+.dark-mode .data-table thead th,
+.dark-mode .products-table thead th,
+.dark-mode .data-table th {
+  background: rgba(30,30,30,0.9) !important;
+  color: #e5e7eb !important;
+  border-bottom-color: #444 !important;
+}
+
+.dark-mode .data-table td,
+.dark-mode .products-table td {
+  color: #d1d5db !important;
+  border-bottom-color: rgba(255,255,255,0.04) !important;
+}
+
+.dark-mode .products-table thead th {
+  background: rgba(34,34,34,0.95) !important;
+  color: #e5e7eb !important;
+}
+
+
+.dark-mode .announcement-message {
+  color: var(--text-primary) !important;
+}
+
+/* Dark mode - Attendance Card */
+.dark-mode .attendance-card {
+  background: var(--surface-card) !important;
+  color: var(--text-primary);
+  border: 1px solid var(--border-stroke);
+}
+
+.dark-mode .attendance-header {
+  background: rgba(255,255,255,0.02);
+  border-bottom: 1px solid var(--border-stroke);
+}
+
+.dark-mode .attendance-title {
+  color: var(--text-primary) !important;
+}
+
+.dark-mode .attendance-status-badge {
+  color: var(--text-primary) !important;
+}
+
+.dark-mode .attendance-status-badge.status-off-duty {
+  background: rgba(255,99,71,0.12) !important;
+  color: #ff6b6b !important;
+}
+
+.dark-mode .attendance-status-badge.status-on-duty {
+  background: rgba(102,187,106,0.2) !important;
+  color: #66bb6a !important;
+}
+
+.dark-mode .attendance-buttons {
+  gap: 8px;
+}
+
+.dark-mode .btn-clock-in {
+  background: linear-gradient(135deg, #28a745, #20c997) !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .btn-clock-out {
+  background: linear-gradient(135deg, #dc3545, #ff6b6b) !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .btn-clock-in:disabled,
+.dark-mode .btn-clock-out:disabled {
+  background: #3a3a3a !important;
+  color: #888 !important;
+  cursor: not-allowed;
+}
+
+/* Branch selector base styles (light) */
+.branch-selector-section {
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.branch-selector-section .branch-label {
+  font-weight: 600;
+  color: #1e293b;
+  margin-right: 0.75rem;
+  font-size: 0.95rem;
+}
+
+.branch-selector-section .branch-select {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #CBD5E1;
+  border-radius: 6px;
+  background: #ffffff;
+  font-size: 0.9rem;
+  min-width: 220px;
+  color: #111827;
+}
+
+/* Dark mode overrides for branch selector */
+.dark-mode .branch-selector-section .branch-label {
+  color: #e5e7eb !important;
+}
+
+.dark-mode .branch-selector-section .branch-select {
+  background: #1a1a1a !important;
+  color: #e5e7eb !important;
+  border-color: #444 !important;
+}
+
+.dark-mode .branch-selector-section .branch-select option {
+  background: #1a1a1a !important;
+  color: #e5e7eb !important;
+}
+
+/* Stronger label and wrapper contrast for dark mode */
+.dark-mode .branch-selector-section {
+  background: #2d2d2d !important;
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.dark-mode .branch-selector-section .branch-label {
+  color: #e5e7eb !important;
+  font-weight: 700 !important;
+  opacity: 1 !important;
+}
+
+.dark-mode .branch-selector-section .branch-select {
+  padding: 0.55rem 0.8rem !important;
+  background: #1a1a1a !important;
+  color: #e5e7eb !important;
+  border: 1px solid #444 !important;
+  box-shadow: none;
+}
+
+.dark-mode .branch-selector-section .branch-select option {
+  background: #1a1a1a !important;
+  color: #e5e7eb !important;
+}
+
+.dark-mode .table-row {
+  color: #d1d5db;
+}
+
+.dark-mode .side-item {
+  color: #e5e7eb;
+}
+
+.dark-mode .side-item + .side-item {
+  border-top: 1px dashed #505050;
+}
+
+.dark-mode .side-value {
+  color: #fca5a5;
+  font-weight: 600;
+}
+
+.dark-mode .side-item--alert .side-value {
+  color: #ffb84d;
+}
+
+.dark-mode .queue-item {
+  color: #e5e7eb;
+}
+
+.dark-mode .queue-title {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.dark-mode .queue-meta {
+  color: #a0aafb;
+  font-size: 0.85rem;
+}
+
+.dark-mode .range-tab {
+  color: #d1d5db;
+}
+
+.dark-mode .range-tab:hover {
+  color: #e5e7eb;
+}
+
+.dark-mode .range-tab--active {
+  background: linear-gradient(135deg, #ff8a50, #ff6b1c);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.dark-mode .panel-action {
+  color: #a0aafb;
+  border-color: #505050;
+  background: transparent;
+}
+
+.dark-mode .panel-action:hover {
+  color: #e5e7eb;
+  border-color: #ff8a50;
+}
+
+.dark-mode .admin-label {
+  color: #a0aafb;
+}
+
+.dark-mode .admin-name {
+  color: #ffffff;
+}
+
+.dark-mode .admin-role {
+  color: #d1d5db;
+}
+
+.dark-mode .admin-id-value {
+  color: #fca5a5;
+}
+
+.dark-mode .owner-value {
+  color: #e5e7eb;
+}
+
+.dark-mode .metric-label {
+  color: #a0aafb;
+}
+
+.dark-mode .metric-value {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.dark-mode span {
+  color: inherit;
+}
+
+.dark-mode .panel-body {
+  color: #e5e7eb;
+}
+
+.dark-mode .panel-body--table {
+  color: #d1d5db;
+}
+
+.dark-mode .panel-body--list {
+  color: #d1d5db;
+}
+
+/* Ensure all content text is readable */
+.dark-mode p,
+.dark-mode div,
+.dark-mode span,
+.dark-mode a {
+  color: inherit;
+}
+
 /* PAGE BACKGROUND */
 .admin-page {
   min-height: 100vh;
@@ -260,6 +1036,14 @@ h1, h2, h3, h4, h5, h6, .section-subtitle, .admin-name, .admin-role {
 
 .admin-avatar:hover {
   border-color: rgba(255, 255, 255, 0.6);
+}
+
+.dark-mode .admin-avatar {
+  border: 3px solid rgba(255, 138, 80, 0.5);
+}
+
+.dark-mode .admin-avatar:hover {
+  border-color: rgba(255, 138, 80, 0.8);
 }
 
 .avatar-img {
@@ -1773,6 +2557,430 @@ h1, h2, h3, h4, h5, h6, .section-subtitle, .admin-name, .admin-role {
   .hr-stat-value {
     font-size: 1.5rem;
   }
+}
+
+/* ============================================
+   DARK MODE - STAFF MANAGEMENT PAGE STYLING
+   ============================================ */
+
+.dark-mode .staff-management-page {
+  background-color: #1a1a1a;
+  color: #e5e7eb;
+}
+
+.dark-mode .staff-header {
+  background: #2d2d2d;
+  border-bottom: 1px solid #3f3f3f;
+}
+
+.dark-mode .owner-staff-title {
+  color: #ffffff;
+}
+
+.dark-mode .owner-staff-total {
+  color: #e5e7eb;
+}
+
+.dark-mode .search-input,
+.dark-mode .filter-select {
+  background: #1f1f1f;
+  color: #e5e7eb;
+  border: 1px solid #404040;
+
+/* Stronger dark overrides for the staff table (some components set a light gradient inline/scoped) */
+.dark-mode .staff-management-page .staff-table {
+  background: transparent !important;
+  border-color: var(--border-stroke) !important;
+}
+.dark-mode .staff-management-page .staff-table thead {
+  background: linear-gradient(180deg,#2b2b2b 0%, #242424 100%) !important;
+}
+.dark-mode .staff-management-page .staff-table thead th {
+  color: var(--text-primary) !important;
+  background: transparent !important;
+  border-bottom: 1px solid var(--border-stroke) !important;
+}
+.dark-mode .staff-management-page .staff-table tbody td {
+  background: transparent !important;
+  color: var(--text-primary) !important;
+  border-bottom: 1px solid var(--border-stroke) !important;
+}
+.dark-mode .staff-management-page .staff-table tbody tr:hover {
+  background: rgba(255,255,255,0.02) !important;
+}
+}
+
+.dark-mode .search-input::placeholder {
+  color: #9ca3af;
+}
+
+.dark-mode .search-input:focus,
+.dark-mode .filter-select:focus {
+  background: #2a2a2a;
+  border-color: #ff8a50;
+  box-shadow: 0 0 0 3px rgba(255, 138, 80, 0.1);
+}
+
+.dark-mode .branch-group {
+  background: #252525;
+  border: 1px solid #3f3f3f;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  padding: 0;
+}
+
+.dark-mode .branch-header {
+  background: #2a2a2a;
+  border-bottom: 1px solid #404040;
+  padding: 16px;
+  border-radius: 8px 8px 0 0;
+}
+
+.dark-mode .branch-title {
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.dark-mode .branch-count {
+  color: #9ca3af;
+}
+
+.dark-mode .staff-table {
+  background: #1f1f1f;
+  border-collapse: collapse;
+}
+
+.dark-mode .staff-table thead {
+  background: #262626;
+  border-bottom: 2px solid #404040;
+}
+
+.dark-mode .staff-table th {
+  color: #ffffff;
+  font-weight: 600;
+  padding: 12px;
+  text-align: left;
+  border-right: 1px solid #3f3f3f;
+}
+
+.dark-mode .staff-table th:last-child {
+  border-right: none;
+}
+
+.dark-mode .staff-table tbody tr {
+  border-bottom: 1px solid #3f3f3f;
+}
+
+.dark-mode .staff-table tbody tr:hover {
+  background: #262626;
+}
+
+.dark-mode .staff-table td {
+  color: #d1d5db;
+  padding: 12px;
+  border-right: 1px solid #3f3f3f;
+}
+
+.dark-mode .staff-table td:last-child {
+  border-right: none;
+}
+
+.dark-mode .staff-table tbody tr.inactive {
+  opacity: 0.6;
+}
+
+.dark-mode .staff-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dark-mode .staff-info strong {
+  color: #ffffff;
+}
+
+.dark-mode .avatar {
+  border: 1px solid #404040;
+}
+
+.dark-mode .badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.dark-mode .badge-online {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+}
+
+.dark-mode .badge-offline {
+  background: rgba(107, 114, 128, 0.2);
+  color: #d1d5db;
+}
+
+.dark-mode .btn-sm {
+  padding: 6px 12px;
+  font-size: 0.875rem;
+  border-radius: 6px;
+  border: 1px solid #404040;
+  background: #2a2a2a;
+  color: #e5e7eb;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dark-mode .btn-sm:hover {
+  background: #3a3a3a;
+  border-color: #ff8a50;
+  color: #ffffff;
+}
+
+.dark-mode .btn-info {
+  background: #0ea5e9;
+  border: none;
+  color: white;
+}
+
+.dark-mode .btn-info:hover {
+  background: #0284c7;
+}
+
+.dark-mode .btn-danger {
+  background: #ef4444;
+  border: none;
+  color: white;
+}
+
+.dark-mode .btn-danger:hover {
+  background: #dc2626;
+}
+
+.dark-mode .loading-state {
+  background: #2d2d2d;
+  color: #e5e7eb;
+  padding: 24px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.dark-mode .alert {
+  padding: 12px 16px;
+  border-radius: 6px;
+}
+
+.dark-mode .alert-danger {
+  background: rgba(239, 68, 68, 0.1);
+  color: #fca5a5;
+  border: 1px solid #7f1d1d;
+}
+
+.dark-mode .empty-state {
+  background: #2d2d2d;
+  color: #9ca3af;
+  padding: 24px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+/* Additional Dark Mode Styling for Staff Management */
+.dark-mode {
+  background-color: #1a1a1a;
+  color: #e5e7eb;
+}
+
+.dark-mode .header-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.dark-mode .header-actions .btn-primary,
+.dark-mode .header-actions .btn-success {
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.dark-mode .header-actions .btn-primary {
+  background: #0ea5e9;
+  color: white;
+}
+
+.dark-mode .header-actions .btn-primary:hover {
+  background: #0284c7;
+}
+
+.dark-mode .header-actions .btn-success {
+  background: #10b981;
+  color: white;
+}
+
+.dark-mode .header-actions .btn-success:hover {
+  background: #059669;
+}
+
+.dark-mode .btn-secondary {
+  background: #4b5563;
+  color: #ffffff;
+  border: 1px solid #5a6580;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dark-mode .btn-secondary:hover {
+  background: #5a6580;
+  border-color: #ff8a50;
+}
+
+.dark-mode .back-to-dashboard-btn {
+  background: #4b5563;
+  color: #ffffff;
+  border: 1px solid #5a6580;
+}
+
+.dark-mode .back-to-dashboard-btn:hover {
+  background: #5a6580;
+  border-color: #ff8a50;
+}
+
+.dark-mode .summary-card {
+  background: #2d2d2d;
+  border: 1px solid #404040;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.dark-mode .summary-card h3 {
+  color: #ffffff;
+}
+
+.dark-mode .staff-table-wrapper {
+  background: #1f1f1f;
+  border: 1px solid #3f3f3f;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.dark-mode .modal-backdrop {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.dark-mode .modal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+}
+
+.dark-mode .modal-card {
+  background: #2d2d2d;
+  border: 1px solid #404040;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px rgba(0, 0, 0, 0.5);
+  max-width: 600px;
+  width: 90%;
+}
+
+.dark-mode .modal-header {
+  background: #252525;
+  border-bottom: 1px solid #404040;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* DARK MODE WRAPPER - Override main gradient background */
+.min-h-screen.dark-mode {
+  background: radial-gradient(circle at center, #1a1a1a 0%, #1f1f1f 40%, #0a0a0a 100%) !important;
+}
+
+.min-h-screen.dark-mode.bg-gradient-to-b {
+  background: radial-gradient(circle at center, #1a1a1a 0%, #1f1f1f 40%, #0a0a0a 100%) !important;
+}
+
+/* Ensure admin-page gets dark background */
+.dark-mode.admin-page {
+  background: var(--bg-main);
+  color: var(--text-primary);
+}
+
+.dark-mode .modal-header h2 {
+  color: #ffffff;
+  margin: 0;
+}
+
+.dark-mode .close-button {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dark-mode .close-button:hover {
+  color: #ffffff;
+}
+
+.dark-mode .modal-body {
+  padding: 16px;
+  color: #d1d5db;
+}
+
+.dark-mode .modal-body ul {
+  list-style: none;
+  padding: 0;
+}
+
+.dark-mode .modal-body li {
+  padding: 8px;
+  color: #d1d5db;
+}
+
+.dark-mode .modal-footer {
+  border-top: 1px solid #404040;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.dark-mode .modal-footer .btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.dark-mode .modal-footer .btn-secondary {
+  background: #404040;
+  color: #ffffff;
+  border: 1px solid #505050;
+}
+
+.dark-mode .modal-footer .btn-secondary:hover {
+  background: #505050;
 }
 
 /* HR Panel Content Styles */

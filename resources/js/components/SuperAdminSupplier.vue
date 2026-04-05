@@ -135,8 +135,10 @@ import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
+import { useTheme } from '../composables/useTheme'
 
 const router = useRouter()
+const { initializeTheme } = useTheme()
 const suppliers = ref([])
 const branches = ref([])
 const selectedBranchId = ref('')
@@ -350,6 +352,7 @@ function handleResize() {
 }
 
 onMounted(async () => {
+  initializeTheme()
   try { await axios.get('/sanctum/csrf-cookie', { withCredentials: true }) } catch (e) {}
   await Promise.all([fetchBranches().catch(()=>{}), fetchSuppliers().catch(()=>{}), loadDashboardTotals().catch(()=>{}), loadOrders().catch(()=>{}), loadDeliveries().catch(()=>{}), loadProducts().catch(()=>{})])
   // check overflow for tables and listen for resizes
@@ -399,17 +402,77 @@ onUnmounted(() => {
   gap: 12px;
   max-width: 520px;
   align-self: start;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-.panel-section { background: rgba(255,255,255,0.95); border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-.section-title { font-size: 20px; font-weight: 600; color: #4b2a06; margin: 0 0 8px 0; }
-.section-description { font-size: 14px; color: #666; margin: 0 0 16px 0; }
+/* Dark Mode - Branch Selector */
+:global(.dark-mode) .branch-selector-section {
+  background: #2d2d2d !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
+}
+
+:global(.dark-mode) .branch-selector-section label {
+  color: #e5e7eb !important;
+}
+
+:global(.dark-mode) .branch-selector-section select {
+  background: #1a1a1a !important;
+  color: #e5e7eb !important;
+  border-color: #444 !important;
+}
+
+:global(.dark-mode) .branch-selector-section select option {
+  background: #1a1a1a !important;
+  color: #e5e7eb !important;
+}
+
+.panel-section { background: rgba(255,255,255,0.95); border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: background-color 0.3s ease, box-shadow 0.3s ease; }
+
+:global(.dark-mode) .panel-section {
+  background: rgba(45,45,45,0.9);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.section-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #4b2a06;
+  margin: 0 0 8px 0;
+  transition: color 0.3s ease;
+}
+
+:global(.dark-mode) .section-title {
+  color: #e5e7eb;
+}
+
+.section-description {
+  font-size: 14px;
+  color: #666;
+  margin: 0 0 16px 0;
+  transition: color 0.3s ease;
+}
+
+:global(.dark-mode) .section-description {
+  color: #9ca3af;
+}
 
 .table-container { overflow-x: auto; max-height: 420px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .data-table { width: 100%; border-collapse: collapse; }
 .data-table thead th { position: sticky; top: 0; z-index: 6; background: #fff4e6; }
 .data-table th, .data-table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #eee; }
 .data-table th { background: #fff4e6; font-weight: 600; color: #5a2c0a; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+.data-table td { color: #333; }
+
+:global(.dark-mode) .data-table thead th {
+  background: rgba(45,45,45,0.8);
+}
+:global(.dark-mode) .data-table th {
+  background: rgba(45,45,45,0.8);
+  color: #e5e7eb;
+}
+:global(.dark-mode) .data-table td {
+  border-bottom-color: #444;
+  color: #d1d5db;
+}
 .empty-message { text-align: center; color: #999; font-style: italic; }
 .status-badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; }
 .status-ok { background: rgba(46, 204, 113, 0.15); color: #27ae60; }
@@ -475,7 +538,6 @@ onUnmounted(() => {
   max-height: calc(100vh - 200px);
   min-height: 0;
 }
-/* Products table styles (placed here to keep component-scoped) */
 .products-table {
   width: 100%;
   border-collapse: collapse;
@@ -496,6 +558,15 @@ onUnmounted(() => {
   padding: 12px 16px;
   border-bottom: 1px solid #eee;
   color: #333;
+}
+
+:global(.dark-mode) .products-table thead th {
+  background: rgba(45,45,45,0.8);
+  color: #e5e7eb;
+}
+:global(.dark-mode) .products-table td {
+  border-bottom-color: #444;
+  color: #d1d5db;
 }
 .products-table-wrapper .table-container { max-height: 480px; overflow: auto; }
 .products-table tbody tr:last-child td { border-bottom: none; }

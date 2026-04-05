@@ -146,8 +146,10 @@ import { useRouter } from 'vue-router'
 import axios from 'axios'
 import '../css/adminpanel.css'
 import StaffModal from './StaffModal.vue'
+import { useTheme } from '../composables/useTheme'
 
 const router = useRouter()
+const { initializeTheme } = useTheme()
 
 function onStaffModalSuccess() {
   showAddStaffModal.value = false
@@ -398,6 +400,7 @@ async function toggleStatus(member) {
 }
 
 onMounted(async () => {
+  initializeTheme()
   // Force page reload effect for HR Staff Management (user request)
   if (sessionStorage.getItem('forceHrReload') === '1') {
     console.log('[HRStaffManagement] Force reload flag detected - full refresh complete')
@@ -449,7 +452,7 @@ function formatDate(dateString) {
 }
 </script>
 
-<style scoped>
+<style>
 /* styles copied unchanged from original component */
 .staff-management-page {
   padding: 30px;
@@ -678,9 +681,219 @@ function formatDate(dateString) {
   overflow: hidden;
 }
 
+/* ===== DARK MODE SUPPORT ===== */
+.dark-mode .staff-management-page {
+  background-color: #1a1a1a !important;
+  color: #e5e7eb !important;
+}
+
+.dark-mode .staff-header {
+  background: #2d2d2d !important;
+  border-bottom: 1px solid #3f3f3f;
+}
+
+.dark-mode .owner-staff-title {
+  color: #ffffff !important;
+}
+
+.dark-mode .search-input,
+.dark-mode .filter-select {
+  background: #1f1f1f !important;
+  color: #e5e7eb !important;
+  border: 1px solid #404040 !important;
+}
+
+.dark-mode .search-input::placeholder {
+  color: #9ca3af !important;
+}
+
+.dark-mode .search-input:focus,
+.dark-mode .filter-select:focus {
+  background: #2a2a2a !important;
+  border-color: #ff8a50 !important;
+  box-shadow: 0 0 0 3px rgba(255, 138, 80, 0.1) !important;
+}
+
+.dark-mode .summary-card {
+  background: #2d2d2d !important;
+  color: #e5e7eb !important;
+  border: 1px solid #3f3f3f !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+}
+
+.dark-mode .summary-card h3 {
+  color: #ffffff !important;
+}
+
+.dark-mode .branch-group {
+  background: #252525 !important;
+  border: 1px solid #3f3f3f !important;
+  border-radius: 8px;
+}
+
+.dark-mode .branch-header {
+  background: #2a2a2a !important;
+  border-bottom: 1px solid #404040 !important;
+  border-left: 4px solid #ff8a50 !important;
+  color: #e5e7eb;
+  box-shadow: none !important;
+}
+
+.dark-mode .branch-title {
+  color: #ffffff !important;
+}
+
+.dark-mode .branch-count {
+  color: #d1d5db !important;
+  background: rgba(255, 138, 80, 0.1) !important;
+}
+
+.dark-mode .staff-table-wrapper {
+  background: #1f1f1f !important;
+  border: 1px solid #3f3f3f !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+}
+
+.dark-mode .staff-table {
+  background: #1f1f1f !important;
+}
+
+.dark-mode .staff-table th {
+  background: #262626 !important;
+  color: #ffffff !important;
+  border-bottom: 2px solid #404040 !important;
+}
+
+.dark-mode .staff-table td {
+  color: #d1d5db !important;
+  border-bottom: 1px solid #3f3f3f !important;
+}
+
+.dark-mode .staff-table tbody tr:hover {
+  background: #262626 !important;
+}
+
+.dark-mode .staff-table tbody tr.inactive {
+  opacity: 0.6;
+  background: #1f1f1f !important;
+}
+
+.dark-mode .staff-info strong {
+  color: #ffffff !important;
+}
+
+.dark-mode .avatar {
+  border: 1px solid #404040 !important;
+}
+
+.dark-mode .badge {
+  background: #3f3f3f !important;
+  color: #e5e7eb !important;
+}
+
+.dark-mode .badge-online {
+  background: rgba(34, 197, 94, 0.2) !important;
+  color: #4ade80 !important;
+}
+
+.dark-mode .badge-offline {
+  background: rgba(107, 114, 128, 0.2) !important;
+  color: #d1d5db !important;
+}
+
+.dark-mode .empty-state,
+.dark-mode .loading-state {
+  background: #2d2d2d !important;
+  color: #9ca3af !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+}
+
+.dark-mode .alert {
+  background: #2a2a2a !important;
+  color: #e5e7eb !important;
+}
+
+.dark-mode .alert-danger {
+  background: rgba(239, 68, 68, 0.1) !important;
+  color: #fca5a5 !important;
+  border: 1px solid #7f1d1d !important;
+}
+
+.dark-mode .back-to-dashboard-btn {
+  background: #4b5563 !important;
+  color: #ffffff !important;
+  border: 1px solid #5a6580 !important;
+}
+
+.dark-mode .back-to-dashboard-btn:hover {
+  background: #5a6580 !important;
+  border-color: #ff8a50 !important;
+}
+
+.dark-mode .btn-primary {
+  background: #0ea5e9 !important;
+  color: white !important;
+}
+
+.dark-mode .btn-primary:hover {
+  background: #0284c7 !important;
+}
+
+.dark-mode .btn-success {
+  background: #10b981 !important;
+  color: white !important;
+}
+
+.dark-mode .btn-success:hover {
+  background: #059669 !important;
+}
+
+.dark-mode .btn-secondary {
+  background: #4b5563 !important;
+  color: #ffffff !important;
+  border: 1px solid #5a6580 !important;
+}
+
+.dark-mode .btn-secondary:hover {
+  background: #5a6580 !important;
+  border-color: #ff8a50 !important;
+}
+
+.dark-mode .btn-info {
+  background: #0ea5e9 !important;
+  color: white !important;
+}
+
+.dark-mode .btn-info:hover {
+  background: #0284c7 !important;
+}
+
+.dark-mode .btn-danger {
+  background: #ef4444 !important;
+  color: white !important;
+}
+
+.dark-mode .btn-danger:hover {
+  background: #dc2626 !important;
+}
+
+.dark-mode .btn-sm {
+  background: #2a2a2a !important;
+  color: #e5e7eb !important;
+  border: 1px solid #404040 !important;
+}
+
+.dark-mode .btn-sm:hover {
+  background: #3a3a3a !important;
+  border-color: #ff8a50 !important;
+  color: #ffffff !important;
+}
+
+/* ===== TABLE STYLING ===== */
 .staff-table {
   width: 100%;
   border-collapse: collapse;
+  background: white;
 }
 
 .staff-table th {
@@ -690,20 +903,26 @@ function formatDate(dateString) {
   padding: 1rem;
   text-align: left;
   font-size: 0.9rem;
+  border-right: 1px solid #E5E7EB;
+}
+
+.staff-table th:last-child {
+  border-right: none;
 }
 
 .staff-table td {
   border-bottom: 1px solid #E5E7EB;
+  border-right: 1px solid #E5E7EB;
   padding: 1rem;
   color: #374151;
 }
 
-
-
-
+.staff-table td:last-child {
+  border-right: none;
+}
 
 .staff-table tbody tr:hover {
-  background: rgba(255,255,255,0.14);
+  background: rgba(0, 102, 255, 0.05);
 }
 
 .staff-table tbody tr.inactive {
@@ -711,87 +930,43 @@ function formatDate(dateString) {
   background: #f8f9fa;
 }
 
-.staff-info {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+/* ===== DARK MODE TABLE STYLING ===== */
+.dark-mode .staff-table {
+  background: #1f1f1f;
+  color: #e5e7eb;
 }
 
-.avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  object-fit: cover;
+.dark-mode .staff-table th {
+  background: #262626 !important;
+  color: #ffffff !important;
+  border-right: 1px solid #404040 !important;
+  border-bottom: 2px solid #404040 !important;
 }
 
-.badge {
-  display: inline-block;
-  background: #FACC15;
-  color: #1F2937;
-  border-radius: 6px;
-  padding: 4px 10px;
-  font-size: 0.8rem;
-  font-weight: 600;
+.dark-mode .staff-table th:last-child {
+  border-right: none;
 }
 
-.badge-online {
-  background: #10B981;
-  color: white;
+.dark-mode .staff-table td {
+  color: #d1d5db !important;
+  border-bottom: 1px solid #3f3f3f !important;
+  border-right: 1px solid #3f3f3f !important;
 }
 
-.badge-offline {
-  background: #6B7280;
-  color: white;
+.dark-mode .staff-table td:last-child {
+  border-right: none;
 }
 
-.actions {
-  display: flex;
-  gap: 0.5rem;
+.dark-mode .staff-table tbody tr {
+  background: #1f1f1f;
 }
 
-.empty-state, .loading-state {
-  text-align: center;
-  padding: 3rem;
-  background: white;
-  border-radius: 12px;
-  color: #6B7280;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+.dark-mode .staff-table tbody tr:hover {
+  background: rgba(255, 138, 80, 0.05) !important;
 }
 
-.alert {
-  padding: 1rem;
-  border-radius: 4px;
-  margin-bottom: 1rem;
-}
-
-.alert-danger {
-  background: #FEF2F2;
-  color: #DC2626;
-  border: 1px solid #FECACA;
-}
-
-@media (max-width: 768px) {
-  .staff-header {
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .header-actions {
-    width: 100%;
-    flex-direction: column;
-  }
-
-  .search-input {
-    width: 100%;
-  }
-
-  .staff-table {
-    font-size: 0.85rem;
-  }
-
-  .staff-table th,
-  .staff-table td {
-    padding: 0.75rem 0.5rem;
-  }
+.dark-mode .staff-table tbody tr.inactive {
+  opacity: 0.6;
+  background: #262626;
 }
 </style>

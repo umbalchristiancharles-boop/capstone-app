@@ -189,9 +189,11 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
+import { useTheme } from '../composables/useTheme'
 
 // Router
 const router = useRouter()
+const { initializeTheme } = useTheme()
 
 // State
 const loading = ref(true)
@@ -326,12 +328,13 @@ const fetchBranches = async () => {
 
 // Lifecycle
 onMounted(async () => {
+  initializeTheme()
   await fetchBranches()
   await fetchDashboard()
 })
 </script>
 
-<style scoped>
+<style>
 .superadmin-finance {
   background: var(--bg-main);
   padding: 30px;
@@ -671,5 +674,234 @@ h1, h2 {
   font-weight: 500;
   text-transform: capitalize;
 }
+
+/* ===== DARK MODE SUPPORT ===== */
+.dark-mode .superadmin-finance {
+  background: #1a1a1a !important;
+  color: #e5e7eb !important;
+}
+
+.dark-mode .page-header {
+  color: #ffffff !important;
+}
+
+.dark-mode .page-title {
+  color: #ffffff !important;
+}
+
+.dark-mode .page-subtitle {
+  color: #d1d5db !important;
+}
+
+.dark-mode h1, .dark-mode h2 {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+}
+
+.dark-mode p {
+  color: #d1d5db !important;
+}
+
+.dark-mode span {
+  color: inherit !important;
+}
+
+.dark-mode .filter-bar {
+  background: #2d2d2d !important;
+  border: 1px solid #404040 !important;
+  color: #e5e7eb !important;
+}
+
+.dark-mode .filter-group {
+  color: #e5e7eb !important;
+}
+
+.dark-mode .filter-group label {
+  color: #e5e7eb !important;
+}
+
+.dark-mode .filter-group select {
+  background: #1f1f1f !important;
+  color: #e5e7eb !important;
+  border: 1px solid #404040 !important;
+}
+
+.dark-mode .filter-group select option {
+  background: #1f1f1f !important;
+  color: #e5e7eb !important;
+}
+
+.dark-mode .btn-refresh {
+  background: #0ea5e9 !important;
+  color: white !important;
+}
+
+.dark-mode .btn-refresh:hover {
+  background: #0284c7 !important;
+}
+
+.dark-mode .loading-container,
+.dark-mode .error-container {
+  background: #2d2d2d !important;
+  color: #e5e7eb !important;
+  border: 1px solid #404040 !important;
+}
+
+.dark-mode .loading-spinner {
+  border-color: rgba(255, 138, 80, 0.2) !important;
+  border-top-color: #ff8a50 !important;
+}
+
+.dark-mode .error-message {
+  color: #fca5a5 !important;
+}
+
+.dark-mode .btn-retry {
+  background: #ef4444 !important;
+  color: white !important;
+}
+
+.dark-mode .btn-retry:hover {
+  background: #dc2626 !important;
+}
+
+.dark-mode .kpi-grid {
+  gap: 12px;
+}
+
+.dark-mode .kpi-card {
+  background: #2d2d2d !important;
+  border: 1px solid #404040 !important;
+  color: #e5e7eb !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark-mode .kpi-card.highlight {
+  background: #252525 !important;
+  border: 2px solid #ff8a50 !important;
+}
+
+.dark-mode .kpi-label {
+  color: #9ca3af !important;
+}
+
+.dark-mode .kpi-value {
+  color: #ffffff !important;
+}
+
+.dark-mode .kpi-icon {
+  background: rgba(255, 138, 80, 0.1) !important;
+  color: #ff8a50 !important;
+}
+
+.dark-mode .branch-stats {
+  color: #e5e7eb !important;
+  background: #2d2d2d !important;
+}
+
+.dark-mode .section-title {
+  color: #ffffff !important;
+}
+
+.dark-mode .section-description {
+  color: #d1d5db !important;
+}
+
+.dark-mode .branch-table-container {
+  background: #1f1f1f !important;
+  border: 1px solid #404040 !important;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark-mode .branch-table {
+  background: #1f1f1f !important;
+  color: #e5e7eb !important;
+}
+
+.dark-mode .branch-table th {
+  background: #262626 !important;
+  color: #ffffff !important;
+  border-bottom: 2px solid #404040 !important;
+  text-align: left;
+}
+
+.dark-mode .branch-table td {
+  color: #d1d5db !important;
+  border-bottom: 1px solid #3f3f3f !important;
+}
+
+.dark-mode .branch-table tbody tr {
+  background: #1f1f1f !important;
+}
+
+.dark-mode .branch-table tbody tr:hover {
+  background: rgba(255, 138, 80, 0.05) !important;
+}
+
+.dark-mode .profit-positive {
+  color: #4ade80 !important;
+}
+
+.dark-mode .profit-negative {
+  color: #fca5a5 !important;
+}
+
+.dark-mode .status-badge {
+  background: rgba(255, 138, 80, 0.2) !important;
+  color: #ff8a50 !important;
+}
+
+.dark-mode .btn-primary {
+  background: #0ea5e9 !important;
+  color: white !important;
+  border: none !important;
+}
+
+.dark-mode .btn-primary:hover {
+  background: #0284c7 !important;
+}
+
+.dark-mode .btn-secondary {
+  background: #4b5563 !important;
+  color: #ffffff !important;
+  border: 1px solid #5a6580 !important;
+}
+
+.dark-mode .btn-secondary:hover {
+  background: #5a6580 !important;
+  border-color: #ff8a50 !important;
+}
+
+.dark-mode .back-to-dashboard-btn {
+  background: #4b5563 !important;
+  color: #ffffff !important;
+  border: 1px solid #5a6580 !important;
+}
+
+.dark-mode .back-to-dashboard-btn:hover {
+  background: #5a6580 !important;
+  border-color: #ff8a50 !important;
+}
+
+.dark-mode * {
+  color: inherit !important;
+}
+
+.dark-mode input, .dark-mode select, .dark-mode textarea {
+  background: #1f1f1f !important;
+  color: #e5e7eb !important;
+  border: 1px solid #404040 !important;
+}
+
+.dark-mode input::placeholder, .dark-mode textarea::placeholder {
+  color: #9ca3af !important;
+}
+
+.dark-mode input:focus, .dark-mode select:focus, .dark-mode textarea:focus {
+  border-color: #ff8a50 !important;
+  outline: none !important;
+}
+
 </style>
 
