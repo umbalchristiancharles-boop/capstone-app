@@ -285,18 +285,7 @@
       </div>
     </div>
   </transition>
-  <transition name="fade">
-    <div v-if="showLogoutConfirm" class="logout-confirm-backdrop">
-      <div class="logout-confirm-box">
-        <h3>Logout from Supplier Panel?</h3>
-        <p>This will end your current session for Chikin Tayo.</p>
-        <div class="logout-actions">
-          <button class="btn-cancel" @click="cancelLogout" :disabled="isLoggingOut">Cancel</button>
-          <button class="btn-confirm" @click="confirmLogout" :disabled="isLoggingOut">Yes, logout</button>
-        </div>
-      </div>
-    </div>
-  </transition>
+
 
   <!-- EDIT PRODUCT MODAL - Edit one field at a time -->
   <transition name="fade">
@@ -413,6 +402,7 @@ import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import LogisticsPanelContent from './logistics/LogisticsPanelContent.vue'
 import LoadingOverlay from './LoadingOverlay.vue'
 import axios from 'axios'
+import Swal from 'sweetalert2'
 import { showToast } from './toastStore'
 
 const userProfile = ref({})
@@ -437,7 +427,6 @@ const supplierPendingCount = computed(() => {
 })
 
 // UI / modal state
-const showLogoutConfirm = ref(false)
 const isLoggingOut = ref(false)
 const showOverlay = ref(false)
 const overlayText = ref('Logging out...')
@@ -493,7 +482,7 @@ function openInfoFromHeader() {
 
 function triggerLogoutFromHeader() {
   closeProfileDropdown()
-  showLogoutConfirm.value = true
+  askLogout()
 }
 
 // Close dropdown when clicking outside
@@ -703,8 +692,19 @@ async function fulfillOrder(id) {
 }
 
 async function completeTransaction(id) {
-  if (!confirm('Complete this transaction and show receipt?')) return
   try {
+    const result = await Swal.fire({
+      title: 'Complete Transaction?',
+      text: 'This transaction will be marked as on delivery and the receipt will be shown.',
+      icon: 'info',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, Complete',
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: '#28a745',
+      cancelButtonColor: '#6c757d'
+    })
+    if (!result.isConfirmed) return
+    
     // Mark the supplier order as on_delivery so the backend finalizes procurement
     const res = await axios.put(`/api/supplier-orders/${id}/status`, { status: 'on_delivery' }, { withCredentials: true })
     if (res && res.data) {
@@ -1004,11 +1004,6 @@ function onProductAdded(newProduct) {
   }
 }
 
-function cancelLogout() {
-  if (isLoggingOut.value) return
-  showLogoutConfirm.value = false
-}
-
 async function confirmLogout() {
   if (isLoggingOut.value) return
   isLoggingOut.value = true
@@ -1026,8 +1021,17 @@ async function confirmLogout() {
 
 async function askLogout() {
   try {
-    const ok = await (window.swalConfirm ? window.swalConfirm('This will end your current session for Chikin Tayo.', 'Confirm logout') : Promise.resolve(false))
-    if (ok) await confirmLogout()
+    const result = await Swal.fire({
+      title: 'Logout from Supplier Panel?',
+      text: 'This will end your current session for Chikin Tayo.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, logout',
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#6c757d'
+    })
+    if (result.isConfirmed) await confirmLogout()
   } catch (e) { console.error('askLogout failed', e) }
 }
 

@@ -124,6 +124,9 @@ const chartLoading = computed(() => props.chartLoading)
 
 const transactionsLoading = computed(() => props.transactionsLoading)
 
+// Expose transactions as a computed for proper reactivity
+const transactions = computed(() => props.transactions || [])
+
 const normalizedReports = computed(() => {
   const rows = []
 
@@ -205,19 +208,55 @@ function renderChart() {
     data: {
       labels,
       datasets: [
-        { label: 'Revenue', data: revenue, borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.12)', tension: 0.25, fill: true },
-        { label: 'Expenses', data: expenses, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.12)', tension: 0.25, fill: true },
-        { label: 'Profit', data: profit, borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.12)', tension: 0.25, fill: false }
+        { label: 'Revenue', data: revenue, borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.12)', tension: 0.25, fill: true, pointRadius: 5, pointHoverRadius: 7, pointBackgroundColor: '#22c55e' },
+        { label: 'Expenses', data: expenses, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.12)', tension: 0.25, fill: true, pointRadius: 5, pointHoverRadius: 7, pointBackgroundColor: '#ef4444' },
+        { label: 'Profit', data: profit, borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.12)', tension: 0.25, fill: false, pointRadius: 5, pointHoverRadius: 7, pointBackgroundColor: '#6366f1' }
       ]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
       plugins: {
-        legend: { display: true, position: 'top' }
+        legend: { display: true, position: 'top' },
+        tooltip: {
+          enabled: true,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          borderColor: '#ddd',
+          borderWidth: 1,
+          padding: 12,
+          displayColors: true,
+          callbacks: {
+            title: (tooltipItems) => {
+              return tooltipItems[0]?.label || 'Data'
+            },
+            label: (context) => {
+              const label = context.dataset.label || ''
+              const value = context.parsed.y || 0
+              return `${label}: ₱${Number(value).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+            },
+            afterLabel: (context) => {
+              if (context.datasetIndex === 2) {
+                const revenue = context.chart.data.datasets[0].data[context.dataIndex] || 0
+                const expenses = context.chart.data.datasets[1].data[context.dataIndex] || 0
+                const profit = revenue - expenses
+                return `Total: ₱${Number(profit).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+              }
+              return ''
+            }
+          }
+        }
       },
       scales: {
-        y: { beginAtZero: true, ticks: { callback: (v) => `₱${Number(v).toLocaleString('en-PH')}` } }
+        y: { 
+          beginAtZero: true, 
+          ticks: { callback: (v) => `₱${Number(v).toLocaleString('en-PH')}` }
+        }
       }
     }
   })

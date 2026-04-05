@@ -446,39 +446,82 @@ function loadApprovedDishes() {
 }
 
 function approveDish(dishId) {
-  if (!window.confirm('Are you sure you want to approve this dish?')) {
-    return
+  // Show SweetAlert confirmation
+  try {
+    window.swalConfirm('Are you sure you want to approve this dish?', 'Approve Dish').then(async (ok) => {
+      if (!ok) return
+
+      approvingId.value = dishId
+      const notes = approvalNotes.value[dishId] || ''
+
+      const payload = { notes: notes }
+      if (userProfile.value.role && userProfile.value.role.toString().toUpperCase() === 'ADMIN') {
+        payload.publish_products = publishProducts.value[dishId] || false
+        payload.per_pack_or_individual = perPackOrIndividual.value[dishId] || null
+        payload.pack_quantity = packQuantity.value[dishId] || null
+        payload.pack_unit = packUnit.value[dishId] || null
+      }
+
+      axios.post(`/api/owner/dishes/${dishId}/approve`, payload)
+        .then(response => {
+          // Remove from pending and add to approved
+          pendingDishes.value = pendingDishes.value.filter(d => d.id !== dishId)
+          approvedDishes.value.unshift(response.data.data)
+          approvalNotes.value[dishId] = ''
+          showRejectReason.value[dishId] = false
+          
+          // Show success message
+          try {
+            window.swalAlert('✅ Dish approved successfully! Ingredients are now visible in logistics panel.', 'Success')
+          } catch (e) {
+            alert('✅ Dish approved successfully! Ingredients are now visible in logistics panel.')
+          }
+        })
+        .catch(err => {
+          console.error('Failed to approve dish:', err)
+          try {
+            window.swalAlert('❌ Error: ' + (err.response?.data?.message || 'Failed to approve dish'), 'Error')
+          } catch (e) {
+            alert('❌ Error: ' + (err.response?.data?.message || 'Failed to approve dish'))
+          }
+        })
+        .finally(() => {
+          approvingId.value = null
+        })
+    })
+  } catch (e) {
+    // Fallback to window.confirm if SweetAlert fails
+    if (!window.confirm('Are you sure you want to approve this dish?')) {
+      return
+    }
+    
+    approvingId.value = dishId
+    const notes = approvalNotes.value[dishId] || ''
+
+    const payload = { notes: notes }
+    if (userProfile.value.role && userProfile.value.role.toString().toUpperCase() === 'ADMIN') {
+      payload.publish_products = publishProducts.value[dishId] || false
+      payload.per_pack_or_individual = perPackOrIndividual.value[dishId] || null
+      payload.pack_quantity = packQuantity.value[dishId] || null
+      payload.pack_unit = packUnit.value[dishId] || null
+    }
+
+    axios.post(`/api/owner/dishes/${dishId}/approve`, payload)
+      .then(response => {
+        pendingDishes.value = pendingDishes.value.filter(d => d.id !== dishId)
+        approvedDishes.value.unshift(response.data.data)
+        approvalNotes.value[dishId] = ''
+        showRejectReason.value[dishId] = false
+        alert('✅ Dish approved successfully! Ingredients are now visible in logistics panel.')
+      })
+      .catch(err => {
+        console.error('Failed to approve dish:', err)
+        alert('❌ Error: ' + (err.response?.data?.message || 'Failed to approve dish'))
+      })
+      .finally(() => {
+        approvingId.value = null
+      })
   }
-
-  approvingId.value = dishId
-  const notes = approvalNotes.value[dishId] || ''
-
-  const payload = { notes: notes }
-  if (userProfile.value.role && userProfile.value.role.toString().toUpperCase() === 'ADMIN') {
-    payload.publish_products = publishProducts.value[dishId] || false
-    payload.per_pack_or_individual = perPackOrIndividual.value[dishId] || null
-    payload.pack_quantity = packQuantity.value[dishId] || null
-    payload.pack_unit = packUnit.value[dishId] || null
-  }
-
-  axios.post(`/api/owner/dishes/${dishId}/approve`, payload)
-    .then(response => {
-      // Remove from pending and add to approved
-      pendingDishes.value = pendingDishes.value.filter(d => d.id !== dishId)
-      approvedDishes.value.unshift(response.data.data)
-      approvalNotes.value[dishId] = ''
-      showRejectReason.value[dishId] = false
-      
-      // Show success message
-      alert('✅ Dish approved successfully! Ingredients are now visible in logistics panel.')
-    })
-    .catch(err => {
-      console.error('Failed to approve dish:', err)
-      alert('❌ Error: ' + (err.response?.data?.message || 'Failed to approve dish'))
-    })
-    .finally(() => {
-      approvingId.value = null
-    })
 }
 
 function showRejectForm(dishId) {
@@ -493,34 +536,73 @@ function cancelReject(dishId) {
 function confirmReject(dishId) {
   const reason = rejectReason.value[dishId] || ''
   if (!reason.trim()) {
-    alert('Please provide a reason for rejection')
+    try {
+      window.swalAlert('Please provide a reason for rejection', 'Invalid Input')
+    } catch (e) {
+      alert('Please provide a reason for rejection')
+    }
     return
   }
 
-  if (!window.confirm('Are you sure you want to reject this dish?')) {
-    return
+  // Show SweetAlert confirmation
+  try {
+    window.swalConfirm('Are you sure you want to reject this dish?', 'Reject Dish').then(async (ok) => {
+      if (!ok) return
+
+      rejectingId.value = dishId
+
+      axios.post(`/api/owner/dishes/${dishId}/reject`, {
+        reason: reason
+      })
+        .then(response => {
+          // Remove from pending
+          pendingDishes.value = pendingDishes.value.filter(d => d.id !== dishId)
+          rejectReason.value[dishId] = ''
+          showRejectReason.value[dishId] = false
+          
+          try {
+            window.swalAlert('❌ Dish rejected. The kitchen staff will be notified.', 'Dish Rejected')
+          } catch (e) {
+            alert('❌ Dish rejected. The kitchen staff will be notified.')
+          }
+        })
+        .catch(err => {
+          console.error('Failed to reject dish:', err)
+          try {
+            window.swalAlert('Error: ' + (err.response?.data?.message || 'Failed to reject dish'), 'Error')
+          } catch (e) {
+            alert('Error: ' + (err.response?.data?.message || 'Failed to reject dish'))
+          }
+        })
+        .finally(() => {
+          rejectingId.value = null
+        })
+    })
+  } catch (e) {
+    // Fallback to window.confirm if SweetAlert fails
+    if (!window.confirm('Are you sure you want to reject this dish?')) {
+      return
+    }
+
+    rejectingId.value = dishId
+
+    axios.post(`/api/owner/dishes/${dishId}/reject`, {
+      reason: reason
+    })
+      .then(response => {
+        pendingDishes.value = pendingDishes.value.filter(d => d.id !== dishId)
+        rejectReason.value[dishId] = ''
+        showRejectReason.value[dishId] = false
+        alert('❌ Dish rejected. The kitchen staff will be notified.')
+      })
+      .catch(err => {
+        console.error('Failed to reject dish:', err)
+        alert('Error: ' + (err.response?.data?.message || 'Failed to reject dish'))
+      })
+      .finally(() => {
+        rejectingId.value = null
+      })
   }
-
-  rejectingId.value = dishId
-
-  axios.post(`/api/owner/dishes/${dishId}/reject`, {
-    reason: reason
-  })
-    .then(response => {
-      // Remove from pending
-      pendingDishes.value = pendingDishes.value.filter(d => d.id !== dishId)
-      rejectReason.value[dishId] = ''
-      showRejectReason.value[dishId] = false
-      
-      alert('❌ Dish rejected. The kitchen staff will be notified.')
-    })
-    .catch(err => {
-      console.error('Failed to reject dish:', err)
-      alert('Error: ' + (err.response?.data?.message || 'Failed to reject dish'))
-    })
-    .finally(() => {
-      rejectingId.value = null
-    })
 }
 
 function toggleProfileDropdown() {

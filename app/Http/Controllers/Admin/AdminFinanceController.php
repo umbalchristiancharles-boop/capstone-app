@@ -193,7 +193,10 @@ class AdminFinanceController extends Controller
             'range' => $range,
             'branch_id' => $branchId,
             'viewingAllBranches' => !$branchId
-        ]);
+        ])
+            ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 
     /**
@@ -208,9 +211,10 @@ class AdminFinanceController extends Controller
         }
 
         [$branchId] = $this->resolveBranchScope($request, $user);
+        Log::info('Transactions query', ['branch_id' => $branchId, 'user_id' => $user->id, 'user_role' => $user->role]);
 
         $transactionsQuery = Order::with(['items.product', 'branch', 'cashier'])
-            ->where('status', 'completed')
+            ->whereIn('status', ['pending', 'in_kitchen', 'approved', 'completed', 'cancelled'])
             ->orderBy('created_at', 'desc')
             ->limit(20);
 
@@ -219,7 +223,10 @@ class AdminFinanceController extends Controller
             $transactionsQuery->where('branch_id', $branchId);
         }
 
-        $transactions = $transactionsQuery->get()
+        $transactions = $transactionsQuery->get();
+        Log::info('Transactions count', ['count' => count($transactions), 'branch_id' => $branchId]);
+
+        $transactions = $transactions
             ->map(function ($order) {
                 return [
                     'id' => $order->id,
@@ -239,7 +246,10 @@ class AdminFinanceController extends Controller
                 ];
             });
 
-        return response()->json(['ok' => true, 'transactions' => $transactions]);
+        return response()->json(['ok' => true, 'transactions' => $transactions])
+            ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 
     /**
@@ -322,6 +332,9 @@ class AdminFinanceController extends Controller
             'type' => 'line'
         ]];
 
-        return response()->json(['ok' => true, 'reports' => $reports]);
+        return response()->json(['ok' => true, 'reports' => $reports])
+            ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 }

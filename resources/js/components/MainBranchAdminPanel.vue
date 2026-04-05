@@ -43,6 +43,10 @@
           <div v-if="financeLoading" class="loading-state">Loading financial reports...</div>
           <div v-else-if="financeError" class="error-state">{{ financeError }}</div>
           <div v-else class="finance-wrapper">
+            <div v-if="selectedBranch !== 'all'" class="branch-info-banner">
+              Showing data for: 
+              <strong>{{ getSelectedBranchName() }}</strong>
+            </div>
             <FinancePanelContent
               :reports="financeReports"
               :transactions="financeTransactions"
@@ -73,7 +77,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import axios from 'axios'
@@ -91,6 +95,7 @@ const branches = ref([])
 const branchesLoading = ref(false)
 const selectedBranch = ref('all')
 const FINANCE_TIMEOUT_MS = 12000
+let autoRefreshInterval = null
 
 function toggleProfileDropdown() {
   profileDropdownVisible.value = !profileDropdownVisible.value
@@ -163,16 +168,44 @@ function goToCRM() {
   safeNavigate('/main-branch/crm')
 }
 
+function getSelectedBranchName() {
+  if (selectedBranch.value === 'all') return 'All Branches'
+  const branch = branches.value.find(b => b.id === parseInt(selectedBranch.value))
+  return branch?.name || branch?.branch_name || ('Branch ' + selectedBranch.value)
+}
+
 async function loadFinance() {
   financeLoading.value = true
   financeError.value = ''
   try {
-    const params = {}
+    const params = {
+      _t: Date.now() // Cache buster - force fresh data
+    }
     if (selectedBranch.value !== 'all') params.branch_id = selectedBranch.value
+    console.log('Loading finance data with params:', params)
     const [reportsRes, txRes] = await Promise.all([
-      axios.get('/api/admin/finance/reports', { withCredentials: true, timeout: FINANCE_TIMEOUT_MS, params }),
-      axios.get('/api/admin/finance/transactions', { withCredentials: true, timeout: FINANCE_TIMEOUT_MS, params })
+      axios.get('/api/admin/finance/reports', { 
+        withCredentials: true, 
+        timeout: FINANCE_TIMEOUT_MS, 
+        params,
+        headers: { 
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      }),
+      axios.get('/api/admin/finance/transactions', { 
+        withCredentials: true, 
+        timeout: FINANCE_TIMEOUT_MS, 
+        params,
+        headers: { 
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      })
     ])
+
+    console.log('Reports response:', reportsRes.data)
+    console.log('Transactions response:', txRes.data)
 
     if (reportsRes.data && reportsRes.data.ok) {
       const r = reportsRes.data.reports || reportsRes.data.data || []
@@ -205,6 +238,7 @@ async function loadBranches() {
     const res = await axios.get('/api/admin/branches', { withCredentials: true, timeout: FINANCE_TIMEOUT_MS })
     const list = res.data?.branches || res.data?.data || res.data || []
     branches.value = Array.isArray(list) ? list : []
+    console.log('Loaded branches:', branches.value)
   } catch (e) {
     console.error('Failed to load branches', e)
     branches.value = []
@@ -216,6 +250,18 @@ async function loadBranches() {
 onMounted(async () => {
   await loadBranches()
   await loadFinance()
+  
+  // Auto-refresh finance data every 30 seconds to ensure fresh data
+  autoRefreshInterval = setInterval(async () => {
+    console.log('Auto-refreshing finance data...')
+    await loadFinance()
+  }, 30000) // 30 seconds
+})
+
+onUnmounted(() => {
+  if (autoRefreshInterval) {
+    clearInterval(autoRefreshInterval)
+  }
 })
 
 // Close dropdown when clicking outside
@@ -300,6 +346,16 @@ window.addEventListener('click', () => {
 .loading-state { color: #6b7280; padding: 10px 0 }
 .error-state { color: #ef4444; padding: 10px 0 }
 .finance-wrapper { margin-top: 6px }
+
+.branch-info-banner {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  font-weight: 500;
+}
 
 @media (max-width: 800px) {
   .finance-header { flex-direction: column; align-items: stretch }

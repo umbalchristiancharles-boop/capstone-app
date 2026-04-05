@@ -968,8 +968,14 @@ $rules = [
                 ->select('id', 'name', 'code', 'address')
                 ->orderBy('name');
 
-            if ($actor && in_array($actor->role, ['HR', 'ADMIN']) && $actor->branch_id) {
-                $branchesQuery->where('id', $actor->branch_id);
+            // Main Branch users should see ALL branches; other admins see only their own
+            if ($actor && $actor->branch_id) {
+                $actorBranch = DB::table('branches')->where('id', $actor->branch_id)->first();
+                $isMainBranch = $actorBranch && strtoupper($actorBranch->name ?? '') === 'MAIN BRANCH';
+                
+                if (!$isMainBranch && in_array($actor->role, ['HR', 'ADMIN'])) {
+                    $branchesQuery->where('id', $actor->branch_id);
+                }
             }
 
             $branches = $branchesQuery->get();
