@@ -1667,6 +1667,116 @@ class SuperAdminController extends Controller
     }
 
     /**
+     * Deactivate a branch (prevent login for accounts in that branch)
+     * PATCH /api/superadmin/branches/{id}/deactivate
+     */
+    public function deactivateBranch(Request $request, $id)
+    {
+        $user = $this->resolveAuthenticatedUser($request);
+
+        if (!$user) {
+            return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
+        }
+
+        $roleUpper = strtoupper($user->role ?? '');
+        $isMainBranchAdmin = false;
+        if ($roleUpper === 'ADMIN') {
+            $b = Branch::find($user->branch_id);
+            $isMainBranchAdmin = (bool) ($b && ($b->is_main_branch ?? false));
+        }
+        $allowed = Permission::allowed($user, ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN'], ['admin']);
+        if (!$allowed && !$isMainBranchAdmin) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $branch = Branch::find($id);
+        if (!$branch) {
+            return response()->json(['ok' => false, 'message' => 'Branch not found'], 404);
+        }
+
+        if ($branch->is_main_branch) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Main Branch (HQ) is protected and cannot be deactivated.',
+            ], 422);
+        }
+
+        try {
+            $branch->is_active = 0;
+            $branch->save();
+
+            Log::info('Branch deactivated', [
+                'branch_id' => $branch->id,
+                'branch_name' => $branch->name,
+                'deactivated_by' => $user->username,
+            ]);
+
+            return response()->json([
+                'ok' => true,
+                'message' => "Branch '{$branch->name}' has been deactivated. Accounts in this branch can no longer login.",
+            ]);
+        } catch (\Exception $e) {
+            Log::error('deactivateBranch error: ' . $e->getMessage());
+            return response()->json(['ok' => false, 'message' => 'Failed to deactivate branch: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Reactivate a branch (allow login for accounts in that branch)
+     * PATCH /api/superadmin/branches/{id}/reactivate
+     */
+    public function reactivateBranch(Request $request, $id)
+    {
+        $user = $this->resolveAuthenticatedUser($request);
+
+        if (!$user) {
+            return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
+        }
+
+        $roleUpper = strtoupper($user->role ?? '');
+        $isMainBranchAdmin = false;
+        if ($roleUpper === 'ADMIN') {
+            $b = Branch::find($user->branch_id);
+            $isMainBranchAdmin = (bool) ($b && ($b->is_main_branch ?? false));
+        }
+        $allowed = Permission::allowed($user, ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN'], ['admin']);
+        if (!$allowed && !$isMainBranchAdmin) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $branch = Branch::find($id);
+        if (!$branch) {
+            return response()->json(['ok' => false, 'message' => 'Branch not found'], 404);
+        }
+
+        if ($branch->is_main_branch) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Main Branch (HQ) is protected and cannot be managed.',
+            ], 422);
+        }
+
+        try {
+            $branch->is_active = 1;
+            $branch->save();
+
+            Log::info('Branch reactivated', [
+                'branch_id' => $branch->id,
+                'branch_name' => $branch->name,
+                'reactivated_by' => $user->username,
+            ]);
+
+            return response()->json([
+                'ok' => true,
+                'message' => "Branch '{$branch->name}' has been reactivated. Accounts in this branch can now login.",
+            ]);
+        } catch (\Exception $e) {
+            Log::error('reactivateBranch error: ' . $e->getMessage());
+            return response()->json(['ok' => false, 'message' => 'Failed to reactivate branch: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * Get all logistics transactions (deliveries) across all branches
      * GET /api/superadmin/logistics/deliveries
      */

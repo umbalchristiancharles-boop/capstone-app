@@ -43,6 +43,16 @@ class JwtAuthController extends Controller
             ], 401);
         }
 
+        // Check if user's branch is active (deactivated branches cannot login)
+        if ($user->branch_id) {
+            $branch = \App\Models\Branch::find($user->branch_id);
+            if ($branch && !$branch->is_active) {
+                return response()->json([
+                    'error' => 'Your branch has been deactivated. Please contact support.',
+                ], 403);
+            }
+        }
+
         $tokens = $this->tokenService->issueTokens($user);
 
         return response()->json($tokens);

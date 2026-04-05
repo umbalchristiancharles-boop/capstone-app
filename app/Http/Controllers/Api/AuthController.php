@@ -80,6 +80,28 @@ class AuthController extends Controller
             ], 403);
         }
 
+        // Check if user's branch is active (deactivated branches cannot login)
+        if ($user->branch_id) {
+            $branch = Branch::find($user->branch_id);
+            if ($branch && !$branch->is_active) {
+                Log::warning('Login attempt from user in deactivated branch', [
+                    'user_id' => $user->id,
+                    'username' => $user->username,
+                    'branch_id' => $user->branch_id,
+                    'role' => $user->role,
+                ]);
+
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'Your branch has been deactivated. Please contact support.',
+                ], 403);
+            }
+        }
+
         // Validate role exists and is valid
         // Include all expected roles: SUPER_ADMIN, ADMIN, OWNER, MANAGER, MANAGER_HR, HR, STAFF, CUSTOM, SUPPLIER
     $validRoles = ['SUPER_ADMIN', 'ADMIN', 'OWNER', 'MANAGER', 'MANAGER_HR', 'HR', 'STAFF', 'CUSTOM', 'SUPPLIER'];

@@ -154,6 +154,10 @@ Route::middleware('web')->group(function () {
     Route::post('/superadmin/branches', [\App\Http\Controllers\Api\SuperAdminController::class, 'storeBranch'])->middleware(['auth', 'permission:admin,admin.branches']);
     // Delete a branch (soft-delete branch and associated user accounts)
     Route::delete('/superadmin/branches/{id}', [\App\Http\Controllers\Api\SuperAdminController::class, 'deleteBranch'])->middleware(['auth', 'permission:admin,admin.branches']);
+    // Deactivate a branch (prevent login for accounts in that branch)
+    Route::patch('/superadmin/branches/{id}/deactivate', [\App\Http\Controllers\Api\SuperAdminController::class, 'deactivateBranch'])->middleware(['auth', 'permission:admin,admin.branches']);
+    // Reactivate a branch (allow login for accounts in that branch)
+    Route::patch('/superadmin/branches/{id}/reactivate', [\App\Http\Controllers\Api\SuperAdminController::class, 'reactivateBranch'])->middleware(['auth', 'permission:admin,admin.branches']);
 
     // Owner Branch Approval
     Route::get('/owner/branch-requests', [\App\Http\Controllers\Api\SuperAdminController::class, 'pendingBranchRequests'])->middleware(['auth']);

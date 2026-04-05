@@ -32,6 +32,14 @@ class LoginController extends Controller
 
         // Check if user exists and password matches
         if ($user && \Illuminate\Support\Facades\Hash::check($password, $user->password)) {
+            // Check if user's branch is active (deactivated branches cannot login)
+            if ($user->branch_id) {
+                $branch = \App\Models\Branch::find($user->branch_id);
+                if ($branch && !$branch->is_active) {
+                    return redirect('/login')
+                        ->withErrors(['login' => 'Your branch has been deactivated. Please contact support.']);
+                }
+            }
             // Store user info in session
             Session::put('user_id', $user->id);
             Session::put('user_role', $user->role);

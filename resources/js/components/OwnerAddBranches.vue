@@ -129,7 +129,7 @@
               <div class="custom-account-header">
                 <div>
                   <h3>Custom Account (role: CUSTOM)</h3>
-                  <p class="info-sub">Pick any modules and functions across panels. A CUSTOM account is created only if at least one permission is selected.</p>
+                  <p class="info-sub">Select which panels this account can access. A CUSTOM account is created only if at least one panel is selected.</p>
                 </div>
                 <label class="toggle">
                   <input type="checkbox" v-model="branchForm.customAccount.enabled" />
@@ -156,22 +156,9 @@
                 <div class="permission-grid">
                   <div v-for="module in permissionTemplates" :key="module.key" class="permission-card">
                     <div class="permission-card-header">
-                      <label>
+                      <label style="display:flex;align-items:center;gap:8px">
                         <input type="checkbox" v-model="branchForm.customAccount.permissions.modules[module.key]" />
-                        <span class="module-label">{{ module.label }}</span>
-                      </label>
-                    </div>
-                    <div class="permission-functions">
-                      <label
-                        v-for="fn in module.functions"
-                        :key="fn.key"
-                        class="function-row"
-                      >
-                        <input
-                          type="checkbox"
-                          v-model="branchForm.customAccount.permissions.functions[fn.key]"
-                        />
-                        <span>{{ fn.label }}</span>
+                        <span style="font-weight:700; text-transform:capitalize">{{ module.label }}</span>
                       </label>
                     </div>
                   </div>
@@ -295,12 +282,25 @@
                 <td>{{ branch.staff_count || 0 }}</td>
                 <td>
                   <button
-                    class="btn btn-secondary"
-                    @click="confirmDeleteBranch(branch)"
-                    :disabled="isDeleting || branch.can_delete === false || branch.is_main_branch || branch.approval_status === 'pending'"
+                    v-if="branch.can_delete !== false && !branch.is_main_branch && branch.approval_status !== 'pending'"
+                    :class="['btn-status', branch.is_active ? 'btn-deactivate' : 'btn-reactivate']"
+                    @click="branch.is_active ? confirmDeactivateBranch(branch) : confirmReactivateBranch(branch)"
+                    :disabled="isDeleting"
+                    :title="branch.is_active ? 'Deactivate this branch' : 'Reactivate this branch'"
                   >
-                    {{ branch.can_delete === false || branch.is_main_branch ? 'Protected' : (branch.approval_status === 'pending' ? 'Pending' : 'Delete') }}
+                    <svg v-if="branch.is_active" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="1"></circle>
+                      <path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m4.12 4.12l4.24 4.24M1 12h6m6 0h6M4.22 19.78l4.24-4.24m4.12-4.12l4.24-4.24"></path>
+                    </svg>
+                    <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+                      <polyline points="9 9 12 15 22 4"></polyline>
+                    </svg>
+                    {{ branch.is_active ? 'Deactivate' : 'Reactivate' }}
                   </button>
+                  <span v-else class="btn-status btn-protected" :title="branch.is_main_branch ? 'Main branch is protected' : 'Not available'">
+                    {{ branch.is_main_branch ? 'Protected' : (branch.approval_status === 'pending' ? 'Pending' : '—') }}
+                  </span>
                 </td>
               </tr>
             </tbody>
@@ -484,37 +484,72 @@ const addressSaved = ref(false)
 
 const isDeleting = ref(false)
 
-async function confirmDeleteBranch(branch) {
+async function confirmDeactivateBranch(branch) {
   try {
     if (branch.can_delete === false || branch.is_main_branch) {
-      formError.value = 'Main Branch (HQ) is protected and cannot be deleted.'
+      formError.value = 'Main Branch (HQ) is protected and cannot be deactivated.'
       setTimeout(() => { formError.value = '' }, 2200)
       return
     }
 
     const count = branch.staff_count || 0
-    const ok = await window.swalConfirm(`Delete branch "${branch.name}" and all ${count} account(s) in it? This will permanently delete those accounts and the branch from the database. This cannot be undone.`)
+    const ok = await window.swalConfirm(`Deactivate branch "${branch.name}"? This will deactivate the branch and disable access for all ${count} account(s) in it.`)
     if (!ok) return
-    await deleteBranch(branch.id)
+    await deactivateBranch(branch.id)
   } catch (e) {
     console.error(e)
   }
 }
 
-async function deleteBranch(branchId) {
+async function deactivateBranch(branchId) {
   isDeleting.value = true
   try {
     await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
-    const res = await axios.delete(`/api/superadmin/branches/${branchId}`, { withCredentials: true })
+    const res = await axios.patch(`/api/superadmin/branches/${branchId}/deactivate`, {}, { withCredentials: true })
     if (res.data && res.data.ok) {
-      formSuccess.value = res.data.message || 'Branch deleted.'
+      formSuccess.value = res.data.message || 'Branch deactivated.'
       await loadBranches()
       setTimeout(() => { formSuccess.value = '' }, 2000)
     } else {
-      formError.value = res.data?.message || 'Failed to delete branch.'
+      formError.value = res.data?.message || 'Failed to deactivate branch.'
     }
   } catch (e) {
-    formError.value = e.response?.data?.message || 'Failed to delete branch.'
+    formError.value = e.response?.data?.message || 'Failed to deactivate branch.'
+  } finally {
+    isDeleting.value = false
+  }
+}
+
+async function confirmReactivateBranch(branch) {
+  try {
+    if (branch.is_main_branch) {
+      formError.value = 'Main Branch (HQ) is protected and cannot be managed.'
+      setTimeout(() => { formError.value = '' }, 2200)
+      return
+    }
+
+    const ok = await window.swalConfirm(`Reactivate branch "${branch.name}"? Accounts in this branch will be able to login again.`)
+    if (!ok) return
+    await reactivateBranch(branch.id)
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+async function reactivateBranch(branchId) {
+  isDeleting.value = true
+  try {
+    await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
+    const res = await axios.patch(`/api/superadmin/branches/${branchId}/reactivate`, {}, { withCredentials: true })
+    if (res.data && res.data.ok) {
+      formSuccess.value = res.data.message || 'Branch reactivated.'
+      await loadBranches()
+      setTimeout(() => { formSuccess.value = '' }, 2000)
+    } else {
+      formError.value = res.data?.message || 'Failed to reactivate branch.'
+    }
+  } catch (e) {
+    formError.value = e.response?.data?.message || 'Failed to reactivate branch.'
   } finally {
     isDeleting.value = false
   }
@@ -661,13 +696,7 @@ async function submitBranch() {
         .filter(m => branchForm.value.customAccount.permissions.modules[m.key])
         .map(m => m.key)
 
-      const selectedFunctions = permissionTemplates.flatMap(m =>
-        m.functions
-          .filter(fn => branchForm.value.customAccount.permissions.functions[fn.key])
-          .map(fn => fn.key)
-      )
-
-      if (selectedModules.length > 0 || selectedFunctions.length > 0) {
+      if (selectedModules.length > 0) {
         const username = (branchForm.value.customAccount.username || '').trim() || `custom_${codeSlugPreview.value}`
         const fullName = (branchForm.value.customAccount.fullName || '').trim() || `Custom Account - ${branchForm.value.name || branchForm.value.code}`
         const password = (branchForm.value.customAccount.password || '').trim() || defaultPassword.value
@@ -676,7 +705,6 @@ async function submitBranch() {
           full_name: fullName,
           password,
           modules: selectedModules,
-          functions: selectedFunctions,
         }
       }
     }
@@ -870,6 +898,16 @@ textarea.form-input { resize: vertical; }
 .btn.btn-secondary:hover { background: #d1d5db; }
 .btn.btn-sm { padding: 0.5rem 1rem; font-size: 0.85rem; }
 .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Status buttons */
+.btn-status { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.2rem; border: none; border-radius: 6px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.25s ease; text-transform: capitalize; }
+.btn-deactivate { background: linear-gradient(135deg, #f87171, #ef4444); color: #fff; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25); }
+.btn-deactivate:hover { background: linear-gradient(135deg, #ef4444, #dc2626); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35); }
+.btn-deactivate:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.btn-reactivate { background: linear-gradient(135deg, #4ade80, #22c55e); color: #fff; box-shadow: 0 2px 8px rgba(34, 197, 94, 0.25); }
+.btn-reactivate:hover { background: linear-gradient(135deg, #22c55e, #16a34a); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(22, 163, 74, 0.35); }
+.btn-reactivate:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.btn-protected { background: #d1d5db; color: #6b7280; cursor: not-allowed; font-weight: 600; }
 
 /* Address Card Styles */
 .address-saved-card {

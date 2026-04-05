@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 05, 2026 at 09:23 PM
+-- Generation Time: Apr 05, 2026 at 10:02 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -92,7 +92,8 @@ CREATE TABLE `attendance_settings` (
 --
 
 INSERT INTO `attendance_settings` (`id`, `branch_id`, `early_clockout_override`, `created_at`, `updated_at`) VALUES
-(146, 31, 0, '2026-04-05 18:23:33', '2026-04-05 18:23:33');
+(146, 31, 0, '2026-04-05 18:23:33', '2026-04-05 18:23:33'),
+(147, 32, 0, '2026-04-05 19:26:07', '2026-04-05 19:26:07');
 
 -- --------------------------------------------------------
 
@@ -124,8 +125,8 @@ CREATE TABLE `branches` (
 --
 
 INSERT INTO `branches` (`id`, `code`, `name`, `address`, `is_active`, `is_main_branch`, `approval_status`, `requested_by`, `finance_confirmed_by`, `finance_confirmed_at`, `approved_by`, `approved_at`, `rejected_at`, `budget`, `created_at`, `updated_at`) VALUES
-(31, 'BR743957', 'Dasma Branch', 'Dasma', 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 95808, '2026-03-22 10:19:21', '2026-04-05 19:03:15'),
-(32, 'MAIN', 'Main Branch', 'HQ', 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 1000000, '2026-03-25 06:56:11', '2026-04-05 12:39:10');
+(31, 'BR743957', 'Dasma Branch', 'Dasma', 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 95808, '2026-03-22 10:19:21', '2026-04-05 20:00:30'),
+(32, 'MAIN', 'Main Branch', 'HQ', 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 900000, '2026-03-25 06:56:11', '2026-04-05 19:47:48');
 
 -- --------------------------------------------------------
 
@@ -3078,7 +3079,14 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (2374, 'App\\Models\\User', 152, 'auth-token', '3b14dc11ba80f87347a77a38f015281c4b1b617cd54ac09f3ad7718679f959cc', '[\"*\"]', NULL, NULL, '2026-04-05 19:11:19', '2026-04-05 19:11:19'),
 (2375, 'App\\Models\\User', 149, 'auth-token', '439bad35430b2f0ad81a2599c66912b9cded501865e2d530e03a7ac1244dbf08', '[\"*\"]', NULL, NULL, '2026-04-05 19:16:38', '2026-04-05 19:16:38'),
 (2376, 'App\\Models\\User', 151, 'auth-token', '53340623a0121fcb697f27b373be10e2d6c39b279d1eee6700b0310c9796ffed', '[\"*\"]', NULL, NULL, '2026-04-05 19:19:28', '2026-04-05 19:19:28'),
-(2377, 'App\\Models\\User', 152, 'auth-token', '263d84d0b766e53f87d51c8fa98233f809e1ef08d34c70ac006706465e6c0b99', '[\"*\"]', NULL, NULL, '2026-04-05 19:21:06', '2026-04-05 19:21:06');
+(2377, 'App\\Models\\User', 152, 'auth-token', '263d84d0b766e53f87d51c8fa98233f809e1ef08d34c70ac006706465e6c0b99', '[\"*\"]', NULL, NULL, '2026-04-05 19:21:06', '2026-04-05 19:21:06'),
+(2378, 'App\\Models\\User', 159, 'auth-token', 'e952ef9e6238c728dd06e465f8b21b87b496d16a3ac31f2f181d3a0ca1615fcd', '[\"*\"]', NULL, NULL, '2026-04-05 19:26:03', '2026-04-05 19:26:03'),
+(2379, 'App\\Models\\User', 161, 'auth-token', '5eba2ec5e7791ea5aed82db63901282f8a8b323de47ffd25c8ce6031fe77c28f', '[\"*\"]', NULL, NULL, '2026-04-05 19:46:21', '2026-04-05 19:46:21'),
+(2380, 'App\\Models\\User', 31, 'auth-token', 'f0cfb7d65cf2984987409e9916cfc435f0cf1fc1f547736d75ca9e08ccf160e3', '[\"*\"]', NULL, NULL, '2026-04-05 19:46:52', '2026-04-05 19:46:52'),
+(2381, 'App\\Models\\User', 215, 'auth-token', '34f0110d9048096ab92a1f843f4ee7d8275a10df10af49b780daf11a69e31849', '[\"*\"]', NULL, NULL, '2026-04-05 19:48:06', '2026-04-05 19:48:06'),
+(2382, 'App\\Models\\User', 159, 'auth-token', 'ee626444bd30da554e5727f02c2fed0452df9cd429b5831fed34bb2c6688ed34', '[\"*\"]', NULL, NULL, '2026-04-05 19:49:13', '2026-04-05 19:49:13'),
+(2383, 'App\\Models\\User', 159, 'auth-token', 'eb2310125c9953640fc7cd56c9cb54e3fca86afc01a0f71cc2bf1f20b788948a', '[\"*\"]', NULL, NULL, '2026-04-05 19:57:11', '2026-04-05 19:57:11'),
+(2384, 'App\\Models\\User', 159, 'auth-token', '73923711a338be895294ffe153c3be6cbe6162635d89b771278f8c4d970983e4', '[\"*\"]', NULL, NULL, '2026-04-05 19:57:50', '2026-04-05 19:57:50');
 
 -- --------------------------------------------------------
 
@@ -3381,10 +3389,10 @@ CREATE TABLE `sessions` (
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
 ('DbajiFYPeKX4L5UPrcbtnbxvic1b8hQ0CNsIDWqV', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiNmt3ODhrV09UZzUzRXE4TWFhanFIV3NaOG1XTkl4QVZ3aUQ1aEhDMCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO319', 1775415927),
-('eWf9bjNCO7iy8BgF0BHzdyE9csDcxwmHdjC0TOdh', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiaDlVenZXRmpYWGlrUGlUVG1MTm9wV0dmN2h0S0hjMHdoVTVhRlljQyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO319', 1775416993),
+('e6V50hmKVU9QPzc97ebwzEOiff6IapbRk2jankQv', 159, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoia3NiT05Fc2QxUklzUDNkSnROd0Y3M2NydnFURTl5cWNFQUt2bkY1diI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTU5O3M6NzoidXNlcl9pZCI7aToxNTk7czo5OiJ1c2VyX3JvbGUiO3M6NToiQURNSU4iO3M6OToidXNlcl9uYW1lIjtzOjE3OiJBZG1pbiBNYWluIEJyYW5jaCI7czoxMzoicmVkaXJlY3RfcGF0aCI7czoxMjoiL2FkbWluLXBhbmVsIjtzOjk6Il9wcmV2aW91cyI7YToyOntzOjM6InVybCI7czo3MDoiaHR0cDovL2xvY2FsaG9zdDo4MDAwLy53ZWxsLWtub3duL2FwcHNwZWNpZmljL2NvbS5jaHJvbWUuZGV2dG9vbHMuanNvbiI7czo1OiJyb3V0ZSI7Tjt9fQ==', 1775419231),
 ('vy4m6w2SEIY7WD7gIigk0WBFLVdWZcjAE8fgxrWb', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiWnJ4UzV1V0xBRDN1UzdQNjZmdG9yQWhhVUY5ZDZGODdlQ3EzTWJ1ZiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO319', 1775416893),
 ('wcYEbGiAMTJOJLijQHVrmLmc0EezErLepxeWKFNO', 149, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiRWxoSFZnbEU1czJtTjY4eFhxOWQ1YUpxb1VRR1VrdDhEQXJ0WHFqNSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxNDk7czo3OiJ1c2VyX2lkIjtpOjE0OTtzOjk6InVzZXJfcm9sZSI7czo3OiJNQU5BR0VSIjtzOjk6InVzZXJfbmFtZSI7czozMDoiRmluYW5jZSBNYW5hZ2VyIC0gRGFzbWEgQnJhbmNoIjtzOjEzOiJyZWRpcmVjdF9wYXRoIjtzOjE2OiIvbWFuYWdlci9maW5hbmNlIjt9', 1775416963),
-('yjTr6dr9Y03I0igVe6oftMlgRYH7XXGqex5NUINH', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiWXhpNW5FTVoxREpzc1NjQXYwMTRsMUdOUVpEejJsWDlCQ1h6WXdUUCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO319', 1775416332);
+('yjTr6dr9Y03I0igVe6oftMlgRYH7XXGqex5NUINH', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiWXhpNW5FTVoxREpzc1NjQXYwMTRsMUdOUVpEejJsWDlCQ1h6WXdUUCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO319', 1775418035);
 
 -- --------------------------------------------------------
 
@@ -3559,7 +3567,9 @@ INSERT INTO `users` (`id`, `email`, `username`, `full_name`, `name`, `password`,
 (162, 'lefet30141@fun4k.com', 'logistics_main_branch', 'Logistics Main Branch', NULL, '$2y$12$5jgXzzPw90ASb/4TuQnmreNk6jVKcPGX6ELJy6C9yfDFNv67u2j6u', '2026-03-25 07:22:05', 'MANAGER', 'LOGISTICS', NULL, 32, NULL, '2026-03-25 06:56:12', '2026-03-25 07:22:05', NULL, 0, 1, NULL, NULL, NULL),
 (176, 'lejanis485@fun4k.com', 'Customer', NULL, NULL, '$2y$12$HaDuG9eTBOzfLI2QJBBEJunc9e6yPAlAfdTYcGQwObeikCBEUfR4C', '2026-03-30 02:13:38', 'customer', NULL, NULL, NULL, NULL, '2026-03-30 02:13:38', '2026-03-30 02:13:38', NULL, 1, 1, NULL, NULL, NULL),
 (177, 'yoboko6989@fun4k.com', 'Customer_12', NULL, NULL, '$2y$12$mDEoShJoia8vzT45WUs3wOfrTISRPuFIb2UZ6lMD3CtbuDcQzul3.', '2026-03-30 07:46:53', 'customer', NULL, NULL, NULL, NULL, '2026-03-30 07:46:53', '2026-03-30 07:46:53', NULL, 1, 1, NULL, NULL, NULL),
-(187, 'yopakes567@availors.com', 'JOHNSON184', 'Johnson', NULL, '$2y$12$.CtC7HZZ3jfBHWsVM6FRheKnV5HAwzSi2ExUyhU04ROwJoOH1EUlW', '2026-04-04 11:01:40', 'CUSTOM', NULL, '{\"modules\":[\"finance\",\"logistics\",\"inventory\",\"procurement\",\"kitchen\",\"hr\",\"cashier\"],\"functions\":[]}', 31, NULL, '2026-04-04 10:50:09', '2026-04-04 11:01:40', NULL, 0, 1, '213', NULL, '0915681822');
+(187, 'yopakes567@availors.com', 'JOHNSON184', 'Johnson', NULL, '$2y$12$.CtC7HZZ3jfBHWsVM6FRheKnV5HAwzSi2ExUyhU04ROwJoOH1EUlW', '2026-04-04 11:01:40', 'CUSTOM', NULL, '{\"modules\":[\"finance\",\"logistics\",\"inventory\",\"procurement\",\"kitchen\",\"hr\",\"cashier\"],\"functions\":[]}', 31, NULL, '2026-04-04 10:50:09', '2026-04-04 11:01:40', NULL, 0, 1, '213', NULL, '0915681822'),
+(214, NULL, 'admin_br216033', 'Admin - test', NULL, '$2y$12$Cm6def5Kq4NElULrwrZ8Gezo.kS/sUkMFhFgmbeXjxCMqIZH8yO2y', NULL, 'ADMIN', NULL, NULL, 46, NULL, '2026-04-05 19:44:55', '2026-04-05 19:47:48', NULL, 1, 1, NULL, NULL, NULL),
+(215, NULL, 'custom_br216033', 'Custom Account - test', NULL, '$2y$12$BF3h6L52Cu0s6InQ/qYRROAH2WwjwLFUZhcOtnYcdyOonE..4lhGm', NULL, 'CUSTOM', NULL, '{\"modules\":[\"admin\",\"finance\",\"logistics\",\"inventory\",\"procurement\",\"kitchen\",\"cashier\",\"hr\"],\"functions\":[]}', 46, NULL, '2026-04-05 19:44:55', '2026-04-05 19:48:39', NULL, 0, 1, NULL, NULL, NULL);
 
 --
 -- Indexes for dumped tables
@@ -3896,13 +3906,13 @@ ALTER TABLE `attendance`
 -- AUTO_INCREMENT for table `attendance_settings`
 --
 ALTER TABLE `attendance_settings`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=147;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=149;
 
 --
 -- AUTO_INCREMENT for table `branches`
 --
 ALTER TABLE `branches`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=46;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=47;
 
 --
 -- AUTO_INCREMENT for table `budget_requests`
@@ -3986,7 +3996,7 @@ ALTER TABLE `order_items`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2378;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2385;
 
 --
 -- AUTO_INCREMENT for table `price_audits`
@@ -4070,7 +4080,7 @@ ALTER TABLE `supplier_orders`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=214;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=216;
 
 --
 -- Constraints for dumped tables
