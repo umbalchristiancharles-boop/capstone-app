@@ -59,8 +59,11 @@
         </div>
 
         <!-- Pending Stock Confirmations Section -->
-        <div class="section">
-          <h2>Pending Stock Confirmations</h2>
+        <div class="section" :class="{ 'stat-alert': inventoryPendingCount > 0 }">
+          <h2>
+            Pending Stock Confirmations
+            <span v-if="inventoryPendingCount > 0" class="panel-badge">{{ inventoryPendingCount }}</span>
+          </h2>
           <div v-if="!pendingProcurements.length" class="empty-message">No pending confirmations.</div>
           <table v-else class="procurements-table">
             <thead>
@@ -178,7 +181,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import axios from 'axios'
 import { showToast } from './toastStore'
@@ -189,6 +192,13 @@ const products = ref([])
 const inventoryReports = ref([])
 const pendingProcurements = ref([])
 const confirmedProcurements = ref([])
+const notificationCounts = ref({ inventory: 0 })
+const hasNotified = ref(false)
+const inventoryPendingCount = computed(() => {
+  const apiPending = Number(notificationCounts.value?.inventory || 0)
+  const localPending = (pendingProcurements.value || []).length
+  return Math.max(apiPending, localPending, 0)
+})
 
 // UI / modal state
 const showLogoutConfirm = ref(false)
@@ -310,6 +320,27 @@ onMounted(async () => {
       }
     }
   } catch (e) { console.warn('Failed to load confirmed procurements', e) }
+
+  await loadPanelNotifications()
+})
+
+async function loadPanelNotifications() {
+  try {
+    const res = await axios.get('/api/panel-notifications', { withCredentials: true })
+    if (res.data && res.data.ok) {
+      const count = Number(res.data.counts?.inventory || 0)
+      notificationCounts.value = { inventory: Number.isNaN(count) ? 0 : count }
+    }
+  } catch (e) {
+    notificationCounts.value = { inventory: 0 }
+  }
+}
+
+watch(inventoryPendingCount, (count) => {
+  if (!hasNotified.value && count > 0) {
+    showToast('You have pending stock confirmations.', 'info')
+    hasNotified.value = true
+  }
 })
 
 function cancelLogout() {

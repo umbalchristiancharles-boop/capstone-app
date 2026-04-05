@@ -227,6 +227,11 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/owner/branch-confirmations',
+      component: () => import('./components/OwnerBranchConfirmations.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/manager/staff',
       component: StaffList,
       meta: { requiresAuth: true },
@@ -361,6 +366,19 @@ const routeOverlayState = {
   app: null,
   host: null,
   isVisible: null,
+  failsafeTimer: null,
+}
+
+function scheduleOverlayFailsafe(timeoutMs = 10000) {
+  try {
+    if (routeOverlayState.failsafeTimer) {
+      clearTimeout(routeOverlayState.failsafeTimer)
+    }
+    routeOverlayState.failsafeTimer = setTimeout(() => {
+      hideRouteOverlay()
+      hidePageBlur()
+    }, timeoutMs)
+  } catch (e) {}
 }
 
 function showRouteOverlay(text = 'Loading...') {
@@ -388,6 +406,8 @@ function showRouteOverlay(text = 'Loading...') {
     routeOverlayState.isVisible = isVisible
     window.__route_loading_overlay = overlayHost
 
+    scheduleOverlayFailsafe()
+
     requestAnimationFrame(() => {
       isVisible.value = true
     })
@@ -397,6 +417,13 @@ function showRouteOverlay(text = 'Loading...') {
 function hideRouteOverlay() {
   try {
     if (!routeOverlayState.app || !routeOverlayState.host || !routeOverlayState.isVisible) return
+
+    try {
+      if (routeOverlayState.failsafeTimer) {
+        clearTimeout(routeOverlayState.failsafeTimer)
+        routeOverlayState.failsafeTimer = null
+      }
+    } catch (e) {}
 
     routeOverlayState.isVisible.value = false
 
@@ -410,6 +437,7 @@ function hideRouteOverlay() {
       routeOverlayState.app = null
       routeOverlayState.host = null
       routeOverlayState.isVisible = null
+      routeOverlayState.failsafeTimer = null
 
       if (window.__route_loading_overlay === overlayHost) {
         window.__route_loading_overlay = null

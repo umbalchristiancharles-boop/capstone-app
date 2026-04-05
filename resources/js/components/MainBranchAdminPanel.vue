@@ -14,80 +14,40 @@
       @profile-updated="onProfileUpdated"
     >
       <template #main>
-        <div class="crm-button-row">
-          <button class="crm-btn" @click.stop="goToCRM">Open CRM Panel</button>
-        </div>
-
-        <section class="kpi-row">
-          <div class="kpi-card">
-            <div class="kpi-title">Total Comments</div>
-            <div class="kpi-value">{{ totalComments }}</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-title">Avg Rating</div>
-            <div class="kpi-value">{{ avgRating }}</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-title">Recent Comments</div>
-            <div class="kpi-value">{{ (comments && comments.length) || 0 }}</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-title">Unique Customers</div>
-            <div class="kpi-value">{{ uniqueCustomers }}</div>
-          </div>
-        </section>
-
-        <section class="overview-box">
-          <h3>Customer Feedback Overview</h3>
-          <p>Monitor and respond to all customer comments about your products. High engagement with comments helps improve customer satisfaction and product quality.</p>
-        </section>
-
-        <section class="comments-panel">
-          <div class="comments-header">
-            <h4>All Customer Comments</h4>
-            <div class="comments-controls">
-              <input class="search-input" placeholder="Search comments..." />
-              <select class="rating-select">
-                <option>All Ratings</option>
+        <section class="finance-panel">
+          <div class="finance-header">
+            <div>
+              <h3 class="finance-title">Branch Financial Reports</h3>
+              <p class="finance-sub">View branch KPIs and recent transactions</p>
+            </div>
+            <div class="finance-actions">
+              <button class="add-branch" @click.prevent="goToBranches">+ Add Branch</button>
+              <select
+                class="branch-select"
+                v-model="selectedBranch"
+                @change="refreshFinance"
+                :disabled="branchesLoading || financeLoading"
+              >
+                <option value="all">All Branches</option>
+                <option v-for="b in branches" :key="b.id" :value="b.id">
+                  {{ b.name || b.branch_name || ('Branch ' + b.id) }}
+                </option>
               </select>
-              <button class="refresh-comments" @click.prevent="loadComments(1000)">Refresh Comments</button>
+              <button class="refresh-finance" @click.prevent="refreshFinance" :disabled="financeLoading">
+                {{ financeLoading ? 'Refreshing...' : 'Refresh Finance' }}
+              </button>
             </div>
           </div>
 
-          <div class="branch-reports">
-            <div class="branch-title">Branch Financial Reports
-              <div class="branch-sub">View branch KPIs and recent transactions</div>
-            </div>
-            <div class="branch-actions">
-              <select class="branch-select"><option>All Branches</option></select>
-              <button class="refresh-finance">Refresh Finance</button>
-            </div>
-          </div>
-
-          <div class="financial-overview">
-            <div class="financial-header">Financial Overview</div>
-            <div class="financial-chart">[Revenue vs Expenses chart placeholder]</div>
-          </div>
-
-          <div class="comments-list-section">
-            <div v-if="commentsLoading">Loading comments...</div>
-            <div v-else-if="commentsError">Failed to load comments.</div>
-            <div v-else>
-              <div v-if="comments && comments.length">
-                <div class="comment-item" v-for="c in comments.slice(0, 50)" :key="c.id">
-                  <div class="comment-meta">
-                    <strong>{{ c.user?.full_name || c.author || 'Customer' }}</strong>
-                    <span class="comment-product"> — {{ c.product?.name || 'Product' }}</span>
-                    <span class="comment-date">{{ new Date(c.created_at).toLocaleString() }}</span>
-                  </div>
-                  <div class="comment-body">{{ c.text }}</div>
-                  <div class="comment-rating">Rating: {{ c.rating || '—' }}</div>
-                </div>
-              </div>
-              <div v-else class="empty-text">No comments found.</div>
-            </div>
-
-            <!-- debug block removed -->
+          <div v-if="financeLoading" class="loading-state">Loading financial reports...</div>
+          <div v-else-if="financeError" class="error-state">{{ financeError }}</div>
+          <div v-else class="finance-wrapper">
+            <FinancePanelContent
+              :reports="financeReports"
+              :transactions="financeTransactions"
+              :transactionsLoading="financeLoading"
+              :chartLoading="financeLoading"
+            />
           </div>
         </section>
       </template>
@@ -112,37 +72,24 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import axios from 'axios'
+import FinancePanelContent from './finance/FinancePanelContent.vue'
 
 const userProfile = ref({})
 const profileDropdownVisible = ref(false)
 const router = useRouter()
 
-// Comments + KPI state
-const comments = ref([])
-const commentsMeta = ref({})
-const commentsLoading = ref(false)
-const commentsError = ref(null)
-
-const totalComments = computed(() => {
-  return commentsMeta.value.total ?? (Array.isArray(comments.value) ? comments.value.length : 0)
-})
-
-const avgRating = computed(() => {
-  const list = comments.value || []
-  if (!list.length) return '0/5'
-  const sum = list.reduce((s, c) => s + (c.rating || 0), 0)
-  const avg = (sum / list.length) || 0
-  return `${avg.toFixed(1)}/5`
-})
-
-const uniqueCustomers = computed(() => {
-  const set = new Set((comments.value || []).map(c => (c.user && c.user.id) || c.author || null).filter(Boolean))
-  return set.size
-})
+const financeReports = ref([])
+const financeTransactions = ref([])
+const financeLoading = ref(true)
+const financeError = ref('')
+const branches = ref([])
+const branchesLoading = ref(false)
+const selectedBranch = ref('all')
+const FINANCE_TIMEOUT_MS = 12000
 
 function toggleProfileDropdown() {
   profileDropdownVisible.value = !profileDropdownVisible.value
@@ -173,7 +120,7 @@ async function confirmLogout() {
   } catch (e) {}
   try { localStorage.clear(); sessionStorage.clear() } catch (e) {}
   setTimeout(() => {
-    try { window.location.replace('/') } catch (e) {}
+    safeNavigate('/')
   }, 600)
 }
 
@@ -189,48 +136,82 @@ function onProfileUpdated(updatedProfile) {
   userProfile.value = { ...userProfile.value, ...updatedProfile }
 }
 
-async function loadComments(perPage = 200) {
-  commentsLoading.value = true
-  commentsError.value = null
+function safeNavigate(path) {
   try {
-    const res = await axios.get('/api/product-comments/all', { params: { per_page: perPage }, withCredentials: true })
-    console.debug('[MainBranchAdminPanel] /api/product-comments/all response:', res && res.data)
-    // response may be a paginator object
-    if (res.data && Array.isArray(res.data.data)) {
-      comments.value = res.data.data
-      commentsMeta.value = {
-        total: res.data.total,
-        per_page: res.data.per_page,
-        current_page: res.data.current_page,
-      }
-    } else if (Array.isArray(res.data)) {
-      comments.value = res.data
-      commentsMeta.value = { total: res.data.length }
+    router.push(path)
+    return
+  } catch (e) {}
+
+  try {
+    const protocol = window.location && window.location.protocol ? window.location.protocol : ''
+    if (protocol === 'http:' || protocol === 'https:') {
+      window.location.href = path
+      return
+    }
+    if (window.top && window.top !== window.self) {
+      window.top.location.href = path
+    }
+  } catch (e) {}
+}
+
+function goToBranches() {
+  safeNavigate('/main-branch/branches')
+}
+
+async function loadFinance() {
+  financeLoading.value = true
+  financeError.value = ''
+  try {
+    const params = {}
+    if (selectedBranch.value !== 'all') params.branch_id = selectedBranch.value
+    const [reportsRes, txRes] = await Promise.all([
+      axios.get('/api/admin/finance/reports', { withCredentials: true, timeout: FINANCE_TIMEOUT_MS, params }),
+      axios.get('/api/admin/finance/transactions', { withCredentials: true, timeout: FINANCE_TIMEOUT_MS, params })
+    ])
+
+    if (reportsRes.data && reportsRes.data.ok) {
+      const r = reportsRes.data.reports || reportsRes.data.data || []
+      financeReports.value = Array.isArray(r) ? r : []
     } else {
-      comments.value = []
-      commentsMeta.value = {}
+      financeReports.value = []
+    }
+
+    if (txRes.data && txRes.data.ok) {
+      const t = txRes.data.transactions || txRes.data.data || []
+      financeTransactions.value = Array.isArray(t) ? t : []
+    } else {
+      financeTransactions.value = []
     }
   } catch (e) {
-    console.error('Failed to load comments:', e)
-    commentsError.value = e
-    comments.value = []
-    commentsMeta.value = {}
+    console.error('Failed to load finance data', e)
+    financeError.value = 'Failed to load finance data. Please refresh.'
   } finally {
-    commentsLoading.value = false
+    financeLoading.value = false
   }
 }
 
-onMounted(() => {
-  loadComments(1000)
-})
+async function refreshFinance() {
+  await loadFinance()
+}
 
-function goToCRM() {
+async function loadBranches() {
+  branchesLoading.value = true
   try {
-    router.push('/main-branch/crm')
+    const res = await axios.get('/api/admin/branches', { withCredentials: true, timeout: FINANCE_TIMEOUT_MS })
+    const list = res.data?.branches || res.data?.data || res.data || []
+    branches.value = Array.isArray(list) ? list : []
   } catch (e) {
-    try { window.location.href = '/main-branch/crm' } catch (e) {}
+    console.error('Failed to load branches', e)
+    branches.value = []
+  } finally {
+    branchesLoading.value = false
   }
 }
+
+onMounted(async () => {
+  await loadBranches()
+  await loadFinance()
+})
 
 // Close dropdown when clicking outside
 window.addEventListener('click', () => {
@@ -243,59 +224,41 @@ window.addEventListener('click', () => {
   width: 100%;
 }
 
-.crm-btn {
-  background: #10b981;
+.finance-panel {
+  background: #fff;
+  padding: 18px;
+  border-radius: 10px;
+  box-shadow: 0 6px 12px rgba(17,24,39,0.04);
+}
+.finance-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f0f2f5;
+  margin-bottom: 12px;
+}
+.finance-title { margin: 0; font-size: 18px; font-weight: 700 }
+.finance-sub { margin: 4px 0 0; color: #6b7280; font-size: 13px }
+.finance-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap }
+.branch-select { padding: 8px 12px; border-radius: 8px; border: 1px solid #e6e6e6; min-width: 160px; height: 40px }
+.add-branch {
+  background: #111827;
   color: #fff;
   border: none;
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-weight: 600;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-weight: 700;
   cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
-.crm-btn:hover { opacity: 0.95 }
-
-.crm-button-row {
-  display: flex;
-  justify-content: flex-start;
-  margin: 18px 0;
-}
-
-.kpi-row {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin: 8px 0 20px 0;
-}
-.kpi-card {
-  background: #fff;
-  border-radius: 8px;
-  padding: 18px;
-  box-shadow: 0 6px 12px rgba(17,24,39,0.04);
-}
-.kpi-title { color: #6b6b6b; font-size: 13px }
-.kpi-value { font-size: 20px; font-weight: 700; margin-top: 6px }
-
-.overview-box {
-  background: #fff;
-  padding: 18px;
-  border-radius: 8px;
-  box-shadow: 0 6px 12px rgba(17,24,39,0.04);
-  margin-bottom: 18px;
-}
-.overview-box h3 { margin: 0 0 6px 0 }
-.overview-box p { margin: 0; color: #666 }
-
-.comments-panel { margin-top: 8px }
-.comments-header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap }
-.comments-controls { display:flex; gap:12px; align-items:center; flex-wrap:wrap }
-.search-input { padding:8px 10px; border-radius:8px; border:1px solid #e6e6e6 }
-.rating-select { padding:8px; border-radius:8px; border:1px solid #e6e6e6 }
-
-.branch-reports { display:flex; justify-content:space-between; align-items:center; margin:12px 0 }
-.branch-title { font-weight:700 }
-.branch-sub { font-size:12px; color:#777 }
-.branch-actions { display:flex; gap:12px; align-items:center; flex-wrap:nowrap }
-.branch-select { padding:8px 12px; border-radius:8px; border:1px solid #e6e6e6; min-width:140px; height:40px }
+.add-branch:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(17,24,39,0.18); opacity: 0.98 }
+.add-branch:active { transform: translateY(0); box-shadow: 0 6px 14px rgba(17,24,39,0.14) }
 .refresh-finance {
   background: linear-gradient(180deg, #ff8a42, #ff6a00);
   color: #fff;
@@ -306,32 +269,20 @@ window.addEventListener('click', () => {
   box-shadow: 0 6px 18px rgba(255,106,0,0.14);
   cursor: pointer;
   transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .refresh-finance:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(255,106,0,0.18); opacity: 0.98 }
 .refresh-finance:active { transform: translateY(0); box-shadow: 0 6px 18px rgba(255,106,0,0.14) }
-
-.financial-overview { background:#fff; border-radius:8px; padding:16px; box-shadow:0 6px 12px rgba(17,24,39,0.04) }
-.financial-header { font-weight:700; margin-bottom:10px }
-.financial-chart { background:#f6f8fa; height:200px; border-radius:6px; display:flex; align-items:center; justify-content:center; color:#999 }
-
-.comments-list-section { margin-top:16px }
-.comment-item { background:#fff; padding:12px; border-radius:8px; box-shadow:0 4px 8px rgba(0,0,0,0.03); margin-bottom:10px }
-.comment-meta { font-size:13px; color:#444; display:flex; gap:8px; align-items:center }
-.comment-product { color:#777 }
-.comment-date { margin-left:auto; color:#999; font-size:12px }
-.comment-body { margin-top:8px; color:#333 }
-.comment-rating { margin-top:8px; color:#555; font-weight:600 }
-.empty-text { color:#777; padding:12px }
+.loading-state { color: #6b7280; padding: 10px 0 }
+.error-state { color: #ef4444; padding: 10px 0 }
+.finance-wrapper { margin-top: 6px }
 
 @media (max-width: 800px) {
-  .branch-actions { flex-direction: column; align-items: stretch; gap:10px; flex-wrap:wrap }
+  .finance-header { flex-direction: column; align-items: stretch }
   .branch-select { width: 100%; min-width: 0 }
   .refresh-finance { width: 100% }
-
-  .comments-controls { flex-direction: column; align-items: stretch; gap:8px }
-  .search-input, .rating-select { width: 100% }
 }
-
-/* Ensure refresh button matches select height on wide screens */
-.refresh-finance { height: 40px; display: inline-flex; align-items: center; justify-content: center }
 </style>

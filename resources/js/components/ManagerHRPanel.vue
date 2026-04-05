@@ -49,6 +49,55 @@
         </div>
         </div>
       </div>
+
+      <section class="panel-block hr-attendance-panel">
+        <div class="panel-header hr-attendance-header">
+          <h2>
+            Attendance Monitoring
+            <span v-if="hrAlertCount > 0" class="panel-badge">{{ hrAlertCount }}</span>
+          </h2>
+          <div class="hr-attendance-actions">
+            <select v-model="attendanceRange" @change="loadHrAttendance(attendanceRange)" class="hr-attendance-select">
+              <option value="today">Today</option>
+              <option value="thisWeek">This Week</option>
+              <option value="thisMonth">This Month</option>
+            </select>
+            <button class="panel-action" @click="loadHrAttendance(attendanceRange)">Refresh</button>
+          </div>
+        </div>
+
+        <div class="panel-body panel-body--table">
+          <div class="table-header">
+            <span>Staff Name</span>
+            <span>Branch</span>
+            <span>Time In</span>
+            <span>Time Out</span>
+            <span>Hours</span>
+            <span>Status</span>
+          </div>
+
+          <div v-if="isLoadingAttendance" class="table-row">
+            <span>Loading attendance...</span>
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+
+          <div v-else-if="hrAttendance.length === 0" class="table-row">
+            <span>No attendance records for this range.</span>
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+
+          <div v-else v-for="att in hrAttendance" :key="att.id" class="table-row">
+            <span>{{ att.user_name }}</span>
+            <span>{{ att.branch_name || '-' }}</span>
+            <span>{{ att.time_in || '-' }}</span>
+            <span>{{ att.time_out || '-' }}</span>
+            <span>{{ att.hours_worked || '-' }}</span>
+            <span>
+              <span class="badge" :class="attendanceStatusClass(att.status)">{{ att.status || '-' }}</span>
+            </span>
+          </div>
+        </div>
+      </section>
     </template>
 
     <template #side>
@@ -95,10 +144,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import axios from 'axios'
+import { showToast } from './toastStore'
 
 const router = useRouter()
 const errorMessage = ref('')
@@ -128,6 +178,20 @@ const isEditing = ref(false)
 const isSubmitting = ref(false)
 const formError = ref('')
 const editingStaffId = ref(null)
+const hrAttendance = ref([])
+const attendanceRange = ref('today')
+const isLoadingAttendance = ref(false)
+const hasNotified = ref(false)
+const hrAlertCount = computed(() => {
+  return (hrAttendance.value || []).filter(a => (a.status || '').toLowerCase() !== 'present').length
+})
+
+watch(hrAlertCount, (count) => {
+  if (!hasNotified.value && count > 0) {
+    showToast('You have attendance alerts to review.', 'info')
+    hasNotified.value = true
+  }
+})
 
 const formData = ref({ username: '', email: '', full_name: '', phone_number: '', department: '', password: '' })
 
@@ -180,6 +244,27 @@ async function refreshAllData() {
   try { const dash = await axios.get('/api/manager/hr/dashboard', { withCredentials: true }); dashboardTotals.value = dash.data } catch (err) { errorMessage.value = 'Failed to load dashboard data.' }
   try { const staff = await axios.get('/api/manager/hr/staff', { withCredentials: true }); staffList.value = extractArray(staff.data, 'staffList') } catch (err) { staffList.value = []; errorMessage.value = 'Failed to load staff list.' }
   try { const reports = await axios.get('/api/manager/hr/reports', { withCredentials: true }); hrReports.value = extractArray(reports.data, 'hrReports') } catch (err) { hrReports.value = []; errorMessage.value = 'Failed to load HR reports.' }
+  loadHrAttendance(attendanceRange.value)
+}
+
+async function loadHrAttendance(range = 'today') {
+  isLoadingAttendance.value = true
+  try {
+    const res = await axios.get('/api/manager/hr/attendance', {
+      params: { range },
+      withCredentials: true
+    })
+    if (res.data && res.data.ok) {
+      hrAttendance.value = res.data.data || []
+    } else {
+      hrAttendance.value = []
+    }
+  } catch (e) {
+    console.error('Error loading HR attendance:', e)
+    hrAttendance.value = []
+  } finally {
+    isLoadingAttendance.value = false
+  }
 }
 
 async function loadStaff() {
@@ -255,6 +340,16 @@ function displayRole(r) {
   return role.replace(/_/g, ' ')
 }
 
+function attendanceStatusClass(status) {
+  const s = (status || '').toString().toLowerCase()
+  if (s === 'present') return 'badge--success'
+  if (s === 'late') return 'badge--warning'
+  if (s === 'absent') return 'badge--info'
+  if (s === 'on_duty') return 'badge--success'
+  if (s === 'completed') return 'badge--success'
+  return 'badge--info'
+}
+
 onMounted(async () => {
   try {
     const res = await axios.get('/api/manager/hr/profile', { withCredentials: true })
@@ -286,6 +381,28 @@ defineExpose({ refreshAllData, onProfileUpdated })
 </script>
 
 <style scoped>
+.panel-badge {
+  position: absolute;
+  top: -8px;
+  right: -16px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.35);
+}
+
+.hr-attendance-header h2 {
+  position: relative;
+  display: inline-block;
+}
 .hr-panel-content { padding: 1rem; }
 /* HR stats grid: keep cards in a responsive row and avoid overlapping other panels */
 .hr-stats-grid {
@@ -392,5 +509,17 @@ defineExpose({ refreshAllData, onProfileUpdated })
 .toggle-switch input:checked + .toggle-slider:before { transform: translateX(24px); }
 .panel-body--list { padding: 0.5rem 0; }
 .side-item { padding: 0.5rem 0; color: #666; font-size: 0.9rem; }
+.hr-attendance-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.hr-attendance-actions { display: flex; align-items: center; gap: 0.5rem; }
+.hr-attendance-select { padding: 6px; border-radius: 6px; border: 1px solid #ddd; background: #fff; }
+.panel-action { padding: 0.45rem 0.75rem; border: none; border-radius: 6px; background: #6c757d; color: #fff; cursor: pointer; }
+.panel-action:hover { background: #5a6268; }
+.panel-body--table { padding-top: 0.75rem; display: flex; flex-direction: column; gap: 0.35rem; }
+.table-header, .table-row { display: grid; grid-template-columns: 1.5fr 1fr 0.9fr 0.9fr 0.7fr 0.8fr; gap: 0.75rem; align-items: center; }
+.table-header { font-weight: 600; color: #333; font-size: 0.85rem; }
+.table-row { background: #fafafa; padding: 0.5rem 0.75rem; border-radius: 6px; color: #333; font-size: 0.85rem; }
+.badge--success { background: #d4edda; color: #155724; padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+.badge--warning { background: #fff3cd; color: #856404; padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+.badge--info { background: #d1ecf1; color: #0c5460; padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
 @media (max-width: 768px) { .staff-header { flex-direction: column; gap: 1rem; } .hr-header-actions { width: 100%; flex-wrap: wrap; } .hr-search-input { width: 100%; } .staff-table { font-size: 0.8rem; } .staff-table th, .staff-table td { padding: 0.5rem; } }
 </style>

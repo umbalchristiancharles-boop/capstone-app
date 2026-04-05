@@ -31,6 +31,11 @@ class ProcurementRequest extends Model
         'receipt_confirmed',
         'receipt_confirmed_by',
         'receipt_confirmed_at',
+        'confirmed_quantity',
+        'variance_quantity',
+        'variance_reason',
+        'variance_reported_at',
+        'delivery_proof_path',
     ];
 
     protected $casts = [
@@ -40,6 +45,9 @@ class ProcurementRequest extends Model
         'price' => 'decimal:2',
         'total_amount' => 'decimal:2',
         'receipt_confirmed' => 'boolean',
+        'confirmed_quantity' => 'integer',
+        'variance_quantity' => 'integer',
+        'variance_reported_at' => 'datetime',
     ];
 
     public function logisticsUser(): BelongsTo

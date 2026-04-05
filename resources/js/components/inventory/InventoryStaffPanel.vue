@@ -44,12 +44,13 @@
             <span class="hr-stat-value">{{ dashboardTotals.lowStock }}</span>
           </div>
         </div>
-        <div class="hr-stat-card hr-stat-card--leave">
+        <div class="hr-stat-card hr-stat-card--leave" :class="{ 'stat-alert': inventoryPendingCount > 0 }">
           <div class="hr-stat-icon">●</div>
           <div class="hr-stat-content">
             <span class="hr-stat-label">Pending Requests</span>
             <span class="hr-stat-value">{{ dashboardTotals.pendingRequests }}</span>
           </div>
+          <span v-if="inventoryPendingCount > 0" class="panel-badge">{{ inventoryPendingCount }}</span>
         </div>
       </div>
 
@@ -166,7 +167,7 @@
     </template>
 
     <template #side>
-      <div class="attendance-card" style="margin-top:12px; background: #ffffff;">
+      <div v-if="!hideAttendanceCard" class="attendance-card" style="margin-top:12px; background: #ffffff;">
         <div class="attendance-header">
           <span class="attendance-title">Attendance</span>
           <span :class="['attendance-status-badge', attendanceStatus.is_clocked_in ? 'status-on-duty' : 'status-off-duty']">
@@ -292,6 +293,24 @@ const showProfileMenu = ref(false);
 const headerProfileWrapper = ref(null);
 const profileDropdown = ref(null);
 
+const isCustomAccount = computed(() => {
+  try {
+    const raw = localStorage.getItem('user') || 'null'
+    const u = JSON.parse(raw)
+    return (u?.role || '').toLowerCase() === 'custom'
+  } catch (e) {
+    return false
+  }
+})
+
+const hideAttendanceCard = computed(() => {
+  try {
+    return new URLSearchParams(window.location.search).get('from') === 'custom-panel' || isCustomAccount.value
+  } catch (e) {
+    return isCustomAccount.value
+  }
+})
+
 // Attendance state variables
 const attendanceStatus = ref({
   is_clocked_in: false,
@@ -308,6 +327,14 @@ const attendanceSettings = ref({
   early_clockout_override: false,
   scheduled_time_out: '17:00:00'
 });
+const notificationCounts = ref({ inventory: 0 })
+const hasNotified = ref(false)
+const inventoryPendingCount = computed(() => {
+  const apiPending = Number(notificationCounts.value?.inventory || 0)
+  const dashboardPending = Number(dashboardTotals.value?.pendingRequests || 0)
+  const listPending = (procurementRequests.value || []).length
+  return Math.max(apiPending, dashboardPending, listPending, 0)
+})
 
 // Computed property for scheduled time out display
 const scheduledTimeOut = computed(() => {
@@ -882,8 +909,10 @@ onMounted(async () => {
     isProfileLoading.value = false;
   }
   // Load attendance status and settings on mount
-  loadAttendanceStatus()
-  loadAttendanceSettings()
+  if (!hideAttendanceCard.value) {
+    loadAttendanceStatus()
+    loadAttendanceSettings()
+  }
   // ProductList will handle fetching when given a fetchUrl; if a parent passed products prop, ProductList will display them.
   // initial stats update after mount
   setTimeout(() => updateStats(), 300)
@@ -901,9 +930,30 @@ onMounted(async () => {
   // load inventory for manager-style table and dashboard
   await fetchInventory()
 
+  await loadPanelNotifications()
+
   // attach click-away listener (defined in setup scope)
   try { document.addEventListener('click', onDocClick) } catch (e) {}
 });
+
+async function loadPanelNotifications() {
+  try {
+    const res = await axios.get('/api/panel-notifications', { withCredentials: true })
+    if (res.data && res.data.ok) {
+      const count = Number(res.data.counts?.inventory || 0)
+      notificationCounts.value = { inventory: Number.isNaN(count) ? 0 : count }
+    }
+  } catch (e) {
+    notificationCounts.value = { inventory: 0 }
+  }
+}
+
+watch(inventoryPendingCount, (count) => {
+  if (!hasNotified.value && count > 0) {
+    showToast('You have pending inventory requests.', 'info')
+    hasNotified.value = true
+  }
+})
 
 
 function toggleProfileMenu() {
@@ -1288,6 +1338,9 @@ async function performClockOut() {
 </style>
 
 <style scoped>
+.hr-stat-card { position: relative; }
+.panel-badge { position:absolute; top:-8px; right:-8px; min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:#ef4444; color:#ffffff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(239,68,68,0.35) }
+.stat-alert { border:1px solid #fecaca; box-shadow:0 0 0 2px rgba(239,68,68,0.12) }
 .inventory-table th, .inventory-table td {
   padding: 0.55rem 0.7rem;
   font-size: 0.92rem;

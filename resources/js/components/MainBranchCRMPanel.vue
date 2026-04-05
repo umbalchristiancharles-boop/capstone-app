@@ -63,33 +63,6 @@
             </div>
           </div>
 
-          <section class="panel-block" style="margin: 12px 0 0; padding: 0; border: none; box-shadow: none;">
-            <div class="finance-header">
-              <div>
-                <h3 class="finance-title">Branch Financial Reports</h3>
-                <p class="finance-sub">View branch KPIs and recent transactions</p>
-              </div>
-              <div class="finance-actions">
-                <select class="branch-filter" v-model="selectedBranch" @change="refreshFinance" :disabled="branchesLoading || financeLoading">
-                  <option value="all">All Branches</option>
-                  <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name || b.branch_name || ('Branch ' + b.id) }}</option>
-                </select>
-                <button class="link-btn" style="width:auto;" @click="refreshFinance" :disabled="financeLoading">{{ financeLoading ? 'Refreshing...' : 'Refresh Finance' }}</button>
-              </div>
-            </div>
-
-            <div v-if="financeLoading" class="loading-state" style="margin-top: 8px;">Loading financial reports...</div>
-            <div v-else-if="financeError" class="empty-state" style="margin-top: 8px; color:#ef4444;">{{ financeError }}</div>
-            <div v-else class="finance-wrapper">
-              <FinancePanelContent
-                :reports="financeReports"
-                :transactions="financeTransactions"
-                :transactionsLoading="financeLoading"
-                :chartLoading="financeLoading"
-              />
-            </div>
-          </section>
-
           <div v-if="isLoading" class="loading-state">
             <p>Loading comments...</p>
           </div>
@@ -191,7 +164,6 @@
 import { onMounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
-import FinancePanelContent from './finance/FinancePanelContent.vue'
 
 const router = useRouter()
 
@@ -208,14 +180,6 @@ const selectedRating = ref('')
 const currentPage = ref(1)
 const itemsPerPage = ref(10)
 
-const financeReports = ref([])
-const financeTransactions = ref([])
-const financeLoading = ref(true)
-const financeError = ref('')
-const branches = ref([])
-const branchesLoading = ref(false)
-const selectedBranch = ref('all')
-const FINANCE_TIMEOUT_MS = 12000
 
 function cancelLogout() {
   if (isLoggingOut.value) return
@@ -241,55 +205,6 @@ async function askLogout() {
   } catch (e) { console.error('askLogout failed', e) }
 }
 
-async function loadFinance() {
-  financeLoading.value = true
-  financeError.value = ''
-  try {
-    const params = {}
-    if (selectedBranch.value !== 'all') params.branch_id = selectedBranch.value
-    const [reportsRes, txRes] = await Promise.all([
-      axios.get('/api/admin/finance/reports', { withCredentials: true, timeout: FINANCE_TIMEOUT_MS, params }),
-      axios.get('/api/admin/finance/transactions', { withCredentials: true, timeout: FINANCE_TIMEOUT_MS, params })
-    ])
-
-    if (reportsRes.data && reportsRes.data.ok) {
-      const r = reportsRes.data.reports || reportsRes.data.data || []
-      financeReports.value = Array.isArray(r) ? r : []
-    } else {
-      financeReports.value = []
-    }
-
-    if (txRes.data && txRes.data.ok) {
-      const t = txRes.data.transactions || txRes.data.data || []
-      financeTransactions.value = Array.isArray(t) ? t : []
-    } else {
-      financeTransactions.value = []
-    }
-  } catch (e) {
-    console.error('Failed to load finance data', e)
-    financeError.value = 'Failed to load finance data. Please refresh.'
-  } finally {
-    financeLoading.value = false
-  }
-}
-
-async function refreshFinance() {
-  await loadFinance()
-}
-
-async function loadBranches() {
-  branchesLoading.value = true
-  try {
-    const res = await axios.get('/api/admin/branches', { withCredentials: true, timeout: FINANCE_TIMEOUT_MS })
-    const list = res.data?.branches || res.data?.data || res.data || []
-    branches.value = Array.isArray(list) ? list : []
-  } catch (e) {
-    console.error('Failed to load branches', e)
-    branches.value = []
-  } finally {
-    branchesLoading.value = false
-  }
-}
 
 function formatDate(dateStr) {
   try {
@@ -408,8 +323,6 @@ const uniqueCustomers = computed(() => {
 onMounted(async () => {
   await loadProfile()
   await loadComments()
-  await loadBranches()
-  await loadFinance()
 })
 </script>
 
@@ -476,10 +389,6 @@ onMounted(async () => {
 
 .logout-btn { border: 0; border-radius: 999px; padding: 8px 12px; background: var(--alert); color: #fff; cursor: pointer; margin-top: 8px; box-shadow: 0 6px 18px rgba(239,68,68,0.08); width: 100%; }
 
-.finance-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 0; }
-.finance-title { margin: 0; font-size: 18px; color: var(--text-dark); }
-.finance-sub { margin: 2px 0 0; color: rgba(66,33,11,0.8); font-size: 14px; }
-.finance-wrapper { margin-top: 8px; }
 
 /* Comments Section */
 .comments-header { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-bottom: 16px; flex-wrap: wrap; }
@@ -548,8 +457,4 @@ onMounted(async () => {
   .rating-filter { width: 100%; }
 }
 
-/* Keep finance action controls inline and spaced */
-.finance-actions { display:flex; gap:12px; align-items:center }
-.finance-actions .branch-filter { min-width: 140px; height:40px; padding:8px 12px; border-radius:8px; }
-.finance-actions .link-btn { display:inline-flex; width:auto; padding:8px 14px; align-items:center; height:40px; margin-bottom:0 }
 </style>

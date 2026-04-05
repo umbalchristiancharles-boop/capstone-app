@@ -17,6 +17,26 @@
 
     <div class="manager-finance">
 
+    <section v-if="!hideAttendanceCard" class="attendance-card">
+      <div class="attendance-header">
+        <span class="attendance-title">Attendance</span>
+        <span :class="['attendance-status-badge', attendanceStatus.is_clocked_in ? 'status-on-duty' : 'status-off-duty']">
+          {{ attendanceStatus.is_clocked_in ? 'On Duty' : 'Off Duty' }}
+        </span>
+      </div>
+      <div class="attendance-times" v-if="attendanceStatus.clock_in_time || attendanceStatus.clock_out_time">
+        <div class="time-row"><span class="time-label">Clock In:</span><span class="time-value">{{ attendanceStatus.clock_in_time || '-' }}</span></div>
+        <div class="time-row"><span class="time-label">Clock Out:</span><span class="time-value">{{ attendanceStatus.clock_out_time || '-' }}</span></div>
+        <div class="time-row" v-if="attendanceStatus.hours_worked > 0"><span class="time-label">Hours:</span><span class="time-value">{{ attendanceStatus.hours_worked }} hrs</span></div>
+      </div>
+      <div class="attendance-buttons">
+        <button @click="performClockIn" :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing" class="btn-clock-in">{{ isAttendanceProcessing ? '...' : 'Clock In' }}</button>
+        <button @click="performClockOut" :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockOut" class="btn-clock-out" :class="{ 'btn-disabled': !canClockOut && attendanceStatus.is_clocked_in }">{{ isAttendanceProcessing ? '...' : 'Clock Out' }}</button>
+      </div>
+      <div v-if="!canClockOut && attendanceStatus.is_clocked_in" class="clockout-restriction"><span class="restriction-icon">LOCK</span><span>Cannot clock out before {{ scheduledTimeOut }}</span></div>
+      <div v-if="attendanceMessage" :class="['attendance-message', attendanceMessageType]">{{ attendanceMessage }}</div>
+    </section>
+
     <div class="filter-bar">
       <div class="filter-group">
         <label>Branch:</label>
@@ -74,7 +94,7 @@
         </div>
       </div>
 
-      <div class="kpi-card">
+      <div class="kpi-card" :class="{ 'stat-alert': financePendingCount > 0 }">
         <div class="kpi-icon expenses-icon">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"></circle>
@@ -86,6 +106,7 @@
           <span class="kpi-label">Pending Approvals</span>
           <span class="kpi-value">{{ pendingBudgetCount }}</span>
         </div>
+        <span v-if="financePendingCount > 0" class="panel-badge">{{ financePendingCount }}</span>
       </div>
 
       <div class="kpi-card highlight">
@@ -350,13 +371,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, onUnmounted } from 'vue'
+import { ref, onMounted, computed, onUnmounted, watch } from 'vue'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import FinancePanelContent from './finance/FinancePanelContent.vue'
 import PriceMarkupPanel from './PriceMarkupPanel.vue'
 import PriceMarkupManagerPanel from './finance/PriceMarkupManagerPanel.vue'
 import axios from 'axios'
 import { Chart } from 'vue-chartjs'
+import { showToast } from './toastStore'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -392,6 +414,8 @@ ChartJS.register(
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
 
 const refreshInterval = ref(null)
+const notificationCounts = ref({ finance: 0 })
+const hasNotified = ref(false)
 
 // Logout state
 const showLogoutConfirm = ref(false)
@@ -402,6 +426,57 @@ const overlayText = ref('Logging out...')
 // Header profile dropdown (match Logistics panel behavior)
 const profileDropdownVisible = ref(false)
 const ownerLayout = ref(null)
+
+const attendanceStatus = ref({
+  is_clocked_in: false,
+  clock_in_time: null,
+  clock_out_time: null,
+  hours_worked: 0
+})
+const isAttendanceProcessing = ref(false)
+const attendanceMessage = ref('')
+const attendanceMessageType = ref('')
+const attendanceSettings = ref({
+  early_clockout_override: false,
+  scheduled_time_out: '17:00:00'
+})
+
+const isCustomAccount = computed(() => {
+  try {
+    const raw = localStorage.getItem('user') || 'null'
+    const u = JSON.parse(raw)
+    return (u?.role || '').toLowerCase() === 'custom'
+  } catch (e) {
+    return false
+  }
+})
+
+const hideAttendanceCard = computed(() => {
+  try {
+    return new URLSearchParams(window.location.search).get('from') === 'custom-panel' || isCustomAccount.value
+  } catch (e) {
+    return isCustomAccount.value
+  }
+})
+
+const scheduledTimeOut = computed(() => {
+  const time = attendanceSettings.value.scheduled_time_out || '17:00:00'
+  const [hours, minutes] = time.split(':')
+  const hour = parseInt(hours)
+  const ampm = hour >= 12 ? 'PM' : 'AM'
+  const hour12 = hour % 12 || 12
+  return `${hour12}:${minutes} ${ampm}`
+})
+
+const canClockOut = computed(() => {
+  if (!attendanceStatus.value.is_clocked_in) return false
+  if (attendanceSettings.value.early_clockout_override) return true
+  const now = new Date()
+  const currentTotalMinutes = now.getHours() * 60 + now.getMinutes()
+  const [scheduledHours, scheduledMinutes] = (attendanceSettings.value.scheduled_time_out || '17:00:00').split(':')
+  const scheduledTotalMinutes = parseInt(scheduledHours) * 60 + parseInt(scheduledMinutes)
+  return currentTotalMinutes >= scheduledTotalMinutes
+})
 
 function toggleProfileDropdown() {
   profileDropdownVisible.value = !profileDropdownVisible.value
@@ -566,8 +641,32 @@ const receiptModalRequest = ref(null)
 
 // Computed: count of pending requests
 const pendingBudgetCount = computed(() => {
-  return budgetRequests.value.filter(r => r.status === 'Pending').length
+  return budgetRequests.value.filter(r => (r.status || '').toLowerCase() === 'pending').length
 })
+const financePendingCount = computed(() => {
+  const apiPending = Number(notificationCounts.value?.finance || 0)
+  const localPending = Number(pendingBudgetCount.value || 0)
+  const receiptsPending = (receiptSubmissions.value || []).length
+  return Math.max(apiPending, localPending, receiptsPending, 0)
+})
+
+watch(financePendingCount, (count) => {
+  if (!hasNotified.value && count > 0) {
+    showToast('You have pending budget approvals.', 'info')
+    hasNotified.value = true
+  }
+})
+
+async function loadPanelNotifications() {
+  try {
+    const res = await axios.get('/api/panel-notifications', { withCredentials: true })
+    if (res.data && res.data.ok) {
+      notificationCounts.value = { finance: Number(res.data.counts?.finance || 0) }
+    }
+  } catch (e) {
+    notificationCounts.value = { finance: 0 }
+  }
+}
 
 // Handle profile update from layout
 function onProfileUpdated(updatedProfile) {
@@ -742,8 +841,85 @@ function getStatusClass(status) {
   }
 }
 
+async function loadAttendanceStatus() {
+  try {
+    const res = await axios.get('/api/manager/attendance/status', { withCredentials: true })
+    if (res.data && res.data.success) {
+      attendanceStatus.value = {
+        is_clocked_in: !!res.data.clocked_in,
+        clock_in_time: res.data.time_in || res.data.status?.clock_in_time || null,
+        clock_out_time: res.data.time_out || res.data.status?.clock_out_time || null,
+        hours_worked: res.data.status?.hours_worked || 0
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load attendance status:', e)
+  }
+}
+
+async function loadAttendanceSettings() {
+  try {
+    const res = await axios.get('/api/attendance/settings', { withCredentials: true })
+    if (res.data && res.data.ok && res.data.data) {
+      attendanceSettings.value = {
+        early_clockout_override: res.data.data.early_clockout_override || false,
+        scheduled_time_out: res.data.data.scheduled_time_out || '17:00:00'
+      }
+    }
+  } catch (e) {
+    attendanceSettings.value = { early_clockout_override: false, scheduled_time_out: '17:00:00' }
+  }
+}
+
+async function performClockIn() {
+  if (isAttendanceProcessing.value) return
+  isAttendanceProcessing.value = true
+  attendanceMessage.value = ''
+  try {
+    const res = await axios.post('/api/manager/clock-in', {}, { withCredentials: true })
+    if (res.data && res.data.success) {
+      attendanceMessage.value = 'Clocked in successfully!'
+      attendanceMessageType.value = 'success'
+      await loadAttendanceStatus()
+    } else {
+      attendanceMessage.value = res.data.message || 'Failed to clock in'
+      attendanceMessageType.value = 'error'
+    }
+  } catch (e) {
+    attendanceMessage.value = e.response?.data?.message || 'Error clocking in'
+    attendanceMessageType.value = 'error'
+  } finally {
+    isAttendanceProcessing.value = false
+    setTimeout(() => { attendanceMessage.value = '' }, 3000)
+  }
+}
+
+async function performClockOut() {
+  if (isAttendanceProcessing.value) return
+  isAttendanceProcessing.value = true
+  attendanceMessage.value = ''
+  try {
+    const res = await axios.post('/api/manager/clock-out', {}, { withCredentials: true })
+    if (res.data && res.data.success) {
+      attendanceMessage.value = 'Clocked out successfully!'
+      attendanceMessageType.value = 'success'
+      await loadAttendanceStatus()
+    } else {
+      attendanceMessage.value = res.data.message || 'Failed to clock out'
+      attendanceMessageType.value = 'error'
+    }
+  } catch (e) {
+    attendanceMessage.value = e.response?.data?.message || 'Error clocking out'
+    attendanceMessageType.value = 'error'
+  } finally {
+    isAttendanceProcessing.value = false
+    setTimeout(() => { attendanceMessage.value = '' }, 3000)
+  }
+}
+
 onMounted(() => {
   loadInitialData()
+  loadPanelNotifications()
 
   // load receipt submissions for finance review
   loadReceiptSubmissions()
@@ -756,6 +932,11 @@ onMounted(() => {
       console.warn('Auto-refresh failed:', e)
     }
   }, 30000)
+
+  if (!hideAttendanceCard.value) {
+    loadAttendanceStatus()
+    loadAttendanceSettings()
+  }
 })
 
 // Extract initial load into separate function
@@ -944,6 +1125,27 @@ async function markBudgetGiven(id) {
 </script>
 
 <style scoped>
+.panel-badge {
+  position: absolute;
+  top: -8px;
+  right: -16px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.35);
+}
+
+.kpi-card {
+  position: relative;
+}
 .manager-finance {
   background-color: #FBF7F4;
   padding: 30px;
@@ -1039,6 +1241,158 @@ async function markBudgetGiven(id) {
   outline: none;
   border-color: #ff7a18;
   box-shadow: 0 0 0 6px rgba(255,122,24,0.06);
+}
+
+.attendance-card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 8px 24px rgba(75,42,6,0.05);
+  border: 1px solid rgba(75,42,6,0.04);
+  margin-bottom: 20px;
+}
+
+.attendance-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.attendance-title {
+  font-weight: 700;
+  color: #4b2a06;
+  font-size: 0.95rem;
+}
+
+.attendance-status-badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.status-on-duty {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-off-duty {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.attendance-times {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+}
+
+.time-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.time-label {
+  color: #7a5a44;
+}
+
+.time-value {
+  font-weight: 600;
+  color: #4b2a06;
+}
+
+.attendance-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-clock-in,
+.btn-clock-out {
+  flex: 1;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-clock-in {
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  color: #ffffff;
+}
+
+.btn-clock-in:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(34, 197, 94, 0.25);
+}
+
+.btn-clock-in:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.btn-clock-out {
+  background: linear-gradient(135deg, #dc2626, #f97316);
+  color: #ffffff;
+}
+
+.btn-clock-out:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(248, 113, 113, 0.3);
+}
+
+.btn-clock-out:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.btn-disabled {
+  background: #9ca3af !important;
+  cursor: not-allowed !important;
+}
+
+.clockout-restriction {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  background: #fff3cd;
+  border: 1px solid #facc15;
+  border-radius: 8px;
+  color: #7c5b00;
+  font-size: 0.75rem;
+}
+
+.restriction-icon {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.attendance-message {
+  padding: 8px;
+  border-radius: 6px;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.attendance-message.success {
+  background: #d4edda;
+  color: #155724;
+}
+
+.attendance-message.error {
+  background: #f8d7da;
+  color: #721c24;
 }
 
 .btn-refresh {

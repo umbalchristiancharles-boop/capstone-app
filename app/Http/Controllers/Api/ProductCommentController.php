@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\ProductComment;
 use App\Models\Product;
+use App\Models\DishIngredient;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ProductCommentController extends Controller
@@ -16,11 +18,39 @@ class ProductCommentController extends Controller
      */
     public function listProducts(Request $request)
     {
-        $products = Product::where('is_active', 1)
+        // Exclude products that are used as dish ingredients so customers
+        // only see actual products and representative dish products.
+        $ingredientIds = DishIngredient::whereNotNull('product_id')
+            ->pluck('product_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $ingredientNames = DishIngredient::pluck('name')
+            ->filter()
+            ->map(fn($n) => trim(strtoupper((string) $n)))
+            ->unique()
+            ->values()
+            ->all();
+
+        $productsQuery = Product::where('is_active', 1)
             ->where('is_published', 1)
             ->select('id', 'name')
-            ->orderBy('name')
-            ->get();
+            ->orderBy('name');
+
+        if (!empty($ingredientIds)) {
+            $productsQuery->whereNotIn('id', $ingredientIds);
+        }
+
+        if (!empty($ingredientNames)) {
+            $productsQuery->whereNotIn(DB::raw('TRIM(UPPER(name))'), $ingredientNames);
+        }
+
+        $products = $productsQuery->get();
+
+        // Deduplicate products by normalized name to avoid duplicate supplier entries
+        $products = $products->unique(fn($p) => trim(strtoupper($p->name)))->values();
 
         Log::info('ProductCommentController::listProducts', [
             'count' => $products->count(),

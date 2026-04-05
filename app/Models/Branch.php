@@ -17,6 +17,13 @@ class Branch extends Model
         'address',
         'is_active',
         'is_main_branch',
+        'approval_status',
+        'requested_by',
+        'finance_confirmed_by',
+        'finance_confirmed_at',
+        'approved_by',
+        'approved_at',
+        'rejected_at',
         'budget',
     ];
 
@@ -25,6 +32,9 @@ class Branch extends Model
         return [
             'is_active' => 'boolean',
             'is_main_branch' => 'boolean',
+            'finance_confirmed_at' => 'datetime',
+            'approved_at' => 'datetime',
+            'rejected_at' => 'datetime',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];

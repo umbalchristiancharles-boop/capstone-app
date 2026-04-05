@@ -1,7 +1,10 @@
 <template>
   <div class="price-markup-owner-section">
     <div class="section-header">
-      <h2>Price Markup Percentage Approvals</h2>
+      <h2>
+        Price Markup Percentage Approvals
+        <span v-if="pendingCount > 0" class="panel-badge">{{ pendingCount }}</span>
+      </h2>
       <p>Final approval authority for price markup percentage changes</p>
       <button class="refresh-btn" @click="fetchPendingRequests" :disabled="isLoading">
         <span v-if="!isLoading">↻ Refresh</span>
@@ -229,6 +232,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
+import { showToast } from '../toastStore'
 
 // State
 const activeTab = ref('pending')
@@ -238,6 +242,7 @@ const isLoading = ref(false)
 const isLoadingHistory = ref(false)
 const errorMessage = ref('')
 const requestActions = reactive({})
+const hasNotified = ref(false)
 
 // Computed
 const pendingCount = computed(() => pendingRequests.value.length)
@@ -265,12 +270,22 @@ async function fetchPendingRequests() {
           }
         }
       })
+
+      notifyIfPending()
     }
   } catch (error) {
     console.error('Error fetching pending requests:', error)
     errorMessage.value = 'Failed to load pending approvals.'
   } finally {
     isLoading.value = false
+  }
+}
+
+function notifyIfPending() {
+  if (hasNotified.value) return
+  if ((pendingRequests.value || []).length > 0) {
+    showToast('You have pending price markup approvals.', 'info')
+    hasNotified.value = true
   }
 }
 
@@ -370,7 +385,10 @@ onMounted(() => {
   font-weight: 700;
   color: #1F2937;
   margin: 0;
+  position: relative;
 }
+
+.panel-badge { position:absolute; top:-8px; right:-18px; min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:#ef4444; color:#ffffff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(239,68,68,0.35) }
 
 .section-header p {
   color: #6B7280;

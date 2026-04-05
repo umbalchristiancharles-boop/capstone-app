@@ -1,61 +1,7 @@
-import { reactive, computed, watch } from 'vue'
+import { reactive, computed, watch, ref } from 'vue'
+import axios from 'axios'
 
 export default function useAddress(initial = {}) {
-  const locationData = {
-    /* LUZON */
-    'NCR (National Capital Region)': {
-      'Metro Manila': {
-        'Quezon City': ['Project 2', 'Culiat'],
-        'Manila': ['Tondo', 'Binondo']
-      }
-    },
-    'CAR (Cordillera Administrative Region)': {
-      'Benguet': {
-        'Baguio City': ['Burnham', 'Military Cut-off']
-      }
-    },
-    'Region I – Ilocos Region': {},
-    'Region II – Cagayan Valley': {},
-    'Region III – Central Luzon': {},
-    'Region IV-A – CALABARZON': {
-      'Laguna': {
-        'Calamba City': ['Santo Tomas', 'Canlubang'],
-        'San Pablo': ['Centro', 'San Jose']
-      },
-      'Cavite': {
-        'Imus': ['Bucandala', 'Tanza']
-      }
-    },
-    'Region IV-B – MIMAROPA': {},
-    'Region V – Bicol Region': {},
-
-    /* VISAYAS */
-    'Region VI – Western Visayas': {
-      'Iloilo': {
-        'Iloilo City': ['Jaro', 'Molo']
-      }
-    },
-    'Region VII – Central Visayas': {
-      'Cebu': {
-        'Cebu City': ['Poblacion', 'Mabolo'],
-        'Lapu-Lapu City': ['Poblacion', 'Marigondon']
-      }
-    },
-    'Region VIII – Eastern Visayas': {},
-
-    /* MINDANAO */
-    'Region IX – Zamboanga Peninsula': {},
-    'Region X – Northern Mindanao': {},
-    'Region XI – Davao Region': {
-      'Davao del Sur': {
-        'Davao City': ['Buhangin', 'Talomo']
-      }
-    },
-    'Region XII – SOCCSKSARGEN': {},
-    'Region XIII – Caraga': {},
-    'BARMM – Bangsamoro Autonomous Region': {}
-  }
-
   const state = reactive({
     selectedRegion: initial.region || '',
     selectedProvince: initial.province || '',
@@ -64,45 +10,97 @@ export default function useAddress(initial = {}) {
     errors: {}
   })
 
-  const provinces = computed(() => {
-    if (!state.selectedRegion) return []
-    const regionObj = locationData[state.selectedRegion] || {}
-    return Object.keys(regionObj)
-  })
+  // Dynamically loaded data
+  const provincesData = ref([])
+  const citiesData = ref([])
+  const barangaysData = ref([])
+  const loading = ref(false)
 
-  const cities = computed(() => {
-    if (!state.selectedRegion || !state.selectedProvince) return []
-    const regionObj = locationData[state.selectedRegion] || {}
-    const provinceObj = regionObj[state.selectedProvince] || {}
-    return Object.keys(provinceObj)
-  })
+  // Computed properties
+  const provinces = computed(() => provincesData.value)
+  const cities = computed(() => citiesData.value)
+  const barangays = computed(() => barangaysData.value)
 
-  const barangays = computed(() => {
-    if (!state.selectedRegion || !state.selectedProvince || !state.selectedCity) return []
-    const regionObj = locationData[state.selectedRegion] || {}
-    const provinceObj = regionObj[state.selectedProvince] || {}
-    return provinceObj[state.selectedCity] || []
-  })
-
-  watch(() => state.selectedRegion, () => {
+  // Load provinces when region changes
+  watch(() => state.selectedRegion, async (newRegion) => {
     state.selectedProvince = ''
     state.selectedCity = ''
     state.selectedBarangay = ''
+    provincesData.value = []
+    citiesData.value = []
+    barangaysData.value = []
     delete state.errors.province
     delete state.errors.city
     delete state.errors.barangay
+
+    if (!newRegion) return
+
+    try {
+      loading.value = true
+      const response = await axios.get(`/api/locations/provinces?region=${encodeURIComponent(newRegion)}`, {
+        withCredentials: true
+      })
+      if (response.data && response.data.data) {
+        provincesData.value = Array.isArray(response.data.data) ? response.data.data : []
+      }
+    } catch (error) {
+      console.error('Error loading provinces:', error)
+      provincesData.value = []
+    } finally {
+      loading.value = false
+    }
   })
 
-  watch(() => state.selectedProvince, () => {
+  // Load cities when province changes
+  watch(() => state.selectedProvince, async (newProvince) => {
     state.selectedCity = ''
     state.selectedBarangay = ''
+    citiesData.value = []
+    barangaysData.value = []
     delete state.errors.city
     delete state.errors.barangay
+
+    if (!newProvince || !state.selectedRegion) return
+
+    try {
+      loading.value = true
+      const response = await axios.get(
+        `/api/locations/cities?province=${encodeURIComponent(newProvince)}&region=${encodeURIComponent(state.selectedRegion)}`,
+        { withCredentials: true }
+      )
+      if (response.data && response.data.data) {
+        citiesData.value = Array.isArray(response.data.data) ? response.data.data : []
+      }
+    } catch (error) {
+      console.error('Error loading cities:', error)
+      citiesData.value = []
+    } finally {
+      loading.value = false
+    }
   })
 
-  watch(() => state.selectedCity, () => {
+  // Load barangays when city changes
+  watch(() => state.selectedCity, async (newCity) => {
     state.selectedBarangay = ''
+    barangaysData.value = []
     delete state.errors.barangay
+
+    if (!newCity) return
+
+    try {
+      loading.value = true
+      const response = await axios.get(`/api/locations/barangays?city=${encodeURIComponent(newCity)}`, {
+        withCredentials: true
+      })
+      if (response.data && response.data.data) {
+        barangaysData.value = Array.isArray(response.data.data) ? response.data.data : []
+      }
+    } catch (error) {
+      console.error('Error loading barangays:', error)
+      barangaysData.value = []
+    } finally {
+      loading.value = false
+    }
   })
 
   function validate() {
@@ -120,6 +118,9 @@ export default function useAddress(initial = {}) {
     state.selectedCity = ''
     state.selectedBarangay = ''
     state.errors = {}
+    provincesData.value = []
+    citiesData.value = []
+    barangaysData.value = []
   }
 
   return {
@@ -129,6 +130,6 @@ export default function useAddress(initial = {}) {
     barangays,
     validate,
     reset,
-    locationData
+    loading
   }
 }

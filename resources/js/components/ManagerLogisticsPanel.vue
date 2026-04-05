@@ -31,7 +31,7 @@
               <span class="hr-stat-value">{{ dashboardTotals.lowStock }}</span>
             </div>
           </div>
-          <div class="hr-stat-card hr-stat-card--leave">
+          <div class="hr-stat-card hr-stat-card--leave" :class="{ 'stat-alert': managerPendingCount > 0 }">
             <div class="hr-stat-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
             </div>
@@ -39,6 +39,7 @@
               <span class="hr-stat-label">Pending Requests</span>
               <span class="hr-stat-value">{{ dashboardTotals.pendingRequests }}</span>
             </div>
+            <span v-if="managerPendingCount > 0" class="panel-badge">{{ managerPendingCount }}</span>
           </div>
         </div>
       <!-- Inventory Section (moved to staff) -->
@@ -308,7 +309,10 @@
 
       <!-- Pending Stock Section (moved to Logistics) -->
       <div class="panel-section">
-        <h2 class="section-title">Pending Stock</h2>
+        <h2 class="section-title">
+          Pending Stock
+          <span v-if="managerPendingCount > 0" class="panel-badge">{{ managerPendingCount }}</span>
+        </h2>
         <p class="section-description">Items delivered and awaiting inventory confirmation by Logistics.</p>
 
         <div v-if="pendingStockLoading" class="loading-container">
@@ -321,32 +325,114 @@
           <button class="btn-retry" @click="fetchPendingStock">Retry</button>
         </div>
 
-        <div v-else class="table-container">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th>Qty</th>
-                <th>Requested</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="item in pendingStock" :key="item.procurement_request_id || item.id">
-                <td>{{ item.product_name || '(no product)' }}</td>
-                <td>{{ item.quantity }}</td>
-                <td>{{ formatDate(item.created_at) }}</td>
-                <td>
-                  <button class="btn-primary btn-small" :disabled="confirmingPending[item.procurement_request_id || item.id]" @click="confirmPendingStock(item)">
-                    {{ confirmingPending[item.procurement_request_id || item.id] ? 'Confirming...' : 'Confirm Stock' }}
+        <div v-else class="logistics-three-panel">
+          <div class="logistics-panel-card">
+            <div class="panel-card-header">Pending Requests</div>
+            <div class="panel-card-body">
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>Qty</th>
+                      <th>Requested</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="item in pendingStock" :key="item.procurement_request_id || item.id">
+                      <td>{{ item.product_name || '(no product)' }}</td>
+                      <td>{{ item.quantity }}</td>
+                      <td>{{ formatDate(item.created_at) }}</td>
+                      <td>
+                        <button class="btn-primary btn-small" @click="selectPending(item)">
+                          Review
+                        </button>
+                      </td>
+                    </tr>
+                    <tr v-if="pendingStock.length === 0">
+                      <td colspan="4" class="empty-message">No pending stock awaiting confirmation.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="logistics-panel-card">
+            <div class="panel-card-header">Confirmation Form</div>
+            <div class="panel-card-body">
+              <div v-if="!selectedPending" class="empty-state">Select a pending request to confirm stock.</div>
+              <div v-else class="confirm-form">
+                <div class="detail-grid">
+                  <div class="detail-row">
+                    <span class="detail-label">Product</span>
+                    <strong class="detail-value">{{ selectedPending.product_name || '(no product)' }}</strong>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-label">Requested Qty</span>
+                    <strong class="detail-value">{{ selectedPending.quantity }}</strong>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-label">Requested At</span>
+                    <strong class="detail-value">{{ formatDate(selectedPending.created_at) }}</strong>
+                  </div>
+                  <div v-if="selectedPending.supplier_name" class="detail-row">
+                    <span class="detail-label">Supplier</span>
+                    <strong class="detail-value">{{ selectedPending.supplier_name }}</strong>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>Counted Stock</label>
+                  <input v-model.number="confirmForm.counted_stock" type="number" min="0" />
+                  <div v-if="varianceValue !== null" :class="['variance-pill', varianceValue === 0 ? 'variance-ok' : (varianceValue > 0 ? 'variance-over' : 'variance-under')]">
+                    Variance: {{ varianceValue }}
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>Proof of Product Image</label>
+                  <input type="file" accept="image/*" @change="onProofSelected" />
+                  <div v-if="confirmForm.proof_image" class="file-chip">{{ confirmForm.proof_image.name }}</div>
+                </div>
+
+                <div class="form-group">
+                  <label>Notes (optional)</label>
+                  <textarea v-model="confirmForm.notes" rows="3" placeholder="Add variance notes if needed"></textarea>
+                </div>
+
+                <div v-if="confirmError" class="error-message">{{ confirmError }}</div>
+
+                <div class="form-actions">
+                  <button class="btn-secondary" type="button" @click="clearSelectedPending">Clear</button>
+                  <button class="btn-primary" type="button" :disabled="confirmSubmitting" @click="submitPendingConfirmation">
+                    {{ confirmSubmitting ? 'Confirming...' : 'Confirm Stock' }}
                   </button>
-                </td>
-              </tr>
-              <tr v-if="pendingStock.length === 0">
-                <td colspan="4" class="empty-message">No pending stock awaiting confirmation.</td>
-              </tr>
-            </tbody>
-          </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="logistics-panel-card">
+            <div class="panel-card-header">Supplier Alerts</div>
+            <div class="panel-card-body">
+              <div v-if="varianceLoading" class="loading-container small">
+                <div class="loading-spinner"></div>
+              </div>
+              <div v-else-if="varianceError" class="error-message">{{ varianceError }}</div>
+              <div v-else-if="varianceAlerts.length === 0" class="empty-state">No variance alerts yet.</div>
+              <div v-else class="alerts-list">
+                <div v-for="alert in varianceAlerts" :key="alert.transaction_id" class="alert-card">
+                  <div class="alert-title">{{ alert.product_name || 'Unknown product' }}</div>
+                  <div class="alert-meta">Expected {{ alert.expected_quantity }} | Actual {{ alert.actual_quantity }}</div>
+                  <div class="alert-variance">Variance: {{ alert.variance }}</div>
+                  <div v-if="alert.variance_reason" class="alert-reason">{{ alert.variance_reason }}</div>
+                  <a v-if="alert.proof_of_delivery_path" class="alert-link" :href="storageUrl(alert.proof_of_delivery_path)" target="_blank" rel="noopener">View proof</a>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -407,7 +493,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import axios from 'axios'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import { showToast } from './toastStore'
@@ -441,6 +527,13 @@ const pendingStock = ref([])
 const pendingStockLoading = ref(false)
 const pendingStockError = ref('')
 const confirmingPending = ref({})
+const selectedPending = ref(null)
+const confirmForm = ref({ counted_stock: 0, notes: '', proof_image: null })
+const confirmSubmitting = ref(false)
+const confirmError = ref('')
+const varianceAlerts = ref([])
+const varianceLoading = ref(false)
+const varianceError = ref('')
 
 // Product Request state
 const productRequests = ref([])
@@ -454,6 +547,20 @@ const showRequestForm = ref(false)
 
 // map of productId => boolean for per-row requesting state
 const requesting = ref({})
+const hasNotified = ref(false)
+const managerPendingCount = computed(() => {
+  const dashboardPending = Number(dashboardTotals.value?.pendingRequests || 0)
+  const procurementPending = (procurementRequests.value || []).filter(r => (r.status || '').toLowerCase() === 'pending').length
+  const productPending = (productRequests.value || []).filter(r => (r.approval_status || '').toLowerCase() === 'pending_approval').length
+  const stockPending = (pendingStock.value || []).length
+  return Math.max(dashboardPending, procurementPending, productPending, stockPending, 0)
+})
+watch(managerPendingCount, (count) => {
+  if (!hasNotified.value && count > 0) {
+    showToast('You have pending logistics requests.', 'info')
+    hasNotified.value = true
+  }
+})
 
 // Helper: perform request with graceful handling and token-fallback on 401.
 async function requestWithFallback(method, url, options = {}) {
@@ -616,6 +723,14 @@ function formatPricingType(type) {
   return typeMap[type] || 'N/A'
 }
 
+const varianceValue = computed(() => {
+  if (!selectedPending.value) return null
+  const expected = Number(selectedPending.value.quantity ?? 0)
+  const actual = Number(confirmForm.value.counted_stock ?? 0)
+  if (Number.isNaN(actual)) return null
+  return actual - expected
+})
+
 // fetchAnnouncements removed
 
 async function fetchInventory() {
@@ -693,6 +808,22 @@ async function fetchPendingStock() {
   } finally {
     pendingStockLoading.value = false
     try { updateDashboardTotals() } catch (e) { /* ignore */ }
+  }
+}
+
+async function fetchVarianceAlerts() {
+  varianceLoading.value = true
+  varianceError.value = ''
+  try {
+    const res = await requestWithFallback('get', '/api/staff/inventory/variance-alerts', { withCredentials: true })
+    const data = res.data?.data ?? []
+    varianceAlerts.value = Array.isArray(data) ? data : []
+  } catch (e) {
+    console.error('fetchVarianceAlerts error', e)
+    varianceAlerts.value = []
+    varianceError.value = 'Failed to load supplier alerts: ' + (e.response?.data?.message || e.message)
+  } finally {
+    varianceLoading.value = false
   }
 }
 
@@ -842,50 +973,83 @@ onMounted(async () => {
   // React to branch changes to reload tables
   watch(selectedBranch, async (newVal, oldVal) => {
     // fetch updated data for the selected branch
-    await Promise.all([fetchInventory(), loadProducts(), fetchProcRequests(), fetchProductRequests(), fetchPendingStock()])
+    await Promise.all([fetchInventory(), loadProducts(), fetchProcRequests(), fetchProductRequests(), fetchPendingStock(), fetchVarianceAlerts()])
   })
 
   // initial load
-  await Promise.all([fetchInventory(), loadProducts(), fetchProcRequests(), fetchProductRequests(), fetchPendingStock()])
+  await Promise.all([fetchInventory(), loadProducts(), fetchProcRequests(), fetchProductRequests(), fetchPendingStock(), fetchVarianceAlerts()])
 })
 
-// Confirm pending procurement stock (inventory) - called from logistics panel
-async function confirmPendingStock(item) {
-  if (!item || !item.procurement_request_id) return
-  const id = item.procurement_request_id || item.id
-  // ask for counted stock using swalPrompt if available, otherwise fallback to window.prompt
-  let input = null
-  try {
-    // Use product min_stock as default (fall back to 10). Show expiry in prompt if available.
-    const defaultQty = (item.min_stock ?? item.product_stock ?? 10)
-    const expiryText = item.product_expires_at ? ` | Expires: ${new Date(item.product_expires_at).toLocaleDateString()}` : ''
-    if (window.swalPrompt) {
-      input = await window.swalPrompt(`Enter counted stock for ${item.product_name || 'item'}${expiryText}`, String(defaultQty))
-    } else {
-      input = window.prompt(`Enter counted stock for ${item.product_name || 'item'}${expiryText}`, String(defaultQty))
-    }
-  } catch (e) {
-    console.warn('Prompt cancelled', e)
-    return
+function selectPending(item) {
+  if (!item) return
+  selectedPending.value = item
+  confirmForm.value = {
+    counted_stock: Number(item.quantity ?? 0),
+    notes: '',
+    proof_image: null,
   }
-  if (input === null || input === undefined) return
-  const qty = parseInt(String(input).replace(/[^0-9\-]/g, ''), 10)
-  if (Number.isNaN(qty) || qty < 0) {
-    showToast('Invalid quantity entered', 'error')
+  confirmError.value = ''
+}
+
+function clearSelectedPending() {
+  selectedPending.value = null
+  confirmForm.value = { counted_stock: 0, notes: '', proof_image: null }
+  confirmError.value = ''
+}
+
+function onProofSelected(e) {
+  const file = e?.target?.files?.[0] || null
+  confirmForm.value = { ...confirmForm.value, proof_image: file }
+}
+
+async function submitPendingConfirmation() {
+  if (!selectedPending.value) {
+    showToast('Select a pending request first', 'warning')
     return
   }
 
+  const id = selectedPending.value.procurement_request_id || selectedPending.value.id
+  if (!id) return
+
+  const qty = Number(confirmForm.value.counted_stock)
+  if (Number.isNaN(qty) || qty < 0) {
+    confirmError.value = 'Enter a valid counted stock value'
+    return
+  }
+
+  if (!confirmForm.value.proof_image) {
+    confirmError.value = 'Proof image is required'
+    return
+  }
+
+  confirmSubmitting.value = true
+  confirmError.value = ''
   confirmingPending.value = { ...confirmingPending.value, [id]: true }
+
   try {
-    await requestWithFallbackPost(`/api/staff/inventory/procurements/${id}/confirm-stock`, { counted_stock: qty }, { withCredentials: true })
+    const formData = new FormData()
+    formData.append('counted_stock', String(qty))
+    if (confirmForm.value.notes) formData.append('notes', confirmForm.value.notes)
+    formData.append('proof_image', confirmForm.value.proof_image)
+
+    await requestWithFallbackPost(`/api/staff/inventory/procurements/${id}/confirm-stock`, formData, { withCredentials: true })
     showToast('Stock confirmed', 'success')
-    await Promise.all([fetchPendingStock(), fetchInventory(), fetchProcRequests()])
+    clearSelectedPending()
+    await Promise.all([fetchPendingStock(), fetchInventory(), fetchProcRequests(), fetchVarianceAlerts()])
   } catch (e) {
-    console.error('confirmPendingStock error', e)
-    showToast(e.response?.data?.message || 'Failed to confirm stock', 'error')
+    console.error('submitPendingConfirmation error', e)
+    confirmError.value = e.response?.data?.message || 'Failed to confirm stock'
   } finally {
+    confirmSubmitting.value = false
     confirmingPending.value = { ...confirmingPending.value, [id]: false }
   }
+}
+
+function storageUrl(path) {
+  if (!path) return ''
+  if (String(path).startsWith('http')) return path
+  if (String(path).startsWith('/storage/')) return path
+  return '/storage/' + String(path).replace(/^\/?storage\//, '')
 }
 
 // Handle profile updates emitted from OwnerPanelLayout
@@ -1050,6 +1214,32 @@ function formatProductReqStatus(status) {
 </script>
 
 <style scoped>
+.panel-badge {
+  position: absolute;
+  top: -8px;
+  right: -16px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.35);
+}
+
+.hr-stat-card {
+  position: relative;
+}
+
+.section-title {
+  position: relative;
+  display: inline-block;
+}
 /* Keep small button style used in other components */
 .btn-small { padding: 6px 10px; font-size: 0.85rem; border-radius: 6px }
 
@@ -1167,6 +1357,150 @@ function formatProductReqStatus(status) {
 
 .table-container {
   overflow-x: auto;
+}
+
+.logistics-three-panel {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 0.9fr;
+  gap: 16px;
+}
+
+.logistics-panel-card {
+  border: 1px solid #f0e6d8;
+  background: #fff;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+}
+
+.panel-card-header {
+  background: #fff4e6;
+  padding: 12px 16px;
+  font-weight: 600;
+  color: #5a2c0a;
+  font-size: 14px;
+}
+
+.panel-card-body {
+  padding: 16px;
+}
+
+.confirm-form .form-group {
+  margin-bottom: 14px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 12px;
+  margin-bottom: 16px;
+}
+
+.detail-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-label {
+  font-size: 12px;
+  color: #8b5a2b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-value {
+  font-size: 14px;
+  color: #2f2f2f;
+}
+
+.file-chip {
+  margin-top: 8px;
+  display: inline-flex;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  font-size: 12px;
+  color: #475569;
+}
+
+.variance-pill {
+  display: inline-flex;
+  margin-top: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.variance-ok {
+  background: rgba(34, 197, 94, 0.15);
+  color: #15803d;
+}
+
+.variance-over {
+  background: rgba(59, 130, 246, 0.15);
+  color: #1d4ed8;
+}
+
+.variance-under {
+  background: rgba(239, 68, 68, 0.15);
+  color: #b91c1c;
+}
+
+.alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.alert-card {
+  border: 1px solid #f1e1c9;
+  border-radius: 12px;
+  padding: 12px;
+  background: #fffaf2;
+}
+
+.alert-title {
+  font-weight: 600;
+  color: #4b2a06;
+  margin-bottom: 4px;
+}
+
+.alert-meta {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.alert-variance {
+  font-size: 13px;
+  font-weight: 600;
+  color: #b45309;
+  margin-top: 6px;
+}
+
+.alert-reason {
+  margin-top: 6px;
+  color: #4b5563;
+  font-size: 12px;
+}
+
+.alert-link {
+  display: inline-flex;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #1d4ed8;
+}
+
+.empty-state {
+  color: #8b8b8b;
+  font-size: 13px;
+}
+
+@media (max-width: 1100px) {
+  .logistics-three-panel {
+    grid-template-columns: 1fr;
+  }
 }
 
 .inventory-table-container {

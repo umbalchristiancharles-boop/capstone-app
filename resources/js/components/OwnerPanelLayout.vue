@@ -87,7 +87,7 @@
             <slot name="side"></slot>
           </template>
           <template v-else>
-            <div class="attendance-card" style="margin-top:12px; background:#ffffff;">
+            <div v-if="!hideAttendanceCard" class="attendance-card" style="margin-top:12px; background:#ffffff;">
               <div class="attendance-header">
                 <span class="attendance-title">Attendance</span>
                 <span :class="['attendance-status-badge', attendanceStatus.is_clocked_in ? 'status-on-duty' : 'status-off-duty']">
@@ -275,6 +275,8 @@ const props = defineProps({
   showBackButton: { type: Boolean, default: false }
   ,
   showAnnouncements: { type: Boolean, default: true }
+  ,
+  showAttendanceCard: { type: Boolean, default: true }
 })
 
 const emit = defineEmits(['logout', 'profile-updated', 'back'])
@@ -288,6 +290,14 @@ const isCustomAccount = computed(() => {
     return (u?.role || '').toLowerCase() === 'custom'
   } catch (e) {
     return false
+  }
+})
+
+const hideAttendanceCard = computed(() => {
+  try {
+    return !props.showAttendanceCard || Boolean(route && route.query && route.query.from === 'custom-panel') || isCustomAccount.value
+  } catch (e) {
+    return !props.showAttendanceCard || isCustomAccount.value
   }
 })
 
@@ -481,8 +491,10 @@ onMounted(() => {
 
     Promise.resolve(loadAnnouncements()).catch(() => {})
     // Load attendance status/settings for default side attendance card
-    Promise.resolve(loadAttendanceStatus()).catch(() => {})
-    Promise.resolve(loadAttendanceSettings()).catch(() => {})
+    if (!hideAttendanceCard.value) {
+      Promise.resolve(loadAttendanceStatus()).catch(() => {})
+      Promise.resolve(loadAttendanceSettings()).catch(() => {})
+    }
   } catch (e) {}
   // If parent did not provide a populated `userProfile` prop, try fetching the
   // authoritative current user so the profile column is not empty after SPA

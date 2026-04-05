@@ -31,9 +31,10 @@
             <div class="hr-stat-icon"> <!-- icon --> </div>
             <div class="hr-stat-content"><span class="hr-stat-label">Low Stock</span><span class="hr-stat-value">{{ lowStockCount }}</span></div>
           </div>
-          <div class="hr-stat-card hr-stat-card--leave">
+          <div class="hr-stat-card hr-stat-card--leave" :class="{ 'stat-alert': inventoryPendingCount > 0 }">
             <div class="hr-stat-icon"> <!-- icon --> </div>
             <div class="hr-stat-content"><span class="hr-stat-label">Pending Requests</span><span class="hr-stat-value">{{ pendingCount }}</span></div>
+            <span v-if="inventoryPendingCount > 0" class="panel-badge">{{ inventoryPendingCount }}</span>
           </div>
         </div>
 
@@ -154,11 +155,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import InventoryStaffPanel from './inventory/InventoryStaffPanel.vue'
 import axios from 'axios'
+import { showToast } from './toastStore'
 import '../css/adminpanel.css'
 
 const userProfile = ref({})
@@ -166,6 +168,8 @@ const products = ref([])
 const procurementRequests = ref([])
 const announcements = ref([])
 const router = useRouter()
+const notificationCounts = ref({ inventory: 0 })
+const hasNotified = ref(false)
 
 const showLogoutConfirm = ref(false)
 const isLoggingOut = ref(false)
@@ -190,6 +194,11 @@ const lowStockCount = computed(() => {
   }, 0)
 })
 const pendingCount = computed(() => (procurementRequests.value || []).length)
+const inventoryPendingCount = computed(() => {
+  const apiPending = Number(notificationCounts.value?.inventory || 0)
+  const localPending = Number(pendingCount.value || 0)
+  return Math.max(apiPending, localPending, 0)
+})
 
 function formatDate(d) {
   if (!d) return ''
@@ -241,11 +250,31 @@ onMounted(async () => {
   // initial fetch
   await fetchProducts()
   await fetchProcurements()
+  await loadPanelNotifications()
   // announcements
   try {
     const ann = await axios.get('/api/announcements', { withCredentials: true })
     announcements.value = Array.isArray(ann.data) ? ann.data : (ann.data?.announcements || ann.data?.data || [])
   } catch (e) { announcements.value = [] }
+})
+
+async function loadPanelNotifications() {
+  try {
+    const res = await axios.get('/api/panel-notifications', { withCredentials: true })
+    if (res.data && res.data.ok) {
+      const count = Number(res.data.counts?.inventory || 0)
+      notificationCounts.value = { inventory: Number.isNaN(count) ? 0 : count }
+    }
+  } catch (e) {
+    notificationCounts.value = { inventory: 0 }
+  }
+}
+
+watch(inventoryPendingCount, (count) => {
+  if (!hasNotified.value && count > 0) {
+    showToast('You have pending inventory confirmations.', 'info')
+    hasNotified.value = true
+  }
 })
 
 function cancelLogout() {
@@ -348,3 +377,9 @@ function onProfileUpdated(newData) {
   Object.assign(userProfile.value, newData)
 }
 </script>
+
+<style scoped>
+.hr-stat-card { position: relative; }
+.panel-badge { position:absolute; top:-8px; right:-8px; min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:#ef4444; color:#ffffff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(239,68,68,0.35) }
+.stat-alert { border:1px solid #fecaca; box-shadow:0 0 0 2px rgba(239,68,68,0.12) }
+</style>

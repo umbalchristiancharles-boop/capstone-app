@@ -17,6 +17,7 @@ use App\Models\BudgetRequest;
 use App\Models\ProcurementRequest;
 use App\Models\SupplierOrder;
 use App\Models\Branch;
+use App\Models\Attendance;
 use Carbon\Carbon;
 use Laravel\Sanctum\PersonalAccessToken;
 
@@ -357,6 +358,58 @@ class ManagerProfileController extends Controller
             'activeStaff' => $activeStaff,
             'onLeave' => 0,
         ]);
+    }
+
+    /**
+     * Get attendance records for HR manager.
+     * Main branch HR can view all branches, others are limited to their branch.
+     */
+    public function hrAttendance(Request $request)
+    {
+        $user = $this->getAuthenticatedManager($request);
+
+        if (!$this->allowManagerDept($user, 'hr')) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $isMainBranchHr = $this->isMainBranchHrManager($user);
+        $range = $request->query('range', 'today');
+        $branchId = $request->query('branch_id');
+
+        if (!$isMainBranchHr) {
+            $branchId = $user->branch_id;
+        }
+
+        $query = Attendance::with('user.branch')->whereHas('user', function ($q) use ($branchId) {
+            if ($branchId) {
+                $q->where('branch_id', $branchId);
+            }
+        });
+
+        if ($range === 'today') {
+            $query->where('date', Carbon::now()->toDateString());
+        } elseif ($range === 'thisWeek') {
+            $query->whereBetween('date', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+        } elseif ($range === 'thisMonth') {
+            $query->whereBetween('date', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()]);
+        }
+
+        $records = $query->orderBy('date', 'desc')->orderBy('time_in', 'desc')->get()->map(function ($att) {
+            return [
+                'id' => $att->id,
+                'user_id' => $att->user_id,
+                'user_name' => $att->user?->full_name ?? ($att->user?->username ?? 'Unknown'),
+                'branch_id' => $att->user?->branch?->id ?? null,
+                'branch_name' => $att->user?->branch?->name ?? null,
+                'date' => $att->date?->format('Y-m-d') ?? null,
+                'time_in' => $att->time_in?->format('h:i A') ?? null,
+                'time_out' => $att->time_out?->format('h:i A') ?? null,
+                'hours_worked' => is_numeric($att->hours_worked) ? round($att->hours_worked / 60, 2) : 0,
+                'status' => $att->status,
+            ];
+        });
+
+        return response()->json(['ok' => true, 'data' => $records]);
     }
 
     /**

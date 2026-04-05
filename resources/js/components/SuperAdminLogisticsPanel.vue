@@ -179,9 +179,10 @@
 
           <!-- Logistics Dashboard Summary -->
           <div v-if="!logisticsDashboardLoading && logisticsDashboard" class="logistics-summary-grid">
-            <div class="logistics-card">
+            <div class="logistics-card" :class="{ 'stat-alert': logisticsPendingCount > 0 }">
               <div class="card-value">{{ logisticsDashboard.summary?.pending || 0 }}</div>
               <div class="card-label">Pending Operations</div>
+              <span v-if="logisticsPendingCount > 0" class="panel-badge">{{ logisticsPendingCount }}</span>
             </div>
             <div class="logistics-card">
               <div class="card-value">{{ logisticsDashboard.summary?.in_progress || 0 }}</div>
@@ -320,11 +321,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import { useTheme } from '../composables/useTheme'
+import { showToast } from './toastStore'
 const router = useRouter()
 const { initializeTheme } = useTheme()
 
@@ -362,6 +364,14 @@ const logisticsTransactions = ref([])
 const logisticsPage = ref(1)
 const selectedTransaction = ref(null)
 const showTransactionModal = ref(false)
+const notificationCounts = ref({ logistics: 0 })
+const hasNotified = ref(false)
+const logisticsPendingCount = computed(() => {
+  const apiPending = Number(notificationCounts.value?.logistics || 0)
+  const dashboardPending = Number(logisticsDashboard.value?.summary?.pending || 0)
+  const localPending = (logisticsTransactions.value || []).filter(t => (t.status || '').toLowerCase() === 'pending').length
+  return Math.max(apiPending, dashboardPending, localPending, 0)
+})
 
 // Utils
 function formatPrice(n) {
@@ -408,7 +418,26 @@ function handleBranchChange() {
   fetchProcRequests()
   fetchLogisticsDashboard()
   fetchLogisticsTransactions()
+  loadPanelNotifications()
 }
+
+async function loadPanelNotifications() {
+  try {
+    const res = await axios.get('/api/panel-notifications', { withCredentials: true })
+    if (res.data && res.data.ok) {
+      notificationCounts.value = { logistics: Number(res.data.counts?.logistics || 0) }
+    }
+  } catch (e) {
+    notificationCounts.value = { logistics: 0 }
+  }
+}
+
+watch(logisticsPendingCount, (count) => {
+  if (!hasNotified.value && count > 0) {
+    showToast('You have pending logistics operations.', 'info')
+    hasNotified.value = true
+  }
+})
 
 // Inventory (superadmin endpoints)
 async function fetchInventory() {
@@ -616,6 +645,7 @@ onMounted(async () => {
       fetchLogisticsDashboard().catch(e => { console.error('fetchLogisticsDashboard failed:', e); }),
       fetchLogisticsTransactions().catch(e => { console.error('fetchLogisticsTransactions failed:', e); }),
     ])
+    await loadPanelNotifications()
   } catch (error) {
     console.error('SuperAdminLogisticsPanel mount error:', error)
   }
@@ -739,6 +769,10 @@ defineExpose({ fetchInventory })
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
+
+.logistics-card { position: relative; }
+.panel-badge { position:absolute; top:-8px; right:-8px; min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:#ef4444; color:#ffffff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(239,68,68,0.35) }
+.stat-alert { border:1px solid #fecaca; box-shadow:0 0 0 2px rgba(239,68,68,0.12) }
 
 :global(.dark-mode) .panel-section {
   background: rgba(45, 45, 45, 0.95);

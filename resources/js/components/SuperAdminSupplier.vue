@@ -31,7 +31,10 @@
 
           <!-- Orders table (read-only monitoring) -->
           <div class="panel-section" style="padding:0">
-            <h3 style="margin:0 0 12px 0">Supplier Orders</h3>
+            <h3 style="margin:0 0 12px 0; position:relative;">
+              Supplier Orders
+              <span v-if="supplierPendingCount > 0" class="panel-badge">{{ supplierPendingCount }}</span>
+            </h3>
             <div v-if="ordersLoading" class="loading-container"><div class="loading-spinner"></div><p>Loading orders...</p></div>
             <div v-else class="requests-container">
               <div class="orders-table-wrapper">
@@ -131,11 +134,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import { useTheme } from '../composables/useTheme'
+import { showToast } from './toastStore'
 
 const router = useRouter()
 const { initializeTheme } = useTheme()
@@ -150,7 +154,32 @@ function handleBranchChange() {
   loadOrders().catch(()=>{})
   loadDeliveries().catch(()=>{})
   loadProducts().catch(()=>{})
+  loadPanelNotifications().catch(()=>{})
 }
+
+async function loadPanelNotifications() {
+  try {
+    const res = await axios.get('/api/panel-notifications', { withCredentials: true })
+    if (res.data && res.data.ok) {
+      notificationCounts.value = { supplier: Number(res.data.counts?.supplier || 0) }
+    }
+  } catch (e) {
+    notificationCounts.value = { supplier: 0 }
+  }
+}
+
+const supplierPendingCount = computed(() => {
+  const apiPending = Number(notificationCounts.value?.supplier || 0)
+  const localPending = (orders.value || []).filter(o => (o.status || '').toLowerCase() === 'pending').length
+  return Math.max(apiPending, localPending, 0)
+})
+
+watch(supplierPendingCount, (count) => {
+  if (!hasNotified.value && count > 0) {
+    showToast('You have pending supplier orders.', 'info')
+    hasNotified.value = true
+  }
+})
 
 async function fetchBranches() {
   try {
@@ -196,6 +225,8 @@ const showOrdersArrows = ref(false)
 const showDeliveriesArrows = ref(false)
 const showOrdersVertArrows = ref(false)
 const showProductsArrows = ref(false)
+const notificationCounts = ref({ supplier: 0 })
+const hasNotified = ref(false)
 
 function getStatusClass(status) {
   switch ((status || '').toLowerCase()) {
@@ -354,7 +385,7 @@ function handleResize() {
 onMounted(async () => {
   initializeTheme()
   try { await axios.get('/sanctum/csrf-cookie', { withCredentials: true }) } catch (e) {}
-  await Promise.all([fetchBranches().catch(()=>{}), fetchSuppliers().catch(()=>{}), loadDashboardTotals().catch(()=>{}), loadOrders().catch(()=>{}), loadDeliveries().catch(()=>{}), loadProducts().catch(()=>{})])
+  await Promise.all([fetchBranches().catch(()=>{}), fetchSuppliers().catch(()=>{}), loadDashboardTotals().catch(()=>{}), loadOrders().catch(()=>{}), loadDeliveries().catch(()=>{}), loadProducts().catch(()=>{}), loadPanelNotifications().catch(()=>{})])
   // check overflow for tables and listen for resizes
   setTimeout(() => { checkOrdersOverflow(); checkDeliveriesOverflow(); checkProductsOverflow(); checkOrdersVerticalOverflow() }, 100)
   window.addEventListener('resize', handleResize)
@@ -390,6 +421,8 @@ onUnmounted(() => {
 }
 
 .back-to-superadmin-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.16); }
+
+.panel-badge { position:absolute; top:-8px; right:-8px; min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:#ef4444; color:#ffffff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(239,68,68,0.35) }
 
 .branch-selector-section {
   background: rgba(255,255,255,0.95);

@@ -20,12 +20,13 @@
               <span class="hr-stat-value">{{ dashboardTotals.activeDeliveries }}</span>
             </div>
           </div>
-          <div class="hr-stat-card hr-stat-card--active">
+          <div class="hr-stat-card hr-stat-card--active" :class="{ 'stat-alert': supplierPendingCount > 0 }">
             <div class="hr-stat-icon">🕒</div>
             <div class="hr-stat-content">
               <span class="hr-stat-label">Pending Orders</span>
               <span class="hr-stat-value">{{ dashboardTotals.pendingOrders }}</span>
             </div>
+            <span v-if="supplierPendingCount > 0" class="panel-badge">{{ supplierPendingCount }}</span>
           </div>
           <div class="hr-stat-card hr-stat-card--leave">
             <div class="hr-stat-icon">🏷️</div>
@@ -51,6 +52,7 @@
                 <th>Product</th>
                 <th>Branch</th>
                 <th>Qty</th>
+                <th>Variance</th>
                 <th>Total</th>
                 <th>Status</th>
                 <th>Action</th>
@@ -61,11 +63,15 @@
                 <td>{{ order.product?.name }}</td>
                 <td>{{ order.branch?.name || order.branch_id }}</td>
                 <td>{{ order.quantity }}</td>
+                <td>{{ formatVariance(order.procurementRequest?.variance_quantity) }}</td>
                 <td>{{ formatPrice(order.product?.price * order.quantity) }}</td>
                 <td>
                   <span :class="['status-badge', getStatusClass(order.status)]">
                     {{ order.status }}
                   </span>
+                  <div v-if="order.procurementRequest?.variance_quantity" class="alert-badge">
+                    Variance reported
+                  </div>
                 </td>
                 <td class="action-cell">
                   <template v-if="order.status === 'pending'">
@@ -402,7 +408,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import LogisticsPanelContent from './logistics/LogisticsPanelContent.vue'
 import LoadingOverlay from './LoadingOverlay.vue'
@@ -417,6 +423,18 @@ const loadingProducts = ref(false)
 const orders = ref([])
 const ordersLoading = ref(false)
 const suppliers = ref([])
+const notificationCounts = ref({ supplier: 0 })
+const hasNotified = ref(false)
+const supplierPendingCount = computed(() => {
+  const apiPending = Number(notificationCounts.value?.supplier || 0)
+  const dashboardPending = Number(dashboardTotals.value?.pendingOrders || 0)
+  const localPending = (orders.value || []).filter(o => {
+    const status = (o.status || '').toLowerCase()
+    if (!status) return false
+    return !['fulfilled', 'completed', 'cancelled'].includes(status)
+  }).length
+  return Math.max(apiPending, dashboardPending, localPending, 0)
+})
 
 // UI / modal state
 const showLogoutConfirm = ref(false)
@@ -576,6 +594,22 @@ onMounted(async () => {
       await loadProducts()
     }
   } catch (e) { console.warn('Failed to load supplier products', e) }
+
+  try {
+    const res = await axios.get('/api/panel-notifications', { withCredentials: true })
+    if (res.data && res.data.ok) {
+      notificationCounts.value = { supplier: Number(res.data.counts?.supplier || 0) }
+    }
+  } catch (e) {
+    notificationCounts.value = { supplier: 0 }
+  }
+})
+
+watch(supplierPendingCount, (count) => {
+  if (!hasNotified.value && count > 0) {
+    showToast('You have pending supplier orders.', 'info')
+    hasNotified.value = true
+  }
 })
 
 async function loadProducts() {
@@ -914,6 +948,13 @@ function formatPrice(val) {
   return '₱' + n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+function formatVariance(val) {
+  if (val === null || val === undefined || val === 0) return '-'
+  const n = Number(val)
+  if (Number.isNaN(n)) return '-'
+  return n > 0 ? `+${n}` : String(n)
+}
+
 function formatDate(dt) {
   try {
     const d = new Date(dt)
@@ -1002,6 +1043,7 @@ function onProfileUpdated(newData) {
 .overview-card { background:#fff; border-radius:10px; padding:0.75rem 1rem; box-shadow:0 6px 18px rgba(15,23,42,0.04); border:1px solid #eef2f6; display:flex; gap:0.5rem; align-items:center }
 .overview-label { color:#6b7280; font-weight:600 }
 .overview-value { font-weight:700; color:#111827; margin-left:6px }
+.hr-stat-card { position: relative; }
 
 .supplier-products { margin-top:1rem }
 .product-grid { display:grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap:0.75rem; margin-top:0.5rem }
@@ -1074,10 +1116,14 @@ function onProfileUpdated(newData) {
 .data-table thead th { background:transparent; color:#374151; font-weight:700; text-align:left }
 .action-cell { min-width:200px; white-space:nowrap; text-align:right }
 .status-badge { display:inline-block; padding:4px 8px; border-radius:8px; font-size:0.9rem }
+.alert-badge { margin-top:6px; display:inline-block; padding:3px 8px; border-radius:999px; font-size:0.75rem; font-weight:600; background:#fff1f2; color:#be123c }
 .btn-small { padding:6px 8px; font-size:0.85rem }
 
 .product-grid { gap:0.75rem }
 .product-card { display:flex; flex-direction:column; justify-content:space-between }
+
+.panel-badge { position:absolute; top:-8px; right:-8px; min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:#ef4444; color:#ffffff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(239,68,68,0.35) }
+.stat-alert { border:1px solid #fecaca; box-shadow:0 0 0 2px rgba(239,68,68,0.12) }
 
 @media (max-width: 900px) {
   .overview-grid { flex-direction:column }

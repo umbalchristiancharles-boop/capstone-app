@@ -25,11 +25,41 @@
           <div class="cards-greeting-text">{{ greetingLabel }}</div>
         </div>
 
+        <div class="attendance-card">
+          <div class="attendance-header">
+            <span class="attendance-title">Attendance</span>
+            <span :class="['attendance-status-badge', attendanceStatus.is_clocked_in ? 'status-on-duty' : 'status-off-duty']">
+              {{ attendanceStatus.is_clocked_in ? 'On Duty' : 'Off Duty' }}
+            </span>
+          </div>
+          <div class="attendance-times" v-if="attendanceStatus.clock_in_time || attendanceStatus.clock_out_time">
+            <div class="time-row"><span class="time-label">Clock In:</span><span class="time-value">{{ attendanceStatus.clock_in_time || '-' }}</span></div>
+            <div class="time-row"><span class="time-label">Clock Out:</span><span class="time-value">{{ attendanceStatus.clock_out_time || '-' }}</span></div>
+            <div class="time-row" v-if="attendanceStatus.hours_worked > 0"><span class="time-label">Hours:</span><span class="time-value">{{ attendanceStatus.hours_worked }} hrs</span></div>
+          </div>
+          <div class="attendance-buttons">
+            <button @click="performClockIn" :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing" class="btn-clock-in">{{ isAttendanceProcessing ? '...' : 'Clock In' }}</button>
+            <button @click="performClockOut" :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockOut" class="btn-clock-out" :class="{ 'btn-disabled': !canClockOut && attendanceStatus.is_clocked_in }">{{ isAttendanceProcessing ? '...' : 'Clock Out' }}</button>
+          </div>
+          <div v-if="!canClockOut && attendanceStatus.is_clocked_in" class="clockout-restriction"><span class="restriction-icon">LOCK</span><span>Cannot clock out before {{ scheduledTimeOut }}</span></div>
+          <div v-if="attendanceMessage" :class="['attendance-message', attendanceMessageType]">{{ attendanceMessage }}</div>
+        </div>
+
         <p v-if="!modules || modules.length === 0" class="empty-message">No modules assigned. Contact admin to enable modules.</p>
 
         <div v-else class="modules-grid">
-          <div v-for="m in modules" :key="m" class="module-tile" @click="goToModule(m)" role="button" tabindex="0" @keydown.enter="goToModule(m)">
+          <div
+            v-for="m in modules"
+            :key="m"
+            class="module-tile"
+            :class="{ 'module-tile--alert': pendingCount(m) > 0 }"
+            @click="goToModule(m)"
+            role="button"
+            tabindex="0"
+            @keydown.enter="goToModule(m)"
+          >
             <div class="module-icon">{{ (prettyName(m) || '').charAt(0) }}</div>
+            <span v-if="pendingCount(m) > 0" class="module-badge">{{ pendingCount(m) }}</span>
             <div class="module-info">
               <div class="module-name">{{ prettyName(m) }}</div>
               <div class="module-desc">{{ panelDescription(m) }}</div>
@@ -46,6 +76,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
+import { showToast } from './toastStore';
 
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href;
 const router = useRouter();
@@ -56,6 +87,22 @@ const userRole = ref('');
 const userInitials = ref('U');
 const userLastLoginRaw = ref('');
 const panelDescriptions = ref({});
+const attendanceStatus = ref({
+  is_clocked_in: false,
+  clock_in_time: null,
+  clock_out_time: null,
+  hours_worked: 0
+});
+const isAttendanceProcessing = ref(false);
+const attendanceMessage = ref('');
+const attendanceMessageType = ref('');
+const attendanceSettings = ref({
+  early_clockout_override: false,
+  scheduled_time_out: '17:00:00'
+});
+const notificationCounts = ref({});
+const isNotificationsLoading = ref(false);
+const hasNotified = ref(false);
 
 const toTitleCase = (value) => {
   return String(value || '')
@@ -110,6 +157,110 @@ const userLastLoginLabel = computed(() => {
   });
 });
 
+const scheduledTimeOut = computed(() => {
+  const time = attendanceSettings.value.scheduled_time_out || '17:00:00';
+  const [hours, minutes] = time.split(':');
+  const hour = parseInt(hours);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour % 12 || 12;
+  return `${hour12}:${minutes} ${ampm}`;
+});
+
+const canClockOut = computed(() => {
+  if (!attendanceStatus.value.is_clocked_in) return false;
+  if (attendanceSettings.value.early_clockout_override) return true;
+
+  const now = new Date();
+  const currentHours = now.getHours();
+  const currentMinutes = now.getMinutes();
+  const [scheduledHours, scheduledMinutes] = (attendanceSettings.value.scheduled_time_out || '17:00:00').split(':');
+  const currentTotalMinutes = currentHours * 60 + currentMinutes;
+  const scheduledTotalMinutes = parseInt(scheduledHours) * 60 + parseInt(scheduledMinutes);
+  return currentTotalMinutes >= scheduledTotalMinutes;
+});
+
+const loadAttendanceStatus = async () => {
+  try {
+    const res = await axios.get('/api/staff/attendance/status', { withCredentials: true });
+    if (res.data && res.data.ok) {
+      attendanceStatus.value = {
+        is_clocked_in: res.data.status?.is_clocked_in || false,
+        clock_in_time: res.data.status?.clock_in_time || null,
+        clock_out_time: res.data.status?.clock_out_time || null,
+        hours_worked: res.data.status?.hours_worked || 0
+      };
+    }
+  } catch (e) {
+    console.error('Failed to load attendance status:', e);
+  }
+};
+
+const loadAttendanceSettings = async () => {
+  try {
+    const res = await axios.get('/api/attendance/settings', { withCredentials: true });
+    if (res.data && res.data.ok && res.data.data) {
+      attendanceSettings.value = {
+        early_clockout_override: res.data.data.early_clockout_override || false,
+        scheduled_time_out: res.data.data.scheduled_time_out || '17:00:00'
+      };
+    }
+  } catch (e) {
+    console.error('Failed to load attendance settings:', e);
+    attendanceSettings.value = {
+      early_clockout_override: false,
+      scheduled_time_out: '17:00:00'
+    };
+  }
+};
+
+const performClockIn = async () => {
+  if (isAttendanceProcessing.value) return;
+  isAttendanceProcessing.value = true;
+  attendanceMessage.value = '';
+
+  try {
+    const res = await axios.post('/api/staff/clock-in', {}, { withCredentials: true });
+    if (res.data && (res.data.success || res.data.ok)) {
+      attendanceMessage.value = 'Clocked in successfully!';
+      attendanceMessageType.value = 'success';
+      await loadAttendanceStatus();
+    } else {
+      attendanceMessage.value = res.data.message || 'Failed to clock in';
+      attendanceMessageType.value = 'error';
+    }
+  } catch (e) {
+    attendanceMessage.value = e.response?.data?.message || 'Error clocking in';
+    attendanceMessageType.value = 'error';
+  } finally {
+    isAttendanceProcessing.value = false;
+    setTimeout(() => { attendanceMessage.value = ''; }, 3000);
+  }
+};
+
+const performClockOut = async () => {
+  if (isAttendanceProcessing.value) return;
+  isAttendanceProcessing.value = true;
+  attendanceMessage.value = '';
+
+  try {
+    const res = await axios.post('/api/staff/clock-out', {}, { withCredentials: true });
+    if (res.data && (res.data.success || res.data.ok)) {
+      attendanceMessage.value = 'Clocked out successfully!';
+      attendanceMessageType.value = 'success';
+      await loadAttendanceStatus();
+    } else {
+      attendanceMessage.value = res.data.message || 'Failed to clock out';
+      attendanceMessageType.value = 'error';
+    }
+  } catch (e) {
+    attendanceMessage.value = e.response?.data?.message || 'Error clocking out';
+    attendanceMessageType.value = 'error';
+  } finally {
+    isAttendanceProcessing.value = false;
+    setTimeout(() => { attendanceMessage.value = ''; }, 3000);
+  }
+};
+
 const loadPanelDescriptions = async () => {
   try {
     const res = await axios.get('/api/panel-descriptions', { withCredentials: true });
@@ -124,6 +275,7 @@ const loadPanelDescriptions = async () => {
 
 onMounted(() => {
   loadPanelDescriptions();
+  loadPanelNotifications();
 
   try {
     const user = JSON.parse(localStorage.getItem('user') || 'null');
@@ -177,7 +329,36 @@ onMounted(() => {
   }).catch((err) => {
     console.warn('[CustomPanel] /api/me failed:', err.response?.status);
   });
+
+  loadAttendanceStatus();
+  loadAttendanceSettings();
 });
+
+const loadPanelNotifications = async () => {
+  isNotificationsLoading.value = true;
+  try {
+    const res = await axios.get('/api/panel-notifications', { withCredentials: true });
+    if (res.data && res.data.ok) {
+      notificationCounts.value = res.data.counts || {};
+      const total = Object.values(notificationCounts.value || {}).reduce((sum, v) => sum + Number(v || 0), 0);
+      if (!hasNotified.value && total > 0) {
+        showToast('You have pending items in your modules.', 'info');
+        hasNotified.value = true;
+      }
+    }
+  } catch (e) {
+    notificationCounts.value = {};
+  } finally {
+    isNotificationsLoading.value = false;
+  }
+};
+
+const pendingCount = (m) => {
+  const key = String(m || '').toLowerCase();
+  const raw = notificationCounts.value[key] ?? 0;
+  const count = Number(raw || 0);
+  return Number.isNaN(count) ? 0 : count;
+};
 
 const prettyName = (m) => {
   if (!m) return 'Unknown';
@@ -268,7 +449,9 @@ const logout = async () => {
 .empty-message { color:#6B7280; text-align:center; margin:12px 0 }
 
 .modules-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:22px; margin:36px auto 18px auto; width:100%; align-items:start }
-.module-tile { display:flex; gap:14px; align-items:center; align-self:start; padding:18px; background:#fff; border-radius:14px; border:1px solid #E5E7EB; cursor:pointer; box-shadow:0 8px 18px rgba(0,0,0,0.08); transition:transform .24s ease, box-shadow .24s ease, padding .28s ease }
+.module-tile { position: relative; display:flex; gap:14px; align-items:center; align-self:start; padding:18px; background:#fff; border-radius:14px; border:1px solid #E5E7EB; cursor:pointer; box-shadow:0 8px 18px rgba(0,0,0,0.08); transition:transform .24s ease, box-shadow .24s ease, padding .28s ease, border-color .24s ease }
+.module-tile--alert { border-color:#fb923c; box-shadow:0 0 0 2px rgba(251,146,60,0.18), 0 10px 20px rgba(251,146,60,0.2) }
+.module-badge { position:absolute; top:-10px; right:-10px; min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:#ef4444; color:#ffffff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(239,68,68,0.35) }
 .module-tile:hover { transform:translateY(-4px); box-shadow:0 12px 24px rgba(249,115,22,0.20) }
 .module-tile:focus { outline: none; box-shadow: 0 0 0 3px rgba(0,102,255,0.12) }
 .module-tile:hover,

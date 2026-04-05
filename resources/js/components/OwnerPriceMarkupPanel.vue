@@ -20,7 +20,10 @@
       <div class="centered-wrapper">
         <section class="panel-block">
         <div class="panel-header">
-          <h2>Pending Price Markup Approvals</h2>
+          <h2>
+            Pending Price Markup Approvals
+            <span v-if="pendingRequests.length > 0" class="panel-badge">{{ pendingRequests.length }}</span>
+          </h2>
           <button class="refresh-btn" @click="loadPendingRequests" :disabled="loading">
             {{ loading ? 'Loading...' : 'Refresh' }}
           </button>
@@ -167,6 +170,7 @@ import { ref, onMounted } from 'vue'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
+import { showToast } from './toastStore'
 
 const router = useRouter()
 const userProfile = ref({})
@@ -178,6 +182,7 @@ const approvingId = ref(null)
 const rejectingId = ref(null)
 const loading = ref(false)
 const error = ref('')
+const hasNotified = ref(false)
 
 function formatDate(dateString) {
   if (!dateString) return 'N/A'
@@ -211,12 +216,21 @@ async function loadPendingRequests() {
       pendingRequests.value = (res.data.requests || []).filter(
         req => req.main_finance_approval === 'approved' && req.owner_approval === 'pending'
       )
+      notifyIfPending()
     }
   } catch (e) {
     error.value = 'Failed to load pending requests'
     console.error('Error loading requests:', e)
   } finally {
     loading.value = false
+  }
+}
+
+function notifyIfPending() {
+  if (hasNotified.value) return
+  if ((pendingRequests.value || []).length > 0) {
+    showToast('You have pending price markup approvals.', 'info')
+    hasNotified.value = true
   }
 }
 
@@ -363,7 +377,10 @@ onMounted(async () => {
   font-weight: 700;
   color: var(--orange);
   letter-spacing: -0.5px;
+  position: relative;
 }
+
+.panel-badge { position:absolute; top:-8px; right:-18px; min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:#ef4444; color:#ffffff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(239,68,68,0.35) }
 
 .refresh-btn {
   padding: 10px 20px;
@@ -461,9 +478,12 @@ onMounted(async () => {
   flex: 1;
   display: grid;
   grid-template-columns: 1fr auto;
+  position: relative;
   gap: 16px;
   align-items: start;
 }
+
+.panel-badge { position:absolute; top:-8px; right:-18px; min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:#ef4444; color:#ffffff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(239,68,68,0.35) }
 
 .request-title {
   margin: 0;

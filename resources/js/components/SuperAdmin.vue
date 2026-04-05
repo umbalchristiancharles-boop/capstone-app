@@ -193,22 +193,42 @@
               <!-- Module Navigation -->
               <div class="admin-actions-row">
                 <button v-if="superAdminProfile.role && superAdminProfile.role.toUpperCase().includes('SUPER')" class="staff-btn staff-btn--center" @click="goToSuperAdminStaff">Staff Management</button>
-                <button class="staff-btn staff-btn--center" @click="openModule('hr')"> HR Staff Management</button>
-                <button class="staff-btn staff-btn--center" @click="openModule('kitchen')">Kitchen Staff Monitoring</button>
-                <button class="staff-btn staff-btn--center" @click="openModule('finance')">Finance</button>
-                <button class="staff-btn staff-btn--center" @click="openModule('cashier')">Cashier</button>
+                <button class="staff-btn staff-btn--center" @click="openModule('hr')">
+                  HR Staff Management
+                </button>
+                <button class="staff-btn staff-btn--center" @click="openModule('kitchen')">
+                  Kitchen Staff Monitoring
+                  <span v-if="pendingCounts.kitchen > 0" class="panel-badge">{{ pendingCounts.kitchen }}</span>
+                </button>
+                <button class="staff-btn staff-btn--center" @click="openModule('finance')">
+                  Finance
+                  <span v-if="pendingCounts.finance > 0" class="panel-badge">{{ pendingCounts.finance }}</span>
+                </button>
+                <button class="staff-btn staff-btn--center" @click="openModule('cashier')">
+                  Cashier
+                  <span v-if="pendingCounts.cashier > 0" class="panel-badge">{{ pendingCounts.cashier }}</span>
+                </button>
               </div>
 
               <div class="admin-actions-row">
-                <button class="staff-btn staff-btn--center" @click="openModule('logistics')">Logistics</button>
+                <button class="staff-btn staff-btn--center" @click="openModule('logistics')">
+                  Logistics
+                  <span v-if="pendingCounts.logistics > 0" class="panel-badge">{{ pendingCounts.logistics }}</span>
+                </button>
               </div>
 
               <div class="admin-actions-row">
-                <button class="staff-btn staff-btn--center" @click="openModule('supplier')">Supplier Management</button>
+                <button class="staff-btn staff-btn--center" @click="openModule('supplier')">
+                  Supplier Management
+                  <span v-if="pendingCounts.supplier > 0" class="panel-badge">{{ pendingCounts.supplier }}</span>
+                </button>
               </div>
 
               <div class="admin-actions-row">
-                <button class="staff-btn staff-btn--center" @click="openModule('procurement')">Procurement</button>
+                <button class="staff-btn staff-btn--center" @click="openModule('procurement')">
+                  Procurement
+                  <span v-if="pendingCounts.procurement > 0" class="panel-badge">{{ pendingCounts.procurement }}</span>
+                </button>
               </div>
 
               <div class="admin-actions-row">
@@ -410,6 +430,7 @@ import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import '../css/adminpanel.css'
 import { useTheme } from '../composables/useTheme'
+import { showToast } from './toastStore'
 
 const router = useRouter()
 const route = useRoute()
@@ -477,6 +498,15 @@ const systemActivity = ref([])
 const topProducts = ref([])
 const lowStockItems = ref([])
 const adminAttendance = ref([])
+const pendingCounts = ref({
+  procurement: 0,
+  logistics: 0,
+  supplier: 0,
+  finance: 0,
+  kitchen: 0,
+  cashier: 0,
+})
+const hasNotified = ref(false)
 
 const panelTitle = computed(() => 'Chikin Tayo Super Admin Panel')
 const panelDescription = computed(() => 'Full system access - manage all modules, branches, and system settings.')
@@ -550,6 +580,22 @@ async function changeRange(range) {
   if (activeRange.value === range) return
   activeRange.value = range
   await loadDashboard(range)
+}
+
+async function loadPanelNotifications() {
+  try {
+    const res = await axios.get('/api/panel-notifications', { withCredentials: true })
+    if (res.data && res.data.ok) {
+      pendingCounts.value = { ...pendingCounts.value, ...(res.data.counts || {}) }
+      const total = Object.values(pendingCounts.value).reduce((sum, v) => sum + Number(v || 0), 0)
+      if (!hasNotified.value && total > 0) {
+        showToast('You have pending items across modules.', 'info')
+        hasNotified.value = true
+      }
+    }
+  } catch (e) {
+    // Non-blocking
+  }
 }
 
 async function openInfoModal() {
@@ -787,6 +833,7 @@ onMounted(async () => {
   superAdminProfile.value = { fullName: '', role: 'SUPER_ADMIN', email: '', contact: '', accountId: '', avatarUrl: '' }
   await loadProfile()
   await loadDashboard(activeRange.value)
+  await loadPanelNotifications()
 })
 
 // Reload dashboard whenever we navigate to this route so external changes (like added branches)
@@ -834,8 +881,27 @@ watch(() => route.path, (p) => {
 }
 
 .staff-btn--center {
+  position: relative;
   width: 100%;
   margin-bottom: 0.5rem;
+}
+
+.panel-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.35);
 }
 
 .info-input {

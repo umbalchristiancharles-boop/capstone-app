@@ -121,6 +121,15 @@ Route::get('/owner/price-markup-approvals', function () {
         ->header('Expires', '0');
 })->name('owner.price-markup-approvals')->middleware(['web', 'auth', \App\Http\Middleware\OwnerOnly::class]);
 
+// OWNER BRANCH CONFIRMATIONS ROUTE (for OwnerBranchConfirmations.vue)
+Route::get('/owner/branch-confirmations', function () {
+    return response()
+        ->view('dashboard')
+        ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        ->header('Pragma', 'no-cache')
+        ->header('Expires', '0');
+})->name('owner.branch-confirmations')->middleware(['web', 'auth', \App\Http\Middleware\OwnerOnly::class]);
+
 // MANAGER STAFF MANAGEMENT
 Route::get('/manager/staff', function () {
     return response()

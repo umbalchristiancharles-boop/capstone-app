@@ -27,7 +27,11 @@
         <section class="overview-grid">
           <article class="overview-card"><span class="k">Active Products</span><strong>{{ metrics.active_products }}</strong></article>
           <article class="overview-card"><span class="k">Low Stock</span><strong>{{ metrics.low_stock }}</strong></article>
-          <article class="overview-card"><span class="k">Pending Deliveries</span><strong>{{ metrics.pending_deliveries }}</strong></article>
+          <article class="overview-card" :class="{ 'stat-alert': pendingDeliveriesCount > 0 }">
+            <span class="k">Pending Deliveries</span>
+            <strong>{{ metrics.pending_deliveries }}</strong>
+            <span v-if="pendingDeliveriesCount > 0" class="panel-badge">{{ pendingDeliveriesCount }}</span>
+          </article>
           <article class="overview-card"><span class="k">Suppliers</span><strong>{{ metrics.suppliers }}</strong></article>
         </section>
 
@@ -86,7 +90,10 @@
             </table>
           </div>
           <section class="panel-section">
-            <h2 class="section-title">Product Requests (Logistics Approval)</h2>
+            <h2 class="section-title">
+              Product Requests (Logistics Approval)
+              <span v-if="pendingProductRequestsCount > 0" class="panel-badge">{{ pendingProductRequestsCount }}</span>
+            </h2>
             <p class="section-description">New product requests awaiting logistics approval from Main Branch.</p>
 
             <div v-if="prLoading" class="loading-container small">
@@ -204,9 +211,10 @@
 </template>
 
 <script setup>
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
+import { showToast } from './toastStore'
 
 const router = useRouter()
 const profile = ref({})
@@ -230,6 +238,15 @@ const prError = ref('')
 const suppliers = ref([])
 const suppliersLoading = ref(false)
 const suppliersError = ref('')
+const notificationCounts = ref({ logistics: 0 })
+const hasNotified = ref(false)
+const pendingDeliveriesCount = computed(() => {
+  const apiPending = Number(notificationCounts.value?.logistics || 0)
+  const metricsPending = Number(metrics.value?.pending_deliveries || 0)
+  return Math.max(apiPending, metricsPending, 0)
+})
+const pendingProductRequestsCount = computed(() => (pendingProductRequests.value || []).length)
+const logisticsAlertCount = computed(() => Math.max(pendingDeliveriesCount.value, pendingProductRequestsCount.value, 0))
 
 // Branch selector for Main Branch HQ users
 const branches = ref([])
@@ -286,6 +303,24 @@ async function loadMetrics() {
     }
   } catch (e) {}
 }
+
+async function loadPanelNotifications() {
+  try {
+    const res = await axios.get('/api/panel-notifications', { withCredentials: true })
+    if (res.data && res.data.ok) {
+      notificationCounts.value = { logistics: Number(res.data.counts?.logistics || 0) }
+    }
+  } catch (e) {
+    notificationCounts.value = { logistics: 0 }
+  }
+}
+
+watch(logisticsAlertCount, (count) => {
+  if (!hasNotified.value && count > 0) {
+    showToast('You have pending logistics operations.', 'info')
+    hasNotified.value = true
+  }
+})
 
 async function fetchInventory() {
   inventoryLoading.value = true
@@ -369,6 +404,7 @@ function formatProcStatus(status, budgetApproved) {
 onMounted(async () => {
   await loadProfile()
   await loadMetrics()
+  await loadPanelNotifications()
   await fetchBranches()
 
   watch(selectedBranch, async () => {
@@ -478,9 +514,11 @@ watch(selectedBranch, async () => {
 .panel-header p { margin: 0; color: rgba(66,33,11,0.7); max-width: 54ch; }
 
 .overview-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
-.overview-card { display: flex; flex-direction: column; gap: 8px; padding: 16px; }
+.overview-card { position: relative; display: flex; flex-direction: column; gap: 8px; padding: 16px; }
 .overview-card .k { color: rgba(66,33,11,0.7); font-size: 13px; }
 .overview-card strong { font-size: 24px; color: rgba(17,24,39,0.85); }
+.panel-badge { position:absolute; top:-8px; right:-8px; min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:#ef4444; color:#ffffff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(239,68,68,0.35) }
+.stat-alert { border:1px solid #fecaca; box-shadow:0 0 0 2px rgba(239,68,68,0.12) }
 
 .side-col { display: grid; gap: 14px; align-content: start; }
 .panel-block ul { margin: 0; padding-left: 18px; }

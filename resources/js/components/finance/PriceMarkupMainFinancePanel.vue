@@ -1,7 +1,10 @@
 <template>
   <div class="price-markup-main-finance-section">
     <div class="section-header">
-      <h2>Price Markup Percentage Requests</h2>
+      <h2>
+        Price Markup Percentage Requests
+        <span v-if="pendingRequests.length > 0" class="panel-badge">{{ pendingRequests.length }}</span>
+      </h2>
       <p>Review and approve/reject percentage change requests from branch finance managers</p>
       <button class="refresh-btn" @click="fetchPendingRequests" :disabled="isLoading">
         <span v-if="!isLoading">↻ Refresh</span>
@@ -141,6 +144,7 @@
 <script setup>
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
+import { showToast } from '../toastStore'
 
 const props = defineProps({
   branchId: {
@@ -154,6 +158,7 @@ const pendingRequests = ref([])
 const isLoading = ref(false)
 const errorMessage = ref('')
 const requestActions = reactive({})
+const hasNotified = ref(false)
 
 // Methods
 async function fetchPendingRequests() {
@@ -183,6 +188,8 @@ async function fetchPendingRequests() {
           }
         }
       })
+
+      notifyIfPending()
     } else {
       errorMessage.value = res.data?.message || 'Failed to load pending requests'
       console.warn('[PriceMarkupMainFinance] API returned ok=false:', res.data)
@@ -192,6 +199,14 @@ async function fetchPendingRequests() {
     errorMessage.value = error.response?.data?.message || 'Failed to load pending requests. Please try again.'
   } finally {
     isLoading.value = false
+  }
+}
+
+function notifyIfPending() {
+  if (hasNotified.value) return
+  if ((pendingRequests.value || []).length > 0) {
+    showToast('You have pending price markup requests to review.', 'info')
+    hasNotified.value = true
   }
 }
 
@@ -315,7 +330,10 @@ onMounted(() => {
   font-weight: 700;
   color: #1F2937;
   margin: 0;
+  position: relative;
 }
+
+.panel-badge { position:absolute; top:-8px; right:-18px; min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:#ef4444; color:#ffffff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(239,68,68,0.35) }
 
 .section-header p {
   color: #6B7280;

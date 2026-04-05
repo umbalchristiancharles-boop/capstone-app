@@ -20,6 +20,8 @@ use Illuminate\Support\Str;
 use App\Models\User;
 use App\Http\Controllers\Api\ProductCommentController;
 use App\Http\Controllers\Api\ConfigController;
+use App\Http\Controllers\Api\PanelNotificationController;
+use App\Http\Controllers\Api\LocationController;
 
 // ==========================================
 // JWT AUTHENTICATION ROUTES (Cross-Domain)
@@ -100,6 +102,7 @@ Route::middleware('web')->group(function () {
 
     Route::get('/me',               [AuthController::class, 'me'])->middleware('auth');
     Route::get('/panel-descriptions', [ConfigController::class, 'panelDescriptions'])->middleware('auth');
+    Route::get('/panel-notifications', [PanelNotificationController::class, 'index'])->middleware('auth');
     Route::get('/owner-profile',    [AuthController::class, 'ownerProfile'])->middleware('auth');
     Route::put('/owner-profile',    [AuthController::class, 'updateOwnerProfile'])->middleware('auth');
     Route::post('/upload-avatar',   [AuthController::class, 'uploadAvatar'])->middleware('auth');
@@ -151,6 +154,16 @@ Route::middleware('web')->group(function () {
     Route::post('/superadmin/branches', [\App\Http\Controllers\Api\SuperAdminController::class, 'storeBranch'])->middleware(['auth', 'permission:admin,admin.branches']);
     // Delete a branch (soft-delete branch and associated user accounts)
     Route::delete('/superadmin/branches/{id}', [\App\Http\Controllers\Api\SuperAdminController::class, 'deleteBranch'])->middleware(['auth', 'permission:admin,admin.branches']);
+
+    // Owner Branch Approval
+    Route::get('/owner/branch-requests', [\App\Http\Controllers\Api\SuperAdminController::class, 'pendingBranchRequests'])->middleware(['auth']);
+    Route::post('/owner/branch-requests/{id}/approve', [\App\Http\Controllers\Api\SuperAdminController::class, 'approveBranchRequest'])->middleware(['auth']);
+    Route::post('/owner/branch-requests/{id}/reject', [\App\Http\Controllers\Api\SuperAdminController::class, 'rejectBranchRequest'])->middleware(['auth']);
+
+    // Main Branch Finance Branch Confirmation
+    Route::get('/main-branch/finance/branch-requests', [\App\Http\Controllers\Api\SuperAdminController::class, 'pendingFinanceBranchRequests'])->middleware(['auth']);
+    Route::post('/main-branch/finance/branch-requests/{id}/approve', [\App\Http\Controllers\Api\SuperAdminController::class, 'approveFinanceBranchRequest'])->middleware(['auth']);
+    Route::post('/main-branch/finance/branch-requests/{id}/reject', [\App\Http\Controllers\Api\SuperAdminController::class, 'rejectFinanceBranchRequest'])->middleware(['auth']);
 
     // ==========================================
     // SUPERADMIN FINANCE MODULE
@@ -328,6 +341,7 @@ Route::prefix('manager')->middleware('auth:sanctum,web')->group(function () {
         Route::get('/hr/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'hrProfile']);
         Route::put('/hr/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'updateHrProfile']);
         Route::get('/hr/dashboard', [\App\Http\Controllers\Api\ManagerProfileController::class, 'hrDashboard']);
+        Route::get('/hr/attendance', [\App\Http\Controllers\Api\ManagerProfileController::class, 'hrAttendance']);
         Route::get('/hr/staff', [\App\Http\Controllers\Api\ManagerProfileController::class, 'hrStaff']);
         Route::post('/hr/staff', [\App\Http\Controllers\Api\ManagerProfileController::class, 'createHrStaff']);
         Route::put('/hr/staff/{id}', [\App\Http\Controllers\Api\ManagerProfileController::class, 'updateHrStaff']);
@@ -413,6 +427,7 @@ Route::prefix('manager')->middleware('auth:sanctum,web')->group(function () {
             // Pending procurements awaiting stock confirmation (staff)
             Route::get('/inventory/pending-procurements', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'pendingProcurements']);
             Route::get('/inventory/confirmed-procurements', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'confirmedProcurements']);
+            Route::get('/inventory/variance-alerts', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'varianceAlerts']);
             Route::post('/inventory/procurements/{id}/confirm-stock', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'confirmProcurementStock']);
 
             // Backwards-compatible aliases (old frontend used these paths)
@@ -499,5 +514,15 @@ Route::prefix('manager')->middleware('auth:sanctum,web')->group(function () {
 
         // Update attendance settings (OWNER/HR only)
         Route::put('/settings', [\App\Http\Controllers\Staff\AttendanceSettingsController::class, 'updateSettings']);
+    });
+
+    // ==========================================
+    // LOCATIONS API - REGIONS, PROVINCES, CITIES, BARANGAYS
+    // ==========================================
+    Route::prefix('locations')->middleware('auth')->group(function () {
+        Route::get('/regions', [LocationController::class, 'regions']);
+        Route::get('/provinces', [LocationController::class, 'provinces']);
+        Route::get('/cities', [LocationController::class, 'cities']);
+        Route::get('/barangays', [LocationController::class, 'barangays']);
     });
 });

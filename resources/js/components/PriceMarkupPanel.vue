@@ -71,7 +71,10 @@
 
     <!-- Pending Requests List (For Main Finance and Owner) -->
     <div v-if="(canApproveAsMainFinance || canApproveAsOwner) && pendingRequests.length > 0" class="pending-requests">
-      <h4>Pending Approval Requests</h4>
+      <h4>
+        Pending Approval Requests
+        <span v-if="pendingRequests.length > 0" class="panel-badge">{{ pendingRequests.length }}</span>
+      </h4>
       
       <div v-for="req in pendingRequests" :key="req.id" class="request-card">
         <div class="request-header">
@@ -185,6 +188,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
+import { showToast } from './toastStore'
 
 const props = defineProps({
   branchId: { type: Number, default: null },
@@ -207,6 +211,7 @@ const approvalNotes = ref({})
 const ownerApprovalNotes = ref({})
 const isApproving = ref({})
 const loading = ref(false)
+const hasNotified = ref(false)
 
 // Permissions
 const canRequest = computed(() => {
@@ -371,9 +376,18 @@ async function loadPendingRequests() {
     const response = await axios.get(`/api/price-markup/pending/${branchParam}`, { withCredentials: true })
     if (response.data.ok) {
       pendingRequests.value = response.data.requests || []
+      notifyIfPending()
     }
   } catch (error) {
     console.error('Failed to load pending requests:', error)
+  }
+}
+
+function notifyIfPending() {
+  if (hasNotified.value) return
+  if ((pendingRequests.value || []).length > 0) {
+    showToast('You have pending price markup requests.', 'info')
+    hasNotified.value = true
   }
 }
 
@@ -624,6 +638,9 @@ onMounted(async () => {
   padding-top: 20px;
   border-top: 2px solid #f3f4f6;
 }
+
+.pending-requests h4 { position: relative; }
+.panel-badge { position:absolute; top:-8px; right:-18px; min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:#ef4444; color:#ffffff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(239,68,68,0.35) }
 
 .pending-requests h4 {
   margin: 0 0 16px;

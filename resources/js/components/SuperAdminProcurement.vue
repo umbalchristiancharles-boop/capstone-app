@@ -51,7 +51,7 @@
             <span class="hr-stat-value">{{ dashboardTotals.activeSuppliers }}</span>
           </div>
         </div>
-        <div class="hr-stat-card hr-stat-card--leave">
+        <div class="hr-stat-card hr-stat-card--leave" :class="{ 'stat-alert': procurementPendingCount > 0 }">
           <div class="hr-stat-icon">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
           </div>
@@ -59,6 +59,7 @@
             <span class="hr-stat-label">Pending Requests</span>
             <span class="hr-stat-value">{{ dashboardTotals.pendingRequests }}</span>
           </div>
+          <span v-if="procurementPendingCount > 0" class="panel-badge">{{ procurementPendingCount }}</span>
         </div>
       </div>
 
@@ -245,6 +246,7 @@ import { useRouter } from 'vue-router'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import axios from 'axios'
 import { useTheme } from '../composables/useTheme'
+import { showToast } from './toastStore'
 
 const router = useRouter()
 const { initializeTheme } = useTheme()
@@ -252,6 +254,15 @@ const userProfile = ref({})
 const dashboardTotals = ref({ totalSuppliers: 0, activeSuppliers: 0, pendingRequests: 0 })
 const showLogoutConfirm = ref(false)
 const isLoggingOut = ref(false)
+const notificationCounts = ref({ procurement: 0 })
+const hasNotified = ref(false)
+const procurementPendingCount = computed(() => {
+  if (!selectedBranch.value) return 0
+  const apiPending = Number(notificationCounts.value?.procurement || 0)
+  const dashboardPending = Number(dashboardTotals.value?.pendingRequests || 0)
+  const localPending = (requestedProducts.value || []).length
+  return Math.max(apiPending, dashboardPending, localPending, 0)
+})
 
 // Branch management
 const branches = ref([])
@@ -350,7 +361,26 @@ async function askLogout() {
 
 async function onBranchChange() {
   await Promise.all([loadProducts(), loadRequestedProducts(), refreshAllData(), fetchBudgetRequests(), loadProcurementHistory()])
+  await loadPanelNotifications()
 }
+
+async function loadPanelNotifications() {
+  try {
+    const res = await axios.get('/api/panel-notifications', { withCredentials: true })
+    if (res.data && res.data.ok) {
+      notificationCounts.value = { procurement: Number(res.data.counts?.procurement || 0) }
+    }
+  } catch (e) {
+    notificationCounts.value = { procurement: 0 }
+  }
+}
+
+watch(procurementPendingCount, (count) => {
+  if (!hasNotified.value && count > 0) {
+    showToast('You have pending procurement requests.', 'info')
+    hasNotified.value = true
+  }
+})
 
 async function loadProducts() {
   if (!selectedBranch.value) return
@@ -557,6 +587,7 @@ onMounted(async () => {
       fetchBudgetRequests(),
       loadProcurementHistory()
     ])
+    await loadPanelNotifications()
   }
 })
 
@@ -587,11 +618,13 @@ watch(selectedBranch, onBranchChange)
 <style scoped>
 /* Exact copy from ProcurementManagerPanel.vue with superadmin enhancements */
 .hr-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-.hr-stat-card { background: white; border-radius: 8px; padding: 1rem; display:flex; gap:0.75rem; align-items:center; color: #1b1b1f; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.hr-stat-card { position: relative; background: white; border-radius: 8px; padding: 1rem; display:flex; gap:0.75rem; align-items:center; color: #1b1b1f; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 .hr-stat-card:hover { transform: translateY(-1px); transition: all 0.2s; }
 .hr-stat-value { font-weight:700; font-size:1.25rem; color: #1e40af; }
 .hr-stat-label { font-size: 0.9rem; color: #64748b; }
 .hr-stat-icon svg { color: #3b82f6; }
+.panel-badge { position:absolute; top:-8px; right:-8px; min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:#ef4444; color:#ffffff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(239,68,68,0.35) }
+.stat-alert { border:1px solid #fecaca; box-shadow:0 0 0 2px rgba(239,68,68,0.12) }
 
 /* Product grid styles */
 .product-grid {

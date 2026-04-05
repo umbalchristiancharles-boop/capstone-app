@@ -833,6 +833,10 @@ class SuperAdminController extends Controller
                     'budget' => isset($branch->budget) ? (int) $branch->budget : 0,
                     'is_active' => (bool) $branch->is_active,
                     'is_main_branch' => (bool) ($branch->is_main_branch ?? false),
+                    'approval_status' => $branch->approval_status ?? 'approved',
+                    'requested_by' => $branch->requested_by,
+                    'approved_at' => $branch->approved_at,
+                    'rejected_at' => $branch->rejected_at,
                     'can_delete' => !((bool) ($branch->is_main_branch ?? false)),
                     'staff_count' => $staffCount,
                     'admin_user' => $adminUser ? [
@@ -895,16 +899,27 @@ class SuperAdminController extends Controller
             $b = Branch::find($user->branch_id);
             $isMainBranchAdmin = (bool) ($b && ($b->is_main_branch ?? false));
         }
+        $isMainBranchFinance = false;
+        if ($roleUpper === 'MANAGER' && strtoupper($user->department ?? '') === 'FINANCE') {
+            $b = Branch::find($user->branch_id);
+            $isMainBranchFinance = (bool) ($b && ($b->is_main_branch ?? false));
+        }
         $allowed = Permission::allowed($user, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER'], ['admin', 'admin.branches']);
         if (! $allowed && ! $isMainBranchAdmin) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
         }
 
+        $requiresOwnerApproval = $isMainBranchAdmin && ! $allowed;
+        $requiresFinanceApproval = $isMainBranchAdmin && ! $allowed;
+        $approvalStatus = $requiresFinanceApproval ? 'pending_finance' : 'approved';
+        $branchIsActive = $requiresFinanceApproval ? 0 : 1;
+        $accountIsActive = $requiresFinanceApproval ? 0 : 1;
+
         $request->validate([
             'code' => 'nullable|string|max:20',
             'name' => 'required|string|max:100',
             'address' => 'nullable|string|max:255',
-            'budget' => 'nullable|numeric|min:0',
+            'budget' => 'nullable|integer|min:100000|max:1000000',
             'accounts' => 'nullable|array',
             'accounts.admin' => 'nullable|boolean',
             'accounts.hr' => 'nullable|boolean',
@@ -924,6 +939,7 @@ class SuperAdminController extends Controller
         $code = $request->input('code');
         $name = $request->input('name');
         $address = $request->input('address');
+        $requestedBudget = (int) ($request->input('budget', 100000));
 
         $defaultPassword = config('chikintayo.default_password', 'Chikintayo_123');
 
@@ -988,10 +1004,17 @@ class SuperAdminController extends Controller
                 'code' => $code,
                 'name' => $name,
                 'address' => $address,
-                'is_active' => 1,
+                'is_active' => $branchIsActive,
                 'is_main_branch' => 0,
+                'approval_status' => $approvalStatus,
+                'requested_by' => $user->id,
+                'finance_confirmed_by' => null,
+                'finance_confirmed_at' => null,
+                'approved_by' => $requiresOwnerApproval ? null : $user->id,
+                'approved_at' => $requiresOwnerApproval ? null : now(),
+                'rejected_at' => null,
                 // Use provided budget or default to 100000
-                'budget' => (int) ($request->input('budget', 100000)),
+                'budget' => $requestedBudget,
             ]);
 
             $createdRoles = [];
@@ -1013,7 +1036,7 @@ class SuperAdminController extends Controller
                     'role' => 'ADMIN',
                     'department' => null,
                     'branch_id' => $branch->id,
-                    'is_active' => 1,
+                    'is_active' => $accountIsActive,
                     'must_change_password' => 1,
                 ]);
 
@@ -1036,7 +1059,7 @@ class SuperAdminController extends Controller
                     'role' => 'MANAGER',
                     'department' => 'HR',
                     'branch_id' => $branch->id,
-                    'is_active' => 1,
+                    'is_active' => $accountIsActive,
                     'must_change_password' => 1,
                 ]);
 
@@ -1059,7 +1082,7 @@ class SuperAdminController extends Controller
                     'role' => 'MANAGER',
                     'department' => 'Finance',
                     'branch_id' => $branch->id,
-                    'is_active' => 1,
+                    'is_active' => $accountIsActive,
                     'must_change_password' => 1,
                 ]);
 
@@ -1082,7 +1105,7 @@ class SuperAdminController extends Controller
                     'role' => 'MANAGER',
                     'department' => 'PROCUREMENT',
                     'branch_id' => $branch->id,
-                    'is_active' => 1,
+                    'is_active' => $accountIsActive,
                     'must_change_password' => 1,
                 ]);
 
@@ -1105,7 +1128,7 @@ class SuperAdminController extends Controller
                     'role' => 'MANAGER',
                     'department' => 'Logistics',
                     'branch_id' => $branch->id,
-                    'is_active' => 1,
+                    'is_active' => $accountIsActive,
                     'must_change_password' => 1,
                 ]);
 
@@ -1142,7 +1165,7 @@ class SuperAdminController extends Controller
                         'role' => 'CUSTOM',
                         'department' => null,
                         'branch_id' => $branch->id,
-                        'is_active' => 1,
+                        'is_active' => $accountIsActive,
                         'must_change_password' => 1,
                         'permissions' => [
                             'modules' => $modules,
@@ -1158,7 +1181,9 @@ class SuperAdminController extends Controller
 
             return response()->json([
                 'ok' => true,
-                'message' => "Branch '{$name}' created" . (!empty($createdRoles) ? ' with ' . implode(', ', $createdRoles) . ' account' . (count($createdRoles) === 1 ? '' : 's') . '.' : '.'),
+                'message' => $requiresFinanceApproval
+                    ? "Branch '{$name}' created and awaiting finance confirmation."
+                    : "Branch '{$name}' created" . (!empty($createdRoles) ? ' with ' . implode(', ', $createdRoles) . ' account' . (count($createdRoles) === 1 ? '' : 's') . '.' : '.'),
                 'branch_id' => $branch->id,
             ], 201);
 
@@ -1169,6 +1194,313 @@ class SuperAdminController extends Controller
                 'ok' => false,
                 'message' => 'Failed to create branch: ' . $e->getMessage(),
             ], 500);
+        }
+    }
+
+    /**
+     * List pending branch creation requests for owner approval.
+     */
+    public function pendingBranchRequests(Request $request)
+    {
+        $user = $this->resolveAuthenticatedUser($request);
+
+        if (!$user) {
+            return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
+        }
+
+        $allowed = Permission::allowed($user, ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN'], ['admin']);
+        if (! $allowed) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $branches = Branch::where('approval_status', 'pending_owner')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $requesterIds = $branches->pluck('requested_by')->filter()->unique()->values();
+        $requesters = User::whereIn('id', $requesterIds)->get()->keyBy('id');
+
+        $result = $branches->map(function ($branch) use ($requesters) {
+            $requester = $branch->requested_by ? ($requesters[$branch->requested_by] ?? null) : null;
+            return [
+                'id' => $branch->id,
+                'code' => $branch->code,
+                'name' => $branch->name,
+                'address' => $branch->address,
+                'budget' => isset($branch->budget) ? (int) $branch->budget : 0,
+                'created_at' => $branch->created_at,
+                'requested_by' => $requester ? [
+                    'id' => $requester->id,
+                    'full_name' => $requester->full_name,
+                    'username' => $requester->username,
+                    'role' => $requester->role,
+                ] : null,
+            ];
+        });
+
+        return response()->json(['ok' => true, 'branches' => $result]);
+    }
+
+    /**
+     * Approve a pending branch request.
+     */
+    public function approveBranchRequest(Request $request, $id)
+    {
+        $user = $this->resolveAuthenticatedUser($request);
+
+        if (!$user) {
+            return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
+        }
+
+        $allowed = Permission::allowed($user, ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN'], ['admin']);
+        if (! $allowed) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $branch = Branch::find($id);
+        if (! $branch) {
+            return response()->json(['ok' => false, 'message' => 'Branch not found'], 404);
+        }
+        if (($branch->approval_status ?? 'approved') !== 'pending_owner') {
+            return response()->json(['ok' => false, 'message' => 'Branch is not pending approval'], 409);
+        }
+
+        DB::beginTransaction();
+        try {
+            $mainBranch = Branch::where('is_main_branch', 1)->lockForUpdate()->first();
+            if (! $mainBranch) {
+                DB::rollBack();
+                return response()->json(['ok' => false, 'message' => 'Main branch not found for budget allocation.'], 422);
+            }
+
+            $allocation = (int) ($branch->budget ?? 0);
+            $mainBudget = (int) ($mainBranch->budget ?? 0);
+            if ($mainBudget < $allocation) {
+                DB::rollBack();
+                return response()->json(['ok' => false, 'message' => 'Insufficient main branch budget for this allocation.'], 422);
+            }
+
+            $mainBranch->budget = $mainBudget - $allocation;
+            $mainBranch->save();
+
+            $branch->approval_status = 'approved';
+            $branch->approved_by = $user->id;
+            $branch->approved_at = now();
+            $branch->rejected_at = null;
+            $branch->is_active = 1;
+            $branch->save();
+
+            User::where('branch_id', $branch->id)->update(['is_active' => 1]);
+
+            DB::commit();
+            return response()->json(['ok' => true, 'message' => 'Branch approved and activated.']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('approveBranchRequest error: ' . $e->getMessage());
+            return response()->json(['ok' => false, 'message' => 'Failed to approve branch'], 500);
+        }
+    }
+
+    /**
+     * Reject a pending branch request.
+     */
+    public function rejectBranchRequest(Request $request, $id)
+    {
+        $user = $this->resolveAuthenticatedUser($request);
+
+        if (!$user) {
+            return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
+        }
+
+        $allowed = Permission::allowed($user, ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN'], ['admin']);
+        if (! $allowed) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $branch = Branch::find($id);
+        if (! $branch) {
+            return response()->json(['ok' => false, 'message' => 'Branch not found'], 404);
+        }
+        if (($branch->approval_status ?? 'approved') !== 'pending_owner') {
+            return response()->json(['ok' => false, 'message' => 'Branch is not pending approval'], 409);
+        }
+
+        DB::beginTransaction();
+        try {
+            $branch->approval_status = 'rejected';
+            $branch->approved_by = $user->id;
+            $branch->approved_at = null;
+            $branch->rejected_at = now();
+            $branch->is_active = 0;
+            $branch->save();
+
+            User::where('branch_id', $branch->id)->update(['is_active' => 0]);
+
+            DB::commit();
+            return response()->json(['ok' => true, 'message' => 'Branch rejected.']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('rejectBranchRequest error: ' . $e->getMessage());
+            return response()->json(['ok' => false, 'message' => 'Failed to reject branch'], 500);
+        }
+    }
+
+    /**
+     * List pending branch requests for main branch finance confirmation.
+     */
+    public function pendingFinanceBranchRequests(Request $request)
+    {
+        $user = $this->resolveAuthenticatedUser($request);
+
+        if (!$user) {
+            return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
+        }
+
+        $roleUpper = strtoupper($user->role ?? '');
+        $isMainBranchFinance = false;
+        if ($roleUpper === 'MANAGER' && strtoupper($user->department ?? '') === 'FINANCE') {
+            $b = Branch::find($user->branch_id);
+            $isMainBranchFinance = (bool) ($b && ($b->is_main_branch ?? false));
+        }
+        if (! $isMainBranchFinance) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $branches = Branch::where('approval_status', 'pending_finance')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $requesterIds = $branches->pluck('requested_by')->filter()->unique()->values();
+        $requesters = User::whereIn('id', $requesterIds)->get()->keyBy('id');
+
+        $result = $branches->map(function ($branch) use ($requesters) {
+            $requester = $branch->requested_by ? ($requesters[$branch->requested_by] ?? null) : null;
+            return [
+                'id' => $branch->id,
+                'code' => $branch->code,
+                'name' => $branch->name,
+                'address' => $branch->address,
+                'budget' => isset($branch->budget) ? (int) $branch->budget : 0,
+                'created_at' => $branch->created_at,
+                'requested_by' => $requester ? [
+                    'id' => $requester->id,
+                    'full_name' => $requester->full_name,
+                    'username' => $requester->username,
+                    'role' => $requester->role,
+                ] : null,
+            ];
+        });
+
+        return response()->json(['ok' => true, 'branches' => $result]);
+    }
+
+    /**
+     * Main branch finance confirms budget allocation for a branch request.
+     */
+    public function approveFinanceBranchRequest(Request $request, $id)
+    {
+        $user = $this->resolveAuthenticatedUser($request);
+
+        if (!$user) {
+            return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
+        }
+
+        $roleUpper = strtoupper($user->role ?? '');
+        $isMainBranchFinance = false;
+        if ($roleUpper === 'MANAGER' && strtoupper($user->department ?? '') === 'FINANCE') {
+            $b = Branch::find($user->branch_id);
+            $isMainBranchFinance = (bool) ($b && ($b->is_main_branch ?? false));
+        }
+        if (! $isMainBranchFinance) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $branch = Branch::find($id);
+        if (! $branch) {
+            return response()->json(['ok' => false, 'message' => 'Branch not found'], 404);
+        }
+        if (($branch->approval_status ?? 'approved') !== 'pending_finance') {
+            return response()->json(['ok' => false, 'message' => 'Branch is not pending finance confirmation'], 409);
+        }
+
+        DB::beginTransaction();
+        try {
+            $branch->approval_status = 'pending_owner';
+            $branch->finance_confirmed_by = $user->id;
+            $branch->finance_confirmed_at = now();
+            $branch->save();
+
+            DB::commit();
+            return response()->json(['ok' => true, 'message' => 'Budget confirmed. Awaiting owner approval.']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('approveFinanceBranchRequest error: ' . $e->getMessage());
+            return response()->json(['ok' => false, 'message' => 'Failed to confirm budget allocation'], 500);
+        }
+    }
+
+    /**
+     * Main branch finance rejects budget allocation for a branch request.
+     */
+    public function rejectFinanceBranchRequest(Request $request, $id)
+    {
+        $user = $this->resolveAuthenticatedUser($request);
+
+        if (!$user) {
+            return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
+        }
+
+        $roleUpper = strtoupper($user->role ?? '');
+        $isMainBranchFinance = false;
+        if ($roleUpper === 'MANAGER' && strtoupper($user->department ?? '') === 'FINANCE') {
+            $b = Branch::find($user->branch_id);
+            $isMainBranchFinance = (bool) ($b && ($b->is_main_branch ?? false));
+        }
+        if (! $isMainBranchFinance) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $branch = Branch::find($id);
+        if (! $branch) {
+            return response()->json(['ok' => false, 'message' => 'Branch not found'], 404);
+        }
+        if (($branch->approval_status ?? 'approved') !== 'pending_finance') {
+            return response()->json(['ok' => false, 'message' => 'Branch is not pending finance confirmation'], 409);
+        }
+
+        DB::beginTransaction();
+        try {
+            $mainBranch = Branch::where('is_main_branch', 1)->lockForUpdate()->first();
+            if (! $mainBranch) {
+                DB::rollBack();
+                return response()->json(['ok' => false, 'message' => 'Main branch not found for budget allocation.'], 422);
+            }
+
+            $allocation = (int) ($branch->budget ?? 0);
+            $mainBudget = (int) ($mainBranch->budget ?? 0);
+            if ($mainBudget < $allocation) {
+                DB::rollBack();
+                return response()->json(['ok' => false, 'message' => 'Insufficient main branch budget for this allocation.'], 422);
+            }
+
+            $mainBranch->budget = $mainBudget - $allocation;
+            $mainBranch->save();
+
+            $branch->approval_status = 'approved';
+            $branch->approved_by = $user->id;
+            $branch->approved_at = now();
+            $branch->rejected_at = null;
+            $branch->is_active = 1;
+            $branch->save();
+
+            User::where('branch_id', $branch->id)->update(['is_active' => 1]);
+
+            DB::commit();
+            return response()->json(['ok' => true, 'message' => 'Branch approved and activated.']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('approveBranchRequest error: ' . $e->getMessage());
+            return response()->json(['ok' => false, 'message' => 'Failed to approve branch'], 500);
         }
     }
 

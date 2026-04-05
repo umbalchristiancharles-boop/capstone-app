@@ -21,7 +21,7 @@
     <div v-if="showAddBranchForm" class="modal-backdrop" @click.self="closeAddBranch">
       <div class="modal">
         <div class="modal-card">
-          <form @submit.prevent="submitBranch">
+          <form @submit.prevent="submitBranch" data-no-overlay="1">
             <div class="modal-header">
               <h2>Add New Branch</h2>
               <button type="button" @click="closeAddBranch" class="close-button">&times;</button>
@@ -40,12 +40,44 @@
 
               <div class="form-group full-span">
                 <label class="form-label">Address</label>
-                <textarea v-model="branchForm.address" rows="2" class="form-input" placeholder="Branch address"></textarea>
+
+                <!-- Saved Address Card -->
+                <div v-if="addressSaved" class="address-saved-card">
+                  <div class="address-card-header">
+                    <div class="address-card-content">
+                      <strong class="address-label">Location:</strong>
+                      <span class="address-text">{{ savedAddress }}</span>
+                    </div>
+                    <div class="address-card-actions">
+                      <button type="button" class="btn btn-secondary btn-sm" @click="editBranchAddress">Edit</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Address Input Form -->
+                <div v-else class="address-input-section">
+                  <textarea v-model="branchForm.address" rows="2" class="form-input" placeholder="House number, street, subdivision" :required="!savedAddress"></textarea>
+
+                  <!-- Address Cascader (Region → Province → City → Barangay) -->
+                  <div style="margin-top:0.5rem;">
+                    <AddressCascader
+                      :initialAddress="{ region: branchForm.region, province: branchForm.province, city: branchForm.city, barangay: branchForm.barangay }"
+                      :showSaveButton="false"
+                      @update:address="onAddressUpdate"
+                    />
+                  </div>
+
+                  <div style="margin-top:0.5rem; display:flex; gap:0.5rem;">
+                    <button type="button" class="btn btn-primary" @click="saveBranchAddress">Save Location</button>
+                    <button type="button" class="btn btn-secondary" @click="clearBranchAddress">Clear</button>
+                  </div>
+                </div>
               </div>
 
               <div class="form-group">
                 <label class="form-label">Initial Budget (PHP)</label>
-                <input v-model.number="branchForm.budget" type="number" min="0" step="1000" class="form-input" />
+                <input v-model.number="branchForm.budget" type="number" min="100000" max="1000000" step="1000" class="form-input" />
+                <small class="budget-helper">Min 100,000 - Max 1,000,000</small>
               </div>
             </div>
 
@@ -250,7 +282,13 @@
                   <span v-else class="text-muted">—</span>
                 </td>
                 <td>
-                  <span :class="['badge', branch.is_active ? 'badge-online' : 'badge-offline']">
+                  <span v-if="branch.approval_status === 'pending'" class="badge badge-pending">
+                    Pending Owner Approval
+                  </span>
+                  <span v-else-if="branch.approval_status === 'rejected'" class="badge badge-rejected">
+                    Rejected
+                  </span>
+                  <span v-else :class="['badge', branch.is_active ? 'badge-online' : 'badge-offline']">
                     {{ branch.is_active ? 'Active' : 'Inactive' }}
                   </span>
                 </td>
@@ -259,9 +297,9 @@
                   <button
                     class="btn btn-secondary"
                     @click="confirmDeleteBranch(branch)"
-                    :disabled="isDeleting || branch.can_delete === false || branch.is_main_branch"
+                    :disabled="isDeleting || branch.can_delete === false || branch.is_main_branch || branch.approval_status === 'pending'"
                   >
-                    {{ branch.can_delete === false || branch.is_main_branch ? 'Protected' : 'Delete' }}
+                    {{ branch.can_delete === false || branch.is_main_branch ? 'Protected' : (branch.approval_status === 'pending' ? 'Pending' : 'Delete') }}
                   </button>
                 </td>
               </tr>
@@ -283,6 +321,7 @@ import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import '../css/adminpanel.css'
 import { useTheme } from '../composables/useTheme'
+import AddressCascader from './AddressCascader.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -406,6 +445,10 @@ const getInitialBranchForm = () => ({
   code: '',
   name: '',
   address: '',
+  region: '',
+  province: '',
+  city: '',
+  barangay: '',
   budget: 100000,
   selectedAccounts: defaultAccountSelection(),
   customAccount: {
@@ -436,6 +479,8 @@ const formError = ref('')
 const formSuccess = ref('')
 const branchForm = ref(getInitialBranchForm())
 const codeSlugPreview = computed(() => branchForm.value.code ? branchForm.value.code.toLowerCase() : 'branchcode')
+const savedAddress = ref('')
+const addressSaved = ref(false)
 
 const isDeleting = ref(false)
 
@@ -542,15 +587,67 @@ function openAddBranchForm() {
   branchForm.value.budget = 100000
   formError.value = ''
   formSuccess.value = ''
+  savedAddress.value = ''
+  addressSaved.value = false
   showAddBranchForm.value = true
+}
+
+function onAddressUpdate(address) {
+  branchForm.value.region = address.region || ''
+  branchForm.value.province = address.province || ''
+  branchForm.value.city = address.city || ''
+  branchForm.value.barangay = address.barangay || ''
+}
+
+function saveBranchAddress() {
+  const parts = []
+  if (branchForm.value.address && branchForm.value.address.trim() !== '') parts.push(branchForm.value.address.trim())
+  if (branchForm.value.barangay) parts.push(branchForm.value.barangay)
+  if (branchForm.value.city) parts.push(branchForm.value.city)
+  if (branchForm.value.province) parts.push(branchForm.value.province)
+  if (branchForm.value.region) parts.push(branchForm.value.region)
+  savedAddress.value = parts.join(', ')
+  addressSaved.value = true
+}
+
+function clearBranchAddress() {
+  branchForm.value.address = ''
+  branchForm.value.province = ''
+  branchForm.value.city = ''
+  branchForm.value.barangay = ''
+  branchForm.value.region = ''
+  savedAddress.value = ''
+  addressSaved.value = false
+}
+
+function editBranchAddress() {
+  addressSaved.value = false
 }
 
 async function submitBranch() {
   formError.value = ''
   formSuccess.value = ''
 
-  if (!branchForm.value.code.trim() || !branchForm.value.name.trim()) {
-    formError.value = 'Branch code and name are required.'
+  if (!branchForm.value.code.trim()) {
+    formError.value = 'Branch code is required.'
+    return
+  }
+
+  // Auto-fill branch name with location + Chikintayo if left blank
+  if (!branchForm.value.name.trim()) {
+    if (savedAddress.value) {
+      branchForm.value.name = savedAddress.value + ' - Chikintayo'
+    } else if (branchForm.value.address.trim()) {
+      branchForm.value.name = branchForm.value.address.trim() + ' - Chikintayo'
+    } else {
+      formError.value = 'Branch name or address is required.'
+      return
+    }
+  }
+
+  const budgetValue = Number(branchForm.value.budget)
+  if (!Number.isFinite(budgetValue) || budgetValue < 100000 || budgetValue > 1000000) {
+    formError.value = 'Initial budget must be between 100,000 and 1,000,000.'
     return
   }
 
@@ -587,8 +684,12 @@ async function submitBranch() {
     const res = await axios.post('/api/superadmin/branches', {
       code: branchForm.value.code.trim(),
       name: branchForm.value.name.trim(),
-      address: branchForm.value.address.trim(),
-      budget: Number(branchForm.value.budget) || 0,
+      address: savedAddress.value || branchForm.value.address.trim(),
+      region: branchForm.value.region || '',
+      province: branchForm.value.province || '',
+      city: branchForm.value.city || '',
+      barangay: branchForm.value.barangay || '',
+      budget: Number(branchForm.value.budget) || 100000,
       accounts: branchForm.value.selectedAccounts,
       custom_account: customAccountPayload,
     }, { withCredentials: true })
@@ -613,8 +714,22 @@ async function submitBranch() {
   }
 }
 
+function enforceLightMode() {
+  try {
+    document.documentElement.classList.remove('dark-mode')
+    document.documentElement.classList.add('light-mode')
+    document.body.classList.remove('dark-mode')
+    document.body.classList.add('light-mode')
+    document.documentElement.removeAttribute('data-superadmin-theme')
+  } catch (e) {}
+}
+
 onMounted(async () => {
-  try { const { initializeTheme } = useTheme(); initializeTheme() } catch (e) {}
+  if (isFromSuperAdmin.value) {
+    try { const { initializeTheme } = useTheme(); initializeTheme() } catch (e) {}
+  } else {
+    enforceLightMode()
+  }
   await Promise.all([loadBranches(), loadDefaultPassword()])
 })
 
@@ -692,6 +807,8 @@ function formatCurrency(amount) {
 .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; }
 .badge-online { background: #d4edda; color: #155724; }
 .badge-offline { background: #f8d7da; color: #721c24; }
+.badge-pending { background: #fff3cd; color: #7c2d12; }
+.badge-rejected { background: #fee2e2; color: #991b1b; }
 
 /* Modal */
 .modal-backdrop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(4px); }
@@ -710,6 +827,7 @@ function formatCurrency(amount) {
 .form-input { padding: 0.875rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 0.875rem; transition: all 0.2s ease; background: white; color: #374151; min-height: 48px; box-sizing: border-box; font-family: inherit; }
 .form-input:focus { outline: none; border-color: #ff7e5f; box-shadow: 0 0 0 3px rgba(255,126,95,0.1); }
 textarea.form-input { resize: vertical; }
+.budget-helper { color: #6b7280; font-size: 0.78rem; margin-top: 6px; }
 
 .default-accounts-info { padding: 1.5rem 2rem; border-top: 1px solid #e5e7eb; background: #fafbfc; }
 .default-accounts-info h3 { margin: 0 0 0.25rem 0; font-size: 1rem; color: #374151; }
@@ -750,7 +868,69 @@ textarea.form-input { resize: vertical; }
 .btn.btn-primary:hover { background: linear-gradient(135deg, #ff8c42, #ff7e3a); }
 .btn.btn-secondary { background: #e5e7eb; color: #374151; }
 .btn.btn-secondary:hover { background: #d1d5db; }
+.btn.btn-sm { padding: 0.5rem 1rem; font-size: 0.85rem; }
 .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Address Card Styles */
+.address-saved-card {
+  margin-top: 0.5rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e6f7ff 100%);
+  border: 2px solid #bfdbfe;
+  border-radius: 8px;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.address-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.address-card-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.address-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #1e40af;
+  letter-spacing: 0.5px;
+}
+
+.address-text {
+  font-size: 1rem;
+  color: #1f2937;
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.address-card-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.address-input-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
 
 /* Main Branch theme (based on StaffIndex) */
 .staff-management-page.main-branch-theme,

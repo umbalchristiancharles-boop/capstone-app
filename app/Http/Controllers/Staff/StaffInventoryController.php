@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use App\Models\ProcurementRequest;
 use App\Models\SupplierOrder;
+use App\Models\SupplierAuditLog;
+use App\Models\LogisticsTransaction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Models\Product as ProductModel;
@@ -499,11 +501,14 @@ class StaffInventoryController extends Controller
                     'product_id' => $r->product_id,
                     'product_name' => $r->product?->name,
                     'quantity' => $r->quantity,
+                    'requested_quantity' => $r->quantity,
                     'product_stock' => $r->product?->stock ?? 0,
                     'min_stock' => $r->product?->min_stock ?? $r->product?->minimum_stock ?? 10,
                     'product_expires_at' => $r->product?->expires_at ?? null,
                     'price' => $r->price,
                     'receipt_path' => $r->receipt_path ?? null,
+                    'supplier_id' => $r->supplier_id ?? null,
+                    'supplier_name' => $r->product?->supplier_name ?? null,
                     'created_at' => $r->created_at,
                 ];
             });
@@ -556,7 +561,9 @@ class StaffInventoryController extends Controller
         if (!$user) return response()->json(['error' => 'Unauthenticated'], 401);
 
         $validated = $request->validate([
-            'counted_stock' => 'required|integer|min:0'
+            'counted_stock' => 'required|integer|min:0',
+            'proof_image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+            'notes' => 'nullable|string|max:1000'
         ]);
 
         $proc = ProcurementRequest::with('product')->find($id);
@@ -566,12 +573,29 @@ class StaffInventoryController extends Controller
         if ($proc->status !== 'awaiting_inventory_confirmation') return response()->json(['error' => 'Procurement not awaiting inventory confirmation'], 400);
 
         try {
-            DB::transaction(function () use ($proc, $validated, $user) {
+            DB::transaction(function () use ($proc, $validated, $user, $request) {
                 $prod = \App\Models\Product::where('id', $proc->product_id)->lockForUpdate()->first();
+                $incrementBy = (int) $validated['counted_stock'];
+                if ($incrementBy < 0) $incrementBy = 0;
+
+                $proofPath = null;
+                if ($request->hasFile('proof_image')) {
+                    $file = $request->file('proof_image');
+                    $filename = 'delivery_proof_' . $proc->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+                    $path = $file->storeAs('delivery-proofs', $filename, 'public');
+                    $proofPath = '/storage/' . $path;
+                }
+
+                $variance = $incrementBy - (int) $proc->quantity;
+                $varianceReason = null;
+                if ($variance !== 0) {
+                    $varianceReason = !empty($validated['notes'])
+                        ? $validated['notes']
+                        : 'Variance: ' . $variance . ' units';
+                }
+
                 if ($prod) {
                     // Increment product stock by the counted delivered quantity
-                    $incrementBy = (int) $validated['counted_stock'];
-                    if ($incrementBy < 0) $incrementBy = 0;
                     $prod->increment('stock', $incrementBy);
                     $prod->has_been_ordered = true;
                     $prod->logistics_request_available = false;
@@ -605,8 +629,53 @@ class StaffInventoryController extends Controller
                 $proc->update([
                     'status' => 'completed',
                     'procurement_user_id' => $user->id,
+                    'confirmed_quantity' => $incrementBy,
+                    'variance_quantity' => $variance !== 0 ? $variance : null,
+                    'variance_reason' => $varianceReason,
+                    'variance_reported_at' => $variance !== 0 ? now() : null,
+                    'delivery_proof_path' => $proofPath,
                     'updated_at' => now()
                 ]);
+
+                // Update logistics transaction with proof and variance
+                try {
+                    $transaction = LogisticsTransaction::where('procurement_request_id', $proc->id)
+                        ->where('type', 'procurement')
+                        ->first();
+                    if ($transaction) {
+                        $transaction->update([
+                            'actual_quantity' => $incrementBy,
+                            'quantity_verified' => $incrementBy,
+                            'variance_reason' => $varianceReason,
+                            'proof_of_delivery_path' => $proofPath,
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('Failed to update logistics transaction details', ['error' => $e->getMessage(), 'proc_req_id' => $proc->id]);
+                }
+
+                if ($variance !== 0) {
+                    try {
+                        $supplierOrder = SupplierOrder::where('procurement_request_id', $proc->id)->first();
+                        if ($supplierOrder && $supplierOrder->supplier_id) {
+                            SupplierAuditLog::create([
+                                'supplier_id' => $supplierOrder->supplier_id,
+                                'action' => 'delivery_variance_reported',
+                                'description' => 'Delivery variance reported for procurement #' . $proc->id,
+                                'triggered_by_user_id' => $user->id,
+                                'severity' => 'warning',
+                                'metadata' => [
+                                    'procurement_request_id' => $proc->id,
+                                    'expected_quantity' => (int) $proc->quantity,
+                                    'actual_quantity' => $incrementBy,
+                                    'variance' => $variance,
+                                ],
+                            ]);
+                        }
+                    } catch (\Exception $e) {
+                        Log::warning('Failed to log supplier variance alert', ['error' => $e->getMessage(), 'proc_req_id' => $proc->id]);
+                    }
+                }
 
                 // Update logistics transaction to verified and completed
                 try {
@@ -635,5 +704,54 @@ class StaffInventoryController extends Controller
         }
 
         return response()->json(['ok' => true, 'message' => 'Stock confirmed and product updated']);
+    }
+
+    // GET /api/staff/inventory/variance-alerts
+    public function varianceAlerts(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) return response()->json(['error' => 'Unauthenticated'], 401);
+
+        $branchId = $user->branch_id;
+
+        try {
+            $alerts = LogisticsTransaction::with(['procurementRequest', 'product'])
+                ->where('status', 'completed')
+                ->whereNotNull('actual_quantity')
+                ->whereRaw('actual_quantity != expected_quantity')
+                ->when($branchId, function ($q) use ($branchId) {
+                    $q->where('destination_branch_id', $branchId);
+                })
+                ->orderBy('completed_at', 'desc')
+                ->limit(25)
+                ->get();
+
+            $payload = $alerts->map(function ($t) {
+                $variance = null;
+                try {
+                    $variance = $t->getVariance();
+                } catch (\Exception $e) {
+                    $variance = null;
+                }
+
+                return [
+                    'transaction_id' => $t->id,
+                    'procurement_request_id' => $t->procurement_request_id,
+                    'product_id' => $t->product_id,
+                    'product_name' => $t->product?->name,
+                    'expected_quantity' => $t->expected_quantity,
+                    'actual_quantity' => $t->actual_quantity,
+                    'variance' => $variance,
+                    'variance_reason' => $t->variance_reason,
+                    'proof_of_delivery_path' => $t->proof_of_delivery_path,
+                    'completed_at' => $t->completed_at,
+                ];
+            });
+
+            return response()->json(['ok' => true, 'data' => $payload]);
+        } catch (\Exception $e) {
+            Log::error('Failed to load variance alerts', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to fetch variance alerts'], 500);
+        }
     }
 }

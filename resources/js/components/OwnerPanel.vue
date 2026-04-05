@@ -27,8 +27,19 @@
         <div class="panel-block">
           <h3>Quick Links</h3>
           <ul>
-            <li><router-link to="/owner/dish-approval">Dish Approval</router-link></li>
+            <li>
+              <router-link to="/owner/dish-approval">Dish Approval</router-link>
+              <span v-if="pendingCounts.kitchen > 0" class="panel-badge">{{ pendingCounts.kitchen }}</span>
+            </li>
             <li><router-link to="/owner/staff-management">Staff Management</router-link></li>
+            <li>
+              <router-link to="/owner/branch-confirmations">Branch Confirmations</router-link>
+              <span v-if="pendingCounts.branchOwner > 0" class="panel-badge">{{ pendingCounts.branchOwner }}</span>
+            </li>
+            <li>
+              <router-link to="/owner/price-markup-approvals">Price Markup Approvals</router-link>
+              <span v-if="pendingCounts.priceMarkup > 0" class="panel-badge">{{ pendingCounts.priceMarkup }}</span>
+            </li>
           </ul>
         </div>
       </div>
@@ -40,9 +51,16 @@
 import { ref, onMounted } from 'vue'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import axios from 'axios'
+import { showToast } from './toastStore'
 import Swal from 'sweetalert2'
 
 const userProfile = ref({})
+const pendingCounts = ref({
+  kitchen: 0,
+  branchOwner: 0,
+  priceMarkup: 0,
+})
+const hasNotified = ref(false)
 
 onMounted(async () => {
   try {
@@ -64,6 +82,24 @@ onMounted(async () => {
     }
   } catch (e) {
     console.warn('OwnerPanel: failed to load profile', e)
+  }
+
+  try {
+    const res = await axios.get('/api/panel-notifications', { withCredentials: true })
+    if (res.data && res.data.ok) {
+      pendingCounts.value = {
+        kitchen: Number(res.data.counts?.kitchen || 0),
+        branchOwner: Number(res.data.extras?.branchPendingOwner || 0),
+        priceMarkup: Number(res.data.extras?.priceMarkupPending || 0),
+      }
+      const total = pendingCounts.value.kitchen + pendingCounts.value.branchOwner + pendingCounts.value.priceMarkup
+      if (!hasNotified.value && total > 0) {
+        showToast('You have pending approvals to review.', 'info')
+        hasNotified.value = true
+      }
+    }
+  } catch (e) {
+    pendingCounts.value = { kitchen: 0, branchOwner: 0, priceMarkup: 0 }
   }
 })
 
@@ -96,6 +132,9 @@ const handleLogout = async () => {
 
 <style scoped>
 .owner-dashboard { padding: 18px; }
+.owner-side-widgets ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.owner-side-widgets li { position: relative; padding-right: 28px; }
+.panel-badge { position: absolute; top: -2px; right: 0; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: #ef4444; color: #ffffff; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.35); }
 .owner-welcome h2 { margin: 0 0 8px; }
 </style>
 

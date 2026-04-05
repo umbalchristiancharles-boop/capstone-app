@@ -18,7 +18,10 @@
     <template #main>
       <section class="panel-block">
         <div class="panel-header">
-          <h2>Pending Dishes</h2>
+          <h2>
+            Pending Dishes
+            <span v-if="pendingDishes.length > 0" class="panel-badge">{{ pendingDishes.length }}</span>
+          </h2>
           <button class="refresh-btn" @click="loadPendingDishes" :disabled="loading">
             {{ loading ? 'Loading...' : 'Refresh' }}
           </button>
@@ -179,7 +182,10 @@
       <!-- Pending Product Requests Section -->
       <section class="panel-block">
         <div class="panel-header">
-          <h2>Pending Product Requests</h2>
+          <h2>
+            Pending Product Requests
+            <span v-if="pendingProductRequests.length > 0" class="panel-badge">{{ pendingProductRequests.length }}</span>
+          </h2>
           <button class="refresh-btn" @click="loadPendingProductRequests" :disabled="loadingProductRequests">
             {{ loadingProductRequests ? 'Loading...' : 'Refresh' }}
           </button>
@@ -350,6 +356,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import axios from 'axios'
+import { showToast } from './toastStore'
 
 const router = useRouter()
 const userProfile = ref({})
@@ -379,6 +386,7 @@ const loadingApprovedProducts = ref(false)
 const productError = ref('')
 const approvingProductId = ref(null)
 const rejectingProductId = ref(null)
+const hasNotified = ref(false)
 
 const approvalNotesProduct = ref({})
 const rejectReasonProduct = ref({})
@@ -412,6 +420,7 @@ function loadPendingDishes() {
   axios.get('/api/owner/dishes/pending')
     .then(response => {
       pendingDishes.value = response.data.data || []
+      notifyIfPending()
     })
     .catch(err => {
       console.error('Failed to load pending dishes:', err)
@@ -561,6 +570,7 @@ function loadPendingProductRequests() {
   axios.get('/api/owner/product-requests/pending')
     .then(response => {
       pendingProductRequests.value = response.data.data || []
+      notifyIfPending()
     })
     .catch(err => {
       console.error('Failed to load pending product requests:', err)
@@ -569,6 +579,15 @@ function loadPendingProductRequests() {
     .finally(() => {
       loadingProductRequests.value = false
     })
+}
+
+function notifyIfPending() {
+  if (hasNotified.value) return
+  const totalPending = (pendingDishes.value?.length || 0) + (pendingProductRequests.value?.length || 0)
+  if (totalPending > 0) {
+    showToast('You have pending approvals to review.', 'info')
+    hasNotified.value = true
+  }
 }
 
 function loadApprovedProductRequests() {
@@ -678,6 +697,9 @@ onMounted(() => {
   padding-bottom: 1rem;
   border-bottom: 2px solid #f0f0f0;
 }
+
+.panel-header h2 { position: relative; }
+.panel-badge { position:absolute; top:-8px; right:-18px; min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:#ef4444; color:#ffffff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(239,68,68,0.35) }
 
 .panel-header h2 {
   margin: 0;

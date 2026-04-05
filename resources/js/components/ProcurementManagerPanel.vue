@@ -31,7 +31,7 @@
 {{ dashboardTotals.activeSuppliers }}
           </div>
         </div>
-        <div class="hr-stat-card hr-stat-card--leave">
+        <div class="hr-stat-card hr-stat-card--leave" :class="{ 'stat-alert': procurementPendingCount > 0 }">
           <div class="hr-stat-icon">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
           </div>
@@ -39,6 +39,7 @@
             <span class="hr-stat-label">Pending Requests</span>
             <span class="hr-stat-value">{{ dashboardTotals.pendingRequests }}</span>
           </div>
+          <span v-if="procurementPendingCount > 0" class="panel-badge">{{ procurementPendingCount }}</span>
         </div>
       </div>
       <div class="panel-actions mt-1">
@@ -83,13 +84,14 @@
             <div class="requests-scroll">
               <table class="data-table">
                 <thead>
-                  <tr><th>Date</th><th>Product</th><th>Qty</th><th>Total</th><th>Status</th><th>Updated</th></tr>
+                  <tr><th>Date</th><th>Product</th><th>Qty</th><th>Variance</th><th>Total</th><th>Status</th><th>Updated</th></tr>
                 </thead>
                 <tbody>
                   <tr v-for="r in procurementHistory" :key="'ph-'+r.id">
                     <td>{{ formatDate(r.created_at) }}</td>
                     <td><div class="product-name">{{ r.product?.name || r.purpose || '(no product)' }}</div></td>
                     <td>{{ r.quantity }}</td>
+                    <td>{{ formatVariance(r.variance_quantity) }}</td>
                     <td class="amount">{{ formatPrice(r.total_amount || r.price || 0) }}</td>
                     <td>
                       <span :class="['status-badge', getProcStatusClass(r.status)]">
@@ -158,7 +160,10 @@
         </div>
       </section>
       <section class="requested-products mt-1">
-        <h2>Requests From Logistics</h2>
+        <h2>
+          Requests From Logistics
+          <span v-if="procurementPendingCount > 0" class="panel-badge">{{ procurementPendingCount }}</span>
+        </h2>
         <p class="section-description">Inventory requests sent by Logistics Managers in your branch.</p>
 
         <div v-if="requestedProductsLoading">Loading requests...</div>
@@ -423,10 +428,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, onUnmounted } from 'vue'
+import { ref, onMounted, computed, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import axios from 'axios'
+import { showToast } from './toastStore'
 
 const router = useRouter()
 const userProfile = ref({})
@@ -486,6 +492,19 @@ function getPublishedProductsByCategory(category) {
 // Requested products (logistics requests)
 const requestedProducts = ref([])
 const requestedProductsLoading = ref(false)
+const hasNotified = ref(false)
+const procurementPendingCount = computed(() => {
+  const dashboardPending = Number(dashboardTotals.value?.pendingRequests || 0)
+  const logisticsPending = (requestedProducts.value || []).length
+  return Math.max(dashboardPending, logisticsPending, 0)
+})
+
+watch(procurementPendingCount, (count) => {
+  if (!hasNotified.value && count > 0) {
+    showToast('You have pending procurement requests.', 'info')
+    hasNotified.value = true
+  }
+})
 // track per-item placing/completing state to avoid global disable for all items
 const placingOrderIds = ref({})
 const orderPlacedIds = ref({})
@@ -1202,6 +1221,13 @@ function formatDate(d) {
   try { return new Date(d).toLocaleString() } catch (e) { return d }
 }
 
+function formatVariance(val) {
+  if (val === null || val === undefined || val === 0) return '-'
+  const n = Number(val)
+  if (Number.isNaN(n)) return '-'
+  return n > 0 ? `+${n}` : String(n)
+}
+
 function getProcStatusClass(status) {
   switch ((status || '').toLowerCase()) {
     case 'completed': return 'status-approved'
@@ -1448,6 +1474,32 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.panel-badge {
+  position: absolute;
+  top: -8px;
+  right: -16px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.35);
+}
+
+.hr-stat-card {
+  position: relative;
+}
+
+.requested-products h2 {
+  position: relative;
+  display: inline-block;
+}
 /* Use StaffIndex theme tokens for this panel to match color, font, and UI */
 :deep(.admin-page) {
   background: var(--bg-main) !important;

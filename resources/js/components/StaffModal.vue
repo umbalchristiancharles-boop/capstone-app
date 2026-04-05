@@ -114,7 +114,7 @@
                 <!-- Address Cascader (Region → Province → City → Barangay) -->
                 <div style="margin-top:0.5rem;">
                   <AddressCascader
-                    :initialAddress="{ province: form.province, city: form.city, barangay: form.barangay }"
+                    :initialAddress="{ region: form.region, province: form.province, city: form.city, barangay: form.barangay }"
                     :showSaveButton="false"
                     @update:address="onAddressUpdate"
                   />

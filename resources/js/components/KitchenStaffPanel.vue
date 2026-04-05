@@ -16,7 +16,7 @@
           <div class="kitchen-grid">
             <div class="kitchen-column">
               <h3>Create Dish</h3>
-              <form @submit.prevent="submitDish">
+              <form @submit.prevent="submitDish" data-no-overlay="1">
                 <div class="form-row">
                   <label>Dish name</label>
                   <input v-model="form.name" type="text" required />
@@ -110,7 +110,10 @@
           <div class="queue-card">
             <div class="queue-header">
               <div>
-                <h3>Orders Queue</h3>
+                <h3>
+                  Orders Queue
+                  <span v-if="pendingKitchenCount > 0" class="panel-badge">{{ pendingKitchenCount }}</span>
+                </h3>
                 <p class="sub">Pending / In Kitchen orders for this branch</p>
               </div>
               <button type="button" class="refresh-btn" @click="loadOrderQueue" :disabled="queueLoading">
@@ -181,9 +184,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import axios from 'axios'
+import { showToast } from './toastStore'
 
 const userProfile = ref({})
 const dishes = ref([])
@@ -195,6 +199,15 @@ const products = ref([])
 const orderQueue = ref([])
 const queueForbidden = ref(false)
 const queueError = ref('')
+const hasNotified = ref(false)
+const pendingKitchenCount = computed(() => (orderQueue.value || []).length)
+
+watch(pendingKitchenCount, (count) => {
+  if (!hasNotified.value && count > 0) {
+    showToast('You have pending kitchen orders.', 'info')
+    hasNotified.value = true
+  }
+})
 
 const form = ref({
   name: '',
@@ -437,7 +450,7 @@ async function performLogout() {
 .panel-body { color: #374151 }
 .queue-card { margin-top: 1.5rem; padding: 1rem; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb }
 .queue-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-.queue-header h3 { margin: 0; }
+.queue-header h3 { margin: 0; position: relative; display: inline-block; }
 .sub { margin: 0; color: #6b7280; font-size: 0.9rem; }
 .refresh-btn { padding: 0.5rem 0.9rem; border: 1px solid #d1d5db; background: #fff; border-radius: 6px; cursor: pointer; }
 .queue-list { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.75rem; }
@@ -452,6 +465,24 @@ async function performLogout() {
 .btn-done { padding: 0.4rem 0.8rem; background: #10b981; color: white; border: none; border-radius: 6px; font-size: 0.85rem; cursor: pointer; transition: background 0.2s; }
 .btn-done:hover:not(:disabled) { background: #059669; }
 .btn-done:disabled { background: #d1d5db; cursor: not-allowed; }
+
+.panel-badge {
+  position: absolute;
+  top: -8px;
+  right: -16px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.35);
+}
 
 /* Kitchen panel layout and form styles */
 .kitchen-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start; }
