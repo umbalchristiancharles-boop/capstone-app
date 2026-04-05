@@ -102,8 +102,8 @@
                 <td>{{ member.email }}</td>
                 <td>{{ member.phone_number || '-' }}</td>
                 <td>
-                  <span :class="['badge', member.is_online ? 'badge-online' : 'badge-offline']">
-                    {{ member.is_online ? 'Online' : 'Offline' }}
+                  <span :class="['badge', this.statusBadgeClass(this.getMemberStatus(member))]">
+                    {{ this.getMemberStatus(member) }}
                   </span>
                 </td>
                 <td>{{ formatDate(member.created_at) }}</td>
@@ -243,6 +243,17 @@ export default {
       const upperRole = (role || '').toUpperCase()
       return rolePriority[upperRole] || 999
     },
+    getMemberStatus(member) {
+      if (!member) return '-'
+      if (member.status) return member.status
+      return member.is_active ? (member.is_online ? 'On Duty' : 'Offline') : 'Inactive'
+    },
+    statusBadgeClass(status) {
+      if (!status) return 'badge-offline'
+      if (status === 'On Duty') return 'badge-online'
+      if (status === 'Offline') return 'badge-offline'
+      return 'badge-inactive'
+    },
     async setCurrentUserRole() {
       try {
         const res = await axios.get('/api/me', { withCredentials: true })
@@ -262,7 +273,7 @@ export default {
         function getCookie(name) { const match = document.cookie.match(new RegExp('(^|; )' + name + '=([^;]*)')); return match ? match[2] : null }
         const xsrf = getCookie('XSRF-TOKEN')
         if (xsrf) {
-          try { axios.defaults.headers.common['X-XSRF-TOKEN'] = decodeURIComponent(xsrf) } 
+          try { axios.defaults.headers.common['X-XSRF-TOKEN'] = decodeURIComponent(xsrf) }
           catch (e) { axios.defaults.headers.common['X-XSRF-TOKEN'] = xsrf }
         }
       } catch (e) { console.warn('Failed to refresh CSRF/XSRF tokens', e) }

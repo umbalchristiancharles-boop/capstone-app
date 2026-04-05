@@ -95,8 +95,8 @@
                 <td>{{ member.email }}</td>
                 <td>{{ member.phone_number || '-' }}</td>
                 <td>
-                  <span :class="['badge', member.is_online ? 'badge-online' : 'badge-offline']">
-                    {{ member.is_online ? 'Online' : 'Offline' }}
+                  <span :class="['badge', statusBadgeClass(getMemberStatus(member))]">
+                    {{ getMemberStatus(member) }}
                   </span>
                 </td>
                 <td>{{ formatDate(member.created_at) }}</td>
@@ -309,6 +309,42 @@ const groupedStaff = computed(() => {
       staff: groups[branchName]
     }))
 })
+
+// Helper: derive human-friendly status for a member
+function getMemberStatus(member) {
+  if (!member) return '-'
+
+  const raw = (member.status || '').toString().trim()
+  const isActive = !!member.is_active
+  const isOnline = !!member.is_online
+
+  if (raw) {
+    const s = raw.toLowerCase()
+    // map common backend values to a normalized display value
+    if (s === 'present' || s === 'on duty' || s === 'onduty' || s === 'working' || s === 'working now') {
+      const role = (member.role || '').toString().toUpperCase()
+      if (role.includes('MANAGER') || role === 'HR') return 'Working'
+      return 'On Duty'
+    }
+    if (s === 'offline' || s === 'off' || s === 'absent') return 'Offline'
+    if (s === 'inactive') return 'Inactive'
+
+    // fallback: return a capitalized version of the raw status
+    return raw.charAt(0).toUpperCase() + raw.slice(1)
+  }
+
+  if (!isActive) return 'Inactive'
+  return isOnline ? 'On Duty' : 'Offline'
+}
+
+function statusBadgeClass(status) {
+  if (!status) return 'badge-offline'
+  const s = status.toString().toLowerCase()
+  if (s === 'on duty' || s === 'working') return 'badge-online'
+  if (s === 'offline') return 'badge-offline'
+  if (s === 'inactive') return 'badge-inactive'
+  return 'badge-offline'
+}
 
 // Methods
 async function loadStaff(retryCount = 0) {
@@ -801,6 +837,11 @@ function formatDate(dateString) {
   color: #d1d5db !important;
 }
 
+.dark-mode .badge-inactive {
+  background: rgba(107, 114, 128, 0.08) !important;
+  color: #9ca3af !important;
+}
+
 .dark-mode .empty-state,
 .dark-mode .loading-state {
   background: #2d2d2d !important;
@@ -818,6 +859,9 @@ function formatDate(dateString) {
   color: #fca5a5 !important;
   border: 1px solid #7f1d1d !important;
 }
+
+.badge-inactive { background: #f1f5f9; color: #64748b; }
+
 
 .dark-mode .back-to-dashboard-btn {
   background: #4b5563 !important;

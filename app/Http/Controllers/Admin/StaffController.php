@@ -122,6 +122,7 @@ class StaffController extends Controller
                 // Format branch manager data (single representative)
                 $managerData = null;
                 if ($branchManager) {
+                    $mgrOnline = $this->isUserOnline($branchManager->id);
                     $managerData = [
                         'id' => $branchManager->id,
                         'username' => $branchManager->username,
@@ -132,12 +133,14 @@ class StaffController extends Controller
                         'address' => $branchManager->address,
                         'role' => $branchManager->role,
                         'is_active' => $branchManager->is_active,
-                        'is_online' => $this->isUserOnline($branchManager->id),
+                        'is_online' => $mgrOnline,
+                        'status' => $branchManager->is_active ? ($mgrOnline ? 'On Duty' : 'Offline') : 'Inactive',
                     ];
                 }
 
                 // Format managers data (all managers in branch)
                 $managersData = $managers->map(function($m) {
+                    $isOnline = $this->isUserOnline($m->id);
                     return [
                         'id' => $m->id,
                         'username' => $m->username,
@@ -148,12 +151,14 @@ class StaffController extends Controller
                         'address' => $m->address,
                         'role' => $m->role,
                         'is_active' => $m->is_active,
-                        'is_online' => $this->isUserOnline($m->id),
+                        'is_online' => $isOnline,
+                        'status' => $m->is_active ? ($isOnline ? 'On Duty' : 'Offline') : 'Inactive',
                     ];
                 })->toArray();
 
                 // Format staff data (preserve actual role: STAFF)
                 $staffData = $staff->map(function($s) {
+                    $isOnline = $this->isUserOnline($s->id);
                     return [
                         'id' => $s->id,
                         'username' => $s->username,
@@ -164,7 +169,8 @@ class StaffController extends Controller
                         'address' => $s->address,
                         'role' => $s->role,
                         'is_active' => $s->is_active,
-                        'is_online' => $this->isUserOnline($s->id),
+                        'is_online' => $isOnline,
+                        'status' => $s->is_active ? ($isOnline ? 'On Duty' : 'Offline') : 'Inactive',
                     ];
                 })->toArray();
 
@@ -184,6 +190,7 @@ class StaffController extends Controller
 
                 // Format HR data
                 $hrData = $hrUsers->map(function($h) {
+                    $isOnline = $this->isUserOnline($h->id);
                     return [
                         'id' => $h->id,
                         'username' => $h->username,
@@ -194,7 +201,8 @@ class StaffController extends Controller
                         'address' => $h->address,
                         'role' => $h->role,
                         'is_active' => $h->is_active,
-                        'is_online' => $this->isUserOnline($h->id),
+                        'is_online' => $isOnline,
+                        'status' => $h->is_active ? ($isOnline ? 'On Duty' : 'Offline') : 'Inactive',
                     ];
                 })->toArray();
 
@@ -227,19 +235,21 @@ class StaffController extends Controller
 
                     if ($owners && count($owners) > 0) {
                         $ownerData = $owners->map(function($o) {
-                            return [
-                                'id' => $o->id,
-                                'username' => $o->username,
-                                'full_name' => $o->full_name,
-                                'email' => $o->email,
-                                'phone_number' => $o->phone_number,
-                                'department' => $o->department ?? '',
-                                'address' => $o->address,
-                                'role' => $o->role,
-                                'is_active' => $o->is_active,
-                                'is_online' => $this->isUserOnline($o->id),
-                            ];
-                        })->toArray();
+                                $isOnline = $this->isUserOnline($o->id);
+                                return [
+                                    'id' => $o->id,
+                                    'username' => $o->username,
+                                    'full_name' => $o->full_name,
+                                    'email' => $o->email,
+                                    'phone_number' => $o->phone_number,
+                                    'department' => $o->department ?? '',
+                                    'address' => $o->address,
+                                    'role' => $o->role,
+                                    'is_active' => $o->is_active,
+                                    'is_online' => $isOnline,
+                                    'status' => $o->is_active ? ($isOnline ? 'On Duty' : 'Offline') : 'Inactive',
+                                ];
+                            })->toArray();
 
                         // Append as a pseudo-branch named 'Owners' so frontend can display them.
                         $result[] = [

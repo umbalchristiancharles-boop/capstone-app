@@ -211,6 +211,26 @@ class ManagerProfileController extends Controller
         return (int) $branch->id === 1 || str_contains($branchName, 'MAIN BRANCH');
     }
 
+    /**
+     * Check if a user has an active session within the threshold (minutes)
+     */
+    private function isUserOnline(int $userId): bool
+    {
+        try {
+            $threshold = now()->subMinutes(5);
+
+            $sessionExists = DB::table('sessions')
+                ->where('user_id', $userId)
+                ->where('last_activity', '>=', $threshold->timestamp)
+                ->exists();
+
+            return $sessionExists;
+        } catch (\Exception $e) {
+            Log::warning('Error checking user online status (manager): ' . $e->getMessage());
+            return false;
+        }
+    }
+
     // ==========================================
     // HR Manager Profile Endpoints
     // ==========================================
@@ -364,6 +384,11 @@ class ManagerProfileController extends Controller
         }
 
         $staff = $staffQuery->get()->map(function ($s) use ($branchNames) {
+            $isOnline = $this->isUserOnline($s->id);
+            $roleUpper = strtoupper($s->role ?? '');
+            $isManagerRole = $this->isManager($s);
+            $status = $s->is_active ? ($isOnline ? ($isManagerRole ? 'Working' : 'On Duty') : 'Offline') : 'Inactive';
+
             return [
                 'id' => $s->id,
                 'username' => $s->username,
@@ -373,6 +398,8 @@ class ManagerProfileController extends Controller
                 'role' => $s->role,
                 'department' => $s->department,
                 'is_active' => $s->is_active,
+                'is_online' => $isOnline,
+                'status' => $status,
                 'branch_id' => $s->branch_id,
                 'branch_name' => $branchNames[$s->branch_id] ?? null,
                 'created_at' => $s->created_at,

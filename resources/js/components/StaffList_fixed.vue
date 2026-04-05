@@ -102,8 +102,8 @@
                 <td>{{ member.email }}</td>
                 <td>{{ member.phone_number || '-' }}</td>
                 <td>
-                  <span :class="['badge', member.is_online ? 'badge-online' : 'badge-offline']">
-                    {{ member.is_online ? 'Online' : 'Offline' }}
+                  <span :class="['badge', statusBadgeClass(getMemberStatus(member))]">
+                    {{ getMemberStatus(member) }}
                   </span>
                 </td>
                 <td>{{ formatDate(member.created_at) }}</td>
@@ -166,26 +166,26 @@ export default {
       loading: false,
       errorMessage: '',
       searchQuery: '',
-      
+
       // Filters
       branchFilter: '',
       roleFilter: '',
       departmentFilter: '',
-      
+
       // Modal
       showModal: false,
       selectedStaff: null,
-      
+
       // User info
       isBranchManager: false,
       managerBranchId: null,
       currentUserId: null,
       currentUserRole: null,
-      
+
       // Alert
       alertMessage: '',
       alertType: 'success',
-      
+
       // Deleting
       deletingIds: [],
     }
@@ -298,7 +298,18 @@ export default {
       const upperRole = (role || '').toUpperCase()
       return rolePriority[upperRole] || 999
     },
-    
+    getMemberStatus(member) {
+      if (!member) return '-'
+      if (member.status) return member.status
+      return member.is_active ? (member.is_online ? 'On Duty' : 'Offline') : 'Inactive'
+    },
+    statusBadgeClass(status) {
+      if (!status) return 'badge-offline'
+      if (status === 'On Duty') return 'badge-online'
+      if (status === 'Offline') return 'badge-offline'
+      return 'badge-inactive'
+    },
+
     async setCurrentUserRole() {
       try {
         const res = await axios.get('/api/me', { withCredentials: true })
@@ -312,7 +323,7 @@ export default {
         console.warn('Could not determine current user role', e)
       }
     },
-    
+
     async ensureCsrf() {
       try {
         const metaToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
@@ -321,12 +332,12 @@ export default {
         function getCookie(name) { const match = document.cookie.match(new RegExp('(^|; )' + name + '=([^;]*)')); return match ? match[2] : null }
         const xsrf = getCookie('XSRF-TOKEN')
         if (xsrf) {
-          try { axios.defaults.headers.common['X-XSRF-TOKEN'] = decodeURIComponent(xsrf) } 
+          try { axios.defaults.headers.common['X-XSRF-TOKEN'] = decodeURIComponent(xsrf) }
           catch (e) { axios.defaults.headers.common['X-XSRF-TOKEN'] = xsrf }
         }
       } catch (e) { console.warn('Failed to refresh CSRF/XSRF tokens', e) }
     },
-    
+
     async fetchStaff() {
       this.loading = true
       this.errorMessage = ''
@@ -363,7 +374,7 @@ export default {
             })
           }
           this.staff = list
-          
+
           // Load branches for filter
           await this.fetchBranches()
         } else {
@@ -384,7 +395,7 @@ export default {
         try { if (window.pageBlur && typeof window.pageBlur.hide === 'function') window.pageBlur.hide() } catch (e) {}
       }
     },
-    
+
     async fetchBranches() {
       try {
         const res = await axios.get('/api/admin/branches', { withCredentials: true })
@@ -395,32 +406,32 @@ export default {
         console.error('Failed loading branches', e)
       }
     },
-    
+
     refreshStaff() {
       this.fetchStaff()
     },
-    
+
     openCreateModal() {
       this.selectedStaff = null
       this.showModal = true
     },
-    
+
     editStaff(staff) {
       this.selectedStaff = Object.assign({}, staff)
       this.showModal = true
     },
-    
+
     closeModal() {
       this.showModal = false
       this.selectedStaff = null
     },
-    
+
     handleSaved() {
       this.closeModal()
       this.fetchStaff()
       this.showAlert('Account saved successfully!', 'success')
     },
-    
+
     async confirmDelete(id, username) {
       if (!(await window.swalConfirm(`Are you sure you want to delete "${username}"?`))) {
         return
@@ -444,7 +455,7 @@ export default {
         this.deletingIds = this.deletingIds.filter(delId => delId !== id)
       }
     },
-    
+
     showAlert(message, type) {
       this.alertMessage = message
       this.alertType = type
@@ -452,7 +463,7 @@ export default {
         this.alertMessage = ''
       }, 5000)
     },
-    
+
     goToAdminPanel() {
       try {
         if (window.__chikin_temp_overlay) return
@@ -491,7 +502,7 @@ export default {
         this.$router.push(dashboardRoute)
       }
     },
-    
+
     displayRole(r) {
       const role = (r || '').toString().toUpperCase()
       if (role === 'BRANCH_MANAGER') return 'Manager'
@@ -500,7 +511,7 @@ export default {
       if (role === 'OWNER') return 'Owner'
       return role.replace(/_/g, ' ')
     },
-    
+
     formatDate(dateString) {
       if (dateString === null || dateString === undefined) return '-'
       const normalizedDate = String(dateString).trim()

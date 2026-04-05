@@ -84,8 +84,8 @@
             <td>{{ member.email }}</td>
             <td>{{ member.phone_number || '-' }}</td>
             <td>
-              <span :class="['badge', member.is_online ? 'badge-online' : 'badge-offline']">
-                {{ member.is_online ? 'Online' : 'Offline' }}
+              <span :class="['badge', statusBadgeClass(getMemberStatus(member))]">
+                {{ getMemberStatus(member) }}
               </span>
             </td>
             <td>{{ formatDate(member.created_at) }}</td>
@@ -264,6 +264,25 @@ const filteredStaff = computed(() => {
 
   return filtered
 })
+
+// Helper: derive human-friendly status for a member
+function getMemberStatus(member) {
+  if (!member) return '-'
+  if (member.status) {
+    // Remap 'On Duty' to 'Working' for manager roles to match HR wording
+    const role = (member.role || '').toString().toUpperCase()
+    if (member.status === 'On Duty' && (role.includes('MANAGER') || role === 'HR')) return 'Working'
+    return member.status
+  }
+  return member.is_active ? (member.is_online ? ((member.role||'').toString().toUpperCase().includes('MANAGER') ? 'Working' : 'On Duty') : 'Offline') : 'Inactive'
+}
+
+function statusBadgeClass(status) {
+  if (!status) return 'badge-offline'
+  if (status === 'On Duty' || status === 'Working') return 'badge-online'
+  if (status === 'Offline') return 'badge-offline'
+  return 'badge-inactive'
+}
 
 // Methods
 async function loadStaff() {
@@ -663,6 +682,8 @@ function formatDate(dateString) {
   background: #6B7280;
   color: white;
 }
+
+.badge-inactive { background: #f1f5f9; color: #64748b; }
 
 .actions {
   display: flex;

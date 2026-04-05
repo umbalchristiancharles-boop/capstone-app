@@ -49,7 +49,7 @@
                 <td>{{ m.full_name || m.username }}</td>
                 <td>{{ m.branch_name || 'Unassigned' }}</td>
                 <td>{{ displayRole(m.role) }}</td>
-                <td>{{ m.is_active ? (m.is_online ? 'On Duty' : 'Active') : 'Inactive' }}</td>
+                <td>{{ m.status || (m.is_active ? (m.is_online ? 'On Duty' : 'Offline') : 'Inactive') }}</td>
                 <td>{{ m.tasks || '-' }}</td>
                 <td><button class="btn-sm" @click="viewTimeLogs(m)">View Logs</button></td>
                 <td>

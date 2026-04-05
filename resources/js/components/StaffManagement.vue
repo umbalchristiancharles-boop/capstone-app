@@ -94,8 +94,8 @@
                 <td>{{ member.email }}</td>
                 <td>{{ member.phone_number || '-' }}</td>
                 <td>
-                  <span :class="['badge', member.is_online ? 'badge-online' : 'badge-offline']">
-                    {{ member.is_online ? 'Online' : 'Offline' }}
+                  <span :class="['badge', statusBadgeClass(getMemberStatus(member))]">
+                    {{ getMemberStatus(member) }}
                   </span>
                 </td>
                 <td>{{ formatDate(member.created_at) }}</td>
@@ -394,6 +394,20 @@ const groupedStaff = computed(() => {
       staff: groups[branchName]
     }))
 })
+
+// Helper: derive human-friendly status for a member
+function getMemberStatus(member) {
+  if (!member) return '-'
+  if (member.status) return member.status
+  return member.is_active ? (member.is_online ? 'On Duty' : 'Offline') : 'Inactive'
+}
+
+function statusBadgeClass(status) {
+  if (!status) return 'badge-offline'
+  if (status === 'On Duty') return 'badge-online'
+  if (status === 'Offline') return 'badge-offline'
+  return 'badge-inactive'
+}
 
 // Methods
 async function loadStaff() {
