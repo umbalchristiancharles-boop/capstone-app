@@ -22,6 +22,7 @@
             </div>
             <div class="finance-actions">
               <button class="add-branch" @click.prevent="goToBranches">+ Add Branch</button>
+              <button class="crm-button" @click.prevent="goToCRM">CRM</button>
               <select
                 class="branch-select"
                 v-model="selectedBranch"
@@ -158,6 +159,10 @@ function goToBranches() {
   safeNavigate('/main-branch/branches')
 }
 
+function goToCRM() {
+  safeNavigate('/main-branch/crm')
+}
+
 async function loadFinance() {
   financeLoading.value = true
   financeError.value = ''
@@ -259,6 +264,22 @@ window.addEventListener('click', () => {
 }
 .add-branch:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(17,24,39,0.18); opacity: 0.98 }
 .add-branch:active { transform: translateY(0); box-shadow: 0 6px 14px rgba(17,24,39,0.14) }
+.crm-button {
+  background: linear-gradient(180deg, #06b6d4, #0891b2);
+  color: #fff;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.crm-button:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(6,182,212,0.18); opacity: 0.98 }
+.crm-button:active { transform: translateY(0); box-shadow: 0 6px 14px rgba(6,182,212,0.14) }
 .refresh-finance {
   background: linear-gradient(180deg, #ff8a42, #ff6a00);
   color: #fff;
@@ -284,5 +305,6 @@ window.addEventListener('click', () => {
   .finance-header { flex-direction: column; align-items: stretch }
   .branch-select { width: 100%; min-width: 0 }
   .refresh-finance { width: 100% }
+  .crm-button { width: 100% }
 }
 </style>
