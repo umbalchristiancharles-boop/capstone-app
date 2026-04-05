@@ -147,6 +147,13 @@ const suppliers = ref([])
 const branches = ref([])
 const selectedBranchId = ref('')
 
+// notification refs need to be declared before any computed that reads them
+const notificationCounts = ref({ supplier: 0 })
+const hasNotified = ref(false)
+
+// orders referenced by computed properties — declare early to avoid TDZ
+const orders = ref([])
+
 function handleBranchChange() {
   fetchSuppliers()
     // Reload monitoring data for selected branch
@@ -211,7 +218,6 @@ async function fetchSuppliers() {
 
 // Monitoring data
 const dashboardTotals = ref({ totalSuppliers: 0, activeDeliveries: 0, pendingOrders: 0 })
-const orders = ref([])
 const ordersLoading = ref(false)
 const deliveries = ref([])
 const deliveriesLoading = ref(false)
@@ -225,8 +231,6 @@ const showOrdersArrows = ref(false)
 const showDeliveriesArrows = ref(false)
 const showOrdersVertArrows = ref(false)
 const showProductsArrows = ref(false)
-const notificationCounts = ref({ supplier: 0 })
-const hasNotified = ref(false)
 
 function getStatusClass(status) {
   switch ((status || '').toLowerCase()) {

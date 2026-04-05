@@ -463,8 +463,18 @@ class StaffInventoryController extends Controller
 
         try {
             $filename = 'avatar_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
-            $path = $file->storeAs('avatars', $filename, 'public');
-            $storePath = '/storage/' . $path;
+
+            // Create avatars directory if not exists
+            $avatarsDir = public_path('avatars');
+            if (!is_dir($avatarsDir)) {
+                mkdir($avatarsDir, 0755, true);
+            }
+
+            // Store directly in public/avatars (avoids symlink issues on shared hosting)
+            $file->move($avatarsDir, $filename);
+
+            // Update user avatar_url - use direct public path
+            $storePath = '/avatars/' . $filename;
 
             $user->avatar_url = $storePath;
             $user->save();
