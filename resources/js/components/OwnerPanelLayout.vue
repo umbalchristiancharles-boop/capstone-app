@@ -864,6 +864,12 @@ async function onAvatarChange(event) {
   width: 360px;
 }
 
+/* Ensure announcements sit below the header profile button when the
+   profile column is hidden (move panel down a bit to avoid overlap). */
+:deep(.admin-layout.no-profile-column) .announcements-panel {
+  margin-top: 40px;
+}
+
 /* Small avatar-only button inside announcements (proxies to header slot) */
 /* announcements avatar styles removed */
 
