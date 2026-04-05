@@ -153,12 +153,10 @@
       :isMainBranchFinance="props.isMainBranchFinance || isMainBranchFinanceManager"
     />
 
-    <!-- Price Markup Percentage Management -->
-    <PriceMarkupPanel
-      :branchId="userProfile.branch_id"
-      :userRole="userProfile.role"
-      :isMainBranchUser="isMainBranchFinanceManager"
-    />
+    <!-- Price Markup Percentage Management removed -->
+
+    <!-- Main branch: Branch Budget Confirmations -->
+    <MainBranchFinanceBranchConfirmations v-if="props.isMainBranchFinance || isMainBranchFinanceManager" />
 
     <!-- Budget Requests Section (keeps existing functionality) -->
     <div class="branch-stats panel-section">
@@ -374,8 +372,8 @@
 import { ref, onMounted, computed, onUnmounted, watch } from 'vue'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import FinancePanelContent from './finance/FinancePanelContent.vue'
-import PriceMarkupPanel from './PriceMarkupPanel.vue'
 import PriceMarkupManagerPanel from './finance/PriceMarkupManagerPanel.vue'
+import MainBranchFinanceBranchConfirmations from './MainBranchFinanceBranchConfirmations.vue'
 import axios from 'axios'
 import { Chart } from 'vue-chartjs'
 import { showToast } from './toastStore'
