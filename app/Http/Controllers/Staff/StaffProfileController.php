@@ -233,16 +233,22 @@ class StaffProfileController extends Controller
             // Generate a unique filename
             $filename = 'avatar_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
 
-            // Store in public/storage/avatars
-            $path = $file->storeAs('avatars', $filename, 'public');
+            // Create avatars directory if not exists
+            $avatarsDir = public_path('avatars');
+            if (!is_dir($avatarsDir)) {
+                mkdir($avatarsDir, 0755, true);
+            }
 
-            // Update user avatar_url
-            $storePath = '/storage/' . $path;
+            // Store directly in public/avatars (avoids symlink issues on shared hosting)
+            $file->move($avatarsDir, $filename);
+
+            // Update user avatar_url - use direct public path
+            $storePath = '/avatars/' . $filename;
             DB::table('users')
                 ->where('id', $user->id)
                 ->update(['avatar_url' => $storePath]);
 
-            Log::debug('Staff uploadAvatar: stored avatar', ['user_id' => $user->id, 'path' => $path]);
+            Log::debug('Staff uploadAvatar: stored avatar', ['user_id' => $user->id, 'path' => $storePath]);
 
             return response()->json([
                 'ok' => true,
