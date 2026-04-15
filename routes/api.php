@@ -42,6 +42,11 @@ Route::middleware('web')->group(function () {
     // Add missing password change route for modal (require session auth)
     Route::post('/change-password', [AuthController::class, 'changePassword'])->middleware('auth');
 
+    // Account setup routes (for new accounts)
+    Route::put('/auth/setup/account-info', [AuthController::class, 'updateAccountSetup'])->middleware('auth');
+    Route::post('/auth/setup/document/{documentType}', [AuthController::class, 'uploadSetupDocument'])->middleware('auth');
+    Route::get('/auth/setup/status', [AuthController::class, 'getSetupStatus'])->middleware('auth');
+
     // Temporary debug endpoint - returns auth and header/cookie info for troubleshooting
     Route::get('/debug/auth-check', function (\Illuminate\Http\Request $request) {
         $user = null;
@@ -113,6 +118,7 @@ Route::middleware('web')->group(function () {
     Route::post('/superadmin/avatar', [\App\Http\Controllers\Api\SuperAdminController::class, 'uploadAvatar'])->middleware('auth');
     Route::get('/superadmin/dashboard', [\App\Http\Controllers\Api\SuperAdminController::class, 'dashboard'])->middleware('auth');
     Route::get('/superadmin/all-staff', [\App\Http\Controllers\Api\SuperAdminController::class, 'allStaff'])->middleware('auth');
+    Route::put('/superadmin/staff/{id}', [\App\Http\Controllers\Api\SuperAdminController::class, 'updateStaff'])->middleware('auth');
     Route::post('/superadmin/announce', [\App\Http\Controllers\Api\SuperAdminController::class, 'sendAnnouncement'])->middleware('auth');
     Route::post('/superadmin/terms', [\App\Http\Controllers\Api\SuperAdminController::class, 'updateTerms'])->middleware('auth');
     // Public announcements endpoint for authenticated users
@@ -242,6 +248,7 @@ Route::middleware('web')->group(function () {
     // ==========================================
     Route::prefix('admin')->middleware('auth')->group(function () {
         Route::get('/dashboard',        [DashboardController::class, 'index']);
+        Route::get('/staff/branch/default-password', [StaffController::class, 'getBranchDefaultPassword']);
         Route::get('/staff',            [StaffController::class, 'apiIndex']);
         Route::get('/staff/{id}',       [StaffController::class, 'apiShow']);
         Route::post('/staff',           [StaffController::class, 'apiStore']);

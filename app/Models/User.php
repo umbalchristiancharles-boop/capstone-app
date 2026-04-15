@@ -24,6 +24,8 @@ use Laravel\Sanctum\HasApiTokens;
  * @property string|null $avatar_url
  * @property string|null $phone_number
  * @property string|null $address
+ * @property float|null $latitude
+ * @property float|null $longitude
  * @property bool $is_active
  * @property bool $must_change_password
  * @property string|null $remember_token
@@ -53,8 +55,12 @@ class User extends Authenticatable implements CanResetPassword
         'avatar_url',
         'phone_number',
         'address',
+        'latitude',
+        'longitude',
         'is_active',
         'must_change_password',
+        'requires_setup',
+        'required_setup_type',
         'email_verified_at',
     ];
 
@@ -75,8 +81,11 @@ class User extends Authenticatable implements CanResetPassword
         'email_verified_at' => 'datetime',
         'is_active' => 'boolean',
         'must_change_password' => 'boolean',
+        'requires_setup' => 'boolean',
         'deleted_at' => 'datetime',
         'created_at' => 'datetime',
+        'latitude' => 'float',
+        'longitude' => 'float',
         'updated_at' => 'datetime',
         'permissions' => 'array',
     ];

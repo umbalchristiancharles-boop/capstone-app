@@ -12,8 +12,10 @@ use Illuminate\Support\Facades\Log;
 use App\Models\User;
 use App\Models\Branch;
 use App\Models\Order;
-    use Illuminate\Support\Facades\Schema;
+use App\Models\StaffDocument;
+use Illuminate\Support\Facades\Schema;
 use App\Support\Permission;
+use App\Services\BranchPasswordService;
 
 class SuperAdminController extends Controller
 {
@@ -839,6 +841,8 @@ class SuperAdminController extends Controller
                     'rejected_at' => $branch->rejected_at,
                     'can_delete' => !((bool) ($branch->is_main_branch ?? false)),
                     'staff_count' => $staffCount,
+                    'default_password' => BranchPasswordService::getCurrentDefaultPassword($branch),
+                    'default_password_updated_at' => $branch->default_password_updated_at,
                     'admin_user' => $adminUser ? [
                         'id' => $adminUser->id,
                         'username' => $adminUser->username,
@@ -919,6 +923,8 @@ class SuperAdminController extends Controller
             'code' => 'nullable|string|max:20',
             'name' => 'required|string|max:100',
             'address' => 'nullable|string|max:255',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
             'budget' => 'nullable|integer|min:100000|max:1000000',
             'accounts' => 'nullable|array',
             'accounts.admin' => 'nullable|boolean',
@@ -939,6 +945,8 @@ class SuperAdminController extends Controller
         $code = $request->input('code');
         $name = $request->input('name');
         $address = $request->input('address');
+        $latitude = $request->input('latitude');
+        $longitude = $request->input('longitude');
         $requestedBudget = (int) ($request->input('budget', 100000));
 
         $defaultPassword = config('chikintayo.default_password', 'Chikintayo_123');
@@ -1004,6 +1012,8 @@ class SuperAdminController extends Controller
                 'code' => $code,
                 'name' => $name,
                 'address' => $address,
+                'latitude' => $latitude,
+                'longitude' => $longitude,
                 'is_active' => $branchIsActive,
                 'is_main_branch' => 0,
                 'approval_status' => $approvalStatus,
@@ -1028,7 +1038,7 @@ class SuperAdminController extends Controller
                     $adminUsername = 'admin_' . $codeSlug . '_' . $branch->id;
                 }
 
-                User::create([
+                $adminUser = User::create([
                     'username' => $adminUsername,
                     'email' => null,
                     'password' => $defaultPassword, // Mutator will hash this automatically
@@ -1038,7 +1048,20 @@ class SuperAdminController extends Controller
                     'branch_id' => $branch->id,
                     'is_active' => $accountIsActive,
                     'must_change_password' => 1,
+                    'required_setup_type' => 'full',
                 ]);
+
+                // Create empty StaffDocument record for document uploads
+                try {
+                    StaffDocument::create([
+                        'user_id' => $adminUser->id,
+                        'sss_id_path' => null,
+                        'philhealth_id_path' => null,
+                        'drug_test_result_path' => null
+                    ]);
+                } catch (\Exception $e) {
+                    Log::warning('Failed to create StaffDocument for admin: ' . $e->getMessage());
+                }
 
                 $createdRoles[] = 'Admin';
             }
@@ -1051,7 +1074,7 @@ class SuperAdminController extends Controller
                     $hrUsername = 'hr_' . $codeSlug . '_' . $branch->id;
                 }
 
-                User::create([
+                $hrUser = User::create([
                     'username' => $hrUsername,
                     'email' => null,
                     'password' => $defaultPassword, // Mutator will hash this automatically
@@ -1061,7 +1084,20 @@ class SuperAdminController extends Controller
                     'branch_id' => $branch->id,
                     'is_active' => $accountIsActive,
                     'must_change_password' => 1,
+                    'required_setup_type' => 'full',
                 ]);
+
+                // Create empty StaffDocument record for document uploads
+                try {
+                    StaffDocument::create([
+                        'user_id' => $hrUser->id,
+                        'sss_id_path' => null,
+                        'philhealth_id_path' => null,
+                        'drug_test_result_path' => null
+                    ]);
+                } catch (\Exception $e) {
+                    Log::warning('Failed to create StaffDocument for HR: ' . $e->getMessage());
+                }
 
                 $createdRoles[] = 'HR Manager';
             }
@@ -1074,7 +1110,7 @@ class SuperAdminController extends Controller
                     $financeUsername = 'finance_' . $codeSlug . '_' . $branch->id;
                 }
 
-                User::create([
+                $financeUser = User::create([
                     'username' => $financeUsername,
                     'email' => null,
                     'password' => $defaultPassword, // Mutator will hash this automatically
@@ -1084,7 +1120,20 @@ class SuperAdminController extends Controller
                     'branch_id' => $branch->id,
                     'is_active' => $accountIsActive,
                     'must_change_password' => 1,
+                    'required_setup_type' => 'full',
                 ]);
+
+                // Create empty StaffDocument record for document uploads
+                try {
+                    StaffDocument::create([
+                        'user_id' => $financeUser->id,
+                        'sss_id_path' => null,
+                        'philhealth_id_path' => null,
+                        'drug_test_result_path' => null
+                    ]);
+                } catch (\Exception $e) {
+                    Log::warning('Failed to create StaffDocument for Finance: ' . $e->getMessage());
+                }
 
                 $createdRoles[] = 'Finance Manager';
             }
@@ -1097,7 +1146,7 @@ class SuperAdminController extends Controller
                     $procurementUsername = 'procurement_' . $codeSlug . '_' . $branch->id;
                 }
 
-                User::create([
+                $procurementUser = User::create([
                     'username' => $procurementUsername,
                     'email' => null,
                     'password' => $defaultPassword, // Mutator will hash this automatically
@@ -1107,7 +1156,20 @@ class SuperAdminController extends Controller
                     'branch_id' => $branch->id,
                     'is_active' => $accountIsActive,
                     'must_change_password' => 1,
+                    'required_setup_type' => 'full',
                 ]);
+
+                // Create empty StaffDocument record for document uploads
+                try {
+                    StaffDocument::create([
+                        'user_id' => $procurementUser->id,
+                        'sss_id_path' => null,
+                        'philhealth_id_path' => null,
+                        'drug_test_result_path' => null
+                    ]);
+                } catch (\Exception $e) {
+                    Log::warning('Failed to create StaffDocument for Procurement: ' . $e->getMessage());
+                }
 
                 $createdRoles[] = 'Procurement Manager';
             }
@@ -1120,7 +1182,7 @@ class SuperAdminController extends Controller
                     $logisticsUsername = 'logistics_' . $codeSlug . '_' . $branch->id;
                 }
 
-                User::create([
+                $logisticsUser = User::create([
                     'username' => $logisticsUsername,
                     'email' => null,
                     'password' => $defaultPassword, // Mutator will hash this automatically
@@ -1130,7 +1192,20 @@ class SuperAdminController extends Controller
                     'branch_id' => $branch->id,
                     'is_active' => $accountIsActive,
                     'must_change_password' => 1,
+                    'required_setup_type' => 'full',
                 ]);
+
+                // Create empty StaffDocument record for document uploads
+                try {
+                    StaffDocument::create([
+                        'user_id' => $logisticsUser->id,
+                        'sss_id_path' => null,
+                        'philhealth_id_path' => null,
+                        'drug_test_result_path' => null
+                    ]);
+                } catch (\Exception $e) {
+                    Log::warning('Failed to create StaffDocument for Logistics: ' . $e->getMessage());
+                }
 
                 $createdRoles[] = 'Logistics Manager';
             }
@@ -2136,6 +2211,90 @@ class SuperAdminController extends Controller
         } catch (\Exception $e) {
             Log::error('supplierAuditLogs error', ['error' => $e->getMessage()]);
             return response()->json(['ok' => false, 'message' => 'Failed to load audit logs'], 500);
+        }
+    }
+
+    /**
+     * Update staff account (SuperAdmin staff management)
+     * PUT /api/superadmin/staff/{id}
+     */
+    public function updateStaff(Request $request, $id)
+    {
+        $user = $this->resolveAuthenticatedUser($request);
+
+        if (!$user) {
+            return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
+        }
+
+        $roleUpper = strtoupper($user->role ?? '');
+        if ($roleUpper !== 'SUPER_ADMIN' && $roleUpper !== 'SUPERADMIN') {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        try {
+            // Validate incoming data - all fields are optional for partial updates
+            $validated = $request->validate([
+                'username' => 'sometimes|string|max:255|unique:users,username,' . $id,
+                'full_name' => 'sometimes|string|max:255',
+                'email' => 'sometimes|email|max:255|unique:users,email,' . $id,
+                'phone_number' => 'sometimes|string|max:20',
+                'role' => 'sometimes|string|max:100',
+                'department' => 'sometimes|string|max:100',
+                'is_active' => 'sometimes|boolean',
+                'branch_id' => 'sometimes|integer|exists:branches,id',
+            ]);
+
+            // Find the user
+            $staffUser = User::find($id);
+            if (!$staffUser) {
+                return response()->json(['ok' => false, 'message' => 'Staff member not found'], 404);
+            }
+
+            // Update only the fields that are provided
+            $staffUser->update($validated);
+
+            Log::info('Staff account updated by SuperAdmin', [
+                'staff_id' => $id,
+                'updated_by' => $user->id,
+                'fields' => array_keys($validated),
+            ]);
+
+            // Reload to get updated data
+            $staffUser->refresh();
+
+            return response()->json([
+                'ok' => true,
+                'message' => 'Staff account updated successfully',
+                'data' => [
+                    'id' => $staffUser->id,
+                    'username' => $staffUser->username,
+                    'full_name' => $staffUser->full_name,
+                    'email' => $staffUser->email,
+                    'phone_number' => $staffUser->phone_number,
+                    'role' => $staffUser->role,
+                    'department' => $staffUser->department,
+                    'is_active' => $staffUser->is_active,
+                    'branch_id' => $staffUser->branch_id,
+                ],
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::warning('Staff update validation error', [
+                'staff_id' => $id,
+                'errors' => $e->errors(),
+            ]);
+            return response()->json([
+                'ok' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Staff update error: ' . $e->getMessage(), [
+                'staff_id' => $id,
+                'updated_by' => $user->id ?? null,
+                'request_data' => $request->all(),
+            ]);
+            return response()->json(['ok' => false, 'message' => 'Failed to update account: ' . $e->getMessage()], 500);
         }
     }
 }

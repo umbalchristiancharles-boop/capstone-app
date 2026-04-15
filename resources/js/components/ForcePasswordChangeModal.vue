@@ -20,6 +20,31 @@
         </div>
 
         <div class="form-group">
+          <label>Current Password *</label>
+          <div class="password-input-wrapper">
+            <input
+              v-model="currentPassword"
+              :type="showCurrentPassword ? 'text' : 'password'"
+              class="form-input"
+              placeholder="Enter your current password"
+              autocomplete="current-password"
+            />
+            <button type="button" class="password-toggle" @click="showCurrentPassword = !showCurrentPassword" title="Toggle password visibility">
+              <svg v-if="!showCurrentPassword" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m2.46 9.15-.83-1.16c-1.47-2.05-1.47-4.99 0-7.04a9.23 9.23 0 0 1 13.77 0l.83 1.16"/>
+                <circle cx="12" cy="12" r="3"/>
+                <path d="m21.54 14.85.83 1.16c1.47 2.05 1.47 4.99 0 7.04a9.23 9.23 0 0 1-13.77 0l-.83-1.16"/>
+              </svg>
+              <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+          <small class="hint">Enter the password you received from your administrator</small>
+        </div>
+
+        <div class="form-group">
           <label>New Password</label>
           <div class="password-input-wrapper">
             <input
@@ -116,8 +141,10 @@ const emit = defineEmits(['completed', 'cancel'])
 
 const newPassword = ref('')
 const confirmPassword = ref('')
+const currentPassword = ref('')
 const showNewPassword = ref(false)
 const showConfirmPassword = ref(false)
+const showCurrentPassword = ref(false)
 const error = ref('')
 const success = ref('')
 const isSubmitting = ref(false)
@@ -167,6 +194,7 @@ const strengthClass = computed(() => {
 
 watch(() => props.show, (val) => {
   if (val) {
+    currentPassword.value = ''
     newPassword.value = ''
     confirmPassword.value = ''
     error.value = ''
@@ -176,27 +204,16 @@ watch(() => props.show, (val) => {
   }
 })
 
-// If defaultPassword not provided as prop, try fetching from API when shown
-watch(() => props.show, async (val) => {
-  if (val && (!props.defaultPassword || props.defaultPassword === '')) {
-    try {
-      const res = await axios.get('/api/admin/config/default-password', { withCredentials: true })
-      if (res.data && res.data.success && res.data.default_password) {
-        // store fetched default locally
-        fetchedDefault.value = res.data.default_password
-      }
-    } catch (e) {
-      // ignore failures — fallback will be empty
-    }
-  }
-})
-
-const fetchedDefault = ref('')
-
 async function submit() {
   if (isSubmitting.value) return
   error.value = ''
   success.value = ''
+
+  // Validate current password is provided
+  if (!currentPassword.value || currentPassword.value.trim() === '') {
+    error.value = 'Please enter your current password.'
+    return
+  }
 
   if (!strongRegex.test(newPassword.value)) {
     error.value = 'Password must be at least 8 chars with uppercase, number, and special character.'
@@ -224,19 +241,28 @@ async function submit() {
       // ignore, we'll still attempt the POST and surface server errors
     }
 
-    // For owner user, set current_password to the known default after reset
-    const currentPassword = props.defaultPassword || fetchedDefault.value || 'Chikintayo_123'
+    // Use the password the user entered for verification
     const res = await axios.post('/api/change-password', {
-      current_password: currentPassword,
+      current_password: currentPassword.value,
       new_password: newPassword.value,
       new_password_confirmation: confirmPassword.value,
       username: props.username,
     }, { withCredentials: true })
 
     if (res.data.ok) {
-      success.value = 'Password updated!'
+      // Build success message with email confirmation
+      let successMsg = 'Password updated successfully!'
+      if (res.data.user?.email && res.data.email_verified) {
+        successMsg += ` Email verified: ${res.data.user.email}`
+      } else if (res.data.user?.email) {
+        successMsg += ` Email on file: ${res.data.user.email}`
+      }
+      success.value = successMsg
       // Emit completion with server response so parent can decide next step
-      setTimeout(() => emit('completed', { verification_sent: res.data.verification_sent ?? false }), 800)
+      setTimeout(() => emit('completed', { 
+        verification_sent: res.data.verification_sent ?? false,
+        user: res.data.user
+      }), 800)
     } else {
       error.value = res.data.message || 'Unable to update password.'
     }

@@ -11,31 +11,18 @@
           <!-- Basic Info Form Grid -->
           <div class="form-grid">
 
-            <!-- Username / Custom Account toggle -->
+            <!-- Username (optional for both custom and non-custom accounts) -->
             <div class="form-group">
-              <label class="form-label">Create custom account?</label>
-              <label style="display:inline-flex;align-items:center;gap:8px">
-                <input type="checkbox" v-model="form.custom_account" :disabled="isEdit" />
-                <span style="font-weight:600">Enable custom username/password</span>
-              </label>
-              <div class="form-hint">When disabled, credentials are auto-generated and the default password card is shown.</div>
-            </div>
-
-            <div class="form-group" v-if="form.custom_account">
-              <label for="username" class="form-label">Username {{ !isEdit ? '*' : '' }}</label>
+              <label for="username" class="form-label">Username (Optional)</label>
               <input
                 v-model="form.username"
                 id="username"
                 class="form-input"
                 :class="{ 'read-only': isEdit }"
-                :placeholder="!isEdit ? 'Enter username' : ''"
-                :required="form.custom_account && !isEdit"
+                :placeholder="!isEdit ? 'Leave blank to auto-generate' : ''"
                 :disabled="isEdit"
               />
-            </div>
-
-            <div class="form-hint" v-else>
-              <small>📧 Email will be set after staff member completes password change and verification</small>
+              <div class="form-hint">Leave blank to auto-generate a username from the staff name. You can also manually enter one.</div>
             </div>
 
             <!-- Full Name -->
@@ -50,6 +37,19 @@
               />
             </div>
 
+            <!-- Email (both for sending credentials and saving to profile) -->
+            <div class="form-group" v-if="!isEdit && !form.custom_account">
+              <label for="email" class="form-label">Staff Email Address *</label>
+              <input
+                v-model="form.email"
+                id="email"
+                type="email"
+                class="form-input"
+                placeholder="staff@example.com"
+                required
+              />
+              <div class="form-hint">Account credentials and password will be sent to this email, and it will be saved to their profile.</div>
+            </div>
 
             <!-- Phone Number & Password (side by side) -->
             <div class="form-group">
@@ -63,15 +63,16 @@
               />
             </div>
             <div class="form-group password-group" v-if="!isEdit && !form.custom_account">
-              <label for="password" class="form-label">Password <span style="font-weight:400">*</span></label>
+              <label class="form-label">Password <span style="font-weight:400">*</span></label>
 
               <div class="password-display-container">
                 <!-- Password Display Card -->
                 <div class="password-display-card">
-                  <div class="password-display-label">Default Password (will be set for new staff):</div>
+                  <div class="password-display-label">Randomized Password:</div>
                   <div class="password-display-value">
-                    <span class="password-text">{{ fetchedDefaultPassword || defaultPasswordValue }}</span>
-                    <button type="button" class="btn btn-primary btn-copy" @click="copyDefaultToClipboard">
+                    <span class="password-text" v-if="generatedPassword">{{ generatedPassword }}</span>
+                    <span class="password-text" v-else style="color:#999;">Will be generated and sent via email</span>
+                    <button v-if="generatedPassword" type="button" class="btn btn-primary btn-copy" @click="copyGeneratedPassword">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                         <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
@@ -79,7 +80,7 @@
                       Copy Password
                     </button>
                   </div>
-                  <div class="form-hint">This password will be assigned to the new staff member. They will be required to change it upon first login.</div>
+                  <div class="form-hint">A random password will be automatically generated and sent to the email address specified above. Staff member will be required to change it upon first login.</div>
                 </div>
 
                 <!-- Loading state -->
@@ -91,39 +92,28 @@
 
             <!-- Current Address -->
             <div class="form-group full-span">
-              <label for="address" class="form-label">Current Address</label>
+              <label for="address" class="form-label">Current Address & Location</label>
 
               <div v-if="addressSaved" class="address-card">
                 <div class="address-card-header">
-                  <strong>Current Address</strong>
+                  <div style="flex:1">
+                    <strong>Current Address</strong>
+                    <div v-if="form.latitude && form.longitude" style="font-size:0.85rem; color:#6b7280; margin-top:0.25rem">
+                      📍 {{ form.latitude?.toFixed(6) }}, {{ form.longitude?.toFixed(6) }}
+                    </div>
+                  </div>
                   <button type="button" class="btn btn-secondary" @click="editSavedAddress">Edit</button>
                 </div>
                 <div class="address-card-body">{{ savedAddress }}</div>
               </div>
 
               <div v-else>
-                <textarea
-                  v-model="form.address"
-                  id="address"
-                  rows="2"
-                  class="form-input"
-                  placeholder="House number, street, subdivision"
-                  :required="!isEdit"
-                ></textarea>
-
-                <!-- Address Cascader (Region → Province → City → Barangay) -->
-                <div style="margin-top:0.5rem;">
-                  <AddressCascader
-                    :initialAddress="{ region: form.region, province: form.province, city: form.city, barangay: form.barangay }"
-                    :showSaveButton="false"
-                    @update:address="onAddressUpdate"
-                  />
-                </div>
-
-                <div style="margin-top:0.5rem; display:flex; gap:0.5rem;">
-                  <button type="button" class="btn btn-primary" @click="saveAddress">Save Address</button>
-                  <button type="button" class="btn btn-secondary" @click="clearAddress">Clear</button>
-                </div>
+                <AddressCascaderWithMap
+                  :initialAddress="{ region: form.region, province: form.province, city: form.city, barangay: form.barangay }"
+                  :initialLocation="{ lat: form.latitude, lng: form.longitude }"
+                  @save:location="onAddressSaved"
+                  @update:location="onLocationUpdate"
+                />
               </div>
             </div>
 
@@ -139,6 +129,18 @@
                 <option value="STAFF inventory">Inventory Staff</option>
                 <option value="CUSTOM">Custom Account</option>
               </select>
+            </div>
+
+            <!-- Custom Account Type (visible when CUSTOM selected) -->
+            <div class="form-group full-span" v-if="form.roleDepartment === 'CUSTOM'">
+              <label class="form-label">Account Types</label>
+              <div class="account-types-grid">
+                <label v-for="type in accountTypeOptions" :key="type.value" style="display:flex;align-items:center;gap:8px;padding:8px;cursor:pointer">
+                  <input type="checkbox" :value="type.value" v-model="form.custom_account_types" />
+                  <span>{{ type.label }}</span>
+                </label>
+              </div>
+              <div class="form-hint">Select one or more account types to grant access to</div>
             </div>
 
             <!-- Custom Account Permissions (visible when CUSTOM selected) -->
@@ -217,122 +219,7 @@
             </div>
           </div>
 
-          <!-- Documents (Create Only) -->
-          <div v-if="!isEdit" class="documents-section">
-            <h3 class="documents-title">Required Documents *</h3>
-            <div class="documents-grid">
-              <div class="form-group full-span">
-                <label class="form-label">Valid Government-issued ID</label>
-                <input
-                  type="file"
-                  class="form-input"
-                  accept=".jpg,.jpeg,.png,.webp,.pdf"
-                  @change="(e) => handleFileChange('government_id', e)"
-                  required
-                />
-              </div>
-              <div class="form-group full-span">
-                <label class="form-label">PSA Birth Certificate</label>
-                <input
-                  type="file"
-                  class="form-input"
-                  accept=".jpg,.jpeg,.png,.webp,.pdf"
-                  @change="(e) => handleFileChange('psa_birth_certificate', e)"
-                  required
-                />
-              </div>
-              <div class="form-group full-span">
-                <label class="form-label">NBI Clearance</label>
-                <input
-                  type="file"
-                  class="form-input"
-                  accept=".jpg,.jpeg,.png,.webp,.pdf"
-                  @change="(e) => handleFileChange('nbi_clearance', e)"
-                  required
-                />
-              </div>
-              <div class="form-group full-span">
-                <label class="form-label">Police Clearance</label>
-                <input
-                  type="file"
-                  class="form-input"
-                  accept=".jpg,.jpeg,.png,.webp,.pdf"
-                  @change="(e) => handleFileChange('police_clearance', e)"
-                  required
-                />
-              </div>
-              <div class="form-group full-span">
-                <label class="form-label">Medical Certificate / Health Clearance</label>
-                <input
-                  type="file"
-                  class="form-input"
-                  accept=".jpg,.jpeg,.png,.webp,.pdf"
-                  @change="(e) => handleFileChange('medical_certificate', e)"
-                  required
-                />
-              </div>
-              <div class="form-group full-span">
-                <label class="form-label">Drug Test Result</label>
-                <input
-                  type="file"
-                  class="form-input"
-                  accept=".jpg,.jpeg,.png,.webp,.pdf"
-                  @change="(e) => handleFileChange('drug_test_result', e)"
-                  required
-                />
-              </div>
-              <div class="form-group full-span">
-                <label class="form-label">SSS Number / SSS ID</label>
-                <input
-                  type="file"
-                  class="form-input"
-                  accept=".jpg,.jpeg,.png,.webp,.pdf"
-                  @change="(e) => handleFileChange('sss_id', e)"
-                  required
-                />
-              </div>
-              <div class="form-group full-span">
-                <label class="form-label">PhilHealth Number / ID</label>
-                <input
-                  type="file"
-                  class="form-input"
-                  accept=".jpg,.jpeg,.png,.webp,.pdf"
-                  @change="(e) => handleFileChange('philhealth_id', e)"
-                  required
-                />
-              </div>
-              <div class="form-group full-span">
-                <label class="form-label">Pag-IBIG Number / MDF</label>
-                <input
-                  type="file"
-                  class="form-input"
-                  accept=".jpg,.jpeg,.png,.webp,.pdf"
-                  @change="(e) => handleFileChange('pagibig_mdf', e)"
-                  required
-                />
-              </div>
-              <div class="form-group full-span">
-                <label class="form-label">TIN (Tax Identification Number)</label>
-                <input
-                  type="file"
-                  class="form-input"
-                  accept=".jpg,.jpeg,.png,.webp,.pdf"
-                  @change="(e) => handleFileChange('tin_id', e)"
-                  required
-                />
-              </div>
-              <div class="form-group full-span">
-                <label class="form-label">Diploma / Transcript / Certificate of Enrollment</label>
-                <input
-                  type="file"
-                  class="form-input"
-                  accept=".jpg,.jpeg,.png,.webp,.pdf"
-                  @change="(e) => handleFileChange('diploma_transcript', e)"
-                  required
-                />
-              </div>
-            </div>
-          </div>
+
 
           <!-- Error Message -->
           <div v-if="errorMessage" class="error-message">
@@ -362,11 +249,11 @@
 
 <script>
 import axios from 'axios'
-import AddressCascader from './AddressCascader.vue'
+import AddressCascaderWithMap from './AddressCascaderWithMap.vue'
 
 export default {
   name: 'StaffModal',
-  components: { AddressCascader },
+  components: { AddressCascaderWithMap },
   props: {
     show: Boolean,
     staff: Object,
@@ -385,20 +272,22 @@ export default {
         full_name: '',
         phone_number: '',
         password: '',
-        roleDepartment: '',
         custom_account: false,
+        custom_department: '',
+        custom_account_types: [],
         enable_custom_permissions: false,
         custom_permissions: null,
+        roleDepartment: '',
         branch_id: '',
         address: '',
         region: '',
         province: '',
         city: '',
         barangay: '',
+        latitude: null,
+        longitude: null,
       },
       branchReadOnly: false,
-      // documentFiles stores selected files for upload
-      documentFiles: {},
       branches: [],
       // Address UI state
       addressSaved: false,
@@ -408,6 +297,8 @@ export default {
       fetchedDefaultPassword: null,
       fetchingDefaultPassword: false,
       showDefaultPassword: false,
+      // generated password from server response (for randomized password)
+      generatedPassword: null,
       errorMessage: '',
       successMessage: '',
       isSubmitting: false,
@@ -437,62 +328,36 @@ export default {
           }
         }
       },
-      // Permission templates copied from OwnerAddBranches for custom accounts
       permissionTemplates: [
-        { key: 'admin', label: 'Admin', functions: [
-          { key: 'admin.users', label: 'User Management' },
-          { key: 'admin.branches', label: 'Branch Settings' },
-          { key: 'admin.settings', label: 'System Settings' },
-        ]},
-        { key: 'finance', label: 'Finance', functions: [
-          { key: 'finance.dashboard', label: 'Dashboard & KPIs' },
-          { key: 'finance.budget', label: 'Branch Budgets' },
-          { key: 'finance.reports', label: 'Reports' },
-          { key: 'finance.expenses', label: 'Expenses' },
-        ]},
-        { key: 'logistics', label: 'Logistics', functions: [
-          { key: 'logistics.dispatch', label: 'Dispatch / Delivery' },
-          { key: 'logistics.receiving', label: 'Receiving' },
-          { key: 'logistics.transfers', label: 'Transfers' },
-        ]},
-        { key: 'inventory', label: 'Inventory', functions: [
-          { key: 'inventory.products', label: 'Products' },
-          { key: 'inventory.counts', label: 'Stock Counts' },
-          { key: 'inventory.adjustments', label: 'Adjustments' },
-        ]},
-        { key: 'procurement', label: 'Procurement', functions: [
-          { key: 'procurement.purchase_orders', label: 'Purchase Orders' },
-          { key: 'procurement.suppliers', label: 'Suppliers' },
-          { key: 'procurement.approvals', label: 'Approvals' },
-        ]},
-        { key: 'kitchen', label: 'Kitchen Staff', functions: [
-          { key: 'kitchen.orders', label: 'Orders Queue' },
-          { key: 'kitchen.production', label: 'Production' },
-          { key: 'kitchen.waste', label: 'Waste / Spoilage' },
-        ]},
-        { key: 'cashier', label: 'Cashier', functions: [
-          { key: 'cashier.pos', label: 'POS' },
-          { key: 'cashier.refunds', label: 'Refunds / Voids' },
-          { key: 'cashier.shifts', label: 'Shift Closure' },
-        ]},
-        { key: 'hr', label: 'HR', functions: [
-          { key: 'hr.attendance', label: 'Attendance' },
-          { key: 'hr.scheduling', label: 'Scheduling' },
-          { key: 'hr.payroll', label: 'Payroll Export' },
-        ]},
-        { key: 'reports', label: 'Reports', functions: [
-          { key: 'reports.sales', label: 'Sales Reports' },
-          { key: 'reports.inventory', label: 'Inventory Reports' },
-          { key: 'reports.finance', label: 'Finance Reports' },
-        ]},
+        { key: "dashboard", label: "Dashboard", category: "view" },
+        { key: "analytics", label: "Analytics", category: "view" },
+        { key: "orders", label: "Orders", category: "view" },
+        { key: "inventory", label: "Inventory", category: "view" },
+        { key: "procurement", label: "Procurement", category: "view" },
+        { key: "budgets", label: "Budgets", category: "view" },
+        { key: "logistics", label: "Logistics", category: "view" },
+        { key: "suppliers", label: "Suppliers", category: "view" },
+        { key: "suppliers_auditing", label: "Suppliers - Auditing", category: "view" },
+        { key: "staff", label: "Staff", category: "view" },
+        { key: "customers", label: "Customers", category: "view" },
+        { key: "settlements", label: "Settlements", category: "view" },
+        { key: "announcements", label: "Announcements", category: "view" },
+      ],
+      accountTypeOptions: [
+        { value: 'admin', label: 'Admin' },
+        { value: 'finance', label: 'Finance' },
+        { value: 'hr', label: 'HR' },
+        { value: 'logistics', label: 'Logistics' },
+        { value: 'inventory', label: 'Inventory' },
+        { value: 'procurement', label: 'Procurement' },
+        { value: 'kitchen', label: 'Kitchen' },
+        { value: 'cashier', label: 'Cashier' },
+        { value: 'reports', label: 'Reports' },
       ],
     }
   },
   mounted() {
     this.loadBranches()
-    if (!this.form.custom_permissions) {
-      this.form.custom_permissions = this.buildPermissionState()
-    }
     if (this.isEdit && this.staff) {
       this.$nextTick(() => {
         if (this.form.province) this.loadCities(this.form.province)
@@ -685,6 +550,36 @@ export default {
       this.addressSaved = false
     },
 
+    onAddressSaved(payload) {
+      // Extract address components from the new payload format
+      const addressComponents = payload.addressComponents || {}
+      
+      // Update address components
+      this.form.region = addressComponents.region || ''
+      this.form.province = addressComponents.province || ''
+      this.form.city = addressComponents.city || ''
+      this.form.barangay = addressComponents.barangay || ''
+      
+      // Update geolocation coordinates
+      this.form.latitude = payload.lat
+      this.form.longitude = payload.lng
+      
+      // Generate saved address display
+      const parts = []
+      if (payload.address && payload.address.trim() !== '') parts.push(payload.address.trim())
+      if (addressComponents.barangay) parts.push(addressComponents.barangay)
+      if (addressComponents.city) parts.push(addressComponents.city)
+      if (addressComponents.province) parts.push(addressComponents.province)
+      if (addressComponents.region) parts.push(addressComponents.region)
+      this.savedAddress = parts.join(', ')
+      this.addressSaved = true
+    },
+
+    onLocationUpdate(location) {
+      this.form.latitude = location.lat
+      this.form.longitude = location.lng
+    },
+
     reconstructRoleDepartment(role, department) {
       if (!role) return ''
       // Normalize legacy BRANCH_MANAGER to MANAGER for option matching
@@ -706,60 +601,40 @@ export default {
       formData.append('province', this.form.province || '')
       formData.append('city', this.form.city || '')
       formData.append('barangay', this.form.barangay || '')
+      formData.append('latitude', this.form.latitude || '')
+      formData.append('longitude', this.form.longitude || '')
       formData.append('password', this.form.password)
       formData.append('role', role)
       if (department !== null && department !== undefined && department !== '') {
         formData.append('department', department)
       }
       formData.append('branchId', this.form.branch_id || '')
-
-      // Attach document files
-      for (const [key, file] of Object.entries(this.documentFiles)) {
-        if (file) {
-          formData.append(key, file)
+      
+      // Handle custom account
+      if (this.form.custom_account) {
+        formData.append('custom_account', '1')
+        if (this.form.custom_account_types && this.form.custom_account_types.length > 0) {
+          formData.append('custom_account_types', JSON.stringify(this.form.custom_account_types))
         }
+        if (this.form.enable_custom_permissions && this.form.custom_permissions) {
+          formData.append('custom_permissions', JSON.stringify(this.form.custom_permissions))
+        }
+      } else {
+        formData.append('custom_account', '0')
+        formData.append('notification_email', this.form.email)
       }
-
-      // If creating a custom account, include selected modules/functions as arrays
-      try {
-        if (String(role).toUpperCase() === 'CUSTOM' && this.form.custom_permissions) {
-          const mods = Object.entries(this.form.custom_permissions.modules || {}).filter(([k,v]) => v).map(([k]) => k)
-          const fns = Object.entries(this.form.custom_permissions.functions || {}).filter(([k,v]) => v).map(([k]) => k)
-          mods.forEach(m => formData.append('modules[]', m))
-          fns.forEach(f => formData.append('functions[]', f))
-        }
-      } catch (e) {}
 
       return formData
     },
 
-    handleFileChange(field, e) {
-      try {
-        const file = e.target?.files ? e.target.files[0] : null
-        if (!file) {
-          this.documentFiles[field] = null
-          return
-        }
-        this.documentFiles[field] = file
-        this.form[`${field}_filename`] = file.name
-      } catch (err) {
-        console.error('File change handler error:', err)
-      }
+    buildPermissionState() {
+      const state = {}
+      this.permissionTemplates.forEach((module) => {
+        state[module.key] = false
+      })
+      return { modules: state }
     },
 
-    buildPermissionState() {
-      const modules = {}
-      const functions = {}
-      try {
-        (this.permissionTemplates || []).forEach(mod => {
-          modules[mod.key] = false
-          (mod.functions || []).forEach(fn => { functions[fn.key] = false })
-        })
-      } catch (e) {
-        // ignore
-      }
-      return { modules, functions }
-    },
 
     async submitForm() {
       this.errorMessage = ''
@@ -773,15 +648,19 @@ export default {
       if (!this.isEdit) {
         // Create mode validation
         if (this.form.custom_account) {
+          // Custom account mode: username required
           if (!this.form.username || this.form.username.trim() === '') {
-            this.errorMessage = 'Username is required when creating a custom account'
+            this.errorMessage = 'Username is required for custom account'
             return
           }
-          if (!this.form.password || this.form.password.trim() === '') {
-            this.errorMessage = 'Password is required when creating a custom account'
+        } else {
+          // Randomized password mode: email required
+          if (!this.form.email || this.form.email.trim() === '') {
+            this.errorMessage = 'Staff email address is required'
             return
           }
         }
+        
         if (!this.form.roleDepartment) {
           this.errorMessage = 'Please select role and department'
           return
@@ -790,15 +669,12 @@ export default {
           this.errorMessage = 'Please select a Branch'
           return
         }
-        if (!this.form.address || !this.form.region || !this.form.province || !this.form.city || !this.form.barangay) {
-          this.errorMessage = 'Please provide complete address information.'
+        // Require coordinates (latitude/longitude) from map pinning
+        if (!this.form.latitude || !this.form.longitude) {
+          this.errorMessage = 'Please pin your location on the map'
           return
         }
         // Password is optional in create mode. Backend will set a default password if left blank.
-        if (Object.keys(this.documentFiles).filter(key => !this.documentFiles[key]).length > 0) {
-          this.errorMessage = 'All required documents must be uploaded'
-          return
-        }
       }
 
       // Parse roleDepartment
@@ -832,6 +708,8 @@ export default {
             province: this.form.province || this.staff.province || '',
             city: this.form.city || this.staff.city || '',
             barangay: this.form.barangay || this.staff.barangay || '',
+            latitude: this.form.latitude || this.staff.latitude || null,
+            longitude: this.form.longitude || this.staff.longitude || null,
             branchId: this.form.branch_id || this.staff.branch_id || '',
             isActive: this.staff?.is_active ? 1 : 0,
           }
@@ -858,17 +736,29 @@ export default {
               email: this.form.email,
               fullName: this.form.full_name,
               phone: this.form.phone_number || '',
-              password: this.form.password || this.defaultPasswordValue,
+              address: this.form.address || '',
+              region: this.form.region || '',
+              province: this.form.province || '',
+              city: this.form.city || '',
+              barangay: this.form.barangay || '',
+              latitude: this.form.latitude || null,
+              longitude: this.form.longitude || null,
             }
+            
+            // Add custom account or notification email field based on mode
+            if (this.form.custom_account) {
+              payload.custom_account = 1
+              payload.custom_account_types = this.form.custom_account_types
+              if (this.form.enable_custom_permissions && this.form.custom_permissions) {
+                payload.custom_permissions = this.form.custom_permissions
+              }
+            } else {
+              payload.custom_account = 0
+              payload.notification_email = this.form.email
+            }
+            
             if (parsedRole) payload.role = parsedRole
             if (parsedDepartment) payload.department = parsedDepartment
-            // include custom permissions when creating CUSTOM accounts
-            if (parsedRole === 'CUSTOM' && this.form.custom_permissions) {
-              const mods = Object.entries(this.form.custom_permissions.modules || {}).filter(([k,v]) => v).map(([k]) => k)
-              const fns = Object.entries(this.form.custom_permissions.functions || {}).filter(([k,v]) => v).map(([k]) => k)
-              if (mods.length > 0) payload.modules = mods
-              if (fns.length > 0) payload.functions = fns
-            }
             res = await axios.post(`${apiBaseUrl}/staff`, payload, {
               withCredentials: true,
               headers: { 'Content-Type': 'application/json' }
@@ -884,6 +774,10 @@ export default {
         }
 
         if (res.data?.success !== false) {
+          // Store generated password if returned by server
+          if (res.data.password) {
+            this.generatedPassword = res.data.password
+          }
           this.$emit('success', res.data)
           this.closeModal()
         } else {
@@ -904,9 +798,10 @@ export default {
 
     closeModal() {
       this.errorMessage = ''
-      this.documentFiles = {}
       this.resetSuccessMsg = ''
       this.resetErrorMsg = ''
+      this.generatedPassword = null
+      this.form.notification_email = ''
       this.$emit('close')
     },
 
@@ -960,6 +855,25 @@ export default {
 
     copyDefaultToClipboard() {
       const passwordToCopy = this.fetchedDefaultPassword || this.defaultPasswordValue
+      if (!passwordToCopy) return
+      try {
+        navigator.clipboard?.writeText(passwordToCopy)
+        // Show visual feedback
+        alert('Password copied to clipboard: ' + passwordToCopy)
+      } catch (e) {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea')
+        textArea.value = passwordToCopy
+        document.body.appendChild(textArea)
+        textArea.select()
+        document.execCommand('copy')
+        document.body.removeChild(textArea)
+        alert('Password copied to clipboard: ' + passwordToCopy)
+      }
+    },
+
+    copyGeneratedPassword() {
+      const passwordToCopy = this.generatedPassword
       if (!passwordToCopy) return
       try {
         navigator.clipboard?.writeText(passwordToCopy)
@@ -1065,9 +979,6 @@ export default {
       if (this.form.password && this.form.password.trim() !== '')
         changes.push('Password')
 
-      if (this.documentFiles && Object.values(this.documentFiles).some(f => !!f))
-        changes.push('Documents')
-
       return changes
     }
   },
@@ -1081,17 +992,26 @@ export default {
           this.form = {
             username: newStaff.username || '',
             email: newStaff.email || '',
+            notification_email: '',
             full_name: newStaff.full_name || '',
             phone_number: newStaff.phone_number || '',
             password: '',
+            custom_account: newStaff.custom_account == 1,
+            custom_department: newStaff.custom_account == 1 ? (newStaff.department || '') : '',
+            custom_account_types: [],
+            enable_custom_permissions: newStaff.role === 'CUSTOM' && !!newStaff.custom_permissions,
+            custom_permissions: newStaff.role === 'CUSTOM' && newStaff.custom_permissions 
+              ? JSON.parse(newStaff.custom_permissions) 
+              : this.buildPermissionState(),
             roleDepartment: reconstructedRoleDept,
-            custom_account: !!newStaff.username,
             branch_id: newStaff.branch_id || '',
             address: newStaff.address || '',
             region: newStaff.region || '',
             province: newStaff.province || '',
             city: newStaff.city || '',
             barangay: newStaff.barangay || '',
+            latitude: newStaff.latitude || null,
+            longitude: newStaff.longitude || null,
           }
 
           if (this.form.region || this.form.province || this.form.city || this.form.barangay) {
@@ -1099,43 +1019,32 @@ export default {
               .filter(Boolean).join(', ')
             this.addressSaved = true
           }
-
-          // If editing a custom account, populate permissions
-          try {
-            if (String(newStaff.role).toUpperCase() === 'CUSTOM') {
-              this.form.enable_custom_permissions = true
-              this.form.custom_permissions = this.buildPermissionState()
-              const perms = (newStaff.permissions && typeof newStaff.permissions === 'string') ? JSON.parse(newStaff.permissions) : (newStaff.permissions || {})
-              (perms.modules || []).forEach(m => { if (this.form.custom_permissions.modules.hasOwnProperty(m)) this.form.custom_permissions.modules[m] = true })
-              (perms.functions || []).forEach(f => { if (this.form.custom_permissions.functions.hasOwnProperty(f)) this.form.custom_permissions.functions[f] = true })
-            } else {
-              this.form.enable_custom_permissions = false
-              if (!this.form.custom_permissions) this.form.custom_permissions = this.buildPermissionState()
-            }
-          } catch (e) {
-            this.form.enable_custom_permissions = false
-            if (!this.form.custom_permissions) this.form.custom_permissions = this.buildPermissionState()
-          }
         } else {
           this.form = {
             username: '',
             email: '',
+            notification_email: '',
             full_name: '',
             phone_number: '',
             password: '',
-            roleDepartment: '',
             custom_account: false,
+            custom_department: '',
+            custom_account_types: [],
+            enable_custom_permissions: false,
+            custom_permissions: null,
+            roleDepartment: '',
             branch_id: '',
             address: '',
             province: '',
             city: '',
             barangay: '',
             region: '',
+            latitude: null,
+            longitude: null,
           }
           this.addressSaved = false
         }
         this.errorMessage = ''
-        this.documentFiles = {}
       }
     },
     show(newVal) {
@@ -1151,27 +1060,40 @@ export default {
           this.form = {
             username: '',
             email: '',
+            notification_email: '',
             full_name: '',
             phone_number: '',
             password: '',
-            roleDepartment: '',
             custom_account: false,
+            custom_department: '',
+            custom_account_types: [],
+            enable_custom_permissions: false,
+            custom_permissions: null,
+            roleDepartment: '',
             branch_id: this.preSelectedBranchId || '',
             address: '',
             province: '',
             city: '',
             barangay: '',
             region: '',
+            latitude: null,
+            longitude: null,
           }
-          if (!this.form.custom_permissions) this.form.custom_permissions = this.buildPermissionState()
           this.addressSaved = false
-          this.documentFiles = {}
           this.errorMessage = ''
           // try to fetch default password for owners/admins (optional display)
           this.fetchDefaultPassword()
         }
       }
-    }
+    },
+    roleDepartment(newRole) {
+      if (newRole === 'CUSTOM') {
+        // Auto-initialize custom permissions when CUSTOM role selected
+        if (!this.form.custom_permissions) {
+          this.form.custom_permissions = this.buildPermissionState()
+        }
+      }
+    },
   },
 }
 </script>
@@ -1413,5 +1335,23 @@ select.form-input {
 .reset-hint { font-size:0.875rem; color:#374151 }
 .reset-success { width:100%; padding:0.5rem 0.75rem; background:#dcfce7; border:1px solid #86efac; border-radius:6px; color:#166534; font-size:0.9rem }
 .reset-error { width:100%; padding:0.5rem 0.75rem; background:#fef2f2; border:1px solid #fca5a5; border-radius:6px; color:#dc2626; font-size:0.9rem }
+
+/* Custom Account Card Styles */
+.custom-account-card { border:1px solid #e5e7eb; border-radius:8px; background:#f9fafb; padding:1.25rem }
+.custom-account-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; padding-bottom:0.75rem; border-bottom:2px solid #e5e7eb }
+.custom-account-body { margin-top:1rem }
+.permission-grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:1rem }
+.permission-card { padding:1rem; background:#ffffff; border:1px solid #e5e7eb; border-radius:6px; transition:all 0.2s ease }
+.permission-card:hover { border-color:#0066FF; box-shadow:0 0 0 2px rgba(0, 102, 255, 0.05) }
+.permission-card-header { display:flex; align-items:center; gap:0.75rem }
+.permission-card-header label { display:flex; align-items:center; gap:0.5rem; margin:0; cursor:pointer; font-size:0.9rem }
+.permission-card-header input[type="checkbox"] { margin:0 }
+
+/* Account Types Grid */
+.account-types-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:0.5rem; padding:1rem; background:#f9fafb; border:1px solid #e5e7eb; border-radius:6px }
+@media (max-width: 768px) { .account-types-grid { grid-template-columns:repeat(2, 1fr) } }
+.account-types-grid label { margin:0; padding:0.5rem; background:#ffffff; border:1px solid #e5e7eb; border-radius:4px; transition:all 0.2s ease; font-size:0.9rem }
+.account-types-grid label:hover { border-color:#0066FF; background:#f0f7ff }
+.account-types-grid label input[type="checkbox"] { margin:0; cursor:pointer }
 </style>
 

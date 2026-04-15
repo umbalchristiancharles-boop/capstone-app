@@ -111,6 +111,21 @@
                                     @enderror
                                 </div>
 
+                                <!-- Notification Email (optional - for sending account creation details) -->
+                                <div>
+                                    <label for="notification_email" class="block text-sm font-medium text-gray-700">
+                                        Notification Email (optional)
+                                    </label>
+                                    <input type="email" name="notification_email" id="notification_email"
+                                           value="{{ old('notification_email') }}"
+                                           placeholder="Where to send account creation details"
+                                           class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                                    @error('notification_email')
+                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                    <p class="mt-1 text-xs text-gray-500">Leave empty to skip notification</p>
+                                </div>
+
                                 <!-- Branch removed: creating Owner accounts only -->
                                 <input type="hidden" name="role" value="OWNER">
 

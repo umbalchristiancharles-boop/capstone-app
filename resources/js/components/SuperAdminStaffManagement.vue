@@ -27,8 +27,25 @@
     <div v-if="!loading && groupedStaff.length > 0">
       <div v-for="group in groupedStaff" :key="group.branchName" class="branch-group">
         <div class="branch-header">
-          <h2 class="branch-title">{{ group.branchName }}{{ group.branchName !== 'Unassigned' ? ' Branch' : '' }}</h2>
-          <span class="branch-count">{{ group.staff.length }} staff member{{ group.staff.length !== 1 ? 's' : '' }}</span>
+          <div class="branch-info">
+            <h2 class="branch-title">{{ group.branchName }}{{ group.branchName !== 'Unassigned' ? ' Branch' : '' }}</h2>
+            <span class="branch-count">{{ group.staff.length }} staff member{{ group.staff.length !== 1 ? 's' : '' }}</span>
+          </div>
+          <div v-if="group.defaultPassword" class="branch-password-display">
+            <div class="password-card">
+              <div class="password-label">Default Password:</div>
+              <div class="password-value">
+                <span class="password-text" :id="`password-${group.branchName}`">{{ group.defaultPassword }}</span>
+                <button 
+                  @click="copyToClipboard(`password-${group.branchName}`, group.defaultPassword)" 
+                  class="btn-copy"
+                  title="Copy to clipboard"
+                >
+                  📋
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="staff-table-wrapper">
@@ -70,8 +87,12 @@
       :staff="isEditingStaff ? staff.find(s => s.id === editingStaffId) : null"
       :isEdit="isEditingStaff"
       :isViewOnly="false"
+      :branchName="editingStaffBranchName"
+      :defaultPassword="editingStaffBranchDefaultPassword"
+      :editingStaffId="editingStaffId"
       @close="showAddStaffModal = false"
       @success="onStaffModalSuccess"
+      @resetPassword="onResetPasswordClick"
     ></OwnerStaffModal>
 
     <transition name="fade">
@@ -113,6 +134,7 @@ const { initializeTheme } = useTheme()
 const loading = ref(false)
 const errorMessage = ref('')
 const staff = ref([])
+const branchData = ref({})  // Store branch-level data including passwords
 const branches = ref([])
 const searchQuery = ref('')
 const branchFilter = ref('')
@@ -120,6 +142,8 @@ const branchFilter = ref('')
 const showAddStaffModal = ref(false)
 const isEditingStaff = ref(false)
 const editingStaffId = ref(null)
+const editingStaffBranchName = ref('')
+const editingStaffBranchDefaultPassword = ref('')
 
 const showTimeLogs = ref(false)
 const timeLogs = ref([])
@@ -143,7 +167,12 @@ const groupedStaff = computed(() => {
     if (!groups[bn]) groups[bn] = []
     groups[bn].push(m)
   })
-  return Object.keys(groups).sort().map(k => ({ branchName: k, staff: groups[k] }))
+  return Object.keys(groups).sort().map(k => ({
+    branchName: k,
+    staff: groups[k],
+    defaultPassword: branchData.value[k]?.defaultPassword || null,
+    defaultPasswordUpdatedAt: branchData.value[k]?.defaultPasswordUpdatedAt || null
+  }))
 })
 
 function displayRole(r) {
@@ -157,16 +186,24 @@ async function loadStaff() {
   try {
     const res = await axios.get('/api/admin/staff', { withCredentials: true })
     if (res.data && (res.data.staff || res.data.data || res.data.success)) {
-      if (Array.isArray(res.data.staff)) staff.value = res.data.staff
-      else if (Array.isArray(res.data.data)) {
+      if (Array.isArray(res.data.staff)) {
+        staff.value = res.data.staff
+        branchData.value = {}
+      } else if (Array.isArray(res.data.data)) {
         const list = []
+        const branches = {}
         res.data.data.forEach(branch => {
           const branchName = branch.branch_name || ''
+          branches[branchName] = {
+            defaultPassword: branch.default_password,
+            defaultPasswordUpdatedAt: branch.default_password_updated_at
+          }
           if (branch.branch_manager) list.push({ ...branch.branch_manager, branch_name: branchName })
           if (Array.isArray(branch.hr)) branch.hr.forEach(h => list.push({ ...h, branch_name: branchName }))
           if (Array.isArray(branch.staff)) branch.staff.forEach(s => list.push({ ...s, branch_name: branchName }))
         })
         staff.value = list
+        branchData.value = branches
       } else staff.value = []
     } else {
       errorMessage.value = 'Failed to load staff.'
@@ -197,23 +234,35 @@ function openAddStaffModal() {
 function editStaff(member) {
   isEditingStaff.value = true
   editingStaffId.value = member.id
-  showAddStaffModal.value = true
+  editingStaffBranchName.value = member.branch_name || ''
+  editingStaffBranchDefaultPassword.value = branchData.value[member.branch_name]?.defaultPassword || ''
+  
+  // Fetch password if not available, then open modal
+  if (!editingStaffBranchDefaultPassword.value && member.branch_id) {
+    fetchBranchPassword(member.branch_id, () => {
+      showAddStaffModal.value = true
+    })
+  } else {
+    showAddStaffModal.value = true
+  }
 }
 
 async function onStaffModalSuccess(payload) {
   try {
     if (payload && payload.form) {
       if (payload.isEdit && payload.staffId) {
-        await axios.put(`/api/admin/staff/${payload.staffId}`, payload.form, { withCredentials: true })
-        alert('Staff updated')
+        await axios.put(`/api/superadmin/staff/${payload.staffId}`, payload.form, { withCredentials: true })
+        alert('Staff updated successfully')
       } else {
+        // Create new staff via admin endpoint (SuperAdmin can create via admin endpoint)
         await axios.post('/api/admin/staff', payload.form, { withCredentials: true })
-        alert('Staff created')
+        alert('Staff created successfully')
       }
     }
   } catch (e) {
-    console.error(e)
-    alert(e?.response?.data?.message || 'Failed to save staff')
+    console.error('Staff save error:', e)
+    const errorMsg = e?.response?.data?.message || e?.response?.data?.errors?.full_name?.[0] || e?.message || 'Failed to save staff'
+    alert(errorMsg)
   } finally {
     showAddStaffModal.value = false
     await loadStaff()
@@ -254,6 +303,46 @@ async function viewTimeLogs(member) {
 
 function formatDateTime(s) {
   try { return new Date(s).toLocaleString() } catch (e) { return s }
+}
+
+function copyToClipboard(elementId, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    alert('Password copied to clipboard!')
+  }).catch(err => {
+    console.error('Failed to copy:', err)
+    alert('Failed to copy to clipboard')
+  })
+}
+
+async function fetchBranchPassword(branchId, callback) {
+  try {
+    const res = await axios.get(`/api/admin/staff/branch/default-password`, { withCredentials: true })
+    if (res.data.success && res.data.data.defaultPassword) {
+      editingStaffBranchDefaultPassword.value = res.data.data.defaultPassword
+      console.log('Loaded default password:', editingStaffBranchDefaultPassword.value)
+    }
+  } catch (e) {
+    console.warn('Failed to fetch branch password:', e)
+  } finally {
+    if (callback) callback()
+  }
+}
+
+async function onResetPasswordClick(staffId) {
+  // Call the reset password endpoint
+  try {
+    const res = await axios.post(`/api/admin/staff/${staffId}/reset-password`, {}, { withCredentials: true })
+    
+    if (res.data.success) {
+      alert('Password reset to default successfully!')
+      loadStaff()
+    } else {
+      alert(res.data.message || 'Failed to reset password')
+    }
+  } catch (error) {
+    console.error('Reset password error:', error)
+    alert('Error resetting password: ' + (error.response?.data?.message || error.message))
+  }
 }
 
 onMounted(async () => {
@@ -898,5 +987,112 @@ onMounted(async () => {
 .dark-mode .staff-table tbody tr.inactive {
   opacity: 0.6;
   background: #262626;
+}
+
+/* Branch Password Display Styles */
+.branch-info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.branch-password-display {
+  margin-left: auto;
+}
+
+.password-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8px;
+  padding: 0.75rem 1.25rem;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.password-label {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.password-value {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.password-text {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: 0.3px;
+  user-select: all;
+}
+
+.btn-copy {
+  background: rgba(255, 255, 255, 0.25);
+  border: none;
+  color: #ffffff;
+  padding: 0.35rem 0.6rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.btn-copy:hover {
+  background: rgba(255, 255, 255, 0.4);
+  transform: scale(1.05);
+}
+
+.btn-copy:active {
+  transform: scale(0.98);
+}
+
+.dark-mode .password-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+@media (max-width: 768px) {
+  .staff-header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .header-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .search-input {
+    width: 100%;
+  }
+
+  .staff-table {
+    font-size: 0.85rem;
+  }
+
+  .staff-table th,
+  .staff-table td {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .branch-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .branch-password-display {
+    width: 100%;
+    margin-left: 0;
+  }
 }
 </style>

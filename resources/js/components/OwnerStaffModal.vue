@@ -62,7 +62,33 @@
 
             <div class="form-group" v-if="form.custom_account && !isViewOnly">
               <label for="password" class="form-label">Password {{ !isEdit ? '*' : '' }}</label>
-              <input v-model="form.password" id="password" class="form-input" type="password" :required="form.custom_account && !isEdit" />
+              <input v-model="form.password" id="password" class="form-input" type="password" autocomplete="current-password" :required="form.custom_account && !isEdit" />
+            </div>
+          </div>
+
+          <!-- Debug: Show password info -->
+          <div style="background: #f0f0f0; padding: 0.5rem; margin-bottom: 1rem; font-size: 0.75rem; border-radius: 4px; font-family: monospace;">
+            isEdit: {{ isEdit }} | defaultPassword: {{ defaultPassword ? '✓ SET' : '✗ EMPTY' }} | branchName: {{ branchName }}
+          </div>
+
+          <!-- Default Password Section (Outside form-grid) -->
+          <div v-if="isEdit && defaultPassword" class="default-password-section-wrapper">
+            <div class="default-password-section">
+              <label class="form-label">Default Branch Password</label>
+              <div class="default-password-display">
+                <div class="password-info">
+                  <span class="password-label">Branch: <strong>{{ branchName }}</strong></span>
+                  <span class="password-value">{{ defaultPassword }}</span>
+                </div>
+                <button 
+                  type="button"
+                  @click="resetToDefaultPassword"
+                  :disabled="isResetting"
+                  class="btn btn-secondary btn-reset-password"
+                >
+                  {{ isResetting ? 'Resetting...' : 'Reset to Default' }}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -89,8 +115,11 @@ export default {
     isEdit: { type: Boolean, default: false },
     isViewOnly: { type: Boolean, default: false },
     staff: { type: Object, default: null },
+    branchName: { type: String, default: '' },
+    defaultPassword: { type: String, default: '' },
+    editingStaffId: { type: [String, Number], default: null },
   },
-  emits: ['close', 'success'],
+  emits: ['close', 'success', 'resetPassword'],
   data() {
     return {
       form: {
@@ -112,25 +141,34 @@ export default {
       documentFiles: {},
       errorMessage: '',
       isSubmitting: false,
+      isResetting: false,
     }
   },
   watch: {
       staff: {
         immediate: true,
         handler(newStaff) {
+          console.log('OwnerStaffModal - staff prop changed:', newStaff)
           if (this.isEdit && newStaff) {
             this.form.username = newStaff.username || ''
             this.form.full_name = newStaff.full_name || ''
             this.form.email = newStaff.email || ''
+            this.form.phone_number = newStaff.phone_number || ''
             this.form.branch_id = newStaff.branch_id || ''
             this.form.role = newStaff.role || ''
+            this.form.address = newStaff.address || ''
             this.form.custom_account = !!(newStaff.username)
+            // Don't populate password when editing (user can change if needed)
+            this.form.password = ''
           } else {
             this.form.username = ''
             this.form.full_name = ''
             this.form.email = ''
+            this.form.phone_number = ''
             this.form.branch_id = ''
             this.form.role = ''
+            this.form.address = ''
+            this.form.password = ''
             this.form.custom_account = false
           }
           this.errorMessage = ''
@@ -165,6 +203,10 @@ export default {
       }
       this.$emit('success', payload)
       this.closeModal()
+    },
+    async resetToDefaultPassword() {
+      // Emit resetPassword event to parent component
+      this.$emit('resetPassword', this.editingStaffId)
     }
   }
 }
@@ -222,4 +264,65 @@ export default {
 .btn { padding:0.6rem 1rem; border-radius:8px; font-weight:600 }
 .btn-primary { background:#ff7e5f; color:#fff; border:none }
 .btn-secondary { background:#fff; border:1px solid #e5e7eb }
+
+/* Default Password Section */
+.default-password-section-wrapper {
+  padding: 1.5rem 1.5rem 0 1.5rem;
+}
+
+.default-password-section {
+  padding: 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8px;
+  color: white;
+}
+
+.default-password-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.password-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.password-label {
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+.password-value {
+  font-family: 'Courier New', monospace;
+  font-size: 0.95rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  word-break: break-all;
+}
+
+.btn-reset-password {
+  background: white !important;
+  color: #667eea !important;
+  font-weight: 600 !important;
+  border: none !important;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-reset-password:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-reset-password:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
 </style>

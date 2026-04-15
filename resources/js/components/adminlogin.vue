@@ -96,6 +96,13 @@
             @completed="handleForceCompleted"
             @cancel="handleForceCancel"
         />
+
+        <AccountSetupModal
+            :show="showAccountSetupModal"
+            :missingFields="accountSetupMissingFields"
+            :setupType="accountSetupType"
+            @complete="handleAccountSetupComplete"
+        />
     </div>
 </template>
 
@@ -105,6 +112,7 @@ import { useRouter } from "vue-router";
 import axios from "axios";
 import "../css/adminlogin.css";
 import ForcePasswordChangeModal from "./ForcePasswordChangeModal.vue";
+import AccountSetupModal from "./AccountSetupModal.vue";
 
 const router = useRouter();
 
@@ -116,6 +124,9 @@ const showOverlay = ref(false);
 const overlayText = ref("Loading Admin Panel...");
 const errorMsg = ref("");
 const showForceModal = ref(false);
+const showAccountSetupModal = ref(false);
+const accountSetupMissingFields = ref([]);
+const accountSetupType = ref('full');
 const pendingRedirectPath = ref("/admin-panel");
 const loggedInUsername = ref("");
 const defaultPassword = ref("");
@@ -263,17 +274,28 @@ async function handleLogin() {
                                 return;
             }
 
-            // After login, ensure the user has an email attached. If not, send them
-            // to the verify-email flow so they can attach and confirm an email.
-            try {
-                const meRes = await axios.get('/api/me', { withCredentials: true });
-                const u = meRes.data.user;
-                if (!u || !u.email) {
-                    router.push('/verify-email');
-                    return;
-                }
-            } catch (e) {
-                // ignore errors from /api/me - fall back to normal redirect
+            // Check if email verification is pending (email exists but not verified)
+            if (res.data.email_verification_pending) {
+                try {
+                    // Store email for the verify-email page
+                    localStorage.setItem('pending_email', res.data.user?.email || '');
+                } catch (e) {}
+                router.push('/verify-email');
+                return;
+            }
+
+            // Check for missing account setup information
+            console.log('🔍 Login response full data:', res.data)
+            console.log('📋 missing_account_info:', res.data.missing_account_info)
+            console.log('🎯 setup_type:', res.data.setup_type)
+            if (res.data.missing_account_info && res.data.missing_account_info.length > 0) {
+                accountSetupMissingFields.value = res.data.missing_account_info;
+                accountSetupType.value = res.data.setup_type || 'full';
+                pendingRedirectPath.value = redirectPath;
+                showAccountSetupModal.value = true;
+                console.log('✅ Showing account setup modal with:', { fields: accountSetupMissingFields.value, type: accountSetupType.value })
+                isLoading.value = false;
+                return;
             }
 
             setTimeout(() => {
@@ -430,6 +452,19 @@ async function handleForceCancel() {
     }
     // Reload page to get fresh CSRF token
     window.location.reload();
+}
+
+async function handleAccountSetupComplete() {
+    showAccountSetupModal.value = false;
+    overlayText.value = "Setting up your account...";
+    setTimeout(() => {
+        showOverlay.value = true;
+        setTimeout(() => {
+            try { sessionStorage.setItem('skipRouteOverlay', '1'); } catch (e) {}
+            // Redirect to the intended dashboard
+            router.push(pendingRedirectPath.value || '/admin-panel');
+        }, 600);
+    }, 400);
 }
 
 onMounted(() => {

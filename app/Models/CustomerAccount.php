@@ -18,6 +18,8 @@ class CustomerAccount extends Model
         'city',
         'province',
         'postal_code',
+        'latitude',
+        'longitude',
         'total_comments',
         'total_ratings',
         'last_activity_at',
@@ -28,6 +30,8 @@ class CustomerAccount extends Model
         'last_activity_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'latitude' => 'float',
+        'longitude' => 'float',
     ];
 
     /**

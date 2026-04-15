@@ -76,7 +76,7 @@ class StaffProfileController extends Controller
                 'id' => $user->id,
                 'username' => $user->username,
                 'full_name' => $user->full_name,
-                'email' => $user->email,
+                'email' => !is_null($user->email_verified_at) ? $user->email : null,
                 'phone_number' => $user->phone_number,
                 'contact' => $user->phone_number,
                 'role' => $user->role,

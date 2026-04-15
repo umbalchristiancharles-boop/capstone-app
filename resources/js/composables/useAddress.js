@@ -106,7 +106,7 @@ export default function useAddress(initial = {}) {
   function validate() {
     state.errors = {}
     if (!state.selectedRegion) state.errors.region = 'Region is required'
-    if (!state.selectedProvince) state.errors.province = 'Province is required'
+    // Province is optional for Philippine addresses (skipped in auto-fill)
     if (!state.selectedCity) state.errors.city = 'City / Municipality is required'
     if (!state.selectedBarangay) state.errors.barangay = 'Barangay is required'
     return Object.keys(state.errors).length === 0

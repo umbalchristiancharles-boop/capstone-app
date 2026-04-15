@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\User;
 use App\Models\CustomerAccount;
+use App\Models\StaffDocument;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -173,11 +175,53 @@ class AuthController extends Controller
         /** @var \App\Models\User $user */
         $token = $user->createToken('auth-token')->plainTextToken;
 
+        // Check if email verification is pending (user has email but it's not verified)
+        $emailVerificationPending = !empty($user->email) && is_null($user->email_verified_at);
+
+        // Ensure StaffDocument record exists for this user (for backward compatibility with old accounts)
+        try {
+            $existingDoc = StaffDocument::where('user_id', $user->id)->first();
+            if (!$existingDoc) {
+                StaffDocument::create([
+                    'user_id' => $user->id,
+                    'sss_id_path' => null,
+                    'philhealth_id_path' => null,
+                    'drug_test_result_path' => null
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to create or check StaffDocument on login: ' . $e->getMessage());
+        }
+
+        // Check for missing account setup info based on setup type
+        // Owner/SuperAdmin accounts skip all setup
+        // 'full' = complete setup, 'documents' = documents only, null = skip setup
+        $missingAccountInfo = [];
+        $setupTypeToUse = null;
+        
+        // Skip setup for Owner and SuperAdmin roles
+        $isOwnerOrAdmin = in_array(strtoupper($user->role), ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN']);
+        
+        if (!$isOwnerOrAdmin) {
+            // Non-owner accounts need setup
+            $setupTypeToUse = $user->required_setup_type ?? 'documents'; // Default to documents for backward compatibility
+            
+            if ($setupTypeToUse === 'full') {
+                $missingAccountInfo = $this->checkMissingAccountInfo($user, 'full');
+            } else {
+                // For 'documents' or any other value, check documents only
+                $missingAccountInfo = $this->checkMissingAccountInfo($user, 'documents');
+            }
+        }
+
         return response()->json([
             'ok' => true,
             'message' => 'Login successful',
             'redirect_path' => $redirectPath,
             'token' => $token, // Send token to frontend for storage
+            'email_verification_pending' => $emailVerificationPending,
+            'missing_account_info' => $missingAccountInfo,
+            'setup_type' => $setupTypeToUse,
             'user' => [
                 'id' => $user->id,
                 'username' => $user->username,
@@ -185,6 +229,7 @@ class AuthController extends Controller
                 'department' => strtolower($user->department ?? ''),
                 'full_name' => $user->full_name,
                 'branch_id' => $user->branch_id,
+                'email' => !is_null($user->email_verified_at) ? $user->email : null,
                 'must_change_password' => (bool) $user->must_change_password,
                 'permissions' => $user->permissions ?? [],
             ],
@@ -303,10 +348,81 @@ class AuthController extends Controller
         return '/staff-landing?error=unknown_role';
     }
 
+    /**
+     * Check for missing account information for new branch default accounts
+     * Returns array of missing fields that need to be completed
+     */
+    private function checkMissingAccountInfo($user, $setupType = 'full')
+    {
+        $missing = [];
+
+        // For full setup, check all fields
+        if ($setupType === 'full') {
+            // Check for phone number
+            if (empty($user->phone_number)) {
+                $missing[] = 'phone_number';
+            }
+
+            // Check for email (must be provided and verified)
+            if (empty($user->email)) {
+                $missing[] = 'email';
+            } elseif (is_null($user->email_verified_at)) {
+                $missing[] = 'email_verification';
+            }
+
+            // Check for current home address (location with coordinates)
+            if (empty($user->address) || empty($user->latitude) || empty($user->longitude)) {
+                $missing[] = 'address';
+            }
+        }
+
+        // For both full and documents-only, check required documents (SSS, PhilHealth, Drug Test)
+        if ($user->id) {
+            $documents = \App\Models\StaffDocument::where('user_id', $user->id)->first();
+            
+            if (!$documents) {
+                // No documents record at all - all docs are missing
+                $missing[] = 'sss_id';
+                $missing[] = 'philhealth_id';
+                $missing[] = 'drug_test_result';
+            } else {
+                // Check individual required documents - use both empty() and null check
+                if (empty($documents->sss_id_path)) {
+                    $missing[] = 'sss_id';
+                }
+                if (empty($documents->philhealth_id_path)) {
+                    $missing[] = 'philhealth_id';
+                }
+                if (empty($documents->drug_test_result_path)) {
+                    $missing[] = 'drug_test_result';
+                }
+            }
+        }
+
+        return $missing;
+    }
 
     public function logout(Request $request)
     {
-        Auth::logout();
+        try {
+            // Attempt to revoke all tokens for the user, even if they're soft-deleted
+            $user = $this->resolveAuthenticatedUser($request);
+            if ($user) {
+                // Revoke all Sanctum tokens for this user
+                $user->tokens()->delete();
+            }
+        } catch (\Exception $e) {
+            // User might be deleted, but we still want to logout the session
+            Log::debug('Error revoking tokens during logout: ' . $e->getMessage());
+        }
+
+        try {
+            Auth::logout();
+        } catch (\Exception $e) {
+            // If Auth::logout() fails (e.g., user is deleted), continue with session cleanup
+            Log::debug('Auth::logout() error: ' . $e->getMessage());
+        }
+
         Session::forget(['user_id', 'user_role', 'user_name', 'redirect_path']);
         $request->session()->invalidate();
         $request->session()->regenerateToken();
@@ -350,7 +466,7 @@ class AuthController extends Controller
                 'username'  => $u->username,
                 'role'      => $u->role,
                 'full_name' => $u->full_name,
-                'email'     => $u->email,
+                'email'     => !is_null($u->email_verified_at) ? $u->email : null,
                 'must_change_password' => (bool) $u->must_change_password,
             ],
         ]);
@@ -391,52 +507,34 @@ class AuthController extends Controller
             'must_change_password' => false,
         ]);
 
-        // If user has an email and it's not verified, either send a one-time verification code
-        // or auto-verify for supplier accounts (created via procurement panel).
-        $verificationSent = false;
+        // Refresh user data to get updated password
+        $user->refresh();
 
-        $roleUpper = strtoupper(trim($user->role ?? ''));
-        $isBsupplierUser = isset($user->username) && Str::startsWith(strtolower($user->username), 'bsupplier');
-        $skipVerification = ($roleUpper === 'SUPPLIER' || $isBsupplierUser);
-
+        // Auto-verify email if user has an email and it's not verified
+        // This is because the password is only received via email
+        $emailWasVerified = false;
         if (!empty($user->email) && is_null($user->email_verified_at)) {
-            if ($skipVerification) {
-                // Auto-verify supplier emails because procurement panel already emailed credentials
-                try {
-                    $user->email_verified_at = now();
-                    $user->save();
-                    Cache::forget('verification_code_' . $user->email);
-                    Log::info('Auto-verified supplier email after password change for user id ' . $user->id);
-                } catch (\Exception $e) {
-                    Log::error('Failed to auto-verify supplier email after password change: ' . $e->getMessage());
-                }
-            } else {
-                try {
-                    $email = $user->email;
-                    $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-                    Cache::put('verification_code_' . $email, $code, 600); // 10 minutes
-
-                    Mail::raw(
-                        "Your CHIKIN TAYO verification code is: {$code}\n\nThis code will expire in 10 minutes.",
-                        function ($message) use ($email) {
-                            $message->to($email)
-                                    ->subject('CHIKIN TAYO - Email Verification Code');
-                        }
-                    );
-
-                    Log::info("Verification email sent to {$email} after password change");
-                    $verificationSent = true;
-                } catch (\Exception $e) {
-                    Log::error('Failed to send verification email after password change: ' . $e->getMessage());
-                    // Do not fail the password change if email sending fails
-                }
+            try {
+                $user->email_verified_at = now();
+                $user->save();
+                Cache::forget('verification_code_' . $user->email);
+                Log::info('Auto-verified email after password change for user id ' . $user->id);
+                $emailWasVerified = true;
+            } catch (\Exception $e) {
+                Log::error('Failed to auto-verify email after password change: ' . $e->getMessage());
             }
         }
 
         return response()->json([
             'ok' => true,
             'message' => 'Password updated successfully',
-            'verification_sent' => $verificationSent,
+            'user' => [
+                'id' => $user->id,
+                'username' => $user->username,
+                'email' => $user->email,
+                'email_verified_at' => $user->email_verified_at,
+            ],
+            'email_verified' => $emailWasVerified,
         ]);
     }
 
@@ -468,7 +566,7 @@ class AuthController extends Controller
                 'username'  => $u->username ?? null,
                 'fullName'  => $u->full_name ?? null,
                 'role'      => $u->role ?? 'OWNER',
-                'email'     => $u->email ?? null,
+                'email'     => !is_null($u->email_verified_at) ? ($u->email ?? null) : null,
                 'contact'   => $u->phone_number ?? null,
                 'branch'    => $u->branch ?? 'Chikin Tayo – QC Main',
                 'accountId' => 'kk' . str_pad($u->id, 5, '0', STR_PAD_LEFT),
@@ -531,20 +629,16 @@ class AuthController extends Controller
         // Fetch and return updated user data
         $updatedUser = User::find($userId);
 
-        // If password was updated and the account is a supplier (or bsupplier username),
-        // auto-verify the email because procurement panel already sent credentials.
+        // If password was updated and user has email, auto-verify the email
+        // because the password change proves they have access to the email
         if (!empty($validated['password']) && !empty($updatedUser->email) && is_null($updatedUser->email_verified_at)) {
-            $roleUpper = strtoupper(trim($updatedUser->role ?? ''));
-            $isBsupplierUser = isset($updatedUser->username) && Str::startsWith(strtolower($updatedUser->username), 'bsupplier');
-            if ($roleUpper === 'SUPPLIER' || $isBsupplierUser) {
-                try {
-                    $updatedUser->email_verified_at = now();
-                    $updatedUser->save();
-                    Cache::forget('verification_code_' . $updatedUser->email);
-                    Log::info('Auto-verified supplier email after profile password update for user id ' . $updatedUser->id);
-                } catch (\Exception $e) {
-                    Log::error('Failed to auto-verify supplier email after profile update: ' . $e->getMessage());
-                }
+            try {
+                $updatedUser->email_verified_at = now();
+                $updatedUser->save();
+                Cache::forget('verification_code_' . $updatedUser->email);
+                Log::info('Auto-verified email after profile password update for user id ' . $updatedUser->id);
+            } catch (\Exception $e) {
+                Log::error('Failed to auto-verify email after profile update: ' . $e->getMessage());
             }
         }
 
@@ -566,7 +660,7 @@ class AuthController extends Controller
                 'username'  => $updatedUser->username ?? null,
                 'fullName'  => $updatedUser->full_name ?? null,
                 'role'      => $updatedUser->role ?? 'OWNER',
-                'email'     => $updatedUser->email ?? null,
+                'email'     => !is_null($updatedUser->email_verified_at) ? ($updatedUser->email ?? null) : null,
                 'contact'   => $updatedUser->phone_number ?? null,
                 'branch'    => $updatedUser->branch ?? 'Chikin Tayo – QC Main',
                 'accountId' => 'kk' . str_pad($updatedUser->id, 5, '0', STR_PAD_LEFT),
@@ -799,6 +893,161 @@ class AuthController extends Controller
         Cache::forget('email_verified_' . $email);
 
         return response()->json(['message' => 'Email associated and verified successfully', 'email' => $email]);
+    }
+
+    /**
+     * Update authenticated user's account setup information (phone, address)
+     * PUT /api/auth/setup/account-info
+     */
+    public function updateAccountSetup(Request $request)
+    {
+        $user = $this->resolveAuthenticatedUser($request);
+        if (!$user) {
+            return response()->json(['ok' => false, 'message' => 'Unauthenticated'], 401);
+        }
+
+        $request->validate([
+            'phone_number' => 'nullable|string|max:20',
+            'address' => 'nullable|string|max:255',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+        ]);
+
+        // Update account info
+        if ($request->has('phone_number')) {
+            $user->phone_number = $request->input('phone_number');
+        }
+        if ($request->has('address')) {
+            $user->address = $request->input('address');
+        }
+        if ($request->has('latitude')) {
+            $user->latitude = $request->input('latitude');
+        }
+        if ($request->has('longitude')) {
+            $user->longitude = $request->input('longitude');
+        }
+
+        $user->save();
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'Account information updated successfully',
+            'user' => [
+                'id' => $user->id,
+                'phone_number' => $user->phone_number,
+                'address' => $user->address,
+                'latitude' => $user->latitude,
+                'longitude' => $user->longitude,
+            ]
+        ]);
+    }
+
+    /**
+     * Upload document for account setup
+     * POST /api/auth/setup/document/{documentType}
+     */
+    public function uploadSetupDocument(Request $request, $documentType)
+    {
+        $user = $this->resolveAuthenticatedUser($request);
+        if (!$user) {
+            return response()->json(['ok' => false, 'message' => 'Unauthenticated'], 401);
+        }
+
+        $request->validate([
+            'file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120'
+        ]);
+
+        $validDocuments = ['sss_id', 'philhealth_id', 'drug_test_result'];
+        if (!in_array($documentType, $validDocuments)) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Invalid document type'
+            ], 400);
+        }
+
+        try {
+            $file = $request->file('file');
+            $docDir = 'account-setup-documents/' . $user->id;
+            $ext = $file->getClientOriginalExtension();
+            $path = $file->storeAs($docDir, $documentType . '.' . $ext, 'public');
+
+            // Get or create staff documents record
+            $doc = \App\Models\StaffDocument::firstOrCreate(['user_id' => $user->id]);
+
+            // Map documentType to database field
+            $fieldMap = [
+                'sss_id' => 'sss_id_path',
+                'philhealth_id' => 'philhealth_id_path',
+                'drug_test_result' => 'drug_test_result_path',
+            ];
+
+            $fieldName = $fieldMap[$documentType];
+
+            // Delete old file if exists
+            if ($doc->$fieldName) {
+                Storage::disk('public')->delete($doc->$fieldName);
+            }
+
+            $doc->$fieldName = $path;
+            $doc->save();
+
+            return response()->json([
+                'ok' => true,
+                'message' => 'Document uploaded successfully',
+                'document_type' => $documentType,
+                'path' => $path
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Account setup document upload error: ' . $e->getMessage());
+            return response()->json([
+                'ok' => false,
+                'message' => 'Failed to upload document'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get account setup status for authenticated user
+     * GET /api/auth/setup/status
+     */
+    public function getSetupStatus(Request $request)
+    {
+        $user = $this->resolveAuthenticatedUser($request);
+        if (!$user) {
+            return response()->json(['ok' => false, 'message' => 'Unauthenticated'], 401);
+        }
+
+        // Ensure StaffDocument exists
+        try {
+            $existingDoc = StaffDocument::where('user_id', $user->id)->first();
+            if (!$existingDoc) {
+                StaffDocument::create([
+                    'user_id' => $user->id,
+                    'sss_id_path' => null,
+                    'philhealth_id_path' => null,
+                    'drug_test_result_path' => null
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to create StaffDocument in getSetupStatus: ' . $e->getMessage());
+        }
+
+        $setupType = $user->required_setup_type ?? 'documents';
+        $missing = $this->checkMissingAccountInfo($user, $setupType);
+
+        return response()->json([
+            'ok' => true,
+            'setup_type' => $setupType,
+            'missing_fields' => $missing,
+            'current_info' => [
+                'phone_number' => $user->phone_number,
+                'email' => $user->email,
+                'email_verified' => !is_null($user->email_verified_at),
+                'address' => $user->address,
+                'latitude' => $user->latitude,
+                'longitude' => $user->longitude,
+            ]
+        ]);
     }
 
     public function registerPublic(Request $request)

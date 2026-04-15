@@ -18,6 +18,7 @@ use App\Models\ProcurementRequest;
 use App\Models\SupplierOrder;
 use App\Models\Branch;
 use App\Models\Attendance;
+use App\Models\StaffDocument;
 use Carbon\Carbon;
 use Laravel\Sanctum\PersonalAccessToken;
 
@@ -121,6 +122,37 @@ class ManagerProfileController extends Controller
             ->filter()
             ->map(fn($m) => strtolower((string) $m))
             ->contains(strtolower($module));
+    }
+
+    /**
+     * Generate a secure randomized password
+     * Creates a 12-character password with uppercase, lowercase, numbers
+     */
+    private function generateSecurePassword(): string
+    {
+        // Generate truly random password with uppercase, lowercase, numbers, and symbols
+        $uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $lowercase = 'abcdefghijklmnopqrstuvwxyz';
+        $numbers = '0123456789';
+        $symbols = '!@#$%^&*';
+        $allChars = $uppercase . $lowercase . $numbers . $symbols;
+        
+        $password = '';
+        // Guarantee at least one of each type
+        $password .= $uppercase[rand(0, strlen($uppercase) - 1)];
+        $password .= $lowercase[rand(0, strlen($lowercase) - 1)];
+        $password .= $numbers[rand(0, strlen($numbers) - 1)];
+        $password .= $symbols[rand(0, strlen($symbols) - 1)];
+        
+        // Fill rest randomly
+        for ($i = 4; $i < 12; $i++) {
+            $password .= $allChars[rand(0, strlen($allChars) - 1)];
+        }
+        
+        // Shuffle the password to randomize position of guaranteed characters
+        $chars = str_split($password);
+        shuffle($chars);
+        return implode('', $chars);
     }
 
     /**
@@ -255,7 +287,7 @@ class ManagerProfileController extends Controller
                 'id' => $user->id,
                 'username' => $user->username,
                 'full_name' => $user->full_name,
-                'email' => $user->email,
+                'email' => !is_null($user->email_verified_at) ? $user->email : null,
                 'role' => $user->role,
                 'department' => $user->department,
                 'branch_id' => $user->branch_id,
@@ -489,9 +521,6 @@ class ManagerProfileController extends Controller
         ]);
     }
 
-    /**
-     * Create new staff for HR Manager - assigned to manager's branch
-     */
     public function createHrStaff(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
@@ -503,11 +532,15 @@ class ManagerProfileController extends Controller
         $validated = $request->validate([
             'username' => 'nullable|string|unique:users,username',
             'email' => 'nullable|email|unique:users,email',
+            'notificationEmail' => 'nullable|email',
             'fullName' => 'required|string|max:255',
             'phone' => 'nullable|string|max:20',
             'password' => 'nullable|string|min:8',
             'role' => 'nullable|in:BRANCH_MANAGER,MANAGER,STAFF,HR,CUSTOM',
             'department' => 'nullable|string',
+            'custom_account' => 'nullable|boolean|integer',
+            'custom_account_types' => 'nullable|json',
+            'custom_permissions' => 'nullable|json',
             'modules' => 'nullable|array',
             'modules.*' => 'string',
             'functions' => 'nullable|array',
@@ -524,8 +557,18 @@ class ManagerProfileController extends Controller
             ], 400);
         }
 
-        // Use default password if not provided
-        $password = $validated['password'] ?? 'Chikintayo_123';
+        // Check if custom account mode is enabled
+        $customAccountMode = (bool)($validated['custom_account'] ?? false);
+
+        // Generate a randomized password - ALWAYS generate, regardless of mode
+        // Custom account mode only affects username; password is always randomized
+        $password = null;
+        if (isset($validated['password']) && !empty($validated['password'])) {
+            $password = $validated['password'];
+        } else {
+            // Always generate random password
+            $password = $this->generateSecurePassword();
+        }
 
         // Generate username server-side if not provided
         $username = $validated['username'] ?? null;
@@ -554,6 +597,7 @@ class ManagerProfileController extends Controller
 
         // Normalize department value
         $department = isset($validated['department']) && is_string($validated['department']) ? strtoupper($validated['department']) : null;
+        $customAccountTypes = [];
 
         // If creating MANAGER or STAFF require a valid department
         if (in_array($role, ['MANAGER', 'STAFF'])) {
@@ -561,63 +605,89 @@ class ManagerProfileController extends Controller
             if (! $department || ! in_array($department, $validDepts)) {
                 return response()->json(['ok' => false, 'message' => 'Department is required and must be valid for Manager/Staff'], 422);
             }
-        } else {
-            // For non-manager/staff roles, clear department
+        } else if ($role !== 'CUSTOM') {
+            // For non-manager/staff/custom roles, clear department
             $department = null;
+        } else if ($role === 'CUSTOM' && $customAccountMode) {
+            // For CUSTOM accounts, use first selected account type as department (optional)
+            if (!empty($validated['custom_account_types'])) {
+                try {
+                    $parsed = is_string($validated['custom_account_types']) 
+                        ? json_decode($validated['custom_account_types'], true)
+                        : $validated['custom_account_types'];
+                    $customAccountTypes = is_array($parsed) ? array_map('strtoupper', $parsed) : [];
+                } catch (\Exception $e) {
+                    // Invalid JSON, ignore
+                }
+            }
+            // Set department to first type if available
+            $validDepts = ['ADMIN', 'FINANCE', 'INVENTORY', 'LOGISTICS', 'CASHIER', 'KITCHEN', 'PROCUREMENT', 'HR', 'REPORTS'];
+            $department = !empty($customAccountTypes) && in_array($customAccountTypes[0], $validDepts) ? $customAccountTypes[0] : null;
         }
 
-        // If creating a CUSTOM account, validate and normalize provided modules/functions
+        // If creating a CUSTOM account, validate and normalize provided permissions
         $permissionsPayload = null;
         if ($role === 'CUSTOM') {
-            // Log incoming raw payload for debugging
-            Log::debug('createHrStaff incoming raw modules/functions', [
-                'modules_raw' => $request->input('modules'),
-                'functions_raw' => $request->input('functions'),
-                'modules_array_key' => $request->input('modules[]'),
-            ]);
-
-            // Allowed permission catalog (keep in sync with frontend templates)
-            $allowedModules = [
-                'admin', 'finance', 'logistics', 'inventory', 'procurement', 'kitchen', 'cashier', 'hr', 'reports',
-            ];
-            $allowedFunctions = [
-                'admin.users', 'admin.branches', 'admin.settings',
-                'finance.dashboard', 'finance.budget', 'finance.reports', 'finance.expenses',
-                'logistics.dispatch', 'logistics.receiving', 'logistics.transfers',
-                'inventory.products', 'inventory.counts', 'inventory.adjustments',
-                'procurement.purchase_orders', 'procurement.suppliers', 'procurement.approvals',
-                'kitchen.orders', 'kitchen.production', 'kitchen.waste',
-                'cashier.pos', 'cashier.refunds', 'cashier.shifts',
-                'hr.attendance', 'hr.scheduling', 'hr.payroll',
-                'reports.sales', 'reports.inventory', 'reports.finance',
-            ];
-
-            // Accept modules/functions from different possible payload shapes
-            $rawModulesInput = $validated['modules'] ?? $request->input('modules') ?? $request->input('modules[]') ?? [];
-            $rawFunctionsInput = $validated['functions'] ?? $request->input('functions') ?? $request->input('functions[]') ?? [];
-
-            // Normalize single comma-separated strings into arrays
-            if (is_string($rawModulesInput) && strpos($rawModulesInput, ',') !== false) {
-                $rawModulesInput = array_map('trim', explode(',', $rawModulesInput));
-            }
-            if (is_string($rawFunctionsInput) && strpos($rawFunctionsInput, ',') !== false) {
-                $rawFunctionsInput = array_map('trim', explode(',', $rawFunctionsInput));
+            // Try to parse custom_permissions from request
+            if (!empty($validated['custom_permissions'])) {
+                try {
+                    $customPerms = is_string($validated['custom_permissions']) 
+                        ? json_decode($validated['custom_permissions'], true)
+                        : $validated['custom_permissions'];
+                    
+                    if (is_array($customPerms) && isset($customPerms['modules'])) {
+                        // Use provided permissions
+                        $permissionsPayload = $customPerms;
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('Failed to parse custom_permissions', ['error' => $e->getMessage()]);
+                }
             }
 
-            $rawModulesInput = is_array($rawModulesInput) ? $rawModulesInput : [$rawModulesInput];
-            $rawFunctionsInput = is_array($rawFunctionsInput) ? $rawFunctionsInput : [$rawFunctionsInput];
-
-            $rawModules = array_filter($rawModulesInput, fn ($m) => is_string($m) && in_array(strtolower($m), $allowedModules, true));
-            $rawFunctions = array_filter($rawFunctionsInput, fn ($f) => is_string($f) && in_array(strtolower($f), array_map('strtolower', $allowedFunctions), true));
-
-            $modules = array_values(array_unique(array_map('strtolower', $rawModules)));
-            $functions = array_values(array_unique(array_map('strtolower', $rawFunctions)));
-
-            if (!empty($modules) || !empty($functions)) {
-                $permissionsPayload = [
-                    'modules' => $modules,
-                    'functions' => $functions,
+            // Fallback to modules/functions approach if custom_permissions not provided
+            if (!$permissionsPayload) {
+                $allowedModules = [
+                    'admin', 'finance', 'logistics', 'inventory', 'procurement', 'kitchen', 'cashier', 'hr', 'reports',
                 ];
+                $allowedFunctions = [
+                    'admin.users', 'admin.branches', 'admin.settings',
+                    'finance.dashboard', 'finance.budget', 'finance.reports', 'finance.expenses',
+                    'logistics.dispatch', 'logistics.receiving', 'logistics.transfers',
+                    'inventory.products', 'inventory.counts', 'inventory.adjustments',
+                    'procurement.purchase_orders', 'procurement.suppliers', 'procurement.approvals',
+                    'kitchen.orders', 'kitchen.production', 'kitchen.waste',
+                    'cashier.pos', 'cashier.refunds', 'cashier.shifts',
+                    'hr.attendance', 'hr.scheduling', 'hr.payroll',
+                    'reports.sales', 'reports.inventory', 'reports.finance',
+                ];
+
+                // Accept modules/functions from different possible payload shapes
+                $rawModulesInput = $validated['modules'] ?? $request->input('modules') ?? $request->input('modules[]') ?? [];
+                $rawFunctionsInput = $validated['functions'] ?? $request->input('functions') ?? $request->input('functions[]') ?? [];
+
+                // Normalize single comma-separated strings into arrays
+                if (is_string($rawModulesInput) && strpos($rawModulesInput, ',') !== false) {
+                    $rawModulesInput = array_map('trim', explode(',', $rawModulesInput));
+                }
+                if (is_string($rawFunctionsInput) && strpos($rawFunctionsInput, ',') !== false) {
+                    $rawFunctionsInput = array_map('trim', explode(',', $rawFunctionsInput));
+                }
+
+                $rawModulesInput = is_array($rawModulesInput) ? $rawModulesInput : [$rawModulesInput];
+                $rawFunctionsInput = is_array($rawFunctionsInput) ? $rawFunctionsInput : [$rawFunctionsInput];
+
+                $rawModules = array_filter($rawModulesInput, fn ($m) => is_string($m) && in_array(strtolower($m), $allowedModules, true));
+                $rawFunctions = array_filter($rawFunctionsInput, fn ($f) => is_string($f) && in_array(strtolower($f), array_map('strtolower', $allowedFunctions), true));
+
+                $modules = array_values(array_unique(array_map('strtolower', $rawModules)));
+                $functions = array_values(array_unique(array_map('strtolower', $rawFunctions)));
+
+                if (!empty($modules) || !empty($functions)) {
+                    $permissionsPayload = [
+                        'modules' => $modules,
+                        'functions' => $functions,
+                    ];
+                }
             }
 
             Log::debug('createHrStaff normalized permissions', ['permissions' => $permissionsPayload]);
@@ -626,7 +696,7 @@ class ManagerProfileController extends Controller
         $staffData = [
             'username' => $username,
             'email' => $validated['email'] ?? null,
-            'password' => Hash::make($password),
+            'password' => $password ? Hash::make($password) : Hash::make($this->generateSecurePassword()),
             'full_name' => $validated['fullName'],
             'phone_number' => $validated['phone'] ?? '',
             'department' => $department,
@@ -634,13 +704,73 @@ class ManagerProfileController extends Controller
             'branch_id' => $branchId,
             'is_active' => 1,
             'must_change_password' => true,
+            'required_setup_type' => 'documents',
+            'custom_account' => $customAccountMode ? 1 : 0,
         ];
 
         if ($permissionsPayload) {
             $staffData['permissions'] = $permissionsPayload;
+            $staffData['custom_permissions'] = json_encode($permissionsPayload);
+        }
+
+        // Store custom account types if provided
+        if ($customAccountMode && !empty($customAccountTypes)) {
+            if (!isset($staffData['custom_permissions'])) {
+                $staffData['custom_permissions'] = json_encode(['types' => $customAccountTypes]);
+            } else {
+                $existing = json_decode($staffData['custom_permissions'], true) ?? [];
+                $existing['types'] = $customAccountTypes;
+                $staffData['custom_permissions'] = json_encode($existing);
+            }
         }
 
         $staff = User::create($staffData);
+
+        // Create empty StaffDocument record for document uploads
+        try {
+            StaffDocument::create([
+                'user_id' => $staff->id,
+                'sss_id_path' => null,
+                'philhealth_id_path' => null,
+                'drug_test_result_path' => null
+            ]);
+        } catch (\Exception $e) {
+            Log::warning('Failed to create StaffDocument record for user ' . $staff->id . ': ' . $e->getMessage());
+        }
+
+        // Send email with account details to notification email if provided
+        // Email sent for non-custom accounts (randomized credential delivery)
+        // Custom accounts don't have a notification email in the request
+        $notificationEmail = $validated['notificationEmail'] ?? null;
+        if (!empty($notificationEmail)) {
+            try {
+                $body = "Hello,\n\n" .
+                    "A new staff account has been created on CHIKIN TAYO.\n\n" .
+                    "Staff Details:\n" .
+                    "Full Name: {$staff->full_name}\n" .
+                    "Username: {$staff->username}\n" .
+                    "Email: " . ($staff->email ?? 'Not set') . "\n" .
+                    "Phone: " . ($staff->phone_number ?? 'Not set') . "\n" .
+                    "Department: " . ($staff->department ?? 'N/A') . "\n" .
+                    "Role: {$staff->role}\n\n" .
+                    "Default Password: {$password}\n\n" .
+                    "The staff member should log in and change their password immediately upon first login.\n\n" .
+                    "Regards,\nCHIKIN TAYO HR Management System";
+
+                Mail::raw($body, function ($message) use ($notificationEmail) {
+                    $message->to($notificationEmail)
+                            ->subject('CHIKIN TAYO - New Staff Account Created');
+                });
+
+                Log::info('Staff account email sent', [
+                    'staff_id' => $staff->id,
+                    'notification_email' => $notificationEmail,
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to send staff account email: ' . $e->getMessage());
+                // continue — account created regardless of email success
+            }
+        }
 
         return response()->json([
             'ok' => true,
@@ -653,7 +783,8 @@ class ManagerProfileController extends Controller
                 'department' => $staff->department,
                 'is_active' => $staff->is_active,
                 'branch_id' => $staff->branch_id,
-            ]
+            ],
+            'password' => $password, // Return password so HR can see it in frontend
         ], 201);
     }
 
@@ -804,7 +935,7 @@ class ManagerProfileController extends Controller
                 'id' => $user->id,
                 'username' => $user->username,
                 'full_name' => $user->full_name,
-                'email' => $user->email,
+                'email' => !is_null($user->email_verified_at) ? $user->email : null,
                 'role' => $user->role,
                 'department' => $user->department,
                 'branch_id' => $user->branch_id,
@@ -871,7 +1002,7 @@ class ManagerProfileController extends Controller
                 'id' => $user->id,
                 'username' => $user->username,
                 'full_name' => $user->full_name,
-                'email' => $user->email,
+                'email' => !is_null($user->email_verified_at) ? $user->email : null,
                 'role' => $user->role,
                 'department' => $user->department,
                 'branch_id' => $user->branch_id,
@@ -1098,7 +1229,7 @@ public function logisticsProducts(Request $request)
                 'id' => $user->id,
                 'username' => $user->username,
                 'full_name' => $user->full_name,
-                'email' => $user->email,
+                'email' => !is_null($user->email_verified_at) ? $user->email : null,
                 'role' => $user->role,
                 'department' => $user->department,
                 'branch_id' => $user->branch_id,
@@ -1791,7 +1922,7 @@ public function logisticsInventory(Request $request)
                 'id' => $user->id,
                 'username' => $user->username,
                 'full_name' => $user->full_name,
-                'email' => $user->email,
+                'email' => !is_null($user->email_verified_at) ? $user->email : null,
                 'role' => $user->role,
                 'department' => $user->department,
                 'branch_id' => $user->branch_id,
@@ -1853,7 +1984,7 @@ public function logisticsInventory(Request $request)
                 'id' => $user->id,
                 'username' => $user->username,
                 'full_name' => $user->full_name,
-                'email' => $user->email,
+                'email' => !is_null($user->email_verified_at) ? $user->email : null,
                 'role' => $user->role,
                 'department' => $user->department,
                 'branch_id' => $user->branch_id,

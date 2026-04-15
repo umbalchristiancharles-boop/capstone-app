@@ -2,14 +2,14 @@
   <div class="verify-email-page">
     <div class="card">
       <h2>Verify Your Email</h2>
-      <p>Please provide and verify an email address so we can confirm your account.</p>
+      <p>{{ isPostLoginFlow ? 'Please verify your email to continue.' : 'Please provide and verify an email address so we can confirm your account.' }}</p>
 
       <div v-if="error" class="error-text">{{ error }}</div>
       <div v-if="success" class="success-text">{{ success }}</div>
 
       <div class="form-group">
         <label>Email</label>
-        <input v-model="email" type="email" class="form-input" placeholder="your@email.com" />
+        <input v-model="email" type="email" class="form-input" placeholder="your@email.com" :readonly="isPostLoginFlow" />
       </div>
 
       <div class="form-group" style="display:flex; gap:0.5rem;">
@@ -26,7 +26,7 @@
         </div>
       </div>
 
-      <div style="margin-top:1rem; display:flex; gap:0.5rem; justify-content:flex-end;">
+      <div v-if="!isPostLoginFlow" style="margin-top:1rem; display:flex; gap:0.5rem; justify-content:flex-end;">
         <button class="btn-secondary" @click="backToLogin">Back to Login</button>
       </div>
     </div>
@@ -46,12 +46,30 @@ const isSending = ref(false)
 const isVerifying = ref(false)
 const error = ref('')
 const success = ref('')
+const isPostLoginFlow = ref(false)
+const userRole = ref('')
 
 onMounted(async () => {
+  // Check if user is coming from post-login verification
   try {
-    const res = await axios.get('/api/me', { withCredentials: true })
-    const u = res.data.user
-    if (u && u.email) email.value = u.email
+    const pendingEmail = localStorage.getItem('pending_email')
+    if (pendingEmail) {
+      email.value = pendingEmail
+      isPostLoginFlow.value = true
+      // Clear the stored email
+      try {
+        localStorage.removeItem('pending_email')
+      } catch (e) {}
+    } else {
+      // Try to get from authenticated user
+      const res = await axios.get('/api/me', { withCredentials: true })
+      const u = res.data.user
+      if (u && u.email) {
+        email.value = u.email
+        isPostLoginFlow.value = true
+        userRole.value = u.role
+      }
+    }
   } catch (e) {
     // ignore
   }
@@ -94,8 +112,28 @@ async function confirm() {
   isVerifying.value = true
   try {
     await axios.post('/api/auth/confirm-email', { email: email.value, code: code.value }, { withCredentials: true })
-    success.value = 'Email verified and attached to your account. Redirecting...'
-    setTimeout(() => router.push('/staff-landing'), 900)
+    success.value = 'Email verified successfully. Redirecting...'
+    
+    // Determine redirect path
+    let redirectPath = '/admin-panel'
+    if (isPostLoginFlow.value) {
+      // Try to get redirect path from API
+      try {
+        const meRes = await axios.get('/api/me', { withCredentials: true })
+        const u = meRes.data.user
+        // Determine role-based redirect (simplified version of backend logic)
+        const role = (u?.role || '').toUpperCase()
+        if (role === 'OWNER') redirectPath = '/owner-panel'
+        else if (role === 'ADMIN') redirectPath = '/admin-panel'
+        else if (role === 'HR') redirectPath = '/hr-panel'
+        else if (role === 'STAFF') redirectPath = '/staff-panel'
+        else redirectPath = '/staff-landing'
+      } catch (e) {
+        redirectPath = '/staff-landing'
+      }
+    }
+    
+    setTimeout(() => router.push(redirectPath), 900)
   } catch (e) {
     error.value = e.response?.data?.message || 'Failed to verify email.'
   } finally {

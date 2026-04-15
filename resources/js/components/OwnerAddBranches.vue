@@ -39,7 +39,7 @@
               </div>
 
               <div class="form-group full-span">
-                <label class="form-label">Address</label>
+                <label class="form-label">Address & Location</label>
 
                 <!-- Saved Address Card -->
                 <div v-if="addressSaved" class="address-saved-card">
@@ -47,6 +47,9 @@
                     <div class="address-card-content">
                       <strong class="address-label">Location:</strong>
                       <span class="address-text">{{ savedAddress }}</span>
+                      <div v-if="branchForm.latitude && branchForm.longitude" style="font-size:0.85rem; color:#6b7280; margin-top:0.25rem">
+                        📍 {{ branchForm.latitude?.toFixed(6) }}, {{ branchForm.longitude?.toFixed(6) }}
+                      </div>
                     </div>
                     <div class="address-card-actions">
                       <button type="button" class="btn btn-secondary btn-sm" @click="editBranchAddress">Edit</button>
@@ -56,21 +59,12 @@
 
                 <!-- Address Input Form -->
                 <div v-else class="address-input-section">
-                  <textarea v-model="branchForm.address" rows="2" class="form-input" placeholder="House number, street, subdivision" :required="!savedAddress"></textarea>
-
-                  <!-- Address Cascader (Region → Province → City → Barangay) -->
-                  <div style="margin-top:0.5rem;">
-                    <AddressCascader
-                      :initialAddress="{ region: branchForm.region, province: branchForm.province, city: branchForm.city, barangay: branchForm.barangay }"
-                      :showSaveButton="false"
-                      @update:address="onAddressUpdate"
-                    />
-                  </div>
-
-                  <div style="margin-top:0.5rem; display:flex; gap:0.5rem;">
-                    <button type="button" class="btn btn-primary" @click="saveBranchAddress">Save Location</button>
-                    <button type="button" class="btn btn-secondary" @click="clearBranchAddress">Clear</button>
-                  </div>
+                  <AddressCascaderWithMap
+                    :initialAddress="{ region: branchForm.region, province: branchForm.province, city: branchForm.city, barangay: branchForm.barangay }"
+                    :initialLocation="{ lat: branchForm.latitude, lng: branchForm.longitude }"
+                    @save:location="onBranchAddressSaved"
+                    @update:location="onBranchLocationUpdate"
+                  />
                 </div>
               </div>
 
@@ -316,12 +310,12 @@
   </div>
 </template>
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import '../css/adminpanel.css'
 import { useTheme } from '../composables/useTheme'
-import AddressCascader from './AddressCascader.vue'
+import AddressCascaderWithMap from './AddressCascaderWithMap.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -449,6 +443,8 @@ const getInitialBranchForm = () => ({
   province: '',
   city: '',
   barangay: '',
+  latitude: null,
+  longitude: null,
   budget: 100000,
   selectedAccounts: defaultAccountSelection(),
   customAccount: {
@@ -483,6 +479,14 @@ const savedAddress = ref('')
 const addressSaved = ref(false)
 
 const isDeleting = ref(false)
+
+// Auto-populate branch name when city changes
+watch(() => branchForm.value.city, (newCity) => {
+  if (newCity && !branchForm.value.name?.trim()) {
+    branchForm.value.name = `${newCity} Branch`
+    console.log(`Auto-generated branch name: "${branchForm.value.name}"`)
+  }
+})
 
 async function confirmDeactivateBranch(branch) {
   try {
@@ -634,6 +638,63 @@ function onAddressUpdate(address) {
   branchForm.value.barangay = address.barangay || ''
 }
 
+function onBranchAddressSaved(payload) {
+  // Extract address components from the new payload format
+  const addressComponents = payload.addressComponents || {}
+  
+  // Update address components
+  branchForm.value.region = addressComponents.region || ''
+  branchForm.value.province = addressComponents.province || ''
+  branchForm.value.city = addressComponents.city || ''
+  branchForm.value.barangay = addressComponents.barangay || ''
+  
+  // Update geolocation coordinates
+  branchForm.value.latitude = payload.lat
+  branchForm.value.longitude = payload.lng
+  
+  // Generate saved address display
+  const parts = []
+  if (payload.address && payload.address.trim() !== '') parts.push(payload.address.trim())
+  if (addressComponents.barangay) parts.push(addressComponents.barangay)
+  if (addressComponents.city) parts.push(addressComponents.city)
+  if (addressComponents.province) parts.push(addressComponents.province)
+  if (addressComponents.region) parts.push(addressComponents.region)
+  savedAddress.value = parts.join(', ')
+  addressSaved.value = true
+  
+  // Auto-generate or update branch name based on city
+  const cityName = (addressComponents.city || '').trim()
+  const currentName = (branchForm.value.name || '').trim()
+  
+  // Update if: city is available AND (name is empty OR name ends with " Branch" indicating auto-generated)
+  if (cityName) {
+    if (!currentName || currentName.endsWith(' Branch')) {
+      branchForm.value.name = `${cityName} Branch`
+    }
+  }
+}
+
+function onBranchAddressUpdate(address) {
+  branchForm.value.region = address.region || branchForm.value.region
+  branchForm.value.province = address.province || branchForm.value.province
+  branchForm.value.city = address.city || branchForm.value.city
+  branchForm.value.barangay = address.barangay || branchForm.value.barangay
+}
+
+function onBranchLocationUpdate(location) {
+  branchForm.value.latitude = location.lat
+  branchForm.value.longitude = location.lng
+  
+  // Auto-populate branch name instantly when clicking on map
+  if (location.addressComponents && location.addressComponents.city) {
+    const cityName = (location.addressComponents.city || '').trim()
+    // Always update the name if city is available (no matter what the current name is)
+    if (cityName) {
+      branchForm.value.name = `${cityName} Branch`
+    }
+  }
+}
+
 function saveBranchAddress() {
   const parts = []
   if (branchForm.value.address && branchForm.value.address.trim() !== '') parts.push(branchForm.value.address.trim())
@@ -657,6 +718,9 @@ function clearBranchAddress() {
 
 function editBranchAddress() {
   addressSaved.value = false
+  // Always clear the auto-generated branch name when editing location
+  // so it can be regenerated with the new location
+  branchForm.value.name = ''
 }
 
 async function submitBranch() {
@@ -717,6 +781,8 @@ async function submitBranch() {
       province: branchForm.value.province || '',
       city: branchForm.value.city || '',
       barangay: branchForm.value.barangay || '',
+      latitude: branchForm.value.latitude || null,
+      longitude: branchForm.value.longitude || null,
       budget: Number(branchForm.value.budget) || 100000,
       accounts: branchForm.value.selectedAccounts,
       custom_account: customAccountPayload,
