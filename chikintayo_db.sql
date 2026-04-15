@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 05, 2026 at 10:02 PM
+-- Generation Time: Apr 15, 2026 at 04:47 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -93,7 +93,8 @@ CREATE TABLE `attendance_settings` (
 
 INSERT INTO `attendance_settings` (`id`, `branch_id`, `early_clockout_override`, `created_at`, `updated_at`) VALUES
 (146, 31, 0, '2026-04-05 18:23:33', '2026-04-05 18:23:33'),
-(147, 32, 0, '2026-04-05 19:26:07', '2026-04-05 19:26:07');
+(147, 32, 0, '2026-04-05 19:26:07', '2026-04-05 19:26:07'),
+(149, 48, 0, '2026-04-15 04:50:19', '2026-04-15 04:50:19');
 
 -- --------------------------------------------------------
 
@@ -106,6 +107,8 @@ CREATE TABLE `branches` (
   `code` varchar(50) NOT NULL,
   `name` varchar(150) NOT NULL,
   `address` varchar(255) DEFAULT NULL,
+  `latitude` decimal(10,8) DEFAULT NULL,
+  `longitude` decimal(11,8) DEFAULT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT 1,
   `is_main_branch` tinyint(1) NOT NULL DEFAULT 0,
   `approval_status` varchar(20) NOT NULL DEFAULT 'approved',
@@ -116,6 +119,8 @@ CREATE TABLE `branches` (
   `approved_at` timestamp NULL DEFAULT NULL,
   `rejected_at` timestamp NULL DEFAULT NULL,
   `budget` bigint(20) NOT NULL DEFAULT 100000,
+  `default_password` varchar(255) DEFAULT NULL COMMENT 'Current default password for branch staff accounts',
+  `default_password_updated_at` timestamp NULL DEFAULT NULL COMMENT 'Last time the default password was updated',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -124,9 +129,10 @@ CREATE TABLE `branches` (
 -- Dumping data for table `branches`
 --
 
-INSERT INTO `branches` (`id`, `code`, `name`, `address`, `is_active`, `is_main_branch`, `approval_status`, `requested_by`, `finance_confirmed_by`, `finance_confirmed_at`, `approved_by`, `approved_at`, `rejected_at`, `budget`, `created_at`, `updated_at`) VALUES
-(31, 'BR743957', 'Dasma Branch', 'Dasma', 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 95808, '2026-03-22 10:19:21', '2026-04-05 20:00:30'),
-(32, 'MAIN', 'Main Branch', 'HQ', 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 900000, '2026-03-25 06:56:11', '2026-04-05 19:47:48');
+INSERT INTO `branches` (`id`, `code`, `name`, `address`, `latitude`, `longitude`, `is_active`, `is_main_branch`, `approval_status`, `requested_by`, `finance_confirmed_by`, `finance_confirmed_at`, `approved_by`, `approved_at`, `rejected_at`, `budget`, `default_password`, `default_password_updated_at`, `created_at`, `updated_at`) VALUES
+(31, 'BR743957', 'Dasma Branch', 'Dasma', NULL, NULL, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 95808, 'BDP20260415CD3EDB', '2026-04-15 05:00:51', '2026-03-22 10:19:21', '2026-04-14 14:14:05'),
+(32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 800000, 'BDP20260415140186', '2026-04-15 05:00:51', '2026-03-25 06:56:11', '2026-04-15 04:22:52'),
+(48, 'BR426492', 'Manila Branch', NULL, 14.61391060, 120.99431992, 1, 0, 'approved', 159, 161, '2026-04-15 04:18:32', 31, '2026-04-15 04:22:52', NULL, 100000, 'BDP202604152B9053', '2026-04-15 05:00:51', '2026-04-15 04:14:07', '2026-04-15 04:22:52');
 
 -- --------------------------------------------------------
 
@@ -176,10 +182,7 @@ CREATE TABLE `cache` (
 --
 
 INSERT INTO `cache` (`key`, `value`, `expiration`) VALUES
-('laravel-cache-user_token_ePGb1CbLonQhF0IKrz4sI3nZBqLAIuHuzV2sgAvvmF1RjpeTW0hSvK2JO84A', 'i:176;', 1777967186),
-('laravel-cache-verification_code_xeyenil325@cosdas.com', 's:6:\"000675\";', 1775383220),
-('laravel-cache-verification_rate_limit_kademel468@cosdas.com', 'i:1;', 1775375568),
-('laravel-cache-verification_rate_limit_xeyenil325@cosdas.com', 'i:2;', 1775383220);
+('laravel-cache-verification_rate_limit_wafeced704@mypethealh.com', 'i:1;', 1776229264);
 
 -- --------------------------------------------------------
 
@@ -209,6 +212,8 @@ CREATE TABLE `customer_accounts` (
   `city` varchar(50) DEFAULT NULL,
   `province` varchar(50) DEFAULT NULL,
   `postal_code` varchar(10) DEFAULT NULL,
+  `latitude` decimal(10,8) DEFAULT NULL,
+  `longitude` decimal(11,8) DEFAULT NULL,
   `total_comments` int(11) NOT NULL DEFAULT 0,
   `total_ratings` int(11) NOT NULL DEFAULT 0,
   `last_activity_at` timestamp NULL DEFAULT NULL,
@@ -221,9 +226,9 @@ CREATE TABLE `customer_accounts` (
 -- Dumping data for table `customer_accounts`
 --
 
-INSERT INTO `customer_accounts` (`id`, `user_id`, `email`, `full_name`, `phone_number`, `address`, `city`, `province`, `postal_code`, `total_comments`, `total_ratings`, `last_activity_at`, `status`, `created_at`, `updated_at`) VALUES
-(6, 176, 'lejanis485@fun4k.com', 'Customer', NULL, NULL, NULL, NULL, NULL, 0, 0, '2026-03-30 02:13:38', 'active', '2026-03-30 02:13:38', '2026-03-30 02:13:38'),
-(7, 177, 'yoboko6989@fun4k.com', 'Customer_12', NULL, NULL, NULL, NULL, NULL, 0, 0, '2026-03-30 07:46:53', 'active', '2026-03-30 07:46:53', '2026-03-30 07:46:53');
+INSERT INTO `customer_accounts` (`id`, `user_id`, `email`, `full_name`, `phone_number`, `address`, `city`, `province`, `postal_code`, `latitude`, `longitude`, `total_comments`, `total_ratings`, `last_activity_at`, `status`, `created_at`, `updated_at`) VALUES
+(6, 176, 'lejanis485@fun4k.com', 'Customer', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, '2026-03-30 02:13:38', 'active', '2026-03-30 02:13:38', '2026-03-30 02:13:38'),
+(7, 177, 'yoboko6989@fun4k.com', 'Customer_12', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, '2026-03-30 07:46:53', 'active', '2026-03-30 07:46:53', '2026-03-30 07:46:53');
 
 -- --------------------------------------------------------
 
@@ -603,7 +608,11 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (109, '2026_04_04_000001_create_logistics_transactions_table', 65),
 (110, '2026_04_05_000001_add_branch_approval_fields_to_branches_table', 65),
 (111, '2026_04_05_000002_add_finance_confirmation_fields_to_branches_table', 66),
-(112, '2026_04_05_120000_add_delivery_confirmation_fields_to_procurement_requests_table', 67);
+(112, '2026_04_05_120000_add_delivery_confirmation_fields_to_procurement_requests_table', 67),
+(113, '2026_04_14_000000_add_geolocation_to_tables', 68),
+(114, '2026_04_15_000000_add_requires_setup_to_users_table', 69),
+(115, '2026_04_15_000001_add_required_setup_type_to_users_table', 70),
+(116, '2026_04_15_000002_add_default_password_to_branches_table', 71);
 
 -- --------------------------------------------------------
 
@@ -1713,9 +1722,6 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1013, 'App\\Models\\User', 31, 'auth-token', '48f1452e9c39b0920e419f2c2c9cb34ba42ce41a2eabc8a5b8758a09ec3a36f5', '[\"*\"]', NULL, NULL, '2026-03-22 10:13:23', '2026-03-22 10:13:23'),
 (1014, 'App\\Models\\User', 142, 'auth-token', '4d517581316a60259d993ae009196b91f2724db55075e24d62c491612d438ac1', '[\"*\"]', NULL, NULL, '2026-03-22 10:13:59', '2026-03-22 10:13:59'),
 (1015, 'App\\Models\\User', 31, 'auth-token', '6c35a7d464ee624067ec452adb399c00570db84ebf920613ce7a0e83cbb583f1', '[\"*\"]', NULL, NULL, '2026-03-22 10:18:53', '2026-03-22 10:18:53'),
-(1016, 'App\\Models\\User', 148, 'auth-token', 'ff6ff574cc601ce711f5584869e9794cac98b6f880cfe21dca3071709e784fdb', '[\"*\"]', NULL, NULL, '2026-03-22 10:19:54', '2026-03-22 10:19:54'),
-(1017, 'App\\Models\\User', 148, 'auth-token', 'b35a906e845c6cc95505eaa0ef27c3c175ba6b207eb03d60fa81e1b213e29f6d', '[\"*\"]', NULL, NULL, '2026-03-22 10:20:20', '2026-03-22 10:20:20'),
-(1018, 'App\\Models\\User', 148, 'auth-token', '7b280e6b9893a37a085c8fdf7e60b805ec070dc2a2b070473d863d19f2adff08', '[\"*\"]', NULL, NULL, '2026-03-22 10:21:29', '2026-03-22 10:21:29'),
 (1019, 'App\\Models\\User', 31, 'auth-token', '4eb881635d70c31c4bfb1fb082e9e462a0df1c95acdfd04ce87de3de6f93e4ec', '[\"*\"]', NULL, NULL, '2026-03-22 10:22:57', '2026-03-22 10:22:57'),
 (1020, 'App\\Models\\User', 149, 'auth-token', 'dbaf665e2474b8277820faab5aa529a4063c9bed7d588e62a2c69570b27d4dc2', '[\"*\"]', NULL, NULL, '2026-03-22 10:23:55', '2026-03-22 10:23:55'),
 (1021, 'App\\Models\\User', 149, 'auth-token', '823072f008a9de8a618ec9411c79d404ef16265be8376a89aa68cc3794341899', '[\"*\"]', NULL, NULL, '2026-03-22 10:24:34', '2026-03-22 10:24:34'),
@@ -1727,7 +1733,6 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1027, 'App\\Models\\User', 150, 'auth-token', '90e7964eaf104554773297eb4831e197a913b2f18618c504ab7237ca3b85915f', '[\"*\"]', NULL, NULL, '2026-03-22 10:36:39', '2026-03-22 10:36:39'),
 (1028, 'App\\Models\\User', 152, 'auth-token', '427364de6558d801fd094d371be9ac55e587709cd1f01f70f364c3bcfd15bdec', '[\"*\"]', NULL, NULL, '2026-03-22 10:38:43', '2026-03-22 10:38:43'),
 (1029, 'App\\Models\\User', 152, 'auth-token', 'bd1a031444c88b0380201c79509d161a17d15b9350c127d417d8c826dbaaa59c', '[\"*\"]', NULL, NULL, '2026-03-22 10:43:09', '2026-03-22 10:43:09'),
-(1030, 'App\\Models\\User', 148, 'auth-token', '5e3f58d76a0f4087339563b8b9b1a4f5798a4aa9af443e9753cfd22fb12ed990', '[\"*\"]', NULL, NULL, '2026-03-22 10:47:48', '2026-03-22 10:47:48'),
 (1031, 'App\\Models\\User', 154, 'auth-token', 'd92268c338566f609436fa03fb243d3445f7ae8bf759023e80f84c6f7d729cc9', '[\"*\"]', NULL, NULL, '2026-03-22 10:50:34', '2026-03-22 10:50:34'),
 (1032, 'App\\Models\\User', 154, 'auth-token', '3fd7d5bdd409e5c08d3d3ba140c47144a52a906f345b3a796187a758222362d4', '[\"*\"]', NULL, NULL, '2026-03-22 10:53:36', '2026-03-22 10:53:36'),
 (1033, 'App\\Models\\User', 153, 'auth-token', 'a8737cbd9ca266466984966f2f769d9dd8302603465ccbbe74f299e3f79c4697', '[\"*\"]', NULL, NULL, '2026-03-22 10:55:32', '2026-03-22 10:55:32'),
@@ -1751,35 +1756,17 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1051, 'App\\Models\\User', 149, 'auth-token', 'ce3234503e2d7350256ab606f0d219308958e9e8e1a662c1715cca653be7b14b', '[\"*\"]', NULL, NULL, '2026-03-22 11:43:25', '2026-03-22 11:43:25'),
 (1052, 'App\\Models\\User', 153, 'auth-token', '493d1a5fc8a2603963e688b057b38c14980809207ef878108e251ce4ec45c265', '[\"*\"]', NULL, NULL, '2026-03-22 11:43:53', '2026-03-22 11:43:53'),
 (1053, 'App\\Models\\User', 149, 'auth-token', 'fc80424698d2b05f9571a1e3995b81a64e09c7e8b9d38f9e73db10db197e5124', '[\"*\"]', NULL, NULL, '2026-03-22 11:45:16', '2026-03-22 11:45:16'),
-(1054, 'App\\Models\\User', 148, 'auth-token', '0ffb85c1aece1ab71b2d2961fa265a9df726db17c36d66db92e4a3142083ad91', '[\"*\"]', NULL, NULL, '2026-03-22 11:46:25', '2026-03-22 11:46:25'),
 (1055, 'App\\Models\\User', 149, 'auth-token', 'df04bdccbbfe497e3750893884fedf3231abc9ff47f7f2c449a1b5d91eb33b91', '[\"*\"]', NULL, NULL, '2026-03-22 11:46:58', '2026-03-22 11:46:58'),
-(1056, 'App\\Models\\User', 148, 'auth-token', 'f7ae85bc1dbce34da0fc5be8c3d0874acc90913ebfa4e709f3b0382dec4f211a', '[\"*\"]', NULL, NULL, '2026-03-23 04:42:09', '2026-03-23 04:42:09'),
-(1057, 'App\\Models\\User', 157, 'auth-token', 'a7d9ce67edd5f59adef42e44d98de2b3287ebcb051ead85d415cfccda5710033', '[\"*\"]', NULL, NULL, '2026-03-23 05:08:17', '2026-03-23 05:08:17'),
-(1058, 'App\\Models\\User', 157, 'auth-token', 'ba454d56cf2bc6b2b1500e69f4d37e44ca249fcd0e5d1a239f0ae683d95ca21a', '[\"*\"]', NULL, NULL, '2026-03-23 05:09:16', '2026-03-23 05:09:16'),
-(1059, 'App\\Models\\User', 157, 'auth-token', 'b3a0c4259ccc2a5b6d67272464aff42bb29dceb51fc101649b2d45fb73a07527', '[\"*\"]', NULL, NULL, '2026-03-23 05:10:28', '2026-03-23 05:10:28'),
-(1060, 'App\\Models\\User', 157, 'auth-token', '72fe7e0da1087feacde893066e4d60425769c7e3a8a891273cef87208ba37886', '[\"*\"]', NULL, NULL, '2026-03-23 05:28:54', '2026-03-23 05:28:54'),
-(1061, 'App\\Models\\User', 157, 'auth-token', '0cb2e22a8c9ca4fd19ae81fb6fb41bd7ee0b41603c9bba36393f859a2eec3afc', '[\"*\"]', NULL, NULL, '2026-03-23 05:29:50', '2026-03-23 05:29:50'),
-(1062, 'App\\Models\\User', 157, 'auth-token', '71656b82f5d090d3639ede1b580f6f850c447d8f23bd6138ae69f407248e9e6f', '[\"*\"]', NULL, NULL, '2026-03-23 05:52:37', '2026-03-23 05:52:37'),
-(1063, 'App\\Models\\User', 157, 'auth-token', 'd4975647515b841a7335c5fd466f663647321f101c33f0ca92f437900144c637', '[\"*\"]', NULL, NULL, '2026-03-23 12:56:34', '2026-03-23 12:56:34'),
-(1064, 'App\\Models\\User', 157, 'auth-token', 'ae52cf9a1262dc5bb8ade3d8a425fb5a84c3511c5f935e2de4441b7b5dc27449', '[\"*\"]', NULL, NULL, '2026-03-23 13:59:00', '2026-03-23 13:59:00'),
 (1065, 'App\\Models\\User', 151, 'auth-token', 'f857491e35d59c8792ea1de43a32b3f3344812dd4784180f254bd4cc945eb05e', '[\"*\"]', NULL, NULL, '2026-03-23 14:00:30', '2026-03-23 14:00:30'),
-(1066, 'App\\Models\\User', 157, 'auth-token', '4393a3002d3675866b8ebc0812bfaf7395de427fa293b926bea914cc93bbc0bd', '[\"*\"]', NULL, NULL, '2026-03-23 14:05:26', '2026-03-23 14:05:26'),
-(1067, 'App\\Models\\User', 157, 'auth-token', '65eb54cfc55c9616b7c710f2f46ee1698e59e7300d8783a88b79af8857b49481', '[\"*\"]', NULL, NULL, '2026-03-23 14:10:33', '2026-03-23 14:10:33'),
-(1068, 'App\\Models\\User', 157, 'auth-token', '209d1c9736ca5d6a7c52888a8bb10f68bdbf790cbd6ac35aa9354249901088bd', '[\"*\"]', NULL, NULL, '2026-03-23 14:10:57', '2026-03-23 14:10:57'),
 (1069, 'App\\Models\\User', 151, 'auth-token', 'e1589767895a2055cc0bab9cb736b29f2261243e3e7f3a70e2862fb7368d4451', '[\"*\"]', NULL, NULL, '2026-03-23 14:20:42', '2026-03-23 14:20:42'),
-(1070, 'App\\Models\\User', 157, 'auth-token', '329ebc45eec51546a28ca8b825ae048df74d74d6e9f6f950ae084f97276b2bd8', '[\"*\"]', NULL, NULL, '2026-03-23 14:23:12', '2026-03-23 14:23:12'),
 (1071, 'App\\Models\\User', 151, 'auth-token', '1da86333a972476cb5ec2ca30dd044ed7dc49c465715afefbc4ef0a2733be1e6', '[\"*\"]', NULL, NULL, '2026-03-23 14:27:41', '2026-03-23 14:27:41'),
-(1072, 'App\\Models\\User', 157, 'auth-token', 'a2bf2801bc88a78da31799984a7083209c6beac14a4d18e4605f34dd7d1cf6fa', '[\"*\"]', NULL, NULL, '2026-03-23 14:32:08', '2026-03-23 14:32:08'),
 (1073, 'App\\Models\\User', 151, 'auth-token', 'f91396ef7e548238a2a4a518ebca85aac8683f3a8a60726faf812abe3a5d7c20', '[\"*\"]', NULL, NULL, '2026-03-23 14:33:04', '2026-03-23 14:33:04'),
 (1074, 'App\\Models\\User', 150, 'auth-token', 'dceeacdc2c6f943baaad8bc651e606f605a00835d622a4280a926cc9ed96afeb', '[\"*\"]', NULL, NULL, '2026-03-23 14:33:21', '2026-03-23 14:33:21'),
-(1075, 'App\\Models\\User', 157, 'auth-token', '7be3ace6aa68f4ff0302c346c5b6507ab46eb017f2faf95de37ec6e9eac51bcd', '[\"*\"]', NULL, NULL, '2026-03-23 14:45:05', '2026-03-23 14:45:05'),
 (1076, 'App\\Models\\User', 150, 'auth-token', 'adaa1261faf916587195a5d2d05d9762aea50546fbce0d29ab21e13a18ab9944', '[\"*\"]', NULL, NULL, '2026-03-23 14:45:40', '2026-03-23 14:45:40'),
 (1077, 'App\\Models\\User', 151, 'auth-token', '868f0e8cf6a75f88e0c6b3a870f8253c8494f5f0aab20d8af39f0ebf8fbbb3ce', '[\"*\"]', NULL, NULL, '2026-03-23 15:00:00', '2026-03-23 15:00:00'),
 (1078, 'App\\Models\\User', 151, 'auth-token', '544141349da3a58f7fe6864b0a687097f0887a64a230c9d20900828821951254', '[\"*\"]', NULL, NULL, '2026-03-23 15:03:37', '2026-03-23 15:03:37'),
-(1079, 'App\\Models\\User', 157, 'auth-token', '1fca0912bec1a55d65d51c5668c2843c11b7185f7798ed6f8d8d9f840ff15271', '[\"*\"]', NULL, NULL, '2026-03-23 15:26:41', '2026-03-23 15:26:41'),
 (1080, 'App\\Models\\User', 151, 'auth-token', 'fe51f0bf0fdcaec5d6359c77e975213a9fc3ded6ccdec5864bcc2c947eb32b65', '[\"*\"]', NULL, NULL, '2026-03-23 15:27:17', '2026-03-23 15:27:17'),
 (1081, 'App\\Models\\User', 150, 'auth-token', 'e989465f29f99a71881fb4bdcebc6ecf1c8d4c7b8686b9fa347278c9c302742c', '[\"*\"]', NULL, NULL, '2026-03-23 15:27:53', '2026-03-23 15:27:53'),
-(1082, 'App\\Models\\User', 157, 'auth-token', '0259aba2653d924766165de11a9d4eeb3ae623cdb7a45355a3cdb4adaa9d105a', '[\"*\"]', NULL, NULL, '2026-03-23 15:45:41', '2026-03-23 15:45:41'),
 (1083, 'App\\Models\\User', 151, 'auth-token', '1928eead997b5393e6455c843feb5e3b62060dfc824a653f92f09a090e3024f1', '[\"*\"]', NULL, NULL, '2026-03-23 15:46:37', '2026-03-23 15:46:37'),
 (1084, 'App\\Models\\User', 150, 'auth-token', '5fc9fe71f50302407b9d9a20af1eece8d2e3e3912ee3da4fe8d9c1bee1830869', '[\"*\"]', NULL, NULL, '2026-03-23 15:47:01', '2026-03-23 15:47:01'),
 (1085, 'App\\Models\\User', 151, 'auth-token', '0909936a02f7e9f50cc19e8d5502e795823bb43be4d495b0db0f9ee5c3121d26', '[\"*\"]', NULL, NULL, '2026-03-23 15:53:32', '2026-03-23 15:53:32'),
@@ -1794,8 +1781,7 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1094, 'App\\Models\\User', 152, 'auth-token', 'daa5d52bfb7da8bb0eb6d57bb4aab6b0a2a2f5bd8b27f2cbe810d3c42ab922b5', '[\"*\"]', NULL, NULL, '2026-03-24 04:53:58', '2026-03-24 04:53:58'),
 (1095, 'App\\Models\\User', 150, 'auth-token', '3c328c3c5adee9cc791adadef95198f63ea0cdab51ec20d9c75d91d73f6d4d55', '[\"*\"]', NULL, NULL, '2026-03-24 04:55:59', '2026-03-24 04:55:59'),
 (1096, 'App\\Models\\User', 152, 'auth-token', '1d643b8b28b159c4719f904104048076a02934496f83d8413848cb8c634970b6', '[\"*\"]', NULL, NULL, '2026-03-24 04:56:46', '2026-03-24 04:56:46'),
-(1097, 'App\\Models\\User', 150, 'auth-token', '9d64552af430f183658c5fc20e960a1099744bd883ea4c9bc62b035508109713', '[\"*\"]', NULL, NULL, '2026-03-24 05:00:02', '2026-03-24 05:00:02');
-INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `name`, `token`, `abilities`, `last_used_at`, `expires_at`, `created_at`, `updated_at`) VALUES
+(1097, 'App\\Models\\User', 150, 'auth-token', '9d64552af430f183658c5fc20e960a1099744bd883ea4c9bc62b035508109713', '[\"*\"]', NULL, NULL, '2026-03-24 05:00:02', '2026-03-24 05:00:02'),
 (1098, 'App\\Models\\User', 152, 'auth-token', '55b45df3888779cf30496780b4b4c0ea144be3c0684b8b9a37da2500c61584e8', '[\"*\"]', NULL, NULL, '2026-03-24 05:00:21', '2026-03-24 05:00:21'),
 (1099, 'App\\Models\\User', 152, 'auth-token', 'ff49120db4d599365ac215e20890e113c73aa7b157ca5d8421e4693c6ac0dd99', '[\"*\"]', NULL, NULL, '2026-03-24 05:14:59', '2026-03-24 05:14:59'),
 (1100, 'App\\Models\\User', 150, 'auth-token', '9f6e71877c29b2d5ed4aa494671a09ffd86e3e2fe56bca0760e359c31726b585', '[\"*\"]', NULL, NULL, '2026-03-24 05:31:38', '2026-03-24 05:31:38'),
@@ -1808,7 +1794,6 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1107, 'App\\Models\\User', 152, 'auth-token', '1c165fc3ba78bc404474a976bed362fb3600bce61675d5af6c64675d7e466d64', '[\"*\"]', NULL, NULL, '2026-03-24 05:47:57', '2026-03-24 05:47:57'),
 (1108, 'App\\Models\\User', 150, 'auth-token', '746ed4cf72f3428e752a67bd5a3f6dd92b980185224695ce90db7a7050b9bc81', '[\"*\"]', NULL, NULL, '2026-03-24 05:48:36', '2026-03-24 05:48:36'),
 (1109, 'App\\Models\\User', 152, 'auth-token', 'd1f1848c925d2633ec5c5a018266d18228cb1f5d85d793def0df0d4d09813723', '[\"*\"]', NULL, NULL, '2026-03-24 06:03:02', '2026-03-24 06:03:02'),
-(1110, 'App\\Models\\User', 157, 'auth-token', 'd6b143a32af8231faed72b343493365b18d7db9495e20f4a37472cd7c3117a0d', '[\"*\"]', NULL, NULL, '2026-03-24 06:24:18', '2026-03-24 06:24:18'),
 (1111, 'App\\Models\\User', 151, 'auth-token', '13564897ebe70af0f57df1d6633c544fdb03c66f8be80876f901b9aff8df2713', '[\"*\"]', NULL, NULL, '2026-03-24 06:24:49', '2026-03-24 06:24:49'),
 (1112, 'App\\Models\\User', 150, 'auth-token', 'd34eec453dec0bd5d4da24ae3d818496a577c13c5763f5faf1ad9fd90031f246', '[\"*\"]', NULL, NULL, '2026-03-24 06:25:10', '2026-03-24 06:25:10'),
 (1113, 'App\\Models\\User', 152, 'auth-token', '807acf857cf79618702551954f51c83399f0bb1247cb8816523517614d267d2c', '[\"*\"]', NULL, NULL, '2026-03-24 06:25:27', '2026-03-24 06:25:27'),
@@ -1816,17 +1801,13 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1115, 'App\\Models\\User', 149, 'auth-token', 'e830969b10f3d3a1b9785d5a990b30b95a7c757d92c4efa0f3454f67be42bed1', '[\"*\"]', NULL, NULL, '2026-03-24 06:26:55', '2026-03-24 06:26:55'),
 (1116, 'App\\Models\\User', 150, 'auth-token', '5c0bc92d557a7ebd7c92715669ce013835f4d9e477e73f25e203c789b3cecdb9', '[\"*\"]', NULL, NULL, '2026-03-24 06:27:20', '2026-03-24 06:27:20'),
 (1117, 'App\\Models\\User', 152, 'auth-token', '29b6c250801d36a05b8d4e40061f94b1e37ea61dcdcd5d3e4890633b0487c743', '[\"*\"]', NULL, NULL, '2026-03-24 06:33:29', '2026-03-24 06:33:29'),
-(1118, 'App\\Models\\User', 157, 'auth-token', 'b24da2ec3bdfca83c7228fe434f27e4878fec05a8cb8bfa2cb7cdb0e5649065e', '[\"*\"]', NULL, NULL, '2026-03-24 07:07:19', '2026-03-24 07:07:19'),
-(1119, 'App\\Models\\User', 157, 'auth-token', '33e589983774edd8841966fa95b2fd649ef20e87e9166c649e7fa02e62282157', '[\"*\"]', NULL, NULL, '2026-03-24 07:14:07', '2026-03-24 07:14:07'),
 (1120, 'App\\Models\\User', 151, 'auth-token', '91b8791df4708e7c1978f8a6e872dbd2615bc3bb8b5fdf293c08effcf272c079', '[\"*\"]', NULL, NULL, '2026-03-24 07:15:57', '2026-03-24 07:15:57'),
-(1121, 'App\\Models\\User', 157, 'auth-token', 'dd22168a9a244d47d0386836996b681c49ed46df1fac257d348aa585bde42654', '[\"*\"]', NULL, NULL, '2026-03-24 07:17:11', '2026-03-24 07:17:11'),
 (1122, 'App\\Models\\User', 151, 'auth-token', 'c1b966c810b21e04383a623ae8be5e005845bbf7a0e1cd8c15876efc94ea85ef', '[\"*\"]', NULL, NULL, '2026-03-24 07:17:50', '2026-03-24 07:17:50'),
-(1123, 'App\\Models\\User', 150, 'auth-token', 'e6de871b15c0ce3cad2f9bfcfddfdec06dd922e4b33f69ef4507fabc9a0ed5dd', '[\"*\"]', NULL, NULL, '2026-03-24 07:18:18', '2026-03-24 07:18:18'),
-(1124, 'App\\Models\\User', 157, 'auth-token', '497520bfb94a011e5cc2f99fe332df5d7321f392e6273814083bcd0b39a267cf', '[\"*\"]', NULL, NULL, '2026-03-24 07:18:43', '2026-03-24 07:18:43'),
+(1123, 'App\\Models\\User', 150, 'auth-token', 'e6de871b15c0ce3cad2f9bfcfddfdec06dd922e4b33f69ef4507fabc9a0ed5dd', '[\"*\"]', NULL, NULL, '2026-03-24 07:18:18', '2026-03-24 07:18:18');
+INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `name`, `token`, `abilities`, `last_used_at`, `expires_at`, `created_at`, `updated_at`) VALUES
 (1125, 'App\\Models\\User', 152, 'auth-token', '722e58ddee2f2527a03517c6057bf4b9491313222474bbfe0e5ad4127ee7895f', '[\"*\"]', NULL, NULL, '2026-03-24 07:19:11', '2026-03-24 07:19:11'),
 (1126, 'App\\Models\\User', 150, 'auth-token', '8a05fc8444ce396c828f2b05d2736ef4e78a1708e0eefe7d549f8275bac24532', '[\"*\"]', NULL, NULL, '2026-03-24 07:19:44', '2026-03-24 07:19:44'),
 (1127, 'App\\Models\\User', 152, 'auth-token', '9a6ef877ce9f93e4c81b6c4bef13d0eab13370d02265a890f3ff03e0e37eb624', '[\"*\"]', NULL, NULL, '2026-03-24 07:20:29', '2026-03-24 07:20:29'),
-(1128, 'App\\Models\\User', 157, 'auth-token', '745c729f43eae0aed10a6d39a4f4ea1f12e66e6c821b8d339084e09104d3fccc', '[\"*\"]', NULL, NULL, '2026-03-24 07:29:02', '2026-03-24 07:29:02'),
 (1129, 'App\\Models\\User', 151, 'auth-token', '09efb7a57b09ea134df9a0f927f553a3cbb678d2c7385e4097d43504cca09089', '[\"*\"]', NULL, NULL, '2026-03-24 07:29:33', '2026-03-24 07:29:33'),
 (1130, 'App\\Models\\User', 150, 'auth-token', '3c71711d730a680da3b8e1b9978f0e745757d74d8402cc93ff6bb061ee7afef2', '[\"*\"]', NULL, NULL, '2026-03-24 07:29:50', '2026-03-24 07:29:50'),
 (1131, 'App\\Models\\User', 152, 'auth-token', '110854d90631b3845fb2d8a3de2280d92373244d96c31bd161bd7b13805b0a58', '[\"*\"]', NULL, NULL, '2026-03-24 07:30:08', '2026-03-24 07:30:08'),
@@ -1835,11 +1816,9 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1134, 'App\\Models\\User', 150, 'auth-token', 'e5917b49c8b926772a8821f8998f4acd3d7a6c235ffca3456f57931f01d98c45', '[\"*\"]', NULL, NULL, '2026-03-24 07:31:35', '2026-03-24 07:31:35'),
 (1135, 'App\\Models\\User', 152, 'auth-token', '1727025c2426c31bf7047e09c4c77b35cdc4e45c77eb3c343af09fb8bb89f17c', '[\"*\"]', NULL, NULL, '2026-03-24 07:31:52', '2026-03-24 07:31:52'),
 (1136, 'App\\Models\\User', 151, 'auth-token', 'cf6a3b25f7a8fdceabc4301b3abc70388cb1315ff9fa6dd4c0c9c97cfec0fc08', '[\"*\"]', NULL, NULL, '2026-03-24 07:34:51', '2026-03-24 07:34:51'),
-(1137, 'App\\Models\\User', 157, 'auth-token', 'a6d8bd7a3778b44cabe1bff5531e81de5c4d7a3e6c0aa5634a99e2a9b4650bde', '[\"*\"]', NULL, NULL, '2026-03-24 07:35:43', '2026-03-24 07:35:43'),
 (1138, 'App\\Models\\User', 151, 'auth-token', 'd4f28f49cce81137857097580eac0361a6e4d361c3d5ce4749f7db7287037bea', '[\"*\"]', NULL, NULL, '2026-03-24 07:35:55', '2026-03-24 07:35:55'),
 (1139, 'App\\Models\\User', 150, 'auth-token', '6644297467ce740c12cd9a825017e75396416fff3a1679dad2b0fa25b444b85c', '[\"*\"]', NULL, NULL, '2026-03-24 07:36:12', '2026-03-24 07:36:12'),
 (1140, 'App\\Models\\User', 151, 'auth-token', 'e18760cbd57857e338cac9ffa3f5f6ae644f8a950d7901d9ce05043be43c77b0', '[\"*\"]', NULL, NULL, '2026-03-24 07:36:27', '2026-03-24 07:36:27'),
-(1141, 'App\\Models\\User', 157, 'auth-token', '9276d009d44047c74f8ad0f4612d3f095f76310b81ae4a40d264d85fbc84948f', '[\"*\"]', NULL, NULL, '2026-03-24 07:37:01', '2026-03-24 07:37:01'),
 (1142, 'App\\Models\\User', 151, 'auth-token', '4c4fb663848aff859977543612573b5b032430ed7d17080b27f1bf466571e7a7', '[\"*\"]', NULL, NULL, '2026-03-24 07:37:53', '2026-03-24 07:37:53'),
 (1143, 'App\\Models\\User', 150, 'auth-token', 'fe4dd9835eb0ee575989a938a386b51d9e202afad29f2e8c8602a34de6267a13', '[\"*\"]', NULL, NULL, '2026-03-24 07:38:10', '2026-03-24 07:38:10'),
 (1144, 'App\\Models\\User', 152, 'auth-token', '47da7f36cec738ab2a0e1d8af1aae73f11489878ac472ba68e5fb7bb48ca1ec1', '[\"*\"]', NULL, NULL, '2026-03-24 07:38:26', '2026-03-24 07:38:26'),
@@ -1849,8 +1828,6 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1148, 'App\\Models\\User', 152, 'auth-token', 'c097b91e15750d479aa93cb0938779a8f8d1dfbe01428f6bdadb7e36e32415ef', '[\"*\"]', NULL, NULL, '2026-03-24 07:40:43', '2026-03-24 07:40:43'),
 (1149, 'App\\Models\\User', 150, 'auth-token', 'ffa1b5539f7f725da046b6e36fd541305ba98c8155e55cd56ca6bf5b04572f36', '[\"*\"]', NULL, NULL, '2026-03-24 07:42:53', '2026-03-24 07:42:53'),
 (1150, 'App\\Models\\User', 151, 'auth-token', '77de65bc2791ce4ef6e8d71103909a1eb1f23978bab00edce2237a32b438fb47', '[\"*\"]', NULL, NULL, '2026-03-24 07:43:16', '2026-03-24 07:43:16'),
-(1151, 'App\\Models\\User', 157, 'auth-token', '580283782d7b03061ed47272f86eeb9592978521ee0de510f11e0eaa3de33f67', '[\"*\"]', NULL, NULL, '2026-03-24 07:45:27', '2026-03-24 07:45:27'),
-(1152, 'App\\Models\\User', 157, 'auth-token', 'e5d0918767744fd33809f31f5fba9eee06d5d7575a90acb9f2c0c3eeaf1f8ed2', '[\"*\"]', NULL, NULL, '2026-03-24 07:53:09', '2026-03-24 07:53:09'),
 (1153, 'App\\Models\\User', 151, 'auth-token', '80d75b320b1d7110c79a1f81bfd2c1057cb24d7792096b00ee362eeffd9cefef', '[\"*\"]', NULL, NULL, '2026-03-24 07:56:01', '2026-03-24 07:56:01'),
 (1154, 'App\\Models\\User', 152, 'auth-token', '999c1c8039eaeb89070950a9c55d8154fb9a22c149ca83fa2d55237482d9fee3', '[\"*\"]', NULL, NULL, '2026-03-24 07:56:21', '2026-03-24 07:56:21'),
 (1155, 'App\\Models\\User', 150, 'auth-token', 'ec37e55a396b1cd9c9fb46b19ed4522c24cf296772f6a131d473ccb67286af18', '[\"*\"]', NULL, NULL, '2026-03-24 07:56:36', '2026-03-24 07:56:36'),
@@ -1879,7 +1856,6 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1178, 'App\\Models\\User', 152, 'auth-token', '481a92b303882debda5e32bfc1fafd4066ea0c54b685884908091de5eb79312d', '[\"*\"]', NULL, NULL, '2026-03-24 09:05:09', '2026-03-24 09:05:09'),
 (1179, 'App\\Models\\User', 150, 'auth-token', 'd8124381eb3ad627ce905cc346d894afc551ec4dccbbd0256385dafaa5136d90', '[\"*\"]', NULL, NULL, '2026-03-24 09:06:31', '2026-03-24 09:06:31'),
 (1180, 'App\\Models\\User', 154, 'auth-token', '87e6d2565b65f74d1402e799ee90c5a10333fca93dcfbe64b8adae77c1446fbb', '[\"*\"]', NULL, NULL, '2026-03-24 09:07:32', '2026-03-24 09:07:32'),
-(1181, 'App\\Models\\User', 157, 'auth-token', '90f293288aaea4f1ccc8d0d8fa96fdeb74d0ba8e808d3cbfbfe44cb782e1623d', '[\"*\"]', NULL, NULL, '2026-03-24 09:08:48', '2026-03-24 09:08:48'),
 (1182, 'App\\Models\\User', 151, 'auth-token', '2c9ef913342392c5100278c587c9386cc465bdf56ed5bee3b8b506918e00d633', '[\"*\"]', NULL, NULL, '2026-03-24 09:10:37', '2026-03-24 09:10:37'),
 (1183, 'App\\Models\\User', 150, 'auth-token', '07865c2bf723762f75e40413659d44beb4c7b530964a1794f7a538177c1922d5', '[\"*\"]', NULL, NULL, '2026-03-24 09:11:00', '2026-03-24 09:11:00'),
 (1184, 'App\\Models\\User', 152, 'auth-token', '63b2ab991a2c73ca74a10d338c73fce02ce3ec1f60de1b4eb903f947cbfb0904', '[\"*\"]', NULL, NULL, '2026-03-24 09:12:52', '2026-03-24 09:12:52'),
@@ -1890,21 +1866,15 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1189, 'App\\Models\\User', 150, 'auth-token', '128cfb92ebb79c951e456add5e8c28663b040e8e37f0dfc809fea01d40bd6815', '[\"*\"]', NULL, NULL, '2026-03-24 09:15:43', '2026-03-24 09:15:43'),
 (1190, 'App\\Models\\User', 151, 'auth-token', '001dc372bd3624f36cb501e585f717fa4935b8803b452384be81abae53b05904', '[\"*\"]', NULL, NULL, '2026-03-24 09:16:20', '2026-03-24 09:16:20'),
 (1191, 'App\\Models\\User', 153, 'auth-token', '8bd3e10c29edf6ddac040defe02e5f7854c6574d417a63ced8ecc98d6b4866d5', '[\"*\"]', NULL, NULL, '2026-03-24 09:16:51', '2026-03-24 09:16:51'),
-(1192, 'App\\Models\\User', 148, 'auth-token', '12382a70334a06f616b47c8f28b482aaadb1107c70b12838b00c5c1142d6690c', '[\"*\"]', NULL, NULL, '2026-03-24 09:19:47', '2026-03-24 09:19:47'),
 (1193, 'App\\Models\\User', 31, 'auth-token', 'eca212b0328823efe7f0687d8dcab970e0445c66b8729e587819aac6681326f9', '[\"*\"]', NULL, NULL, '2026-03-24 09:21:32', '2026-03-24 09:21:32'),
 (1194, 'App\\Models\\User', 153, 'auth-token', 'd0ea2d0fbb3c395449cb84d05032187c4f236389f5a32fe72ad903671c1e5841', '[\"*\"]', NULL, NULL, '2026-03-25 06:34:09', '2026-03-25 06:34:09'),
 (1195, 'App\\Models\\User', 154, 'auth-token', 'f36cd2eca672e4e381ffc2677da4206a48526a8cbea2f35ae27681ca5b424cc7', '[\"*\"]', NULL, NULL, '2026-03-25 06:34:35', '2026-03-25 06:34:35'),
 (1196, 'App\\Models\\User', 147, 'auth-token', '0cecc38af248026a33e3b32fb6ac0698e5a583618b2ef7f8dd7b824f4ff69092', '[\"*\"]', NULL, NULL, '2026-03-25 06:35:11', '2026-03-25 06:35:11'),
 (1197, 'App\\Models\\User', 31, 'auth-token', '7d1d016b728784d896fad2a27e8435230e602cc65d8912e478527108b29c4073', '[\"*\"]', NULL, NULL, '2026-03-25 06:35:29', '2026-03-25 06:35:29'),
-(1198, 'App\\Models\\User', 159, 'auth-token', 'e8dbc316ecdd53acb5e584769f197eaac462db047918cfe62e2d67f983f0e93c', '[\"*\"]', NULL, NULL, '2026-03-25 07:06:47', '2026-03-25 07:06:47'),
-(1199, 'App\\Models\\User', 159, 'auth-token', '5d9fc57191a1a66ed711cdf95a5331298734576dab21977ba9b69f297f48857b', '[\"*\"]', NULL, NULL, '2026-03-25 07:07:06', '2026-03-25 07:07:06'),
-(1200, 'App\\Models\\User', 159, 'auth-token', 'f645a237b771581a42001785665b15f49aa053b4cc2477ef5524bd214052e8ce', '[\"*\"]', NULL, NULL, '2026-03-25 07:08:01', '2026-03-25 07:08:01'),
 (1201, 'App\\Models\\User', 160, 'auth-token', '6aec93daa5086e293ecd2746f7a753b776a2cf5790dd408133ed2fd94ff312c9', '[\"*\"]', NULL, NULL, '2026-03-25 07:16:24', '2026-03-25 07:16:24'),
 (1202, 'App\\Models\\User', 160, 'auth-token', '7f89efdc67e279b82522d6058b7e0384aacb168b8e904b587e6794daf27d3a29', '[\"*\"]', NULL, NULL, '2026-03-25 07:16:49', '2026-03-25 07:16:49'),
 (1203, 'App\\Models\\User', 160, 'auth-token', '4636165b0b2804971ebc702d657992d99b4ec9e4c9198c1cd334d9ebe4fdc701', '[\"*\"]', NULL, NULL, '2026-03-25 07:17:29', '2026-03-25 07:17:29'),
-(1204, 'App\\Models\\User', 161, 'auth-token', 'f459d2a077eeb9c6090b3d6ba9551f0701bc1c06d14e2ad0adff1d55f44f2fd4', '[\"*\"]', NULL, NULL, '2026-03-25 07:18:39', '2026-03-25 07:18:39'),
 (1205, 'App\\Models\\User', 149, 'auth-token', '1003bcd819e422b19f6753cd98c496b7941e228b4a4656b4757d006b51734bfd', '[\"*\"]', NULL, NULL, '2026-03-25 07:19:24', '2026-03-25 07:19:24'),
-(1206, 'App\\Models\\User', 161, 'auth-token', '035f5da8590d6b017a6e60615790734abd27d2677a2411b200dd80d93775ab2c', '[\"*\"]', NULL, NULL, '2026-03-25 07:19:40', '2026-03-25 07:19:40'),
 (1207, 'App\\Models\\User', 162, 'auth-token', 'cae08c04dbb3a9a9825a536782aef3b7789c041b7a61b20f0137d36726d65b5e', '[\"*\"]', NULL, NULL, '2026-03-25 07:20:38', '2026-03-25 07:20:38'),
 (1208, 'App\\Models\\User', 162, 'auth-token', '0adcd2c444e899b0b33a9753001efd2522627b3e5031ff2b9a119188537acb5b', '[\"*\"]', NULL, NULL, '2026-03-25 07:21:32', '2026-03-25 07:21:32'),
 (1209, 'App\\Models\\User', 162, 'auth-token', '1b025f71eceec374cfabf2fb56dce63dbb73ed08292def132c0dd7f344812faf', '[\"*\"]', NULL, NULL, '2026-03-25 07:22:19', '2026-03-25 07:22:19'),
@@ -1916,7 +1886,6 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1215, 'App\\Models\\User', 162, 'auth-token', '13c2ac87f267b331138dfd624ba9a4cd23794aec0386c678a716df1f0c2b79b2', '[\"*\"]', NULL, NULL, '2026-03-26 05:34:02', '2026-03-26 05:34:02'),
 (1216, 'App\\Models\\User', 151, 'auth-token', '7b2ec9262600221e9a7ca358162d212dc7c976e3ac6a8e394381429579dd8cdd', '[\"*\"]', NULL, NULL, '2026-03-26 05:34:18', '2026-03-26 05:34:18'),
 (1217, 'App\\Models\\User', 162, 'auth-token', '0978aa3aa288fa517b982a9c9d2ba7caef29d0ab6afccb35a47e80ca960d893a', '[\"*\"]', NULL, NULL, '2026-03-26 05:37:53', '2026-03-26 05:37:53'),
-(1218, 'App\\Models\\User', 159, 'auth-token', 'b620cd187876a575326785cf967a66ebc0ceb9269252b55b21467399cd4ec65d', '[\"*\"]', NULL, NULL, '2026-03-26 06:43:36', '2026-03-26 06:43:36'),
 (1219, 'App\\Models\\User', 162, 'auth-token', '461c6ab94b79bf8b1d6f7b5e4980eda8f25283f0bc42b3d94704c6f5bec2805e', '[\"*\"]', NULL, NULL, '2026-03-26 07:01:40', '2026-03-26 07:01:40'),
 (1220, 'App\\Models\\User', 151, 'auth-token', 'dcf6cad68598a18d7c56c0bcbc2ff67541361fdf4883086d6d62e32c0da5ceb3', '[\"*\"]', NULL, NULL, '2026-03-26 07:45:39', '2026-03-26 07:45:39'),
 (1221, 'App\\Models\\User', 150, 'auth-token', 'cd017af77f279902aeee43261dbc5dd7b2f1f091813f7895aa78ef7273e77c74', '[\"*\"]', NULL, NULL, '2026-03-26 07:49:27', '2026-03-26 07:49:27'),
@@ -1982,7 +1951,6 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1281, 'App\\Models\\User', 151, 'auth-token', 'fb2ea362aa4c49196f5b4a02de5594c9fe3a7113d34fd9bf8a34550c37f2a7b7', '[\"*\"]', NULL, NULL, '2026-03-26 18:41:13', '2026-03-26 18:41:13'),
 (1282, 'App\\Models\\User', 28, 'auth-token', 'd83cf0d24bc2669f7f600d78311d7b47923dfdd7f7e9af2b152e9fb637011655', '[\"*\"]', NULL, NULL, '2026-03-26 18:53:53', '2026-03-26 18:53:53'),
 (1283, 'App\\Models\\User', 28, 'auth-token', '26c69331a5ae432a3a4d6856a9b4b84468f341bc35564618a588ef6e22d7f8c1', '[\"*\"]', NULL, NULL, '2026-03-26 19:11:08', '2026-03-26 19:11:08'),
-(1284, 'App\\Models\\User', 157, 'auth-token', 'b8ac66660fec68ffe13ae6a414373da6031c2c74c533dc2c2b8a79541264db56', '[\"*\"]', NULL, NULL, '2026-03-26 19:14:02', '2026-03-26 19:14:02'),
 (1285, 'App\\Models\\User', 28, 'auth-token', '8327a707fdb2526b119fc7e1e4565e7397b5817ecef6debcc0026db17c6f5d10', '[\"*\"]', NULL, NULL, '2026-03-26 19:14:16', '2026-03-26 19:14:16'),
 (1286, 'App\\Models\\User', 28, 'auth-token', '46c6e25ceee81e3dc3c603cd6c5faaa89102244d52c0e74b24e19c475758fdf8', '[\"*\"]', NULL, NULL, '2026-03-26 19:16:18', '2026-03-26 19:16:18'),
 (1287, 'App\\Models\\User', 28, 'auth-token', 'd6a45388c48921e43c20a15776110178bcc562fbba0a142b7d9eb98cd99c86ed', '[\"*\"]', NULL, NULL, '2026-03-26 19:16:27', '2026-03-26 19:16:27'),
@@ -2038,17 +2006,8 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1337, 'App\\Models\\User', 149, 'auth-token', '056459526d1f96eb0981214d110bcf6872472fa73eec6acdab201bd81957e202', '[\"*\"]', NULL, NULL, '2026-03-26 21:32:10', '2026-03-26 21:32:10'),
 (1338, 'App\\Models\\User', 150, 'auth-token', 'e2d29253549b6e0065482bb13a89c73e872e56c396595c86087246e91dcafbef', '[\"*\"]', NULL, NULL, '2026-03-26 21:32:38', '2026-03-26 21:32:38'),
 (1339, 'App\\Models\\User', 154, 'auth-token', '2a847a9709e6ce55d2d8a0c6c82b2d5053c62fd2814ce7ac97f00e9d18d2863f', '[\"*\"]', NULL, NULL, '2026-03-26 21:33:01', '2026-03-26 21:33:01'),
-(1340, 'App\\Models\\User', 159, 'auth-token', '021266f29c1bbc9f7665734c7930380a05367834fe76f1cd5168417284f7ab33', '[\"*\"]', NULL, NULL, '2026-03-27 05:02:25', '2026-03-27 05:02:25'),
 (1341, 'App\\Models\\User', 147, 'auth-token', 'adacb950669f08bfe6d747fa91e0d243d5b747db399157cee436759114998487', '[\"*\"]', NULL, NULL, '2026-03-27 05:11:33', '2026-03-27 05:11:33'),
-(1342, 'App\\Models\\User', 159, 'auth-token', 'ef5539807c979789d078fbd685b459c25a5dfa60830e25ccc24fc2dfa38936f6', '[\"*\"]', NULL, NULL, '2026-03-27 05:23:39', '2026-03-27 05:23:39'),
-(1343, 'App\\Models\\User', 159, 'auth-token', '4af7f77beec04e16e4b36d35ff48ec2016fc07e632a159b272ff45ed117117b3', '[\"*\"]', NULL, NULL, '2026-03-27 05:46:58', '2026-03-27 05:46:58'),
-(1344, 'App\\Models\\User', 159, 'auth-token', 'c79b2c18a7e186065bf60502374caf72e625afa6092d216c66836b036f17b91a', '[\"*\"]', NULL, NULL, '2026-03-27 05:52:45', '2026-03-27 05:52:45'),
-(1345, 'App\\Models\\User', 159, 'auth-token', '364c8b95b289c390c4f9ed9347c89e59b3b9b3b40bf59dea975ac8816cdf1124', '[\"*\"]', NULL, NULL, '2026-03-27 05:55:32', '2026-03-27 05:55:32'),
-(1346, 'App\\Models\\User', 159, 'auth-token', '27d7cbb70a9f7be319f612ee7cb9e90831608b4a73ec1e0c3a4aa01f37caf684', '[\"*\"]', NULL, NULL, '2026-03-27 06:01:54', '2026-03-27 06:01:54'),
 (1347, 'App\\Models\\User', 151, 'auth-token', '7f6eef13c026658667b6af7b07eff11684a699a66113968bd4432aab24ae85f6', '[\"*\"]', NULL, NULL, '2026-03-27 06:13:25', '2026-03-27 06:13:25'),
-(1348, 'App\\Models\\User', 159, 'auth-token', '1da95a3120b407a8c17123fd4a8f1aba6a406528908d91d9e7f97a908827eff5', '[\"*\"]', NULL, NULL, '2026-03-27 06:14:51', '2026-03-27 06:14:51'),
-(1349, 'App\\Models\\User', 159, 'auth-token', 'c23cf915ecb2e9981abbf1efc013c156abc04cd8f9ae3c74d2a18d7385be0e32', '[\"*\"]', NULL, NULL, '2026-03-27 06:36:15', '2026-03-27 06:36:15'),
-(1350, 'App\\Models\\User', 159, 'auth-token', 'ac05c14c878f9f056ad601d263421af384488729ac0ac71189b343e7c5d9f472', '[\"*\"]', NULL, NULL, '2026-03-27 06:40:12', '2026-03-27 06:40:12'),
 (1351, 'App\\Models\\User', 167, 'auth-token', '1c7e89a38f31ceb081a9064bda1c61fa6a6d9b6dc23330322afe74cd67936335', '[\"*\"]', NULL, NULL, '2026-03-27 06:45:46', '2026-03-27 06:45:46'),
 (1352, 'App\\Models\\User', 167, 'auth-token', '6df635684ed33d8dad8dfc94b8a067b9952e76330bfcc28f01bd468a87306297', '[\"*\"]', NULL, NULL, '2026-03-27 06:46:28', '2026-03-27 06:46:28'),
 (1353, 'App\\Models\\User', 167, 'auth-token', 'eba222f2734a0022b4abbcd6c30fb92d0b53fc8ae4ea5c64a966ade911ab051d', '[\"*\"]', NULL, NULL, '2026-03-27 06:47:33', '2026-03-27 06:47:33'),
@@ -2060,15 +2019,13 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1359, 'App\\Models\\User', 167, 'auth-token', 'eddc5c025c342d3cec9d4e3276765d48e2509a336d8c04741c36b1c4acf3a463', '[\"*\"]', NULL, NULL, '2026-03-27 08:50:29', '2026-03-27 08:50:29'),
 (1360, 'App\\Models\\User', 167, 'auth-token', '67e145290bb35b85d428676e867562e8d58e6415751235da52d4888d037ce595', '[\"*\"]', NULL, NULL, '2026-03-27 09:02:21', '2026-03-27 09:02:21'),
 (1361, 'App\\Models\\User', 167, 'auth-token', '6caad882cde152b55ec62d9b474f5b7f285f9f15669968ef30aa80a080e06e47', '[\"*\"]', NULL, NULL, '2026-03-27 09:04:36', '2026-03-27 09:04:36'),
-(1362, 'App\\Models\\User', 159, 'auth-token', 'd2b58964c44526b1f7473affb57faa320620f78dd77e97a38e05dc6acebcc411', '[\"*\"]', NULL, NULL, '2026-03-27 09:05:34', '2026-03-27 09:05:34'),
 (1363, 'App\\Models\\User', 169, 'auth-token', '9ac892b4d8d8bd0e057b5301e6ae2a52bdc5de2d64d3fb6290b349450149a9bc', '[\"*\"]', NULL, NULL, '2026-03-27 09:08:42', '2026-03-27 09:08:42'),
 (1364, 'App\\Models\\User', 169, 'auth-token', '290c523e03debc1d3e8552dd222d9caeb9f247dfaa685fd4691663e5051696dc', '[\"*\"]', NULL, NULL, '2026-03-27 09:09:20', '2026-03-27 09:09:20'),
 (1365, 'App\\Models\\User', 169, 'auth-token', 'e13f664e418b3055b532f4b2d2f6dab6cbcd4ed50257b8d75b015c388a60bf55', '[\"*\"]', NULL, NULL, '2026-03-27 09:10:17', '2026-03-27 09:10:17'),
 (1366, 'App\\Models\\User', 169, 'auth-token', '28bedc20e4a8c232d1b8fa4675976161ade85442eefe4d7aee6fc4fd3bc56b41', '[\"*\"]', NULL, NULL, '2026-03-27 09:16:49', '2026-03-27 09:16:49'),
 (1367, 'App\\Models\\User', 169, 'auth-token', '80e75aecf09bb8c2c06885d49816070f9812330da72cca3cd79520e5e47e8174', '[\"*\"]', NULL, NULL, '2026-03-27 09:17:12', '2026-03-27 09:17:12'),
 (1368, 'App\\Models\\User', 169, 'auth-token', '1e6567ca7806dff4409b0988cf32dea47a14046c8b1e4dbf32792f6aa1f80a32', '[\"*\"]', NULL, NULL, '2026-03-27 09:38:18', '2026-03-27 09:38:18'),
-(1369, 'App\\Models\\User', 169, 'auth-token', '0ef3e9fdb0247723e9b9fd4b08f4d5a8061d4d1512b71430ca1f5aaec3a91526', '[\"*\"]', NULL, NULL, '2026-03-27 09:47:59', '2026-03-27 09:47:59');
-INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `name`, `token`, `abilities`, `last_used_at`, `expires_at`, `created_at`, `updated_at`) VALUES
+(1369, 'App\\Models\\User', 169, 'auth-token', '0ef3e9fdb0247723e9b9fd4b08f4d5a8061d4d1512b71430ca1f5aaec3a91526', '[\"*\"]', NULL, NULL, '2026-03-27 09:47:59', '2026-03-27 09:47:59'),
 (1370, 'App\\Models\\User', 169, 'auth-token', '3811bebb2422ca5191a75423546f16c2fc0eb54ea3cf7447eb684198d606fbed', '[\"*\"]', NULL, NULL, '2026-03-27 09:48:30', '2026-03-27 09:48:30'),
 (1371, 'App\\Models\\User', 150, 'auth-token', '6ac9a107fae7afcc01eb975793af1c075580e13cac43f123b700e9332ad1a7d3', '[\"*\"]', NULL, NULL, '2026-03-28 03:56:11', '2026-03-28 03:56:11'),
 (1372, 'App\\Models\\User', 28, 'auth-token', '9458f9fde790a00947e7a8ffdea71403163afda55d7ad75be3453995918a66ee', '[\"*\"]', NULL, NULL, '2026-03-28 03:56:36', '2026-03-28 03:56:36'),
@@ -2078,7 +2035,6 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1376, 'App\\Models\\User', 28, 'auth-token', '2b2ebf90db403ee81509bee872f15b0e198f5a54ae2e739d5761c465806741dd', '[\"*\"]', NULL, NULL, '2026-03-28 04:48:59', '2026-03-28 04:48:59'),
 (1377, 'App\\Models\\User', 169, 'auth-token', 'aeecfd7337a744c8f4e12c2222d8568a9f8f4e6d5f92be63b737ec84a4e1d64c', '[\"*\"]', NULL, NULL, '2026-03-28 04:50:29', '2026-03-28 04:50:29'),
 (1378, 'App\\Models\\User', 169, 'auth-token', 'c6e5b5a3924940ba0f134fb8bc02c39ee0bbded20f0b7d51ed1e84e4908c6614', '[\"*\"]', NULL, NULL, '2026-03-28 04:52:04', '2026-03-28 04:52:04'),
-(1379, 'App\\Models\\User', 159, 'auth-token', '8a6e973a009f913ecf6ab717a399cfb81ce0dbd0f6c2aa1d7e795aee6340a90b', '[\"*\"]', NULL, NULL, '2026-03-28 05:04:50', '2026-03-28 05:04:50'),
 (1380, 'App\\Models\\User', 173, 'auth-token', 'c66131eed66c322fc75bb1d36b2dc165849cff03bae58e6bccbad0677ea8fc9c', '[\"*\"]', NULL, NULL, '2026-03-28 05:19:04', '2026-03-28 05:19:04'),
 (1381, 'App\\Models\\User', 173, 'auth-token', '48e47388d95d2cfc66e442729a64e6ea3d449b4b10ecb3bcd672a66398958f5c', '[\"*\"]', NULL, NULL, '2026-03-28 05:19:33', '2026-03-28 05:19:33'),
 (1382, 'App\\Models\\User', 173, 'auth-token', 'f0d35825f9a2ad02ba6adfe5333e10bc1695484426bdc9e6eb02a75cec26095d', '[\"*\"]', NULL, NULL, '2026-03-28 05:20:01', '2026-03-28 05:20:01'),
@@ -2115,14 +2071,13 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1413, 'App\\Models\\User', 173, 'auth-token', 'b62f9b30238dc6f7685f6828d4243ba30384e629a60de9f4509c37b99c725d6d', '[\"*\"]', NULL, NULL, '2026-03-28 08:07:05', '2026-03-28 08:07:05'),
 (1414, 'App\\Models\\User', 153, 'auth-token', '0a370e3070f6f0cb0fa58f98d3f2b5d632b987f4e62a7673c1678e722a89bf0e', '[\"*\"]', NULL, NULL, '2026-03-28 08:07:57', '2026-03-28 08:07:57'),
 (1415, 'App\\Models\\User', 154, 'auth-token', '4a9e2a3a341f7bab5681a645b52fc1ca9781161acb65f84044af232b97158e10', '[\"*\"]', NULL, NULL, '2026-03-28 08:08:29', '2026-03-28 08:08:29'),
-(1416, 'App\\Models\\User', 157, 'auth-token', '75e7c535ae168bfe615f16c87046581a71654f6c63c6d6288845bdd07b0ebd58', '[\"*\"]', NULL, NULL, '2026-03-28 08:08:50', '2026-03-28 08:08:50'),
 (1417, 'App\\Models\\User', 153, 'auth-token', '23824975c4cbc613673a9136374b4869c53670137f895bcadea706af1b748b0d', '[\"*\"]', NULL, NULL, '2026-03-28 08:16:39', '2026-03-28 08:16:39'),
-(1418, 'App\\Models\\User', 157, 'auth-token', 'e36a895eb1b7169f6d257f675cbd56ec8e3baca795ddb41865c991b93d3a3602', '[\"*\"]', NULL, NULL, '2026-03-28 08:32:23', '2026-03-28 08:32:23'),
 (1419, 'App\\Models\\User', 151, 'auth-token', '3fda03bdecabbc9a2af1ff0ebbc701f2e7edf829e6f131069b81108af91c2a56', '[\"*\"]', NULL, NULL, '2026-03-28 08:43:07', '2026-03-28 08:43:07'),
 (1420, 'App\\Models\\User', 151, 'auth-token', '572df3d013ddead9c27db253ce9b1a3bfeebacf224f6fc1b7bf3241d16c24182', '[\"*\"]', NULL, NULL, '2026-03-28 08:45:55', '2026-03-28 08:45:55'),
 (1421, 'App\\Models\\User', 153, 'auth-token', '44f5a4304c5a3a4ad2d5a571b91f0000728993afe9e859a3e81330661a29d2ae', '[\"*\"]', NULL, NULL, '2026-03-28 08:46:13', '2026-03-28 08:46:13'),
 (1422, 'App\\Models\\User', 152, 'auth-token', 'c3078ae155fa6770d6e3613ba063daad3339c146b2d584fdde9cb1826ac94844', '[\"*\"]', NULL, NULL, '2026-03-28 08:46:42', '2026-03-28 08:46:42'),
-(1423, 'App\\Models\\User', 154, 'auth-token', '7af232411b5a39cc822770dc173e34e6b6f46a62654aa8c3dbef095ec9c12bdc', '[\"*\"]', NULL, NULL, '2026-03-28 08:47:47', '2026-03-28 08:47:47'),
+(1423, 'App\\Models\\User', 154, 'auth-token', '7af232411b5a39cc822770dc173e34e6b6f46a62654aa8c3dbef095ec9c12bdc', '[\"*\"]', NULL, NULL, '2026-03-28 08:47:47', '2026-03-28 08:47:47');
+INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `name`, `token`, `abilities`, `last_used_at`, `expires_at`, `created_at`, `updated_at`) VALUES
 (1424, 'App\\Models\\User', 152, 'auth-token', 'dc5776b936577367006e41607b614169abc01ab96ab403b02ece5ef1aef913dd', '[\"*\"]', NULL, NULL, '2026-03-28 08:51:02', '2026-03-28 08:51:02'),
 (1425, 'App\\Models\\User', 151, 'auth-token', 'f892d654c2609fe30e90c95d8601a0becc6bd924cd77ceef9b6311f9fc340baf', '[\"*\"]', NULL, NULL, '2026-03-28 08:52:28', '2026-03-28 08:52:28'),
 (1426, 'App\\Models\\User', 151, 'auth-token', '0e36658b134307e11dc260928c3108d429bdfa493b4a36775258c3047fc88dc8', '[\"*\"]', NULL, NULL, '2026-03-28 08:56:31', '2026-03-28 08:56:31'),
@@ -2152,17 +2107,13 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1450, 'App\\Models\\User', 150, 'auth-token', '1a4d33619a0e657c030b5a4de49158c3f66d5d063b51e8c44c8c971c094a433b', '[\"*\"]', NULL, NULL, '2026-03-28 09:44:41', '2026-03-28 09:44:41'),
 (1451, 'App\\Models\\User', 151, 'auth-token', '34f7d173af9c62c4df3172778c96364d062cc220a3a32f41a22f94771225cf32', '[\"*\"]', NULL, NULL, '2026-03-28 09:45:38', '2026-03-28 09:45:38'),
 (1452, 'App\\Models\\User', 150, 'auth-token', '8c94bdb0d62d3569307dd2e74e0375936e54e4de7892202ba237cae17310cc6d', '[\"*\"]', NULL, NULL, '2026-03-28 09:47:07', '2026-03-28 09:47:07'),
-(1453, 'App\\Models\\User', 157, 'auth-token', '0dca1d7321d4a46dc4e4436b97a8a578c09af35a63fbce24df954595b23132e8', '[\"*\"]', NULL, NULL, '2026-03-29 09:53:59', '2026-03-29 09:53:59'),
 (1454, 'App\\Models\\User', 150, 'auth-token', 'b5e153eabdfd747d913bc19106472048d09bb0815687e27efa6aefba17a3d530', '[\"*\"]', NULL, NULL, '2026-03-29 09:57:54', '2026-03-29 09:57:54'),
 (1455, 'App\\Models\\User', 31, 'auth-token', '149d7597d76064a308ad16d31604b49c1537196ca26d2caa08b8f5cfedd8ff78', '[\"*\"]', NULL, NULL, '2026-03-29 10:00:15', '2026-03-29 10:00:15'),
 (1456, 'App\\Models\\User', 31, 'auth-token', 'b3d9439bc58bb4238419337b1f18270e296323247a912864b7bb6879653216ef', '[\"*\"]', NULL, NULL, '2026-03-29 10:07:09', '2026-03-29 10:07:09'),
 (1457, 'App\\Models\\User', 31, 'auth-token', '4cfb3352abcde0f52123ffa3cf03db2f5e1c88e90c521b19ff951a5e8619d490', '[\"*\"]', NULL, NULL, '2026-03-29 10:12:56', '2026-03-29 10:12:56'),
 (1458, 'App\\Models\\User', 153, 'auth-token', '3a2063306717131c157b63079e1522cae66591caa14419657c49a3e3fc10fa73', '[\"*\"]', NULL, NULL, '2026-03-29 10:17:03', '2026-03-29 10:17:03'),
-(1459, 'App\\Models\\User', 157, 'auth-token', '1fcd6cb10ef9876348e363eb5c3696ba38827cd0549da2a919d4d2c52a69d19b', '[\"*\"]', NULL, NULL, '2026-03-29 10:17:39', '2026-03-29 10:17:39'),
 (1460, 'App\\Models\\User', 151, 'auth-token', '83f58f5074c50952cd0214b8c9ca983616b5a2765a917cc74e76760173b7f768', '[\"*\"]', NULL, NULL, '2026-03-29 10:18:23', '2026-03-29 10:18:23'),
-(1461, 'App\\Models\\User', 157, 'auth-token', 'd82a60f6d8d4585298ae034fefaccf8f0f9169a67d9b994fedba765747e24cd0', '[\"*\"]', NULL, NULL, '2026-03-29 10:18:52', '2026-03-29 10:18:52'),
 (1462, 'App\\Models\\User', 151, 'auth-token', '0a3f72dd90f2ac3154a0264426978e99c23f064918320bdc14b712360c832f5c', '[\"*\"]', NULL, NULL, '2026-03-29 10:20:19', '2026-03-29 10:20:19'),
-(1463, 'App\\Models\\User', 157, 'auth-token', '1010bff0b2fed89ce39877ddbbe27a6513b56027a23b4e0f2ae7b1d0b60c867b', '[\"*\"]', NULL, NULL, '2026-03-29 10:24:27', '2026-03-29 10:24:27'),
 (1464, 'App\\Models\\User', 151, 'auth-token', '43af180af8aa477b3e9d3c610b636998c43eca4bcd80f094a1d80484bc62d034', '[\"*\"]', NULL, NULL, '2026-03-29 10:25:14', '2026-03-29 10:25:14'),
 (1465, 'App\\Models\\User', 31, 'auth-token', '76f7ede59abdbef0a79d54df495dfe85d5d09276acb658e5ebf6af17c58b7d29', '[\"*\"]', NULL, NULL, '2026-03-29 10:25:48', '2026-03-29 10:25:48'),
 (1466, 'App\\Models\\User', 151, 'auth-token', 'f7e6670444adc997cf393a806013e54491c50964236f61dabb164966411d8cf4', '[\"*\"]', NULL, NULL, '2026-03-29 10:26:58', '2026-03-29 10:26:58'),
@@ -2170,13 +2121,10 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1468, 'App\\Models\\User', 150, 'auth-token', '884f3dd11552eaa89e07d691bd2f71f6e34b1983bc37f00ae3850feaa6bdb145', '[\"*\"]', NULL, NULL, '2026-03-29 10:31:03', '2026-03-29 10:31:03'),
 (1469, 'App\\Models\\User', 149, 'auth-token', 'ebc58d280f7907704736590c16e6396a38d73154f26fe1c2410cb21477a9c475', '[\"*\"]', NULL, NULL, '2026-03-29 11:31:51', '2026-03-29 11:31:51'),
 (1470, 'App\\Models\\User', 149, 'auth-token', 'f51cafa27d22d0f56077f5162d3ca819bdf3053d9c2bff3550e102bbf0d9cf26', '[\"*\"]', NULL, NULL, '2026-03-29 11:57:43', '2026-03-29 11:57:43'),
-(1471, 'App\\Models\\User', 161, 'auth-token', '057f61d3898205e0b1365628648b1c85761d65906d87eb5faab561c1f63fc6f6', '[\"*\"]', NULL, NULL, '2026-03-29 11:59:38', '2026-03-29 11:59:38'),
 (1472, 'App\\Models\\User', 31, 'auth-token', '59b29d505dad36d7dde0ae486c20d189fb5d70764a7dca1244a6b7256179a9df', '[\"*\"]', NULL, NULL, '2026-03-29 12:12:12', '2026-03-29 12:12:12'),
 (1473, 'App\\Models\\User', 149, 'auth-token', 'c49b14beb1ee81e8aa660c6782719741dbfd53fc99cb4088516b796413d14c5b', '[\"*\"]', NULL, NULL, '2026-03-29 13:00:55', '2026-03-29 13:00:55'),
-(1474, 'App\\Models\\User', 161, 'auth-token', '90af6d5350e969c8cfad045df989c610e7b55d82787f87b8725d50d6ce265ca0', '[\"*\"]', NULL, NULL, '2026-03-29 13:04:25', '2026-03-29 13:04:25'),
 (1475, 'App\\Models\\User', 31, 'auth-token', '85e76ad7da74e29658b7aa9dbb13acd4d842bc1ffb90ed7f072fe762bf5c5a7b', '[\"*\"]', NULL, NULL, '2026-03-29 13:04:49', '2026-03-29 13:04:49'),
 (1476, 'App\\Models\\User', 173, 'auth-token', '7efc31c02a5081b634367c509447679515c9579b6486e6f0db7905d62acbc3da', '[\"*\"]', NULL, NULL, '2026-03-29 13:05:43', '2026-03-29 13:05:43'),
-(1477, 'App\\Models\\User', 148, 'auth-token', '2c5bc035eb8f72210e45e63ae46d67345d208dce1b48c719ca6903c957656dd9', '[\"*\"]', NULL, NULL, '2026-03-29 13:06:20', '2026-03-29 13:06:20'),
 (1478, 'App\\Models\\User', 31, 'auth-token', 'e9002a4ca33eaacb0104805f7acee4cf5077137c1b9de5f69c8252b266d81cfb', '[\"*\"]', NULL, NULL, '2026-03-29 13:06:41', '2026-03-29 13:06:41'),
 (1479, 'App\\Models\\User', 154, 'auth-token', 'e700194ed6cf978059a88a13c0735537495eeca41358b777448b18c129147ad3', '[\"*\"]', NULL, NULL, '2026-03-29 13:08:06', '2026-03-29 13:08:06'),
 (1480, 'App\\Models\\User', 150, 'auth-token', '12812d46ead0dfe23587343c0af232399c85a7718933df695ef587edb0036ba4', '[\"*\"]', NULL, NULL, '2026-03-29 13:10:13', '2026-03-29 13:10:13'),
@@ -2197,7 +2145,6 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1495, 'App\\Models\\User', 150, 'auth-token', '31480ad6340ac3924ee7c21ae945ce925658cb11e7d8c29530513ee1962ccdc5', '[\"*\"]', NULL, NULL, '2026-03-29 14:41:38', '2026-03-29 14:41:38'),
 (1496, 'App\\Models\\User', 149, 'auth-token', '763a5fee065dc3daabc3d6255f37d08c61118d8bf0ee85b030f157fdfb7d0dfe', '[\"*\"]', NULL, NULL, '2026-03-29 14:42:11', '2026-03-29 14:42:11'),
 (1497, 'App\\Models\\User', 150, 'auth-token', '34dc935214df9efa4ab53798b25bbd1e6a43024f2e6b24a440b891f8d6aee382', '[\"*\"]', NULL, NULL, '2026-03-29 14:43:28', '2026-03-29 14:43:28'),
-(1498, 'App\\Models\\User', 157, 'auth-token', 'e6c1cc2565e1b3ccc9cbd5cb9e5ecd3f0ebc2b25d88b83fdbe16fb77c3fe1a68', '[\"*\"]', NULL, NULL, '2026-03-29 14:44:20', '2026-03-29 14:44:20'),
 (1499, 'App\\Models\\User', 152, 'auth-token', 'bd86e7334f047973a21da0e4c9dd9a799e37b983c115319cc01ec7f750d08460', '[\"*\"]', NULL, NULL, '2026-03-29 14:44:46', '2026-03-29 14:44:46'),
 (1500, 'App\\Models\\User', 150, 'auth-token', 'e91ceab19571fbf576bd9bebde50944dd0ec97c6a21790c9405194c0b8129a26', '[\"*\"]', NULL, NULL, '2026-03-29 14:48:21', '2026-03-29 14:48:21'),
 (1501, 'App\\Models\\User', 149, 'auth-token', '6430def61590c4b40d537db35db8ee69d231625d51eebe8ee7a2604803dfb1b0', '[\"*\"]', NULL, NULL, '2026-03-29 14:49:05', '2026-03-29 14:49:05'),
@@ -2259,9 +2206,7 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1557, 'App\\Models\\User', 151, 'auth-token', 'f34a576174fc1bb9e1904867eb0616065c4b59c7509fb3dbf8e8e0e6e938a9d7', '[\"*\"]', NULL, NULL, '2026-03-29 16:28:00', '2026-03-29 16:28:00'),
 (1558, 'App\\Models\\User', 150, 'auth-token', '4484a99699fbbdc94cabd29f6965346c636e53406f5fa7275e89e65e19c6410f', '[\"*\"]', NULL, NULL, '2026-03-29 16:30:51', '2026-03-29 16:30:51'),
 (1559, 'App\\Models\\User', 150, 'auth-token', '8ad51f0aa96b6cddbfd125caf47e64cedc87a4ed091c1b80ef638dcd36921e7f', '[\"*\"]', NULL, NULL, '2026-03-29 16:35:43', '2026-03-29 16:35:43'),
-(1560, 'App\\Models\\User', 159, 'auth-token', '8e7bb63ea834f527fc7b38011e9973d263903bbe6ed4125d45a81dd2bfda8227', '[\"*\"]', NULL, NULL, '2026-03-29 16:38:18', '2026-03-29 16:38:18'),
 (1561, 'App\\Models\\User', 151, 'auth-token', 'fb65e502336b01129f6030122e9b487f80716e22de0cd3c90ab35c284b16bf20', '[\"*\"]', NULL, NULL, '2026-03-29 16:42:17', '2026-03-29 16:42:17'),
-(1562, 'App\\Models\\User', 159, 'auth-token', '944a7805fa6532948df0fe3cdb8bc0b81f1186d2ab4c2450ff61cbfd9f0ff666', '[\"*\"]', NULL, NULL, '2026-03-29 16:43:18', '2026-03-29 16:43:18'),
 (1563, 'App\\Models\\User', 151, 'auth-token', '0dca5284fcb519bd1515ec308226ff4c941ec594ee206e1fcfca97a3a680e0b1', '[\"*\"]', NULL, NULL, '2026-03-29 16:44:42', '2026-03-29 16:44:42'),
 (1564, 'App\\Models\\User', 31, 'auth-token', '732fa252a16db00a38eeaebe1839fb1db1cece0091225b6d27ca8d6815f94bc2', '[\"*\"]', NULL, NULL, '2026-03-29 16:47:39', '2026-03-29 16:47:39'),
 (1565, 'App\\Models\\User', 151, 'auth-token', '59e6ca1e4e896dd0b15b8546cb8912379d4fbf9f1286d9d45e70b3a50020e56a', '[\"*\"]', NULL, NULL, '2026-03-29 16:48:05', '2026-03-29 16:48:05'),
@@ -2324,52 +2269,29 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1622, 'App\\Models\\User', 149, 'auth-token', 'ede76efec1712bb5e3fd49b577c2a4d2f15fed85fb3a1ed0869ad7282fee8c5f', '[\"*\"]', NULL, NULL, '2026-03-29 18:01:00', '2026-03-29 18:01:00'),
 (1623, 'App\\Models\\User', 150, 'auth-token', '88c4a12c86bab427db7163bc845d1609be737f1967f5f7cee77dfc4e0e034a9b', '[\"*\"]', NULL, NULL, '2026-03-29 18:01:50', '2026-03-29 18:01:50'),
 (1624, 'App\\Models\\User', 154, 'auth-token', 'e0acffa662aa1042c6f811eee8df76a844486aaabb11267ebfbd083665271dc8', '[\"*\"]', NULL, NULL, '2026-03-29 18:02:38', '2026-03-29 18:02:38'),
-(1625, 'App\\Models\\User', 159, 'auth-token', 'd1f59e451a70a1a0176bd34fb2fd25f5c9665b1cc50b1369f32690f7d434f4e7', '[\"*\"]', NULL, NULL, '2026-03-29 18:17:40', '2026-03-29 18:17:40'),
-(1626, 'App\\Models\\User', 159, 'auth-token', '7fb49b24343075f914f0877538739020fadb440a77eee4019a40680a98c73f6b', '[\"*\"]', NULL, NULL, '2026-03-29 18:18:36', '2026-03-29 18:18:36'),
-(1627, 'App\\Models\\User', 159, 'auth-token', 'd4c22e1fa4135d5f88e0755a476492fdf5b912fbacfdf3c3d8ccff5adc24a122', '[\"*\"]', NULL, NULL, '2026-03-29 18:40:03', '2026-03-29 18:40:03'),
-(1628, 'App\\Models\\User', 159, 'auth-token', '5ef0ecc473f172709ea69a7dd75518b26de88a67ab0229cbf6ee28abd28cff1a', '[\"*\"]', NULL, NULL, '2026-03-29 18:42:22', '2026-03-29 18:42:22'),
-(1629, 'App\\Models\\User', 159, 'auth-token', '624f038dbc6536128a6c81f72a2d233adcfa229222bf5a35ded59b7cd687be0f', '[\"*\"]', NULL, NULL, '2026-03-29 19:01:46', '2026-03-29 19:01:46'),
 (1630, 'App\\Models\\User', 147, 'auth-token', '36e61dbd7f0d406475d8519e2dc32331910e7379c4fcdd2e741ac5bc1c9b6ce3', '[\"*\"]', NULL, NULL, '2026-03-29 19:02:17', '2026-03-29 19:02:17'),
 (1631, 'App\\Models\\User', 147, 'auth-token', '66fa004543a2daf4a2e531ee88def00c525452ec07eca12681bd7b5244e46a39', '[\"*\"]', NULL, NULL, '2026-03-30 01:49:11', '2026-03-30 01:49:11'),
 (1632, 'App\\Models\\User', 149, 'auth-token', '66f5df03dceafaee071410c5ba6c55e5961e83e69490ccc89a1c3ac16d82f8aa', '[\"*\"]', NULL, NULL, '2026-03-30 02:06:58', '2026-03-30 02:06:58'),
 (1633, 'App\\Models\\User', 147, 'auth-token', 'bd88b5be1862d8949a9ec98a83e3bc6d33464bd15beabb6e4c2ca8422178c50b', '[\"*\"]', NULL, NULL, '2026-03-30 02:14:15', '2026-03-30 02:14:15'),
-(1634, 'App\\Models\\User', 159, 'auth-token', 'cde6e86e8ce24c202e2c7d6972a08519629cac37b7dcc5f8437a728fd9e20f23', '[\"*\"]', NULL, NULL, '2026-03-30 02:14:34', '2026-03-30 02:14:34'),
 (1635, 'App\\Models\\User', 149, 'auth-token', '1e76967402bcdb4f3f35f0e6f1060a0964d45226f3ebfbba518f133031cacaee', '[\"*\"]', NULL, NULL, '2026-03-30 02:19:38', '2026-03-30 02:19:38'),
 (1636, 'App\\Models\\User', 149, 'auth-token', '04cd7d5d02532b7a8b99abd8ac9aa0d5b9b04adb160018e450b108706841382c', '[\"*\"]', NULL, NULL, '2026-03-30 03:07:32', '2026-03-30 03:07:32'),
 (1637, 'App\\Models\\User', 150, 'auth-token', '87ff2af47603a4924b19abc52854933ff47d303f89aa0a123fffc20650229f12', '[\"*\"]', NULL, NULL, '2026-03-30 03:13:26', '2026-03-30 03:13:26'),
 (1638, 'App\\Models\\User', 150, 'auth-token', '64bd9895893d3bcf3068a8bb1c98d06e304177aed8933a37f66377d964a82fce', '[\"*\"]', NULL, NULL, '2026-03-30 03:24:03', '2026-03-30 03:24:03'),
 (1639, 'App\\Models\\User', 147, 'auth-token', '6b60ff635f243ac2d1dd912a0a3e703549997633d4bd8f428b043dc221dd71b0', '[\"*\"]', NULL, NULL, '2026-03-30 03:29:10', '2026-03-30 03:29:10'),
 (1640, 'App\\Models\\User', 151, 'auth-token', 'f9169ee31ed63b5199d240050d71160fc035e32ec1bb4c41e489ef91d616c6e1', '[\"*\"]', NULL, NULL, '2026-03-30 03:30:00', '2026-03-30 03:30:00'),
-(1641, 'App\\Models\\User', 150, 'auth-token', '7c8c3f66f9d8fc4e4351fe63fd7cc462f1365204b7469890c5b6f9ef5839c6a5', '[\"*\"]', NULL, NULL, '2026-03-30 03:30:39', '2026-03-30 03:30:39');
-INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `name`, `token`, `abilities`, `last_used_at`, `expires_at`, `created_at`, `updated_at`) VALUES
+(1641, 'App\\Models\\User', 150, 'auth-token', '7c8c3f66f9d8fc4e4351fe63fd7cc462f1365204b7469890c5b6f9ef5839c6a5', '[\"*\"]', NULL, NULL, '2026-03-30 03:30:39', '2026-03-30 03:30:39'),
 (1642, 'App\\Models\\User', 147, 'auth-token', '320b60dd50d5d5644cc79d87f96ec2f1d29155832f8e8704bc44c6a9c604c674', '[\"*\"]', NULL, NULL, '2026-03-30 03:31:28', '2026-03-30 03:31:28'),
-(1643, 'App\\Models\\User', 159, 'auth-token', 'b31174ca966d0b9325fb8f959d5599df06552711d55266a06caaa980ffe5e7ef', '[\"*\"]', NULL, NULL, '2026-03-30 03:36:09', '2026-03-30 03:36:09'),
 (1644, 'App\\Models\\User', 162, 'auth-token', 'ec32664b70c9da71f596e84aac132028f831e0b8ca3b596890c4de91df335351', '[\"*\"]', NULL, NULL, '2026-03-30 03:37:36', '2026-03-30 03:37:36'),
-(1645, 'App\\Models\\User', 159, 'auth-token', 'b31bb6940571be164ee430e979495f4fb789a4a5812d720dafd061f7e474e649', '[\"*\"]', NULL, NULL, '2026-03-30 03:38:00', '2026-03-30 03:38:00'),
 (1646, 'App\\Models\\User', 160, 'auth-token', '997f158ccbe35b8825934a6f770b77f74c29919b7a892588f9386c317287335b', '[\"*\"]', NULL, NULL, '2026-03-30 03:38:20', '2026-03-30 03:38:20'),
 (1647, 'App\\Models\\User', 160, 'auth-token', '9040eb61e80b7d8554ca9eb9bf61c51bde531c21d1ff9dc40f283e0f790cf72d', '[\"*\"]', NULL, NULL, '2026-03-30 03:47:10', '2026-03-30 03:47:10'),
-(1648, 'App\\Models\\User', 159, 'auth-token', 'ce0c2e95bc4340a47e13b153f69880b46bf32fb0e6116619b64340fd02452068', '[\"*\"]', NULL, NULL, '2026-03-30 03:47:31', '2026-03-30 03:47:31'),
-(1649, 'App\\Models\\User', 161, 'auth-token', 'f0e921012d0b8d0794f1b015dea96109065c4d6ad634b8df6649a6b2d3a44eaf', '[\"*\"]', NULL, NULL, '2026-03-30 03:54:46', '2026-03-30 03:54:46'),
-(1650, 'App\\Models\\User', 161, 'auth-token', 'dc994b846d41a12e91196b3908640c3454810b214f6e933e159b4192dd91a3ea', '[\"*\"]', NULL, NULL, '2026-03-30 04:09:07', '2026-03-30 04:09:07'),
 (1651, 'App\\Models\\User', 149, 'auth-token', '687cd245fbe5baa114f729b207418a639da707eebcccad038dcfd5d8e84bfc70', '[\"*\"]', NULL, NULL, '2026-03-30 04:13:33', '2026-03-30 04:13:33'),
 (1652, 'App\\Models\\User', 149, 'auth-token', '0843051cf05b419b568ea86ae7ad824ca4ef89895f8d77babeab94a3fbcd705d', '[\"*\"]', NULL, NULL, '2026-03-30 04:16:33', '2026-03-30 04:16:33'),
-(1653, 'App\\Models\\User', 161, 'auth-token', '638281813796a0d4be048fb83df1575c94283e628605365ee8e8545173fc3b41', '[\"*\"]', NULL, NULL, '2026-03-30 04:16:45', '2026-03-30 04:16:45'),
-(1654, 'App\\Models\\User', 161, 'auth-token', '03263bf6e9c8810604b1c24e5545a31f477a29795d61d82b0d7ff4f5e46bde5b', '[\"*\"]', NULL, NULL, '2026-03-30 04:18:55', '2026-03-30 04:18:55'),
-(1655, 'App\\Models\\User', 161, 'auth-token', 'd124b4f2aab001b524f1267704859bf9b8bdf11f9038fac4f04a448a532ba1d4', '[\"*\"]', NULL, NULL, '2026-03-30 04:26:13', '2026-03-30 04:26:13'),
-(1656, 'App\\Models\\User', 161, 'auth-token', 'a8963db33728f47dc63839619d53c11bb0c0579eab8228ea7a2332f852ab5bfa', '[\"*\"]', NULL, NULL, '2026-03-30 04:29:10', '2026-03-30 04:29:10'),
-(1657, 'App\\Models\\User', 161, 'auth-token', '2706ee9e3fc283cf82d1832d02f1b034e56a43dd349953543819aabc460ded26', '[\"*\"]', NULL, NULL, '2026-03-30 04:30:17', '2026-03-30 04:30:17'),
-(1658, 'App\\Models\\User', 161, 'auth-token', 'ea560fec0ff35bd2cb19e842425fab08cdd68ded80f41f3a25811a18f86557a1', '[\"*\"]', NULL, NULL, '2026-03-30 04:36:29', '2026-03-30 04:36:29'),
 (1659, 'App\\Models\\User', 149, 'auth-token', 'c20fed37134b35b60103dff8284e54ce123131c42696cb6920588a50fee8c8f1', '[\"*\"]', NULL, NULL, '2026-03-30 04:37:01', '2026-03-30 04:37:01'),
-(1660, 'App\\Models\\User', 161, 'auth-token', '69ba31f373c26fbc502e7f391f34fdb4be6888358747c16e513c24c2b55b1858', '[\"*\"]', NULL, NULL, '2026-03-30 04:37:19', '2026-03-30 04:37:19'),
 (1661, 'App\\Models\\User', 149, 'auth-token', 'c491abfa6062732272dbfea1f246d8ac6459282c6830a111451464c2c43abe74', '[\"*\"]', NULL, NULL, '2026-03-30 04:37:41', '2026-03-30 04:37:41'),
 (1662, 'App\\Models\\User', 31, 'auth-token', 'e31e75e7d106fd18cd3391c82ac1d158d12391d3ecf93f0d8d7ede0ee9227967', '[\"*\"]', NULL, NULL, '2026-03-30 04:38:08', '2026-03-30 04:38:08'),
 (1663, 'App\\Models\\User', 149, 'auth-token', 'b75c42f086052bedfd2eb988f57b69c56a426c81ef70178d77466cf6acbdd6d2', '[\"*\"]', NULL, NULL, '2026-03-30 04:41:35', '2026-03-30 04:41:35'),
-(1664, 'App\\Models\\User', 161, 'auth-token', '56e817946eaafc7ad5fabd25a0e5202f33fc6668312a7ee8e090b23bfd5f9724', '[\"*\"]', NULL, NULL, '2026-03-30 04:42:17', '2026-03-30 04:42:17'),
-(1665, 'App\\Models\\User', 161, 'auth-token', '76adb3f493dc5ffec74a43a6550f8ae9650659d71dd85f5eb4c5c34de73aa7cf', '[\"*\"]', NULL, NULL, '2026-03-30 04:44:40', '2026-03-30 04:44:40'),
 (1666, 'App\\Models\\User', 31, 'auth-token', 'c9b7664a8e89f227082dcbafbe857ea20176a8717b03b8d47820f572d56f2522', '[\"*\"]', NULL, NULL, '2026-03-30 04:54:55', '2026-03-30 04:54:55'),
-(1667, 'App\\Models\\User', 161, 'auth-token', 'f536e246ddb39fc83222f9701f8a29d5623ff39f37b88b6b2b0158aadc5165aa', '[\"*\"]', NULL, NULL, '2026-03-30 04:55:53', '2026-03-30 04:55:53'),
 (1668, 'App\\Models\\User', 149, 'auth-token', 'ba4e92ae7545157b9d75562db04f70cf3bdc4e6be9e8e4f45716569ea8845c2e', '[\"*\"]', NULL, NULL, '2026-03-30 05:03:01', '2026-03-30 05:03:01'),
-(1669, 'App\\Models\\User', 161, 'auth-token', 'c06fe667f2c0cd5237d52d1885c859b043125bbc918679338acfd2fcf30124f1', '[\"*\"]', NULL, NULL, '2026-03-30 05:05:26', '2026-03-30 05:05:26'),
 (1670, 'App\\Models\\User', 31, 'auth-token', 'e52c838f90c730e455cf8c6e2dd50a8d46b1cd2325cfaea7e84ed6cd4a83ad09', '[\"*\"]', NULL, NULL, '2026-03-30 05:06:08', '2026-03-30 05:06:08'),
 (1671, 'App\\Models\\User', 31, 'auth-token', 'c43c3391f879d0684cfefa78b04adf42330d1ba2e2ab421301ee20db121a9ab7', '[\"*\"]', NULL, NULL, '2026-03-30 05:16:07', '2026-03-30 05:16:07'),
 (1672, 'App\\Models\\User', 151, 'auth-token', 'fb429732e8e0a43407c3062058b7ea1e4baaa91f593a6a75b3ddbddd24544d01', '[\"*\"]', NULL, NULL, '2026-03-30 05:17:37', '2026-03-30 05:17:37'),
@@ -2379,7 +2301,6 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1676, 'App\\Models\\User', 160, 'auth-token', '07aa8364eada9c0c2d9fa7d4710ea18537c560e5c148bf247de7a005605b4023', '[\"*\"]', NULL, NULL, '2026-03-30 05:25:49', '2026-03-30 05:25:49'),
 (1677, 'App\\Models\\User', 31, 'auth-token', 'b4458043513a596b8aada1b42422c2bf3d7269f8014c6e134feb4933d364dbfb', '[\"*\"]', NULL, NULL, '2026-03-30 05:27:53', '2026-03-30 05:27:53'),
 (1678, 'App\\Models\\User', 160, 'auth-token', 'e778b5eab3a9f338be13144bf419bcd95551438d4925d8c23abd0e5ea99b0177', '[\"*\"]', NULL, NULL, '2026-03-30 05:28:48', '2026-03-30 05:28:48'),
-(1679, 'App\\Models\\User', 157, 'auth-token', 'cf420759f9e8747f3f01fd90983b89bc4bb24afe73b62c43565ace89ceb44e7f', '[\"*\"]', NULL, NULL, '2026-03-30 05:37:31', '2026-03-30 05:37:31'),
 (1680, 'App\\Models\\User', 31, 'auth-token', '0c77d0528d540133b8b31b05d8ae7d8ba990649d0fe23724ef37f4b5f5de5b9a', '[\"*\"]', NULL, NULL, '2026-03-30 05:38:53', '2026-03-30 05:38:53'),
 (1681, 'App\\Models\\User', 151, 'auth-token', 'de70391421ed6aac07f5dc0590c592fea7aa1411aec0bce8e7e15a5ba9a3dd8f', '[\"*\"]', NULL, NULL, '2026-03-30 05:39:33', '2026-03-30 05:39:33'),
 (1682, 'App\\Models\\User', 153, 'auth-token', '55e963ee24ff4b7b9699d68799c1e2d3e461718e034cbe98b4946ec04af6238a', '[\"*\"]', NULL, NULL, '2026-03-30 05:40:11', '2026-03-30 05:40:11'),
@@ -2401,21 +2322,11 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1698, 'App\\Models\\User', 149, 'auth-token', '30284089b5e0fa2d7a0822b8d53ac23f12f39d3c6d5aef256727e602923e5852', '[\"*\"]', NULL, NULL, '2026-03-30 05:59:28', '2026-03-30 05:59:28'),
 (1699, 'App\\Models\\User', 150, 'auth-token', 'c4177699a23418f5038e4a37888359b16eb69b89e839661bd8a81e0640deadfe', '[\"*\"]', NULL, NULL, '2026-03-30 06:01:35', '2026-03-30 06:01:35'),
 (1700, 'App\\Models\\User', 154, 'auth-token', 'c0d1dcc9deec3ecf6d5562819b879e53c09d7124951f3b73a16f1dc56ce679af', '[\"*\"]', NULL, NULL, '2026-03-30 06:02:07', '2026-03-30 06:02:07'),
-(1701, 'App\\Models\\User', 159, 'auth-token', '10e3cd778b87c36ffe20c12b67ea6a60b8a15c015e9ba01f877311c0240f5030', '[\"*\"]', NULL, NULL, '2026-03-30 06:02:50', '2026-03-30 06:02:50'),
-(1702, 'App\\Models\\User', 159, 'auth-token', 'eda4adadf7effa410f9e47904fb5823528baa53da222a1208cc276e928fe9261', '[\"*\"]', NULL, NULL, '2026-03-30 06:07:54', '2026-03-30 06:07:54'),
 (1703, 'App\\Models\\User', 147, 'auth-token', 'aa14709bdf0a057752d056b891f49f720a87a373a7822d4ec34e5ee183c0c8da', '[\"*\"]', NULL, NULL, '2026-03-30 06:08:26', '2026-03-30 06:08:26'),
-(1704, 'App\\Models\\User', 159, 'auth-token', '0d32aed54836d44fd81488daa62d82e48044b46cc2514d0ca6e0e9d255a458bd', '[\"*\"]', NULL, NULL, '2026-03-30 06:10:56', '2026-03-30 06:10:56'),
-(1705, 'App\\Models\\User', 159, 'auth-token', 'd9a7aa8d904dab2a4f4299a525b481cb74aeea42842f035774cf25c3eaa69a0a', '[\"*\"]', NULL, NULL, '2026-03-30 06:14:09', '2026-03-30 06:14:09'),
-(1706, 'App\\Models\\User', 159, 'auth-token', 'fb5a298632bcc47b7d3df1b1c0e50c2aadb0bb54c7ddd10e396aac68ee3fbaaa', '[\"*\"]', NULL, NULL, '2026-03-30 06:14:42', '2026-03-30 06:14:42'),
-(1707, 'App\\Models\\User', 159, 'auth-token', '5a2fe7501592c72301d9025d0835be4b6b10dcaeb23a081fae1f8b320b495394', '[\"*\"]', NULL, NULL, '2026-03-30 06:18:00', '2026-03-30 06:18:00'),
 (1708, 'App\\Models\\User', 149, 'auth-token', 'c049b59d11e7de2b0437ae5731df566339e9a26e328b35f1b4d855bc09ecf722', '[\"*\"]', NULL, NULL, '2026-03-30 06:31:34', '2026-03-30 06:31:34'),
-(1709, 'App\\Models\\User', 159, 'auth-token', '33b4875deeecfce3d23fd589cf0eb145a744d3f548e45761078a6e7c9b69d51e', '[\"*\"]', NULL, NULL, '2026-03-30 06:32:05', '2026-03-30 06:32:05'),
-(1710, 'App\\Models\\User', 159, 'auth-token', 'c2d1dd236ee4f643f8c41b7ca8afd71cbecd015530b63259aac8fc979a38ad55', '[\"*\"]', NULL, NULL, '2026-03-30 07:47:38', '2026-03-30 07:47:38'),
-(1711, 'App\\Models\\User', 161, 'auth-token', '9d8817ddf696e0feccf99266f934dfbed653f3756a5294de244fe99e79cc4214', '[\"*\"]', NULL, NULL, '2026-03-30 07:48:29', '2026-03-30 07:48:29'),
 (1712, 'App\\Models\\User', 162, 'auth-token', '5b53390b10f97eb841899ea9309623d5f21eaf6c835a10dd909051cbfe38facb', '[\"*\"]', NULL, NULL, '2026-03-30 07:49:14', '2026-03-30 07:49:14'),
 (1713, 'App\\Models\\User', 28, 'auth-token', 'd6a31fe372dc7cf9768d5684e94179911feab0e477c41fb6bff252006163973d', '[\"*\"]', NULL, NULL, '2026-03-30 07:50:07', '2026-03-30 07:50:07'),
 (1714, 'App\\Models\\User', 31, 'auth-token', '94544377e65c14abb440ef58ffef368f0fcb9cb296face4b191741fa8ef5f5af', '[\"*\"]', NULL, NULL, '2026-03-30 07:52:13', '2026-03-30 07:52:13'),
-(1715, 'App\\Models\\User', 159, 'auth-token', '7f995d3c5e051f14dff7684aabdad60e90702d5dbae5f8a83d8870959bdd6464', '[\"*\"]', NULL, NULL, '2026-03-30 07:53:32', '2026-03-30 07:53:32'),
 (1716, 'App\\Models\\User', 28, 'auth-token', 'fc5d7acf4311340d74829d533dbd12ad866cd01c5d45024cbab470fcece00703', '[\"*\"]', NULL, NULL, '2026-03-30 07:53:55', '2026-03-30 07:53:55'),
 (1717, 'App\\Models\\User', 179, 'auth-token', '06f81091c46d48cf4f20e5226dbca85b79246264a11ae8063de092f1c9e3eb5c', '[\"*\"]', NULL, NULL, '2026-03-30 07:56:38', '2026-03-30 07:56:38'),
 (1718, 'App\\Models\\User', 151, 'auth-token', '3480266d57aef18f72a57683c0c5816dd4e3e1a20a6be315afdeef5740c16933', '[\"*\"]', NULL, NULL, '2026-03-30 07:58:24', '2026-03-30 07:58:24'),
@@ -2438,7 +2349,8 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1735, 'App\\Models\\User', 149, 'auth-token', 'be39b7af309943763980e5db3e8c8bd3f526b91a995e6e3ae91a69f5c78d01bd', '[\"*\"]', NULL, NULL, '2026-03-30 08:15:58', '2026-03-30 08:15:58'),
 (1736, 'App\\Models\\User', 150, 'auth-token', '3c5f7f2427dda093d79e19ff63080e053e931435f0238456db7c4b507bec79b0', '[\"*\"]', NULL, NULL, '2026-03-30 08:21:14', '2026-03-30 08:21:14'),
 (1737, 'App\\Models\\User', 152, 'auth-token', 'c5369d88ad615ae8a777d88fcdf69713a99d63434a88f7485ca34457611e5849', '[\"*\"]', NULL, NULL, '2026-03-30 08:21:34', '2026-03-30 08:21:34'),
-(1738, 'App\\Models\\User', 158, 'auth-token', '2ea8e8d86fbe73774c859ad56d38f8343122403c7b6adde8675ba2c83b2fe320', '[\"*\"]', NULL, NULL, '2026-03-30 08:21:47', '2026-03-30 08:21:47'),
+(1738, 'App\\Models\\User', 158, 'auth-token', '2ea8e8d86fbe73774c859ad56d38f8343122403c7b6adde8675ba2c83b2fe320', '[\"*\"]', NULL, NULL, '2026-03-30 08:21:47', '2026-03-30 08:21:47');
+INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `name`, `token`, `abilities`, `last_used_at`, `expires_at`, `created_at`, `updated_at`) VALUES
 (1739, 'App\\Models\\User', 150, 'auth-token', '5a17c83a99e269808e8a165afe81ace0f9b2ff6fa4478c84a21aa7d3712de247', '[\"*\"]', NULL, NULL, '2026-03-30 08:22:30', '2026-03-30 08:22:30'),
 (1740, 'App\\Models\\User', 173, 'auth-token', '00e2f2fcc6c84f6d32347e28beadaad3c53dc17d72da1e482cf76b75985a4bd9', '[\"*\"]', NULL, NULL, '2026-03-30 08:26:45', '2026-03-30 08:26:45'),
 (1741, 'App\\Models\\User', 173, 'auth-token', '8f327bfce03b97584d1b9ddfe0a835fc139b80b8f9267f144be72b918c196f77', '[\"*\"]', NULL, NULL, '2026-03-30 08:28:54', '2026-03-30 08:28:54'),
@@ -2449,19 +2361,12 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1746, 'App\\Models\\User', 150, 'auth-token', '76931c932e4c63b093897dac4ebee4a3e5d32ec301c13e64fd02554b8aa2aee6', '[\"*\"]', NULL, NULL, '2026-03-30 08:39:28', '2026-03-30 08:39:28'),
 (1747, 'App\\Models\\User', 154, 'auth-token', 'a42c912f1a52570e4a3706f66cb5c7d4b4123da2c9259a9f64e168d875621b35', '[\"*\"]', NULL, NULL, '2026-03-30 08:39:54', '2026-03-30 08:39:54'),
 (1748, 'App\\Models\\User', 149, 'auth-token', '0bc5086f6b9c06a33f0a37acb9ac58ea0073a4a5a1fb69f775aed87296420198', '[\"*\"]', NULL, NULL, '2026-03-30 08:40:25', '2026-03-30 08:40:25'),
-(1749, 'App\\Models\\User', 161, 'auth-token', 'b16928f828780fed4cb014251d6916864da73a30473e6078355070e53729683b', '[\"*\"]', NULL, NULL, '2026-03-30 08:41:19', '2026-03-30 08:41:19'),
 (1750, 'App\\Models\\User', 31, 'auth-token', '91651c7be79a5410c1533a3859d6dd9ddc10f82d5333150db3c55aa0d979c14f', '[\"*\"]', NULL, NULL, '2026-03-30 08:41:42', '2026-03-30 08:41:42'),
-(1751, 'App\\Models\\User', 157, 'auth-token', '7c1eedea741bf83b293ba2f6f08934bf9778adbcd3c6d0b57f913f7fc23baf35', '[\"*\"]', NULL, NULL, '2026-03-30 08:42:28', '2026-03-30 08:42:28'),
 (1752, 'App\\Models\\User', 31, 'auth-token', 'd9b232c66a563ec454bbddbfc3e106bbee5e4416860e7fe92459ff18099e608a', '[\"*\"]', NULL, NULL, '2026-03-30 08:45:25', '2026-03-30 08:45:25'),
 (1753, 'App\\Models\\User', 151, 'auth-token', 'bc9d56b209d6e35686a90ada09105b5abb8a9a87dc7bd230628e36e0ae9cb7df', '[\"*\"]', NULL, NULL, '2026-03-30 08:46:04', '2026-03-30 08:46:04'),
 (1754, 'App\\Models\\User', 153, 'auth-token', '7176a038ec2a77e80a71d8cbbcd7a81b941f0cf58e9d02c794fc6d7582417a02', '[\"*\"]', NULL, NULL, '2026-03-30 08:46:38', '2026-03-30 08:46:38'),
 (1755, 'App\\Models\\User', 149, 'auth-token', '206dcda16810bcd100b004286cff6d29b513a21e6f7c2b8a1f582d61e45836e1', '[\"*\"]', NULL, NULL, '2026-03-30 08:48:57', '2026-03-30 08:48:57'),
 (1756, 'App\\Models\\User', 151, 'auth-token', 'a6cb8a1daabfa08479c456981240a7d7dc0c0bbe54ef5cd83e71d9855ddb25a6', '[\"*\"]', NULL, NULL, '2026-03-30 08:50:00', '2026-03-30 08:50:00'),
-(1757, 'App\\Models\\User', 159, 'auth-token', 'ad17cba2deec405c283c9bc68bc3b6320b0199c779d35f2dc36a3f910025e895', '[\"*\"]', NULL, NULL, '2026-03-30 09:05:04', '2026-03-30 09:05:04'),
-(1758, 'App\\Models\\User', 159, 'auth-token', '02190024efadae49d2c55f4f6dfbad8bcc3e62a061106fc6ed845198ed90eab2', '[\"*\"]', NULL, NULL, '2026-03-30 09:05:28', '2026-03-30 09:05:28'),
-(1759, 'App\\Models\\User', 159, 'auth-token', '1f91013ad892c87efaa9d0a723c385d5ba4dd34a58280fceac8faf0dbd0c86ee', '[\"*\"]', NULL, NULL, '2026-03-30 09:07:02', '2026-03-30 09:07:02'),
-(1760, 'App\\Models\\User', 159, 'auth-token', 'ccfc81e2a39816f96e54cf3b9f7d745e7f3f137a115fd84868d515e438bdcd1c', '[\"*\"]', NULL, NULL, '2026-03-30 09:07:15', '2026-03-30 09:07:15'),
-(1761, 'App\\Models\\User', 159, 'auth-token', '5d2576b8703d7ba26ba3bbab2a49982dc4b04b9b8a24d8a95d56fcd71f18a275', '[\"*\"]', NULL, NULL, '2026-03-30 09:07:26', '2026-03-30 09:07:26'),
 (1762, 'App\\Models\\User', 31, 'auth-token', '504cc61b1f7743c107d470685929337af30b94b528a3646074563cb08dee42c3', '[\"*\"]', NULL, NULL, '2026-03-30 09:09:29', '2026-03-30 09:09:29'),
 (1763, 'App\\Models\\User', 149, 'auth-token', 'fba1b51275f82059f7963eb30c862e85ec003b8039ad00a3cf1f077660b9281f', '[\"*\"]', NULL, NULL, '2026-03-30 09:10:10', '2026-03-30 09:10:10'),
 (1764, 'App\\Models\\User', 174, 'auth-token', 'cbaeb03770c6b07dfdd8ca1ea6670d907f305a42381fa88917871487a09ab487', '[\"*\"]', NULL, NULL, '2026-03-30 09:10:35', '2026-03-30 09:10:35'),
@@ -2474,13 +2379,9 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1771, 'App\\Models\\User', 153, 'auth-token', 'a08fba05794d361d5622cddfe1467521fd53032bba014775304c36f0590ba1c5', '[\"*\"]', NULL, NULL, '2026-03-30 09:13:10', '2026-03-30 09:13:10'),
 (1772, 'App\\Models\\User', 153, 'auth-token', 'fd5d5c79996bd4da4f6c330fb5659884e2b49ebd3142a5eddf01a5ab5cd75b71', '[\"*\"]', NULL, NULL, '2026-03-30 09:38:17', '2026-03-30 09:38:17'),
 (1773, 'App\\Models\\User', 153, 'auth-token', '29053890efe0574e4de282eb0713ce8878cbf0aa3ad7ba5cc481b9edc52d9d7a', '[\"*\"]', NULL, NULL, '2026-03-30 10:43:43', '2026-03-30 10:43:43'),
-(1774, 'App\\Models\\User', 148, 'auth-token', '0cb8aa67138a6d7a9814dc37e42c4af9622c3d4328167538613e58868bbae3cd', '[\"*\"]', NULL, NULL, '2026-03-30 10:51:37', '2026-03-30 10:51:37'),
-(1775, 'App\\Models\\User', 148, 'auth-token', '4e7365bf7f72267a2c6da2a468656176b5be2a49dbf81b5c306696fa39ee687d', '[\"*\"]', NULL, NULL, '2026-03-30 10:52:06', '2026-03-30 10:52:06'),
 (1776, 'App\\Models\\User', 28, 'auth-token', '6c0a7a909a1f7bb2d7a2bf82056c9080ac525f12c698f11f62bf4ae388cb49a5', '[\"*\"]', NULL, NULL, '2026-03-30 10:52:50', '2026-03-30 10:52:50'),
 (1777, 'App\\Models\\User', 147, 'auth-token', '0f4b2508ff198e5785438ac08b670c64eed572cf64f74549956d675789f954e4', '[\"*\"]', NULL, NULL, '2026-03-30 10:53:22', '2026-03-30 10:53:22'),
-(1778, 'App\\Models\\User', 148, 'auth-token', '2720c8075f75d0d17607424fcf879e3cc1905626c2bd40956fe2a4fc9b6d4993', '[\"*\"]', NULL, NULL, '2026-03-30 10:53:55', '2026-03-30 10:53:55'),
 (1779, 'App\\Models\\User', 28, 'auth-token', 'a9e615b1df90ca9f441a01a412a2458815128df245db52bb5ae0cc665db4b9e2', '[\"*\"]', NULL, NULL, '2026-03-30 10:59:20', '2026-03-30 10:59:20'),
-(1780, 'App\\Models\\User', 148, 'auth-token', 'b1516b93cf0e8467c72139f877937a90741f53d994dab99d25016c91c5559cba', '[\"*\"]', NULL, NULL, '2026-03-30 11:03:42', '2026-03-30 11:03:42'),
 (1781, 'App\\Models\\User', 173, 'auth-token', '544550b32f996b94da5fcde52e320dbd69c810b1064f672aec58a85172d2deb6', '[\"*\"]', NULL, NULL, '2026-03-30 11:04:44', '2026-03-30 11:04:44'),
 (1782, 'App\\Models\\User', 181, 'auth-token', '4103a461cd6d33d9853b4d4922e48998aacf7085f37d52da17295d66d1c7f03d', '[\"*\"]', NULL, NULL, '2026-03-30 11:22:12', '2026-03-30 11:22:12'),
 (1783, 'App\\Models\\User', 173, 'auth-token', '11f12be56c0a69cbe4ce3ac00d1333e483b131689d8b05052096f5c28500e7a7', '[\"*\"]', NULL, NULL, '2026-03-30 12:14:12', '2026-03-30 12:14:12'),
@@ -2561,7 +2462,6 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1858, 'App\\Models\\User', 152, 'auth-token', '0341a7a07df0698f83b461356aa8e81afb4cbe0787951d384d7e38543505d642', '[\"*\"]', NULL, NULL, '2026-03-30 15:57:58', '2026-03-30 15:57:58'),
 (1859, 'App\\Models\\User', 150, 'auth-token', 'f9070c9009a98dd9411792e116961eca62810be6465ecd5902634bb991c8d50d', '[\"*\"]', NULL, NULL, '2026-03-30 16:00:39', '2026-03-30 16:00:39'),
 (1860, 'App\\Models\\User', 31, 'auth-token', '8cc60e9d7b3c6a168dbb2f34906e889ad6ec44bb407c63f23e6fc1487c271092', '[\"*\"]', NULL, NULL, '2026-03-30 16:03:04', '2026-03-30 16:03:04'),
-(1861, 'App\\Models\\User', 159, 'auth-token', 'fa0b35d3f427f40dc21a7eac709dc097e4fe3a46fa12d325b50f05dedbe55f1d', '[\"*\"]', NULL, NULL, '2026-03-30 16:03:21', '2026-03-30 16:03:21'),
 (1862, 'App\\Models\\User', 28, 'auth-token', '3f06efcf5dba0230126e0b67ad1fa331b70c9e46825a2a38c635bbad52965ceb', '[\"*\"]', NULL, NULL, '2026-03-30 16:03:45', '2026-03-30 16:03:45'),
 (1863, 'App\\Models\\User', 150, 'auth-token', '708fc35681f4012f1df511554877ed0f923521a005e49533c2671007e8cda290', '[\"*\"]', NULL, NULL, '2026-03-30 16:10:26', '2026-03-30 16:10:26'),
 (1864, 'App\\Models\\User', 154, 'auth-token', 'f6f2ff03a8cadd3922840437f813870f24a534ca30c60f7319595e1773ad4b83', '[\"*\"]', NULL, NULL, '2026-03-30 16:11:47', '2026-03-30 16:11:47'),
@@ -2595,7 +2495,6 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1892, 'App\\Models\\User', 154, 'auth-token', '206337f41df25eb9e142589279510715236fd8234e48f4f4fcb91d0faa47df64', '[\"*\"]', NULL, NULL, '2026-04-02 05:12:54', '2026-04-02 05:12:54'),
 (1893, 'App\\Models\\User', 162, 'auth-token', '5d75aad12666aed058cdbc77dccd5a1fa59f262390379b10eaffb4e710e6f804', '[\"*\"]', NULL, NULL, '2026-04-02 05:20:54', '2026-04-02 05:20:54'),
 (1894, 'App\\Models\\User', 154, 'auth-token', 'a9ecad6fe0826d5919a1d81bf0d96021d03814fad956be3f9dd3d326077a323d', '[\"*\"]', NULL, NULL, '2026-04-02 05:21:31', '2026-04-02 05:21:31'),
-(1895, 'App\\Models\\User', 157, 'auth-token', '9d29806b93492234b8c6cc7194a3d158dff604ae7bbc26da0042ed43c191f0f5', '[\"*\"]', NULL, NULL, '2026-04-02 05:22:13', '2026-04-02 05:22:13'),
 (1896, 'App\\Models\\User', 31, 'auth-token', '293647cac8dc8241ebc17d1333ba0d9b8f64a25a32fafad22c01e6fc4e4c8080', '[\"*\"]', NULL, NULL, '2026-04-02 05:29:34', '2026-04-02 05:29:34'),
 (1897, 'App\\Models\\User', 151, 'auth-token', '29b46124c1ccf3c81f4ab2eda5da5d91724132aab2896ff451323dc8c924a1eb', '[\"*\"]', NULL, NULL, '2026-04-02 05:31:23', '2026-04-02 05:31:23'),
 (1898, 'App\\Models\\User', 154, 'auth-token', '4a0ea838a028bff34b67663c3e2e7d93917c02dd41a5eeca272f34b19483cd75', '[\"*\"]', NULL, NULL, '2026-04-02 05:32:00', '2026-04-02 05:32:00'),
@@ -2613,8 +2512,7 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1910, 'App\\Models\\User', 153, 'auth-token', 'eca20bdedf8e857cb1b56b1dc515b47efd0f9b9691a8b498f5ae9f1a50f6eeda', '[\"*\"]', NULL, NULL, '2026-04-02 05:38:59', '2026-04-02 05:38:59'),
 (1911, 'App\\Models\\User', 150, 'auth-token', 'b9ab42b6f1a17cb01633524c65c7955c697aae6f9db2679bb3567d3f8ac1e5ac', '[\"*\"]', NULL, NULL, '2026-04-02 05:39:55', '2026-04-02 05:39:55'),
 (1912, 'App\\Models\\User', 162, 'auth-token', '308fe3b5292a57fd61259758e2ff438c98894df15573afbdc930d716825ba6af', '[\"*\"]', NULL, NULL, '2026-04-02 05:40:27', '2026-04-02 05:40:27'),
-(1913, 'App\\Models\\User', 151, 'auth-token', '157e44ebebedadd6a20cc4c428568061d8d4c4af0ed3a9fb5828a3c4291f9556', '[\"*\"]', NULL, NULL, '2026-04-02 05:41:26', '2026-04-02 05:41:26');
-INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `name`, `token`, `abilities`, `last_used_at`, `expires_at`, `created_at`, `updated_at`) VALUES
+(1913, 'App\\Models\\User', 151, 'auth-token', '157e44ebebedadd6a20cc4c428568061d8d4c4af0ed3a9fb5828a3c4291f9556', '[\"*\"]', NULL, NULL, '2026-04-02 05:41:26', '2026-04-02 05:41:26'),
 (1914, 'App\\Models\\User', 153, 'auth-token', '0bf43d3c60fb349b954875b37b20c795cfcdcf8fccb7d93373c43f58a35cfa00', '[\"*\"]', NULL, NULL, '2026-04-02 05:42:19', '2026-04-02 05:42:19'),
 (1915, 'App\\Models\\User', 154, 'auth-token', '03de7f992237edc10f48364e440f607a9b6d1c535d67ba136cd8e6f01a4615a7', '[\"*\"]', NULL, NULL, '2026-04-02 05:42:57', '2026-04-02 05:42:57'),
 (1916, 'App\\Models\\User', 150, 'auth-token', 'e39d55ea581f0433d662f76f1cb9217df288a296ce554a01965c76f2a4ce8cd5', '[\"*\"]', NULL, NULL, '2026-04-02 05:50:22', '2026-04-02 05:50:22'),
@@ -2656,7 +2554,6 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1952, 'App\\Models\\User', 147, 'auth-token', 'd00b3d3056a8c442a3a415347b434e0bbecef492d068ebe2fba9849aff0b54f2', '[\"*\"]', NULL, NULL, '2026-04-02 08:50:18', '2026-04-02 08:50:18'),
 (1953, 'App\\Models\\User', 153, 'auth-token', 'd5ebbd214e90a0a3d8cfdc3c8dd2b24739e0004a8858d6dac8a315d5a3979a9b', '[\"*\"]', NULL, NULL, '2026-04-02 08:50:55', '2026-04-02 08:50:55'),
 (1954, 'App\\Models\\User', 147, 'auth-token', '9855d5b959f61c875b080ca4cdcca01aae5baefae4c421cef3ba693da92c5e48', '[\"*\"]', NULL, NULL, '2026-04-02 08:56:57', '2026-04-02 08:56:57'),
-(1955, 'App\\Models\\User', 159, 'auth-token', '0d17d00318081a31b66349592eee03242804d139aa611cdda12a056ff2c75831', '[\"*\"]', NULL, NULL, '2026-04-02 09:06:15', '2026-04-02 09:06:15'),
 (1956, 'App\\Models\\User', 147, 'auth-token', '1f7c5ce48270f42a777d20cdd014f00a713fa6dc52fb72a5d144658ce5836ec1', '[\"*\"]', NULL, NULL, '2026-04-02 09:06:47', '2026-04-02 09:06:47'),
 (1957, 'App\\Models\\User', 147, 'auth-token', 'ad8fa6c62022029d84d200223f8c8ac9861e082c80c54aac004ba39b9ee02609', '[\"*\"]', NULL, NULL, '2026-04-02 09:14:33', '2026-04-02 09:14:33'),
 (1958, 'App\\Models\\User', 153, 'auth-token', 'b11ed3bbad441dd77f45a02e7d02e8f7b1fdee62a042d144286472d7d1c97c30', '[\"*\"]', NULL, NULL, '2026-04-02 09:30:57', '2026-04-02 09:30:57'),
@@ -2697,14 +2594,10 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1993, 'App\\Models\\User', 151, 'auth-token', 'b973f884cdbc9adf7ce2429206184116d36b87f393e97b94af949aa712243bb6', '[\"*\"]', NULL, NULL, '2026-04-02 10:06:51', '2026-04-02 10:06:51'),
 (1994, 'App\\Models\\User', 154, 'auth-token', '7c3d3bc66f4069c8046b6094ab581009d556050896d732c34ffd9996425749b5', '[\"*\"]', NULL, NULL, '2026-04-02 10:07:58', '2026-04-02 10:07:58'),
 (1995, 'App\\Models\\User', 153, 'auth-token', 'c1f5f61b9b53aaf846d996728fd75e7c976ea8b6b417022f5936858734413e55', '[\"*\"]', NULL, NULL, '2026-04-02 10:08:19', '2026-04-02 10:08:19'),
-(1996, 'App\\Models\\User', 157, 'auth-token', '7f606500b22a44fceee9280d7c9687120f1a52a12e53c1e5b9545c6d4f7de13a', '[\"*\"]', NULL, NULL, '2026-04-02 10:19:31', '2026-04-02 10:19:31'),
-(1997, 'App\\Models\\User', 157, 'auth-token', '616cba52b89ef6e24bef10e32662079392cf26832d3ec5f3b7d4820c87060df0', '[\"*\"]', NULL, NULL, '2026-04-02 10:20:08', '2026-04-02 10:20:08'),
-(1998, 'App\\Models\\User', 157, 'auth-token', 'f78e1a961a22df42cddd5230ceae1a8c684abef6e36d0eefe37c368a9c81ba05', '[\"*\"]', NULL, NULL, '2026-04-02 10:52:20', '2026-04-02 10:52:20'),
 (1999, 'App\\Models\\User', 154, 'auth-token', '954c9a799d9736f72892b7064b2e1f844b157e376db020ba8d693c6005832d52', '[\"*\"]', NULL, NULL, '2026-04-02 10:54:27', '2026-04-02 10:54:27'),
 (2000, 'App\\Models\\User', 31, 'auth-token', 'e301d626f2661e0c318f1a10285dc84863353d35ca0bae5dd4a0e4054d95e836', '[\"*\"]', NULL, NULL, '2026-04-02 10:54:52', '2026-04-02 10:54:52'),
 (2001, 'App\\Models\\User', 154, 'auth-token', '95f03fbe8970a86798e381ef68aacf59a81bada04cc8d11483c90c92d84e8c03', '[\"*\"]', NULL, NULL, '2026-04-02 11:04:10', '2026-04-02 11:04:10'),
 (2002, 'App\\Models\\User', 150, 'auth-token', 'e76799b6a59e1b1c1df725b53a034d16f9a94c4e21fd64c38f2f8ceab233c910', '[\"*\"]', NULL, NULL, '2026-04-02 11:04:37', '2026-04-02 11:04:37'),
-(2003, 'App\\Models\\User', 157, 'auth-token', '5e6ac8d534e2a41e72ed4579e9edd5839e4f9ea3b8e081b68ab6c412453ebb8b', '[\"*\"]', NULL, NULL, '2026-04-02 11:15:01', '2026-04-02 11:15:01'),
 (2004, 'App\\Models\\User', 31, 'auth-token', '24d19d4226e7da159df12c4e9c5ba452da579902281addc0f503639fc73cc6f4', '[\"*\"]', NULL, NULL, '2026-04-02 11:19:48', '2026-04-02 11:19:48'),
 (2005, 'App\\Models\\User', 154, 'auth-token', '947038e3c91db2cfc63ef2ea5ad3b99905a2afb2cace3372580fc7c991b3ca66', '[\"*\"]', NULL, NULL, '2026-04-02 11:20:21', '2026-04-02 11:20:21'),
 (2006, 'App\\Models\\User', 150, 'auth-token', '7e1dd05e511625b705e952438c3c4e31aa027cb96573e584599b4aabf8615b88', '[\"*\"]', NULL, NULL, '2026-04-02 11:21:02', '2026-04-02 11:21:02'),
@@ -2712,8 +2605,6 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (2008, 'App\\Models\\User', 158, 'auth-token', 'a151c2649ef10df583a639ce789905db735731ffe3e1be34db763c8c7344cc39', '[\"*\"]', NULL, NULL, '2026-04-02 11:23:29', '2026-04-02 11:23:29'),
 (2009, 'App\\Models\\User', 150, 'auth-token', 'b69966eabd3b017045c5e4c598931f87d26afd0d91130f5ffb9d8ba3080842bb', '[\"*\"]', NULL, NULL, '2026-04-02 11:24:18', '2026-04-02 11:24:18'),
 (2010, 'App\\Models\\User', 147, 'auth-token', '2437fefc0d2305ea69cd02a6b230baacdcf00513f71bd41cb4fedced5269105f', '[\"*\"]', NULL, NULL, '2026-04-02 11:25:18', '2026-04-02 11:25:18'),
-(2011, 'App\\Models\\User', 157, 'auth-token', '4e7095faa47ede7dd86dee17170dd5a2bd77718c78c73e88b2b34e15de5eaae7', '[\"*\"]', NULL, NULL, '2026-04-02 11:29:51', '2026-04-02 11:29:51'),
-(2012, 'App\\Models\\User', 157, 'auth-token', '9d1ca58b428d40ca4fdb82c89b0836acb6224ef033ea6b1d0ccbf73aabba198b', '[\"*\"]', NULL, NULL, '2026-04-02 11:31:36', '2026-04-02 11:31:36'),
 (2013, 'App\\Models\\User', 31, 'auth-token', '7efc1cab26a77b956916d431279088e165cf77fd100113182a40eaf86c85ca83', '[\"*\"]', NULL, NULL, '2026-04-02 11:31:54', '2026-04-02 11:31:54'),
 (2014, 'App\\Models\\User', 154, 'auth-token', '7a556dd44700f46bea2af06e7945dfff75543dfa0c976349d1c8e52bedacb1c3', '[\"*\"]', NULL, NULL, '2026-04-02 11:32:48', '2026-04-02 11:32:48'),
 (2015, 'App\\Models\\User', 150, 'auth-token', '89712df1f9cff828bd5ddbde579fef07fc67a5a030d50e99fcf2a77e69b43cae', '[\"*\"]', NULL, NULL, '2026-04-02 11:33:17', '2026-04-02 11:33:17'),
@@ -2723,7 +2614,6 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (2019, 'App\\Models\\User', 150, 'auth-token', 'ff68480bdc388497ac0f5adb88abd1ff341a2ee861344a2fd8d1e352943daaba', '[\"*\"]', NULL, NULL, '2026-04-02 11:35:54', '2026-04-02 11:35:54'),
 (2020, 'App\\Models\\User', 153, 'auth-token', '940df8146ed2d03533c5a66c7ca34c1357fe44fa7602fcbca9dd8b02097afed9', '[\"*\"]', NULL, NULL, '2026-04-02 11:37:09', '2026-04-02 11:37:09'),
 (2021, 'App\\Models\\User', 147, 'auth-token', 'f508c0d0197780d1ea55a67cab35ed6abcda4e9e13e04c3cb884880537a3e974', '[\"*\"]', NULL, NULL, '2026-04-02 11:37:46', '2026-04-02 11:37:46'),
-(2022, 'App\\Models\\User', 157, 'auth-token', 'ae6f9b546b776538ebd988af5a41fcec887dcb7aa4593fddabb486fc9e442ea9', '[\"*\"]', NULL, NULL, '2026-04-02 11:42:37', '2026-04-02 11:42:37'),
 (2023, 'App\\Models\\User', 31, 'auth-token', '221d2f83195755e1fddbf08a3e5c8340d66ce45aaf1bffe728348a7a7e629aaa', '[\"*\"]', NULL, NULL, '2026-04-02 11:43:20', '2026-04-02 11:43:20'),
 (2024, 'App\\Models\\User', 147, 'auth-token', 'fac9707a7dba0eca59d5d8ced7e6691bc394c3cfe372e86eb0080fcda24cea3c', '[\"*\"]', NULL, NULL, '2026-04-02 11:43:43', '2026-04-02 11:43:43'),
 (2025, 'App\\Models\\User', 31, 'auth-token', '9ee526567c4bcf723023c3e4968e31e559ce49e972c752969839c14e05cceb65', '[\"*\"]', NULL, NULL, '2026-04-02 11:44:10', '2026-04-02 11:44:10'),
@@ -2732,23 +2622,19 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (2028, 'App\\Models\\User', 147, 'auth-token', 'c2c74f0cfa9d006d04f9b8e1c63fdef5083626c84bbe6486dacf38a5e0ed5c7d', '[\"*\"]', NULL, NULL, '2026-04-02 11:46:35', '2026-04-02 11:46:35'),
 (2029, 'App\\Models\\User', 152, 'auth-token', '18e06c7033af7e561dc3c0c3bf8e84130247b3e76e79665c6ba147c33b2cc92d', '[\"*\"]', NULL, NULL, '2026-04-02 11:47:44', '2026-04-02 11:47:44'),
 (2030, 'App\\Models\\User', 158, 'auth-token', 'f6f92b23b35bbb6c60d22dc649a4ca0d83aca555df1a48609a9cb2159c50a2a7', '[\"*\"]', NULL, NULL, '2026-04-02 11:49:13', '2026-04-02 11:49:13'),
-(2031, 'App\\Models\\User', 150, 'auth-token', '88d416d4e6be9777f2f9cd857ec426263a4ffd0ff21163ff3b1a2ffa1427d2a0', '[\"*\"]', NULL, NULL, '2026-04-02 11:49:57', '2026-04-02 11:49:57'),
+(2031, 'App\\Models\\User', 150, 'auth-token', '88d416d4e6be9777f2f9cd857ec426263a4ffd0ff21163ff3b1a2ffa1427d2a0', '[\"*\"]', NULL, NULL, '2026-04-02 11:49:57', '2026-04-02 11:49:57');
+INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `name`, `token`, `abilities`, `last_used_at`, `expires_at`, `created_at`, `updated_at`) VALUES
 (2032, 'App\\Models\\User', 153, 'auth-token', 'cf48a27f640d52dccf1c8db3be15b5c54358ff9bab4706c276aefc882794b81a', '[\"*\"]', NULL, NULL, '2026-04-02 11:52:57', '2026-04-02 11:52:57'),
 (2033, 'App\\Models\\User', 147, 'auth-token', 'dd892773ad9b13ae1ea2d49bbc050cc7c1f371075ca61c34754b09bbe00edc46', '[\"*\"]', NULL, NULL, '2026-04-02 11:53:09', '2026-04-02 11:53:09'),
-(2034, 'App\\Models\\User', 157, 'auth-token', 'd4cfed902d0b9c4b041ce6e0bcc6b1a326c6b7c559f752320646ff87aaaed4f7', '[\"*\"]', NULL, NULL, '2026-04-02 12:07:12', '2026-04-02 12:07:12'),
-(2035, 'App\\Models\\User', 157, 'auth-token', 'b40d40634964cbcebdda3e5466930f1944b3c56a8bcbb55bbef8bcfc4379b520', '[\"*\"]', NULL, NULL, '2026-04-02 12:08:28', '2026-04-02 12:08:28'),
 (2036, 'App\\Models\\User', 31, 'auth-token', 'd37347d8e297105eb9b4194a7198f114e2eabe12d780e40fab0d44be905b120f', '[\"*\"]', NULL, NULL, '2026-04-02 12:09:02', '2026-04-02 12:09:02'),
 (2037, 'App\\Models\\User', 154, 'auth-token', '08bc972b41be65dbc71847aaac70269d188f9b6b5ee204af661bdcf4afaecbcd', '[\"*\"]', NULL, NULL, '2026-04-02 12:09:27', '2026-04-02 12:09:27'),
 (2038, 'App\\Models\\User', 147, 'auth-token', 'ccf74309dfc7084045119e4a7b7da9008d6f307ecb6d4871e672f5ddf5902121', '[\"*\"]', NULL, NULL, '2026-04-02 12:17:49', '2026-04-02 12:17:49'),
-(2039, 'App\\Models\\User', 157, 'auth-token', 'd47778e2a5459ba77077765453b59ffffa0187e85b0f2a71ccf1828c230a1622', '[\"*\"]', NULL, NULL, '2026-04-02 13:22:43', '2026-04-02 13:22:43'),
 (2040, 'App\\Models\\User', 31, 'auth-token', 'e53cbcf66eeb6ac8f77c5f49d11b5a2e14aaaf96780f4202a42239a629e86346', '[\"*\"]', NULL, NULL, '2026-04-02 13:24:14', '2026-04-02 13:24:14'),
 (2041, 'App\\Models\\User', 154, 'auth-token', '60463b56f050b0259614df1fcf1dd63ae3ba2e6f6563d89ff96a2914ad0839bd', '[\"*\"]', NULL, NULL, '2026-04-02 13:25:03', '2026-04-02 13:25:03'),
 (2042, 'App\\Models\\User', 150, 'auth-token', 'bddc036b6fd5926de8582f5562b23d417cac2ebbcdc3d6250f60f63ecebbee85', '[\"*\"]', NULL, NULL, '2026-04-02 13:26:30', '2026-04-02 13:26:30'),
 (2043, 'App\\Models\\User', 147, 'auth-token', '1296713e001a1ac6a0a2edeb542dcc3991a64b712b493142530b909eeb2c1007', '[\"*\"]', NULL, NULL, '2026-04-02 13:27:34', '2026-04-02 13:27:34'),
-(2044, 'App\\Models\\User', 157, 'auth-token', 'd26aaf36698fdcc42cbfcf989e2ba761a14f70cffed5a1be775c5a8491d690af', '[\"*\"]', NULL, NULL, '2026-04-02 13:34:37', '2026-04-02 13:34:37'),
 (2045, 'App\\Models\\User', 31, 'auth-token', '777e8b59d48c70bb68df3b0fcf285f89713af6c4ad3ce61f9a8bfc30dfbbd701', '[\"*\"]', NULL, NULL, '2026-04-02 13:36:33', '2026-04-02 13:36:33'),
 (2046, 'App\\Models\\User', 154, 'auth-token', 'd89b7c49af10b3bfab102f2f102363b6bb8f34235b67dced9bcfe4d0e81b1920', '[\"*\"]', NULL, NULL, '2026-04-02 13:38:02', '2026-04-02 13:38:02'),
-(2047, 'App\\Models\\User', 157, 'auth-token', '2a82f6a9f895df01b64bffaf0ca2caffb0452144c8eea2086845edc8072a0486', '[\"*\"]', NULL, NULL, '2026-04-02 13:39:35', '2026-04-02 13:39:35'),
 (2048, 'App\\Models\\User', 31, 'auth-token', 'eb797ee2c559699421516ad3f8e796c59dceea02ba211ef366fef9896c20a631', '[\"*\"]', NULL, NULL, '2026-04-02 13:40:57', '2026-04-02 13:40:57'),
 (2049, 'App\\Models\\User', 154, 'auth-token', 'fa0ad3b47de5dd8dcfd98a98b1123004538a9e06e5a16bb0d0d7bc9c9d7c4d38', '[\"*\"]', NULL, NULL, '2026-04-02 13:44:05', '2026-04-02 13:44:05'),
 (2050, 'App\\Models\\User', 150, 'auth-token', 'f674497f77b086d680c5d378471e273e733db57f4f6b4382ae582436478dc98b', '[\"*\"]', NULL, NULL, '2026-04-02 13:44:46', '2026-04-02 13:44:46'),
@@ -2765,14 +2651,11 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (2061, 'App\\Models\\User', 150, 'auth-token', 'f6bf4dc2a6df6fde1a014618dfd61579522041aefcf65f0b893ac484d4afbc6d', '[\"*\"]', NULL, NULL, '2026-04-02 13:56:26', '2026-04-02 13:56:26'),
 (2062, 'App\\Models\\User', 151, 'auth-token', 'eaf3093ee6de3a3062b5791f8d80252bfc1099cf5eb57104335eec12ef52b77d', '[\"*\"]', NULL, NULL, '2026-04-02 13:57:13', '2026-04-02 13:57:13'),
 (2063, 'App\\Models\\User', 154, 'auth-token', 'a170441c4afdda11771f8c20804f6966e32f32a4babb7fdfdf3756da476ec300', '[\"*\"]', NULL, NULL, '2026-04-02 13:57:52', '2026-04-02 13:57:52'),
-(2064, 'App\\Models\\User', 157, 'auth-token', 'b28a346bb97bd04929edb76927290d774de67d16d81cdff2cdfc575a5b7f9444', '[\"*\"]', NULL, NULL, '2026-04-02 13:58:19', '2026-04-02 13:58:19'),
 (2065, 'App\\Models\\User', 147, 'auth-token', '88cf752e4dde392703f716b5bc545c1ec07ffe6abb82e0a0f842fd42cb15324e', '[\"*\"]', NULL, NULL, '2026-04-02 13:58:36', '2026-04-02 13:58:36'),
 (2066, 'App\\Models\\User', 153, 'auth-token', '92346ab3f3499e8105119fccc7022964741ef9e28c18a2736d2d266465e75886', '[\"*\"]', NULL, NULL, '2026-04-02 13:59:34', '2026-04-02 13:59:34'),
 (2067, 'App\\Models\\User', 153, 'auth-token', 'b22e70e52ad7a7a6e83063e499de53c2f7382de70fe9485f65d831ab0a3794c8', '[\"*\"]', NULL, NULL, '2026-04-02 14:05:33', '2026-04-02 14:05:33'),
-(2068, 'App\\Models\\User', 157, 'auth-token', '65240d53967cf47ed3e00a48aef1cd23e608e85e7ae76f0e6708102449a72c5c', '[\"*\"]', NULL, NULL, '2026-04-02 14:11:25', '2026-04-02 14:11:25'),
 (2069, 'App\\Models\\User', 31, 'auth-token', '19f2377e9f258717998b66a3ad1e845d05ef2c6cdfb8379978ec690d85ba79f6', '[\"*\"]', NULL, NULL, '2026-04-02 14:12:42', '2026-04-02 14:12:42'),
 (2070, 'App\\Models\\User', 154, 'auth-token', 'b52f25c76008da0166eb34bd3a94b90316353be138a47a446eef004090ff3934', '[\"*\"]', NULL, NULL, '2026-04-02 14:13:17', '2026-04-02 14:13:17'),
-(2071, 'App\\Models\\User', 157, 'auth-token', '112d4fbfa0fbb8e59b8f71cf53602b1a5139843296202f7bdb95007940822376', '[\"*\"]', NULL, NULL, '2026-04-02 14:14:42', '2026-04-02 14:14:42'),
 (2072, 'App\\Models\\User', 31, 'auth-token', '8f87e6a5dc5408934840c19ee82e9543af0d16e9de9bdda92445c56f03370961', '[\"*\"]', NULL, NULL, '2026-04-02 14:15:42', '2026-04-02 14:15:42'),
 (2073, 'App\\Models\\User', 154, 'auth-token', '05f6eab53b3165920459743669c72d3147a85067fcb00f839b140e455a8fb39a', '[\"*\"]', NULL, NULL, '2026-04-02 14:16:27', '2026-04-02 14:16:27'),
 (2074, 'App\\Models\\User', 150, 'auth-token', '8931f289bbd0a0c0b6301ff771f9f5eed2de69d269e885fd37b936863de803e3', '[\"*\"]', NULL, NULL, '2026-04-02 14:17:05', '2026-04-02 14:17:05'),
@@ -2788,7 +2671,6 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (2084, 'App\\Models\\User', 150, 'auth-token', '50e76773f9c87392619f8d17ed60c8e8ef02a2eb9d5f951facee6a14c8a956c9', '[\"*\"]', NULL, NULL, '2026-04-02 14:33:15', '2026-04-02 14:33:15'),
 (2085, 'App\\Models\\User', 151, 'auth-token', '03916aa51edf3cd5ac6ad93b8a8b1326190ede466d9c7d8a9985ddf0c8b35f67', '[\"*\"]', NULL, NULL, '2026-04-02 14:34:11', '2026-04-02 14:34:11'),
 (2086, 'App\\Models\\User', 153, 'auth-token', '061a0ba4b2f2da8f90e6a131481804fc3bfb1bfc72f1a601d2daa5cbfe3b3124', '[\"*\"]', NULL, NULL, '2026-04-02 14:34:45', '2026-04-02 14:34:45'),
-(2087, 'App\\Models\\User', 157, 'auth-token', '66f42b2e03f9acc1a775538f41969c6f24eec51c578e036fc7f0845112838049', '[\"*\"]', NULL, NULL, '2026-04-02 14:47:38', '2026-04-02 14:47:38'),
 (2088, 'App\\Models\\User', 31, 'auth-token', 'e3643418ae9e5ae4da36921f36b483eca41b80d734430af881f98a281f258bc4', '[\"*\"]', NULL, NULL, '2026-04-02 14:49:01', '2026-04-02 14:49:01'),
 (2089, 'App\\Models\\User', 154, 'auth-token', 'de80ad450061acf0c4e4fd051ad88f8df1b8897f6e2ac33ee4a2d32ab955c25d', '[\"*\"]', NULL, NULL, '2026-04-02 14:49:42', '2026-04-02 14:49:42'),
 (2090, 'App\\Models\\User', 150, 'auth-token', '66ea4eaa5f0d5c2ca927e1bdfc9503cb085a120eac17d4874b1f57cec1eb56ff', '[\"*\"]', NULL, NULL, '2026-04-02 14:50:24', '2026-04-02 14:50:24'),
@@ -2831,22 +2713,13 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (2127, 'App\\Models\\User', 182, 'auth-token', 'cc6d56d3faad5c75a9dfac5a8a20023b23e16fff4318483427aa0eb3dfa0e49b', '[\"*\"]', NULL, NULL, '2026-04-03 15:02:17', '2026-04-03 15:02:17'),
 (2128, 'App\\Models\\User', 182, 'auth-token', '13c191305644a322c3456120c5af05b300364ef4d7368268c443f99aab821f87', '[\"*\"]', NULL, NULL, '2026-04-03 15:02:57', '2026-04-03 15:02:57'),
 (2129, 'App\\Models\\User', 147, 'auth-token', 'a23012575adc5de4a9116d988af542e01521dc286d91727a12b8216ae3a2ee22', '[\"*\"]', NULL, NULL, '2026-04-03 15:09:38', '2026-04-03 15:09:38'),
-(2130, 'App\\Models\\User', 148, 'auth-token', '89e81c22e7a5b243f1bdfea2f3e900d68b432cf6770eefff40f422cac8495784', '[\"*\"]', '2026-04-03 15:18:31', NULL, '2026-04-03 15:17:11', '2026-04-03 15:18:31'),
 (2131, 'App\\Models\\User', 182, 'auth-token', 'afad6d27cadf8392aacf093bc9fb68844bcf4c7a2ccc8765960e186006ec724f', '[\"*\"]', NULL, NULL, '2026-04-03 15:18:45', '2026-04-03 15:18:45'),
 (2132, 'App\\Models\\User', 31, 'auth-token', '4c6602c287164938613e6bcb1faa80e1171ff900c5b70fa76f7243098d4f0556', '[\"*\"]', NULL, NULL, '2026-04-03 15:27:57', '2026-04-03 15:27:57'),
-(2133, 'App\\Models\\User', 148, 'auth-token', '9b24a84234bd39365a6053d69d0bff563a61919fe0d7326da2a542c3bcf978fd', '[\"*\"]', NULL, NULL, '2026-04-03 15:44:49', '2026-04-03 15:44:49'),
-(2134, 'App\\Models\\User', 159, 'auth-token', '6f719cbe50a1fdf253628542460cc3cf2a2cb76a42f89318dbf2b2c55c5e5d0c', '[\"*\"]', NULL, NULL, '2026-04-03 15:57:02', '2026-04-03 15:57:02'),
 (2135, 'App\\Models\\User', 28, 'auth-token', '60818938e9305198de533fe35bc388fdf0d0f6045adf438c3f4013af3be6d0d1', '[\"*\"]', NULL, NULL, '2026-04-03 16:08:15', '2026-04-03 16:08:15'),
 (2136, 'App\\Models\\User', 147, 'auth-token', 'ff284a9a60389df57706342b08ee444738fdbe7f5febaecf1cd07cb9f34d3fc3', '[\"*\"]', NULL, NULL, '2026-04-03 16:12:57', '2026-04-03 16:12:57'),
-(2137, 'App\\Models\\User', 148, 'auth-token', 'e4b992bc8ee2359f7b1441479900ba3b4158b3685278c2b64ae1c0c1072cdeb3', '[\"*\"]', NULL, NULL, '2026-04-03 16:37:07', '2026-04-03 16:37:07'),
 (2138, 'App\\Models\\User', 28, 'auth-token', '186277d54bff5f766cc8551ec38b9c5d732e20c011a1e6439ff9919993558036', '[\"*\"]', NULL, NULL, '2026-04-03 16:55:05', '2026-04-03 16:55:05'),
 (2139, 'App\\Models\\User', 153, 'auth-token', 'fbedae61d0b00bdc0f706057028b0d0a7389c8e36933045ffea7fc9ebf300d92', '[\"*\"]', NULL, NULL, '2026-04-03 17:11:44', '2026-04-03 17:11:44'),
-(2140, 'App\\Models\\User', 148, 'auth-token', 'e8e62918977f2b86fdc3dd67fee3ca50f8fdc7cf12a5f9f5537949c1cfc62fb5', '[\"*\"]', NULL, NULL, '2026-04-03 17:13:06', '2026-04-03 17:13:06'),
-(2141, 'App\\Models\\User', 159, 'auth-token', 'e3de021fdb6d7cbd9058cdd43be57afecfc8a490afedd32b6ca8244c72c34b60', '[\"*\"]', NULL, NULL, '2026-04-03 17:23:32', '2026-04-03 17:23:32'),
 (2142, 'App\\Models\\User', 28, 'auth-token', '5a873f5399fbec2a638587ca2de4a22bef3056f9c3b5bdc1a1275050cdfa7d17', '[\"*\"]', NULL, NULL, '2026-04-03 17:25:22', '2026-04-03 17:25:22'),
-(2143, 'App\\Models\\User', 148, 'auth-token', '1b8485acbfab0e1a4fc5fa526b1fcd196b04335dca1be592706c187065e37c6e', '[\"*\"]', NULL, NULL, '2026-04-03 17:35:18', '2026-04-03 17:35:18'),
-(2144, 'App\\Models\\User', 159, 'auth-token', '85923952807eca771cccb29fccefab63c741c56d9ccdf546a645c452c986b265', '[\"*\"]', NULL, NULL, '2026-04-03 17:59:06', '2026-04-03 17:59:06'),
-(2145, 'App\\Models\\User', 159, 'auth-token', 'f54419970dde9bb01fd7084b46c3a53e166631cf74a16dfb8b031595e2fcc885', '[\"*\"]', NULL, NULL, '2026-04-03 18:08:17', '2026-04-03 18:08:17'),
 (2146, 'App\\Models\\User', 28, 'auth-token', '5363a04d1db310e9a69f745dc2085502e35aa594ef52d03a4d6731ce9f3627fc', '[\"*\"]', NULL, NULL, '2026-04-03 18:11:51', '2026-04-03 18:11:51'),
 (2147, 'App\\Models\\User', 31, 'auth-token', '09c9f3734c832e116aee623dc32d1ee8f5f201d8c9b7a50c2a1017c87b1b1c5c', '[\"*\"]', NULL, NULL, '2026-04-03 18:15:17', '2026-04-03 18:15:17'),
 (2148, 'App\\Models\\User', 31, 'auth-token', 'cf17ceaac8864062c5f30984a4ae456aa31846dadedd7a00e001c19b2b15c59f', '[\"*\"]', NULL, NULL, '2026-04-03 18:21:12', '2026-04-03 18:21:12'),
@@ -2855,8 +2728,6 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (2151, 'App\\Models\\User', 28, 'auth-token', '44caf5f2727c65500e1ed6d3087c81188429dc4e6639d8e4061b5697bb32a91e', '[\"*\"]', NULL, NULL, '2026-04-03 18:23:35', '2026-04-03 18:23:35'),
 (2152, 'App\\Models\\User', 31, 'auth-token', '50e1af7c6ca90b30353de34e9fafa969ef460b61fba6df78b9e91a31b02c7492', '[\"*\"]', NULL, NULL, '2026-04-03 18:27:19', '2026-04-03 18:27:19'),
 (2153, 'App\\Models\\User', 31, 'auth-token', '8c4ac3e0ceff67f0e0711b29ba8ec63e741541fb24b317f01b450fe664a94183', '[\"*\"]', NULL, NULL, '2026-04-03 18:30:05', '2026-04-03 18:30:05'),
-(2154, 'App\\Models\\User', 148, 'auth-token', 'c656ea7f64111b41d6fc6f2f593ffc1a7a509b098cb78e178a9955372a7476b2', '[\"*\"]', '2026-04-03 18:44:36', NULL, '2026-04-03 18:33:52', '2026-04-03 18:44:36'),
-(2155, 'App\\Models\\User', 148, 'auth-token', '5f46fccaf7c09a7eb3fd90b0264bba7a587e2cfbd7005799c49fa9eb1df0b7bb', '[\"*\"]', NULL, NULL, '2026-04-03 18:44:51', '2026-04-03 18:44:51'),
 (2156, 'App\\Models\\User', 149, 'auth-token', '9d6a470482c6f333ee5e21fd6efca1d2543a2c1f1277493454c6e53fea1b9412', '[\"*\"]', NULL, NULL, '2026-04-04 07:13:49', '2026-04-04 07:13:49'),
 (2157, 'App\\Models\\User', 153, 'auth-token', '65acb0c4fd7a90197711302f2d2b30a6822a4aa423748ffb3371439781c76ed3', '[\"*\"]', NULL, NULL, '2026-04-04 07:15:07', '2026-04-04 07:15:07'),
 (2158, 'App\\Models\\User', 149, 'auth-token', '8b77c171b41a232af89cd07217cccba3ffd6833ff761bc879045407ebc5666b6', '[\"*\"]', NULL, NULL, '2026-04-04 07:15:54', '2026-04-04 07:15:54'),
@@ -2886,30 +2757,21 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (2182, 'App\\Models\\User', 150, 'auth-token', 'fd71720befedf7b09e8d80c8506a4cfd0718bf29d0b89b8f76da28a633b4fbd2', '[\"*\"]', NULL, NULL, '2026-04-04 07:48:23', '2026-04-04 07:48:23'),
 (2183, 'App\\Models\\User', 149, 'auth-token', '41f2a060bdc3741a19f14c7fa5e6ed2a2f9824fa4f5d07b2de0d8f114d7d8dc6', '[\"*\"]', NULL, NULL, '2026-04-04 07:49:16', '2026-04-04 07:49:16'),
 (2184, 'App\\Models\\User', 150, 'auth-token', 'df61146ee14aae99fe41fd6e69627c833cac3770a065b1a801c9eccf17ed1904', '[\"*\"]', NULL, NULL, '2026-04-04 07:50:28', '2026-04-04 07:50:28'),
-(2185, 'App\\Models\\User', 151, 'auth-token', '3d525dd70aa39ca689315c4c7b011cf734b2e85e4361a3119b73afd5ad284808', '[\"*\"]', NULL, NULL, '2026-04-04 07:50:58', '2026-04-04 07:50:58');
-INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `name`, `token`, `abilities`, `last_used_at`, `expires_at`, `created_at`, `updated_at`) VALUES
+(2185, 'App\\Models\\User', 151, 'auth-token', '3d525dd70aa39ca689315c4c7b011cf734b2e85e4361a3119b73afd5ad284808', '[\"*\"]', NULL, NULL, '2026-04-04 07:50:58', '2026-04-04 07:50:58'),
 (2186, 'App\\Models\\User', 153, 'auth-token', '73d276c3772ba00a0d44f288db5e2de82ebf7e4a833bbee5ff8cacb1b580abb9', '[\"*\"]', NULL, NULL, '2026-04-04 07:51:22', '2026-04-04 07:51:22'),
 (2187, 'App\\Models\\User', 149, 'auth-token', '5d69a754c41f174dccce4e85b69e33985d14752dbdb78c09c18a1e06d19dc94e', '[\"*\"]', NULL, NULL, '2026-04-04 07:52:10', '2026-04-04 07:52:10'),
-(2188, 'App\\Models\\User', 148, 'auth-token', '0c5aac029ff868894ed23bf3667c7c7424dccb77cc752cc2b7dd1436036bdd53', '[\"*\"]', NULL, NULL, '2026-04-04 07:56:43', '2026-04-04 07:56:43'),
-(2189, 'App\\Models\\User', 148, 'auth-token', 'cf55bc5ad378ac6998a246d5b87517ce44c883ff6b4cba08dc4acde47e9ed9e5', '[\"*\"]', NULL, NULL, '2026-04-04 09:12:21', '2026-04-04 09:12:21'),
 (2190, 'App\\Models\\User', 184, 'auth-token', '42dda13b7076163b4adc9d502a04a5d46633aa3f2fd3d4361a737eb6dedc82d5', '[\"*\"]', NULL, NULL, '2026-04-04 09:20:55', '2026-04-04 09:20:55'),
-(2191, 'App\\Models\\User', 148, 'auth-token', 'a18bbf23e175825187424195c170cce6068c625b21434a1faa1e20293871226c', '[\"*\"]', NULL, NULL, '2026-04-04 09:37:35', '2026-04-04 09:37:35'),
 (2192, 'App\\Models\\User', 185, 'auth-token', 'b7f35ea7158c5edde81a0ad3068f6bcfbc7944bd60b6a858f30593d7b57a46fd', '[\"*\"]', NULL, NULL, '2026-04-04 10:21:42', '2026-04-04 10:21:42'),
-(2193, 'App\\Models\\User', 148, 'auth-token', '7facd34486d32ab64a22e8c2a55d624be3202755ef34fa888eb96d4480d0d2c5', '[\"*\"]', NULL, NULL, '2026-04-04 10:29:16', '2026-04-04 10:29:16'),
 (2194, 'App\\Models\\User', 187, 'auth-token', 'e15baa675caf5fb0db6ffa968e8d91c48141febd71cc98fc09aea2e119a80d96', '[\"*\"]', NULL, NULL, '2026-04-04 10:51:23', '2026-04-04 10:51:23'),
-(2195, 'App\\Models\\User', 148, 'auth-token', '95b20251682ca406c955df5e5f85dc2746cd560aeccc4fc233f534058d923db6', '[\"*\"]', NULL, NULL, '2026-04-04 10:55:46', '2026-04-04 10:55:46'),
 (2196, 'App\\Models\\User', 28, 'auth-token', '4102ad4eb56b5c1b2733a757e4d17200d9cbfa5014e5a9686b3f60fe641536a1', '[\"*\"]', NULL, NULL, '2026-04-04 10:59:14', '2026-04-04 10:59:14'),
 (2197, 'App\\Models\\User', 187, 'auth-token', 'df2a3429f2d1c4b6cd71ae975b4062c44b9235bb1ab5ee7e107fdb593c9b92e9', '[\"*\"]', NULL, NULL, '2026-04-04 11:01:06', '2026-04-04 11:01:06'),
-(2198, 'App\\Models\\User', 157, 'auth-token', '52b8b6841924fe139c97072296fe6a1f1d20ce3e1698c5984dc2f4660b6eb63d', '[\"*\"]', NULL, NULL, '2026-04-04 11:31:02', '2026-04-04 11:31:02'),
 (2199, 'App\\Models\\User', 187, 'auth-token', 'e99386c9b1a14ba1696e452ba263e30938b887cf030f9672b3a458a6e5f8cc35', '[\"*\"]', NULL, NULL, '2026-04-04 12:17:56', '2026-04-04 12:17:56'),
 (2200, 'App\\Models\\User', 147, 'auth-token', '501d92ae5644ecb17816982d1cb5b7a285844ad9cf32d066cd82d3bfd449cc89', '[\"*\"]', NULL, NULL, '2026-04-04 12:19:13', '2026-04-04 12:19:13'),
 (2201, 'App\\Models\\User', 28, 'auth-token', 'ec3c237170a3caa47c9ecf8a49fb4f2f86eb9d39baa713c2cf6b4f7668dfdfb6', '[\"*\"]', NULL, NULL, '2026-04-04 12:24:59', '2026-04-04 12:24:59'),
-(2202, 'App\\Models\\User', 148, 'auth-token', '72d05c30cbb4030764653ac694fbb57950d7d6fe06aa3982d947fee0d816dd42', '[\"*\"]', NULL, NULL, '2026-04-04 12:25:57', '2026-04-04 12:25:57'),
 (2203, 'App\\Models\\User', 147, 'auth-token', '126df05472c1c26cc069198aed5dd41f7472ad4f64ce9c262bfb5c47fad143d3', '[\"*\"]', NULL, NULL, '2026-04-04 13:02:10', '2026-04-04 13:02:10'),
 (2204, 'App\\Models\\User', 150, 'auth-token', 'c2defb657d3c155d9e27021195e8b03f0bba1ad2f97e3edd54e61d96ea75f893', '[\"*\"]', NULL, NULL, '2026-04-04 13:03:32', '2026-04-04 13:03:32'),
 (2205, 'App\\Models\\User', 154, 'auth-token', '7baf2ff659f4abb1e3edebb697fe0b0ee337bc067e1bb2923f4b3148c6405c26', '[\"*\"]', NULL, NULL, '2026-04-04 13:09:57', '2026-04-04 13:09:57'),
 (2206, 'App\\Models\\User', 151, 'auth-token', '58e3fff9722428427c3cc416f156766010e72b9b4fed9b776a03cac04eb59444', '[\"*\"]', NULL, NULL, '2026-04-04 13:12:06', '2026-04-04 13:12:06'),
-(2207, 'App\\Models\\User', 148, 'auth-token', '345c8de0916211e60b133bd08dede8e5ec4ffde054102bc15e9539e9bad24dcc', '[\"*\"]', NULL, NULL, '2026-04-04 13:24:09', '2026-04-04 13:24:09'),
 (2208, 'App\\Models\\User', 187, 'auth-token', '57877470d09ae4574dc788ef617c18144056134f52fc21dcf393c253b20ab663', '[\"*\"]', NULL, NULL, '2026-04-04 13:24:37', '2026-04-04 13:24:37'),
 (2209, 'App\\Models\\User', 28, 'auth-token', '5b4d423194b6df53ace28f4f7117d792877c8d1f850d6198116dc38969c5c22f', '[\"*\"]', NULL, NULL, '2026-04-04 13:24:58', '2026-04-04 13:24:58'),
 (2210, 'App\\Models\\User', 28, 'auth-token', 'c6bfe9922359db5b586a3e55a4fc3cbe61ed25464bc22daac14373adee48d86a', '[\"*\"]', NULL, NULL, '2026-04-04 13:37:14', '2026-04-04 13:37:14'),
@@ -2940,7 +2802,6 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (2235, 'App\\Models\\User', 149, 'auth-token', 'e485d4d2979e052faf4d73950f2088461a2f32ca6aefd40048a03218e4ad4f99', '[\"*\"]', NULL, NULL, '2026-04-04 14:39:35', '2026-04-04 14:39:35'),
 (2236, 'App\\Models\\User', 150, 'auth-token', 'a14cccbf817046b01ed58ecd9794bdd3c2d847302bf8379a282223f2e34cd8e2', '[\"*\"]', NULL, NULL, '2026-04-04 14:40:10', '2026-04-04 14:40:10'),
 (2237, 'App\\Models\\User', 151, 'auth-token', 'b59ebcb5b7041d7cc71f4ae9f6e57867caeefdf1fb27471eab7c50f75a12d5e7', '[\"*\"]', NULL, NULL, '2026-04-04 14:40:41', '2026-04-04 14:40:41'),
-(2238, 'App\\Models\\User', 157, 'auth-token', 'fff4c7c4ee625de8751151ef29e9d066c501777b0ba60221b988b1be3e41e831', '[\"*\"]', NULL, NULL, '2026-04-04 16:33:47', '2026-04-04 16:33:47'),
 (2239, 'App\\Models\\User', 147, 'auth-token', '12ddb9bb1881f5e49b303449e45ca395dd9355ee35005e2573799f490b6444c6', '[\"*\"]', NULL, NULL, '2026-04-04 17:03:43', '2026-04-04 17:03:43'),
 (2240, 'App\\Models\\User', 28, 'auth-token', 'facd8647123ce4866efc7164d06c0bca78b9f5f48fa0501ae554f01f9b37216e', '[\"*\"]', NULL, NULL, '2026-04-04 17:04:59', '2026-04-04 17:04:59'),
 (2241, 'App\\Models\\User', 28, 'auth-token', '451cc4bede3b348880b53faa37e1d8ec6dbb5613b96bd8dfe267ba825a5992bc', '[\"*\"]', NULL, NULL, '2026-04-04 17:10:17', '2026-04-04 17:10:17'),
@@ -2969,28 +2830,17 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (2264, 'App\\Models\\User', 147, 'auth-token', '4431b5e9b8d1a5327c2ae7548f0d4f7310482a29b4e2f04f714ec72018779d88', '[\"*\"]', NULL, NULL, '2026-04-04 21:54:26', '2026-04-04 21:54:26'),
 (2265, 'App\\Models\\User', 28, 'auth-token', '5e551f43b45e8523489f5a6fb2e2e18967d7b9dd229cb51910039c252d33bba9', '[\"*\"]', NULL, NULL, '2026-04-04 22:38:14', '2026-04-04 22:38:14'),
 (2266, 'App\\Models\\User', 151, 'auth-token', 'b58aa626d95e080fcfcb7bf99a594a0209f13a5b7d1f8e3235eea44a2688a90f', '[\"*\"]', NULL, NULL, '2026-04-04 22:45:48', '2026-04-04 22:45:48'),
-(2267, 'App\\Models\\User', 148, 'auth-token', '18cfdaea5fb6b977b32793436155f72e26603105fe8b9ccf618ea67a5683dbb2', '[\"*\"]', NULL, NULL, '2026-04-04 23:24:32', '2026-04-04 23:24:32'),
 (2268, 'App\\Models\\User', 28, 'auth-token', 'cac795c42e23650fcb7953db741a1b608d841b2b5ace488970c8939900e4fe14', '[\"*\"]', NULL, NULL, '2026-04-04 23:40:47', '2026-04-04 23:40:47'),
 (2269, 'App\\Models\\User', 153, 'auth-token', 'c9c586cde622d28afd38911c1c65b12e5a077a392e2e13637f1d613b632b0805', '[\"*\"]', NULL, NULL, '2026-04-05 01:15:38', '2026-04-05 01:15:38'),
-(2270, 'App\\Models\\User', 148, 'auth-token', 'e7507a820dc8fa947420b4f6cff4a8648d3acd9723c5ea3bb63c3ae505666b12', '[\"*\"]', NULL, NULL, '2026-04-05 01:20:06', '2026-04-05 01:20:06'),
-(2271, 'App\\Models\\User', 148, 'auth-token', 'f10867a5fa4c4dc640f05c6b8ff28b49deeda361b61297b9ca08c6255c46b393', '[\"*\"]', NULL, NULL, '2026-04-05 01:21:10', '2026-04-05 01:21:10'),
-(2272, 'App\\Models\\User', 157, 'auth-token', '7253825a59b66a8464337d54cbe32da2417003cd3de1f8fbbd9fa8af9dd204ba', '[\"*\"]', NULL, NULL, '2026-04-05 01:21:57', '2026-04-05 01:21:57'),
 (2273, 'App\\Models\\User', 28, 'auth-token', '99f6bd6491769a5607610791d8fe98fca0345196e00523f16d49a1333878866e', '[\"*\"]', NULL, NULL, '2026-04-05 01:24:16', '2026-04-05 01:24:16'),
-(2274, 'App\\Models\\User', 157, 'auth-token', '29a5a5762ef036654af688a34180b3716553ebfff21a8701b51746731a0bf886', '[\"*\"]', NULL, NULL, '2026-04-05 01:31:08', '2026-04-05 01:31:08'),
-(2275, 'App\\Models\\User', 157, 'auth-token', '6a82fe6ad28f8e74b73610160216dc4f0adc807b92e4f7b90e4f254f7f297614', '[\"*\"]', NULL, NULL, '2026-04-05 01:36:24', '2026-04-05 01:36:24'),
 (2276, 'App\\Models\\User', 28, 'auth-token', 'e4fe787caee6a057f6a29c29e10ee92c98bacdce48f26b266e6f825d01c1054d', '[\"*\"]', NULL, NULL, '2026-04-05 01:37:22', '2026-04-05 01:37:22'),
-(2277, 'App\\Models\\User', 148, 'auth-token', 'a5b6cef7e17439a6d0c90ee55a08f5f32ea6fcba0df674dec274e1a770d97d2e', '[\"*\"]', NULL, NULL, '2026-04-05 01:42:35', '2026-04-05 01:42:35'),
 (2278, 'App\\Models\\User', 28, 'auth-token', '075853b999f0ce903e72d1482a543f9de925ed1ef25de31416e5cdc0361af088', '[\"*\"]', NULL, NULL, '2026-04-05 01:43:04', '2026-04-05 01:43:04'),
 (2279, 'App\\Models\\User', 151, 'auth-token', '922604947bb586c0f16af000ebd40ca30aff4ffb329090c97c12021a9e85a5e0', '[\"*\"]', NULL, NULL, '2026-04-05 01:44:54', '2026-04-05 01:44:54'),
 (2280, 'App\\Models\\User', 28, 'auth-token', '4339a1d139f472535b820102a1844ed5fe1a6a133dad0129a4978a575fbda257', '[\"*\"]', NULL, NULL, '2026-04-05 01:51:45', '2026-04-05 01:51:45'),
-(2281, 'App\\Models\\User', 159, 'auth-token', '2824041f316d8621484c73010d15ac5d3aa82a7c2a5d4419cfbf1ec9eed20281', '[\"*\"]', NULL, NULL, '2026-04-05 07:08:23', '2026-04-05 07:08:23'),
-(2282, 'App\\Models\\User', 159, 'auth-token', 'ed8cf3275993ac679466fedbd4dff67da8ec335f6310e2b798d644ff760a4d2b', '[\"*\"]', NULL, NULL, '2026-04-05 07:17:17', '2026-04-05 07:17:17'),
 (2283, 'App\\Models\\User', 28, 'auth-token', 'c34252d8115ac1530142a7bcdb5f8b9dde71457a3cd77e3913e0338f92bb3912', '[\"*\"]', NULL, NULL, '2026-04-05 07:19:00', '2026-04-05 07:19:00'),
 (2284, 'App\\Models\\User', 187, 'auth-token', 'cca87e8c35d66289ab41146ac4d055429e54c1215190987d6c4252b0817bab48', '[\"*\"]', NULL, NULL, '2026-04-05 07:23:48', '2026-04-05 07:23:48'),
 (2285, 'App\\Models\\User', 162, 'auth-token', '42ac4177c157ac3ca1d42a0a5791df16ae972abf25a3b76189a1ce99c6cd771a', '[\"*\"]', NULL, NULL, '2026-04-05 07:26:41', '2026-04-05 07:26:41'),
-(2286, 'App\\Models\\User', 161, 'auth-token', '529a03b9aa7642b0276ea95a5afe9e129adae7d267798299b8d0cc3856e43b5b', '[\"*\"]', NULL, NULL, '2026-04-05 07:27:48', '2026-04-05 07:27:48'),
 (2287, 'App\\Models\\User', 160, 'auth-token', '4bccb2a59ad5b2d66e9d2bb0a4e395a1c925fe074ae4a88b2a0d3451ef695450', '[\"*\"]', NULL, NULL, '2026-04-05 07:29:47', '2026-04-05 07:29:47'),
-(2288, 'App\\Models\\User', 159, 'auth-token', '9af949f20f522eb7af1dd94f148d635dc9b64c256085fa6d18053a037e1192fc', '[\"*\"]', NULL, NULL, '2026-04-05 07:33:03', '2026-04-05 07:33:03'),
 (2289, 'App\\Models\\User', 28, 'auth-token', '2125bd7784a81a79120cb71ecba67d6913b3999375222b6e8b4c29b7e5f7191b', '[\"*\"]', NULL, NULL, '2026-04-05 07:33:34', '2026-04-05 07:33:34'),
 (2290, 'App\\Models\\User', 28, 'auth-token', '2cd54ffba4655d3ff73e892e74a39f098c824edb54bc8118ac0ec807a247dc55', '[\"*\"]', NULL, NULL, '2026-04-05 07:41:10', '2026-04-05 07:41:10'),
 (2291, 'App\\Models\\User', 193, 'auth-token', 'dde12743ce798e239bf7d1dd83ac1ffe430df82df6659038e96813c6d1280043', '[\"*\"]', NULL, NULL, '2026-04-05 07:41:59', '2026-04-05 07:41:59'),
@@ -2998,7 +2848,6 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (2293, 'App\\Models\\User', 154, 'auth-token', '8c0dad0958b502461ab97ac877efb23b091f06313ff827b24f5f64f13def0e9c', '[\"*\"]', NULL, NULL, '2026-04-05 07:43:57', '2026-04-05 07:43:57'),
 (2294, 'App\\Models\\User', 150, 'auth-token', '33b9bb956cb495c1b4bf19aedcb28edb3ce1190bca364626e86757bd8a71ac7d', '[\"*\"]', NULL, NULL, '2026-04-05 07:44:24', '2026-04-05 07:44:24'),
 (2295, 'App\\Models\\User', 152, 'auth-token', 'b6e13f0bfbde982d6967cac6ec9d8c05cdeb402aad1e37604588842799f722c8', '[\"*\"]', NULL, NULL, '2026-04-05 07:44:42', '2026-04-05 07:44:42'),
-(2296, 'App\\Models\\User', 159, 'auth-token', '54beddffb8a9f1b0e25327da9f23fc6186cf37eaa5f50733b15104c18f5124f9', '[\"*\"]', NULL, NULL, '2026-04-05 07:49:38', '2026-04-05 07:49:38'),
 (2297, 'App\\Models\\User', 153, 'auth-token', '42b515a81e38886f8355548656fe8f0e435013be22d323b6f5f61ec49604f712', '[\"*\"]', NULL, NULL, '2026-04-05 07:51:27', '2026-04-05 07:51:27'),
 (2298, 'App\\Models\\User', 150, 'auth-token', '47c84c3a076da366176e188d3e342f3a375257fc9ac34de9a756692f86bc32a1', '[\"*\"]', NULL, NULL, '2026-04-05 07:54:07', '2026-04-05 07:54:07'),
 (2299, 'App\\Models\\User', 149, 'auth-token', '208272c16f6fb34a0cc6ee9b4d753ce89dd49a7c409496e223856b078d8a189d', '[\"*\"]', NULL, NULL, '2026-04-05 07:54:39', '2026-04-05 07:54:39'),
@@ -3016,13 +2865,8 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (2311, 'App\\Models\\User', 158, 'auth-token', '5a52e9bf6c0db58d03660b501f2a3aecfecb68de1911c48b64e2f1869a4cd066', '[\"*\"]', NULL, NULL, '2026-04-05 08:05:28', '2026-04-05 08:05:28'),
 (2312, 'App\\Models\\User', 152, 'auth-token', 'b2667bfd83f295249147f1832ebc5331ccdc429873f98918414b98f7e1b1b704', '[\"*\"]', NULL, NULL, '2026-04-05 08:06:38', '2026-04-05 08:06:38'),
 (2313, 'App\\Models\\User', 150, 'auth-token', 'bb9994827b0a0f61dd60e1982bd26151b46f6902412ad77b2f4702e9fed6f28c', '[\"*\"]', NULL, NULL, '2026-04-05 08:07:05', '2026-04-05 08:07:05'),
-(2314, 'App\\Models\\User', 157, 'auth-token', '05ff912650c48429a96210f4f36a148d0e564b31d2177d005327ae85b34ebc6d', '[\"*\"]', NULL, NULL, '2026-04-05 08:09:05', '2026-04-05 08:09:05'),
 (2315, 'App\\Models\\User', 31, 'auth-token', '6bf412d430dc551f9468af98e861840a7988ac5768fddb82e5f5995014080fa4', '[\"*\"]', NULL, NULL, '2026-04-05 08:10:37', '2026-04-05 08:10:37'),
 (2316, 'App\\Models\\User', 154, 'auth-token', 'ab6946b9d382f03d5099d7702e5c8e603861a7151e41cd33c1c95668f7c1496d', '[\"*\"]', NULL, NULL, '2026-04-05 08:11:09', '2026-04-05 08:11:09'),
-(2317, 'App\\Models\\User', 148, 'auth-token', 'd530e142da0a76906724e8e848bf642c36c7adecd8ef32ce747a4551333013ea', '[\"*\"]', NULL, NULL, '2026-04-05 08:12:06', '2026-04-05 08:12:06'),
-(2318, 'App\\Models\\User', 159, 'auth-token', '93e2604dd7adb078c6bd934e60e0ed95d855805637f99000d35baa0321ca9ad8', '[\"*\"]', NULL, NULL, '2026-04-05 09:43:42', '2026-04-05 09:43:42'),
-(2319, 'App\\Models\\User', 148, 'auth-token', '4acd5d77d57a0e1e74546e85501b3b45b988dec401c3b9657663744301a47167', '[\"*\"]', NULL, NULL, '2026-04-05 10:03:45', '2026-04-05 10:03:45'),
-(2320, 'App\\Models\\User', 148, 'auth-token', '4a49c6afd0650e138cf652caa1c45126ffb9fdc5b9b5cd38c0aef86114247eeb', '[\"*\"]', NULL, NULL, '2026-04-05 10:10:49', '2026-04-05 10:10:49'),
 (2321, 'App\\Models\\User', 153, 'auth-token', '895098d631f55a5da5e505f58041eb6270bfb35c3987402d2a5a2698f74ec9c1', '[\"*\"]', NULL, NULL, '2026-04-05 10:29:44', '2026-04-05 10:29:44'),
 (2322, 'App\\Models\\User', 151, 'auth-token', '43f0569744ac2141185d52dd681cd691842986f73dc7b5f632ee0393df0533ac', '[\"*\"]', NULL, NULL, '2026-04-05 10:36:05', '2026-04-05 10:36:05'),
 (2323, 'App\\Models\\User', 154, 'auth-token', '34e2665178d6b1f743924c5f96907e6a5aae804e0834527690e03f28fc7e95e3', '[\"*\"]', NULL, NULL, '2026-04-05 10:36:18', '2026-04-05 10:36:18'),
@@ -3032,44 +2876,31 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (2327, 'App\\Models\\User', 151, 'auth-token', 'fc69babf537b327929a51bb1eabdc199c887d19fc7ccb7fa0e2c7c884bb6acd0', '[\"*\"]', NULL, NULL, '2026-04-05 11:06:45', '2026-04-05 11:06:45'),
 (2328, 'App\\Models\\User', 149, 'auth-token', '0e20d6cf5ed6a3af6df703c1d13b2923d9a2182a0b99d35945731d5ef68b18fd', '[\"*\"]', NULL, NULL, '2026-04-05 11:07:01', '2026-04-05 11:07:01'),
 (2329, 'App\\Models\\User', 31, 'auth-token', 'cb65ce91f82b496b2ff32ee0c41f89a06d22b525f881cc63344cb84d8c5a4eda', '[\"*\"]', NULL, NULL, '2026-04-05 11:25:07', '2026-04-05 11:25:07'),
-(2330, 'App\\Models\\User', 159, 'auth-token', '3a4bfbd3eaff01c987858d28838d8134de499b05cf6b75d18121dc5538ef772e', '[\"*\"]', NULL, NULL, '2026-04-05 11:32:27', '2026-04-05 11:32:27'),
 (2331, 'App\\Models\\User', 31, 'auth-token', 'aeb18ff556f1a58e83737c370d13dbcc1513d1c145e8ae967f578f7e24c2b267', '[\"*\"]', NULL, NULL, '2026-04-05 11:34:04', '2026-04-05 11:34:04'),
-(2332, 'App\\Models\\User', 159, 'auth-token', 'f8de43a4c6fa8d197e3afd54cbb7f5e15dcf62904a88bed12a7e7caefa37a98e', '[\"*\"]', NULL, NULL, '2026-04-05 11:43:09', '2026-04-05 11:43:09'),
 (2333, 'App\\Models\\User', 31, 'auth-token', '0f241e8613b5eae6238a3621fc54dc3b4e8f07b83124c058adc048103baeb316', '[\"*\"]', NULL, NULL, '2026-04-05 12:00:16', '2026-04-05 12:00:16'),
-(2334, 'App\\Models\\User', 161, 'auth-token', 'bf7f2e857a74a2621efd77860208b0315df7a94d9c96f4bb315210a837ee3328', '[\"*\"]', NULL, NULL, '2026-04-05 12:01:17', '2026-04-05 12:01:17'),
 (2335, 'App\\Models\\User', 31, 'auth-token', '47df8fed30aa50faa7ca21e3a782a065a306ccf9f432dc48fd0317bb0b1e263d', '[\"*\"]', NULL, NULL, '2026-04-05 12:03:06', '2026-04-05 12:03:06'),
 (2336, 'App\\Models\\User', 147, 'auth-token', 'c80befcc21dad0cc4465d2d2b3103fc366c56bb04613f2cea249603f994c4303', '[\"*\"]', NULL, NULL, '2026-04-05 12:04:00', '2026-04-05 12:04:00'),
-(2337, 'App\\Models\\User', 159, 'auth-token', 'ab90ee7d57be01eec310c1a560fb4a648dbaad025a418bf98da2f2f7a76a97f2', '[\"*\"]', NULL, NULL, '2026-04-05 12:04:16', '2026-04-05 12:04:16'),
-(2338, 'App\\Models\\User', 161, 'auth-token', 'f5fb0b5f084534ee9a5456c5d0b42556080ac7bd621d77f247a05e1513efe403', '[\"*\"]', NULL, NULL, '2026-04-05 12:06:45', '2026-04-05 12:06:45'),
 (2339, 'App\\Models\\User', 31, 'auth-token', '763de1a7565f74a95e423d0b08dc8a1ac4039576c8b5986dcde63fcbd9eddebe', '[\"*\"]', NULL, NULL, '2026-04-05 12:07:09', '2026-04-05 12:07:09'),
-(2340, 'App\\Models\\User', 159, 'auth-token', 'dd0b0611a427faffb2b095e2dad48c30dabde2fcd15ac051fc582c08ebde5cad', '[\"*\"]', NULL, NULL, '2026-04-05 12:09:23', '2026-04-05 12:09:23'),
-(2341, 'App\\Models\\User', 161, 'auth-token', '2d3ee22ff07d3bb13def8cb72b51abd7de6a921d85e067a7542bb958db289653', '[\"*\"]', NULL, NULL, '2026-04-05 12:37:55', '2026-04-05 12:37:55'),
 (2342, 'App\\Models\\User', 31, 'auth-token', '6c286aefe84f506d28ae278ea1c6bd381f482c1ec7bd2406c25bbfbd93ebd4a2', '[\"*\"]', NULL, NULL, '2026-04-05 12:38:42', '2026-04-05 12:38:42'),
-(2343, 'App\\Models\\User', 159, 'auth-token', '16780fbe5e743e35c56d9d1b123e69d90c9c54328bf62930e0149b00a1bf76f8', '[\"*\"]', NULL, NULL, '2026-04-05 12:40:27', '2026-04-05 12:40:27'),
 (2344, 'App\\Models\\User', 151, 'auth-token', '3b5ec6fec601a1ecdfe85d96e38c38fb0d2203bc0a458825bba4bb3b9bbc5490', '[\"*\"]', NULL, NULL, '2026-04-05 12:41:25', '2026-04-05 12:41:25'),
 (2345, 'App\\Models\\User', 150, 'auth-token', 'b1a14c580859861113f5c8dbfa80be80b6e8acba8a846dff2cef22b8e87292b9', '[\"*\"]', NULL, NULL, '2026-04-05 12:51:55', '2026-04-05 12:51:55'),
 (2346, 'App\\Models\\User', 152, 'auth-token', 'c0038badad80be6ddd5fe2cdc2fc5cf17a59e4fe9b64c4a4a13df81665cc047b', '[\"*\"]', NULL, NULL, '2026-04-05 12:52:41', '2026-04-05 12:52:41'),
 (2347, 'App\\Models\\User', 152, 'auth-token', '17be47277fbfe1b0eb9174e7b3c72836cc15be58ab27b28abb8ba8c31635d591', '[\"*\"]', NULL, NULL, '2026-04-05 12:55:35', '2026-04-05 12:55:35'),
 (2348, 'App\\Models\\User', 149, 'auth-token', '17d21d3d51464e4aa0ba05c9186f5ad95073ecf38f09b7ce2b4a4ee3bf6d041b', '[\"*\"]', NULL, NULL, '2026-04-05 13:14:03', '2026-04-05 13:14:03'),
-(2349, 'App\\Models\\User', 161, 'auth-token', '281adbd5fa2f7157a16a362a518baf6fe16bb74f6dde52adfbf80af38b900cb3', '[\"*\"]', NULL, NULL, '2026-04-05 13:19:11', '2026-04-05 13:19:11'),
 (2350, 'App\\Models\\User', 154, 'auth-token', '7a9e2ee7fd07619731b9d6099c39d479cc50af080ab9577397971b14cb6b439a', '[\"*\"]', NULL, NULL, '2026-04-05 13:19:40', '2026-04-05 13:19:40'),
 (2351, 'App\\Models\\User', 149, 'auth-token', '7e59f65694c23e8f7ec363cb312dff5cda4a9513aaf88a0b0139de760fc1daef', '[\"*\"]', NULL, NULL, '2026-04-05 13:23:22', '2026-04-05 13:23:22'),
 (2352, 'App\\Models\\User', 151, 'auth-token', '5121011dba89bd98cd04405f2f1ca6baa69cad4a8e0627df612730ca8054c287', '[\"*\"]', NULL, NULL, '2026-04-05 13:23:38', '2026-04-05 13:23:38'),
 (2353, 'App\\Models\\User', 28, 'auth-token', '839a05274a11190edf585ea0585637dd00983f8fecf68d57cf9837186edbe4eb', '[\"*\"]', NULL, NULL, '2026-04-05 13:27:05', '2026-04-05 13:27:05'),
-(2354, 'App\\Models\\User', 157, 'auth-token', '4e8052848f7e07364eb4648c1788874a8af20841fe1d435a52871f403a91a589', '[\"*\"]', NULL, NULL, '2026-04-05 13:29:05', '2026-04-05 13:29:05'),
 (2355, 'App\\Models\\User', 149, 'auth-token', '0c63fab6c6be399ed73f847b190e57b95f34508b14331c6bf2da52b6f0a4d4b1', '[\"*\"]', NULL, NULL, '2026-04-05 13:29:23', '2026-04-05 13:29:23'),
 (2356, 'App\\Models\\User', 147, 'auth-token', 'd11b822992fcc937d7a9eb27ec75d2187aafad2debf93ebcdc660a7cade6df2e', '[\"*\"]', NULL, NULL, '2026-04-05 13:30:07', '2026-04-05 13:30:07'),
 (2357, 'App\\Models\\User', 151, 'auth-token', 'ed86811542b151787cd747f9483b43e53074d0862b78864c29c1e549be1afe1d', '[\"*\"]', NULL, NULL, '2026-04-05 13:30:50', '2026-04-05 13:30:50'),
 (2358, 'App\\Models\\User', 150, 'auth-token', '8cea6dc87c78c40b180b20e29ca133927ae568fa04bd9b9c18301af2fa72efe0', '[\"*\"]', NULL, NULL, '2026-04-05 13:31:11', '2026-04-05 13:31:11'),
-(2359, 'App\\Models\\User', 187, 'auth-token', 'cb7b082a273216abfc09dc9143afe123e9b1480cb76a925a63679b413418789b', '[\"*\"]', NULL, NULL, '2026-04-05 13:31:43', '2026-04-05 13:31:43'),
+(2359, 'App\\Models\\User', 187, 'auth-token', 'cb7b082a273216abfc09dc9143afe123e9b1480cb76a925a63679b413418789b', '[\"*\"]', NULL, NULL, '2026-04-05 13:31:43', '2026-04-05 13:31:43');
+INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `name`, `token`, `abilities`, `last_used_at`, `expires_at`, `created_at`, `updated_at`) VALUES
 (2360, 'App\\Models\\User', 187, 'auth-token', 'd7fe4f401b5bfde603203ab4d907070cfd0e12ab244ab11211cbbb354459d646', '[\"*\"]', NULL, NULL, '2026-04-05 13:40:30', '2026-04-05 13:40:30'),
 (2361, 'App\\Models\\User', 149, 'auth-token', '8d42b29c1fa896a4eb0178e61001d2fa3a1a90ea5ab3625cc3dc340c66b9331d', '[\"*\"]', NULL, NULL, '2026-04-05 13:40:53', '2026-04-05 13:40:53'),
 (2362, 'App\\Models\\User', 150, 'auth-token', 'a60b360b984495325fdfb6cb0d5eba1e7ca98b6da728095369db402d0c20a771', '[\"*\"]', NULL, NULL, '2026-04-05 13:41:18', '2026-04-05 13:41:18'),
-(2363, 'App\\Models\\User', 148, 'auth-token', 'ca8124c0cc5dc788bad9f941694d6eb81631b755d198693887df387e0a10060d', '[\"*\"]', NULL, NULL, '2026-04-05 13:42:18', '2026-04-05 13:42:18'),
-(2364, 'App\\Models\\User', 159, 'auth-token', 'b329ce747ebef26823f1c41a61ec44ae2a5040f0191c8a126f2e1e52ac67003f', '[\"*\"]', NULL, NULL, '2026-04-05 14:37:43', '2026-04-05 14:37:43'),
-(2365, 'App\\Models\\User', 157, 'auth-token', '97d5dd8ef0c9987a0128b9a910c8dbd904d42c946fd55a12bbd7c34e57bf5b2a', '[\"*\"]', NULL, NULL, '2026-04-05 18:23:30', '2026-04-05 18:23:30'),
 (2366, 'App\\Models\\User', 153, 'auth-token', '7963cda20514d5d386656ce1ac2a3a388a72dd3b7ca2a06c15b7f5340cd40aec', '[\"*\"]', NULL, NULL, '2026-04-05 18:24:09', '2026-04-05 18:24:09'),
-(2367, 'App\\Models\\User', 157, 'auth-token', '4bac0a32f53392b64d1710c3654a3e6358c7b2597610574318b173e5e3378f67', '[\"*\"]', NULL, NULL, '2026-04-05 18:29:41', '2026-04-05 18:29:41'),
 (2368, 'App\\Models\\User', 31, 'auth-token', '3a722b65e123185e5923194d401a778226e22eccecf4691f01cae91eb84722fd', '[\"*\"]', NULL, NULL, '2026-04-05 18:32:32', '2026-04-05 18:32:32'),
 (2369, 'App\\Models\\User', 154, 'auth-token', 'bfa0b380e3d51be3d605b6f1eb8fcc4d8678187d8a4bf0df026b46ae8a8c1657', '[\"*\"]', NULL, NULL, '2026-04-05 18:36:18', '2026-04-05 18:36:18'),
 (2370, 'App\\Models\\User', 150, 'auth-token', '5280fb3e6d0243e9f7c68a88dd1ea50df187bd370fd505e7571a11c054060d81', '[\"*\"]', NULL, NULL, '2026-04-05 18:37:56', '2026-04-05 18:37:56'),
@@ -3080,13 +2911,29 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (2375, 'App\\Models\\User', 149, 'auth-token', '439bad35430b2f0ad81a2599c66912b9cded501865e2d530e03a7ac1244dbf08', '[\"*\"]', NULL, NULL, '2026-04-05 19:16:38', '2026-04-05 19:16:38'),
 (2376, 'App\\Models\\User', 151, 'auth-token', '53340623a0121fcb697f27b373be10e2d6c39b279d1eee6700b0310c9796ffed', '[\"*\"]', NULL, NULL, '2026-04-05 19:19:28', '2026-04-05 19:19:28'),
 (2377, 'App\\Models\\User', 152, 'auth-token', '263d84d0b766e53f87d51c8fa98233f809e1ef08d34c70ac006706465e6c0b99', '[\"*\"]', NULL, NULL, '2026-04-05 19:21:06', '2026-04-05 19:21:06'),
-(2378, 'App\\Models\\User', 159, 'auth-token', 'e952ef9e6238c728dd06e465f8b21b87b496d16a3ac31f2f181d3a0ca1615fcd', '[\"*\"]', NULL, NULL, '2026-04-05 19:26:03', '2026-04-05 19:26:03'),
-(2379, 'App\\Models\\User', 161, 'auth-token', '5eba2ec5e7791ea5aed82db63901282f8a8b323de47ffd25c8ce6031fe77c28f', '[\"*\"]', NULL, NULL, '2026-04-05 19:46:21', '2026-04-05 19:46:21'),
 (2380, 'App\\Models\\User', 31, 'auth-token', 'f0cfb7d65cf2984987409e9916cfc435f0cf1fc1f547736d75ca9e08ccf160e3', '[\"*\"]', NULL, NULL, '2026-04-05 19:46:52', '2026-04-05 19:46:52'),
 (2381, 'App\\Models\\User', 215, 'auth-token', '34f0110d9048096ab92a1f843f4ee7d8275a10df10af49b780daf11a69e31849', '[\"*\"]', NULL, NULL, '2026-04-05 19:48:06', '2026-04-05 19:48:06'),
-(2382, 'App\\Models\\User', 159, 'auth-token', 'ee626444bd30da554e5727f02c2fed0452df9cd429b5831fed34bb2c6688ed34', '[\"*\"]', NULL, NULL, '2026-04-05 19:49:13', '2026-04-05 19:49:13'),
-(2383, 'App\\Models\\User', 159, 'auth-token', 'eb2310125c9953640fc7cd56c9cb54e3fca86afc01a0f71cc2bf1f20b788948a', '[\"*\"]', NULL, NULL, '2026-04-05 19:57:11', '2026-04-05 19:57:11'),
-(2384, 'App\\Models\\User', 159, 'auth-token', '73923711a338be895294ffe153c3be6cbe6162635d89b771278f8c4d970983e4', '[\"*\"]', NULL, NULL, '2026-04-05 19:57:50', '2026-04-05 19:57:50');
+(2385, 'App\\Models\\User', 162, 'auth-token', 'ce371323f16526cd00c7897c71aa0bbae71550173392e5716b500a40af7344ca', '[\"*\"]', NULL, NULL, '2026-04-14 02:36:47', '2026-04-14 02:36:47'),
+(2388, 'App\\Models\\User', 150, 'auth-token', 'd7bad171918d0b658465395d33aef1b131a0705f577a3cf9a1acfe5548d566d4', '[\"*\"]', NULL, NULL, '2026-04-14 05:13:26', '2026-04-14 05:13:26'),
+(2392, 'App\\Models\\User', 222, 'auth-token', '207f82f29498181dc4d06bc1c0c4a5008b4b1dd7ce18b3760605e4860024bb73', '[\"*\"]', NULL, NULL, '2026-04-14 11:25:54', '2026-04-14 11:25:54'),
+(2393, 'App\\Models\\User', 222, 'auth-token', '5a92438665df6274d8861739f16b05c1669c3a39af278348129b84365d40249e', '[\"*\"]', NULL, NULL, '2026-04-14 11:31:08', '2026-04-14 11:31:08'),
+(2395, 'App\\Models\\User', 223, 'auth-token', 'a1f5c7bd5f25bc05284df50c415c1f1e490698320149a83582e58411a204933f', '[\"*\"]', NULL, NULL, '2026-04-14 11:49:25', '2026-04-14 11:49:25'),
+(2396, 'App\\Models\\User', 223, 'auth-token', '06545841d2fcaa5632644fbd0def58a3ba6ec5bcc76125ba7d497e0d3748129b', '[\"*\"]', NULL, NULL, '2026-04-14 11:52:25', '2026-04-14 11:52:25'),
+(2399, 'App\\Models\\User', 230, 'auth-token', '04a112738af75e29da5b0bfa1797ef927b9c6dabb1761a9694da9073e522d360', '[\"*\"]', NULL, NULL, '2026-04-14 13:05:38', '2026-04-14 13:05:38'),
+(2404, 'App\\Models\\User', 236, 'auth-token', '38e701af19d87a529316510560ba3e94a9e16f720674edb56dbaf95c32b4d856', '[\"*\"]', NULL, NULL, '2026-04-15 03:28:56', '2026-04-15 03:28:56'),
+(2405, 'App\\Models\\User', 236, 'auth-token', '9618fbd9ccfbc34f52857db1d6b2fb2312057eb0e9e32cca0e8f975a70ccb9bf', '[\"*\"]', NULL, NULL, '2026-04-15 03:29:27', '2026-04-15 03:29:27'),
+(2406, 'App\\Models\\User', 236, 'auth-token', '39f8386852e754829dfbd1fa016dee63496a6d2d37b94ce49f256f1922115e2a', '[\"*\"]', NULL, NULL, '2026-04-15 03:30:10', '2026-04-15 03:30:10'),
+(2407, 'App\\Models\\User', 236, 'auth-token', '93ee1532c27d0c935052d62aa78abec2f277bc3dc0e3530400a71f3b74af1115', '[\"*\"]', NULL, NULL, '2026-04-15 03:35:29', '2026-04-15 03:35:29'),
+(2419, 'App\\Models\\User', 31, 'auth-token', 'f2cf9ee437cff6ab6c7207e13e14b4fb8db79301585d8e448da6ef97b18ddef3', '[\"*\"]', NULL, NULL, '2026-04-15 04:18:50', '2026-04-15 04:18:50'),
+(2422, 'App\\Models\\User', 239, 'auth-token', '21c36f85886895c00d2969cdea7134a0f848ec05330601c30e35a921b8ed1914', '[\"*\"]', NULL, NULL, '2026-04-15 04:49:39', '2026-04-15 04:49:39'),
+(2423, 'App\\Models\\User', 239, 'auth-token', 'cbd7b771f762b05221344b3fe5d7052e2fcf3ebec4ddb40e11d48c575e24c43f', '[\"*\"]', NULL, NULL, '2026-04-15 04:50:27', '2026-04-15 04:50:27'),
+(2425, 'App\\Models\\User', 147, 'auth-token', '6ef9bc293bf018f52a8b25595f8f76d50b04f9ba8a5630503a2e9763776cacc8', '[\"*\"]', NULL, NULL, '2026-04-15 05:17:43', '2026-04-15 05:17:43'),
+(2426, 'App\\Models\\User', 28, 'auth-token', '4a6e297acfe06810a3c1d2c0a90f0320016d642ebf4ad63b3fb3fc496c3f5670', '[\"*\"]', NULL, NULL, '2026-04-15 06:22:36', '2026-04-15 06:22:36'),
+(2427, 'App\\Models\\User', 147, 'auth-token', '4a761df157665e818ef6e0ad56d7162cbb0602b097cc8a9c63b7b82a7bbf633e', '[\"*\"]', NULL, NULL, '2026-04-15 06:23:55', '2026-04-15 06:23:55'),
+(2428, 'App\\Models\\User', 31, 'auth-token', '722ee5f74bb34fef43155242dd7542d72b7f291c3fb83f0c197d272ee7cb1f06', '[\"*\"]', NULL, NULL, '2026-04-15 12:28:40', '2026-04-15 12:28:40'),
+(2429, 'App\\Models\\User', 147, 'auth-token', 'f862ffc7211109f7ae1286386cc3aeec012e99a1213f6fcd845a3629567b72e3', '[\"*\"]', NULL, NULL, '2026-04-15 12:28:52', '2026-04-15 12:28:52'),
+(2431, 'App\\Models\\User', 147, 'auth-token', '29ac0b903868eb563da1239c3ca6ed147e12a95efcad75a168d5079cfcdc9650', '[\"*\"]', NULL, NULL, '2026-04-15 12:49:49', '2026-04-15 12:49:49'),
+(2432, 'App\\Models\\User', 159, 'auth-token', '2dbf5c7b85a275e1d27e1b44c8d064ff69349619b6bb688973d90fbbc88fcc5a', '[\"*\"]', NULL, NULL, '2026-04-15 14:41:25', '2026-04-15 14:41:25');
 
 -- --------------------------------------------------------
 
@@ -3214,11 +3061,11 @@ CREATE TABLE `procurement_requests` (
 --
 
 INSERT INTO `procurement_requests` (`id`, `product_id`, `supplier_id`, `logistics_user_id`, `procurement_user_id`, `finance_user_id`, `quantity`, `price`, `total_amount`, `status`, `receipt_path`, `receipt_uploaded_by`, `receipt_uploaded_at`, `receipt_confirmed`, `receipt_confirmed_by`, `receipt_confirmed_at`, `confirmed_quantity`, `variance_quantity`, `variance_reason`, `variance_reported_at`, `delivery_proof_path`, `budget_approved`, `supplier_confirmed`, `budget_amount`, `created_at`, `updated_at`, `branch_id`) VALUES
-(124, 169, 152, 154, 151, 187, 10, 40.00, 400.00, 'completed', '/receipts/receipt_124_1775416556.webp', 150, '2026-04-05 19:15:56', 1, 149, '2026-04-05 19:17:31', 10, NULL, NULL, NULL, '/storage/delivery-proofs/delivery_proof_124_1775416848.png', 1, 0, 400.00, '2026-04-05 18:36:51', '2026-04-05 19:20:48', 31),
-(125, 166, 152, 154, 151, 187, 10, 10.00, 100.00, 'completed', '/receipts/receipt_125_1775416516.png', 150, '2026-04-05 19:15:16', 1, 149, '2026-04-05 19:17:43', 9, -1, 'Variance: -1 units', '2026-04-05 19:20:39', '/storage/delivery-proofs/delivery_proof_125_1775416839.png', 1, 0, 100.00, '2026-04-05 18:36:55', '2026-04-05 19:20:39', 31),
-(126, 167, 152, 154, 151, 187, 10, 20.00, 200.00, 'completed', '/receipts/receipt_126_1775416526.jpg', 150, '2026-04-05 19:15:26', 1, 149, '2026-04-05 19:17:36', 10, NULL, NULL, NULL, '/storage/delivery-proofs/delivery_proof_126_1775416825.png', 1, 0, 200.00, '2026-04-05 18:37:07', '2026-04-05 19:20:25', 31),
-(127, 168, 152, 154, 151, 187, 10, 45.00, 450.00, 'completed', '/receipts/receipt_127_1775416539.jpg', 150, '2026-04-05 19:15:39', 1, 149, '2026-04-05 19:17:40', 10, NULL, NULL, NULL, '/storage/delivery-proofs/delivery_proof_127_1775416817.png', 1, 0, 450.00, '2026-04-05 18:37:12', '2026-04-05 19:20:17', 31),
-(129, 172, 152, 154, 151, 187, 10, 200.00, 2000.00, 'completed', '/receipts/receipt_129_1775416570.jpg', 150, '2026-04-05 19:16:10', 1, 149, '2026-04-05 19:17:28', 12, 2, 'Variance: 2 units', '2026-04-05 19:19:59', '/storage/delivery-proofs/delivery_proof_129_1775416799.png', 1, 0, 2000.00, '2026-04-05 18:54:15', '2026-04-05 19:19:59', 31);
+(124, 169, 152, 154, 151, NULL, 10, 40.00, 400.00, 'completed', '/receipts/receipt_124_1775416556.webp', 150, '2026-04-05 19:15:56', 1, 149, '2026-04-05 19:17:31', 10, NULL, NULL, NULL, '/storage/delivery-proofs/delivery_proof_124_1775416848.png', 1, 0, 400.00, '2026-04-05 18:36:51', '2026-04-05 19:20:48', 31),
+(125, 166, 152, 154, 151, NULL, 10, 10.00, 100.00, 'completed', '/receipts/receipt_125_1775416516.png', 150, '2026-04-05 19:15:16', 1, 149, '2026-04-05 19:17:43', 9, -1, 'Variance: -1 units', '2026-04-05 19:20:39', '/storage/delivery-proofs/delivery_proof_125_1775416839.png', 1, 0, 100.00, '2026-04-05 18:36:55', '2026-04-05 19:20:39', 31),
+(126, 167, 152, 154, 151, NULL, 10, 20.00, 200.00, 'completed', '/receipts/receipt_126_1775416526.jpg', 150, '2026-04-05 19:15:26', 1, 149, '2026-04-05 19:17:36', 10, NULL, NULL, NULL, '/storage/delivery-proofs/delivery_proof_126_1775416825.png', 1, 0, 200.00, '2026-04-05 18:37:07', '2026-04-05 19:20:25', 31),
+(127, 168, 152, 154, 151, NULL, 10, 45.00, 450.00, 'completed', '/receipts/receipt_127_1775416539.jpg', 150, '2026-04-05 19:15:39', 1, 149, '2026-04-05 19:17:40', 10, NULL, NULL, NULL, '/storage/delivery-proofs/delivery_proof_127_1775416817.png', 1, 0, 450.00, '2026-04-05 18:37:12', '2026-04-05 19:20:17', 31),
+(129, 172, 152, 154, 151, NULL, 10, 200.00, 2000.00, 'completed', '/receipts/receipt_129_1775416570.jpg', 150, '2026-04-05 19:16:10', 1, 149, '2026-04-05 19:17:28', 12, 2, 'Variance: 2 units', '2026-04-05 19:19:59', '/storage/delivery-proofs/delivery_proof_129_1775416799.png', 1, 0, 2000.00, '2026-04-05 18:54:15', '2026-04-05 19:19:59', 31);
 
 -- --------------------------------------------------------
 
@@ -3274,7 +3121,7 @@ INSERT INTO `products` (`id`, `dish_id`, `name`, `category`, `per_pack_or_indivi
 (162, NULL, 'Yang Yeom Sauce', NULL, 'individual', NULL, NULL, 'yang-yeom-sauce-37-1775414111', '2026-04-05 18:35:11', '2026-04-05 18:37:12', 0.00, 0.00, 0, 0, 0.0000, NULL, 0, 'KITCHEN-DISH-37-1383', 31, NULL, NULL, 0, 1, 1, 1, 0, 'KITCHEN', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
 (163, NULL, 'Salt', NULL, 'individual', NULL, NULL, 'salt-37-1775414111', '2026-04-05 18:35:11', '2026-04-05 18:37:07', 0.00, 0.00, 0, 0, 0.0000, NULL, 0, 'KITCHEN-DISH-37-4351', 31, NULL, NULL, 0, 1, 1, 1, 0, 'KITCHEN', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
 (164, NULL, 'Pepper', NULL, 'individual', NULL, NULL, 'pepper-37-1775414111', '2026-04-05 18:35:11', '2026-04-05 18:36:55', 0.00, 0.00, 0, 0, 0.0000, NULL, 0, 'KITCHEN-DISH-37-3054', 31, NULL, NULL, 0, 1, 1, 1, 0, 'KITCHEN', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
-(165, 37, 'Yang Yeom Chiken', NULL, 'individual', NULL, NULL, 'yang-yeom-chiken', '2026-04-05 18:35:11', '2026-04-05 18:35:11', 0.00, NULL, 0, 0, 0.0000, NULL, 0, 'YANGYEOM-LNOY', 31, 31, '2026-04-05 18:35:11', 1, 0, 1, 1, 1, NULL, NULL, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
+(165, 37, 'Yang Yeom Chiken', NULL, 'individual', NULL, NULL, 'yang-yeom-chiken', '2026-04-05 18:35:11', '2026-04-14 11:30:53', 16571.25, 12275.00, 0, 0, 0.0000, NULL, 0, 'YANGYEOM-LNOY', 31, 31, '2026-04-05 18:35:11', 1, 0, 1, 1, 1, NULL, NULL, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
 (166, NULL, 'Pepper', 'Condiment', 'per_pack', 20.00, 'g', 'pepper', '2026-04-05 18:42:20', '2026-04-05 19:20:39', 11.00, 10.00, 9, 9, 0.0000, '2027-04-06 04:43:00', 10, 'sku-1775414539-8389', 31, NULL, NULL, 1, 1, 1, 0, 0, 'Umberto Batumbakal', 152, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
 (167, NULL, 'Salt', 'Condiment', 'per_pack', 1.00, 'kg', 'salt', '2026-04-05 18:43:07', '2026-04-05 19:20:25', 22.00, 20.00, 10, 10, 0.0000, '2027-01-04 02:42:00', 10, 'sku-1775414587-8650', 31, NULL, NULL, 1, 1, 1, 0, 0, 'Umberto Batumbakal', 152, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
 (168, NULL, 'Yang Yeom Sauce', 'Other', 'individual', NULL, NULL, 'yang-yeom-sauce', '2026-04-05 18:44:02', '2026-04-05 19:20:17', 49.50, 45.00, 10, 10, 0.0000, '2027-07-06 02:43:00', 10, 'sku-1775414642-2866', 31, NULL, NULL, 1, 1, 1, 0, 0, 'Umberto Batumbakal', 152, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
@@ -3388,11 +3235,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('DbajiFYPeKX4L5UPrcbtnbxvic1b8hQ0CNsIDWqV', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiNmt3ODhrV09UZzUzRXE4TWFhanFIV3NaOG1XTkl4QVZ3aUQ1aEhDMCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO319', 1775415927),
-('e6V50hmKVU9QPzc97ebwzEOiff6IapbRk2jankQv', 159, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoia3NiT05Fc2QxUklzUDNkSnROd0Y3M2NydnFURTl5cWNFQUt2bkY1diI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTU5O3M6NzoidXNlcl9pZCI7aToxNTk7czo5OiJ1c2VyX3JvbGUiO3M6NToiQURNSU4iO3M6OToidXNlcl9uYW1lIjtzOjE3OiJBZG1pbiBNYWluIEJyYW5jaCI7czoxMzoicmVkaXJlY3RfcGF0aCI7czoxMjoiL2FkbWluLXBhbmVsIjtzOjk6Il9wcmV2aW91cyI7YToyOntzOjM6InVybCI7czo3MDoiaHR0cDovL2xvY2FsaG9zdDo4MDAwLy53ZWxsLWtub3duL2FwcHNwZWNpZmljL2NvbS5jaHJvbWUuZGV2dG9vbHMuanNvbiI7czo1OiJyb3V0ZSI7Tjt9fQ==', 1775419231),
-('vy4m6w2SEIY7WD7gIigk0WBFLVdWZcjAE8fgxrWb', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiWnJ4UzV1V0xBRDN1UzdQNjZmdG9yQWhhVUY5ZDZGODdlQ3EzTWJ1ZiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO319', 1775416893),
-('wcYEbGiAMTJOJLijQHVrmLmc0EezErLepxeWKFNO', 149, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiRWxoSFZnbEU1czJtTjY4eFhxOWQ1YUpxb1VRR1VrdDhEQXJ0WHFqNSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxNDk7czo3OiJ1c2VyX2lkIjtpOjE0OTtzOjk6InVzZXJfcm9sZSI7czo3OiJNQU5BR0VSIjtzOjk6InVzZXJfbmFtZSI7czozMDoiRmluYW5jZSBNYW5hZ2VyIC0gRGFzbWEgQnJhbmNoIjtzOjEzOiJyZWRpcmVjdF9wYXRoIjtzOjE2OiIvbWFuYWdlci9maW5hbmNlIjt9', 1775416963),
-('yjTr6dr9Y03I0igVe6oftMlgRYH7XXGqex5NUINH', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiWXhpNW5FTVoxREpzc1NjQXYwMTRsMUdOUVpEejJsWDlCQ1h6WXdUUCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO319', 1775418035);
+('pue0km6zA4XTWTJsvhoKri2htTebHSLcw7QkQqQ5', 159, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiV3JKYk43cWNpWWw3QzNZdkVMNXhSazZqS3d2N2Y3akhsZ3oyUUFEMyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mzk6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9tYWluLWJyYW5jaC9hZG1pbiI7czo1OiJyb3V0ZSI7Tjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTU5O3M6NzoidXNlcl9pZCI7aToxNTk7czo5OiJ1c2VyX3JvbGUiO3M6NToiQURNSU4iO3M6OToidXNlcl9uYW1lIjtzOjE3OiJBZG1pbiBNYWluIEJyYW5jaCI7czoxMzoicmVkaXJlY3RfcGF0aCI7czoxMjoiL2FkbWluLXBhbmVsIjt9', 1776264457);
 
 -- --------------------------------------------------------
 
@@ -3444,7 +3287,11 @@ INSERT INTO `staff_documents` (`id`, `user_id`, `resume_path`, `government_id_pa
 (35, 153, NULL, 'staff-documents/153/government_id.jpg', 'staff-documents/153/psa_birth_certificate.jpg', 'staff-documents/153/nbi_clearance.png', 'staff-documents/153/police_clearance.jpg', 'staff-documents/153/medical_certificate.jpg', 'staff-documents/153/drug_test_result.jpg', 'staff-documents/153/sss_id.png', 'staff-documents/153/philhealth_id.jpg', 'staff-documents/153/pagibig_mdf.png', 'staff-documents/153/tin_id.jpg', 'staff-documents/153/diploma_transcript.jpg', '2026-03-22 10:49:07', '2026-03-22 10:49:07'),
 (36, 154, NULL, 'staff-documents/154/government_id.jpg', 'staff-documents/154/psa_birth_certificate.jpg', 'staff-documents/154/nbi_clearance.jpg', 'staff-documents/154/police_clearance.png', 'staff-documents/154/medical_certificate.png', 'staff-documents/154/drug_test_result.jpg', 'staff-documents/154/sss_id.png', 'staff-documents/154/philhealth_id.jpg', 'staff-documents/154/pagibig_mdf.jpg', 'staff-documents/154/tin_id.jpg', 'staff-documents/154/diploma_transcript.jpg', '2026-03-22 10:50:09', '2026-03-22 10:50:09'),
 (39, 157, NULL, 'staff-documents/157/government_id.jpg', 'staff-documents/157/psa_birth_certificate.jpg', 'staff-documents/157/nbi_clearance.jpg', 'staff-documents/157/police_clearance.jpg', 'staff-documents/157/medical_certificate.jpg', 'staff-documents/157/drug_test_result.png', 'staff-documents/157/sss_id.jpg', 'staff-documents/157/philhealth_id.png', 'staff-documents/157/pagibig_mdf.png', 'staff-documents/157/tin_id.jpg', 'staff-documents/157/diploma_transcript.jpg', '2026-03-23 05:07:32', '2026-03-23 05:07:32'),
-(45, 187, NULL, 'staff-documents/187/government_id.jpg', 'staff-documents/187/psa_birth_certificate.jpg', 'staff-documents/187/nbi_clearance.png', 'staff-documents/187/police_clearance.jpg', 'staff-documents/187/medical_certificate.png', 'staff-documents/187/drug_test_result.jpg', 'staff-documents/187/sss_id.jpg', 'staff-documents/187/philhealth_id.jpg', 'staff-documents/187/pagibig_mdf.jpg', 'staff-documents/187/tin_id.jpg', 'staff-documents/187/diploma_transcript.jpg', '2026-04-04 10:50:09', '2026-04-04 10:50:09');
+(47, 159, NULL, NULL, NULL, NULL, NULL, NULL, 'account-setup-documents/159/drug_test_result.jpg', 'account-setup-documents/159/sss_id.jpg', 'account-setup-documents/159/philhealth_id.jpg', NULL, NULL, NULL, '2026-04-15 04:13:25', '2026-04-15 04:13:37'),
+(49, 161, NULL, NULL, NULL, NULL, NULL, NULL, 'account-setup-documents/161/drug_test_result.jpg', 'account-setup-documents/161/sss_id.jpg', 'account-setup-documents/161/philhealth_id.jpg', NULL, NULL, NULL, '2026-04-15 04:17:20', '2026-04-15 04:18:17'),
+(50, 31, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-04-15 04:18:50', '2026-04-15 04:18:50'),
+(51, 147, NULL, NULL, NULL, NULL, NULL, NULL, 'account-setup-documents/147/drug_test_result.jpg', 'account-setup-documents/147/sss_id.jpg', 'account-setup-documents/147/philhealth_id.jpg', NULL, NULL, NULL, '2026-04-15 05:17:43', '2026-04-15 05:17:56'),
+(52, 28, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-04-15 06:22:36', '2026-04-15 06:22:36');
 
 -- --------------------------------------------------------
 
@@ -3538,38 +3385,46 @@ CREATE TABLE `users` (
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
   `must_change_password` tinyint(1) NOT NULL DEFAULT 0,
+  `requires_setup` tinyint(1) NOT NULL DEFAULT 1,
   `is_active` tinyint(1) NOT NULL DEFAULT 1,
   `address` varchar(255) DEFAULT NULL,
+  `latitude` decimal(10,8) DEFAULT NULL,
+  `longitude` decimal(11,8) DEFAULT NULL,
   `avatar_url` varchar(255) DEFAULT NULL,
-  `phone_number` varchar(20) DEFAULT NULL
+  `phone_number` varchar(20) DEFAULT NULL,
+  `required_setup_type` enum('full','documents') DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `email`, `username`, `full_name`, `name`, `password`, `email_verified_at`, `role`, `department`, `permissions`, `branch_id`, `remember_token`, `created_at`, `updated_at`, `deleted_at`, `must_change_password`, `is_active`, `address`, `avatar_url`, `phone_number`) VALUES
-(28, 'superadmin@example.com', 'superadmin', 'Super Administrators', NULL, '$2y$12$f67akYY/xm/H9KJoqytmXeblCxSgZ786slMmHkmqzlMozGUn3Ew7G', '2026-03-05 15:03:55', 'SUPER_ADMIN', NULL, NULL, NULL, NULL, '2026-03-05 15:03:55', '2026-03-05 16:01:06', NULL, 0, 1, NULL, '/storage/avatars/avatar_28_1775232518.jpg', NULL),
-(31, 'admin@chikintayo.com', 'Parks', 'Mr.parks', NULL, '$2y$12$/jjxezfu4JAW55dvduVkVu7hpmk5CBXg2GWKtlT17A8jEMfJFpY8y', NULL, 'OWNER', NULL, NULL, NULL, NULL, '2026-03-07 04:30:58', '2026-03-07 04:30:58', NULL, 0, 1, NULL, NULL, 'admin'),
-(147, 'biteyag645@onbap.com', 'admin_br743957', 'Admin - Dasma Branch', NULL, '$2y$12$8RJHYsL5dHsXJc9.XiEUSuHL8F2DAPRGug1ED5uYU6tZylZwpcjGa', '2026-03-22 11:35:00', 'ADMIN', NULL, NULL, 31, NULL, '2026-03-22 10:19:22', '2026-03-22 11:35:00', NULL, 0, 1, NULL, NULL, NULL),
-(148, 'yawilog234@lxbeta.com', 'hr_br743957', 'HR Manager - Dasma Branch', NULL, '$2y$12$1AUNIAaO6IsU.NgPHyVqfuZmrI7EbeUTnHrku.w9douNkI7STbjfW', '2026-03-22 10:21:24', 'MANAGER', 'HR', NULL, 31, NULL, '2026-03-22 10:19:22', '2026-03-22 10:21:24', NULL, 0, 1, NULL, NULL, NULL),
-(149, 'jiveda9771@lxbeta.com', 'finance_br743957', 'Finance Manager - Dasma Branch', NULL, '$2y$12$9tGgivqfWOXFzZjHh./TNeQnKFXsrvyMHitvfpjtnRH9ctUwYKA5S', '2026-03-22 10:27:01', 'MANAGER', 'FINANCE', NULL, 31, NULL, '2026-03-22 10:19:22', '2026-03-22 10:27:01', NULL, 0, 1, NULL, NULL, NULL),
-(150, 'yenater279@onbap.com', 'procurement_br743957', 'Procurement Manager - Dasma Branch', NULL, '$2y$12$kF..QIb.DvV18ylucsDIHuPPnLwxXpZe4R5/VcwiI5CCZ2XpkCYx.', '2026-03-22 10:33:29', 'MANAGER', 'PROCUREMENT', NULL, 31, NULL, '2026-03-22 10:19:22', '2026-03-22 10:33:29', NULL, 0, 1, NULL, NULL, NULL),
-(151, 'rogogaj619@onbap.com', 'logistics_br743957', 'Logistics Manager - Dasma Branch', NULL, '$2y$12$OGJ.SPNyGXorcgKCa/EAaOmnaeqm4sLmZtx6dpGJiijay1uXA6LXq', '2026-03-22 11:37:41', 'MANAGER', 'LOGISTICS', NULL, 31, NULL, '2026-03-22 10:19:22', '2026-03-22 11:37:41', NULL, 0, 1, NULL, NULL, NULL),
-(152, 'jadol43025@onbap.com', 'Umberto', 'Umberto Batumbakal', NULL, '$2y$12$eym3kh1XoBRy0Ibjr3qrR.fLvvYUL9bimjdYe.f867drHAYjMURWa', NULL, 'SUPPLIER', NULL, NULL, 31, NULL, '2026-03-22 10:37:58', '2026-03-22 10:38:57', NULL, 0, 1, NULL, NULL, ''),
-(153, 'mecepey855@lxbeta.com', 'janne', 'Janne De Guzman', NULL, '$2y$12$1SY4y/G62PeI69w/RGa3bu13s/bCYLFpBPEiT8kZD7K.Ebg3UV/ly', '2026-03-22 10:58:41', 'STAFF', 'CASHIER', NULL, 31, NULL, '2026-03-22 10:49:07', '2026-03-22 10:58:41', NULL, 0, 1, '213', NULL, '09156818822'),
-(154, 'lalaher611@lxbeta.com', 'vince', 'Vince Hannibal Bido', NULL, '$2y$12$.9o2LKOIrQQWcrtHTKCtKOxdGGgLVs41Xr.eaY9OqHDe/iNtJwnUi', '2026-03-22 10:55:12', 'STAFF', 'INVENTORY', NULL, 31, NULL, '2026-03-22 10:50:09', '2026-03-22 10:55:12', NULL, 0, 1, '213', NULL, '09156818811'),
-(157, 'matika8515@onbap.com', 'charles', 'christian Umbal', NULL, '$2y$12$DUh2zXlesutpPfCM6bBeHuKfbmkGWR083ZLYQ9Ul4RT9QV/HB.XMC', '2026-03-23 05:10:23', 'STAFF', 'KITCHEN', NULL, 31, NULL, '2026-03-23 05:07:32', '2026-03-23 05:10:23', NULL, 0, 1, '123', NULL, '09156818831'),
-(158, 'xiralih141@lxbeta.com', 'John', 'John Stalone', NULL, '$2y$12$LOUp7zlefTxO05AmE6OCAuQtq3vFSVkgFjMUSa2LAyD57UwtF85uC', '2026-03-24 08:58:36', 'SUPPLIER', NULL, NULL, 31, NULL, '2026-03-24 08:57:40', '2026-03-24 08:58:36', NULL, 0, 1, NULL, NULL, ''),
-(159, 'xecof21486@fun4k.com', 'admin_main_branch', 'Admin Main Branch', NULL, '$2y$12$0mEgYuYslnBkJs79fi7H0OjiH3uTrkDbe2Kvas21ltIJ9BExNMm0C', '2026-03-25 07:07:57', 'ADMIN', NULL, NULL, 32, NULL, '2026-03-25 06:56:11', '2026-03-25 07:07:57', NULL, 0, 1, NULL, NULL, NULL),
-(160, 'radalol730@fun4k.com', 'hr_main_branch', 'HR Main Branch', NULL, '$2y$12$7XE7ggeRv7J3xUcTOgf6qOvZEPs4A8ppDdHk8zb3VxzTggE3EUI2i', '2026-03-25 07:17:25', 'MANAGER', 'HR', NULL, 32, NULL, '2026-03-25 06:56:12', '2026-03-25 07:17:25', NULL, 0, 1, NULL, NULL, NULL),
-(161, 'tavej98512@fabaos.com', 'finance_main_branch', 'Finance Main Branch', NULL, '$2y$12$Hb8m1H0Iau3u0jFJ0Spr5uqsg2Fl0kk.2QbHUAKQ.iMtZ9zKuBpra', '2026-03-25 07:20:21', 'MANAGER', 'FINANCE', NULL, 32, NULL, '2026-03-25 06:56:12', '2026-03-25 07:20:21', NULL, 0, 1, NULL, NULL, NULL),
-(162, 'lefet30141@fun4k.com', 'logistics_main_branch', 'Logistics Main Branch', NULL, '$2y$12$5jgXzzPw90ASb/4TuQnmreNk6jVKcPGX6ELJy6C9yfDFNv67u2j6u', '2026-03-25 07:22:05', 'MANAGER', 'LOGISTICS', NULL, 32, NULL, '2026-03-25 06:56:12', '2026-03-25 07:22:05', NULL, 0, 1, NULL, NULL, NULL),
-(176, 'lejanis485@fun4k.com', 'Customer', NULL, NULL, '$2y$12$HaDuG9eTBOzfLI2QJBBEJunc9e6yPAlAfdTYcGQwObeikCBEUfR4C', '2026-03-30 02:13:38', 'customer', NULL, NULL, NULL, NULL, '2026-03-30 02:13:38', '2026-03-30 02:13:38', NULL, 1, 1, NULL, NULL, NULL),
-(177, 'yoboko6989@fun4k.com', 'Customer_12', NULL, NULL, '$2y$12$mDEoShJoia8vzT45WUs3wOfrTISRPuFIb2UZ6lMD3CtbuDcQzul3.', '2026-03-30 07:46:53', 'customer', NULL, NULL, NULL, NULL, '2026-03-30 07:46:53', '2026-03-30 07:46:53', NULL, 1, 1, NULL, NULL, NULL),
-(187, 'yopakes567@availors.com', 'JOHNSON184', 'Johnson', NULL, '$2y$12$.CtC7HZZ3jfBHWsVM6FRheKnV5HAwzSi2ExUyhU04ROwJoOH1EUlW', '2026-04-04 11:01:40', 'CUSTOM', NULL, '{\"modules\":[\"finance\",\"logistics\",\"inventory\",\"procurement\",\"kitchen\",\"hr\",\"cashier\"],\"functions\":[]}', 31, NULL, '2026-04-04 10:50:09', '2026-04-04 11:01:40', NULL, 0, 1, '213', NULL, '0915681822'),
-(214, NULL, 'admin_br216033', 'Admin - test', NULL, '$2y$12$Cm6def5Kq4NElULrwrZ8Gezo.kS/sUkMFhFgmbeXjxCMqIZH8yO2y', NULL, 'ADMIN', NULL, NULL, 46, NULL, '2026-04-05 19:44:55', '2026-04-05 19:47:48', NULL, 1, 1, NULL, NULL, NULL),
-(215, NULL, 'custom_br216033', 'Custom Account - test', NULL, '$2y$12$BF3h6L52Cu0s6InQ/qYRROAH2WwjwLFUZhcOtnYcdyOonE..4lhGm', NULL, 'CUSTOM', NULL, '{\"modules\":[\"admin\",\"finance\",\"logistics\",\"inventory\",\"procurement\",\"kitchen\",\"cashier\",\"hr\"],\"functions\":[]}', 46, NULL, '2026-04-05 19:44:55', '2026-04-05 19:48:39', NULL, 0, 1, NULL, NULL, NULL);
+INSERT INTO `users` (`id`, `email`, `username`, `full_name`, `name`, `password`, `email_verified_at`, `role`, `department`, `permissions`, `branch_id`, `remember_token`, `created_at`, `updated_at`, `deleted_at`, `must_change_password`, `requires_setup`, `is_active`, `address`, `latitude`, `longitude`, `avatar_url`, `phone_number`, `required_setup_type`) VALUES
+(28, 'superadmin@example.com', 'superadmin', 'Super Administrators', NULL, '$2y$12$f67akYY/xm/H9KJoqytmXeblCxSgZ786slMmHkmqzlMozGUn3Ew7G', '2026-03-05 15:03:55', 'SUPER_ADMIN', NULL, NULL, NULL, NULL, '2026-03-05 15:03:55', '2026-03-05 16:01:06', NULL, 0, 1, 1, NULL, NULL, NULL, '/storage/avatars/avatar_28_1775232518.jpg', NULL, NULL),
+(31, 'fowal15977@pmdeal.com', 'Parks', 'Mr.parks', NULL, '$2y$12$/jjxezfu4JAW55dvduVkVu7hpmk5CBXg2GWKtlT17A8jEMfJFpY8y', NULL, 'OWNER', NULL, NULL, NULL, NULL, '2026-03-07 04:30:58', '2026-03-07 04:30:58', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, 'admin', NULL),
+(147, 'biteyag645@onbap.com', 'admin_br743957', 'Admin - Dasma Branch', NULL, '$2y$12$8RJHYsL5dHsXJc9.XiEUSuHL8F2DAPRGug1ED5uYU6tZylZwpcjGa', '2026-03-22 11:35:00', 'ADMIN', NULL, NULL, 31, NULL, '2026-03-22 10:19:22', '2026-03-22 11:35:00', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL),
+(148, 'yawilog234@lxbeta.com', 'hr_br743957', 'HR Manager - Dasma Branch', NULL, '$2y$12$1AUNIAaO6IsU.NgPHyVqfuZmrI7EbeUTnHrku.w9douNkI7STbjfW', '2026-03-22 10:21:24', 'MANAGER', 'HR', NULL, 31, NULL, '2026-03-22 10:19:22', '2026-03-22 10:21:24', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL),
+(149, 'jiveda9771@lxbeta.com', 'finance_br743957', 'Finance Manager - Dasma Branch', NULL, '$2y$12$9tGgivqfWOXFzZjHh./TNeQnKFXsrvyMHitvfpjtnRH9ctUwYKA5S', '2026-03-22 10:27:01', 'MANAGER', 'FINANCE', NULL, 31, NULL, '2026-03-22 10:19:22', '2026-03-22 10:27:01', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL),
+(150, 'yenater279@onbap.com', 'procurement_br743957', 'Procurement Manager - Dasma Branch', NULL, '$2y$12$kF..QIb.DvV18ylucsDIHuPPnLwxXpZe4R5/VcwiI5CCZ2XpkCYx.', '2026-03-22 10:33:29', 'MANAGER', 'PROCUREMENT', NULL, 31, NULL, '2026-03-22 10:19:22', '2026-03-22 10:33:29', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL),
+(151, 'rogogaj619@onbap.com', 'logistics_br743957', 'Logistics Manager - Dasma Branch', NULL, '$2y$12$OGJ.SPNyGXorcgKCa/EAaOmnaeqm4sLmZtx6dpGJiijay1uXA6LXq', '2026-03-22 11:37:41', 'MANAGER', 'LOGISTICS', NULL, 31, NULL, '2026-03-22 10:19:22', '2026-03-22 11:37:41', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL),
+(152, 'jadol43025@onbap.com', 'Umberto', 'Umberto Batumbakal', NULL, '$2y$12$eym3kh1XoBRy0Ibjr3qrR.fLvvYUL9bimjdYe.f867drHAYjMURWa', NULL, 'SUPPLIER', NULL, NULL, 31, NULL, '2026-03-22 10:37:58', '2026-03-22 10:38:57', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, '', NULL),
+(153, 'mecepey855@lxbeta.com', 'janne', 'Janne De Guzman', NULL, '$2y$12$1SY4y/G62PeI69w/RGa3bu13s/bCYLFpBPEiT8kZD7K.Ebg3UV/ly', '2026-03-22 10:58:41', 'STAFF', 'CASHIER', NULL, 31, NULL, '2026-03-22 10:49:07', '2026-03-22 10:58:41', NULL, 0, 1, 1, '213', NULL, NULL, NULL, '09156818822', NULL),
+(154, 'lalaher611@lxbeta.com', 'vince', 'Vince Hannibal Bido', NULL, '$2y$12$.9o2LKOIrQQWcrtHTKCtKOxdGGgLVs41Xr.eaY9OqHDe/iNtJwnUi', '2026-03-22 10:55:12', 'STAFF', 'INVENTORY', NULL, 31, NULL, '2026-03-22 10:50:09', '2026-03-22 10:55:12', NULL, 0, 1, 1, '213', NULL, NULL, NULL, '09156818811', NULL),
+(157, 'sevof40551@pmdeal.com', 'charles', 'christian Umbal', NULL, '$2y$12$p5xbuMtD/H7yIDBrmdUOyuyuI6b49vKImqKipEUUMBqTGjqBvigci', '2026-03-23 05:10:23', 'STAFF', 'KITCHEN', NULL, 31, NULL, '2026-03-23 05:07:32', '2026-04-15 14:35:15', NULL, 1, 1, 1, '123', NULL, NULL, NULL, '09156818831', NULL),
+(158, 'xiralih141@lxbeta.com', 'John', 'John Stalone', NULL, '$2y$12$LOUp7zlefTxO05AmE6OCAuQtq3vFSVkgFjMUSa2LAyD57UwtF85uC', '2026-03-24 08:58:36', 'SUPPLIER', NULL, NULL, 31, NULL, '2026-03-24 08:57:40', '2026-03-24 08:58:36', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, '', NULL),
+(159, 'xecof21486@fun4k.com', 'admin_main_branch', 'Admin Main Branch', NULL, '$2y$12$0mEgYuYslnBkJs79fi7H0OjiH3uTrkDbe2Kvas21ltIJ9BExNMm0C', '2026-03-25 07:07:57', 'ADMIN', NULL, NULL, 32, NULL, '2026-03-25 06:56:11', '2026-03-25 07:07:57', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL),
+(160, 'radalol730@fun4k.com', 'hr_main_branch', 'HR Main Branch', NULL, '$2y$12$7XE7ggeRv7J3xUcTOgf6qOvZEPs4A8ppDdHk8zb3VxzTggE3EUI2i', '2026-03-25 07:17:25', 'MANAGER', 'HR', NULL, 32, NULL, '2026-03-25 06:56:12', '2026-03-25 07:17:25', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL),
+(161, 'tavej98512@fabaos.com', 'finance_main_branch', 'Finance Main Branch', NULL, '$2y$12$Hb8m1H0Iau3u0jFJ0Spr5uqsg2Fl0kk.2QbHUAKQ.iMtZ9zKuBpra', '2026-03-25 07:20:21', 'MANAGER', 'FINANCE', NULL, 32, NULL, '2026-03-25 06:56:12', '2026-03-25 07:20:21', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL),
+(162, 'lefet30141@fun4k.com', 'logistics_main_branch', 'Logistics Main Branch', NULL, '$2y$12$5jgXzzPw90ASb/4TuQnmreNk6jVKcPGX6ELJy6C9yfDFNv67u2j6u', '2026-03-25 07:22:05', 'MANAGER', 'LOGISTICS', NULL, 32, NULL, '2026-03-25 06:56:12', '2026-03-25 07:22:05', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL),
+(176, 'lejanis485@fun4k.com', 'Customer', NULL, NULL, '$2y$12$HaDuG9eTBOzfLI2QJBBEJunc9e6yPAlAfdTYcGQwObeikCBEUfR4C', '2026-03-30 02:13:38', 'customer', NULL, NULL, NULL, NULL, '2026-03-30 02:13:38', '2026-03-30 02:13:38', NULL, 1, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL),
+(177, 'yoboko6989@fun4k.com', 'Customer_12', NULL, NULL, '$2y$12$mDEoShJoia8vzT45WUs3wOfrTISRPuFIb2UZ6lMD3CtbuDcQzul3.', '2026-03-30 07:46:53', 'customer', NULL, NULL, NULL, NULL, '2026-03-30 07:46:53', '2026-03-30 07:46:53', NULL, 1, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL),
+(214, NULL, 'admin_br216033', 'Admin - test', NULL, '$2y$12$Cm6def5Kq4NElULrwrZ8Gezo.kS/sUkMFhFgmbeXjxCMqIZH8yO2y', NULL, 'ADMIN', NULL, NULL, 46, NULL, '2026-04-05 19:44:55', '2026-04-05 19:47:48', NULL, 1, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL),
+(215, NULL, 'custom_br216033', 'Custom Account - test', NULL, '$2y$12$BF3h6L52Cu0s6InQ/qYRROAH2WwjwLFUZhcOtnYcdyOonE..4lhGm', NULL, 'CUSTOM', NULL, '{\"modules\":[\"admin\",\"finance\",\"logistics\",\"inventory\",\"procurement\",\"kitchen\",\"cashier\",\"hr\"],\"functions\":[]}', 46, NULL, '2026-04-05 19:44:55', '2026-04-05 19:48:39', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL),
+(231, NULL, 'admin_br687660', 'Admin - San Simon Branch', NULL, '$2y$12$o1LJ..GU13mGlpDOg2gaVefQClGNLWvBEcduocg3GbYOVcgQBiHdq', NULL, 'ADMIN', NULL, NULL, 47, NULL, '2026-04-14 14:13:36', '2026-04-14 14:13:36', NULL, 1, 1, 0, NULL, NULL, NULL, NULL, NULL, NULL),
+(232, NULL, 'hr_br687660', 'HR Manager - San Simon Branch', NULL, '$2y$12$SUL0/MEe3ejLNwvpQA0uZ.Ji8pZuKQK4ogNeQ1h/YhMK0vvJP7.lm', NULL, 'MANAGER', 'HR', NULL, 47, NULL, '2026-04-14 14:13:36', '2026-04-14 14:13:36', NULL, 1, 1, 0, NULL, NULL, NULL, NULL, NULL, NULL),
+(233, NULL, 'finance_br687660', 'Finance Manager - San Simon Branch', NULL, '$2y$12$3flgZyKGpB4fHVCzjrn.Y.K2KQ6Ae.x/KHnZYfOIPIBi.T67wJy5.', NULL, 'MANAGER', 'FINANCE', NULL, 47, NULL, '2026-04-14 14:13:36', '2026-04-14 14:13:36', NULL, 1, 1, 0, NULL, NULL, NULL, NULL, NULL, NULL),
+(234, NULL, 'procurement_br687660', 'Procurement Manager - San Simon Branch', NULL, '$2y$12$GhDK5a/xOz6KlieTdsUmqOwHcE22vH0KnibWJCtaiSneiz0zgAWFy', NULL, 'MANAGER', 'PROCUREMENT', NULL, 47, NULL, '2026-04-14 14:13:36', '2026-04-14 14:13:36', NULL, 1, 1, 0, NULL, NULL, NULL, NULL, NULL, NULL),
+(235, NULL, 'logistics_br687660', 'Logistics Manager - San Simon Branch', NULL, '$2y$12$BFfjh5oLhi0C/ZaKaxuhOuwnvyvYg9F1Xi6uLABUiYmKq6BqEIbm.', NULL, 'MANAGER', 'LOGISTICS', NULL, 47, NULL, '2026-04-14 14:13:36', '2026-04-14 14:13:36', NULL, 1, 1, 0, NULL, NULL, NULL, NULL, NULL, NULL);
 
 --
 -- Indexes for dumped tables
@@ -3906,13 +3761,13 @@ ALTER TABLE `attendance`
 -- AUTO_INCREMENT for table `attendance_settings`
 --
 ALTER TABLE `attendance_settings`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=149;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=150;
 
 --
 -- AUTO_INCREMENT for table `branches`
 --
 ALTER TABLE `branches`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=47;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=49;
 
 --
 -- AUTO_INCREMENT for table `budget_requests`
@@ -3978,7 +3833,7 @@ ALTER TABLE `messages`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=113;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=117;
 
 --
 -- AUTO_INCREMENT for table `orders`
@@ -3996,7 +3851,7 @@ ALTER TABLE `order_items`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2385;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2433;
 
 --
 -- AUTO_INCREMENT for table `price_audits`
@@ -4062,7 +3917,7 @@ ALTER TABLE `settlements`
 -- AUTO_INCREMENT for table `staff_documents`
 --
 ALTER TABLE `staff_documents`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=46;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=53;
 
 --
 -- AUTO_INCREMENT for table `supplier_audit_logs`
@@ -4080,7 +3935,7 @@ ALTER TABLE `supplier_orders`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=216;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=240;
 
 --
 -- Constraints for dumped tables
