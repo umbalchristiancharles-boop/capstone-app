@@ -85,18 +85,13 @@
                             </div>
                           </div>
                           <div class="ingredient-actions">
-                            <button class="mark-low-btn" @click.prevent="showLowStock(ing)">Mark Low Stock</button>
-                            <div v-if="lowStockVisible[ing.id]" class="low-stock-form">
-                              <select v-model="lowStockForm[ing.id].unit">
-                                <option value="pcs">pcs</option>
-                                <option value="g">g</option>
-                                <option value="kg">kg</option>
-                                <option value="ml">ml</option>
-                                <option value="l">l</option>
-                                <option value="pack">pack</option>
-                              </select>
-                              <button @click.prevent="submitLowStock(ing)">Submit</button>
-                              <button @click.prevent="hideLowStock(ing)">Cancel</button>
+                            <button class="update-stock-btn" :disabled="(!ing.product_id)" @click.prevent="showUpdateStock(ing)">Reduce Stock</button>
+                            <div v-if="updateStockVisible[ingKey(ing)]" class="update-stock-form">
+                              <input type="number" v-model.number="updateStockForm[ingKey(ing)].reduce" min="1" max="9999" />
+                              <button @click.prevent="submitUpdateStock(ing)" :disabled="updateStockSubmitting[ingKey(ing)]">
+                                {{ updateStockSubmitting[ingKey(ing)] ? 'Saving...' : 'Save' }}
+                              </button>
+                              <button @click.prevent="hideUpdateStock(ing)" :disabled="updateStockSubmitting[ingKey(ing)]">Cancel</button>
                             </div>
                           </div>
                         </div>
@@ -184,7 +179,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import axios from 'axios'
 import { showToast } from './toastStore'
@@ -334,30 +329,116 @@ function onProductSelect(idx) {
   }
 }
 
-const lowStockVisible = ref({})
-const lowStockForm = ref({})
+const updateStockVisible = reactive({})
+const updateStockForm = reactive({})
+const updateStockSubmitting = reactive({})
 
-function showLowStock(ing) {
-  lowStockVisible.value[ing.id] = true
-  if (!lowStockForm.value[ing.id]) {
-    lowStockForm.value[ing.id] = { unit: ing.unit || 'pcs' }
+function ingKey(ing) {
+  // prefer product id if available, otherwise fallback to ingredient id
+  return String((ing.product && ing.product.id) || ing.product_id || ing.id || Math.random().toString(36).slice(2,9))
+}
+
+async function showUpdateStock(ing) {
+  console.log('[Kitchen] showUpdateStock click', ing)
+  const key = ingKey(ing)
+  updateStockVisible[key] = true
+  if (!updateStockForm[key]) {
+    // Default to 1 for reduce amount; backend validates against aggregated stock
+    updateStockForm[key] = { reduce: 1 }
+  }
+  // Ensure we have product info: if global products are not loaded, fetch them first
+  try {
+    if (!ing.product && ing.product_id) {
+      if (!products.value || products.value.length === 0) {
+        console.log('[Kitchen] products list empty — loading products before showing reduce UI')
+        await loadProducts()
+      }
+      const p = products.value.find(p => String(p.id) === String(ing.product_id))
+      if (p) {
+        // attach a shallow copy so v-model bindings update safely
+        ing.product = { ...p }
+      }
+    }
+  } catch (er) {
+    console.warn('Failed to load product for showUpdateStock', er)
   }
 }
 
-function hideLowStock(ing) {
-  lowStockVisible.value[ing.id] = false
+function hideUpdateStock(ing) {
+  updateStockVisible[ingKey(ing)] = false
 }
 
-async function submitLowStock(ing) {
+async function submitUpdateStock(ing) {
+  const productId = (ing.product && ing.product.id) || ing.product_id
+  if (!productId) {
+    alert('Cannot update stock for an ingredient not linked to a product.')
+    return
+  }
+
+  const key = ingKey(ing)
   try {
-    const payload = { unit: lowStockForm.value[ing.id].unit }
-    const res = await axios.post(`/api/staff/kitchen/ingredients/${ing.id}/low-stock`, payload)
-    alert(res.data.message || 'Requested')
-    lowStockVisible.value[ing.id] = false
-    await loadDishes()
+    const reduce = Number((updateStockForm[key] && updateStockForm[key].reduce) || 0)
+    if (reduce <= 0) {
+      alert('Enter a positive reduce amount')
+      return
+    }
+
+    // No client-side stock check; backend validates against aggregated group stock.
+    // This allows reducing even when individual row stock is 0 but group total is > 0.
+
+    const payload = { reduce }
+    updateStockSubmitting[key] = true
+    console.debug('[Kitchen] Reducing stock', { productId, reduce })
+
+    const res = await axios.put(`/api/manager/inventory/${productId}`, payload, { withCredentials: true })
+
+    // Update UI from response: backend returns updated product with new stock and real_stock
+    try {
+      if (res.data && res.data.product) {
+        const updated = res.data.product
+        // update ingredient product display
+        if (ing.product) {
+          ing.product.stock = updated.stock
+          if (typeof updated.real_stock !== 'undefined') {
+            ing.product.real_stock = updated.real_stock
+          }
+        }
+        // update global products list if present
+        const globalP = products.value.find(p => String(p.id) === String(productId))
+        if (globalP) {
+          globalP.stock = updated.stock
+          if (typeof updated.real_stock !== 'undefined') {
+            globalP.real_stock = updated.real_stock
+          }
+        }
+      }
+    } catch (er) { console.warn('Failed updating local stock view', er) }
+
+    showToast(res.data.message || 'Stock reduced', 'success')
+    updateStockVisible[key] = false
+    // refresh lists in background
+    loadProducts().catch(()=>{})
+    loadDishes().catch(()=>{})
   } catch (e) {
-    console.error('Failed low-stock', e)
-    alert(e?.response?.data?.message || 'Failed to submit')
+    console.error('Failed updating stock', e)
+    const resp = e?.response
+    if (resp && resp.data) {
+      // Laravel validation errors
+      const body = resp.data
+      let msg = body.message || 'Validation error'
+      if (body.errors) {
+        const firstKey = Object.keys(body.errors)[0]
+        if (firstKey && Array.isArray(body.errors[firstKey])) {
+          msg = body.errors[firstKey].join(' ')
+        }
+      }
+      alert(msg)
+    } else {
+      alert(e?.message || 'Failed to update stock')
+    }
+  } finally {
+    updateStockSubmitting[key] = false
+    await nextTick()
   }
 }
 
@@ -519,8 +600,8 @@ async function performLogout() {
 .ingredient-name { font-weight:600 }
 .ingredient-per { color:#374151; font-style:italic }
 .ingredient-actions { display:flex; align-items:center; gap:0.5rem }
-.mark-low-btn { padding:0.35rem 0.5rem; border-radius:6px; border:1px solid #e6e7eb; background:#fff; cursor:pointer }
-.low-stock-form { display:flex; gap:0.5rem; align-items:center }
+.update-stock-btn { padding:0.35rem 0.5rem; border-radius:6px; border:1px solid #e6e7eb; background:#fff; cursor:pointer }
+.update-stock-form { display:flex; gap:0.5rem; align-items:center }
 
 @media (max-width: 900px) {
   .kitchen-grid { grid-template-columns: 1fr; }

@@ -570,6 +570,32 @@ class StaffInventoryController extends Controller
         $user = $request->user();
         if (!$user) return response()->json(['error' => 'Unauthenticated'], 401);
 
+        // Only Logistics roles (or users with LOGISTICS module permission) may confirm stock
+        $role = strtoupper($user->role ?? '');
+        $dept = strtoupper($user->department ?? '');
+        $hasLogistics = (
+            $role === 'LOGISTICS' || $role === 'LOGISTICS_MANAGER' || $role === 'MANAGER_LOGISTICS' ||
+            ($role === 'MANAGER' && $dept === 'LOGISTICS') || ($role === 'STAFF' && $dept === 'LOGISTICS') ||
+            $role === 'SUPER_ADMIN'
+        );
+        if (!$hasLogistics && $role === 'CUSTOM') {
+            try {
+                $perms = $user->permissions ?? [];
+                if (is_string($perms)) $perms = json_decode($perms, true) ?: [];
+                $modules = [];
+                if (is_array($perms) && isset($perms['modules']) && is_array($perms['modules'])) {
+                    $modules = $perms['modules'];
+                } elseif (is_array($perms)) {
+                    $modules = $perms;
+                }
+                foreach ($modules as $m) {
+                    $m = strtoupper(trim((string)$m));
+                    if ($m === 'LOGISTICS') { $hasLogistics = true; break; }
+                }
+            } catch (\Throwable $_) { /* ignore */ }
+        }
+        if (!$hasLogistics) return response()->json(['error' => 'Unauthorized: Logistics only'], 403);
+
         $validated = $request->validate([
             'counted_stock' => 'required|integer|min:0',
             'proof_image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120',

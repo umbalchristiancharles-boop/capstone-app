@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Product;
+use Illuminate\Support\Facades\DB;
 
 class InventoryController extends Controller
 {
@@ -20,16 +21,26 @@ class InventoryController extends Controller
 
         $user = Auth::user();
 
-        if ($user->role !== 'BRANCH_MANAGER' || !$user->branch_id) {
+        $isManager = ($user->role === 'BRANCH_MANAGER' && $user->branch_id);
+        $isKitchen = ($user->department === 'KITCHEN' && $user->branch_id);
+
+        if (! $isManager && ! $isKitchen) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
         $branchId = $user->branch_id;
 
-        $products = Product::where('branch_id', $branchId)
+        $productsQuery = Product::where('branch_id', $branchId)
             ->where('is_published', 1)
-            ->where('is_active', 1)
-            ->select('id', 'name', 'slug', 'price', 'stock', 'min_stock', 'sku', 'branch_id', 'supplier_name', 'is_published', 'created_at', 'updated_at')
+            ->where('is_active', 1);
+
+        // Kitchen staff only need to see kitchen ingredient products
+        if ($isKitchen && ! $isManager) {
+            $productsQuery->where('is_kitchen_dish', 1);
+        }
+
+        $products = $productsQuery
+            ->select('id', 'name', 'slug', 'price', 'stock', 'real_stock', 'min_stock', 'sku', 'branch_id', 'supplier_name', 'is_published', 'created_at', 'updated_at')
             ->orderBy('name', 'asc')
             ->get();
 
@@ -50,7 +61,10 @@ class InventoryController extends Controller
 
         $user = Auth::user();
 
-        if ($user->role !== 'BRANCH_MANAGER' || !$user->branch_id) {
+        $isManager = ($user->role === 'BRANCH_MANAGER' && $user->branch_id);
+        $isKitchen = ($user->department === 'KITCHEN' && $user->branch_id);
+
+        if (! $isManager && ! $isKitchen) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -64,12 +78,70 @@ class InventoryController extends Controller
             return response()->json(['success' => false, 'message' => 'Product not found'], 404);
         }
 
-        $request->validate([
-            'stock' => 'required|integer|min:0',
-        ]);
+        // Validation differs for kitchen staff (they send `reduce`) vs managers (they send absolute `stock`).
+        if ($isKitchen && ! $isManager) {
+            // For kitchen staff, always group by normalized name to handle multi-supplier ingredients.
+            // This ensures Flour from different suppliers aggregates correctly.
+            $normalized = trim(strtoupper((string)$product->name));
+            $groupQuery = Product::where('branch_id', $branchId)
+                ->whereRaw('TRIM(UPPER(name)) = ?', [$normalized])
+                ->where('is_active', 1);
+            $groupTotal = (int) $groupQuery->sum('stock');
 
-        $product->stock = $request->stock;
-        $product->save();
+            $request->validate([
+                'reduce' => ['required','integer','min:1', 'max:'.$groupTotal],
+            ]);
+        } else {
+            $request->validate([
+                'stock' => 'required|integer|min:0',
+            ]);
+        }
+
+        // If user is kitchen staff, only allow updating products that are marked as kitchen ingredients
+        if ($isKitchen && !$isManager) {
+            if (!$product || (int)$product->is_kitchen_dish !== 1) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized to update this product'], 403);
+            }
+        }
+
+        // Kitchen staff reduce by a quantity; managers set absolute stock
+        if ($isKitchen && ! $isManager) {
+            $reduce = (int) $request->reduce;
+
+            // Use name-based grouping to decrement across all rows of this ingredient
+            $normalized = trim(strtoupper((string)$product->name));
+            $branchIdForTrans = $branchId;
+            $normalizedForTrans = $normalized;
+
+            DB::transaction(function () use ($normalizedForTrans, $branchIdForTrans, $reduce) {
+                $remaining = $reduce;
+                // Rebuild query inside transaction to avoid stale state
+                $rows = Product::where('branch_id', $branchIdForTrans)
+                    ->whereRaw('TRIM(UPPER(name)) = ?', [$normalizedForTrans])
+                    ->where('is_active', 1)
+                    ->where('stock', '>', 0)
+                    ->orderBy('stock', 'desc')
+                    ->get();
+                    
+                foreach ($rows as $r) {
+                    if ($remaining <= 0) break;
+                    $take = min((int)$r->stock, $remaining);
+                    $r->stock = max(0, (int)$r->stock - $take);
+                    $r->save();
+                    $remaining -= $take;
+                }
+            });
+
+            // Recompute aggregated real_stock for the group
+            Product::recomputeRealStockForGroup($branchId, $product->sku, $product->name);
+
+            // reload product to reflect updated values
+            $product = Product::where('id', $product->id)->first();
+        } else {
+            $product->stock = (int) $request->stock;
+            $product->save();
+            Product::recomputeRealStockForGroup($branchId, $product->sku, $product->name);
+        }
 
         return response()->json([
             'success' => true,

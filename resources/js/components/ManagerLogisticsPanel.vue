@@ -1032,7 +1032,8 @@ async function submitPendingConfirmation() {
     if (confirmForm.value.notes) formData.append('notes', confirmForm.value.notes)
     formData.append('proof_image', confirmForm.value.proof_image)
 
-    await requestWithFallbackPost(`/api/staff/inventory/procurements/${id}/confirm-stock`, formData, { withCredentials: true })
+    // Use manager logistics endpoint for confirming stock
+    await requestWithFallbackPost(`/api/manager/logistics/procurements/${id}/confirm-stock`, formData, { withCredentials: true })
     showToast('Stock confirmed', 'success')
     clearSelectedPending()
     await Promise.all([fetchPendingStock(), fetchInventory(), fetchProcRequests(), fetchVarianceAlerts()])

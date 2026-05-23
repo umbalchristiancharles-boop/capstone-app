@@ -276,6 +276,7 @@ Route::middleware('web')->group(function () {
     // ==========================================
 Route::middleware('auth:sanctum,web')->group(function () {
     Route::apiResource('procurement-requests', \App\Http\Controllers\Api\ProcurementRequestController::class)->except(['show']);
+    Route::post('procurement-requests/manual', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'storeManual']);
     Route::get('procurement-requests/requested-products', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'requestedProducts']);
     Route::get('procurement-requests/receipt-submissions', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'receiptSubmissions']);
     Route::get('procurement-requests/{id}/confirmed-suppliers', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'confirmedSuppliers']);
@@ -369,6 +370,9 @@ Route::prefix('manager')->middleware('auth:sanctum,web')->group(function () {
         Route::get('/logistics/products', [\App\Http\Controllers\Api\ManagerProfileController::class, 'logisticsProducts']);
         Route::get('/logistics/branches', [\App\Http\Controllers\Api\ManagerProfileController::class, 'logisticsBranches']);
         Route::get('/logistics/suppliers', [\App\Http\Controllers\Api\ManagerProfileController::class, 'logisticsSuppliers']);
+
+        // Allow logistics managers to confirm procurement stock via manager logistics endpoints
+        Route::post('/logistics/procurements/{id}/confirm-stock', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'confirmProcurementStock']);
 
         // Procurement Manager endpoints
         Route::get('/procurement/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'procurementProfile']);

@@ -81,7 +81,11 @@
                 <td>{{ proc.product_name || 'Unknown' }}</td>
                 <td>{{ proc.quantity }}</td>
                 <td>{{ formatDate(proc.created_at) }}</td>
-                <td><button class="btn-primary" @click="openConfirmModal(proc)">Confirm Stock</button></td>
+                <td>
+                  <button class="btn-primary" disabled>Confirm Stock (Logistics)</button>
+                  <div style="font-size:12px;color:#9ca3af">Confirmation performed by Logistics team</div>
+                  <div v-if="!proc.budget_approved" style="font-size:12px;color:#9ca3af">Waiting for Finance approval</div>
+                </td>
               </tr>
             </tbody>
           </table>

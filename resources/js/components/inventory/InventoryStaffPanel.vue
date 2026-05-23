@@ -75,58 +75,7 @@
         </div>
       </div>
 
-      <!-- Procurement Requests (Staff) -->
-      <div class="panel-section">
-        <h2 class="section-title">Procurement Requests</h2>
-        <p class="section-description">Create and view procurement requests for items needing replenishment.</p>
-
-        <button v-if="!showProcRequestForm" class="btn-primary" @click="showProcRequestForm = true" style="margin-bottom: 16px;">+ Custom Procurement Request</button>
-
-        <div v-if="showProcRequestForm" class="form-container" style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-            <h3 style="margin: 0; font-size: 18px; color: #1f2937;">Create Custom Procurement Request</h3>
-            <button type="button" @click="cancelProcRequest" style="background: none; border: none; color: #9ca3af; font-size: 20px; cursor: pointer; padding: 0;">✕</button>
-          </div>
-          <p class="form-note" style="color: #6b7280; font-size: 13px; margin: 0 0 16px 0; line-height: 1.5;">
-            📝 <strong>Set a custom quantity</strong> for a specific product below. For quick replenishment of low-stock items, use the <strong>'Request Procurement'</strong> button in the Inventory Monitor table (which automatically requests minimum 10 units).
-          </p>
-          <form @submit.prevent="submitProcRequest">
-            <div class="form-group" style="margin-bottom: 16px;">
-              <label style="display: block; font-weight: 500; color: #374151; margin-bottom: 6px; font-size: 14px;">Product *</label>
-              <select v-model="procRequestForm.product_id" required style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; background-color: white; cursor: pointer;">
-                <option value="">— Select a product —</option>
-                <option v-for="p in internalProducts" :key="p.id" :value="p.id">{{ p.name }} (₱{{ formatCurrency(p.price) }})</option>
-              </select>
-            </div>
-            <div class="form-group" style="margin-bottom: 16px;">
-              <label style="display: block; font-weight: 500; color: #374151; margin-bottom: 6px; font-size: 14px;">Quantity *</label>
-              <input type="number" v-model="procRequestForm.quantity" min="1" required style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box;" />
-              <small style="color: #9ca3af; display: block; margin-top: 4px; font-size: 12px;">Any quantity you need for this product</small>
-            </div>
-            <div v-if="procRequestFormError" class="error-message" style="color: #dc2626; background: #fee2e2; padding: 10px 12px; border-radius: 6px; margin-bottom: 16px; font-size: 13px; border-left: 3px solid #dc2626;">{{ procRequestFormError }}</div>
-            <div class="form-actions" style="display: flex; gap: 10px; justify-content: flex-end;">
-              <button type="button" class="btn-secondary" @click="cancelProcRequest" style="padding: 8px 16px; background: white; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; font-size: 14px; color: #374151; transition: all 0.2s;">Cancel</button>
-              <button type="submit" class="btn-primary" :disabled="procRequestSubmitting" style="padding: 8px 20px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; transition: background 0.2s;" :style="procRequestSubmitting ? 'opacity: 0.7; cursor: not-allowed;' : 'hover: { background: #2563eb }'">{{ procRequestSubmitting ? '⏳ Submitting...' : '✓ Submit Request' }}</button>
-            </div>
-          </form>
-        </div>
-
-        <div class="requests-list">
-          <h3>My Procurement Requests</h3>
-          <div v-if="procRequestsLoading" class="loading-container small"><div class="loading-spinner"></div></div>
-          <div v-else class="requests-list-items">
-            <div v-for="req in procurementRequests" :key="req.id" class="request-item">
-              <div class="request-left">{{ req.product?.name || '(no product)' }}</div>
-              <div class="request-mid">{{ req.quantity }} · <span class="amount">{{ formatCurrency(req.total_amount) }}</span></div>
-              <div class="request-right">
-                <div><span :class="['status-badge', getProcStatusClass(req.status)]">{{ formatProcStatus(req.status, req.budget_approved) }}</span></div>
-                <div class="request-updated">{{ formatDate(req.updated_at) }}</div>
-              </div>
-            </div>
-            <div v-if="procurementRequests.length === 0" class="empty-message">No procurement requests.</div>
-          </div>
-        </div>
-      </div>
+      <!-- ProcurementRequests moved to Procurement Manager panel per request -->
 
       <!-- Product Request Modal (opened by ProductList "Add Product") -->
       <transition name="fade">
@@ -414,60 +363,16 @@ const fetchUrl = computed(() => `${endpoints.value.products}?include_unpublished
 // ref to the ProductList child so we can trigger refreshes
 const productListRef = ref(null)
 
+// Dashboard totals used by the header stats
+const dashboardTotals = ref({ totalProducts: 0, lowStock: 0, pendingRequests: 0 })
+
 // Procurement & Product Request state (staff)
 const procurementRequests = ref([])
 const procRequestsLoading = ref(false)
-const procRequestForm = ref({ product_id: '', quantity: 1 })
+const procRequestForm = ref({ product_id: '', quantity: 1, request_budget: false, receipt: null, product_image: null })
 const procRequestSubmitting = ref(false)
-const showProcRequestForm = ref(false)
 const procRequestFormError = ref('')
-
-const productRequests = ref([])
-const productRequestsLoading = ref(false)
-const productRequestForm = ref({ name: '', description: '', unit: '' })
-const productRequestSubmitting = ref(false)
-const showProductRequestForm = ref(false)
-const requesting = ref({})
-
-// Dashboard + inventory state (match manager panel)
-const dashboardTotals = ref({ totalProducts: 0, lowStock: 0, pendingRequests: 0 })
-const inventory = ref([])
-const inventoryLoading = ref(false)
-const inventoryError = ref('')
-const canRequestProcurement = ref(true)
-
-function getProcStatusClass(status) {
-  switch ((status || '').toLowerCase()) {
-    case 'completed': return 'status-approved'
-    case 'approved': return 'status-approved'
-    case 'pending': return 'status-pending'
-    default: return 'status-pending'
-  }
-}
-
-function formatProcStatus(status, budgetApproved) {
-  if (budgetApproved) return 'BUDGET APPROVED'
-  return (status || '').toUpperCase()
-}
-
-// Helpers for product request approval statuses (used in Product Request section)
-function getProductReqStatusClass(status) {
-  switch ((status || '').toLowerCase()) {
-    case 'approved': return 'status-approved'
-    case 'rejected': return 'status-rejected'
-    case 'pending_approval': return 'status-pending'
-    default: return 'status-pending'
-  }
-}
-
-function formatProductReqStatus(status) {
-  const statusMap = {
-    'pending_approval': 'PENDING APPROVAL',
-    'approved': 'APPROVED',
-    'rejected': 'REJECTED'
-  }
-  return statusMap[status] || (status || '').toUpperCase()
-}
+const showProcRequestForm = ref(false)
 
 async function fetchProcRequests() {
   procRequestsLoading.value = true
@@ -507,16 +412,26 @@ async function submitProcRequest() {
     await ensureCsrf()
     // If the product has an associated supplier, include it so procurement managers
     // can acknowledge without requiring supplier-order submissions.
-    const payload = { product_id: procRequestForm.value.product_id, quantity: quantity }
+    // Build FormData for manual endpoint to support file uploads and budget flag
+    const form = new FormData()
+    form.append('product_id', procRequestForm.value.product_id)
+    form.append('quantity', quantity)
+    if (procRequestForm.value.request_budget) form.append('request_budget', '1')
+
     try {
       const prodRes = await axios.get(`/api/staff/inventory/products`, { withCredentials: true, params: { include_unpublished: 1 } })
       const allProducts = Array.isArray(prodRes.data) ? prodRes.data : (prodRes.data?.data || [])
       const selected = allProducts.find(p => Number(p.id) === Number(procRequestForm.value.product_id))
-      if (selected && selected.supplier_id) payload.supplier_id = selected.supplier_id
+      if (selected && selected.supplier_id) form.append('supplier_id', selected.supplier_id)
     } catch (e) {
       // ignore; best-effort only
     }
-    const res = await axios.post('/api/procurement-requests', payload, { withCredentials: true })
+
+    // attach files
+    if (procRequestForm.value.receipt) form.append('receipt', procRequestForm.value.receipt)
+    if (procRequestForm.value.product_image) form.append('product_image', procRequestForm.value.product_image)
+
+    const res = await axios.post('/api/procurement-requests/manual', form, { withCredentials: true, headers: { 'Content-Type': 'multipart/form-data' } })
     // try to use created object returned from server to insert into list and avoid duplicates
     const created = res.data?.data ?? res.data ?? null
     if (created && created.id) {
@@ -524,7 +439,7 @@ async function submitProcRequest() {
     }
     showToast(`✓ Procurement request created for ${quantity} units`, 'success')
     showProcRequestForm.value = false
-    procRequestForm.value = { product_id: '', quantity: 1 }
+    procRequestForm.value = { product_id: '', quantity: 1, request_budget: false, receipt: null, product_image: null }
     procRequestFormError.value = ''
     // Add timeout to prevent hanging indefinitely
     try {
@@ -548,7 +463,7 @@ async function submitProcRequest() {
 
 function cancelProcRequest() {
   showProcRequestForm.value = false
-  procRequestForm.value = { product_id: '', quantity: 1 }
+  procRequestForm.value = { product_id: '', quantity: 1, request_budget: false, receipt: null, product_image: null }
   procRequestFormError.value = ''
 }
 
@@ -588,6 +503,16 @@ async function requestProcurement(product) {
     try { if (window.hideRouteOverlay) window.hideRouteOverlay() } catch (e) {}
     try { if (window.pageBlur && typeof window.pageBlur.hide === 'function') window.pageBlur.hide() } catch (e) {}
   }
+}
+
+function onReceiptChange(e) {
+  const f = e?.target?.files?.[0] ?? null
+  procRequestForm.value.receipt = f
+}
+
+function onProductImageChange(e) {
+  const f = e?.target?.files?.[0] ?? null
+  procRequestForm.value.product_image = f
 }
 
 async function fetchProductRequests() {

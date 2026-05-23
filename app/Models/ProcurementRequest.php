@@ -36,11 +36,13 @@ class ProcurementRequest extends Model
         'variance_reason',
         'variance_reported_at',
         'delivery_proof_path',
+        'is_manual',
     ];
 
     protected $casts = [
         'budget_approved' => 'boolean',
         'supplier_confirmed' => 'boolean',
+        'is_manual' => 'boolean',
         'budget_amount' => 'decimal:2',
         'price' => 'decimal:2',
         'total_amount' => 'decimal:2',

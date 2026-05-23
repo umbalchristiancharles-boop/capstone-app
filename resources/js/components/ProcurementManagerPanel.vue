@@ -42,6 +42,57 @@
           <span v-if="procurementPendingCount > 0" class="panel-badge">{{ procurementPendingCount }}</span>
         </div>
       </div>
+      <section class="manual-procurement mt-1">
+        <h2>Manual Procurement</h2>
+        <p class="section-description">Create a manual procurement (attach receipt/product image and optionally request budget).</p>
+
+        <div class="mb-1">
+          <button class="btn-primary" v-if="!showProcRequestFormManager" @click="showProcRequestFormManager = true">+ Custom Procurement Request</button>
+        </div>
+
+        <div v-if="showProcRequestFormManager" class="form-container" style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3 style="margin:0; font-size:16px;">Create Manual Procurement</h3>
+            <button type="button" @click="cancelProcRequestManager" style="background:none;border:none;color:#9ca3af;font-size:18px;cursor:pointer;padding:0">✕</button>
+          </div>
+          <form @submit.prevent="submitProcRequestManager">
+            <div class="form-group" style="margin-bottom:12px;">
+              <label>Product *</label>
+              <select v-model="procRequestFormManager.product_id" required style="width:100%; padding:8px;">
+                <option value="">— Select product —</option>
+                <option v-for="p in products" :key="p.id" :value="p.id">{{ p.name }} (₱{{ formatPrice(p.price) }})</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:12px;">
+              <label>Quantity *</label>
+              <input type="number" v-model.number="procRequestFormManager.quantity" min="1" required style="width:100%; padding:8px;" />
+            </div>
+            <div class="form-group" style="margin-bottom:12px;">
+              <label>Unit Price (PHP)</label>
+              <input type="number" v-model.number="procRequestFormManager.price" step="0.01" min="0" placeholder="Optional - enter price per unit" style="width:100%; padding:8px;" />
+              <small style="color:#9ca3af">If provided, this price will be used to compute the total and sent to Finance.</small>
+            </div>
+            <div class="form-group" style="display:flex; gap:12px; margin-bottom:12px;">
+              <div style="flex:1">
+                <label>Receipt *</label>
+                <input type="file" accept="image/*" @change="onReceiptChangeManager" required />
+              </div>
+              <div style="flex:1">
+                <label>Product image *</label>
+                <input type="file" accept="image/*" @change="onProductImageChangeManager" required />
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom:12px;">
+              <label><input type="checkbox" v-model="procRequestFormManager.request_budget" /> Request budget from Finance</label>
+            </div>
+            <div v-if="procRequestFormManagerError" class="error-msg" style="color:#dc2626;margin-bottom:12px">{{ procRequestFormManagerError }}</div>
+            <div class="form-actions" style="display:flex; gap:10px; justify-content:flex-end;">
+              <button type="button" class="btn-secondary" @click="cancelProcRequestManager">Cancel</button>
+              <button type="submit" class="btn-primary" :disabled="procRequestSubmittingManager">{{ procRequestSubmittingManager ? 'Submitting...' : 'Submit' }}</button>
+            </div>
+          </form>
+        </div>
+      </section>
       <div class="panel-actions mt-1">
         <button class="btn-primary" @click="openAddSupplier">Add Supplier</button>
       </div>
@@ -467,6 +518,91 @@ function cancelBudgetForm() {
   budgetForm.value.requested_amount = ''
   budgetError.value = ''
   budgetFieldError.value = ''
+}
+
+// Manual procurement form (manager panel)
+const showProcRequestFormManager = ref(false)
+  const procRequestFormManager = ref({ product_id: '', quantity: 1, price: null, request_budget: false, receipt: null, product_image: null })
+const procRequestSubmittingManager = ref(false)
+const procRequestFormManagerError = ref('')
+
+function cancelProcRequestManager() {
+  if (procRequestSubmittingManager.value) return
+  showProcRequestFormManager.value = false
+  procRequestFormManager.value = { product_id: '', quantity: 1, request_budget: false, receipt: null, product_image: null }
+  procRequestFormManagerError.value = ''
+}
+
+function onReceiptChangeManager(e) {
+  const f = e?.target?.files?.[0] ?? null
+  procRequestFormManager.value.receipt = f
+}
+
+function onProductImageChangeManager(e) {
+  const f = e?.target?.files?.[0] ?? null
+  procRequestFormManager.value.product_image = f
+}
+
+async function submitProcRequestManager() {
+  procRequestFormManagerError.value = ''
+  if (!procRequestFormManager.value.product_id) {
+    procRequestFormManagerError.value = 'Please select a product'
+    return
+  }
+  const quantity = Number(procRequestFormManager.value.quantity)
+  if (!quantity || quantity <= 0) {
+    procRequestFormManagerError.value = 'Please enter a quantity greater than 0'
+    return
+  }
+    // Ensure required files are present
+    if (!procRequestFormManager.value.receipt) {
+      procRequestFormManagerError.value = 'Receipt image is required.'
+      procRequestSubmittingManager.value = false
+      return
+    }
+    if (!procRequestFormManager.value.product_image) {
+      procRequestFormManagerError.value = 'Product image is required.'
+      procRequestSubmittingManager.value = false
+      return
+    }
+  procRequestSubmittingManager.value = true
+  try {
+    // ensure CSRF cookie and set token header
+    await ensureCsrf()
+    const form = new FormData()
+    form.append('product_id', procRequestFormManager.value.product_id)
+    form.append('quantity', quantity)
+    if (procRequestFormManager.value.request_budget) form.append('request_budget', '1')
+    if (procRequestFormManager.value.price !== null && procRequestFormManager.value.price !== undefined) {
+      form.append('price', String(procRequestFormManager.value.price))
+    }
+
+    // attempt to include supplier_id from loaded products
+    try {
+      const selected = (products.value || []).find(p => Number(p.id) === Number(procRequestFormManager.value.product_id))
+      if (selected && selected.supplier_id) form.append('supplier_id', selected.supplier_id)
+    } catch (e) {}
+
+    if (procRequestFormManager.value.receipt) form.append('receipt', procRequestFormManager.value.receipt)
+    if (procRequestFormManager.value.product_image) form.append('product_image', procRequestFormManager.value.product_image)
+
+    const res = await axios.post('/api/procurement-requests/manual', form, { withCredentials: true, headers: { 'Content-Type': 'multipart/form-data' } })
+    const created = res.data?.data ?? res.data ?? null
+    showToast(`✓ Procurement request created`, 'success')
+    showProcRequestFormManager.value = false
+    procRequestFormManager.value = { product_id: '', quantity: 1, request_budget: false, receipt: null, product_image: null }
+    procRequestFormManagerError.value = ''
+    // refresh lists
+    try { await loadRequestedProducts() } catch (e) {}
+    try { await loadProducts() } catch (e) {}
+    await refreshAllData()
+  } catch (e) {
+    console.error('submitProcRequestManager error', e)
+    procRequestFormManagerError.value = e.response?.data?.message || 'Failed to create procurement request'
+    showToast(procRequestFormManagerError.value, 'error')
+  } finally {
+    procRequestSubmittingManager.value = false
+  }
 }
 
 // Products for procurement manager (branch-scoped)
@@ -895,6 +1031,19 @@ async function requestSupplier(product) {
     const errorMsg = e.response?.data?.error || e.response?.data?.message || 'Failed to request supplier'
     alert('❌ ' + errorMsg)
     setRequestingFlag(productId, false)
+  }
+}
+
+async function ensureCsrf() {
+  try {
+    await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
+    const match = document.cookie.match(new RegExp('(^|; )' + 'XSRF-TOKEN' + '=([^;]*)'))
+    const token = match ? decodeURIComponent(match[2]) : null
+    if (token) axios.defaults.headers.common['X-XSRF-TOKEN'] = token
+    return true
+  } catch (e) {
+    console.error('ensureCsrf failed:', e)
+    return false
   }
 }
 

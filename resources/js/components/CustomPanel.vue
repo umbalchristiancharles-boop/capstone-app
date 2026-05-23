@@ -373,7 +373,7 @@ const panelDescription = (m) => {
     hr: 'Manage staff records and status, monitor HR metrics, open staff management tools, and control attendance settings and HR reports.',
     logistics: 'Monitor inventory health, create procurement and product requests, track request statuses, and coordinate branch logistics workflows.',
     procurement: 'Handle supplier operations, review branch procurement history, process logistics requests, and manage budget and order progression.',
-    kitchen: 'Create and manage dishes with ingredient mappings, monitor kitchen order queues, mark orders done, and flag low-stock ingredients.',
+    kitchen: 'Create and manage dishes with ingredient mappings, monitor kitchen order queues, mark orders done, and update ingredient stock.',
     cashier: 'Run POS transactions with cart, discounts, VAT, and payments, print receipts, and monitor recent transactions with refund actions.',
     reports: 'Access cross-module reporting endpoints for sales, staff performance, inventory, and finance analytics and exports.',
   };

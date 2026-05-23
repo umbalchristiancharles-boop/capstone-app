@@ -1485,8 +1485,21 @@ public function logisticsProducts(Request $request)
                 return response()->json(['ok' => false, 'message' => $message, 'debug' => config('app.debug') ? ['request_id' => $validated['procurement_request_id'] ?? null, 'product_id' => $product->id, 'branch_id' => $branchId] : null], 400);
             }
 
-            // Ensure budget approved before ordering
+        // Ensure budget approved before ordering
             if (!$procReq->budget_approved) {
+                // Check if this is a manual procurement - they should not reach order creation
+                if ($procReq->is_manual) {
+                    Log::info('placeOrderProduct: manual procurement cannot be ordered', [
+                        'proc_id' => $procReq->id,
+                        'message' => 'Manual procurements go directly to inventory for confirmation after budget approval'
+                    ]);
+                    return response()->json([
+                        'ok' => false,
+                        'message' => 'Manual procurements go directly to inventory for stock confirmation after budget approval. No supplier order needed.',
+                        'procurement_request' => $procReq->fresh()->load('product')
+                    ], 400);
+                }
+
                 // If status is 'pending', auto-acknowledge first (which creates BudgetRequest for Finance)
                 if ($procReq->status === 'pending') {
                     try {
@@ -1541,6 +1554,20 @@ public function logisticsProducts(Request $request)
                     Log::warning('placeOrderProduct SPECIFIC SUPPLIER: budget not approved', ['proc_id' => $procReq->id, 'status' => $procReq->status]);
                     return response()->json(['ok' => false, 'message' => 'Budget must be approved before ordering'], 400);
                 }
+            }
+
+            // If this is a manual procurement that was approved, don't create supplier order
+            // Manual procurements go straight to inventory for stock confirmation
+            if ($procReq->is_manual && $procReq->budget_approved) {
+                Log::info('placeOrderProduct: manual procurement after budget approval', [
+                    'proc_id' => $procReq->id,
+                    'message' => 'Skipping order creation - manual procurements go to inventory'
+                ]);
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'This is a manual procurement. After budget approval, it goes directly to the inventory panel for stock confirmation. No supplier order is needed.',
+                    'procurement_request' => $procReq->fresh()->load('product')
+                ], 400);
             }
 
             // Use the quantity requested by logistics (cannot be changed by procurement manager)
@@ -1644,6 +1671,14 @@ public function logisticsProducts(Request $request)
                 Log::info('placeOrderProduct BROADCAST: found procurement request', [
                     'proc_id' => $procReq->id,
                 ]);
+
+                // Manual procurements cannot have orders placed - they go straight to inventory
+                if ($procReq->is_manual) {
+                    Log::info('placeOrderProduct BROADCAST: manual procurement detected, skipping order', [
+                        'proc_id' => $procReq->id,
+                    ]);
+                    throw new \Exception('This is a manual procurement. After budget approval, it goes directly to inventory for stock confirmation. No supplier order is needed.');
+                }
 
                 // Check if a broadcast supplier order already exists for this procurement request
                 // Prevent duplicate broadcast orders (fix for: 1 product, 2 suppliers showing duplicate entries)

@@ -349,6 +349,146 @@ class ProcurementRequestController extends Controller
         return response()->json($result, 201);
     }
 
+    /**
+     * Create a manual procurement record (for purchases made directly without supplier orders).
+     * Accepts optional receipt and product image uploads and can optionally create a BudgetRequest
+     * to ask Finance for funds.
+     */
+    public function storeManual(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) return response()->json(['error' => 'Unauthenticated'], 401);
+
+        // Allow procurement managers, logistics staff, inventory staff, or super admin
+        $role = strtoupper($user->role ?? '');
+        $dept = strtoupper($user->department ?? '');
+
+        $hasAccess = (
+            $role === 'PROCUREMENT_MANAGER' || $role === 'MANAGER_PROCUREMENT' ||
+            $role === 'LOGISTICS_MANAGER' || $role === 'MANAGER_LOGISTICS' ||
+            ($role === 'MANAGER' && ($dept === 'PROCUREMENT' || $dept === 'LOGISTICS')) ||
+            ($role === 'STAFF' && $dept === 'INVENTORY') ||
+            $role === 'SUPER_ADMIN'
+        );
+
+        if (!$hasAccess && $role === 'CUSTOM') {
+            try {
+                $perms = $user->permissions ?? [];
+                if (is_string($perms)) $perms = json_decode($perms, true) ?: [];
+                $modules = [];
+                if (is_array($perms) && isset($perms['modules']) && is_array($perms['modules'])) {
+                    $modules = $perms['modules'];
+                } elseif (is_array($perms)) {
+                    $modules = $perms;
+                }
+                foreach ($modules as $m) {
+                    $m = strtoupper(trim((string)$m));
+                    if ($m === 'LOGISTICS' || $m === 'PROCUREMENT') { $hasAccess = true; break; }
+                }
+            } catch (\Throwable $e) { /* ignore */ }
+        }
+
+        if (!$hasAccess) return response()->json(['error' => 'Unauthorized'], 401);
+
+        $validated = $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'quantity' => 'required|integer|min:1',
+            'supplier_id' => 'nullable|exists:users,id',
+            'request_budget' => 'boolean',
+            // receipt and product_image are required for manual procurements per new requirement
+            'receipt' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+            'product_image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+            // allow manager to provide a custom price for this manual procurement
+            'price' => 'nullable|numeric|min:0'
+        ]);
+
+        $product = \App\Models\Product::findOrFail($validated['product_id']);
+
+        // Determine branch similar to store()
+        if ($role === 'SUPER_ADMIN') {
+            $branchId = $request->input('branch_id') ?? $product->branch_id ?? 1;
+        } else {
+            $branchId = $user->branch_id ?: 1;
+        }
+
+        // Use provided price if present (manager can set), otherwise product price
+        $usePrice = isset($validated['price']) && $validated['price'] !== null ? (float)$validated['price'] : (float)($product->price ?? 0);
+        $data = [
+            'product_id' => $product->id,
+            'logistics_user_id' => $user->id,
+            'quantity' => $validated['quantity'],
+            'price' => $usePrice,
+            'total_amount' => ($usePrice * $validated['quantity']),
+            'status' => $request->boolean('request_budget', false) ? 'budget_pending' : 'pending',
+            'budget_approved' => false,
+            'branch_id' => $branchId,
+            'is_manual' => true, // Mark as manually submitted to skip order creation and go straight to inventory
+        ];
+        if (!empty($validated['supplier_id'])) $data['supplier_id'] = $validated['supplier_id'];
+
+        try {
+            $proc = ProcurementRequest::create($data);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to create procurement request', 'message' => $e->getMessage()], 500);
+        }
+
+        // Handle file uploads after creating to use the id in filenames
+        try {
+            if ($request->hasFile('receipt')) {
+                $file = $request->file('receipt');
+                $receiptsDir = public_path('receipts');
+                if (!file_exists($receiptsDir)) mkdir($receiptsDir, 0755, true);
+                $ext = $file->getClientOriginalExtension() ?: 'jpg';
+                $filename = 'manual_receipt_' . $proc->id . '_' . time() . '.' . $ext;
+                $file->move($receiptsDir, $filename);
+                $proc->receipt_path = '/receipts/' . $filename;
+                $proc->receipt_uploaded_by = $user->id;
+                $proc->receipt_uploaded_at = now();
+                $proc->receipt_confirmed = false;
+            }
+
+            if ($request->hasFile('product_image')) {
+                $file = $request->file('product_image');
+                $imagesDir = public_path('product-images');
+                if (!file_exists($imagesDir)) mkdir($imagesDir, 0755, true);
+                $ext = $file->getClientOriginalExtension() ?: 'jpg';
+                $filename = 'manual_product_' . $proc->id . '_' . time() . '.' . $ext;
+                $file->move($imagesDir, $filename);
+                // Store as delivery_proof_path so frontend can display the product image
+                $proc->delivery_proof_path = '/product-images/' . $filename;
+            }
+
+            $proc->save();
+        } catch (\Exception $e) {
+            // Non-fatal: log and continue
+            Log::warning('Failed to store manual procurement files', ['error' => $e->getMessage(), 'proc_id' => $proc->id]);
+        }
+
+        // Optionally create a BudgetRequest to ask Finance for funds
+        if ($request->boolean('request_budget', false)) {
+            try {
+                $budgetAmount = (float) $proc->total_amount;
+                $existing = BudgetRequest::where('branch_id', $proc->branch_id)
+                    ->where('purpose', 'LIKE', "%Procurement Request #{$proc->id}%")
+                    ->first();
+                if (!$existing) {
+                    BudgetRequest::create([
+                        'branch_id' => $proc->branch_id,
+                        'user_id' => $user->id,
+                        'purpose' => "Procurement Request #{$proc->id}: {$product->name} x{$proc->quantity}",
+                        'requested_amount' => $budgetAmount,
+                        'status' => 'Pending',
+                        'date_requested' => now()->toDateString(),
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::warning('Failed to create BudgetRequest for manual procurement', ['error' => $e->getMessage(), 'proc_id' => $proc->id]);
+            }
+        }
+
+        return response()->json(['ok' => true, 'procurement_request' => $proc->fresh()->load(['product', 'logisticsUser'])], 201);
+    }
+
 public function requestedProducts(Request $request)
     {
         Log::info('=== REQUESTED PRODUCTS START ===', ['user_id' => $request->user()?->id, 'user_role' => $request->user()?->role, 'user_branch' => $request->user()?->branch_id]);
