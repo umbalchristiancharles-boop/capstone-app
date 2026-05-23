@@ -557,7 +557,6 @@
 import { createApp, h, ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
-import '../css/adminpanel.css'
 import LoadingOverlay from './LoadingOverlay.vue'
 
 import { showToast } from './toastStore'

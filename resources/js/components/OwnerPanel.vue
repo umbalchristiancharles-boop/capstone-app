@@ -12,35 +12,55 @@
     @logout="handleLogout"
   >
     <template #main>
-      <section class="owner-dashboard">
-        <div class="owner-welcome">
-          <h2>Welcome, {{ userProfile.full_name || userProfile.fullName || userProfile.username }}</h2>
-          <p>This is the owner dashboard. Add owner-specific widgets here.</p>
+      <section class="space-y-6">
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 border border-slate-200 dark:border-slate-700">
+          <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">Welcome, {{ userProfile.full_name || userProfile.fullName || userProfile.username }}</h2>
+          <p class="text-slate-600 dark:text-slate-400">This is the owner dashboard. Add owner-specific widgets here.</p>
         </div>
         <!-- Placeholder: owner widgets can be added here -->
       </section>
     </template>
 
     <template #sideTop>
-      <div class="owner-side-widgets">
-        <!-- Simple owner widgets placeholder -->
-        <div class="panel-block">
-          <h3>Quick Links</h3>
-          <ul>
-            <li>
-              <router-link to="/owner/dish-approval">Dish Approval</router-link>
-              <span v-if="pendingCounts.kitchen > 0" class="panel-badge">{{ pendingCounts.kitchen }}</span>
-            </li>
-            <li><router-link to="/owner/staff-management">Staff Management</router-link></li>
-            <li>
-              <router-link to="/owner/branch-confirmations">Branch Confirmations</router-link>
-              <span v-if="pendingCounts.branchOwner > 0" class="panel-badge">{{ pendingCounts.branchOwner }}</span>
-            </li>
-            <li>
-              <router-link to="/owner/price-markup-approvals">Price Markup Approvals</router-link>
-              <span v-if="pendingCounts.priceMarkup > 0" class="panel-badge">{{ pendingCounts.priceMarkup }}</span>
-            </li>
-          </ul>
+      <div class="space-y-4">
+        <!-- Quick Links Card -->
+        <div class="tw-panel-block">
+          <div class="tw-panel-header">
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Quick Links</h3>
+          </div>
+          <div class="tw-panel-body">
+            <ul class="space-y-2">
+              <li class="flex items-center justify-between">
+                <router-link to="/owner/dish-approval" class="text-orange-600 dark:text-orange-400 hover:underline font-medium">
+                  Dish Approval
+                </router-link>
+                <span v-if="pendingCounts.kitchen > 0" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
+                  {{ pendingCounts.kitchen }}
+                </span>
+              </li>
+              <li>
+                <router-link to="/owner/staff-management" class="text-orange-600 dark:text-orange-400 hover:underline font-medium">
+                  Staff Management
+                </router-link>
+              </li>
+              <li class="flex items-center justify-between">
+                <router-link to="/owner/branch-confirmations" class="text-orange-600 dark:text-orange-400 hover:underline font-medium">
+                  Branch Confirmations
+                </router-link>
+                <span v-if="pendingCounts.branchOwner > 0" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
+                  {{ pendingCounts.branchOwner }}
+                </span>
+              </li>
+              <li class="flex items-center justify-between">
+                <router-link to="/owner/price-markup-approvals" class="text-orange-600 dark:text-orange-400 hover:underline font-medium">
+                  Price Markup Approvals
+                </router-link>
+                <span v-if="pendingCounts.priceMarkup > 0" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
+                  {{ pendingCounts.priceMarkup }}
+                </span>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
     </template>
