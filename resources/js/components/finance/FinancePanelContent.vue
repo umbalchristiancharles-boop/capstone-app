@@ -202,8 +202,16 @@ function renderChart() {
   const expenses = normalizedReports.value.map(r => r.expenses)
   const profit = normalizedReports.value.map(r => r.profit)
 
+  // Guard against a missing or detached canvas context which causes Chart.js internals to fail
+  if (!chartRef.value || typeof chartRef.value.getContext !== 'function') return
   const ctx = chartRef.value.getContext('2d')
-  chartInstance.value = new Chart(ctx, {
+  if (!ctx) {
+    // Canvas context couldn't be obtained (element detached or not ready). Skip rendering.
+    return
+  }
+
+  try {
+    chartInstance.value = new Chart(ctx, {
     type: 'line',
     data: {
       labels,
@@ -260,6 +268,11 @@ function renderChart() {
       }
     }
   })
+  } catch (e) {
+    // Prevent Chart.js drawing errors from bubbling to global handlers
+    // Log to console for debugging
+    console.error('Chart rendering failed:', e)
+  }
 }
 
 watch(normalizedReports, () => {

@@ -7,6 +7,21 @@
     </div>
 
     <div v-show="!isMapLoading" class="map-controls">
+      <div class="search-control">
+        <input
+          v-model="searchQuery"
+          @input="onSearchInput"
+          placeholder="Search for address or place (e.g. Quezon City, SM Mall)"
+          class="search-input"
+          aria-label="Search location"
+        />
+        <ul v-if="searchResults.length" class="search-results">
+          <li v-for="(r, idx) in searchResults" :key="idx" @click="selectSearchResult(r)" class="search-result-item">
+            <div class="result-title">{{ r.display_name }}</div>
+            <div class="result-sub">{{ formatResultSub(r) }}</div>
+          </li>
+        </ul>
+      </div>
       <button type="button" @click="getCurrentLocation" class="btn btn-primary btn-sm" :disabled="isLocating">
         <span v-if="isLocating">⏳ Detecting...</span>
         <span v-else>📍 Use My Current Location</span>
@@ -40,6 +55,8 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import L from 'leaflet'
+import cities from '../../../cities.json'
+import barangays from '../../../barangays.json'
 import 'leaflet/dist/leaflet.css'
 
 // Cache marker icon setup
@@ -178,6 +195,12 @@ const selectedLocation = ref({
 const isLocating = ref(false)
 const isMapLoading = ref(true)
 let tileLayer = null
+
+// Search / forward geocoding state
+const searchQuery = ref('')
+const searchResults = ref([])
+const isSearching = ref(false)
+let searchTimeout = null
 
 // Fast marker icon setup (only once)
 function setupMarkerIcons() {
@@ -381,6 +404,123 @@ function getCurrentLocation() {
   )
 }
 
+// --- Forward geocoding (Nominatim) for search box ---
+function onSearchInput() {
+  // debounce to avoid too many requests
+  if (searchTimeout) clearTimeout(searchTimeout)
+  if (!searchQuery.value || searchQuery.value.trim().length < 3) {
+    searchResults.value = []
+    return
+  }
+  searchTimeout = setTimeout(() => {
+    fetchSearchResults(searchQuery.value.trim())
+  }, 350)
+}
+
+async function fetchSearchResults(q) {
+  isSearching.value = true
+  searchResults.value = []
+  try {
+    // 1) Check local barangay/city datasets for strong matches
+    const localCandidates = []
+    const qLower = q.toLowerCase()
+
+    // Barangay matches (prefix or exact)
+    const barangayMatches = barangays.filter(b => b.name && b.name.toLowerCase().includes(qLower)).slice(0, 6)
+    for (const b of barangayMatches) {
+      // lookup city name for context
+      const city = cities.find(c => c.code === b.city_code) || null
+      const cityName = city ? city.name : ''
+      localCandidates.push({ type: 'barangay', name: b.name, cityName })
+    }
+
+    // City matches
+    const cityMatches = cities.filter(c => c.name && c.name.toLowerCase().includes(qLower)).slice(0, 6)
+    for (const c of cityMatches) {
+      localCandidates.push({ type: 'city', name: c.name, cityName: c.name })
+    }
+
+    const results = []
+
+    // For each local candidate, perform a targeted search to get coordinates (limit 1)
+    for (const cand of localCandidates.slice(0, 6)) {
+      try {
+        const queryText = cand.type === 'barangay' && cand.cityName ? `${cand.name}, ${cand.cityName}, Philippines` : `${cand.name}, Philippines`
+        const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=1&q=${encodeURIComponent(queryText)}`
+        const res = await fetch(url, { headers: { 'Accept-Language': 'en' } })
+        if (!res.ok) continue
+        const data = await res.json()
+        if (Array.isArray(data) && data.length) results.push(data[0])
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    // 2) Fetch general search results and merge, avoiding duplicates
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=8&q=${encodeURIComponent(q)}`
+      const res = await fetch(url, { headers: { 'Accept-Language': 'en' } })
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data)) {
+          // merge while preventing duplicates by lat/lon
+          const seen = new Set(results.map(r => `${r.lat}_${r.lon}`))
+          for (const d of data) {
+            const key = `${d.lat}_${d.lon}`
+            if (!seen.has(key)) {
+              results.push(d)
+              seen.add(key)
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('General search failed', e)
+    }
+
+    searchResults.value = results.slice(0, 8)
+  } catch (e) {
+    console.warn('Search error', e)
+    searchResults.value = []
+  } finally {
+    isSearching.value = false
+  }
+}
+
+function formatResultSub(r) {
+  if (!r || !r.address) return ''
+  const parts = []
+  if (r.address.city) parts.push(r.address.city)
+  if (r.address.state) parts.push(r.address.state)
+  if (r.address.country) parts.push(r.address.country)
+  return parts.join(', ')
+}
+
+function selectSearchResult(r) {
+  if (!r) return
+  const lat = parseFloat(r.lat)
+  const lng = parseFloat(r.lon)
+  // update selected location and marker
+  selectedLocation.value = { lat, lng, address: r.display_name, addressComponents: {} }
+  updateMarker(lat, lng)
+  // emit a structured update including components where possible
+  const addr = r.address || {}
+  emit('update:location', {
+    lat: parseFloat(lat.toFixed(8)),
+    lng: parseFloat(lng.toFixed(8)),
+    address: r.display_name,
+    addressComponents: {
+      region: addr.state || addr.county || addr.region || '',
+      province: addr.state || '',
+      city: addr.city || addr.town || addr.village || addr.municipality || '',
+      barangay: addr.suburb || addr.neighbourhood || addr.village || ''
+    }
+  })
+  // clear suggestions and query
+  searchResults.value = []
+  searchQuery.value = r.display_name
+}
+
 function resetMap() {
   const defaultLat = 14.5994
   const defaultLng = 120.9842
@@ -475,8 +615,49 @@ onMounted(() => {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
-  z-index: 10;
+  position: relative;
+  z-index: 1000; /* bring controls above the map */
 }
+
+.search-control {
+  position: relative;
+  min-width: 280px;
+  max-width: 420px;
+  z-index: 1001;
+}
+
+.search-input {
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  width: 100%;
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+
+.search-results {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  max-height: 240px;
+  overflow: auto;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+  z-index: 100000; /* ensure suggestions sit above Leaflet panes */
+  padding: 6px 0;
+}
+
+.search-result-item {
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.search-result-item:hover { background: #f3f4f6; }
+.result-title { font-size: 0.9rem; font-weight: 600; color: #111827; }
+.result-sub { font-size: 0.8rem; color: #6b7280; margin-top: 4px; }
 
 .btn {
   padding: 0.5rem 1rem;
@@ -540,6 +721,8 @@ onMounted(() => {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   background: #f9fafb;
   transition: box-shadow 0.2s;
+  position: relative;
+  z-index: 1; /* keep map beneath controls/dropdown */
 }
 
 .map-wrapper.loading {

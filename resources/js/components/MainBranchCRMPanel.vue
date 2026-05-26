@@ -85,6 +85,11 @@
                     </span>
                   </div>
                   <button
+                    class="flag-btn"
+                    @click="flagComment(comment.id)"
+                    title="Flag this comment"
+                  >🚩</button>
+                  <button
                     class="delete-btn"
                     @click="deleteComment(comment.id)"
                     title="Delete this comment"
@@ -266,6 +271,42 @@ async function deleteComment(commentId) {
     console.error('Failed to delete comment:', error)
     if (window.swalAlert) {
       await window.swalAlert('Failed to delete comment. Please try again.', 'Error', 'error')
+    }
+  }
+}
+
+async function flagComment(commentId) {
+  try {
+    // Ask for optional reason using swalPrompt if available, otherwise prompt()
+    let reason = ''
+    if (window.swalPrompt) {
+      try { reason = await window.swalPrompt('Optional reason for flagging this comment') } catch (e) { reason = '' }
+    } else {
+      try { reason = window.prompt('Optional reason for flagging this comment') || '' } catch (e) { reason = '' }
+    }
+    // Prompt for an email address to notify in case the comment author is a guest
+    let notifyEmail = ''
+    if (window.swalPrompt) {
+      try { notifyEmail = await window.swalPrompt('Recipient email (leave blank to use commenter account email)') } catch (e) { notifyEmail = '' }
+    } else {
+      try { notifyEmail = window.prompt('Recipient email (optional)') || '' } catch (e) { notifyEmail = '' }
+    }
+
+    const ok = await (window.swalConfirm ? window.swalConfirm('Flag this comment? This will notify the user.', 'Confirm flag') : Promise.resolve(true))
+    if (!ok) return
+
+    await axios.post(`/api/product-comments/${commentId}/flag`, { reason, email: notifyEmail || undefined }, { withCredentials: true })
+
+    // Refresh comments to reflect any flag count changes
+    await loadComments()
+
+    if (window.swalAlert) {
+      await window.swalAlert('Comment flagged and user notified', 'Success', 'success')
+    }
+  } catch (error) {
+    console.error('Failed to flag comment:', error)
+    if (window.swalAlert) {
+      await window.swalAlert('Failed to flag comment. Please try again.', 'Error', 'error')
     }
   }
 }

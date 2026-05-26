@@ -804,9 +804,20 @@ class AuthController extends Controller
         // Try Personal Access Token lookup (plain bearer token)
         try {
             $bearer = $request->bearerToken();
-            if ($bearer && class_exists(\Laravel\Sanctum\PersonalAccessToken::class)) {
-                $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($bearer);
-                if ($tokenModel && $tokenModel->tokenable) return $tokenModel->tokenable;
+            if ($bearer) {
+                // 1) Try Sanctum personal access tokens if available
+                if (class_exists(\Laravel\Sanctum\PersonalAccessToken::class)) {
+                    $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($bearer);
+                    if ($tokenModel && $tokenModel->tokenable) return $tokenModel->tokenable;
+                }
+
+                // 2) Try legacy/cache-based token stored by registerPublic/loginPublic
+                try {
+                    $cachedUserId = \Illuminate\Support\Facades\Cache::get('user_token_' . $bearer);
+                    if ($cachedUserId) {
+                        return User::find($cachedUserId);
+                    }
+                } catch (\Throwable $_) {}
             }
         } catch (\Throwable $e) {}
 
@@ -830,6 +841,15 @@ class AuthController extends Controller
 
         // Get stored code
         $storedCode = Cache::get('verification_code_' . $email);
+
+        // Debug logging: mask codes to avoid full exposure in logs when possible
+        try {
+            $maskedProvided = is_string($code) ? (strlen($code) > 2 ? '***' . substr($code, -2) : $code) : null;
+            $maskedStored = is_string($storedCode) ? (strlen($storedCode) > 2 ? '***' . substr($storedCode, -2) : $storedCode) : null;
+            Log::info("verifyCode attempt", ['email' => $email, 'provided' => $maskedProvided, 'stored' => $maskedStored]);
+        } catch (\Throwable $e) {
+            // Don't let logging errors affect verification flow
+        }
 
         if (!$storedCode) {
             return response()->json([

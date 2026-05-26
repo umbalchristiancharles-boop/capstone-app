@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 23, 2026 at 02:37 PM
+-- Generation Time: May 26, 2026 at 11:41 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -130,9 +130,9 @@ CREATE TABLE `branches` (
 --
 
 INSERT INTO `branches` (`id`, `code`, `name`, `address`, `latitude`, `longitude`, `is_active`, `is_main_branch`, `approval_status`, `requested_by`, `finance_confirmed_by`, `finance_confirmed_at`, `approved_by`, `approved_at`, `rejected_at`, `budget`, `default_password`, `default_password_updated_at`, `created_at`, `updated_at`) VALUES
-(31, 'BR743957', 'Dasma Branch', 'Dasma', NULL, NULL, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 95808, 'BDP20260523A3A09A', '2026-05-23 09:40:45', '2026-03-22 10:19:21', '2026-05-23 09:40:45'),
-(32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 800000, 'BDP20260415140186', '2026-04-15 05:00:51', '2026-03-25 06:56:11', '2026-04-15 04:22:52'),
-(48, 'BR426492', 'Manila Branch', NULL, 14.61391060, 120.99431992, 1, 0, 'approved', 159, 161, '2026-04-15 04:18:32', 31, '2026-04-15 04:22:52', NULL, 100000, 'BDP202604152B9053', '2026-04-15 05:00:51', '2026-04-15 04:14:07', '2026-04-15 04:22:52');
+(31, 'BR743957', 'Dasma Branch', 'Dasma', NULL, NULL, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 95808, 'BDP2026052647004F', '2026-05-26 08:23:16', '2026-03-22 10:19:21', '2026-05-26 08:23:16'),
+(32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 800000, 'BDP2026052608570E', '2026-05-26 08:23:16', '2026-03-25 06:56:11', '2026-05-26 08:23:16'),
+(48, 'BR426492', 'Manila Branch', NULL, 14.61391060, 120.99431992, 1, 0, 'approved', 159, 161, '2026-04-15 04:18:32', 31, '2026-04-15 04:22:52', NULL, 100000, 'BDP202605262D9C15', '2026-05-26 08:23:16', '2026-04-15 04:14:07', '2026-05-26 08:23:16');
 
 -- --------------------------------------------------------
 
@@ -186,7 +186,9 @@ CREATE TABLE `cache` (
 --
 
 INSERT INTO `cache` (`key`, `value`, `expiration`) VALUES
-('laravel-cache-verification_rate_limit_wafeced704@mypethealh.com', 'i:1;', 1776229264);
+('laravel-cache-user_token_AK9tUHsIMLIAa4Xgei4DMgWYysXYvwMtoJjsVkuUrhTcGoTh0zkSVC3druLC', 'i:240;', 1782380049),
+('laravel-cache-user_token_lqdGhGtGeQGn6ud1XQRRGUA6KMAbvIEPHInhfLipqvFW3LupuxCC84w0GA6A', 'i:240;', 1782380470),
+('laravel-cache-verification_rate_limit_xmusics77@gmail.com', 'i:1;', 1779788589);
 
 -- --------------------------------------------------------
 
@@ -231,8 +233,7 @@ CREATE TABLE `customer_accounts` (
 --
 
 INSERT INTO `customer_accounts` (`id`, `user_id`, `email`, `full_name`, `phone_number`, `address`, `city`, `province`, `postal_code`, `latitude`, `longitude`, `total_comments`, `total_ratings`, `last_activity_at`, `status`, `created_at`, `updated_at`) VALUES
-(6, 176, 'lejanis485@fun4k.com', 'Customer', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, '2026-03-30 02:13:38', 'active', '2026-03-30 02:13:38', '2026-03-30 02:13:38'),
-(7, 177, 'yoboko6989@fun4k.com', 'Customer_12', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, '2026-03-30 07:46:53', 'active', '2026-03-30 07:46:53', '2026-03-30 07:46:53');
+(8, 240, 'xmusics77@gmail.com', 'gab', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, '2026-05-26 09:34:09', 'active', '2026-05-26 09:34:09', '2026-05-26 09:34:09');
 
 -- --------------------------------------------------------
 
@@ -618,7 +619,9 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (114, '2026_04_15_000000_add_requires_setup_to_users_table', 69),
 (115, '2026_04_15_000001_add_required_setup_type_to_users_table', 70),
 (116, '2026_04_15_000002_add_default_password_to_branches_table', 71),
-(117, '2026_05_23_000000_add_is_manual_to_procurement_requests', 72);
+(117, '2026_05_23_000000_add_is_manual_to_procurement_requests', 72),
+(118, '2026_05_26_000001_add_flags_to_product_comments_table', 73),
+(119, '2026_05_26_000002_create_product_comment_flags_table', 73);
 
 -- --------------------------------------------------------
 
@@ -2194,7 +2197,10 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (2429, 'App\\Models\\User', 147, 'auth-token', 'f862ffc7211109f7ae1286386cc3aeec012e99a1213f6fcd845a3629567b72e3', '[\"*\"]', NULL, NULL, '2026-04-15 12:28:52', '2026-04-15 12:28:52'),
 (2431, 'App\\Models\\User', 147, 'auth-token', '29ac0b903868eb563da1239c3ca6ed147e12a95efcad75a168d5079cfcdc9650', '[\"*\"]', NULL, NULL, '2026-04-15 12:49:49', '2026-04-15 12:49:49'),
 (2442, 'App\\Models\\User', 147, 'auth-token', '35b6f450a0971d48813e88f37c1fad4372b0c2d91dad3ee316c14a0a420fa57c', '[\"*\"]', NULL, NULL, '2026-05-23 09:40:21', '2026-05-23 09:40:21'),
-(2463, 'App\\Models\\User', 151, 'auth-token', 'df1fde9887add370387575a292978eaefe4f1d189edff8ff32fd0997b4670df3', '[\"*\"]', NULL, NULL, '2026-05-23 12:35:21', '2026-05-23 12:35:21');
+(2466, 'App\\Models\\User', 147, 'auth-token', '68ecc944dfacd338f822a53aa8b2cff024fb38f9bb7c3cf3d65f626793a2d79d', '[\"*\"]', NULL, NULL, '2026-05-26 08:32:10', '2026-05-26 08:32:10'),
+(2468, 'App\\Models\\User', 147, 'auth-token', '8bf48b075f39320269494d214c18ec2d794108b6d2099a11206122e2389c1aec', '[\"*\"]', NULL, NULL, '2026-05-26 08:42:52', '2026-05-26 08:42:52'),
+(2469, 'App\\Models\\User', 28, 'auth-token', '754bdc5ff1c7630ebb63e1a117a345298e6142087b48e80bed820c04b35d7e65', '[\"*\"]', NULL, NULL, '2026-05-26 08:44:47', '2026-05-26 08:44:47'),
+(2470, 'App\\Models\\User', 147, 'auth-token', '1818b83cb393a3607152c0713b3d32097a86c71e85f20bbf1e34026fdd518dc4', '[\"*\"]', NULL, NULL, '2026-05-26 08:46:27', '2026-05-26 08:46:27');
 
 -- --------------------------------------------------------
 
@@ -2412,9 +2418,43 @@ CREATE TABLE `product_comments` (
   `text` text NOT NULL,
   `rating` tinyint(3) UNSIGNED NOT NULL DEFAULT 5,
   `ip_address` varchar(45) DEFAULT NULL,
+  `flags` int(11) NOT NULL DEFAULT 0,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `product_comments`
+--
+
+INSERT INTO `product_comments` (`id`, `product_id`, `user_id`, `parent_comment_id`, `author`, `text`, `rating`, `ip_address`, `flags`, `created_at`, `updated_at`) VALUES
+(19, 165, NULL, NULL, 'Customer', 'gago', 5, '127.0.0.1', 2, '2026-05-26 09:05:11', '2026-05-26 09:09:00'),
+(20, 165, NULL, NULL, 'gab', 'bobo', 5, '127.0.0.1', 2, '2026-05-26 09:34:20', '2026-05-26 09:40:12');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `product_comment_flags`
+--
+
+CREATE TABLE `product_comment_flags` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `product_comment_id` bigint(20) UNSIGNED NOT NULL,
+  `admin_user_id` bigint(20) UNSIGNED NOT NULL,
+  `reason` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `product_comment_flags`
+--
+
+INSERT INTO `product_comment_flags` (`id`, `product_comment_id`, `admin_user_id`, `reason`, `created_at`, `updated_at`) VALUES
+(1, 19, 159, 'bad word', '2026-05-26 09:06:08', '2026-05-26 09:06:08'),
+(2, 19, 159, 'bad word', '2026-05-26 09:09:00', '2026-05-26 09:09:00'),
+(3, 20, 159, NULL, '2026-05-26 09:35:00', '2026-05-26 09:35:00'),
+(4, 20, 159, NULL, '2026-05-26 09:40:12', '2026-05-26 09:40:12');
 
 -- --------------------------------------------------------
 
@@ -2503,7 +2543,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('TC8z1Rcjz8UR78esr7WOJLWEg61pe6IJmUsLPohZ', 151, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiZkxJRHplMmdjZGFQWVR3RE1ZcDd1MVRvSW5kNkk4SWd6anRGbTFuTiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE1MTtzOjc6InVzZXJfaWQiO2k6MTUxO3M6OToidXNlcl9yb2xlIjtzOjc6Ik1BTkFHRVIiO3M6OToidXNlcl9uYW1lIjtzOjMyOiJMb2dpc3RpY3MgTWFuYWdlciAtIERhc21hIEJyYW5jaCI7czoxMzoicmVkaXJlY3RfcGF0aCI7czoxODoiL21hbmFnZXIvbG9naXN0aWNzIjt9', 1779539855);
+('fgefQPjeZHnQTR8bkKFLauHdWf0WVfnrV2MTMkAx', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiVDd4bkN1b0VHQjBTZFRyblExSFJSa0VYQk1zS0ZmaXNnam1jNmpwNCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fX0=', 1779788470),
+('MBYYPNFoM6CpdgrIT7OzKaNJ2nMPx05tCJMxIQYI', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.121.0 Chrome/142.0.7444.265 Electron/39.8.8 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoic1pDdXFCN1ZzSmJPbDRheTIwekYwT0FCaWFuWWFMT2Zqd3dQd2dNciI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1779783726);
 
 -- --------------------------------------------------------
 
@@ -2564,7 +2605,8 @@ INSERT INTO `staff_documents` (`id`, `user_id`, `resume_path`, `government_id_pa
 (54, 158, NULL, NULL, NULL, NULL, NULL, NULL, 'account-setup-documents/158/drug_test_result.jpg', 'account-setup-documents/158/sss_id.jpg', 'account-setup-documents/158/philhealth_id.jpg', NULL, NULL, NULL, '2026-05-23 09:19:21', '2026-05-23 09:20:38'),
 (55, 151, NULL, NULL, NULL, NULL, NULL, NULL, 'account-setup-documents/151/drug_test_result.jpg', 'account-setup-documents/151/sss_id.jpg', 'account-setup-documents/151/philhealth_id.jpg', NULL, NULL, NULL, '2026-05-23 09:29:11', '2026-05-23 09:29:28'),
 (56, 149, NULL, NULL, NULL, NULL, NULL, NULL, 'account-setup-documents/149/drug_test_result.jpg', 'account-setup-documents/149/sss_id.jpg', 'account-setup-documents/149/philhealth_id.jpg', NULL, NULL, NULL, '2026-05-23 12:10:13', '2026-05-23 12:10:26'),
-(57, 162, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-05-23 12:34:48', '2026-05-23 12:34:48');
+(57, 162, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-05-23 12:34:48', '2026-05-23 12:34:48'),
+(58, 148, NULL, NULL, NULL, NULL, NULL, NULL, 'account-setup-documents/148/drug_test_result.jpg', 'account-setup-documents/148/sss_id.jpg', 'account-setup-documents/148/philhealth_id.jpg', NULL, NULL, NULL, '2026-05-26 08:31:17', '2026-05-26 08:31:35');
 
 -- --------------------------------------------------------
 
@@ -2689,15 +2731,14 @@ INSERT INTO `users` (`id`, `email`, `username`, `full_name`, `name`, `password`,
 (160, 'radalol730@fun4k.com', 'hr_main_branch', 'HR Main Branch', NULL, '$2y$12$7XE7ggeRv7J3xUcTOgf6qOvZEPs4A8ppDdHk8zb3VxzTggE3EUI2i', '2026-03-25 07:17:25', 'MANAGER', 'HR', NULL, 32, NULL, '2026-03-25 06:56:12', '2026-03-25 07:17:25', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL),
 (161, 'tavej98512@fabaos.com', 'finance_main_branch', 'Finance Main Branch', NULL, '$2y$12$Hb8m1H0Iau3u0jFJ0Spr5uqsg2Fl0kk.2QbHUAKQ.iMtZ9zKuBpra', '2026-03-25 07:20:21', 'MANAGER', 'FINANCE', NULL, 32, NULL, '2026-03-25 06:56:12', '2026-03-25 07:20:21', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL),
 (162, 'lefet30141@fun4k.com', 'logistics_main_branch', 'Logistics Main Branch', NULL, '$2y$12$5jgXzzPw90ASb/4TuQnmreNk6jVKcPGX6ELJy6C9yfDFNv67u2j6u', '2026-03-25 07:22:05', 'MANAGER', 'LOGISTICS', NULL, 32, NULL, '2026-03-25 06:56:12', '2026-03-25 07:22:05', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL),
-(176, 'lejanis485@fun4k.com', 'Customer', NULL, NULL, '$2y$12$HaDuG9eTBOzfLI2QJBBEJunc9e6yPAlAfdTYcGQwObeikCBEUfR4C', '2026-03-30 02:13:38', 'customer', NULL, NULL, NULL, NULL, '2026-03-30 02:13:38', '2026-03-30 02:13:38', NULL, 1, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL),
-(177, 'yoboko6989@fun4k.com', 'Customer_12', NULL, NULL, '$2y$12$mDEoShJoia8vzT45WUs3wOfrTISRPuFIb2UZ6lMD3CtbuDcQzul3.', '2026-03-30 07:46:53', 'customer', NULL, NULL, NULL, NULL, '2026-03-30 07:46:53', '2026-03-30 07:46:53', NULL, 1, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL),
 (214, NULL, 'admin_br216033', 'Admin - test', NULL, '$2y$12$Cm6def5Kq4NElULrwrZ8Gezo.kS/sUkMFhFgmbeXjxCMqIZH8yO2y', NULL, 'ADMIN', NULL, NULL, 46, NULL, '2026-04-05 19:44:55', '2026-04-05 19:47:48', NULL, 1, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL),
 (215, NULL, 'custom_br216033', 'Custom Account - test', NULL, '$2y$12$BF3h6L52Cu0s6InQ/qYRROAH2WwjwLFUZhcOtnYcdyOonE..4lhGm', NULL, 'CUSTOM', NULL, '{\"modules\":[\"admin\",\"finance\",\"logistics\",\"inventory\",\"procurement\",\"kitchen\",\"cashier\",\"hr\"],\"functions\":[]}', 46, NULL, '2026-04-05 19:44:55', '2026-04-05 19:48:39', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL),
 (231, NULL, 'admin_br687660', 'Admin - San Simon Branch', NULL, '$2y$12$o1LJ..GU13mGlpDOg2gaVefQClGNLWvBEcduocg3GbYOVcgQBiHdq', NULL, 'ADMIN', NULL, NULL, 47, NULL, '2026-04-14 14:13:36', '2026-04-14 14:13:36', NULL, 1, 1, 0, NULL, NULL, NULL, NULL, NULL, NULL),
 (232, NULL, 'hr_br687660', 'HR Manager - San Simon Branch', NULL, '$2y$12$SUL0/MEe3ejLNwvpQA0uZ.Ji8pZuKQK4ogNeQ1h/YhMK0vvJP7.lm', NULL, 'MANAGER', 'HR', NULL, 47, NULL, '2026-04-14 14:13:36', '2026-04-14 14:13:36', NULL, 1, 1, 0, NULL, NULL, NULL, NULL, NULL, NULL),
 (233, NULL, 'finance_br687660', 'Finance Manager - San Simon Branch', NULL, '$2y$12$3flgZyKGpB4fHVCzjrn.Y.K2KQ6Ae.x/KHnZYfOIPIBi.T67wJy5.', NULL, 'MANAGER', 'FINANCE', NULL, 47, NULL, '2026-04-14 14:13:36', '2026-04-14 14:13:36', NULL, 1, 1, 0, NULL, NULL, NULL, NULL, NULL, NULL),
 (234, NULL, 'procurement_br687660', 'Procurement Manager - San Simon Branch', NULL, '$2y$12$GhDK5a/xOz6KlieTdsUmqOwHcE22vH0KnibWJCtaiSneiz0zgAWFy', NULL, 'MANAGER', 'PROCUREMENT', NULL, 47, NULL, '2026-04-14 14:13:36', '2026-04-14 14:13:36', NULL, 1, 1, 0, NULL, NULL, NULL, NULL, NULL, NULL),
-(235, NULL, 'logistics_br687660', 'Logistics Manager - San Simon Branch', NULL, '$2y$12$BFfjh5oLhi0C/ZaKaxuhOuwnvyvYg9F1Xi6uLABUiYmKq6BqEIbm.', NULL, 'MANAGER', 'LOGISTICS', NULL, 47, NULL, '2026-04-14 14:13:36', '2026-04-14 14:13:36', NULL, 1, 1, 0, NULL, NULL, NULL, NULL, NULL, NULL);
+(235, NULL, 'logistics_br687660', 'Logistics Manager - San Simon Branch', NULL, '$2y$12$BFfjh5oLhi0C/ZaKaxuhOuwnvyvYg9F1Xi6uLABUiYmKq6BqEIbm.', NULL, 'MANAGER', 'LOGISTICS', NULL, 47, NULL, '2026-04-14 14:13:36', '2026-04-14 14:13:36', NULL, 1, 1, 0, NULL, NULL, NULL, NULL, NULL, NULL),
+(240, 'xmusics77@gmail.com', 'gab', NULL, NULL, '$2y$12$dVtcSpO1fUxFFNw/73Y8L.UUGdHlHvYH0v8a7iYFxLdnnH75rwKxa', '2026-05-26 09:34:09', 'customer', NULL, NULL, NULL, NULL, '2026-05-26 09:34:09', '2026-05-26 09:34:09', NULL, 1, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL);
 
 --
 -- Indexes for dumped tables
@@ -2933,6 +2974,14 @@ ALTER TABLE `product_comments`
   ADD KEY `product_comments_parent_comment_id_foreign` (`parent_comment_id`);
 
 --
+-- Indexes for table `product_comment_flags`
+--
+ALTER TABLE `product_comment_flags`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `product_comment_flags_product_comment_id_index` (`product_comment_id`),
+  ADD KEY `product_comment_flags_admin_user_id_index` (`admin_user_id`);
+
+--
 -- Indexes for table `product_requests`
 --
 ALTER TABLE `product_requests`
@@ -3052,7 +3101,7 @@ ALTER TABLE `budget_requests`
 -- AUTO_INCREMENT for table `customer_accounts`
 --
 ALTER TABLE `customer_accounts`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `dishes`
@@ -3106,7 +3155,7 @@ ALTER TABLE `messages`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=118;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=120;
 
 --
 -- AUTO_INCREMENT for table `orders`
@@ -3124,7 +3173,7 @@ ALTER TABLE `order_items`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2464;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2475;
 
 --
 -- AUTO_INCREMENT for table `price_audits`
@@ -3160,7 +3209,13 @@ ALTER TABLE `products`
 -- AUTO_INCREMENT for table `product_comments`
 --
 ALTER TABLE `product_comments`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+
+--
+-- AUTO_INCREMENT for table `product_comment_flags`
+--
+ALTER TABLE `product_comment_flags`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `product_requests`
@@ -3190,7 +3245,7 @@ ALTER TABLE `settlements`
 -- AUTO_INCREMENT for table `staff_documents`
 --
 ALTER TABLE `staff_documents`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=58;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=59;
 
 --
 -- AUTO_INCREMENT for table `supplier_audit_logs`
@@ -3208,7 +3263,7 @@ ALTER TABLE `supplier_orders`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=240;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=241;
 
 --
 -- Constraints for dumped tables
@@ -3331,6 +3386,13 @@ ALTER TABLE `product_comments`
   ADD CONSTRAINT `product_comments_parent_comment_id_foreign` FOREIGN KEY (`parent_comment_id`) REFERENCES `product_comments` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `product_comments_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `product_comments_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `product_comment_flags`
+--
+ALTER TABLE `product_comment_flags`
+  ADD CONSTRAINT `product_comment_flags_admin_user_id_foreign` FOREIGN KEY (`admin_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `product_comment_flags_product_comment_id_foreign` FOREIGN KEY (`product_comment_id`) REFERENCES `product_comments` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `product_requests`

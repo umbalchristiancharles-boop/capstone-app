@@ -505,11 +505,14 @@ Route::prefix('manager')->middleware('auth:sanctum,web')->group(function () {
 
     // PRODUCT COMMENTS API
     Route::get('/products-for-comments', [ProductCommentController::class, 'listProducts']);
+    // Public branches list for customer landing (no auth required)
+    Route::get('/public/branches', [ProductCommentController::class, 'publicBranches']);
     Route::get('/product-comments', [ProductCommentController::class, 'index']);
     Route::get('/product-comments/all', [ProductCommentController::class, 'allComments'])->middleware('auth');
     Route::post('/product-comments', [ProductCommentController::class, 'store']);
     Route::post('/product-comment-replies', [ProductCommentController::class, 'storeReply']);
     Route::delete('/product-comments/{id}', [ProductCommentController::class, 'destroy'])->middleware('auth');
+    Route::post('/product-comments/{id}/flag', [ProductCommentController::class, 'flag'])->middleware('auth');
 
     Route::post('/auth/send-verification', [AuthController::class, 'sendVerification']);
     Route::post('/auth/verify-code', [AuthController::class, 'verifyCode']);

@@ -82,7 +82,16 @@
     <!-- SCAFFOLD 3: ORANGE SECTION -->
     <section class="scaffold scaffold-orange" id="scaffold-3">
       <div class="scaffold-content">
-        <h2>What We Offer</h2>
+        <div class="what-we-offer-header">
+          <h2>What We Offer</h2>
+          <div class="branch-filter">
+            <label for="branch-select">Branch</label>
+            <select id="branch-select" v-model="selectedBranch" @change="onBranchChange">
+              <option :value="0">All Branches</option>
+              <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
+            </select>
+          </div>
+        </div>
         <div class="products-grid">
           <div class="product-card" v-for="product in products" :key="product.id">
             <div class="product-box">
@@ -563,6 +572,8 @@ const commonEmojis = {
 }
 
 const products = ref([])
+const branches = ref([])
+const selectedBranch = ref(0)
 
 const newComments = ref({})
 
@@ -587,9 +598,9 @@ onMounted(() => {
   // Clear any stale user session on landing page
   try {
     localStorage.removeItem('user');
-    localStorage.removeItem('authToken');
+       localStorage.removeItem('token');
     sessionStorage.removeItem('user');
-    sessionStorage.removeItem('authToken');
+       sessionStorage.removeItem('token');
   } catch (e) {}
 
   if (sessionStorage.getItem('chikin_show_home_overlay') === '1') {
@@ -604,6 +615,7 @@ onMounted(() => {
 
   handleScroll()
   window.addEventListener('scroll', handleScroll, { passive: true })
+  loadBranches()
   loadProducts()
   loadComments()
   loadGoogleUser()
@@ -615,7 +627,9 @@ onUnmounted(() => {
 
 async function loadProducts() {
   try {
-    const { data } = await axios.get('/api/products-for-comments')
+    const params = {}
+    if (selectedBranch.value && Number(selectedBranch.value) > 0) params.branch_id = Number(selectedBranch.value)
+    const { data } = await axios.get('/api/products-for-comments', { params })
     
     console.debug('[PRODUCTS] Loaded from API:', data)
     
@@ -653,6 +667,21 @@ async function loadProducts() {
     console.error('[PRODUCTS] Failed to load:', error)
     alert('❌ Failed to load products: ' + (error.message || 'Unknown error'))
   }
+}
+
+async function loadBranches() {
+  try {
+    const { data } = await axios.get('/api/public/branches')
+    branches.value = Array.isArray(data) ? data : []
+  } catch (error) {
+    console.error('Failed to load branches:', error)
+    branches.value = []
+  }
+}
+
+function onBranchChange() {
+  loadProducts()
+  loadComments()
 }
 
 async function loadComments() {
@@ -922,6 +951,12 @@ async function sendVerificationCode() {
       break
     } catch (error) {
       retries++
+      const status = error.response?.status
+      // If server rate-limited us, show message and stop retrying
+      if (status === 429) {
+        otpError.value = error.response?.data?.message || 'Too many verification requests. Please try later.'
+        break
+      }
       if (retries > maxRetries) {
         otpError.value = error.response?.data?.message || 'Failed to send verification code. Please try again.'
         break
@@ -1047,7 +1082,7 @@ async function createAccount() {
     }
 
     localStorage.setItem('googleUser', JSON.stringify(googleUser.value))
-    localStorage.setItem('authToken', data.token)
+    localStorage.setItem('token', data.token)
 
     // Update comment forms
     products.value.forEach(product => {
@@ -1087,7 +1122,7 @@ async function loginUser() {
     }
 
     localStorage.setItem('googleUser', JSON.stringify(googleUser.value))
-    localStorage.setItem('authToken', data.token)
+    localStorage.setItem('token', data.token)
 
     // Update comment forms
     products.value.forEach(product => {

@@ -16,6 +16,11 @@ class ProductComment extends Model
         'rating',
         'ip_address',
         'user_id',
+        'flags',
+    ];
+
+    protected $casts = [
+        'flags' => 'integer',
     ];
 
     public function product(): BelongsTo
@@ -36,5 +41,10 @@ class ProductComment extends Model
     public function replies(): HasMany
     {
         return $this->hasMany(ProductComment::class, 'parent_comment_id')->latest('created_at');
+    }
+
+    public function flags(): HasMany
+    {
+        return $this->hasMany(ProductCommentFlag::class, 'product_comment_id');
     }
 }
