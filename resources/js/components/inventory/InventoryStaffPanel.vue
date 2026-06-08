@@ -71,48 +71,13 @@
         </div>
 
         <div v-else>
-          <ProductList :fetchUrl="fetchUrl" :compact="true" :showPublishControls="(staffProfile.role || '').toUpperCase() === 'ADMIN'" ref="productListRef" @edit="handleEdit" @delete="deleteProduct" @toggle-publish="handleTogglePublish" @open-add="showProductRequestForm = true" @request-procurement="requestProcurement" />
+          <ProductList :fetchUrl="fetchUrl" :compact="true" :showPublishControls="(staffProfile.role || '').toUpperCase() === 'ADMIN'" ref="productListRef" @edit="handleEdit" @delete="deleteProduct" @toggle-publish="handleTogglePublish" @request-procurement="requestProcurement" />
         </div>
       </div>
 
       <!-- ProcurementRequests moved to Procurement Manager panel per request -->
 
-      <!-- Product Request Modal (opened by ProductList "Add Product") -->
-      <transition name="fade">
-        <div v-if="showProductRequestForm" class="modal-backdrop">
-          <div class="modal-panel">
-            <h3>Request New Product</h3>
-            <p class="modal-sub">Request new products to be added to inventory. Requires owner/main approval.</p>
-            <form @submit.prevent="submitProductRequest">
-              <div class="form-group">
-                <label>Product Name*</label>
-                <input v-model="productRequestForm.name" type="text" placeholder="e.g., Organic Chicken Breast" required />
-              </div>
-              <div class="form-group">
-                <label>Description</label>
-                <textarea v-model="productRequestForm.description" rows="3" placeholder="Optional details"></textarea>
-              </div>
-              <div class="form-group">
-                <label>Unit of Measurement</label>
-                <select v-model="productRequestForm.unit">
-                  <option value="">-- Select unit (optional) --</option>
-                  <option value="pcs">Pieces (pcs)</option>
-                  <option value="g">Grams (g)</option>
-                  <option value="kg">Kilograms (kg)</option>
-                  <option value="ml">Milliliters (ml)</option>
-                  <option value="l">Liters (l)</option>
-                  <option value="pack">Pack</option>
-                  <option value="box">Box</option>
-                </select>
-              </div>
-              <div class="form-actions" style="margin-top:12px; display:flex; gap:8px; justify-content:flex-end;">
-                <button type="button" class="btn-secondary" @click="cancelProductRequest">Cancel</button>
-                <button type="submit" class="btn-primary">Submit Request</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </transition>
+      <!-- Product request moved to Admin Panel -->
     </template>
 
     <template #side>

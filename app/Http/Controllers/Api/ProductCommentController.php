@@ -14,6 +14,9 @@ use App\Models\ProductCommentFlag;
 use App\Notifications\CommentFlaggedNotification;
 use App\Notifications\AccountBannedNotification;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
+use App\Models\User;
 
 class ProductCommentController extends Controller
 {
@@ -90,6 +93,7 @@ class ProductCommentController extends Controller
     {
         $query = ProductComment::query()
             ->whereNull('parent_comment_id')
+            ->where('is_hidden', 0)
             ->latest('created_at');
 
         if ($request->filled('product_id')) {
@@ -208,38 +212,93 @@ class ProductCommentController extends Controller
         // Increment fast counter on comment
         $comment->increment('flags');
 
-        // Notify the comment author if available
+        // Hide the comment from public views immediately when flagged
+        try {
+            $comment->is_hidden = 1;
+            $comment->save();
+            Log::info('ProductCommentController::flag - comment hidden', ['comment_id' => $comment->id]);
+        } catch (\Throwable $e) {
+            Log::error('ProductCommentController::flag - failed to hide comment', ['error' => $e->getMessage(), 'comment_id' => $comment->id]);
+        }
+
+        // Resolve an email address to send to. Priority:
+        // 1) explicit email provided in request (admin typed it),
+        // 2) comment's associated user account email (if exists),
+        // 3) email stored in comment->author (guest comment),
+        // 4) lookup a user by comment->author as username or email.
         $user = $comment->user;
-        if ($user) {
-            // Resolve an email address to send to. Priority:
-            // 1) explicit email provided in request (admin typed it),
-            // 2) user's account email,
-            // 3) user's customerAccount->email
-            $email = $data['email'] ?? $user->email ?? null;
+        $email = $data['email'] ?? null;
+
+        if (empty($email) && $user) {
+            $email = $user->email ?? null;
             if (empty($email) && $user->customerAccount && !empty($user->customerAccount->email)) {
                 $email = $user->customerAccount->email;
             }
+        }
 
-            if (!empty($email)) {
-                try {
-                    Log::info('ProductCommentController::flag - sending CommentFlaggedNotification', ['user_id' => $user->id, 'email' => $email, 'comment_id' => $comment->id]);
-                    // If the email differs from $user->email (or user is null), send directly to the provided address
-                    if (($data['email'] ?? null) && $data['email'] !== ($user->email ?? null)) {
-                        \Illuminate\Support\Facades\Notification::route('mail', $email)->notify(new CommentFlaggedNotification($comment, $data['reason'] ?? null));
-                    } else {
-                        $user->notify(new CommentFlaggedNotification($comment, $data['reason'] ?? null));
-                    }
-                } catch (\Throwable $e) {
-                    Log::error('Failed to send CommentFlaggedNotification', ['error' => $e->getMessage(), 'user_id' => $user->id, 'comment_id' => $comment->id, 'email' => $email]);
-                }
+        // If still no email, try using comment author field directly (often contains guest email)
+        if (empty($email) && !empty($comment->author)) {
+            $author = trim((string)$comment->author);
+            if (filter_var($author, FILTER_VALIDATE_EMAIL)) {
+                $email = $author;
             } else {
-                Log::warning('ProductCommentController::flag - no email found or provided; cannot notify', [
-                    'user_id' => $user->id ?? null,
-                    'comment_id' => $comment->id,
-                ]);
+                try {
+                    $possibleUser = User::where('email', $author)
+                        ->orWhere('username', $author)
+                        ->first();
+                    if ($possibleUser && !empty($possibleUser->email)) {
+                        $email = $possibleUser->email;
+                        $user = $possibleUser;
+                    }
+                } catch (\Throwable $_) {
+                    // ignore lookup failures
+                }
             }
+        }
 
-            // Count total flags against this user's comments
+        if (!empty($email)) {
+                try {
+                    Log::info('ProductCommentController::flag - sending flagged email via Mail::raw', ['user_id' => $user->id ?? null, 'email' => $email, 'comment_id' => $comment->id]);
+
+                    $body = [];
+                    $body[] = 'Hello ' . ($user->full_name ?? $email);
+                    $body[] = '';
+                    $body[] = 'One of your comments was flagged by an administrator for review.';
+                    if (!empty($data['reason'])) {
+                        $body[] = '';
+                        $body[] = 'Reason: ' . $data['reason'];
+                    }
+                    $body[] = '';
+                    $body[] = 'Comment: ' . (is_string($comment->text) ? mb_strimwidth($comment->text, 0, 500, '...') : '');
+                    $body[] = '';
+                    $body[] = 'If you believe this is a mistake, please contact support.';
+
+                    Mail::raw(implode("\n", $body), function ($message) use ($email) {
+                        $message->to($email)
+                            ->subject('Warning: Your comment has been flagged');
+                    });
+
+                    Log::info('ProductCommentController::flag - Mail::raw sent', ['email' => $email, 'comment_id' => $comment->id]);
+                } catch (\Throwable $e) {
+                    Log::error('Failed to send flagged email via Mail::raw', ['error' => $e->getMessage(), 'user_id' => $user->id, 'comment_id' => $comment->id, 'email' => $email]);
+
+                    // As a last resort, attempt the Notification path
+                    try {
+                        Notification::route('mail', $email)->notify(new CommentFlaggedNotification($comment, $data['reason'] ?? null));
+                        Log::info('ProductCommentController::flag - fallback Notification route used', ['email' => $email, 'comment_id' => $comment->id]);
+                    } catch (\Throwable $e2) {
+                        Log::error('Fallback Notification also failed for CommentFlaggedNotification', ['error' => $e2->getMessage(), 'email' => $email, 'comment_id' => $comment->id]);
+                    }
+                }
+        } else {
+            Log::warning('ProductCommentController::flag - no email found or provided; cannot notify', [
+                'user_id' => $user->id ?? null,
+                'comment_id' => $comment->id,
+            ]);
+        }
+
+        // If we have an associated user, count total flags against this user's comments
+        if ($user) {
             $commentIds = ProductComment::where('user_id', $user->id)->pluck('id');
             $totalFlags = ProductCommentFlag::whereIn('product_comment_id', $commentIds)->count();
 
@@ -274,5 +333,24 @@ class ProductCommentController extends Controller
         }
 
         return response()->json(['message' => 'Comment flagged', 'flag_id' => $flag->id], 200);
+    }
+
+    /**
+     * Unhide a previously hidden comment (admin action)
+     */
+    public function unhide(Request $request, $id)
+    {
+        $admin = $request->user();
+        $comment = ProductComment::findOrFail($id);
+
+        try {
+            $comment->is_hidden = 0;
+            $comment->save();
+            Log::info('ProductCommentController::unhide - comment unhidden', ['comment_id' => $comment->id, 'admin_user_id' => $admin->id]);
+            return response()->json(['message' => 'Comment unhidden'], 200);
+        } catch (\Throwable $e) {
+            Log::error('ProductCommentController::unhide - failed to unhide comment', ['error' => $e->getMessage(), 'comment_id' => $comment->id]);
+            return response()->json(['message' => 'Failed to unhide comment'], 500);
+        }
     }
 }

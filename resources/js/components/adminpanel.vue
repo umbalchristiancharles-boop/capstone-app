@@ -133,6 +133,17 @@
             </div>
           </section>
 
+          <!-- Request New Product (Admin) -->
+          <section class="panel-block">
+            <div class="panel-header">
+              <h2>Request New Product</h2>
+              <button class="panel-action" @click="showProductRequestForm = true">+ Request New Product</button>
+            </div>
+            <div class="panel-body panel-body--list">
+              <p>Request new products to be added to inventory. Requests will require owner/main branch logistics approval.</p>
+            </div>
+          </section>
+
           <!-- Financial Metrics (moved to Attendance column) -->
 
           <!-- Orders table -->
@@ -521,6 +532,43 @@
         </div>
       </transition>
 
+      <!-- Product Request Modal -->
+      <transition name="fade">
+        <div v-if="showProductRequestForm" class="modal-backdrop" @click.self="cancelProductRequest">
+          <div class="modal">
+            <h3>Request New Product</h3>
+            <p class="modal-sub">Request new products to be added to inventory. Requires owner/main approval.</p>
+            <form @submit.prevent="submitProductRequest">
+              <div class="form-group">
+                <label>Product Name*</label>
+                <input v-model="productRequestForm.name" type="text" placeholder="e.g., Organic Chicken Breast" required />
+              </div>
+              <div class="form-group">
+                <label>Description</label>
+                <textarea v-model="productRequestForm.description" rows="3" placeholder="Optional details"></textarea>
+              </div>
+              <div class="form-group">
+                <label>Unit of Measurement</label>
+                <select v-model="productRequestForm.unit">
+                  <option value="">-- Select unit (optional) --</option>
+                  <option value="pcs">Pieces (pcs)</option>
+                  <option value="g">Grams (g)</option>
+                  <option value="kg">Kilograms (kg)</option>
+                  <option value="ml">Milliliters (ml)</option>
+                  <option value="l">Liters (l)</option>
+                  <option value="pack">Pack</option>
+                  <option value="box">Box</option>
+                </select>
+              </div>
+              <div class="form-actions" style="margin-top:12px; display:flex; gap:8px; justify-content:flex-end;">
+                <button type="button" class="btn-secondary" @click="cancelProductRequest">Cancel</button>
+                <button type="submit" class="btn-primary">Submit Request</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </transition>
+
       <!-- LOGOUT CONFIRM MODAL -->
       <transition name="fade">
         <div v-if="showLogoutConfirm" class="logout-confirm-backdrop">
@@ -603,6 +651,10 @@ const showInfoModal = ref(false)
 const showLogoutConfirm = ref(false)
 const isLoggingOut = ref(false)
 const showOverlay = ref(false)
+// Product request modal state (Admin)
+const showProductRequestForm = ref(false)
+const productRequestForm = ref({ name: '', description: '', unit: '' })
+const productRequestSubmitting = ref(false)
 const overlayText = ref('Logging out...')
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
 
@@ -717,6 +769,41 @@ async function fetchAnnouncements() {
   } finally {
     loadingAnnouncements.value = false
   }
+}
+
+// Ensure a fresh CSRF cookie/header is present before mutating requests
+async function ensureCsrf() {
+  try {
+    await axios.get('/sanctum/csrf-cookie', { withCredentials: true });
+    const match = document.cookie.match(new RegExp('(^|; )' + 'XSRF-TOKEN' + '=([^;]*)'));
+    const token = match ? decodeURIComponent(match[2]) : null;
+    if (token) axios.defaults.headers.common['X-XSRF-TOKEN'] = token;
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+async function submitProductRequest() {
+  productRequestSubmitting.value = true
+  try {
+    await ensureCsrf()
+    const payload = { name: productRequestForm.value.name, description: productRequestForm.value.description || null, unit: productRequestForm.value.unit || null }
+    const res = await axios.post('/api/product-requests', payload, { withCredentials: true })
+    showToast('Product request submitted for approval', 'success')
+    showProductRequestForm.value = false
+    productRequestForm.value = { name: '', description: '', unit: '' }
+  } catch (e) {
+    const msg = e.response?.data?.error || e.response?.data?.message || e.message || 'Failed to submit product request'
+    showToast(msg, 'error')
+  } finally {
+    productRequestSubmitting.value = false
+  }
+}
+
+function cancelProductRequest() {
+  showProductRequestForm.value = false
+  productRequestForm.value = { name: '', description: '', unit: '' }
 }
 
 async function loadAdminAttendance(range = 'today') {

@@ -513,6 +513,7 @@ Route::prefix('manager')->middleware('auth:sanctum,web')->group(function () {
     Route::post('/product-comment-replies', [ProductCommentController::class, 'storeReply']);
     Route::delete('/product-comments/{id}', [ProductCommentController::class, 'destroy'])->middleware('auth');
     Route::post('/product-comments/{id}/flag', [ProductCommentController::class, 'flag'])->middleware('auth');
+    Route::post('/product-comments/{id}/unhide', [ProductCommentController::class, 'unhide'])->middleware('auth');
 
     Route::post('/auth/send-verification', [AuthController::class, 'sendVerification']);
     Route::post('/auth/verify-code', [AuthController::class, 'verifyCode']);

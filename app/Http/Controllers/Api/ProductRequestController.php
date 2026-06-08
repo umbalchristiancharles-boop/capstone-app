@@ -71,15 +71,15 @@ class ProductRequestController extends Controller
             'branch_id' => $user->branch_id,
         ]);
 
-        // Allow logistics managers and inventory staff to request new products
-        $isLogistics = in_array($role, ['LOGISTICS_MANAGER', 'MANAGER_LOGISTICS']) || ($role === 'MANAGER' && $dept === 'LOGISTICS') || ($role === 'STAFF' && $dept === 'INVENTORY');
+        // Allow logistics managers, inventory staff, and branch admins to request new products
+        $isLogistics = in_array($role, ['LOGISTICS_MANAGER', 'MANAGER_LOGISTICS', 'ADMIN']) || ($role === 'MANAGER' && $dept === 'LOGISTICS') || ($role === 'STAFF' && $dept === 'INVENTORY');
         if (!$isLogistics) {
             Log::warning('[ProductRequest] Authorization failed', [
                 'user_id' => $user->id,
                 'role' => $role,
                 'dept' => $dept,
             ]);
-            return response()->json(['error' => 'Only logistics managers and inventory staff can request new products'], 403);
+            return response()->json(['error' => 'Only logistics managers, inventory staff, and admins can request new products'], 403);
         }
 
         $validated = $request->validate([

@@ -84,6 +84,7 @@
                       {{ '★'.repeat(comment.rating) }}{{ '☆'.repeat(5 - comment.rating) }}
                     </span>
                   </div>
+                    <span v-if="comment.is_hidden" class="hidden-badge">Hidden</span>
                   <button
                     class="flag-btn"
                     @click="flagComment(comment.id)"
@@ -94,6 +95,7 @@
                     @click="deleteComment(comment.id)"
                     title="Delete this comment"
                   >🗑️</button>
+                    <button v-if="comment.is_hidden" class="unhide-btn" @click="unhideComment(comment.id)" title="Unhide this comment">🔓</button>
                 </div>
               </div>
 
@@ -311,6 +313,19 @@ async function flagComment(commentId) {
   }
 }
 
+async function unhideComment(commentId) {
+  try {
+    const ok = await (window.swalConfirm ? window.swalConfirm('Unhide this comment?', 'Confirm') : Promise.resolve(true))
+    if (!ok) return
+    await axios.post(`/api/product-comments/${commentId}/unhide`, {}, { withCredentials: true })
+    await loadComments()
+    if (window.swalAlert) await window.swalAlert('Comment unhidden', 'Success', 'success')
+  } catch (e) {
+    console.error('Failed to unhide comment:', e)
+    if (window.swalAlert) await window.swalAlert('Failed to unhide comment. Please try again.', 'Error', 'error')
+  }
+}
+
 const filteredComments = computed(() => {
   let filtered = comments.value
 
@@ -417,6 +432,24 @@ onMounted(async () => {
 
 .panel-block ul { margin: 0; padding-left: 18px; }
 .panel-block li { margin: 8px 0; color: rgba(66,33,11,0.9); }
+
+.hidden-badge {
+  display: inline-block;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+.unhide-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  margin-left: 6px;
+}
 
 .link-btn {
   border: 0; border-radius: 10px; background: var(--color-royal-blue); color: #fff; cursor: pointer;

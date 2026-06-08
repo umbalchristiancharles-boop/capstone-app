@@ -17,10 +17,12 @@ class ProductComment extends Model
         'ip_address',
         'user_id',
         'flags',
+        'is_hidden',
     ];
 
     protected $casts = [
         'flags' => 'integer',
+        'is_hidden' => 'boolean',
     ];
 
     public function product(): BelongsTo
