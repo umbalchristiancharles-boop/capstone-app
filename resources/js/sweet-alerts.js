@@ -47,6 +47,23 @@ export async function swalPrompt(message, title = '', input = 'text') {
   return null
 }
 
+export async function swalSelectPrompt(message, title = '', options = {}) {
+  const res = await Swal.fire({
+    title,
+    text: message,
+    input: 'select',
+    inputOptions: options,
+    inputPlaceholder: 'Select a reason',
+    showCancelButton: true,
+    confirmButtonText: 'OK',
+    cancelButtonText: 'Cancel',
+    confirmButtonColor: THEME.confirmButtonColor,
+    cancelButtonColor: THEME.cancelButtonColor
+  })
+  if (res.isConfirmed) return res.value
+  return null
+}
+
 export async function swalConfirmLogout({ useApi = true, message = 'You will be logged out of your session.', title = 'Confirm logout' } = {}) {
   // Prevent multiple simultaneous logout confirmations
   if (window.__swalLogoutPending) return false
@@ -80,6 +97,7 @@ window.Swal = Swal
 window.swalAlert = swalAlert
 window.swalConfirm = swalConfirm
 window.swalPrompt = swalPrompt
+window.swalSelectPrompt = swalSelectPrompt
 window.swalConfirmLogout = swalConfirmLogout
 
 // Replace default alert with SweetAlert visually (non-blocking)

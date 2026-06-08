@@ -225,6 +225,14 @@ const hideAttendanceCard = computed(() => {
   }
 })
 
+// Inventory state
+const inventory = ref([])
+const inventoryLoading = ref(false)
+const inventoryError = ref('')
+
+// Per-product action loading states (e.g., requestProcurement)
+const requesting = ref({})
+
 // Attendance state variables
 const attendanceStatus = ref({
   is_clocked_in: false,
@@ -338,6 +346,13 @@ const procRequestForm = ref({ product_id: '', quantity: 1, request_budget: false
 const procRequestSubmitting = ref(false)
 const procRequestFormError = ref('')
 const showProcRequestForm = ref(false)
+
+// Product request state (staff)
+const productRequests = ref([])
+const productRequestsLoading = ref(false)
+const productRequestForm = ref({ name: '', description: '', unit: '' })
+const productRequestSubmitting = ref(false)
+const showProductRequestForm = ref(false)
 
 async function fetchProcRequests() {
   procRequestsLoading.value = true

@@ -147,23 +147,11 @@
         <section class="panel-block">
           <h3>Quick Links</h3>
           <button class="link-btn" @click="refreshComments" style="background: linear-gradient(180deg, #10b981, #059669);">Refresh Comments</button>
-          <button class="logout-btn" @click.prevent="askLogout">Logout</button>
         </section>
       </aside>
     </section>
 
-    <transition name="fade">
-      <div v-if="showLogoutConfirm" class="logout-confirm-backdrop">
-        <div class="logout-confirm-box">
-          <h3>Logout from CRM Panel?</h3>
-          <p>This will end your current session for Chikin Tayo.</p>
-          <div class="logout-actions">
-            <button class="btn-cancel" @click="cancelLogout" :disabled="isLoggingOut">Cancel</button>
-            <button class="btn-confirm" @click="confirmLogout" :disabled="isLoggingOut">Yes, logout</button>
-          </div>
-        </div>
-      </div>
-    </transition>
+
   </div>
 </template>
 
@@ -178,8 +166,6 @@ function goBack() {
   try { router.back() } catch (e) { try { router.push('/main-branch/admin') } catch (e) {} }
 }
 const profile = ref({})
-const showLogoutConfirm = ref(false)
-const isLoggingOut = ref(false)
 const comments = ref([])
 const isLoading = ref(true)
 const searchQuery = ref('')
@@ -188,29 +174,7 @@ const currentPage = ref(1)
 const itemsPerPage = ref(10)
 
 
-function cancelLogout() {
-  if (isLoggingOut.value) return
-  showLogoutConfirm.value = false
-}
 
-async function confirmLogout() {
-  if (isLoggingOut.value) return
-  isLoggingOut.value = true
-  try {
-    await axios.post('/api/logout', {}, { withCredentials: true })
-  } catch (e) {}
-  try { localStorage.clear(); sessionStorage.clear() } catch (e) {}
-  setTimeout(() => {
-    window.location.replace('/staff-landing')
-  }, 350)
-}
-
-async function askLogout() {
-  try {
-    const ok = await (window.swalConfirm ? window.swalConfirm('This will end your current session for Chikin Tayo.', 'Confirm logout') : Promise.resolve(false))
-    if (ok) await confirmLogout()
-  } catch (e) { console.error('askLogout failed', e) }
-}
 
 
 function formatDate(dateStr) {
@@ -279,10 +243,20 @@ async function deleteComment(commentId) {
 
 async function flagComment(commentId) {
   try {
-    // Ask for optional reason using swalPrompt if available, otherwise prompt()
+    // Ask for reason using dropdown with common reasons
     let reason = ''
-    if (window.swalPrompt) {
-      try { reason = await window.swalPrompt('Optional reason for flagging this comment') } catch (e) { reason = '' }
+    if (window.swalSelectPrompt) {
+      const flaggingReasons = {
+        '': 'No reason (skip)',
+        'inappropriate_content': 'Inappropriate content',
+        'spam': 'Spam',
+        'offensive_language': 'Offensive language',
+        'misinformation': 'Misinformation',
+        'harassment': 'Harassment',
+        'fake_review': 'Fake review',
+        'off_topic': 'Off-topic'
+      }
+      try { reason = await window.swalSelectPrompt('Select reason for flagging this comment', 'Flag Comment', flaggingReasons) } catch (e) { reason = '' }
     } else {
       try { reason = window.prompt('Optional reason for flagging this comment') || '' } catch (e) { reason = '' }
     }
@@ -461,8 +435,6 @@ onMounted(async () => {
 .link-btn:hover { filter: brightness(0.98); }
 .link-btn:last-of-type { margin-bottom: 0; }
 
-.logout-btn { border: 0; border-radius: 999px; padding: 8px 12px; background: var(--alert); color: #fff; cursor: pointer; margin-top: 8px; box-shadow: 0 6px 18px rgba(239,68,68,0.08); width: 100%; }
-
 
 /* Comments Section */
 .comments-header { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-bottom: 16px; flex-wrap: wrap; }
@@ -509,16 +481,7 @@ onMounted(async () => {
 .pagination-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .pagination-info { font-size: 14px; color: #6b7280; }
 
-.logout-confirm-backdrop {
-  position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45); display: flex; align-items: center; justify-content: center; z-index: 9999;
-}
-.logout-confirm-box { width: min(92vw, 420px); background: #fff; border-radius: 12px; padding: 18px; box-shadow: 0 12px 40px rgba(16,24,40,0.12); }
-.logout-confirm-box h3 { margin: 0 0 8px; font-size: 18px; }
-.logout-confirm-box p { margin: 0 0 14px; color: #64748b; }
-.logout-actions { display: flex; gap: 10px; justify-content: flex-end; }
-.btn-cancel, .btn-confirm { border: 0; border-radius: 999px; padding: 6px 14px; font-size: 0.88rem; cursor: pointer; }
-.btn-cancel { background: rgba(16,24,40,0.04); color: var(--text-primary); }
-.btn-confirm { background: var(--alert); color: #ffffff; }
+
 
 .fade-enter-active, .fade-leave-active { transition: opacity .18s ease; }
 

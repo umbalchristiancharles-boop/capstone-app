@@ -61,7 +61,8 @@ class SupplierOrderController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'price' => 'required|numeric|min:0',
+            // price must be a positive number greater than zero
+            'price' => 'required|numeric|min:0.01',
             'category' => 'required|string|max:255|not_in:,null',
             'per_pack_or_individual' => 'required|in:individual,per_pack,both',
             // If front-end always sends the field, allow null when not per_pack by using nullable.

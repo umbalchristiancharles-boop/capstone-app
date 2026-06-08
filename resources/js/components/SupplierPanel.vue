@@ -4,6 +4,7 @@
     :panelTitle="'Supplier Panel'"
     :panelDescription="'Manage suppliers, view deliveries, and monitor supplier performance.'"
     :showProfileColumn="false"
+    :showAttendanceCard="false"
     :enableProfileUpdate="true"
     :canEditProfile="userProfile.role === 'OWNER'"
     :canChangePassword="true"
@@ -256,7 +257,7 @@
             </div>
             <div class="form-group">
               <label>Unit Price (PHP)</label>
-              <input v-model.number="submitForm.price" type="number" step="0.01" placeholder="0.00" />
+              <input v-model.number="submitForm.price" type="number" min="0.01" step="0.01" placeholder="0.00" />
             </div>
             <div class="form-group">
               <label>Expiration Date</label>
@@ -816,16 +817,18 @@ async function saveProductChanges() {
 
 async function submitProductForm() {
   if (!currentSubmitOrderId.value) return
-  if (!submitForm.value.name) { submitError.value = 'Product name is required'; return }
-  if (!submitForm.value.category) { submitError.value = 'Category is required'; return }
-  if (!submitForm.value.per_pack_or_individual) { submitError.value = 'Pricing type is required'; return }
+  if (!submitForm.value.name) { await Swal.fire({ icon: 'error', title: 'Validation', text: 'Product name is required' }); return }
+  if (!submitForm.value.category) { await Swal.fire({ icon: 'error', title: 'Validation', text: 'Category is required' }); return }
+  if (!submitForm.value.per_pack_or_individual) { await Swal.fire({ icon: 'error', title: 'Validation', text: 'Pricing type is required' }); return }
   // If per-pack, require pack quantity and unit
   if (submitForm.value.per_pack_or_individual === 'per_pack') {
-    if (submitForm.value.pack_quantity === null || submitForm.value.pack_quantity === undefined || Number(submitForm.value.pack_quantity) <= 0) { submitError.value = 'Pack quantity is required and must be greater than 0'; return }
-    if (!submitForm.value.pack_unit) { submitError.value = 'Pack unit is required'; return }
+    if (submitForm.value.pack_quantity === null || submitForm.value.pack_quantity === undefined || Number(submitForm.value.pack_quantity) <= 0) { await Swal.fire({ icon: 'error', title: 'Validation', text: 'Pack quantity is required and must be greater than 0' }); return }
+    if (!submitForm.value.pack_unit) { await Swal.fire({ icon: 'error', title: 'Validation', text: 'Pack unit is required' }); return }
   }
-  if (submitForm.value.price === null || submitForm.value.price === undefined) { submitError.value = 'Price is required'; return }
-  if (!submitForm.value.expires_at) { submitError.value = 'Expiration date is required'; return }
+  if (submitForm.value.price === null || submitForm.value.price === undefined) { await Swal.fire({ icon: 'error', title: 'Validation', text: 'Price is required' }); return }
+  // Ensure price is greater than zero
+  if (Number(submitForm.value.price) <= 0) { await Swal.fire({ icon: 'error', title: 'Validation', text: 'Price must be greater than 0' }); return }
+  if (!submitForm.value.expires_at) { await Swal.fire({ icon: 'error', title: 'Validation', text: 'Expiration date is required' }); return }
   submitSubmitting.value = true
   submitError.value = ''
   try {
