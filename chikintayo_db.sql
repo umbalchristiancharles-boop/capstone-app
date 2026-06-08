@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 08, 2026 at 07:41 AM
+-- Generation Time: Jun 08, 2026 at 02:51 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -625,7 +625,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (117, '2026_05_23_000000_add_is_manual_to_procurement_requests', 72),
 (118, '2026_05_26_000001_add_flags_to_product_comments_table', 73),
 (119, '2026_05_26_000002_create_product_comment_flags_table', 73),
-(120, '2026_06_01_000001_add_is_hidden_to_product_comments_table', 74);
+(120, '2026_06_01_000001_add_is_hidden_to_product_comments_table', 74),
+(121, '2026_06_08_000001_add_date_made_to_products_table', 75);
 
 -- --------------------------------------------------------
 
@@ -2083,7 +2084,7 @@ INSERT INTO `procurement_requests` (`id`, `product_id`, `supplier_id`, `logistic
 (132, 167, 152, 150, NULL, 149, 50, 10.00, 500.00, 'pending_order_to_supplier', '/receipts/manual_receipt_132_1779538741.jpg', 150, '2026-05-23 12:19:01', 0, NULL, NULL, NULL, NULL, NULL, NULL, '/product-images/manual_product_132_1779538741.jpg', 1, 1, 0, 500.00, '2026-05-23 12:19:01', '2026-05-23 12:20:18', 31),
 (133, 167, 152, 150, 151, 149, 50, 10.00, 500.00, 'completed', '/receipts/manual_receipt_133_1779539299.jpg', 150, '2026-05-23 12:28:19', 1, 149, '2026-05-23 12:33:34', 50, NULL, NULL, NULL, '/storage/delivery-proofs/delivery_proof_133_1779539750.jpg', 1, 1, 0, 500.00, '2026-05-23 12:28:19', '2026-05-23 12:35:50', 31),
 (134, 168, 152, 150, 150, 149, 10, 60.00, 600.00, 'awaiting_inventory_confirmation', '/receipts/manual_receipt_134_1779539561.jpg', 150, '2026-05-23 12:32:41', 1, 149, '2026-05-23 12:33:45', NULL, NULL, NULL, NULL, '/product-images/manual_product_134_1779539561.jpg', 1, 1, 0, 600.00, '2026-05-23 12:32:41', '2026-05-23 12:34:28', 31),
-(135, 174, NULL, 154, NULL, NULL, 10, 0.00, 0.00, 'pending', NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, NULL, '2026-06-08 05:07:51', '2026-06-08 05:07:51', 31);
+(135, 174, NULL, 154, NULL, NULL, 10, 15.00, 150.00, 'pending', NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 1, NULL, '2026-06-08 05:07:51', '2026-06-08 12:47:01', 31);
 
 -- --------------------------------------------------------
 
@@ -2108,6 +2109,7 @@ CREATE TABLE `products` (
   `real_stock` int(11) NOT NULL DEFAULT 0,
   `open_pack_used` decimal(12,4) NOT NULL DEFAULT 0.0000,
   `expires_at` datetime DEFAULT NULL,
+  `date_made` date DEFAULT NULL,
   `min_stock` int(11) NOT NULL DEFAULT 10,
   `sku` varchar(255) NOT NULL DEFAULT 'SKU-DEFAULT',
   `branch_id` bigint(20) UNSIGNED NOT NULL DEFAULT 1,
@@ -2133,21 +2135,22 @@ CREATE TABLE `products` (
 -- Dumping data for table `products`
 --
 
-INSERT INTO `products` (`id`, `dish_id`, `name`, `category`, `per_pack_or_individual`, `pack_quantity`, `pack_unit`, `slug`, `created_at`, `updated_at`, `price`, `cost_price`, `stock`, `real_stock`, `open_pack_used`, `expires_at`, `min_stock`, `sku`, `branch_id`, `published_by`, `published_at`, `is_published`, `has_been_ordered`, `is_active`, `is_kitchen_dish`, `is_dish_product`, `supplier_name`, `supplier_id`, `logistics_request_available`, `status`, `requires_logistics`, `approved_by_logistics_main`, `approved_by_owner`, `rejection_reason`, `approved_at`) VALUES
-(160, NULL, 'Boneless Chiken', NULL, 'individual', NULL, NULL, 'boneless-chiken-37-1775414111', '2026-04-05 18:35:11', '2026-04-05 18:36:43', 0.00, 0.00, 0, 0, 0.0000, NULL, 0, 'KITCHEN-DISH-37-3608', 31, NULL, NULL, 0, 1, 1, 1, 0, 'KITCHEN', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
-(161, NULL, 'Flour', NULL, 'individual', NULL, NULL, 'flour-37-1775414111', '2026-04-05 18:35:11', '2026-05-23 11:28:41', 0.00, 0.00, 0, 0, 0.0000, NULL, 0, 'KITCHEN-DISH-37-6080', 31, NULL, NULL, 0, 1, 1, 1, 0, 'KITCHEN', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
-(162, NULL, 'Yang Yeom Sauce', NULL, 'individual', NULL, NULL, 'yang-yeom-sauce-37-1775414111', '2026-04-05 18:35:11', '2026-04-05 18:37:12', 0.00, 0.00, 0, 0, 0.0000, NULL, 0, 'KITCHEN-DISH-37-1383', 31, NULL, NULL, 0, 1, 1, 1, 0, 'KITCHEN', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
-(163, NULL, 'Salt', NULL, 'individual', NULL, NULL, 'salt-37-1775414111', '2026-04-05 18:35:11', '2026-04-05 18:37:07', 0.00, 0.00, 0, 0, 0.0000, NULL, 0, 'KITCHEN-DISH-37-4351', 31, NULL, NULL, 0, 1, 1, 1, 0, 'KITCHEN', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
-(164, NULL, 'Pepper', NULL, 'individual', NULL, NULL, 'pepper-37-1775414111', '2026-04-05 18:35:11', '2026-04-05 18:36:55', 0.00, 0.00, 0, 0, 0.0000, NULL, 0, 'KITCHEN-DISH-37-3054', 31, NULL, NULL, 0, 1, 1, 1, 0, 'KITCHEN', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
-(165, 37, 'Yang Yeom Chiken', NULL, 'individual', NULL, NULL, 'yang-yeom-chiken', '2026-04-05 18:35:11', '2026-04-14 11:30:53', 16571.25, 12275.00, 0, 0, 0.0000, NULL, 0, 'YANGYEOM-LNOY', 31, 31, '2026-04-05 18:35:11', 1, 0, 1, 1, 1, NULL, NULL, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
-(166, NULL, 'Pepper', 'Condiment', 'per_pack', 20.00, 'g', 'pepper', '2026-04-05 18:42:20', '2026-04-05 19:20:39', 11.00, 10.00, 9, 9, 0.0000, '2027-04-06 04:43:00', 10, 'sku-1775414539-8389', 31, NULL, NULL, 1, 1, 1, 0, 0, 'Umberto Batumbakal', 152, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
-(167, NULL, 'Salt', 'Condiment', 'per_pack', 1.00, 'kg', 'salt', '2026-04-05 18:43:07', '2026-05-23 12:35:50', 11.00, 10.00, 60, 60, 0.0000, '2027-01-04 02:42:00', 10, 'sku-1775414587-8650', 31, NULL, NULL, 1, 1, 1, 0, 0, 'Umberto Batumbakal', 152, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
-(168, NULL, 'Yang Yeom Sauce', 'Other', 'individual', NULL, NULL, 'yang-yeom-sauce', '2026-04-05 18:44:02', '2026-04-05 19:20:17', 49.50, 45.00, 10, 10, 0.0000, '2027-07-06 02:43:00', 10, 'sku-1775414642-2866', 31, NULL, NULL, 1, 1, 1, 0, 0, 'Umberto Batumbakal', 152, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
-(169, NULL, 'Flour', 'Other', 'per_pack', 1.00, 'kg', 'flour', '2026-04-05 18:44:43', '2026-05-23 11:28:41', 44.00, 40.00, 5, 10, 0.0000, '2027-01-12 02:44:00', 10, 'sku-1775414683-7554', 31, NULL, NULL, 1, 1, 1, 0, 0, 'Umberto Batumbakal', 152, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
-(170, NULL, 'Rice', 'Grain', 'per_pack', NULL, NULL, 'rice', '2026-04-05 18:45:42', '2026-04-05 18:45:42', 60.00, 60.00, 0, 0, 0.0000, '2027-06-12 04:47:00', 10, 'RICE-JPKT', 31, NULL, NULL, 0, 0, 1, 0, 0, 'Umberto Batumbakal', 152, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
-(172, NULL, 'Boneless Chiken', 'Meat', 'per_pack', 4.00, 'pcs', 'boneless-chiken', '2026-04-05 19:00:31', '2026-04-05 19:19:59', 220.00, 200.00, 12, 12, 0.0000, '2026-11-20 03:00:00', 10, 'sku-1775415631-1644', 31, NULL, NULL, 1, 1, 1, 0, 0, 'Umberto Batumbakal', 152, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
-(173, NULL, 'sabon', 'Other', 'both', NULL, NULL, 'sabon', '2026-05-23 09:26:10', '2026-05-23 09:26:10', 25.00, 25.00, 0, 0, 0.0000, '2026-06-02 17:25:00', 10, 'SABON-FJLT', 31, NULL, NULL, 0, 0, 1, 0, 0, 'John Stalone', 158, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
-(174, NULL, 'Water', NULL, 'individual', NULL, NULL, 'water-28-1780893781', '2026-06-08 04:43:01', '2026-06-08 05:07:51', 0.00, 0.00, 0, 0, 0.0000, NULL, 0, 'PRODUCT-REQ-28-7912', 31, NULL, NULL, 1, 1, 1, 0, 0, 'TO BE ASSIGNED', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL);
+INSERT INTO `products` (`id`, `dish_id`, `name`, `category`, `per_pack_or_individual`, `pack_quantity`, `pack_unit`, `slug`, `created_at`, `updated_at`, `price`, `cost_price`, `stock`, `real_stock`, `open_pack_used`, `expires_at`, `date_made`, `min_stock`, `sku`, `branch_id`, `published_by`, `published_at`, `is_published`, `has_been_ordered`, `is_active`, `is_kitchen_dish`, `is_dish_product`, `supplier_name`, `supplier_id`, `logistics_request_available`, `status`, `requires_logistics`, `approved_by_logistics_main`, `approved_by_owner`, `rejection_reason`, `approved_at`) VALUES
+(160, NULL, 'Boneless Chiken', NULL, 'individual', NULL, NULL, 'boneless-chiken-37-1775414111', '2026-04-05 18:35:11', '2026-04-05 18:36:43', 0.00, 0.00, 0, 0, 0.0000, NULL, NULL, 0, 'KITCHEN-DISH-37-3608', 31, NULL, NULL, 0, 1, 1, 1, 0, 'KITCHEN', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
+(161, NULL, 'Flour', NULL, 'individual', NULL, NULL, 'flour-37-1775414111', '2026-04-05 18:35:11', '2026-05-23 11:28:41', 0.00, 0.00, 0, 0, 0.0000, NULL, NULL, 0, 'KITCHEN-DISH-37-6080', 31, NULL, NULL, 0, 1, 1, 1, 0, 'KITCHEN', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
+(162, NULL, 'Yang Yeom Sauce', NULL, 'individual', NULL, NULL, 'yang-yeom-sauce-37-1775414111', '2026-04-05 18:35:11', '2026-04-05 18:37:12', 0.00, 0.00, 0, 0, 0.0000, NULL, NULL, 0, 'KITCHEN-DISH-37-1383', 31, NULL, NULL, 0, 1, 1, 1, 0, 'KITCHEN', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
+(163, NULL, 'Salt', NULL, 'individual', NULL, NULL, 'salt-37-1775414111', '2026-04-05 18:35:11', '2026-04-05 18:37:07', 0.00, 0.00, 0, 0, 0.0000, NULL, NULL, 0, 'KITCHEN-DISH-37-4351', 31, NULL, NULL, 0, 1, 1, 1, 0, 'KITCHEN', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
+(164, NULL, 'Pepper', NULL, 'individual', NULL, NULL, 'pepper-37-1775414111', '2026-04-05 18:35:11', '2026-04-05 18:36:55', 0.00, 0.00, 0, 0, 0.0000, NULL, NULL, 0, 'KITCHEN-DISH-37-3054', 31, NULL, NULL, 0, 1, 1, 1, 0, 'KITCHEN', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
+(165, 37, 'Yang Yeom Chiken', NULL, 'individual', NULL, NULL, 'yang-yeom-chiken', '2026-04-05 18:35:11', '2026-04-14 11:30:53', 16571.25, 12275.00, 0, 0, 0.0000, NULL, NULL, 0, 'YANGYEOM-LNOY', 31, 31, '2026-04-05 18:35:11', 1, 0, 1, 1, 1, NULL, NULL, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
+(166, NULL, 'Pepper', 'Condiment', 'per_pack', 20.00, 'g', 'pepper', '2026-04-05 18:42:20', '2026-04-05 19:20:39', 11.00, 10.00, 9, 9, 0.0000, '2027-04-06 04:43:00', NULL, 10, 'sku-1775414539-8389', 31, NULL, NULL, 1, 1, 1, 0, 0, 'Umberto Batumbakal', 152, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
+(167, NULL, 'Salt', 'Condiment', 'per_pack', 1.00, 'kg', 'salt', '2026-04-05 18:43:07', '2026-05-23 12:35:50', 11.00, 10.00, 60, 60, 0.0000, '2027-01-04 02:42:00', NULL, 10, 'sku-1775414587-8650', 31, NULL, NULL, 1, 1, 1, 0, 0, 'Umberto Batumbakal', 152, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
+(168, NULL, 'Yang Yeom Sauce', 'Other', 'individual', NULL, NULL, 'yang-yeom-sauce', '2026-04-05 18:44:02', '2026-04-05 19:20:17', 49.50, 45.00, 10, 10, 0.0000, '2027-07-06 02:43:00', NULL, 10, 'sku-1775414642-2866', 31, NULL, NULL, 1, 1, 1, 0, 0, 'Umberto Batumbakal', 152, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
+(169, NULL, 'Flour', 'Other', 'per_pack', 1.00, 'kg', 'flour', '2026-04-05 18:44:43', '2026-05-23 11:28:41', 44.00, 40.00, 5, 10, 0.0000, '2027-01-12 02:44:00', NULL, 10, 'sku-1775414683-7554', 31, NULL, NULL, 1, 1, 1, 0, 0, 'Umberto Batumbakal', 152, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
+(170, NULL, 'Rice', 'Grain', 'per_pack', NULL, NULL, 'rice', '2026-04-05 18:45:42', '2026-04-05 18:45:42', 60.00, 60.00, 0, 0, 0.0000, '2027-06-12 04:47:00', NULL, 10, 'RICE-JPKT', 31, NULL, NULL, 0, 0, 1, 0, 0, 'Umberto Batumbakal', 152, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
+(172, NULL, 'Boneless Chiken', 'Meat', 'per_pack', 4.00, 'pcs', 'boneless-chiken', '2026-04-05 19:00:31', '2026-04-05 19:19:59', 220.00, 200.00, 12, 12, 0.0000, '2026-11-20 03:00:00', NULL, 10, 'sku-1775415631-1644', 31, NULL, NULL, 1, 1, 1, 0, 0, 'Umberto Batumbakal', 152, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
+(173, NULL, 'sabon', 'Other', 'both', NULL, NULL, 'sabon', '2026-05-23 09:26:10', '2026-05-23 09:26:10', 25.00, 25.00, 0, 0, 0.0000, '2026-06-02 17:25:00', NULL, 10, 'SABON-FJLT', 31, NULL, NULL, 0, 0, 1, 0, 0, 'John Stalone', 158, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
+(174, NULL, 'Water', NULL, 'individual', NULL, NULL, 'water-28-1780893781', '2026-06-08 04:43:01', '2026-06-08 05:07:51', 0.00, 0.00, 0, 0, 0.0000, NULL, NULL, 0, 'PRODUCT-REQ-28-7912', 31, NULL, NULL, 1, 1, 1, 0, 0, 'TO BE ASSIGNED', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
+(175, NULL, 'Water', 'Beverage', 'individual', NULL, NULL, 'water', '2026-06-08 12:47:01', '2026-06-08 12:47:01', 15.00, 15.00, 0, 0, 0.0000, '2027-10-06 20:46:00', '2026-06-01', 10, 'sku-1780922821-9486', 31, NULL, NULL, 1, 0, 1, 0, 0, 'Umberto Batumbakal', 152, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -2294,7 +2297,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('QC8dc6S2j53U1RbFZjoV4ecztqjJ7xJODD8lxFt0', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiS0NnS0tJSjJBU1htYUFON0I5RzJSd2ZxeEIzZmRnUHhXcVY0QUxPNyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO319', 1780897207);
+('ApiU65UWT1uUhvHdezlkclKTvdA9f798ywK3X9WZ', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiaENSN1RkWlJ6aDNVdmwwZFhnQ2tSMTBub3R6NFNSWEEzZXRvZVdGQSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO319', 1780922941);
 
 -- --------------------------------------------------------
 
@@ -2427,7 +2430,7 @@ INSERT INTO `supplier_orders` (`id`, `procurement_request_id`, `product_id`, `su
 (151, 125, 164, 158, 10, NULL, 'pending', 1, NULL, 31, '2026-04-05 18:38:31', '2026-04-05 18:38:31'),
 (154, 129, 172, 152, 10, NULL, 'fulfilled', 0, '2026-04-05 19:19:59', 31, '2026-04-05 18:55:17', '2026-04-05 19:19:59'),
 (155, 129, 160, 158, 10, NULL, 'pending', 1, NULL, 31, '2026-04-05 18:55:17', '2026-04-05 18:55:17'),
-(156, 135, 174, 152, 10, NULL, 'pending', 1, NULL, 31, '2026-06-08 05:17:23', '2026-06-08 05:17:23'),
+(156, 135, 175, 152, 10, NULL, 'pending', 1, NULL, 31, '2026-06-08 05:17:23', '2026-06-08 12:47:01'),
 (157, 135, 174, 158, 10, NULL, 'pending', 1, NULL, 31, '2026-06-08 05:17:23', '2026-06-08 05:17:23');
 
 -- --------------------------------------------------------
@@ -2908,7 +2911,7 @@ ALTER TABLE `messages`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=121;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=122;
 
 --
 -- AUTO_INCREMENT for table `orders`
@@ -2926,7 +2929,7 @@ ALTER TABLE `order_items`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2491;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2493;
 
 --
 -- AUTO_INCREMENT for table `price_audits`
@@ -2956,7 +2959,7 @@ ALTER TABLE `procurement_requests`
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=175;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=176;
 
 --
 -- AUTO_INCREMENT for table `product_comments`

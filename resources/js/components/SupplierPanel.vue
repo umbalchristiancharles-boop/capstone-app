@@ -263,6 +263,10 @@
               <label>Expiration Date</label>
               <input v-model="submitForm.expires_at" type="datetime-local" />
             </div>
+            <div class="form-group">
+              <label>Date Product Made</label>
+              <input v-model="submitForm.date_made" type="date" />
+            </div>
             <div v-if="submitForm.per_pack_or_individual === 'per_pack'" class="form-group">
               <label>Pack details</label>
               <div style="display:flex;gap:8px">
@@ -437,7 +441,7 @@ const receiptData = ref({})
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
 // Supplier submit modal state
 const supplierSubmitModalVisible = ref(false)
-const submitForm = ref({ name: '', price: null, category: '', per_pack_or_individual: '', expires_at: '', pack_quantity: null, pack_unit: '' })
+const submitForm = ref({ name: '', price: null, category: '', per_pack_or_individual: '', expires_at: '', date_made: '', pack_quantity: null, pack_unit: '' })
 const submitSubmitting = ref(false)
 const submitError = ref('')
 const currentSubmitOrderId = ref(null)
@@ -726,7 +730,7 @@ async function completeTransaction(id) {
 function openSupplierSubmitModal(order) {
   // Prefill product name if procurement request provides it
   submitError.value = ''
-  submitForm.value = { name: '', price: null, category: '', per_pack_or_individual: '', expires_at: '', pack_quantity: null, pack_unit: '' }
+  submitForm.value = { name: '', price: null, category: '', per_pack_or_individual: '', expires_at: '', date_made: '', pack_quantity: null, pack_unit: '' }
   currentSubmitOrderId.value = null
   if (!order) return
   currentSubmitOrderId.value = order.id
@@ -740,7 +744,7 @@ function closeSupplierSubmitModal() {
   if (submitSubmitting.value) return
   supplierSubmitModalVisible.value = false
   submitError.value = ''
-  submitForm.value = { name: '', price: null, category: '', per_pack_or_individual: '', expires_at: '', pack_quantity: null, pack_unit: '' }
+  submitForm.value = { name: '', price: null, category: '', per_pack_or_individual: '', expires_at: '', date_made: '', pack_quantity: null, pack_unit: '' }
   currentSubmitOrderId.value = null
 }
 
@@ -839,7 +843,8 @@ async function submitProductForm() {
       per_pack_or_individual: submitForm.value.per_pack_or_individual,
       pack_quantity: submitForm.value.pack_quantity,
       pack_unit: submitForm.value.pack_unit,
-      expires_at: submitForm.value.expires_at
+      expires_at: submitForm.value.expires_at,
+      date_made: submitForm.value.date_made || null
     }
     const res = await axios.post(`/api/supplier-orders/${currentSubmitOrderId.value}/submit-product`, payload, { withCredentials: true })
     if (res && res.data && res.data.ok) {

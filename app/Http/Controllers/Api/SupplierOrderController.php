@@ -70,6 +70,7 @@ class SupplierOrderController extends Controller
             'pack_quantity' => 'sometimes|required_if:per_pack_or_individual,per_pack|nullable|numeric|min:0',
             'pack_unit' => 'sometimes|required_if:per_pack_or_individual,per_pack|nullable|string|max:50',
             'expires_at' => 'required|date_format:Y-m-d\TH:i',
+            'date_made' => 'nullable|date_format:Y-m-d',
             'stock' => 'nullable|integer|min:0',
             'sku' => 'nullable|string|max:255'
         ]);
@@ -144,6 +145,7 @@ class SupplierOrderController extends Controller
                     'supplier_id' => $user->id,
                     'supplier_name' => $user->full_name ?? $user->username,
                     'expires_at' => $validated['expires_at'],
+                    'date_made' => $validated['date_made'] ?? null,
                     'is_published' => 1,
                     'is_active' => 1,
                     'is_kitchen_dish' => $isDish,
@@ -169,6 +171,7 @@ class SupplierOrderController extends Controller
                     'supplier_id' => $user->id,
                     'supplier_name' => $user->full_name ?? $user->username,
                     'expires_at' => $validated['expires_at'],
+                    'date_made' => $validated['date_made'] ?? null,
                     'is_published' => 1,
                     'is_active' => 1,
                     'is_kitchen_dish' => $isDish,
