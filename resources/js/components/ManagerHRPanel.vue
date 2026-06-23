@@ -17,6 +17,78 @@
       </div>
     </template>
     <template #main>
+      <!-- HR Positions Management -->
+      <!-- POSITIONS REQUEST MODAL -->
+      <transition name="fade">
+        <div v-if="showPositionsModal" class="positions-modal-backdrop" @click.self="closePositionsModal">
+          <div class="positions-modal">
+            <div class="positions-modal__header">
+              <div>
+                <h3>Request Open Positions</h3>
+                <p class="muted">Select a position, then set quantity and notes.</p>
+              </div>
+              <button class="modal-close" @click="closePositionsModal" aria-label="Close">✕</button>
+            </div>
+
+            <div class="positions-modal__body">
+              <div v-if="positionsLoading" class="loading-box">Loading positions...</div>
+              <div v-else-if="positions.length === 0" class="empty-box">No active positions found.</div>
+
+              <div v-else class="positions-list">
+                <div v-for="p in positions" :key="p.id" class="position-row">
+                  <div class="position-row__meta">
+                    <div class="position-row__name">{{ p.name }}</div>
+                    <div class="position-row__dept">{{ p.department || '—' }}</div>
+                  </div>
+
+                  <div class="position-row__inputs">
+                    <label class="field">
+                      <span class="field-label">Quantity</span>
+                      <input
+                        type="number"
+                        min="1"
+                        class="field-input"
+                        v-model.number="requestQuantities[p.id]"
+                        :placeholder="'1'"
+                      />
+                    </label>
+
+                    <label class="field">
+                      <span class="field-label">Notes</span>
+                      <textarea
+                        class="field-textarea"
+                        rows="2"
+                        v-model.trim="requestNotes[p.id]"
+                        placeholder="Optional"
+                      ></textarea>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="positions-modal__footer">
+              <button class="btn-secondary" @click="closePositionsModal" :disabled="submittingPositions">Cancel</button>
+              <button
+                class="btn-primary"
+                @click="submitPositionsRequests"
+                :disabled="submittingPositions || positionsLoading"
+              >
+                {{ submittingPositions ? 'Submitting...' : 'Submit Request(s)' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
+
+      <!-- HR Positions Management -->
+      <div class="positions-top-actions">
+        <button class="panel-action panel-action--primary" @click="openPositionsModal" :disabled="positionsLoading">
+          {{ positionsLoading ? 'Loading...' : 'Request Open Positions' }}
+        </button>
+      </div>
+
+
       <!-- Bento-style Stats Cards -->
       <div class="manager-hr-main-wrapper">
         <div class="hr-stats-grid">
@@ -120,7 +192,10 @@
     </template>
   </OwnerPanelLayout>
 
+
+
   <transition name="fade">
+
     <div v-if="showLogoutConfirm" class="logout-confirm-backdrop">
       <div class="logout-confirm-box">
         <h3>Logout from Manager Panel?</h3>
@@ -149,6 +224,15 @@ import { useRouter } from 'vue-router'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import axios from 'axios'
 import { showToast } from './toastStore'
+
+// HR Positions Modal state
+const showPositionsModal = ref(false)
+const positions = ref([])
+const positionsLoading = ref(false)
+const submittingPositions = ref(false)
+const requestQuantities = ref({})
+const requestNotes = ref({})
+
 
 const router = useRouter()
 const errorMessage = ref('')
@@ -377,8 +461,68 @@ async function askLogout() {
   } catch (e) { console.error('askLogout failed', e) }
 }
 
+async function closePositionsModal() {
+  showPositionsModal.value = false
+}
+
+async function openPositionsModal() {
+  showPositionsModal.value = true
+  positionsLoading.value = true
+  try {
+    const res = await axios.get('/api/hr/positions', { withCredentials: true })
+    positions.value = res.data?.positions || []
+
+    const quantities = {}
+    const notes = {}
+    ;(positions.value || []).forEach(p => {
+      quantities[p.id] = requestQuantities.value[p.id] || 1
+      notes[p.id] = requestNotes.value[p.id] || ''
+    })
+    requestQuantities.value = quantities
+    requestNotes.value = notes
+  } catch (err) {
+    alert(err.response?.data?.message || 'Failed to load positions')
+    positions.value = []
+  } finally {
+    positionsLoading.value = false
+  }
+}
+
+async function submitPositionsRequests() {
+  if (!Array.isArray(positions.value) || positions.value.length === 0) return
+
+  const payloads = positions.value
+    .map(p => {
+      const q = Number(requestQuantities.value?.[p.id] || 0)
+      const notes = requestNotes.value?.[p.id] || null
+      return { position_id: p.id, quantity: q, notes }
+    })
+    .filter(x => x.quantity && x.quantity >= 1)
+
+  if (payloads.length === 0) {
+    alert('Please enter quantity (min 1) for at least one position.')
+    return
+  }
+
+  submittingPositions.value = true
+  try {
+    for (const item of payloads) {
+      const res = await axios.post('/api/hr/positions/requests', item, { withCredentials: true })
+      if (!res.data?.ok) throw new Error(res.data?.message || 'Request failed')
+    }
+
+    alert('Open position request(s) submitted successfully.')
+    await closePositionsModal()
+  } catch (err) {
+    alert(err.response?.data?.message || 'Failed to submit position request(s).')
+  } finally {
+    submittingPositions.value = false
+  }
+}
+
 defineExpose({ refreshAllData, onProfileUpdated })
 </script>
+
 
 <style scoped>
 .panel-badge {
