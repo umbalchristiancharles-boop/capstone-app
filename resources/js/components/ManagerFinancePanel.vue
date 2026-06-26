@@ -127,7 +127,7 @@
     <!-- Financial Reports Chart -->
     <section class="panel-section" style="margin-top:16px;">
       <div class="panel-header">
-        <h2>Financial Reports</h2>
+        <h2>Financial Overview: Revenue vs Expenses</h2>
         <button class="panel-action" @click="refreshDashboard">Refresh</button>
       </div>
       <div class="panel-body" style="padding:16px 20px; min-height:320px;">
@@ -557,7 +557,7 @@ const managerChartData = computed(() => {
     labels,
     datasets: [
       {
-        label: 'Income',
+        label: 'Revenue',
         data: rpt.income || [],
         borderColor: '#10B981',
         backgroundColor: 'rgba(16,185,129,0.08)',
@@ -580,7 +580,7 @@ const managerChartData = computed(() => {
         borderColor: '#3B82F6',
         backgroundColor: 'rgba(59,130,246,0.08)',
         tension: 0.25,
-        fill: true,
+        fill: false,
         pointRadius: 3
       }
     ]

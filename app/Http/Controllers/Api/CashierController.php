@@ -85,6 +85,14 @@ class CashierController extends Controller
             $totalPiecesAvailable = 0;
             $totalCost = 0.0;
             $isCondiment = false;
+            $isWeightBased = false;
+
+            // Check if ingredient uses weight-based unit (g, kg, ml, l)
+            $ingUnit = strtolower(trim($ing->unit ?? ''));
+            $weightUnits = ['g', 'gram', 'grams', 'kg', 'kilogram', 'kilograms', 'ml', 'milliliter', 'milliliters', 'l', 'liter', 'liters'];
+            $isWeightBased = in_array($ingUnit, $weightUnits);
+
+            $costPerServing = 0.0;
 
             foreach ($candidateProducts as $cp) {
                 $cat = strtolower(trim($cp->category ?? ''));
@@ -101,17 +109,32 @@ class CashierController extends Controller
                     $totalPiecesAvailable += (float) ($cp->stock ?? 0);
                 }
 
-                $totalCost += ((float) ($cp->cost_price ?? $cp->price ?? 0)) * 1;
+                // Get cost for ONE unit of the ingredient (not total stock)
+                // If per pack, divide cost by pack_quantity to get cost per piece
+                $unitCost = (float) ($cp->cost_price ?? $cp->price ?? 0);
+                if ($perPackModeCp && $packQtyCp > 0) {
+                    $unitCost = $unitCost / $packQtyCp;
+                }
+                $costPerServing += $unitCost;
             }
 
             if ($isCondiment && $totalPiecesAvailable <= 0) {
-                $costSum += ($totalCost * $perServing);
+                $costSum += $costPerServing;
                 continue;
             }
 
-            $possibleByIng = (int) floor($totalPiecesAvailable / max(1, $perServing));
-            $maxServings = is_null($maxServings) ? $possibleByIng : min($maxServings, $possibleByIng);
-            $costSum += ($totalCost * $perServing);
+            if ($isWeightBased) {
+                // For weight-based ingredients, the per_serving is already the weight (e.g., 100g)
+                // so we calculate servings based on total weight available
+                $possibleByIng = (int) floor($totalPiecesAvailable / max(1, $perServing));
+                $maxServings = is_null($maxServings) ? $possibleByIng : min($maxServings, $possibleByIng);
+            } else {
+                // For piece-based ingredients
+                $possibleByIng = (int) floor($totalPiecesAvailable / max(1, $perServing));
+                $maxServings = is_null($maxServings) ? $possibleByIng : min($maxServings, $possibleByIng);
+            }
+            // Multiply cost per serving by the required amount per serving
+            $costSum += ($costPerServing * $perServing);
         }
 
         return [(int) ($maxServings ?? 0), (float) $costSum];
@@ -121,8 +144,12 @@ class CashierController extends Controller
      * Consume required pieces for an ingredient across candidate products in a branch.
      * Returns true if consumption succeeded fully, false if insufficient.
      * This handles per-pack products (updates stock + open_pack_used) and individual units.
+     *
+     * Pack logic: When pack_quantity is set (e.g., 5 per pack), each purchase of 5 units
+     * consumes 1 from stock. Partial packs remaining in open_pack_used don't reduce stock
+     * until enough are used to equal a full pack.
      */
-    private function consumeIngredientProducts($ing, $branchId, int $requiredPieces): bool
+    private function consumeIngredientProducts($ing, $branchId, float $requiredPieces): bool
     {
         if ($requiredPieces <= 0) return true;
 
@@ -130,6 +157,11 @@ class CashierController extends Controller
         $nameUpper = strtoupper($nameRaw);
         $normalized = preg_replace('/[^A-Z0-9]+/', '', $nameUpper);
         $skuKey = $ing->product?->sku ?? null;
+
+        // Check if ingredient uses weight-based unit (g, kg, ml, l) - treat like condiments
+        $ingUnit = strtolower(trim($ing->unit ?? ''));
+        $weightUnits = ['g', 'gram', 'grams', 'kg', 'kilogram', 'kilograms', 'ml', 'milliliter', 'milliliters', 'l', 'liter', 'liters'];
+        $isWeightBased = in_array($ingUnit, $weightUnits);
 
         $candidateQuery = Product::where('branch_id', $branchId)->where('is_active', 1)
             ->where(function ($q) use ($skuKey, $nameRaw) {
@@ -152,8 +184,9 @@ class CashierController extends Controller
         $needed = $requiredPieces;
         foreach ($sorted as $cp) {
             $cat = strtolower(trim($cp->category ?? ''));
-            if ($cat === 'condiment') {
-                // do not consume condiments
+            if ($cat === 'condiment' || $isWeightBased) {
+                // do not consume condiments or weight-based ingredients automatically
+                // They should be flagged for manual logistics replenishment
                 continue;
             }
 
@@ -163,13 +196,14 @@ class CashierController extends Controller
             $openUsed = (float) ($cp->open_pack_used ?? 0);
             $piecesAvailable = $perPackMode && $packQty > 0
                 ? (($cp->stock ?? 0) * $packQty) - $openUsed
-                : (int) ($cp->stock ?? 0);
+                : (float) ($cp->stock ?? 0);
 
             if ($piecesAvailable <= 0) continue;
 
-            $toTake = min($needed, (int) $piecesAvailable);
+            $toTake = min($needed, $piecesAvailable);
 
             if ($perPackMode && $packQty > 0) {
+                // For pack-based: accumulate used items; only decrement stock when open_pack_used reaches pack_quantity
                 $totalAfter = $openUsed + $toTake;
                 $packsToConsume = (int) floor($totalAfter / $packQty);
                 $remainingOpenUsed = $totalAfter - ($packsToConsume * $packQty);
@@ -182,9 +216,9 @@ class CashierController extends Controller
                 $cp->open_pack_used = $remainingOpenUsed;
                 $cp->save();
             } else {
-                // individual units
-                $dec = min((int) $cp->stock, $toTake);
-                $cp->decrement('stock', $dec);
+                // individual units - consume directly
+                $dec = min((float) $cp->stock, $toTake);
+                $cp->decrement('stock', (int) $dec);
             }
 
             $needed -= $toTake;
@@ -258,12 +292,11 @@ class CashierController extends Controller
             ->values()
             ->all();
 
-        // 1) Regular sellable products (non-dish, not ingredient, stock > 0)
+        // 1) Regular sellable products (non-dish, not ingredient) - show all published, not just stock > 0
         $regularProductsQuery = Product::query()
             ->where('is_active', 1)
             ->where('is_published', 1)
             ->where('branch_id', $branchId)
-            ->where('stock', '>', 0)
             ->where(function ($q) {
                 $q->whereNull('is_kitchen_dish')->orWhere('is_kitchen_dish', false);
             });
@@ -349,10 +382,22 @@ class CashierController extends Controller
 
             // Prepare row: prefer computed selling price if available, otherwise use stored product price
             $row = $dishProduct->toArray();
+            // Use selling price (includes markup for kitchen dishes)
             $row['price'] = !is_null($sellingPrice) ? $sellingPrice : ($dishProduct->price ?? 0);
-            $row['computed_cost'] = $costSum > 0 ? round($costSum, 2) : ($dishProduct->cost_price ?? null);
+            // Also send computed_cost as the final selling price for frontend reference
+            $row['computed_cost'] = !is_null($sellingPrice) ? $sellingPrice : ($costSum > 0 ? round($costSum, 2) : ($dishProduct->cost_price ?? null));
             // Use computed available servings when >0, otherwise fall back to stored product stock
-            $row['stock'] = $maxServings > 0 ? $maxServings : ($dishProduct->stock ?? 0);
+            // Always show at least 10 stock for published dishes to allow multiple orders
+            $fallbackStock = $dishProduct->stock ?? 0;
+            if ($maxServings > 0) {
+                $displayStock = max($maxServings, 10);
+            } elseif ($fallbackStock > 0) {
+                $displayStock = max($fallbackStock, 10);
+            } else {
+                // For published dishes with no available servings, allow 10 for ordering
+                $displayStock = (!empty($dishProduct->is_published)) ? 10 : 0;
+            }
+            $row['stock'] = $displayStock;
             $row['is_kitchen_dish'] = true;
             $out[] = $row;
         }
@@ -389,7 +434,9 @@ class CashierController extends Controller
             foreach ($request->items as $item) {
                 $product = Product::where('id', $item['product_id'])
                     ->where('branch_id', $request->branch_id)
-                    ->where('is_published', 1)
+                    ->where(function ($q) {
+                        $q->where('is_published', 1)->orWhere('is_active', 1);
+                    })
                     ->lockForUpdate()
                     ->first();
 
@@ -562,7 +609,7 @@ class CashierController extends Controller
                                     if ($required <= 0) $required = 1;
                                     $required = $required * $it->quantity;
 
-                                    $consumed = $this->consumeIngredientProducts($ing, $request->branch_id, (int) $required);
+                                    $consumed = $this->consumeIngredientProducts($ing, $request->branch_id, $required);
 
                                     if (! $consumed) {
                                         // Flag logistics for representative product if present, otherwise flag candidates

@@ -475,7 +475,7 @@ async function openPositionsModal() {
     const quantities = {}
     const notes = {}
     ;(positions.value || []).forEach(p => {
-      quantities[p.id] = requestQuantities.value[p.id] || 1
+      quantities[p.id] = requestQuantities.value[p.id] || 0
       notes[p.id] = requestNotes.value[p.id] || ''
     })
     requestQuantities.value = quantities
@@ -505,16 +505,19 @@ async function submitPositionsRequests() {
   }
 
   submittingPositions.value = true
+  let lastResponse = null
   try {
     for (const item of payloads) {
       const res = await axios.post('/api/hr/positions/requests', item, { withCredentials: true })
+      lastResponse = res
       if (!res.data?.ok) throw new Error(res.data?.message || 'Request failed')
     }
 
-    alert('Open position request(s) submitted successfully.')
+    alert(lastResponse?.data?.message || 'Position request(s) submitted. Waiting for main HR approval.')
     await closePositionsModal()
   } catch (err) {
-    alert(err.response?.data?.message || 'Failed to submit position request(s).')
+    console.error('Position request error:', err)
+    alert(err.response?.data?.message || err.message || 'Failed to submit position request(s).')
   } finally {
     submittingPositions.value = false
   }
@@ -666,4 +669,150 @@ defineExpose({ refreshAllData, onProfileUpdated })
 .badge--warning { background: #fff3cd; color: #856404; padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
 .badge--info { background: #d1ecf1; color: #0c5460; padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
 @media (max-width: 768px) { .staff-header { flex-direction: column; gap: 1rem; } .hr-header-actions { width: 100%; flex-wrap: wrap; } .hr-search-input { width: 100%; } .staff-table { font-size: 0.8rem; } .staff-table th, .staff-table td { padding: 0.5rem; } }
+
+/* Positions Modal Styles */
+.positions-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+.positions-modal {
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+.positions-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #eee;
+}
+.positions-modal__header h3 {
+  margin: 0 0 0.25rem;
+  color: #333;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+.positions-modal__header .muted {
+  margin: 0;
+  color: #666;
+  font-size: 0.85rem;
+}
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  color: #999;
+  cursor: pointer;
+  padding: 0.25rem;
+  line-height: 1;
+}
+.modal-close:hover {
+  color: #333;
+}
+.positions-modal__body {
+  padding: 1rem 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+.loading-box, .empty-box {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+}
+.positions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.position-row {
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid #eee;
+}
+.position-row__meta {
+  margin-bottom: 0.75rem;
+}
+.position-row__name {
+  font-weight: 600;
+  color: #333;
+  font-size: 1rem;
+}
+.position-row__dept {
+  color: #666;
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+.position-row__inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.field-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #333;
+}
+.field-input,
+.field-textarea {
+  padding: 0.625rem 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+.field-input:focus,
+.field-textarea:focus {
+  outline: none;
+  border-color: #ff9f43;
+  box-shadow: 0 0 0 3px rgba(255, 154, 74, 0.15);
+}
+.field-textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+.positions-modal__footer {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #eee;
+  background: #fafafa;
+  border-radius: 0 0 12px 12px;
+}
+.positions-top-actions {
+  margin-bottom: 1.25rem;
+}
+.panel-action--primary {
+  background: #ff9f43;
+  color: #fff;
+}
+.panel-action--primary:hover {
+  background: #fabd83;
+}
+.panel-action--primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 </style>

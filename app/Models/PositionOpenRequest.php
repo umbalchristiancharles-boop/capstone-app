@@ -15,7 +15,15 @@ class PositionOpenRequest extends Model
         'quantity',
         'notes',
         'status',
+        'approved_by_user_id',
+        'approved_at',
+        'rejection_reason',
     ];
+
+    public function approvedBy()
+    {
+        return $this->belongsTo(User::class, 'approved_by_user_id');
+    }
 
     public function position()
     {

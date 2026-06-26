@@ -137,6 +137,106 @@
       @close="showAddStaffModal = false"
       @success="onStaffModalSuccess"
     />
+
+    <!-- Position Open Requests Section -->
+    <div class="position-requests-section" style="display: block;">
+      <div class="section-header">
+        <h2 class="section-title">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+          Open Position Requests
+          <span v-if="positionRequestsPendingCount > 0" style="background: #ffc107; color: #000; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold; margin-left: 8px;">{{ positionRequestsPendingCount }}</span>
+        </h2>
+        <div class="section-actions">
+          <button @click="loadPositionRequests" class="btn-secondary" :disabled="loadingPositionRequests">
+            {{ loadingPositionRequests ? 'Loading...' : 'Refresh' }}
+          </button>
+        </div>
+      </div>
+
+      <div v-if="loadingPositionRequests" class="loading-state">
+        <p>Loading requests...</p>
+      </div>
+
+      <div v-else-if="positionRequests.length === 0" class="empty-state">
+        <p>No position requests found.</p>
+      </div>
+
+      <div v-else class="requests-list">
+        <div v-for="req in positionRequests" :key="req.id" class="request-card" :class="'request-card--' + req.status.toLowerCase()">
+          <div class="request-card__header">
+            <div class="request-card__position">{{ req.position?.name || 'Unknown Position' }}</div>
+            <span class="badge" :class="statusBadgeClass(req.status)">{{ req.status }}</span>
+          </div>
+
+          <div class="request-card__body">
+            <div class="request-card__info">
+              <span class="label">Branch:</span>
+              <span class="value">{{ req.branch?.name || 'Main HR' }}</span>
+            </div>
+            <div class="request-card__info">
+              <span class="label">Quantity:</span>
+              <span class="value">{{ req.quantity }}</span>
+            </div>
+            <div class="request-card__info">
+              <span class="label">Requested by:</span>
+              <span class="value">{{ req.requested_by?.full_name || req.requested_by?.username || 'Unknown' }}</span>
+            </div>
+            <div class="request-card__info">
+              <span class="label">Date:</span>
+              <span class="value">{{ formatDate(req.created_at) }}</span>
+            </div>
+            <div v-if="req.notes" class="request-card__notes">
+              <span class="label">Notes:</span>
+              <p>{{ req.notes }}</p>
+            </div>
+            <div v-if="req.rejection_reason" class="request-card__notes request-card__notes--rejection">
+              <span class="label">Rejection reason:</span>
+              <p>{{ req.rejection_reason }}</p>
+            </div>
+          </div>
+
+          <div v-if="req.status === 'Pending'" class="request-card__actions">
+            <button @click="approveRequest(req)" class="btn-success btn-sm" :disabled="processingRequestId === req.id">
+              {{ processingRequestId === req.id ? 'Processing...' : 'Approve' }}
+            </button>
+            <button @click="openRejectModal(req)" class="btn-danger btn-sm" :disabled="processingRequestId === req.id">
+              Reject
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reject Reason Modal -->
+    <div v-if="showRejectModal" class="modal-backdrop" @click.self="closeRejectModal">
+      <div class="modal">
+        <div class="modal-header">
+          <h2>Reject Request</h2>
+          <button class="close-button" @click="closeRejectModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Reason for rejection (optional)</label>
+            <textarea
+              v-model="rejectReason"
+              class="form-input"
+              rows="3"
+              placeholder="Enter reason..."
+            ></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" @click="closeRejectModal">Cancel</button>
+          <button
+            class="btn-danger"
+            @click="confirmReject"
+            :disabled="processingRequestId === rejectingRequest?.id"
+          >
+            {{ processingRequestId === rejectingRequest?.id ? 'Processing...' : 'Reject Request' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -167,6 +267,18 @@ const currentBranchId = ref(null)
 
 // Staff Data
 const staff = ref([])
+
+// Position Open Requests State
+const positionRequests = ref([])
+const loadingPositionRequests = ref(false)
+const processingRequestId = ref(null)
+const showRejectModal = ref(false)
+const rejectingRequest = ref(null)
+const rejectReason = ref('')
+
+const positionRequestsPendingCount = computed(() => {
+  return positionRequests.value.filter(r => r.status === 'Pending').length
+})
 // Branches and filters
 const branches = ref([])
 const branchFilter = ref('')
@@ -397,6 +509,82 @@ async function loadBranches() {
   }
 }
 
+// Position Requests Methods
+async function loadPositionRequests() {
+  loadingPositionRequests.value = true
+  try {
+    console.log('[HRStaffManagement] Loading position requests, CSRF token available:', document.cookie.includes('XSRF'))
+    const res = await axios.get('/api/hr/positions/requests/pending', { withCredentials: true })
+    console.log('[HRStaffManagement] Position requests response:', res.data)
+    if (res.data && res.data.ok) {
+      positionRequests.value = res.data.requests || []
+    } else {
+      positionRequests.value = []
+    }
+  } catch (e) {
+    console.error('[HRStaffManagement] Failed loading position requests:', e.response || e.message || e)
+    positionRequests.value = []
+  } finally {
+    loadingPositionRequests.value = false
+  }
+}
+
+async function approveRequest(req) {
+  processingRequestId.value = req.id
+  try {
+    const res = await axios.post(`/api/hr/positions/requests/${req.id}/approve`, {}, { withCredentials: true })
+    if (res.data && res.data.ok) {
+      alert('Request approved successfully.')
+      await loadPositionRequests()
+    } else {
+      alert(res.data?.message || 'Failed to approve request.')
+    }
+  } catch (e) {
+    alert(e.response?.data?.message || 'Failed to approve request.')
+  } finally {
+    processingRequestId.value = null
+  }
+}
+
+function openRejectModal(req) {
+  rejectingRequest.value = req
+  rejectReason.value = ''
+  showRejectModal.value = true
+}
+
+function closeRejectModal() {
+  showRejectModal.value = false
+  rejectingRequest.value = null
+  rejectReason.value = ''
+}
+
+async function confirmReject() {
+  if (!rejectingRequest.value) return
+  processingRequestId.value = rejectingRequest.value.id
+  try {
+    const res = await axios.post(`/api/hr/positions/requests/${rejectingRequest.value.id}/reject`, {
+      reason: rejectReason.value
+    }, { withCredentials: true })
+    if (res.data && res.data.ok) {
+      alert('Request rejected.')
+      closeRejectModal()
+      await loadPositionRequests()
+    } else {
+      alert(res.data?.message || 'Failed to reject request.')
+    }
+  } catch (e) {
+    alert(e.response?.data?.message || 'Failed to reject request.')
+  } finally {
+    processingRequestId.value = null
+  }
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '-'
+  const d = new Date(dateStr)
+  return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
 function refreshStaff() {
   loadStaff()
 }
@@ -463,6 +651,7 @@ onMounted(async () => {
 
   await loadBranches()
   await loadStaff()
+  await loadPositionRequests()
 })
 
 function displayRole(r) {
@@ -1012,5 +1201,135 @@ function formatDate(dateString) {
 .dark-mode .staff-table tbody tr.inactive {
   opacity: 0.6;
   background: #262626;
+}
+
+/* Position Requests Section */
+.position-requests-section {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 2rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  margin-top: 2rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.section-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.requests-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.request-card {
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px solid #eee;
+  padding: 1rem;
+}
+
+.request-card--approved {
+  border-left: 4px solid #28a745;
+}
+
+.request-card--rejected {
+  border-left: 4px solid #dc3545;
+}
+
+.request-card--pending {
+  border-left: 4px solid #ffc107;
+}
+
+.request-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.request-card__position {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.request-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.request-card__info {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.request-card__info .label {
+  color: #666;
+  min-width: 100px;
+}
+
+.request-card__info .value {
+  color: #333;
+  font-weight: 500;
+}
+
+.request-card__notes {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #eee;
+}
+
+.request-card__notes .label {
+  display: block;
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 0.25rem;
+}
+
+.request-card__notes p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.request-card__notes--rejection p {
+  color: #dc3545;
+}
+
+.request-card__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+}
+
+.btn-sm {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
 }
 </style>

@@ -245,6 +245,11 @@ Route::middleware('web')->group(function () {
         // HR Positions (Open positions request)
         Route::get('/positions', [\App\Http\Controllers\Api\HrPositionRequestController::class, 'positions']);
         Route::post('/positions/requests', [\App\Http\Controllers\Api\HrPositionRequestController::class, 'store']);
+
+        // HR Positions - Main HR approval endpoints
+        Route::get('/positions/requests/pending', [\App\Http\Controllers\Api\HrPositionRequestController::class, 'pendingRequests']);
+        Route::post('/positions/requests/{id}/approve', [\App\Http\Controllers\Api\HrPositionRequestController::class, 'approve']);
+        Route::post('/positions/requests/{id}/reject', [\App\Http\Controllers\Api\HrPositionRequestController::class, 'reject']);
     });
 
 

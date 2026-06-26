@@ -386,7 +386,15 @@ class ManagerFinanceController extends Controller
             }
             $budgetExpense = (float) $budgetQuery->sum('requested_amount');
 
-            $expenses = (float) ($supplierExpense + $procurementExpense + $budgetExpense);
+            // Additional expenses from Expense model (approved expenses)
+            $expenseQuery = Expense::where('status', 'approved')
+                ->whereBetween('created_at', [$monthStart, $monthEnd]);
+            if ($branchId) {
+                $expenseQuery->where('branch_id', $branchId);
+            }
+            $additionalExpense = (float) $expenseQuery->sum('amount');
+
+            $expenses = (float) ($supplierExpense + $procurementExpense + $budgetExpense + $additionalExpense);
 
             $net = $income - $expenses;
 
