@@ -246,8 +246,12 @@ Route::middleware('web')->group(function () {
         Route::get('/positions', [\App\Http\Controllers\Api\HrPositionRequestController::class, 'positions']);
         Route::post('/positions/requests', [\App\Http\Controllers\Api\HrPositionRequestController::class, 'store']);
 
-        // HR Positions - Main HR approval endpoints
-        Route::get('/positions/requests/pending', [\App\Http\Controllers\Api\HrPositionRequestController::class, 'pendingRequests']);
+    // HR Positions - Main HR approval endpoints
+    Route::get('/positions/requests/pending', [\App\Http\Controllers\Api\HrPositionRequestController::class, 'pendingRequests']);
+    
+    // Public endpoint (customer landing) - approved open positions
+    // Note: keep outside auth middleware group in a separate block if you ever refactor.
+
         Route::post('/positions/requests/{id}/approve', [\App\Http\Controllers\Api\HrPositionRequestController::class, 'approve']);
         Route::post('/positions/requests/{id}/reject', [\App\Http\Controllers\Api\HrPositionRequestController::class, 'reject']);
     });
@@ -517,6 +521,10 @@ Route::prefix('manager')->middleware('auth:sanctum,web')->group(function () {
     Route::get('/products-for-comments', [ProductCommentController::class, 'listProducts']);
     // Public branches list for customer landing (no auth required)
     Route::get('/public/branches', [ProductCommentController::class, 'publicBranches']);
+
+    // Public approved positions for customer landing (no auth required)
+    Route::get('/public/positions/approved', [\App\Http\Controllers\Api\HrPositionRequestController::class, 'approvedOpenPositions']);
+
     Route::get('/product-comments', [ProductCommentController::class, 'index']);
     Route::get('/product-comments/all', [ProductCommentController::class, 'allComments'])->middleware('auth');
     Route::post('/product-comments', [ProductCommentController::class, 'store']);

@@ -1,18 +1,7 @@
-# TODO - HR Open Positions Feature
+# TODO (Capstone)
 
-- [x] Inspect existing positions schema/table (positions.sql / DB models / migrations)
-- [x] Add DB migration + model for `position_open_requests` (position_id, branch_id, requested_by_user_id, quantity, notes, status)
-- [x] Add API endpoints:
-  - [x] GET `/api/hr/positions` (list active positions)
-  - [x] POST `/api/hr/positions/requests` (create request; validate role + quantity)
-- [ ] Update `resources/js/components/MainBranchHrPanel.vue`:
-  - [ ] Add “Request Open Positions” button
-  - [ ] Add modal popup listing positions
-  - [ ] Add quantity + notes inputs per request
-  - [ ] Wire up API calls + success/error handling
-- [ ] Smoke test UI:
-  - [ ] Modal opens
-  - [ ] Positions list loads
-  - [ ] Submitting creates DB record
-
+## Open Positions (Customer Landing) - Frontend polish
+- [ ] Refactor Open Positions markup in `resources/js/components/index.vue` into better job-card structure (badges + empty state).
+- [ ] Add/extend styles in `resources/css/index.css` for job cards: responsive grid, hover, typography, description clamp.
+- [ ] Smoke-test build (run `npm run build` or `npm run dev` if appropriate).
 

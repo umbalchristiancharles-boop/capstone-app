@@ -13,6 +13,8 @@ use Illuminate\Validation\Rule;
 
 class HrPositionRequestController extends Controller
 {
+
+
     // GET /api/hr/positions
     public function positions(Request $request)
     {
@@ -120,12 +122,47 @@ class HrPositionRequestController extends Controller
         ]);
     }
 
+    // GET /api/public/positions/approved - List approved open positions (customer landing)
+    public function approvedOpenPositions(Request $request)
+    {
+        $query = PositionOpenRequest::query()
+            ->where('status', 'Approved')
+            ->with(['position', 'branch'])
+            ->orderByDesc('approved_at');
+
+        // Optional: filter by branch_id if frontend ever needs it
+        $branchId = $request->query('branch_id');
+        if ($branchId) {
+            $query->where('branch_id', (int) $branchId);
+        }
+
+        $requests = $query->get();
+
+        return response()->json([
+            'ok' => true,
+            'approved_positions' => $requests->map(function ($r) {
+                return [
+                    'id' => $r->id,
+                    'position_id' => $r->position_id,
+                    'position_name' => optional($r->position)->name,
+                    'department' => optional($r->position)->department,
+                    'description' => optional($r->position)->description,
+                    'branch_id' => $r->branch_id,
+                    'branch_name' => optional($r->branch)->name,
+                    'quantity' => $r->quantity,
+                    'approved_at' => $r->approved_at,
+                ];
+            }),
+        ]);
+    }
+
     // POST /api/hr/positions/requests/{id}/reject
     public function reject(Request $request, $id)
     {
         $user = Auth::user();
 
         $request->validate([
+
             'reason' => ['nullable', 'string', 'max:5000'],
         ]);
 

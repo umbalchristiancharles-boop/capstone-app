@@ -248,9 +248,58 @@
       </div>
     </section>
 
-    <!-- SCAFFOLD 4: WHITE SECTION -->
+    <!-- SCAFFOLD 4: OPEN POSITIONS (CUSTOMER) -->
     <section class="scaffold scaffold-white scaffold-4">
       <div class="scaffold-content about-section">
+        <h2>Open Positions</h2>
+
+        <div v-if="approvedPositions.length === 0" class="no-positions-empty">
+          <div class="no-positions-icon">💼</div>
+          <h3 class="no-positions-title">No open positions right now</h3>
+          <p class="no-positions-subtitle">Check back soon—new roles may be posted anytime.</p>
+        </div>
+
+        <div v-else class="positions-grid" role="list">
+          <div
+            v-for="p in approvedPositions"
+            :key="p.id"
+            class="position-card"
+            role="listitem"
+          >
+            <div class="position-top">
+              <h3 class="position-name" :title="p.position_name">
+                {{ p.position_name || 'Position' }}
+              </h3>
+
+              <div class="position-pill-row">
+                <span v-if="p.department" class="position-pill position-pill--dept">{{ p.department }}</span>
+                <span v-if="p.branch_name" class="position-pill position-pill--branch">{{ p.branch_name }}</span>
+              </div>
+            </div>
+
+            <div class="position-meta-row">
+              <span class="position-qty">
+                <span class="position-qty-label">Quantity</span>
+                <span class="position-qty-value">{{ p.quantity ?? 0 }}</span>
+              </span>
+            </div>
+
+            <p v-if="p.description" class="position-desc" :title="p.description">
+              {{ p.description }}
+            </p>
+
+            <p v-else class="position-desc position-desc--muted">
+              No description provided for this position.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCAFFOLD 5: WHITE SECTION -->
+    <section class="scaffold scaffold-white scaffold-5">
+      <div class="scaffold-content about-section">
+
         <h2>About CHIKIN TAYO</h2>
 
         <div class="about-content">
@@ -574,6 +623,8 @@ const commonEmojis = {
 const products = ref([])
 const branches = ref([])
 const selectedBranch = ref(0)
+const approvedPositions = ref([])
+
 
 const newComments = ref({})
 
@@ -618,8 +669,10 @@ onMounted(() => {
   loadBranches()
   loadProducts()
   loadComments()
+  loadApprovedPositions()
   loadGoogleUser()
 })
+
 
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
@@ -684,7 +737,18 @@ function onBranchChange() {
   loadComments()
 }
 
+async function loadApprovedPositions() {
+  try {
+    const { data } = await axios.get('/api/public/positions/approved')
+    approvedPositions.value = Array.isArray(data?.approved_positions) ? data.approved_positions : []
+  } catch (error) {
+    console.error('Failed to load approved positions:', error)
+    approvedPositions.value = []
+  }
+}
+
 async function loadComments() {
+
   try {
     const { data } = await axios.get('/api/product-comments')
     const grouped = data.reduce((acc, comment) => {
