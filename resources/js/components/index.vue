@@ -251,7 +251,13 @@
     <!-- SCAFFOLD 4: OPEN POSITIONS (CUSTOMER) -->
     <section class="scaffold scaffold-white scaffold-4">
       <div class="scaffold-content about-section">
-        <h2>Open Positions</h2>
+        <div class="positions-section-intro">
+          <span class="positions-section-kicker">Join the team</span>
+          <h2>Open Positions</h2>
+          <p class="positions-section-subtitle">
+            Explore current openings across the branches and departments that are actively hiring.
+          </p>
+        </div>
 
         <div v-if="approvedPositions.length === 0" class="no-positions-empty">
           <div class="no-positions-icon">💼</div>
@@ -266,6 +272,11 @@
             class="position-card"
             role="listitem"
           >
+            <div class="position-card-header">
+              <span class="position-card-status">Hiring now</span>
+              <span class="position-qty">{{ p.quantity ?? 0 }} {{ (p.quantity ?? 0) === 1 ? 'opening' : 'openings' }}</span>
+            </div>
+
             <div class="position-top">
               <h3 class="position-name" :title="p.position_name">
                 {{ p.position_name || 'Position' }}
@@ -273,15 +284,9 @@
 
               <div class="position-pill-row">
                 <span v-if="p.department" class="position-pill position-pill--dept">{{ p.department }}</span>
+                <span v-if="p.department && p.branch_name" class="position-pill-separator" aria-hidden="true">•</span>
                 <span v-if="p.branch_name" class="position-pill position-pill--branch">{{ p.branch_name }}</span>
               </div>
-            </div>
-
-            <div class="position-meta-row">
-              <span class="position-qty">
-                <span class="position-qty-label">Quantity</span>
-                <span class="position-qty-value">{{ p.quantity ?? 0 }}</span>
-              </span>
             </div>
 
             <p v-if="p.description" class="position-desc" :title="p.description">
