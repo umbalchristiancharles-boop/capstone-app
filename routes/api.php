@@ -525,6 +525,10 @@ Route::prefix('manager')->middleware('auth:sanctum,web')->group(function () {
     // Public approved positions for customer landing (no auth required)
     Route::get('/public/positions/approved', [\App\Http\Controllers\Api\HrPositionRequestController::class, 'approvedOpenPositions']);
 
+    // Public job applications (customer landing) - async multipart submit
+    Route::post('/public/positions/apply', [\App\Http\Controllers\Api\PositionApplicationController::class, 'store']);
+
+
     Route::get('/product-comments', [ProductCommentController::class, 'index']);
     Route::get('/product-comments/all', [ProductCommentController::class, 'allComments'])->middleware('auth');
     Route::post('/product-comments', [ProductCommentController::class, 'store']);

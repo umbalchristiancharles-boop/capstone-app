@@ -145,7 +145,7 @@ class StaffInventoryController extends Controller
         // been accepted/placed into inventory by procurement.
         // (Procurement will still mark products as published when placed.)
 
-        $products = $query->select('id', 'name', 'slug', 'price', 'stock', 'sku', 'branch_id', 'is_published', 'created_at', 'updated_at', 'status')
+        $products = $query->select('id', 'name', 'slug', 'price', 'stock', 'sku', 'branch_id', 'is_published', 'created_at', 'updated_at', 'status', 'expires_at')
             ->orderBy('name')
             ->get();
 

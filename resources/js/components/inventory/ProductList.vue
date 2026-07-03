@@ -59,11 +59,12 @@
                     <th class="col-price" @click="toggleSort('price')" role="button" tabindex="0">Price (PHP) <span class="sort">{{ sortIndicator('price') }}</span></th>
                     <th class="col-stock" @click="toggleSort('stock')" role="button" tabindex="0">Stock <span class="sort">{{ sortIndicator('stock') }}</span></th>
                     <th class="col-expiry">Expires</th>
+                    <th class="col-status">Status</th>
                     <th class="col-actions">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="p in getProductsByCategory(cat)" :key="p.id" class="pl-row" :title="p.name" :class="{ expired: isProductExpired(p) }">
+                  <tr v-for="p in getProductsByCategory(cat)" :key="p.id" class="pl-row" :title="p.name" :class="rowStateClass(p)">
                     <td class="col-thumb">
                       <img v-if="p.image_url" :src="p.image_url" :alt="p.name" class="thumb" />
                       <div v-else class="thumb thumb-placeholder" aria-hidden="true">{{ p.name ? p.name.charAt(0) : '?' }}</div>
@@ -78,53 +79,26 @@
                     <td class="col-price">{{ formatCurrency(p.price) }}</td>
                     <td class="col-stock"><span :class="stockClass(p.stock)">{{ p.stock }}</span></td>
                     <td class="col-expiry">
-                      <span v-if="p.expires_at" :class="getExpiryClass(p)">{{ formatDate(p.expires_at) }}</span>
-                      <span v-else class="expiry-none">—</span>
+                      <div class="expiry-cell-wrap">
+                        <span v-if="getExpiryValue(p)" class="expiry-date" :class="getExpiryClass(p)">{{ formatDate(getExpiryValue(p)) }}</span>
+                        <span v-else class="expiry-none">—</span>
+                        <span v-if="expiryIndicatorLabel(p)" class="expiry-indicator" :class="expiryIndicatorClass(p)">
+                          {{ expiryIndicatorLabel(p) }}
+                        </span>
+                      </div>
                     </td>
+                    <td class="col-status"><span :class="['status-badge', statusClass(p)]">{{ statusLabel(p) }}</span></td>
                     <td class="col-actions">
-                      <button v-if="props.showPublishControls && p.is_published" type="button" class="btn btn-icon" @click="$emit('toggle-publish', { id: p.id, publish: false })">Unpublish</button>
-                      <button v-else-if="props.showPublishControls" type="button" class="btn btn-icon btn-primary" @click="$emit('toggle-publish', { id: p.id, publish: true })">Publish</button>
+                      <div class="table-actions">
+                        <button v-if="showProcurementButton(p)" class="btn btn-primary btn-small" type="button" @click="$emit('request-procurement', p)">Request Procurement</button>
+                        <button v-if="props.showPublishControls && p.is_published" type="button" class="btn btn-icon" @click="$emit('toggle-publish', { id: p.id, publish: false })">Unpublish</button>
+                        <button v-else-if="props.showPublishControls" type="button" class="btn btn-icon btn-primary" @click="$emit('toggle-publish', { id: p.id, publish: true })">Publish</button>
+                      </div>
                     </td>
                   </tr>
                 </tbody>
               </table>
 
-            </div>
-          </div>
-
-          <!-- Inventory Monitor: show current stock levels in a Manager-like table -->
-          <div class="panel-section" style="margin-top:18px;">
-            <h2 class="section-title">Inventory Monitor</h2>
-            <p class="section-description">Current stock levels for your branch (Read-only)</p>
-            <div class="table-container inventory-table-container" style="margin-top:12px;">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Product Name</th>
-                    <th>Category</th>
-                    <th>Pricing Type</th>
-                    <th>Stock Count</th>
-                    <th>Minimum Stock</th>
-                    <th>Expires At</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="p in sorted" :key="p.id">
-                    <td>{{ p.name }}</td>
-                    <td>{{ p.category || '—' }}</td>
-                    <td><span class="pricing-type-badge">{{ p.pricing_type || 'N/A' }}</span></td>
-                    <td>{{ p.stock == null ? '—' : p.stock }}</td>
-                    <td>{{ p.low_stock_threshold ?? 10 }}</td>
-                    <td class="expiry-cell"><span class="expiry-date">{{ formatDate(p.expires_at) }}</span></td>
-                    <td><span :class="['status-badge', statusClass(p)]">{{ statusLabel(p) }}</span></td>
-                    <td>
-                      <button v-if="(p.stock == null ? 0 : p.stock) <= (p.low_stock_threshold ?? 10)" class="btn-primary btn-small" type="button" @click="$emit('request-procurement', p)">Request Procurement</button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
             </div>
           </div>
 
@@ -139,11 +113,12 @@
                   <th class="col-price" @click="toggleSort('price')" role="button" tabindex="0">Price (PHP) <span class="sort">{{ sortIndicator('price') }}</span></th>
                   <th class="col-stock" @click="toggleSort('stock')" role="button" tabindex="0">Stock <span class="sort">{{ sortIndicator('stock') }}</span></th>
                   <th class="col-expiry">Expires</th>
+                  <th class="col-status">Status</th>
                   <th class="col-actions">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="p in pageItems" :key="p.id" class="pl-row" :title="p.name" :class="{ expired: isProductExpired(p) }">
+                <tr v-for="p in pageItems" :key="p.id" class="pl-row" :title="p.name" :class="rowStateClass(p)">
                   <td class="col-thumb">
                     <img v-if="p.image_url" :src="p.image_url" :alt="p.name" class="thumb" />
                     <div v-else class="thumb thumb-placeholder" aria-hidden="true">{{ p.name ? p.name.charAt(0) : '?' }}</div>
@@ -158,13 +133,22 @@
                   <td class="col-price">{{ formatCurrency(p.price) }}</td>
                   <td class="col-stock"><span :class="stockClass(p.stock)">{{ p.stock }}</span></td>
                   <td class="col-expiry">
-                    <span v-if="p.expires_at" :class="getExpiryClass(p)">{{ formatDate(p.expires_at) }}</span>
-                    <span v-else class="expiry-none">—</span>
+                    <div class="expiry-cell-wrap">
+                      <span v-if="getExpiryValue(p)" class="expiry-date" :class="getExpiryClass(p)">{{ formatDate(getExpiryValue(p)) }}</span>
+                      <span v-else class="expiry-none">—</span>
+                      <span v-if="expiryIndicatorLabel(p)" class="expiry-indicator" :class="expiryIndicatorClass(p)">
+                        {{ expiryIndicatorLabel(p) }}
+                      </span>
+                    </div>
                   </td>
-                    <td class="col-actions">
+                  <td class="col-status"><span :class="['status-badge', statusClass(p)]">{{ statusLabel(p) }}</span></td>
+                  <td class="col-actions">
+                    <div class="table-actions">
+                      <button v-if="showProcurementButton(p)" class="btn btn-primary btn-small" type="button" @click="$emit('request-procurement', p)">Request Procurement</button>
                       <button v-if="props.showPublishControls && p.is_published" type="button" class="btn btn-icon" @click="$emit('toggle-publish', { id: p.id, publish: false })">Unpublish</button>
                       <button v-else-if="props.showPublishControls" type="button" class="btn btn-icon btn-primary" @click="$emit('toggle-publish', { id: p.id, publish: true })">Publish</button>
-                    </td>
+                    </div>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -198,7 +182,14 @@
               <div class="card-title">{{ p.name }}</div>
               <div class="card-sub">SKU: <span class="sku">{{ p.sku || '-' }}</span></div>
               <div class="card-meta">{{ formatCurrency(p.price) }} · <span :class="stockClass(p.stock)">{{ p.stock }}</span></div>
+              <div class="card-meta card-meta--expiry">
+                <span v-if="getExpiryValue(p)" class="expiry-date" :class="getExpiryClass(p)">{{ formatDate(getExpiryValue(p)) }}</span>
+                <span v-else class="expiry-none">—</span>
+                <span v-if="expiryIndicatorLabel(p)" class="expiry-indicator" :class="expiryIndicatorClass(p)">{{ expiryIndicatorLabel(p) }}</span>
+              </div>
+              <div class="card-meta"><span :class="['status-badge', statusClass(p)]">{{ statusLabel(p) }}</span></div>
               <div class="card-actions">
+                <button v-if="showProcurementButton(p)" type="button" class="btn btn-small btn-primary" @click="$emit('request-procurement', p)">Request Procurement</button>
                 <button v-if="props.showPublishControls && p.is_published" type="button" class="btn btn-small" @click="$emit('toggle-publish', { id: p.id, publish: false })">Unpublish</button>
                 <button v-else-if="props.showPublishControls" type="button" class="btn btn-small btn-primary" @click="$emit('toggle-publish', { id: p.id, publish: true })">Publish</button>
               </div>
@@ -384,6 +375,9 @@ const sorted = computed(() => {
 
 // helpers for inventory monitor status
 function statusClass(p) {
+  const expiryState = getExpiryClass(p)
+  if (expiryState === 'expiry-expired') return 'status-expired'
+  if (expiryState === 'expiry-critical' || expiryState === 'expiry-warning') return 'status-near-expiry'
   const n = (p.stock == null) ? 0 : p.stock
   if (n <= 0) return 'status-out'
   const threshold = p.low_stock_threshold ?? 10
@@ -392,10 +386,31 @@ function statusClass(p) {
 }
 
 function statusLabel(p) {
-  const cls = statusClass(p)
-  if (cls === 'status-out') return 'OUT'
-  if (cls === 'status-low') return 'LOW STOCK'
+  const expiryState = getExpiryClass(p)
+  if (expiryState === 'expiry-expired') return 'EXPIRED'
+  if (expiryState === 'expiry-critical' || expiryState === 'expiry-warning') return 'NEAR EXPIRY'
+  const stockState = statusClass(p)
+  if (stockState === 'status-out') return 'OUT'
+  if (stockState === 'status-low') return 'LOW STOCK'
   return 'OK'
+}
+
+function rowStateClass(p) {
+  return {
+    expired: isProductExpired(p),
+    'near-expiry': isProductNearExpiry(p)
+  }
+}
+
+function isProductNearExpiry(product) {
+  const cls = getExpiryClass(product)
+  return cls === 'expiry-critical' || cls === 'expiry-warning'
+}
+
+function showProcurementButton(product) {
+  const stock = product?.stock == null ? 0 : Number(product.stock)
+  const threshold = Number(product?.low_stock_threshold ?? 10)
+  return stock <= threshold
 }
 
 // Pagination
@@ -472,7 +487,7 @@ function setStockFilter(val) { stockFilter.value = val }
 function setCategoryFilter(val) { categoryFilter.value = val }
 
 // Category grouping
-const groupByCategory = ref(true)
+const groupByCategory = computed(() => !props.compact && categories.value.length > 0)
 const groupedCategories = computed(() => {
   const cats = new Set()
   sorted.value.forEach(p => {
@@ -486,6 +501,9 @@ function getProductsByCategory(category) {
 }
 
 // Expiration date utilities
+const EXPIRY_CRITICAL_DAYS = 1
+const EXPIRY_NEAR_DAYS = 5
+
 function formatDate(dateStr) {
   if (!dateStr) return '—'
   try {
@@ -497,9 +515,10 @@ function formatDate(dateStr) {
 }
 
 function isProductExpired(product) {
-  if (!product.expires_at) return false
+  const expiryValue = getExpiryValue(product)
+  if (!expiryValue) return false
   try {
-    const expiryDate = new Date(product.expires_at)
+    const expiryDate = new Date(expiryValue)
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     return expiryDate < today
@@ -509,14 +528,15 @@ function isProductExpired(product) {
 }
 
 function getExpiryClass(product) {
-  if (!product.expires_at) return 'expiry-none'
+  const expiryValue = getExpiryValue(product)
+  if (!expiryValue) return 'expiry-none'
   try {
-    const expiryDate = new Date(product.expires_at)
+    const expiryDate = new Date(expiryValue)
     const today = new Date()
     const tomorrow = new Date(today)
-    tomorrow.setDate(tomorrow.getDate() + 1)
+    tomorrow.setDate(tomorrow.getDate() + EXPIRY_CRITICAL_DAYS)
     const weekFromNow = new Date(today)
-    weekFromNow.setDate(weekFromNow.getDate() + 7)
+    weekFromNow.setDate(weekFromNow.getDate() + EXPIRY_NEAR_DAYS)
 
     today.setHours(0, 0, 0, 0)
     expiryDate.setHours(0, 0, 0, 0)
@@ -528,6 +548,30 @@ function getExpiryClass(product) {
   } catch (e) {
     return 'expiry-none'
   }
+}
+
+function expiryIndicatorLabel(product) {
+  if (!getExpiryValue(product)) return ''
+  const cls = getExpiryClass(product)
+  if (cls === 'expiry-expired') return 'EXPIRED'
+  if (cls === 'expiry-critical' || cls === 'expiry-warning') return 'NEAR EXPIRY'
+  return ''
+}
+
+function expiryIndicatorClass(product) {
+  const cls = getExpiryClass(product)
+  if (cls === 'expiry-expired') return 'expiry-ind--expired'
+  if (cls === 'expiry-critical') return 'expiry-ind--critical'
+  if (cls === 'expiry-warning') return 'expiry-ind--warning'
+  return 'expiry-ind--ok'
+}
+
+function expiryIndicatorCellClass(product) {
+  return getExpiryClass(product)
+}
+
+function getExpiryValue(product) {
+  return product?.expires_at ?? product?.expiresAt ?? null
 }
 
 defineExpose({ fetchProducts, getStats, setQuery, setStockFilter, setCategoryFilter })
@@ -642,7 +686,8 @@ defineExpose({ fetchProducts, getStats, setQuery, setStockFilter, setCategoryFil
 .pl-table th.col-price, .pl-table td:nth-child(4) { width: 120px; text-align: right }
 .pl-table th.col-stock, .pl-table td:nth-child(5) { width: 90px; text-align: center }
 .pl-table th.col-expiry, .pl-table td:nth-child(6) { width: 120px; text-align: center }
-.pl-table th.col-actions, .pl-table td:nth-child(7) { width: 120px; text-align: right }
+.pl-table th.col-status, .pl-table td:nth-child(7) { width: 120px; text-align: center }
+.pl-table th.col-actions, .pl-table td:nth-child(8) { width: 170px; text-align: right }
 .pl-table thead th { text-align: left; padding: 10px; border-bottom: 1px solid #eef2f7; color: #0b213f; font-weight: 700; font-size: 0.9rem }
 .pl-table tbody tr { transition: background .12s ease, transform .08s ease; }
 .pl-table tbody tr:hover { background: #fbfeff }
@@ -653,6 +698,33 @@ defineExpose({ fetchProducts, getStats, setQuery, setStockFilter, setCategoryFil
 .name-block .meta { font-size: 0.8rem; color: #64748b }
 .sku { display: inline-block; padding: 4px 8px; border-radius: 999px; background: #f8fafc; border: 1px solid #e6eef6; font-weight: 700; font-size: 0.82rem }
 .col-actions { text-align: right }
+.table-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap }
+
+/* Expiry / status badges */
+.expiry-cell-wrap { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.expiry-indicator { display: inline-flex; padding: 3px 8px; border-radius: 999px; font-weight: 900; font-size: 0.75rem; letter-spacing: 0.02em; }
+.expiry-ind--expired { background: #fee2e2; color: #7f1d1d; border: 1px solid rgba(239,68,68,0.25) }
+.expiry-ind--critical { background: #fef3c7; color: #92400e; border: 1px solid rgba(245,158,11,0.25) }
+.expiry-ind--warning { background: #fef08a; color: #713f12; border: 1px solid rgba(245,158,11,0.20) }
+.expiry-ind--ok { display:none; }
+.expiry-expired { background: #fee2e2; color: #7f1d1d; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 0.85rem }
+.expiry-critical { background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 0.85rem }
+.expiry-warning { background: #fef08a; color: #713f12; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 0.85rem }
+.expiry-ok { background: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 0.85rem }
+.expiry-none { color: #9ca3af; font-size: 0.85rem }
+
+.status-badge { display: inline-flex; align-items: center; justify-content: center; padding:6px 8px; border-radius:8px; font-weight:700; font-size:0.8rem }
+.status-ok { background:#dcfce7; color:#166534 }
+.status-low { background:#fff7ed; color:#92400e }
+.status-out { background:#fee2e2; color:#7f1d1d }
+.status-near-expiry { background:#fef3c7; color:#92400e }
+.status-expired { background:#fee2e2; color:#7f1d1d }
+
+/* Highlight rows that need attention */
+.pl-row.expired { background: #fef2f2 !important }
+.pl-row.near-expiry { background: #fff8e6 !important }
+.pl-row.expired .col-name .name,
+.pl-row.near-expiry .col-name .name { color: #991b1b }
 
 /* Stock colors */
 .stock-ok { color: #065f46; background: rgba(16,185,129,0.08); padding: 4px 8px; border-radius: 8px; font-weight: 700 }
@@ -713,7 +785,8 @@ defineExpose({ fetchProducts, getStats, setQuery, setStockFilter, setCategoryFil
   .card { display: flex; gap: 12px; background: white; border-radius: 10px; padding: 12px; margin-bottom: 12px; align-items: center }
   .card-left .thumb { width: 64px; height: 64px }
   .card-body .card-title { font-weight: 800 }
-  .card-actions { margin-top: 8px; display: flex; gap: 8px }
+  .card-meta--expiry { display: flex; align-items: center; gap: 8px; flex-wrap: wrap }
+  .card-actions { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap }
 }
 
 /* On wider screens nudge the left panel down so it aligns with the
@@ -733,29 +806,13 @@ defineExpose({ fetchProducts, getStats, setQuery, setStockFilter, setCategoryFil
 .category-group { display: flex; flex-direction: column; gap: 8px }
 .category-title { margin: 0; padding: 0 8px; font-size: 1rem; font-weight: 700; color: #0b213f; border-bottom: 2px solid #ff9a4a; padding-bottom: 8px }
 
-/* Expiration date columns */
-.col-expiry { text-align: center; width: 120px }
-.expiry-expired { background: #fee2e2; color: #7f1d1d; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 0.85rem }
-.expiry-critical { background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 0.85rem }
-.expiry-warning { background: #fef08a; color: #713f12; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 0.85rem }
-.expiry-ok { background: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 0.85rem }
-.expiry-none { color: #9ca3af; font-size: 0.85rem }
-
-/* Expired product row highlight */
-.pl-row.expired { background: #fef2f2 !important }
-.pl-row.expired .col-name .name { color: #991b1b }
-
 /* Inventory monitor / data-table styles */
 .inventory-table-container { overflow: auto }
 .data-table { width: 100%; border-collapse: collapse; background: #fff }
 .data-table thead th { text-align: left; padding: 10px; border-bottom: 1px solid #eef2f7; color: #0b213f; font-weight: 700; font-size: 0.9rem }
 .data-table td { padding: 10px; border-bottom: 1px solid #f1f5f9; vertical-align: middle }
 .pricing-type-badge { display:inline-block; padding:6px 8px; border-radius:6px; background:#f8fafc; border:1px solid #e6eef6; font-size:0.82rem }
-.expiry-cell .expiry-date { color:#475569 }
-.status-badge { padding:6px 8px; border-radius:8px; font-weight:700; font-size:0.8rem }
-.status-ok { background:#dcfce7; color:#166534 }
-.status-low { background:#fff7ed; color:#92400e }
-.status-out { background:#fee2e2; color:#7f1d1d }
+
 
 </style>
 

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 26, 2026 at 09:57 AM
+-- Generation Time: Jul 03, 2026 at 09:32 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -131,7 +131,7 @@ CREATE TABLE `branches` (
 --
 
 INSERT INTO `branches` (`id`, `code`, `name`, `address`, `latitude`, `longitude`, `is_active`, `is_main_branch`, `approval_status`, `requested_by`, `finance_confirmed_by`, `finance_confirmed_at`, `approved_by`, `approved_at`, `rejected_at`, `budget`, `default_password`, `default_password_updated_at`, `created_at`, `updated_at`) VALUES
-(31, 'BR743957', 'Dasma Branch', 'Dasma', NULL, NULL, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 94437, 'BDP202606268EDA1D', '2026-06-26 06:16:34', '2026-03-22 10:19:21', '2026-06-26 07:34:08'),
+(31, 'BR743957', 'Dasma Branch', 'Dasma', NULL, NULL, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 94836, 'BDP202606268EDA1D', '2026-06-26 06:16:34', '2026-03-22 10:19:21', '2026-06-26 11:22:24'),
 (32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 800000, 'BDP20260626ACB23A', '2026-06-26 06:16:34', '2026-03-25 06:56:11', '2026-06-26 06:16:34'),
 (48, 'BR426492', 'Manila Branch', NULL, NULL, NULL, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 100000, 'BDP20260623D5EDD8', '2026-06-23 08:01:26', '2026-04-15 04:14:07', '2026-05-26 08:23:16');
 
@@ -175,6 +175,13 @@ CREATE TABLE `cache` (
   `value` mediumtext NOT NULL,
   `expiration` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `cache`
+--
+
+INSERT INTO `cache` (`key`, `value`, `expiration`) VALUES
+('laravel-cache-user_token_EquWKXxgMnLdjvGBeYbc8SAWk93ILf8KHh14sARoNWu733kKFWdNnhBqxobo', 'i:240;', 1785653466);
 
 -- --------------------------------------------------------
 
@@ -617,7 +624,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (138, '2026_06_08_000001_add_date_made_to_products_table', 77),
 (139, '2026_06_23_000000_create_position_open_requests_table', 77),
 (140, '2026_06_26_000000_add_branch_id_to_position_open_requests_table', 78),
-(141, '2026_06_26_000001_add_approval_fields_to_position_open_requests_table', 78);
+(141, '2026_06_26_000001_add_approval_fields_to_position_open_requests_table', 78),
+(142, '2026_07_03_000000_create_position_applications_table', 79);
 
 -- --------------------------------------------------------
 
@@ -660,7 +668,14 @@ CREATE TABLE `orders` (
 --
 
 INSERT INTO `orders` (`id`, `order_code`, `owner_id`, `cashier_id`, `branch_id`, `customer_name`, `status`, `is_cancelled`, `cancelled_at`, `cancelled_by`, `refund_reason`, `approved_at`, `grand_total`, `amount_paid`, `change_amount`, `discount_type`, `discount_percent`, `discount_amount`, `vat_percent`, `vat_amount`, `subtotal`, `ordered_at`, `created_at`, `updated_at`, `approved_by`, `completed_at`, `completed_by`) VALUES
-(129, 'CT-0001', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-06-26 07:34:08', 57.46, 60.00, 2.54, 'none', 0.00, 0.00, 12.00, 6.16, 51.30, '2026-06-26 07:34:08', '2026-06-26 07:34:08', '2026-06-26 07:34:08', 153, NULL, NULL);
+(129, 'CT-0001', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-06-26 07:34:08', 57.46, 60.00, 2.54, 'none', 0.00, 0.00, 12.00, 6.16, 51.30, '2026-06-26 07:34:08', '2026-06-26 07:34:08', '2026-06-26 07:34:08', 153, NULL, NULL),
+(130, 'CT-0002', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-06-26 11:21:48', 57.46, 100.00, 42.54, 'none', 0.00, 0.00, 12.00, 6.16, 51.30, '2026-06-26 11:21:48', '2026-06-26 11:21:48', '2026-06-26 11:21:48', 153, NULL, NULL),
+(131, 'CT-0003', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-06-26 11:21:53', 57.46, 100.00, 42.54, 'none', 0.00, 0.00, 12.00, 6.16, 51.30, '2026-06-26 11:21:53', '2026-06-26 11:21:53', '2026-06-26 11:21:53', 153, NULL, NULL),
+(132, 'CT-0004', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-06-26 11:21:58', 57.46, 100.00, 42.54, 'none', 0.00, 0.00, 12.00, 6.16, 51.30, '2026-06-26 11:21:58', '2026-06-26 11:21:58', '2026-06-26 11:21:58', 153, NULL, NULL),
+(133, 'CT-0005', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-06-26 11:22:05', 57.46, 100.00, 42.54, 'none', 0.00, 0.00, 12.00, 6.16, 51.30, '2026-06-26 11:22:05', '2026-06-26 11:22:05', '2026-06-26 11:22:05', 153, NULL, NULL),
+(134, 'CT-0006', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-06-26 11:22:17', 57.46, 100.00, 42.54, 'none', 0.00, 0.00, 12.00, 6.16, 51.30, '2026-06-26 11:22:17', '2026-06-26 11:22:17', '2026-06-26 11:22:17', 153, NULL, NULL),
+(135, 'CT-0007', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-06-26 11:22:20', 57.46, 100.00, 42.54, 'none', 0.00, 0.00, 12.00, 6.16, 51.30, '2026-06-26 11:22:20', '2026-06-26 11:22:20', '2026-06-26 11:22:20', 153, NULL, NULL),
+(136, 'CT-0008', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-06-26 11:22:24', 57.46, 100.00, 42.54, 'none', 0.00, 0.00, 12.00, 6.16, 51.30, '2026-06-26 11:22:24', '2026-06-26 11:22:24', '2026-06-26 11:22:24', 153, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -685,7 +700,14 @@ CREATE TABLE `order_items` (
 --
 
 INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `product_name`, `unit_price`, `quantity`, `subtotal`, `created_at`, `updated_at`) VALUES
-(80, 129, 183, 'Corn Dog', 51.30, 1, 51.30, '2026-06-26 07:34:08', '2026-06-26 07:34:08');
+(80, 129, 183, 'Corn Dog', 51.30, 1, 51.30, '2026-06-26 07:34:08', '2026-06-26 07:34:08'),
+(81, 130, 183, 'Corn Dog', 51.30, 1, 51.30, '2026-06-26 11:21:48', '2026-06-26 11:21:48'),
+(82, 131, 183, 'Corn Dog', 51.30, 1, 51.30, '2026-06-26 11:21:53', '2026-06-26 11:21:53'),
+(83, 132, 183, 'Corn Dog', 51.30, 1, 51.30, '2026-06-26 11:21:58', '2026-06-26 11:21:58'),
+(84, 133, 183, 'Corn Dog', 51.30, 1, 51.30, '2026-06-26 11:22:05', '2026-06-26 11:22:05'),
+(85, 134, 183, 'Corn Dog', 51.30, 1, 51.30, '2026-06-26 11:22:17', '2026-06-26 11:22:17'),
+(86, 135, 183, 'Corn Dog', 51.30, 1, 51.30, '2026-06-26 11:22:20', '2026-06-26 11:22:20'),
+(87, 136, 183, 'Corn Dog', 51.30, 1, 51.30, '2026-06-26 11:22:24', '2026-06-26 11:22:24');
 
 -- --------------------------------------------------------
 
@@ -1896,7 +1918,8 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (2482, 'App\\Models\\User', 147, 'auth-token', '9ba4e37cc484c88566dc85b3b46fb278fdb1b212ae1210f50b31f06790dd4355', '[\"*\"]', NULL, NULL, '2026-06-08 03:52:08', '2026-06-08 03:52:08'),
 (2484, 'App\\Models\\User', 147, 'auth-token', 'c729ff461e21c8ccb1f45fcdf539989aabfbd5560b1c6de70bea6dc3a5e2486d', '[\"*\"]', NULL, NULL, '2026-06-08 04:40:49', '2026-06-08 04:40:49'),
 (2505, 'App\\Models\\User', 147, 'auth-token', '790d4cb4bdf442eb51d0b4fb048ae55200017d43934fa7d8d863d8ef42c49ec8', '[\"*\"]', NULL, NULL, '2026-06-26 05:12:57', '2026-06-26 05:12:57'),
-(2533, 'App\\Models\\User', 31, 'auth-token', 'fb5b96ef8d9d179fbb65f9ec8d3e433cac1a54b84e27e243cd6b1346f0f29194', '[\"*\"]', NULL, NULL, '2026-06-26 06:16:27', '2026-06-26 06:16:27');
+(2533, 'App\\Models\\User', 31, 'auth-token', 'fb5b96ef8d9d179fbb65f9ec8d3e433cac1a54b84e27e243cd6b1346f0f29194', '[\"*\"]', NULL, NULL, '2026-06-26 06:16:27', '2026-06-26 06:16:27'),
+(2551, 'App\\Models\\User', 28, 'auth-token', '7411078b7e68e69a3c6f3463c8170801acad05cfc28c434a348766d00a71f22e', '[\"*\"]', NULL, NULL, '2026-06-29 06:36:45', '2026-06-29 06:36:45');
 
 -- --------------------------------------------------------
 
@@ -1933,6 +1956,38 @@ INSERT INTO `positions` (`id`, `name`, `description`, `department`, `is_active`,
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `position_applications`
+--
+
+CREATE TABLE `position_applications` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `position_open_request_id` bigint(20) UNSIGNED NOT NULL,
+  `position_id` bigint(20) UNSIGNED NOT NULL,
+  `branch_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `department` varchar(255) DEFAULT NULL,
+  `job_title` varchar(255) NOT NULL,
+  `applicant_full_name` varchar(255) NOT NULL,
+  `applicant_email` varchar(255) NOT NULL,
+  `applicant_phone` varchar(255) NOT NULL,
+  `applicant_address` text NOT NULL,
+  `cover_letter` text NOT NULL,
+  `years_of_experience` int(10) UNSIGNED NOT NULL,
+  `education` varchar(255) NOT NULL,
+  `available_start_date` date NOT NULL,
+  `linkedin_url` varchar(255) DEFAULT NULL,
+  `portfolio_url` varchar(255) DEFAULT NULL,
+  `privacy_consent` tinyint(1) NOT NULL DEFAULT 0,
+  `website` varchar(255) DEFAULT NULL,
+  `resume_path` varchar(255) NOT NULL,
+  `supporting_documents_paths` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`supporting_documents_paths`)),
+  `status` varchar(255) NOT NULL DEFAULT 'Submitted',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `position_open_requests`
 --
 
@@ -1956,7 +2011,8 @@ CREATE TABLE `position_open_requests` (
 --
 
 INSERT INTO `position_open_requests` (`id`, `position_id`, `requested_by_user_id`, `branch_id`, `quantity`, `notes`, `status`, `approved_by_user_id`, `approved_at`, `rejection_reason`, `created_at`, `updated_at`) VALUES
-(18, 2, 148, 31, 1, NULL, 'Pending', NULL, NULL, NULL, '2026-06-26 04:47:19', '2026-06-26 04:47:19');
+(18, 2, 148, 31, 1, NULL, 'Pending', NULL, NULL, NULL, '2026-06-26 04:47:19', '2026-06-26 04:47:19'),
+(19, 8, 148, 31, 1, NULL, 'Approved', 160, '2026-06-29 07:13:36', NULL, '2026-06-29 06:39:29', '2026-06-29 07:13:36');
 
 -- --------------------------------------------------------
 
@@ -2140,12 +2196,12 @@ CREATE TABLE `products` (
 
 INSERT INTO `products` (`id`, `dish_id`, `name`, `category`, `per_pack_or_individual`, `pack_quantity`, `pack_unit`, `slug`, `created_at`, `updated_at`, `price`, `cost_price`, `stock`, `real_stock`, `open_pack_used`, `expires_at`, `date_made`, `min_stock`, `sku`, `branch_id`, `published_by`, `published_at`, `is_published`, `has_been_ordered`, `is_active`, `is_kitchen_dish`, `is_dish_product`, `supplier_name`, `supplier_id`, `logistics_request_available`, `status`, `requires_logistics`, `approved_by_logistics_main`, `approved_by_owner`, `rejection_reason`, `approved_at`) VALUES
 (180, NULL, 'Hotdog', NULL, 'individual', NULL, NULL, 'hotdog-40-1782454616', '2026-06-26 06:16:56', '2026-06-26 06:17:52', 0.00, 0.00, 0, 0, 0.0000, NULL, NULL, 0, 'KITCHEN-DISH-40-8590', 31, NULL, NULL, 0, 1, 1, 1, 0, 'KITCHEN', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
-(181, NULL, 'Flour', NULL, 'individual', NULL, NULL, 'flour-40-1782454616', '2026-06-26 06:16:56', '2026-06-26 07:34:08', 0.00, 0.00, 0, 0, 0.0000, NULL, NULL, 0, 'KITCHEN-DISH-40-8981', 31, NULL, NULL, 0, 1, 1, 1, 0, 'KITCHEN', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
+(181, NULL, 'Flour', NULL, 'individual', NULL, NULL, 'flour-40-1782454616', '2026-06-26 06:16:56', '2026-06-26 11:22:24', 0.00, 0.00, 0, 0, 0.0000, NULL, NULL, 0, 'KITCHEN-DISH-40-8981', 31, NULL, NULL, 0, 1, 1, 1, 0, 'KITCHEN', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
 (182, NULL, 'Salt', NULL, 'individual', NULL, NULL, 'salt-40-1782454616', '2026-06-26 06:16:56', '2026-06-26 06:17:55', 0.00, 0.00, 0, 0, 0.0000, NULL, NULL, 0, 'KITCHEN-DISH-40-7860', 31, NULL, NULL, 0, 1, 1, 1, 0, 'KITCHEN', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
-(183, 40, 'Corn Dog', NULL, 'individual', NULL, NULL, 'corn-dog', '2026-06-26 06:16:56', '2026-06-26 07:42:23', 51.30, 38.00, 20, 0, 0.0000, NULL, NULL, 0, 'CORNDOG-NMTG', 31, 31, '2026-06-26 06:16:56', 1, 0, 1, 1, 1, NULL, NULL, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
-(184, NULL, 'Salt', 'Beverage', 'per_pack', 20.00, 'g', 'salt', '2026-06-26 06:37:22', '2026-06-26 07:34:08', 11.00, 10.00, 10, 10, 1.0000, '2026-06-12 14:36:00', '2026-06-10', 10, 'sku-1782455842-8736', 31, NULL, NULL, 1, 1, 1, 0, 0, 'Umberto Batumbakal', 152, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
+(183, 40, 'Corn Dog', NULL, 'individual', NULL, NULL, 'corn-dog', '2026-06-26 06:16:56', '2026-06-26 11:22:24', 51.30, 38.00, 13, 0, 0.0000, NULL, NULL, 0, 'CORNDOG-NMTG', 31, 31, '2026-06-26 06:16:56', 1, 0, 1, 1, 1, NULL, NULL, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
+(184, NULL, 'Salt', 'Beverage', 'per_pack', 20.00, 'g', 'salt', '2026-06-26 06:37:22', '2026-06-26 11:22:24', 11.00, 10.00, 10, 10, 8.0000, '2026-06-12 14:36:00', '2026-06-10', 10, 'sku-1782455842-8736', 31, NULL, NULL, 1, 1, 1, 0, 0, 'Umberto Batumbakal', 152, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
 (185, NULL, 'Flour', 'Other', 'per_pack', 200.00, 'g', 'flour', '2026-06-26 06:39:17', '2026-06-26 07:34:08', 55.00, 50.00, 10, 10, 0.0000, '2026-07-11 14:39:00', '2026-06-24', 10, 'sku-1782455957-5148', 31, NULL, NULL, 1, 1, 1, 0, 0, 'Umberto Batumbakal', 152, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
-(186, NULL, 'Hotdog', 'Meat', 'per_pack', 8.00, 'pcs', 'hotdog', '2026-06-26 06:51:04', '2026-06-26 07:34:08', 110.00, 100.00, 9, 9, 1.0000, '2026-07-11 14:50:00', '2026-06-24', 10, 'sku-1782456664-7887', 31, NULL, NULL, 1, 1, 1, 0, 0, 'Umberto Batumbakal', 152, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL);
+(186, NULL, 'Hotdog', 'Meat', 'per_pack', 8.00, 'pcs', 'hotdog', '2026-06-26 06:51:04', '2026-06-26 11:22:24', 110.00, 100.00, 8, 9, 0.0000, '2026-07-11 14:50:00', '2026-06-24', 10, 'sku-1782456664-7887', 31, NULL, NULL, 1, 1, 1, 0, 0, 'Umberto Batumbakal', 152, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -2270,7 +2326,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('h3Z2bLkQXw7H6XoX2qMfszBgMKkESQxuyQM0NGMb', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiYjVIUTU5aTdDRWZuTTVJS2thY1JHSzRDTkpOS083bjRlQlVYWjJIUyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO319', 1782460624);
+('pKxj603gFX783ceH5Ari2ruSDbdDvr920Jeg5QhQ', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.127.0 Chrome/148.0.7778.97 Electron/42.2.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoicTRsNHg1akRCNFRra0hpc3dUYUFqTUU0amJkOGEwajZua0V2THZvNSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1783058400),
+('rPboEsbCfPNCYd7IodgtTkg5uMIpGMXvYfd7wQvs', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoia0xXNUpwenZmT2l5WXVvTGxuU0VqREVJb1pXWUp0Zm9VY0hmc3dMVCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO319', 1783063800);
 
 -- --------------------------------------------------------
 
@@ -2646,6 +2703,15 @@ ALTER TABLE `positions`
   ADD UNIQUE KEY `positions_name_unique` (`name`);
 
 --
+-- Indexes for table `position_applications`
+--
+ALTER TABLE `position_applications`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `position_applications_position_open_request_id_foreign` (`position_open_request_id`),
+  ADD KEY `position_applications_position_id_foreign` (`position_id`),
+  ADD KEY `position_applications_branch_id_foreign` (`branch_id`);
+
+--
 -- Indexes for table `position_open_requests`
 --
 ALTER TABLE `position_open_requests`
@@ -2894,25 +2960,25 @@ ALTER TABLE `messages`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=142;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=143;
 
 --
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=130;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=137;
 
 --
 -- AUTO_INCREMENT for table `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=81;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=88;
 
 --
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2550;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2562;
 
 --
 -- AUTO_INCREMENT for table `positions`
@@ -2921,10 +2987,16 @@ ALTER TABLE `positions`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
+-- AUTO_INCREMENT for table `position_applications`
+--
+ALTER TABLE `position_applications`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
 -- AUTO_INCREMENT for table `position_open_requests`
 --
 ALTER TABLE `position_open_requests`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT for table `price_audits`
@@ -3095,6 +3167,14 @@ ALTER TABLE `orders`
 ALTER TABLE `order_items`
   ADD CONSTRAINT `order_items_order_id_foreign` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `order_items_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `position_applications`
+--
+ALTER TABLE `position_applications`
+  ADD CONSTRAINT `position_applications_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `position_applications_position_id_foreign` FOREIGN KEY (`position_id`) REFERENCES `positions` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `position_applications_position_open_request_id_foreign` FOREIGN KEY (`position_open_request_id`) REFERENCES `position_open_requests` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `position_open_requests`

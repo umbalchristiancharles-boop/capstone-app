@@ -296,6 +296,12 @@
             <p v-else class="position-desc position-desc--muted">
               No description provided for this position.
             </p>
+
+            <div class="position-actions">
+              <button type="button" class="btn-apply-now" @click="openApplyModal(p)">
+                Apply Now
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -338,6 +344,197 @@
       </button>
     </transition>
   </main>
+
+  <!-- Apply Now Modal -->
+  <teleport to="body">
+    <transition name="modal">
+      <div v-if="showApplyModal" class="modal-overlay" @click.self="closeApplyModal">
+        <div class="apply-modal">
+          <div class="apply-modal-header">
+            <div class="apply-modal-title">
+              <h2>Apply for <span class="apply-modal-job">{{ applyForm.job_title }}</span></h2>
+              <div class="apply-modal-kicker">
+                <span v-if="applyForm.department" class="apply-pill">{{ applyForm.department }}</span>
+                <span v-if="applyForm.branch_name" class="apply-pill">{{ applyForm.branch_name }}</span>
+                <span class="apply-pill">Job ID: {{ applyForm.job_id }}</span>
+              </div>
+            </div>
+            <button class="modal-close" type="button" aria-label="Close" @click="closeApplyModal">✕</button>
+          </div>
+
+          <div class="apply-form">
+            <div v-if="applyErrorMessage" class="banner banner--error">{{ applyErrorMessage }}</div>
+            <div v-if="applySuccessMessage" class="banner banner--success">{{ applySuccessMessage }}</div>
+
+            <form @submit.prevent="submitApplyNow" class="apply-modal-body">
+              <div class="apply-grid">
+                <div class="apply-col">
+                  <!-- Left Column -->
+                  <div class="field" :class="{ 'field--error': applyFieldErrors.full_name }">
+                    <label for="full_name" class="field-label">
+                      Full Name <span class="req">*</span>
+                    </label>
+                    <input id="full_name" v-model.trim="applyForm.full_name" type="text" placeholder="e.g., Juan Dela Cruz" />
+                    <div class="inline-error" v-if="applyFieldErrors.full_name">{{ applyFieldErrors.full_name }}</div>
+                  </div>
+
+                  <div class="field" :class="{ 'field--error': applyFieldErrors.email }">
+                    <label for="email" class="field-label">
+                      Email <span class="req">*</span>
+                    </label>
+                    <input id="email" v-model.trim="applyForm.email" type="email" placeholder="you@example.com" />
+                    <div class="inline-error" v-if="applyFieldErrors.email">{{ applyFieldErrors.email }}</div>
+                  </div>
+
+                  <div class="field" :class="{ 'field--error': applyFieldErrors.phone }">
+                    <label for="phone" class="field-label">
+                      Phone <span class="req">*</span>
+                    </label>
+                    <input id="phone" v-model.trim="applyForm.phone" type="tel" placeholder="09xxxxxxxxx" />
+                    <div class="inline-error" v-if="applyFieldErrors.phone">{{ applyFieldErrors.phone }}</div>
+                  </div>
+
+                  <div class="field" :class="{ 'field--error': applyFieldErrors.address }">
+                    <label for="address" class="field-label">
+                      Address <span class="req">*</span>
+                    </label>
+                    <input id="address" v-model.trim="applyForm.address" type="text" placeholder="House no., street, barangay" />
+                    <div class="inline-error" v-if="applyFieldErrors.address">{{ applyFieldErrors.address }}</div>
+                  </div>
+
+                  <div class="field" :class="{ 'field--error': applyFieldErrors.years_of_experience }">
+                    <label for="years_of_experience" class="field-label">
+                      Years of Experience <span class="req">*</span>
+                    </label>
+                    <input id="years_of_experience" v-model.trim.number="applyForm.years_of_experience" type="number" min="0" step="1" />
+                    <div class="inline-error" v-if="applyFieldErrors.years_of_experience">{{ applyFieldErrors.years_of_experience }}</div>
+                  </div>
+
+                  <div class="field" :class="{ 'field--error': applyFieldErrors.education }">
+                    <label for="education" class="field-label">
+                      Education <span class="req">*</span>
+                    </label>
+                    <input id="education" v-model.trim="applyForm.education" type="text" placeholder="e.g., BSIT - University" />
+                    <div class="inline-error" v-if="applyFieldErrors.education">{{ applyFieldErrors.education }}</div>
+                  </div>
+                </div>
+
+                <!-- Right Column -->
+                <div class="apply-col">
+                  <div class="field" :class="{ 'field--error': applyFieldErrors.available_start_date }">
+                    <label for="available_start_date" class="field-label">
+                      Available Start Date <span class="req">*</span>
+                    </label>
+                    <input id="available_start_date" v-model="applyForm.available_start_date" type="date" />
+                    <div class="inline-error" v-if="applyFieldErrors.available_start_date">{{ applyFieldErrors.available_start_date }}</div>
+                  </div>
+
+                  <div class="field" :class="{ 'field--error': applyFieldErrors.linkedin_url }">
+                    <label for="linkedin_url" class="field-label">
+                      LinkedIn <span class="opt">(Optional)</span>
+                    </label>
+                    <input id="linkedin_url" v-model.trim="applyForm.linkedin_url" type="url" placeholder="https://linkedin.com/in/..." />
+                    <div class="inline-error" v-if="applyFieldErrors.linkedin_url">{{ applyFieldErrors.linkedin_url }}</div>
+                  </div>
+
+                  <div class="field" :class="{ 'field--error': applyFieldErrors.portfolio_url }">
+                    <label for="portfolio_url" class="field-label">
+                      Portfolio <span class="opt">(Optional)</span>
+                    </label>
+                    <input id="portfolio_url" v-model.trim="applyForm.portfolio_url" type="url" placeholder="https://your-portfolio.com" />
+                    <div class="inline-error" v-if="applyFieldErrors.portfolio_url">{{ applyFieldErrors.portfolio_url }}</div>
+                  </div>
+
+                  <div class="field" :class="{ 'field--error': applyFieldErrors.resume_cv }">
+                    <label class="field-label">
+                      Resume/CV <span class="req">*</span>
+                    </label>
+
+                    <div class="upload-box" :class="{ 'upload-box--error': applyFieldErrors.resume_cv }">
+                      <div class="upload-box-inner">
+                        <div class="upload-icon">📄</div>
+                        <div class="upload-title">📄 Upload Resume</div>
+                        <div class="upload-sub">Drag & drop or <span class="upload-link">Choose File</span></div>
+                      </div>
+                      <input
+                        id="resume_cv"
+                        class="upload-input"
+                        type="file"
+                        accept=".pdf,.doc,.docx"
+                        @change="onResumeSelected"
+                      />
+                    </div>
+
+                    <div class="file-hint" v-if="resumeCvFile">Selected: <b>{{ resumeCvFile.name }}</b></div>
+                    <div class="file-hint" v-else>PDF/DOC/DOCX only (max 5MB)</div>
+                    <div class="inline-error" v-if="applyFieldErrors.resume_cv">{{ applyFieldErrors.resume_cv }}</div>
+                  </div>
+
+                  <div class="field" :class="{ 'field--error': applyFieldErrors.supporting_documents }">
+                    <label class="field-label">
+                      Supporting Documents <span class="opt">(Optional)</span>
+                    </label>
+
+                    <div class="upload-box">
+                      <div class="upload-box-inner">
+                        <div class="upload-icon">🗂️</div>
+                        <div class="upload-title">Upload Files</div>
+                        <div class="upload-sub">Drag & drop or choose files</div>
+                      </div>
+                      <input
+                        id="supporting_documents"
+                        class="upload-input"
+                        type="file"
+                        multiple
+                        accept=".pdf,.doc,.docx"
+                        @change="onSupportingDocsSelected"
+                      />
+                    </div>
+
+                    <div class="file-hint" v-if="supportingDocumentsFiles?.length">
+                      Selected: <b>{{ supportingDocumentsFiles.length }}</b> file(s)
+                    </div>
+                    <div class="file-hint" v-else>You can upload multiple files (max 10MB each)</div>
+                    <div class="inline-error" v-if="applyFieldErrors.supporting_documents">{{ applyFieldErrors.supporting_documents }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="apply-stack">
+                <div class="field" style="grid-column: 1 / -1;" :class="{ 'field--error': applyFieldErrors.cover_letter }">
+                  <label for="cover_letter" class="field-label">
+                    Cover Letter <span class="req">*</span>
+                  </label>
+                  <textarea id="cover_letter" v-model.trim="applyForm.cover_letter" placeholder="Tell us about yourself..." ></textarea>
+                  <div class="inline-error" v-if="applyFieldErrors.cover_letter">{{ applyFieldErrors.cover_letter }}</div>
+                </div>
+
+                <div class="field consent-field" style="grid-column: 1 / -1;">
+                  <div class="check-row">
+                    <input type="checkbox" id="privacy_consent" v-model="applyForm.privacy_consent" />
+                    <label for="privacy_consent" style="cursor:pointer;">
+                      I consent to the collection and use of my application data for recruitment purposes. <span class="req">*</span>
+                    </label>
+                  </div>
+                  <div class="inline-error" v-if="applyFieldErrors.privacy_consent">{{ applyFieldErrors.privacy_consent }}</div>
+                </div>
+
+                <!-- Honeypot (hidden) -->
+                <input type="text" v-model="applyForm.website" name="website" autocomplete="off" style="display:none;" />
+
+                <div class="apply-actions">
+                  <button type="button" class="btn btn-cancel" @click="closeApplyModal" :disabled="applyLoading">Cancel</button>
+                  <button type="submit" class="btn btn-primary" :disabled="applyLoading">
+                    {{ applyLoading ? 'Submitting...' : 'Submit Application' }}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </transition>
+  </teleport>
 
   <!-- Authentication Modal -->
   <teleport to="body">
@@ -630,6 +827,40 @@ const branches = ref([])
 const selectedBranch = ref(0)
 const approvedPositions = ref([])
 
+// Apply modal state
+const showApplyModal = ref(false)
+const applyLoading = ref(false)
+const applySuccessMessage = ref('')
+const applyErrorMessage = ref('')
+const applyFieldErrors = ref({})
+
+const applyForm = ref({
+  job_open_request_id: null,
+  job_title: '',
+  position_id: null,
+  branch_id: null,
+  branch_name: '',
+  department: '',
+  job_id: '',
+
+  full_name: '',
+  email: '',
+  phone: '',
+  address: '',
+  cover_letter: '',
+  years_of_experience: '',
+  education: '',
+  available_start_date: '',
+
+  linkedin_url: '',
+  portfolio_url: '',
+
+  privacy_consent: false,
+  website: '', // honeypot
+})
+
+const resumeCvFile = ref(null)
+const supportingDocumentsFiles = ref([])
 
 const newComments = ref({})
 
@@ -658,6 +889,14 @@ onMounted(() => {
     sessionStorage.removeItem('user');
        sessionStorage.removeItem('token');
   } catch (e) {}
+
+  // Apply modal ESC close
+  window.addEventListener('keydown', (evt) => {
+    if (evt.key === 'Escape' && showApplyModal.value) {
+      closeApplyModal()
+    }
+  })
+
 
   if (sessionStorage.getItem('chikin_show_home_overlay') === '1') {
     sessionStorage.removeItem('chikin_show_home_overlay')
@@ -1233,6 +1472,214 @@ function signOut() {
   })
   replyData.value.author = ''
 }
+
+function resetApplyForm() {
+  applyForm.value = {
+    job_open_request_id: null,
+    job_title: '',
+    position_id: null,
+    branch_id: null,
+    branch_name: '',
+    department: '',
+    job_id: '',
+
+    full_name: '',
+    email: '',
+    phone: '',
+    address: '',
+    cover_letter: '',
+    years_of_experience: '',
+    education: '',
+    available_start_date: '',
+
+    linkedin_url: '',
+    portfolio_url: '',
+
+    privacy_consent: false,
+    website: '',
+  }
+  resumeCvFile.value = null
+  supportingDocumentsFiles.value = []
+  applyLoading.value = false
+  applySuccessMessage.value = ''
+  applyErrorMessage.value = ''
+  applyFieldErrors.value = {}
+}
+
+function openApplyModal(p) {
+  // p is an approved position record from backend
+  resetApplyForm()
+  applyFieldErrors.value = {}
+  applyErrorMessage.value = ''
+
+  applyForm.value.job_open_request_id = p.id
+  applyForm.value.job_id = p.id
+  applyForm.value.position_id = p.position_id
+  applyForm.value.job_title = p.position_name || ''
+  applyForm.value.department = p.department || ''
+  applyForm.value.branch_id = p.branch_id ?? null
+  applyForm.value.branch_name = p.branch_name || ''
+
+  // Prefill branch/department/job fields only; applicant details remain blank.
+  showApplyModal.value = true
+}
+
+function closeApplyModal() {
+  showApplyModal.value = false
+  // keep values only until close; reset to be safe
+  resetApplyForm()
+}
+
+function onResumeSelected(e) {
+  const file = e.target.files?.[0] || null
+  applyFieldErrors.value.resume_cv = ''
+  resumeCvFile.value = file
+}
+
+function onSupportingDocsSelected(e) {
+  const files = Array.from(e.target.files || [])
+  applyFieldErrors.value.supporting_documents = ''
+  supportingDocumentsFiles.value = files
+}
+
+function getCsrfToken() {
+  // If app is rendered with a csrf meta tag, use it.
+  const meta = document.querySelector('meta[name="csrf-token"]')
+  return meta ? meta.getAttribute('content') : ''
+}
+
+function validateClientSideBeforeSubmit() {
+  const errors = {}
+
+  if (!applyForm.value.full_name.trim()) errors.full_name = 'Full name is required.'
+  if (!applyForm.value.email.trim()) errors.email = 'Email is required.'
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(applyForm.value.email)) errors.email = 'Please enter a valid email.'
+
+  if (!applyForm.value.phone.trim()) errors.phone = 'Phone is required.'
+  if (!applyForm.value.address.trim()) errors.address = 'Address is required.'
+  if (!applyForm.value.cover_letter.trim()) errors.cover_letter = 'Cover letter is required.'
+
+  if (applyForm.value.years_of_experience === '' || applyForm.value.years_of_experience === null) {
+    errors.years_of_experience = 'Years of experience is required.'
+  }
+
+  if (!String(applyForm.value.education).trim()) errors.education = 'Education is required.'
+  if (!applyForm.value.available_start_date) errors.available_start_date = 'Available start date is required.'
+
+  if (!resumeCvFile.value) errors.resume_cv = 'Resume/CV is required.'
+
+  if (!applyForm.value.privacy_consent) errors.privacy_consent = 'Please confirm data privacy consent.'
+
+  // File type validation (client)
+  if (resumeCvFile.value) {
+    const allowed = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/octet-stream']
+    const nameOk = /\.(pdf|doc|docx)$/i.test(resumeCvFile.value.name)
+    if (!nameOk) errors.resume_cv = 'Resume must be a PDF, DOC, or DOCX file.'
+  }
+
+  if (supportingDocumentsFiles.value?.length) {
+    const bad = supportingDocumentsFiles.value.some(f => !/\.(pdf|doc|docx)$/i.test(f.name))
+    if (bad) errors.supporting_documents = 'Supporting documents must be PDF, DOC, or DOCX.'
+  }
+
+  applyFieldErrors.value = errors
+  return Object.keys(errors).length === 0
+}
+
+async function submitApplyNow() {
+  console.log('[APPLY] submitApplyNow called')
+  console.log('[APPLY] applyForm', JSON.parse(JSON.stringify(applyForm.value)))
+  console.log('[APPLY] resumeCvFile', resumeCvFile.value)
+  console.log('[APPLY] supportingDocumentsFiles', supportingDocumentsFiles.value)
+  if (applyLoading.value) return
+
+  applyErrorMessage.value = ''
+  applySuccessMessage.value = ''
+
+  const ok = validateClientSideBeforeSubmit()
+  if (!ok) return
+
+  if (!applyForm.value.job_open_request_id) {
+    applyErrorMessage.value = 'Invalid job application context.'
+    return
+  }
+
+  applyLoading.value = true
+
+  try {
+    const fd = new FormData()
+
+    fd.append('position_open_request_id', String(applyForm.value.job_open_request_id))
+    fd.append('position_id', String(applyForm.value.position_id))
+    if (applyForm.value.branch_id) fd.append('branch_id', String(applyForm.value.branch_id))
+    fd.append('department', String(applyForm.value.department || ''))
+    fd.append('job_title', String(applyForm.value.job_title || ''))
+
+    fd.append('full_name', applyForm.value.full_name)
+    fd.append('email', applyForm.value.email)
+    fd.append('phone', applyForm.value.phone)
+    fd.append('address', applyForm.value.address)
+    fd.append('cover_letter', applyForm.value.cover_letter)
+    fd.append('years_of_experience', String(applyForm.value.years_of_experience))
+    fd.append('education', applyForm.value.education)
+    fd.append('available_start_date', applyForm.value.available_start_date)
+
+    if (applyForm.value.linkedin_url) fd.append('linkedin_url', applyForm.value.linkedin_url)
+    if (applyForm.value.portfolio_url) fd.append('portfolio_url', applyForm.value.portfolio_url)
+
+    fd.append('privacy_consent', applyForm.value.privacy_consent ? '1' : '0')
+    if (applyForm.value.website) fd.append('website', applyForm.value.website)
+
+    if (resumeCvFile.value) {
+      fd.append('resume_cv', resumeCvFile.value)
+    }
+
+    if (supportingDocumentsFiles.value?.length) {
+      supportingDocumentsFiles.value.forEach((file) => {
+        fd.append('supporting_documents[]', file)
+      })
+      // Laravel expects supporting_documents as array; sending [] will match.
+    }
+
+    const headers = {
+      'X-Requested-With': 'XMLHttpRequest',
+    }
+    const csrf = getCsrfToken()
+    if (csrf) headers['X-CSRF-TOKEN'] = csrf
+
+    const res = await fetch('/api/public/positions/apply', {
+      method: 'POST',
+      headers,
+      body: fd,
+    })
+
+    const payload = await res.json().catch(() => null)
+
+    if (!res.ok) {
+      if (res.status === 422 && payload?.errors) {
+        // Map Laravel errors to inline fields
+        applyFieldErrors.value = Object.fromEntries(
+          Object.entries(payload.errors).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
+        )
+        applyErrorMessage.value = 'Please fix the highlighted fields.'
+        return
+      }
+      applyErrorMessage.value = payload?.message || 'Unable to submit application right now.'
+      return
+    }
+
+    applySuccessMessage.value = payload?.message || 'Application submitted successfully.'
+    // Reset state after success
+    resetApplyForm()
+    // Keep modal visible momentarily? requirement says reset after successful submission.
+  } catch (e) {
+    console.error('submitApplyNow error', e)
+    applyErrorMessage.value = 'Something went wrong. Please try again.'
+  } finally {
+    applyLoading.value = false
+  }
+}
+
 </script>
 
 <style src="../css/adminpanel.css"></style>
