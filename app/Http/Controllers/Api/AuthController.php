@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
@@ -761,12 +760,10 @@ class AuthController extends Controller
 
         // Send email with verification code
         try {
-            Mail::raw(
-                "Your CHIKIN TAYO verification code is: {$code}\n\nThis code will expire in 10 minutes.",
-                function ($message) use ($email) {
-                    $message->to($email)
-                            ->subject('CHIKIN TAYO - Email Verification Code');
-                }
+            \send_raw_mail_notification(
+                $email,
+                'CHIKIN TAYO - Email Verification Code',
+                "Your CHIKIN TAYO verification code is: {$code}\n\nThis code will expire in 10 minutes."
             );
 
             Log::info("Verification email sent to {$email}");

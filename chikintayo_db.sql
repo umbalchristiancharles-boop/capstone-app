@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 03, 2026 at 09:32 AM
+-- Generation Time: Jul 06, 2026 at 09:42 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -1985,6 +1985,13 @@ CREATE TABLE `position_applications` (
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `position_applications`
+--
+
+INSERT INTO `position_applications` (`id`, `position_open_request_id`, `position_id`, `branch_id`, `department`, `job_title`, `applicant_full_name`, `applicant_email`, `applicant_phone`, `applicant_address`, `cover_letter`, `years_of_experience`, `education`, `available_start_date`, `linkedin_url`, `portfolio_url`, `privacy_consent`, `website`, `resume_path`, `supporting_documents_paths`, `status`, `created_at`, `updated_at`) VALUES
+(2, 19, 8, 31, 'LOGISTICS', 'Logistics Manager', 'gab ongs', 'marac21139@lovadio.com', '09156818812', 'Pinned location: 14.330000, 120.940000', 'asd', 12, 'BSIT', '2000-07-06', NULL, NULL, 1, NULL, 'position-applications/19/042d90e6-c32a-403c-9f78-3286ae6908cc/resume_cv.docx', '[\"position-applications\\/19\\/042d90e6-c32a-403c-9f78-3286ae6908cc\\/supporting\\/supporting_1.docx\"]', 'Submitted', '2026-07-06 06:50:30', '2026-07-06 06:50:30');
+
 -- --------------------------------------------------------
 
 --
@@ -2326,8 +2333,15 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('pKxj603gFX783ceH5Ari2ruSDbdDvr920Jeg5QhQ', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.127.0 Chrome/148.0.7778.97 Electron/42.2.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoicTRsNHg1akRCNFRra0hpc3dUYUFqTUU0amJkOGEwajZua0V2THZvNSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1783058400),
-('rPboEsbCfPNCYd7IodgtTkg5uMIpGMXvYfd7wQvs', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoia0xXNUpwenZmT2l5WXVvTGxuU0VqREVJb1pXWUp0Zm9VY0hmc3dMVCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO319', 1783063800);
+('8iXdzbK45PhgSlj6qAiCHXNnL1MWff0oC3NT1FQG', NULL, '127.0.0.1', 'node', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiZFRLU2dtNzU3ZnVYWG14RTN5V295VGJZdG1JWEE5cEdYU3pQSTVtcyI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czo1MToiaHR0cDovLzEyNy4wLjAuMTo4MDAwL2FwaS9oci9wb3NpdGlvbnMvYXBwbGljYXRpb25zIjt9czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hcGkvaHIvcG9zaXRpb25zL2FwcGxpY2F0aW9ucyI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1783322682),
+('8vsOUURn74oGHg8y5DrV9JbNTR9Vv1A2QcAu80jm', NULL, '127.0.0.1', 'node', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiRXdoZ1RPN1hXaTlyS01sM0N5NThPd3N1SHJ0Y1MwYWpFZjZ4aVpabyI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czo1MToiaHR0cDovLzEyNy4wLjAuMTo4MDAwL2FwaS9oci9wb3NpdGlvbnMvYXBwbGljYXRpb25zIjt9czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hcGkvaHIvcG9zaXRpb25zL2FwcGxpY2F0aW9ucyI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1783322690),
+('DbXvMd3DampnBSfZ8lmTmkwA6y5AsPhfy6VXsu6z', NULL, '127.0.0.1', 'node', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiejdQWFp6eGM1cTFuelFUWFI2U1hMWXJKRTJwbzliQnMxeVdKSUEwRyI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czo1MToiaHR0cDovLzEyNy4wLjAuMTo4MDAwL2FwaS9oci9wb3NpdGlvbnMvYXBwbGljYXRpb25zIjt9czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hcGkvaHIvcG9zaXRpb25zL2FwcGxpY2F0aW9ucyI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1783322698),
+('DVTYaqQWtkqI9lH6hWFZyXhB747KXXq5O97cmNoM', NULL, '127.0.0.1', 'node', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiVncxa1I4N0FFNk5EaTM2RG1DdFo2Mlp4dmJxUG1HZUdQUzRkRXhOUSI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czo1MToiaHR0cDovLzEyNy4wLjAuMTo4MDAwL2FwaS9oci9wb3NpdGlvbnMvYXBwbGljYXRpb25zIjt9czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hcGkvaHIvcG9zaXRpb25zL2FwcGxpY2F0aW9ucyI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1783322548),
+('efVVp9tTymCla9SWWceYnZ06yhsFuPcbPl0nRrAL', NULL, '127.0.0.1', 'node', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiWE9GT0pMRXNGQUlWUEVuZ3dXZVRwWXZGU0pOWjV0d2NLaWExczRobCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9sb2dpbiI7czo1OiJyb3V0ZSI7czo1OiJsb2dpbiI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1783322548),
+('JXM0phQDotohxVePiiltPixUh1mX8p3gftdd48LQ', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoid1QxdEJwQTJYNUJ2M3psb0NGaDN5SEQ0eDFvaTBFblp6YlZORlVvVSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fX0=', 1783323692),
+('kMwdrUyNwEJfrwyy2On98rU8utUgucOdl2aHc8zS', NULL, '127.0.0.1', 'node', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoia2hsaFBkZVIzOXRyeVZzdEVHYWV1SEUwUWFiazZlTjlEVktUT21BSiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9sb2dpbiI7czo1OiJyb3V0ZSI7czo1OiJsb2dpbiI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1783322682),
+('mP4W0hrAXRQtQ2Ahnt7HXD68J1DipP1J5SI9ScEr', NULL, '127.0.0.1', 'node', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiS3dvMlBjTThRZ01nUklUQjhDTWdpWkFZVWlOeVNaeFc5bEtRSlhZWSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9sb2dpbiI7czo1OiJyb3V0ZSI7czo1OiJsb2dpbiI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1783322691),
+('WWpUACr6p4isKa2Xz6YYtx4prpZ7oN7khKPkGRf6', NULL, '127.0.0.1', 'node', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoidUVrdzlQc0xJdVQ1dTdmcFh5VGlLdU5ibjBQaTFzSWpVUzg2QW1pRSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9sb2dpbiI7czo1OiJyb3V0ZSI7czo1OiJsb2dpbiI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1783322699);
 
 -- --------------------------------------------------------
 
@@ -2978,7 +2992,7 @@ ALTER TABLE `order_items`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2562;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2568;
 
 --
 -- AUTO_INCREMENT for table `positions`
@@ -2990,7 +3004,7 @@ ALTER TABLE `positions`
 -- AUTO_INCREMENT for table `position_applications`
 --
 ALTER TABLE `position_applications`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `position_open_requests`

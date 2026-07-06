@@ -242,9 +242,12 @@ Route::middleware('web')->group(function () {
         Route::get('/messages/conversation/{userId}', [\App\Http\Controllers\HRMessageController::class, 'conversation']);
         Route::post('/messages/send', [\App\Http\Controllers\HRMessageController::class, 'send']);
 
-        // HR Positions (Open positions request)
+    // HR Positions (Open positions request)
         Route::get('/positions', [\App\Http\Controllers\Api\HrPositionRequestController::class, 'positions']);
         Route::post('/positions/requests', [\App\Http\Controllers\Api\HrPositionRequestController::class, 'store']);
+
+        // HR: View applications for the HR's branch
+        Route::get('/positions/applications', [\App\Http\Controllers\Api\PositionApplicationController::class, 'listForHrBranch']);
 
     // HR Positions - Main HR approval endpoints
     Route::get('/positions/requests/pending', [\App\Http\Controllers\Api\HrPositionRequestController::class, 'pendingRequests']);
@@ -255,6 +258,7 @@ Route::middleware('web')->group(function () {
         Route::post('/positions/requests/{id}/approve', [\App\Http\Controllers\Api\HrPositionRequestController::class, 'approve']);
         Route::post('/positions/requests/{id}/reject', [\App\Http\Controllers\Api\HrPositionRequestController::class, 'reject']);
     });
+
 
 
     // ==========================================

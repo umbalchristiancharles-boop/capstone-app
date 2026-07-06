@@ -394,14 +394,6 @@
                     <div class="inline-error" v-if="applyFieldErrors.phone">{{ applyFieldErrors.phone }}</div>
                   </div>
 
-                  <div class="field" :class="{ 'field--error': applyFieldErrors.address }">
-                    <label for="address" class="field-label">
-                      Address <span class="req">*</span>
-                    </label>
-                    <input id="address" v-model.trim="applyForm.address" type="text" placeholder="House no., street, barangay" />
-                    <div class="inline-error" v-if="applyFieldErrors.address">{{ applyFieldErrors.address }}</div>
-                  </div>
-
                   <div class="field" :class="{ 'field--error': applyFieldErrors.years_of_experience }">
                     <label for="years_of_experience" class="field-label">
                       Years of Experience <span class="req">*</span>
@@ -417,6 +409,37 @@
                     <input id="education" v-model.trim="applyForm.education" type="text" placeholder="e.g., BSIT - University" />
                     <div class="inline-error" v-if="applyFieldErrors.education">{{ applyFieldErrors.education }}</div>
                   </div>
+                </div>
+
+                <div class="field" style="grid-column: 1 / -1;" :class="{ 'field--error': applyFieldErrors.address }">
+                  <label class="field-label">
+                    Address & Location <span class="req">*</span>
+                  </label>
+
+                  <div v-if="applyAddressSaved" class="address-saved-card">
+                    <div class="address-card-header">
+                      <div class="address-card-content">
+                        <strong class="address-label">Pinned Address</strong>
+                        <span class="address-text">{{ savedApplyAddress }}</span>
+                        <div v-if="applyLocation.lat && applyLocation.lng" class="address-coordinates">
+                          📍 {{ applyLocation.lat?.toFixed(6) }}, {{ applyLocation.lng?.toFixed(6) }}
+                        </div>
+                      </div>
+                      <div class="address-card-actions">
+                        <button type="button" class="address-edit-btn" @click="editApplyAddress">Edit</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div v-else class="address-input-section">
+                    <AddressCascaderWithMap
+                      :initialLocation="applyLocation"
+                      @update:location="onApplyLocationUpdate"
+                      @save:location="onApplyAddressSaved"
+                    />
+                  </div>
+
+                  <div class="inline-error" v-if="applyFieldErrors.address">{{ applyFieldErrors.address }}</div>
                 </div>
 
                 <!-- Right Column -->
@@ -765,6 +788,7 @@ import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import axios from 'axios'
 import { useRouter, RouterLink } from 'vue-router'
 import LoadingOverlay from './LoadingOverlay.vue'
+import AddressCascaderWithMap from './AddressCascaderWithMap.vue'
 
 const router = useRouter()
 const showLoginLoader = ref(false)
@@ -833,6 +857,9 @@ const applyLoading = ref(false)
 const applySuccessMessage = ref('')
 const applyErrorMessage = ref('')
 const applyFieldErrors = ref({})
+const applyLocation = ref({ lat: 14.5994, lng: 120.9842 })
+const savedApplyAddress = ref('')
+const applyAddressSaved = ref(false)
 
 const applyForm = ref({
   job_open_request_id: null,
@@ -1498,6 +1525,9 @@ function resetApplyForm() {
     privacy_consent: false,
     website: '',
   }
+  applyLocation.value = { lat: 14.5994, lng: 120.9842 }
+  savedApplyAddress.value = ''
+  applyAddressSaved.value = false
   resumeCvFile.value = null
   supportingDocumentsFiles.value = []
   applyLoading.value = false
@@ -1528,6 +1558,40 @@ function closeApplyModal() {
   showApplyModal.value = false
   // keep values only until close; reset to be safe
   resetApplyForm()
+}
+
+function onApplyLocationUpdate(location) {
+  applyLocation.value = {
+    lat: location?.lat ?? applyLocation.value.lat,
+    lng: location?.lng ?? applyLocation.value.lng,
+  }
+}
+
+function onApplyAddressSaved(payload) {
+  const addressComponents = payload?.addressComponents || {}
+  const parts = []
+  const lat = payload?.lat ?? applyLocation.value.lat
+  const lng = payload?.lng ?? applyLocation.value.lng
+
+  if (payload?.address && payload.address.trim()) parts.push(payload.address.trim())
+  if (addressComponents.barangay) parts.push(addressComponents.barangay)
+  if (addressComponents.city) parts.push(addressComponents.city)
+  if (addressComponents.province) parts.push(addressComponents.province)
+  if (addressComponents.region) parts.push(addressComponents.region)
+
+  savedApplyAddress.value = parts.join(', ') || `Pinned location: ${Number(lat).toFixed(6)}, ${Number(lng).toFixed(6)}`
+  applyForm.value.address = savedApplyAddress.value
+  applyLocation.value = {
+    lat,
+    lng,
+  }
+  applyAddressSaved.value = true
+}
+
+function editApplyAddress() {
+  applyAddressSaved.value = false
+  savedApplyAddress.value = ''
+  applyForm.value.address = ''
 }
 
 function onResumeSelected(e) {

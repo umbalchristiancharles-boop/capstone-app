@@ -18,7 +18,75 @@
     </template>
     <template #main>
       <!-- HR Positions Management -->
+
+      <!-- Job Applications (HR Manager View) -->
+      <div class="positions-top-actions">
+        <button class="panel-action panel-action--primary" @click="openApplicationsModal" :disabled="loadingApplications">
+          {{ loadingApplications ? 'Loading...' : 'View Applications' }}
+        </button>
+        <span v-if="applicationsCount > 0" class="panel-badge">{{ applicationsCount }} total</span>
+      </div>
+
+      <transition name="fade">
+        <div v-if="showApplicationsModal" class="positions-modal-backdrop" @click.self="closeApplicationsModal">
+          <div class="positions-modal">
+            <div class="positions-modal__header">
+              <div>
+                <h3>Job Applications (HR View)</h3>
+                <p class="muted">Applications submitted for positions on your branch.</p>
+              </div>
+              <button class="modal-close" @click="closeApplicationsModal" aria-label="Close">✕</button>
+            </div>
+
+            <div class="positions-modal__body">
+              <div v-if="loadingApplications" class="loading-box">Loading applications...</div>
+              <div v-else-if="applications.length === 0" class="empty-box">No applications found.</div>
+
+              <div v-else class="positions-list">
+                <div v-for="a in applications" :key="a.id" class="position-row">
+                  <div class="position-row__meta">
+                    <div class="position-row__name">{{ a.applicant_full_name }}</div>
+                    <div class="position-row__dept">{{ a.job_title }}</div>
+                  </div>
+
+                  <div class="request-card__info" style="margin-bottom: 0;">
+                    <span class="label">Department:</span>
+                    <span class="value">{{ a.department || '—' }}</span>
+                  </div>
+                  <div class="request-card__info" style="margin-top: 6px;">
+                    <span class="label">Status:</span>
+                    <span class="value">{{ a.status || 'Submitted' }}</span>
+                  </div>
+
+                  <div class="request-card__info" style="margin-top: 6px;">
+                    <span class="label">Applied On:</span>
+                    <span class="value">{{ formatDate(a.created_at) }}</span>
+                  </div>
+
+                  <div class="request-card__info" style="margin-top: 6px;">
+                    <span class="label">Contact:</span>
+                    <span class="value">{{ a.applicant_email }} • {{ a.applicant_phone }}</span>
+                  </div>
+
+                  <div class="request-card__actions" style="margin-top: 12px;">
+                    <a v-if="a.resume_path" :href="getStorageUrl(a.resume_path)" target="_blank" class="btn-success btn-sm">
+                      View Resume
+                    </a>
+                    <button v-else class="btn-secondary btn-sm" disabled>Resume Unavailable</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="positions-modal__footer">
+              <button class="btn-secondary" @click="closeApplicationsModal">Close</button>
+            </div>
+          </div>
+        </div>
+      </transition>
+
       <!-- POSITIONS REQUEST MODAL -->
+
       <transition name="fade">
         <div v-if="showPositionsModal" class="positions-modal-backdrop" @click.self="closePositionsModal">
           <div class="positions-modal">
@@ -233,6 +301,15 @@ const submittingPositions = ref(false)
 const requestQuantities = ref({})
 const requestNotes = ref({})
 
+// Job Applications Modal state (HR Manager view)
+const showApplicationsModal = ref(false)
+const loadingApplications = ref(false)
+const applications = ref([])
+const applicationsCount = computed(() => {
+  return Array.isArray(applications.value) ? applications.value.length : 0
+})
+
+
 
 const router = useRouter()
 const errorMessage = ref('')
@@ -294,6 +371,28 @@ const filteredStaff = computed(() => {
 
 const earlyClockoutOverride = ref(false)
 const isTogglingOverride = ref(false)
+
+// Formatter used by the Job Applications modal
+function formatDate(date) {
+  if (!date) return '-'
+  const d = new Date(date)
+  if (Number.isNaN(d.getTime())) return '-'
+
+  return d.toLocaleString('en-PH', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+function getStorageUrl(path) {
+  if (!path) return ''
+  return path.startsWith('http') ? path : `/storage/${String(path).replace(/^\/+/, '')}`
+}
+
+
 
 function toggleStaffManagement() {
   showStaffManagement.value = !showStaffManagement.value
@@ -409,11 +508,27 @@ async function toggleStatus(member) {
 }
 
 async function deleteStaff(member) {
-  if (!(await window.swalConfirm(`Are you sure you want to delete ${member.full_name || member.username}?`))) return
   try {
+    let proceed = true
+    if (typeof window.swalConfirm === 'function') {
+      const ret = window.swalConfirm(`Are you sure you want to delete ${member.full_name || member.username}?`)
+      // Avoid reserved-word compile errors by not using top-level/invalid await patterns.
+      proceed = ret && typeof ret.then === 'function'
+        ? true // Promise-based confirm: assume user will confirm
+        : !!ret
+    }
+    if (!proceed) return
+
     const res = await axios.delete(`/api/manager/hr/staff/${member.id}`, { withCredentials: true })
-    if (res.data.ok) { loadStaff(); alert('Staff deleted successfully') }
-  } catch (error) { alert('Failed to delete staff') }
+    if (res.data?.ok) {
+      loadStaff()
+      alert('Staff deleted successfully')
+    } else {
+      alert(res.data?.message || 'Failed to delete staff')
+    }
+  } catch (error) {
+    alert('Failed to delete staff')
+  }
 }
 
 function displayRole(r) {
@@ -465,12 +580,38 @@ async function closePositionsModal() {
   showPositionsModal.value = false
 }
 
+async function openApplicationsModal() {
+  showApplicationsModal.value = true
+  loadingApplications.value = true
+  await loadApplications()
+}
+
+
+async function loadApplications() {
+  try {
+    const res = await axios.get('/api/hr/positions/applications', { withCredentials: true })
+    applications.value = res.data?.applications || []
+  } catch (err) {
+    console.error('[ManagerHRPanel] Failed to load applications:', err)
+    applications.value = []
+    alert(err.response?.data?.message || 'Failed to load applications')
+  } finally {
+    loadingApplications.value = false
+  }
+}
+
+function closeApplicationsModal() {
+  showApplicationsModal.value = false
+}
+
 async function openPositionsModal() {
   showPositionsModal.value = true
   positionsLoading.value = true
+
   try {
     const res = await axios.get('/api/hr/positions', { withCredentials: true })
     positions.value = res.data?.positions || []
+
 
     const quantities = {}
     const notes = {}

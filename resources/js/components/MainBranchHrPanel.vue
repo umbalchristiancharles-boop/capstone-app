@@ -33,11 +33,14 @@
               </button>
             </div>
 
+
+
             <div v-if="loadingPositionRequests" class="loading-box">Loading position requests...</div>
             <div v-else-if="positionRequests.length === 0" class="empty-box">No position requests found.</div>
 
             <div v-else class="requests-list">
               <div v-for="req in positionRequests" :key="req.id" class="request-card" :class="'request-card--' + req.status.toLowerCase()">
+
                 <div class="request-card__header">
                   <span class="request-card__position">{{ req.position?.name || 'Unknown Position' }}</span>
                   <span class="request-card__status" :class="'status-' + req.status.toLowerCase()">{{ req.status }}</span>
@@ -171,6 +174,7 @@
   <!-- POSITIONS REQUEST MODAL -->
   <transition name="fade">
     <div v-if="showPositionsModal" class="positions-modal-backdrop" @click.self="closePositionsModal">
+
       <div class="positions-modal">
         <div class="positions-modal__header">
           <div>
@@ -229,8 +233,68 @@
     </div>
   </transition>
 
+  <!-- Applications Modal -->
+  <transition name="fade">
+    <div v-if="showApplicationsModal" class="positions-modal-backdrop" @click.self="closeApplicationsModal">
+      <div class="positions-modal">
+        <div class="positions-modal__header">
+          <div>
+            <h3>Job Applications (HR View)</h3>
+            <p class="muted">Applications submitted for positions on your branch.</p>
+          </div>
+          <button class="modal-close" @click="closeApplicationsModal" aria-label="Close">✕</button>
+        </div>
+
+        <div class="positions-modal__body">
+          <div v-if="loadingApplications" class="loading-box">Loading applications...</div>
+          <div v-else-if="applications.length === 0" class="empty-box">No applications found.</div>
+
+          <div v-else class="positions-list">
+            <div v-for="a in applications" :key="a.id" class="position-row">
+              <div class="position-row__meta">
+                <div class="position-row__name">{{ a.applicant_full_name }}</div>
+                <div class="position-row__dept">{{ a.job_title }}</div>
+              </div>
+
+              <div class="request-card__info" style="margin-bottom: 0;">
+                <span class="label">Department:</span>
+                <span class="value">{{ a.department || '—' }}</span>
+              </div>
+              <div class="request-card__info" style="margin-top: 6px;">
+                <span class="label">Status:</span>
+                <span class="value">{{ a.status || 'Submitted' }}</span>
+              </div>
+
+              <div class="request-card__info" style="margin-top: 6px;">
+                <span class="label">Applied On:</span>
+                <span class="value">{{ formatDate(a.created_at) }}</span>
+              </div>
+
+              <div class="request-card__info" style="margin-top: 6px;">
+                <span class="label">Contact:</span>
+                <span class="value">{{ a.applicant_email }} • {{ a.applicant_phone }}</span>
+              </div>
+
+              <div class="request-card__actions" style="margin-top: 12px;">
+                <a v-if="a.resume_path" :href="getStorageUrl(a.resume_path)" target="_blank" class="btn-success btn-sm">
+                  View Resume
+                </a>
+                <button v-else class="btn-secondary btn-sm" disabled>Resume Unavailable</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="positions-modal__footer">
+          <button class="btn-secondary" @click="closeApplicationsModal">Close</button>
+        </div>
+      </div>
+    </div>
+  </transition>
+
   <!-- Reject Reason Modal -->
   <div v-if="showRejectModal" class="reject-modal-backdrop" @click.self="closeRejectModal">
+
     <div class="reject-modal">
       <div class="reject-modal__header">
         <h3>Reject Position Request</h3>
@@ -286,9 +350,18 @@ const showRejectModal = ref(false)
 const rejectingRequest = ref(null)
 const rejectReason = ref('')
 
+// Job Applications modal state
+const showApplicationsModal = ref(false)
+const loadingApplications = ref(false)
+const applications = ref([])
+const applicationsCount = computed(() => {
+  return Array.isArray(applications.value) ? applications.value.length : 0
+})
+
 const positionRequestsPendingCount = computed(() => {
   return positionRequests.value.filter(r => r.status === 'Pending').length
 })
+
 
 
 function toggleProfileDropdown() {
@@ -347,6 +420,37 @@ function displayRole(r) {
 function closePositionsModal() {
   showPositionsModal.value = false
 }
+
+function closeApplicationsModal() {
+  showApplicationsModal.value = false
+}
+
+function getStorageUrl(path) {
+  if (!path) return ''
+  // resume_path is stored using Laravel's public disk under /storage
+  // The stored string is usually like: position-applications/.../resume_cv.pdf
+  return path.startsWith('/') ? path : `/storage/${path}`
+}
+
+async function openApplicationsModal() {
+  showApplicationsModal.value = true
+  loadingApplications.value = true
+  try {
+    const res = await axios.get('/api/hr/positions/applications', { withCredentials: true })
+    if (res.data?.ok) {
+      applications.value = Array.isArray(res.data.applications) ? res.data.applications : []
+    } else {
+      applications.value = []
+    }
+  } catch (err) {
+    console.error('[MainBranchHrPanel] Failed loading applications:', err)
+    applications.value = []
+    alert(err.response?.data?.message || 'Failed to load applications.')
+  } finally {
+    loadingApplications.value = false
+  }
+}
+
 
 async function openPositionsModal() {
   showPositionsModal.value = true
