@@ -13,9 +13,15 @@
   >
     <template #main>
       <section class="space-y-6">
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 border border-slate-200 dark:border-slate-700">
-          <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">Welcome, {{ userProfile.full_name || userProfile.fullName || userProfile.username }}</h2>
-          <p class="text-slate-600 dark:text-slate-400">This is the owner dashboard. Add owner-specific widgets here.</p>
+        <div class="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-br from-white via-white to-orange-50/80 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)] ring-1 ring-white/70 dark:border-slate-700 dark:from-slate-800 dark:via-slate-800 dark:to-slate-900 dark:ring-slate-700/60 sm:p-7">
+          <div class="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-orange-500 via-amber-400 to-orange-600"></div>
+          <div class="flex flex-col gap-2">
+            <span class="inline-flex w-fit items-center rounded-full bg-orange-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-orange-700 dark:bg-orange-500/15 dark:text-orange-300">
+              Owner dashboard
+            </span>
+            <h2 class="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-3xl">Welcome, {{ userProfile.full_name || userProfile.fullName || userProfile.username }}</h2>
+            <p class="max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300 sm:text-base">This is the owner dashboard. Add owner-specific widgets here.</p>
+          </div>
         </div>
         <!-- Placeholder: owner widgets can be added here -->
       </section>
@@ -24,38 +30,41 @@
     <template #sideTop>
       <div class="space-y-4">
         <!-- Quick Links Card -->
-        <div class="tw-panel-block">
-          <div class="tw-panel-header">
-            <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Quick Links</h3>
+        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.08)] dark:border-slate-700 dark:bg-slate-800">
+          <div class="flex items-center justify-between gap-3 border-b border-slate-200 bg-gradient-to-r from-orange-50 to-amber-50 px-5 py-4 dark:border-slate-700 dark:from-slate-800 dark:to-slate-700/60">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-orange-600 dark:text-orange-300">Quick Links</p>
+              <h3 class="mt-1 text-lg font-semibold text-slate-900 dark:text-white">Owner actions</h3>
+            </div>
           </div>
-          <div class="tw-panel-body">
-            <ul class="space-y-2">
-              <li class="flex items-center justify-between">
-                <router-link to="/owner/dish-approval" class="text-orange-600 dark:text-orange-400 hover:underline font-medium">
+          <div class="p-5">
+            <ul class="space-y-3">
+              <li class="flex items-center justify-between gap-3 rounded-xl border border-transparent px-3 py-2 transition-all duration-200 hover:-translate-y-0.5 hover:border-orange-100 hover:bg-orange-50/80 hover:shadow-sm dark:hover:border-slate-600 dark:hover:bg-slate-700/60">
+                <router-link to="/owner/dish-approval" class="font-medium text-slate-700 transition-colors duration-200 hover:text-orange-600 dark:text-slate-200 dark:hover:text-orange-300">
                   Dish Approval
                 </router-link>
-                <span v-if="pendingCounts.kitchen > 0" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
+                <span v-if="pendingCounts.kitchen > 0" class="owner-panel-badge">
                   {{ pendingCounts.kitchen }}
                 </span>
               </li>
-              <li>
-                <router-link to="/owner/staff-management" class="text-orange-600 dark:text-orange-400 hover:underline font-medium">
+              <li class="rounded-xl border border-transparent px-3 py-2 transition-all duration-200 hover:-translate-y-0.5 hover:border-orange-100 hover:bg-orange-50/80 hover:shadow-sm dark:hover:border-slate-600 dark:hover:bg-slate-700/60">
+                <router-link to="/owner/staff-management" class="font-medium text-slate-700 transition-colors duration-200 hover:text-orange-600 dark:text-slate-200 dark:hover:text-orange-300">
                   Staff Management
                 </router-link>
               </li>
-              <li class="flex items-center justify-between">
-                <router-link to="/owner/branch-confirmations" class="text-orange-600 dark:text-orange-400 hover:underline font-medium">
+              <li class="flex items-center justify-between gap-3 rounded-xl border border-transparent px-3 py-2 transition-all duration-200 hover:-translate-y-0.5 hover:border-orange-100 hover:bg-orange-50/80 hover:shadow-sm dark:hover:border-slate-600 dark:hover:bg-slate-700/60">
+                <router-link to="/owner/branch-confirmations" class="font-medium text-slate-700 transition-colors duration-200 hover:text-orange-600 dark:text-slate-200 dark:hover:text-orange-300">
                   Branch Confirmations
                 </router-link>
-                <span v-if="pendingCounts.branchOwner > 0" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
+                <span v-if="pendingCounts.branchOwner > 0" class="owner-panel-badge">
                   {{ pendingCounts.branchOwner }}
                 </span>
               </li>
-              <li class="flex items-center justify-between">
-                <router-link to="/owner/price-markup-approvals" class="text-orange-600 dark:text-orange-400 hover:underline font-medium">
+              <li class="flex items-center justify-between gap-3 rounded-xl border border-transparent px-3 py-2 transition-all duration-200 hover:-translate-y-0.5 hover:border-orange-100 hover:bg-orange-50/80 hover:shadow-sm dark:hover:border-slate-600 dark:hover:bg-slate-700/60">
+                <router-link to="/owner/price-markup-approvals" class="font-medium text-slate-700 transition-colors duration-200 hover:text-orange-600 dark:text-slate-200 dark:hover:text-orange-300">
                   Price Markup Approvals
                 </router-link>
-                <span v-if="pendingCounts.priceMarkup > 0" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
+                <span v-if="pendingCounts.priceMarkup > 0" class="owner-panel-badge">
                   {{ pendingCounts.priceMarkup }}
                 </span>
               </li>
@@ -151,10 +160,25 @@ const handleLogout = async () => {
 </script>
 
 <style scoped>
-.owner-dashboard { padding: 18px; }
-.owner-side-widgets ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
-.owner-side-widgets li { position: relative; padding-right: 28px; }
-.panel-badge { position: absolute; top: -2px; right: 0; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: #ef4444; color: #ffffff; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.35); }
-.owner-welcome h2 { margin: 0 0 8px; }
+.owner-panel-badge {
+  display: inline-flex;
+  min-width: 1.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: rgb(254 226 226);
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  line-height: 1;
+  color: rgb(153 27 27);
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.18);
+}
+
+:global(.dark) .owner-panel-badge,
+:global(.dark-mode) .owner-panel-badge {
+  background: rgba(127, 29, 29, 0.35);
+  color: rgb(252 165 165);
+}
 </style>
 
