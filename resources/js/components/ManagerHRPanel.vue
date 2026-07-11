@@ -10,23 +10,33 @@
     @profile-updated="onProfileUpdated"
   >
     <template #profileFooter>
-      <div class="admin-actions-row">
+      <div class="admin-actions-row manager-hr-profile-actions">
         <button class="staff-btn staff-btn--center" @click="goToStaffManagement()">
           Staff Management
         </button>
       </div>
     </template>
     <template #main>
-      <!-- HR Positions Management -->
+      <div class="manager-hr-page">
+        <header class="manager-hr-hero">
+          <div class="manager-hr-hero__copy">
+            <span class="manager-hr-hero__eyebrow">Manager dashboard</span>
+            <h2 class="manager-hr-hero__title">HR overview</h2>
+            <p class="manager-hr-hero__subtitle">Manage attendance, review applications, and request open positions from one place.</p>
+          </div>
+
+          <div class="positions-top-actions manager-hr-hero__actions">
+            <button class="panel-action panel-action--primary" @click="openApplicationsModal" :disabled="loadingApplications">
+              {{ loadingApplications ? 'Loading...' : 'View Applications' }}
+            </button>
+            <span v-if="applicationsCount > 0" class="panel-badge">{{ applicationsCount }} total</span>
+            <button class="panel-action panel-action--primary" @click="openPositionsModal" :disabled="positionsLoading">
+              {{ positionsLoading ? 'Loading...' : 'Request Open Positions' }}
+            </button>
+          </div>
+        </header>
 
       <!-- Job Applications (HR Manager View) -->
-      <div class="positions-top-actions">
-        <button class="panel-action panel-action--primary" @click="openApplicationsModal" :disabled="loadingApplications">
-          {{ loadingApplications ? 'Loading...' : 'View Applications' }}
-        </button>
-        <span v-if="applicationsCount > 0" class="panel-badge">{{ applicationsCount }} total</span>
-      </div>
-
       <transition name="fade">
         <div v-if="showApplicationsModal" class="positions-modal-backdrop" @click.self="closeApplicationsModal">
           <div class="positions-modal">
@@ -150,46 +160,43 @@
       </transition>
 
       <!-- HR Positions Management -->
-      <div class="positions-top-actions">
-        <button class="panel-action panel-action--primary" @click="openPositionsModal" :disabled="positionsLoading">
-          {{ positionsLoading ? 'Loading...' : 'Request Open Positions' }}
-        </button>
-      </div>
-
-
       <!-- Bento-style Stats Cards -->
       <div class="manager-hr-main-wrapper">
-        <div class="hr-stats-grid">
-        <div class="hr-stat-card hr-stat-card--total">
-          <div class="hr-stat-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+        <div class="hr-stats-grid manager-hr-stats-grid">
+          <div class="hr-stat-card hr-stat-card--total">
+            <div class="hr-stat-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            </div>
+            <div class="hr-stat-content">
+              <span class="hr-stat-label">Total Staff</span>
+              <span class="hr-stat-value">{{ dashboardTotals.totalStaff }}</span>
+            </div>
           </div>
-          <div class="hr-stat-content">
-            <span class="hr-stat-label">Total Staff</span>
-            <span class="hr-stat-value">{{ dashboardTotals.totalStaff }}</span>
+          <div class="hr-stat-card hr-stat-card--active">
+            <div class="hr-stat-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <div class="hr-stat-content">
+              <span class="hr-stat-label">Active Staff</span>
+              <span class="hr-stat-value">{{ dashboardTotals.activeStaff }}</span>
+            </div>
           </div>
-        </div>
-        <div class="hr-stat-card hr-stat-card--active">
-          <div class="hr-stat-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <div class="hr-stat-card hr-stat-card--leave">
+            <div class="hr-stat-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            </div>
+            <div class="hr-stat-content">
+              <span class="hr-stat-label">On Leave</span>
+              <span class="hr-stat-value">{{ dashboardTotals.onLeave }}</span>
+            </div>
           </div>
-          <div class="hr-stat-content">
-            <span class="hr-stat-label">Active Staff</span>
-            <span class="hr-stat-value">{{ dashboardTotals.activeStaff }}</span>
-          </div>
-        </div>
-        <div class="hr-stat-card hr-stat-card--leave">
-          <div class="hr-stat-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-          </div>
-          <div class="hr-stat-content">
-            <span class="hr-stat-label">On Leave</span>
-            <span class="hr-stat-value">{{ dashboardTotals.onLeave }}</span>
-          </div>
-        </div>
         </div>
       </div>
 
+      </div>
+    </template>
+
+    <template #side>
       <section class="panel-block hr-attendance-panel">
         <div class="panel-header hr-attendance-header">
           <h2>
@@ -236,25 +243,6 @@
               <span class="badge" :class="attendanceStatusClass(att.status)">{{ att.status || '-' }}</span>
             </span>
           </div>
-        </div>
-      </section>
-    </template>
-
-    <template #side>
-      <section class="panel-block hr-settings-panel">
-        <div class="panel-header"><h2>Attendance Settings</h2></div>
-        <div class="attendance-override-toggle" v-if="userProfile.role === 'HR'">
-          <div class="toggle-label">
-            <span class="toggle-title">Enable Early Clock-Out</span>
-            <span class="toggle-desc">Allow staff to clock out before scheduled time</span>
-          </div>
-          <label class="toggle-switch">
-            <input type="checkbox" v-model="earlyClockoutOverride" @change="toggleEarlyClockout" :disabled="isTogglingOverride">
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-        <div class="panel-body panel-body--list">
-          <div class="side-item"><span>View and manage staff attendance records</span></div>
         </div>
       </section>
     </template>
@@ -667,6 +655,7 @@ async function submitPositionsRequests() {
 defineExpose({ refreshAllData, onProfileUpdated })
 </script>
 
+<style scoped src="./ManagerHRPanel.css"></style>
 
 <style scoped>
 .panel-badge {
@@ -687,37 +676,8 @@ defineExpose({ refreshAllData, onProfileUpdated })
   box-shadow: 0 4px 10px rgba(239, 68, 68, 0.35);
 }
 
-.hr-attendance-header h2 {
-  position: relative;
-  display: inline-block;
-}
 .hr-panel-content { padding: 1rem; }
-/* HR stats grid: keep cards in a responsive row and avoid overlapping other panels */
-.hr-stats-grid {
-  display: flex;
-  gap: 1rem;
-  align-items: stretch;
-  flex-wrap: wrap;
-  margin: 0 0 1.25rem 0;
-}
-.hr-stat-card {
-  background: white;
-  border-radius: 8px;
-  padding: 0.85rem 1rem;
-  box-shadow: 0 2px 6px rgba(16,24,40,0.04);
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-  min-width: 180px;
-  flex: 0 0 200px;
-}
-.hr-stat-icon { width:48px; height:48px; display:flex; align-items:center; justify-content:center; border-radius:8px; background: #fff5ee; color: #ff9f43; }
-.hr-stat-content { display:flex; flex-direction:column; }
-.hr-stat-label { font-size:0.85rem; color:#666; }
-.hr-stat-value { font-size:1.35rem; font-weight:700; color:#333; }
 
-/* Ensure main content area in this component sits above any sticky side panels */
-.manager-hr-main-wrapper { position: relative; z-index: 1; }
 .staff-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
 .staff-header h2 { margin: 0; color: #333; font-size: 1.5rem; }
 .hr-header-actions { display: flex; gap: 0.75rem; align-items: center; }
@@ -797,9 +757,6 @@ defineExpose({ refreshAllData, onProfileUpdated })
 .toggle-switch input:checked + .toggle-slider:before { transform: translateX(24px); }
 .panel-body--list { padding: 0.5rem 0; }
 .side-item { padding: 0.5rem 0; color: #666; font-size: 0.9rem; }
-.hr-attendance-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.hr-attendance-actions { display: flex; align-items: center; gap: 0.5rem; }
-.hr-attendance-select { padding: 6px; border-radius: 6px; border: 1px solid #ddd; background: #fff; }
 .panel-action { padding: 0.45rem 0.75rem; border: none; border-radius: 6px; background: #6c757d; color: #fff; cursor: pointer; }
 .panel-action:hover { background: #5a6268; }
 .panel-body--table { padding-top: 0.75rem; display: flex; flex-direction: column; gap: 0.35rem; }
@@ -941,19 +898,5 @@ defineExpose({ refreshAllData, onProfileUpdated })
   border-top: 1px solid #eee;
   background: #fafafa;
   border-radius: 0 0 12px 12px;
-}
-.positions-top-actions {
-  margin-bottom: 1.25rem;
-}
-.panel-action--primary {
-  background: #ff9f43;
-  color: #fff;
-}
-.panel-action--primary:hover {
-  background: #fabd83;
-}
-.panel-action--primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 </style>
