@@ -222,15 +222,15 @@ function getApiPrefix() {
     if (!userStr) return '/api/manager/inventory'
     const user = JSON.parse(userStr)
     const role = (user.role || '').toLowerCase()
-    
+
     console.debug('[getApiPrefix] User role:', role, 'Full user:', user)
-    
+
     // Staff role uses staff inventory endpoints
     if (role === 'staff') {
       console.debug('[getApiPrefix] Using staff endpoint')
       return '/api/staff/inventory'
     }
-    
+
     // Manager, Custom, and other roles use manager inventory endpoints
     console.debug('[getApiPrefix] Using manager endpoint')
     return '/api/manager/inventory'
@@ -273,7 +273,7 @@ onMounted(async () => {
         products.value = []
       }
     }
-  } catch (e) { 
+  } catch (e) {
     console.warn('Failed to load products', e.response?.status, e.response?.data || e.message)
   }
 
@@ -512,10 +512,10 @@ function getExpiryClass(product) {
     tomorrow.setDate(tomorrow.getDate() + 1)
     const weekFromNow = new Date(today)
     weekFromNow.setDate(weekFromNow.getDate() + 7)
-    
+
     today.setHours(0, 0, 0, 0)
     expiryDate.setHours(0, 0, 0, 0)
-    
+
     if (expiryDate < today) return 'expiry-expired'
     if (expiryDate <= tomorrow) return 'expiry-critical'
     if (expiryDate <= weekFromNow) return 'expiry-warning'
@@ -526,245 +526,4 @@ function getExpiryClass(product) {
 }
 </script>
 
-<style scoped>
-.inventory-content {
-  padding: 20px;
-}
-
-.section {
-  margin-bottom: 40px;
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.section h2 {
-  font-size: 1.3em;
-  margin-bottom: 16px;
-  color: #333;
-  border-bottom: 2px solid #f39c12;
-  padding-bottom: 10px;
-}
-
-.empty-message {
-  text-align: center;
-  color: #999;
-  padding: 20px;
-  font-style: italic;
-}
-
-.products-table,
-.procurements-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
-}
-
-.products-table thead,
-.procurements-table thead {
-  background-color: #f8f9fa;
-}
-
-.products-table th,
-.procurements-table th {
-  padding: 12px;
-  text-align: left;
-  font-weight: 600;
-  border-bottom: 2px solid #dee2e6;
-  color: #333;
-}
-
-.products-table td,
-.procurements-table td {
-  padding: 12px;
-  border-bottom: 1px solid #dee2e6;
-}
-
-.products-table tbody tr:hover,
-.procurements-table tbody tr:hover {
-  background-color: #f9f9f9;
-}
-
-.status-badge {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.85em;
-  font-weight: 600;
-}
-
-.status-ok {
-  background-color: #d4edda;
-  color: #155724;
-}
-
-.status-low {
-  background-color: #fff3cd;
-  color: #856404;
-}
-
-.status-out {
-  background-color: #f8d7da;
-  color: #721c24;
-}
-
-.reports-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
-  margin-top: 10px;
-}
-
-.report-card {
-  border: 1px solid #dee2e6;
-  padding: 16px;
-  border-radius: 6px;
-  background: #f9f9f9;
-}
-
-.report-card h3 {
-  margin: 0 0 8px 0;
-  color: #333;
-  font-size: 1em;
-}
-
-.report-type {
-  margin: 0 0 12px 0;
-  color: #666;
-  font-size: 0.85em;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.report-summary {
-  background: white;
-  padding: 10px;
-  border-radius: 4px;
-  margin-bottom: 10px;
-  font-size: 0.9em;
-}
-
-.report-summary div {
-  margin: 4px 0;
-  color: #555;
-}
-
-.report-date {
-  margin: 0;
-  font-size: 0.8em;
-  color: #999;
-}
-
-.info-grid {
-  margin: 16px 0;
-}
-
-.info-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.info-label {
-  font-weight: 600;
-  min-width: 150px;
-  color: #333;
-}
-
-.confirm-input {
-  padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1em;
-  flex: 1;
-  max-width: 200px;
-}
-
-.btn-primary {
-  background-color: #f39c12;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9em;
-  font-weight: 600;
-  transition: background-color 0.2s;
-}
-
-.btn-primary:hover {
-  background-color: #e67e22;
-}
-
-.btn-primary:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-}
-
-/* Category grouping styles */
-.category-section {
-  margin-bottom: 30px;
-}
-
-.category-title {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #333;
-  margin: 15px 0 10px 0;
-  padding-bottom: 8px;
-  border-bottom: 2px solid #f39c12;
-}
-
-/* Expiration date styles */
-.expiry-expired {
-  background: #fee2e2;
-  color: #7f1d1d;
-  padding: 3px 6px;
-  border-radius: 4px;
-  font-weight: 600;
-  font-size: 0.85rem;
-}
-
-.expiry-critical {
-  background: #fef3c7;
-  color: #92400e;
-  padding: 3px 6px;
-  border-radius: 4px;
-  font-weight: 600;
-  font-size: 0.85rem;
-}
-
-.expiry-warning {
-  background: #fef08a;
-  color: #713f12;
-  padding: 3px 6px;
-  border-radius: 4px;
-  font-weight: 600;
-  font-size: 0.85rem;
-}
-
-.expiry-ok {
-  background: #dcfce7;
-  color: #166534;
-  padding: 3px 6px;
-  border-radius: 4px;
-  font-weight: 600;
-  font-size: 0.85rem;
-}
-
-.expiry-none {
-  color: #9ca3af;
-  font-size: 0.85rem;
-}
-
-.products-table tbody tr.expired {
-  background: #fef2f2;
-}
-
-.products-table tbody tr.expired .name {
-  color: #7f1d1d;
-  font-weight: 700;
-}
-</style>
+<style scoped src="./ManagerInventoryPanel.css"></style>

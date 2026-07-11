@@ -1,0 +1,497 @@
+/* Manager Inventory Panel - UI styling only (no logic) */
+
+/* Page background (match manager panels) */
+.overview-grid,
+.inventory-content {
+  box-sizing: border-box;
+}
+
+.inventory-content {
+  padding: clamp(0.9rem, 2vw, 1.25rem);
+}
+
+/* Overview / KPI cards */
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 0 0 1rem 0;
+}
+
+.overview-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-height: 96px;
+  padding: 1rem 1rem 1rem 1.05rem;
+  border-radius: 18px;
+  border: 1px solid rgba(219, 188, 160, 0.45);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 246, 236, 0.92) 100%);
+  box-shadow: 0 12px 28px rgba(16, 24, 40, 0.06);
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.overview-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 34px rgba(16, 24, 40, 0.08);
+  border-color: rgba(255, 159, 67, 0.22);
+}
+
+.overview-label {
+  display: block;
+  color: #7c6758;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.overview-value {
+  display: block;
+  color: #3d2a1f;
+  font-size: 1.55rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  margin-top: 0.15rem;
+}
+
+/* Section blocks */
+.section {
+  margin-bottom: 1.25rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(255, 249, 242, 0.96));
+  border: 1px solid rgba(219, 188, 160, 0.42);
+  padding: 1.1rem 1.1rem 0.95rem;
+  border-radius: 18px;
+  box-shadow: 0 14px 34px rgba(16, 24, 40, 0.06);
+  overflow: hidden;
+}
+
+.section > h2 {
+  margin: 0 0 0.75rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  color: #3d2a1f;
+  font-size: 1.15rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+/* Section divider line accent (gold) */
+.section > h2::after {
+  content: '';
+  display: block;
+  height: 2px;
+  width: 100%;
+  background: rgba(243, 156, 18, 0.28);
+  border-radius: 999px;
+  margin-top: 0.55rem;
+}
+
+.section > h2 > *:not(span) {
+  position: relative;
+  z-index: 1;
+}
+
+/* Inventory pending badge */
+.panel-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.6rem;
+  height: 1.6rem;
+  padding: 0 0.45rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ef4444, #dc2626);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 900;
+  box-shadow: 0 10px 18px rgba(239, 68, 68, 0.28);
+}
+
+/* Empty state */
+.empty-message {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: #8b7565;
+  font-style: italic;
+}
+
+/* Product category blocks */
+.category-section {
+  margin-bottom: 1.25rem;
+}
+
+.category-title {
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: #3d2a1f;
+  margin: 1.05rem 0 0.85rem 0;
+  padding-bottom: 0.55rem;
+  border-bottom: 2px solid rgba(243, 156, 18, 0.35);
+}
+
+/* Tables (match manager finance table style) */
+.products-table,
+.procurements-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-top: 0.25rem;
+}
+
+.products-table thead th,
+.procurements-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, #fff7ef 0%, #fff1e6 100%);
+  color: #6b4e39;
+  font-size: 0.84rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  padding: 0.95rem 1rem;
+  border-bottom: 1px solid rgba(219, 188, 160, 0.35);
+  white-space: nowrap;
+}
+
+.products-table td,
+.procurements-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid rgba(219, 188, 160, 0.35);
+  color: #4b3528;
+  font-size: 0.92rem;
+  vertical-align: middle;
+}
+
+.products-table tbody tr:hover td,
+.procurements-table tbody tr:hover td {
+  background: rgba(255, 159, 67, 0.05);
+}
+
+/* Status badges (inventory-specific) */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 5.5rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 900;
+  text-transform: capitalize;
+  letter-spacing: 0.01em;
+}
+
+.status-ok {
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+}
+
+.status-low {
+  background: rgba(250, 204, 21, 0.16);
+  color: #7c5b00;
+}
+
+.status-out {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+}
+
+/* Expiration badges */
+.expiry-expired,
+.expiry-critical,
+.expiry-warning,
+.expiry-ok {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.45rem;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 0.78rem;
+  line-height: 1.2;
+}
+
+.expiry-expired {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+}
+
+.expiry-critical {
+  background: rgba(250, 204, 21, 0.18);
+  color: #92400e;
+}
+
+.expiry-warning {
+  background: rgba(250, 204, 21, 0.12);
+  color: #7c5b00;
+}
+
+.expiry-ok {
+  background: rgba(34, 197, 94, 0.12);
+  color: #166534;
+}
+
+.expiry-none {
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+
+/* Reports cards */
+.reports-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-top: 0.25rem;
+}
+
+.report-card {
+  border: 1px solid rgba(219, 188, 160, 0.45);
+  border-radius: 16px;
+  padding: 1rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 246, 236, 0.92) 100%);
+  box-shadow: 0 12px 28px rgba(16, 24, 40, 0.05);
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.report-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 34px rgba(16, 24, 40, 0.08);
+  border-color: rgba(255, 159, 67, 0.22);
+}
+
+.report-card h3 {
+  margin: 0 0 0.35rem 0;
+  color: #3d2a1f;
+  font-size: 1.02rem;
+  font-weight: 900;
+}
+
+.report-type {
+  margin: 0 0 0.75rem 0;
+  color: #7c6758;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 900;
+}
+
+.report-summary {
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(219, 188, 160, 0.35);
+  padding: 0.75rem;
+  border-radius: 12px;
+  margin-bottom: 0.85rem;
+  font-size: 0.9em;
+}
+
+.report-summary div {
+  margin: 0.25rem 0;
+  color: #4b3528;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.report-date {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #9a8777;
+  font-weight: 700;
+}
+
+/* Confirmation modal inputs/buttons */
+.info-grid {
+  margin: 1rem 0;
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.info-label {
+  font-weight: 900;
+  min-width: 165px;
+  color: #3d2a1f;
+}
+
+.confirm-input {
+  padding: 0.7rem 0.85rem;
+  border: 1px solid rgba(219, 188, 160, 0.65);
+  border-radius: 12px;
+  font-size: 1rem;
+  flex: 1;
+  max-width: 240px;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.confirm-input:focus {
+  outline: none;
+  border-color: rgba(255, 159, 67, 0.55);
+  box-shadow: 0 0 0 4px rgba(255, 159, 67, 0.14);
+}
+
+/* Buttons inside this component use btn-primary / btn-cancel / btn-confirm */
+.btn-primary {
+  color: #ffffff;
+  background: linear-gradient(135deg, #ff9f43 0%, #ff8a1f 100%);
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 900;
+  transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+  box-shadow: 0 10px 24px rgba(255, 159, 67, 0.18);
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(255, 159, 67, 0.22);
+}
+
+.btn-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-cancel {
+  padding: 0.75rem 1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #fff7ef 100%);
+  color: #5c4333;
+  border: 1px solid rgba(219, 188, 160, 0.55);
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 900;
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease, opacity 160ms ease;
+}
+
+.btn-confirm {
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #dc2626 0%, #f97316 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 900;
+  transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+  box-shadow: 0 10px 24px rgba(220, 38, 38, 0.16);
+}
+
+.btn-cancel:disabled,
+.btn-confirm:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-cancel:hover:not(:disabled),
+.btn-confirm:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+/* Older product row expiry highlighting */
+.products-table tbody tr.expired {
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.products-table tbody tr.expired .name {
+  color: #7f1d1d;
+  font-weight: 900;
+}
+
+/* Overlays (logout + confirm + loading) */
+.logout-confirm-backdrop,
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  background: rgba(15, 23, 42, 0.46);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.logout-confirm-box {
+  width: min(92vw, 420px);
+  padding: 1.35rem;
+  border-radius: 20px;
+  text-align: center;
+  border: 1px solid rgba(219, 188, 160, 0.45);
+  background: linear-gradient(180deg, #ffffff 0%, #fff8f1 100%);
+  box-shadow: 0 28px 72px rgba(15, 23, 42, 0.18);
+}
+
+.logout-confirm-box h3 {
+  margin: 0 0 0.4rem;
+  color: #3d2a1f;
+  font-size: 1.1rem;
+  font-weight: 900;
+}
+
+.logout-confirm-box p {
+  margin: 0 0 1rem;
+  color: #7c6758;
+  font-weight: 700;
+}
+
+.logout-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.logo-loading-box {
+  display: grid;
+  justify-items: center;
+  gap: 0.8rem;
+  text-align: center;
+}
+
+.logo-loading-img {
+  width: 7rem;
+  max-width: 100%;
+}
+
+.logo-loading-box p {
+  color: #7c6758;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .overview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .products-table thead th,
+  .products-table td,
+  .procurements-table thead th,
+  .procurements-table td {
+    padding: 0.75rem 0.85rem;
+    font-size: 0.88rem;
+  }
+
+  .info-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .info-label {
+    min-width: 0;
+  }
+}
+
