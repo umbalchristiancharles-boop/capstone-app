@@ -1,19 +1,25 @@
 <template>
   <main class="page staff-landing">
     <section class="hero" id="staff-hero">
-      <div class="hero-left">
+      <div class="hero-content">
+        <div class="hero-left">
+          <div class="badge">
+            <span class="badge-dot"></span>
+            <span>Staff Portal</span>
+          </div>
 <h1>STAFF LOGIN</h1>
-        <p>This is the separate staff landing page. Authorized staff should sign in below.</p>
-        <div class="cta-row">
-          <button class="btn-back" @click.prevent="goToCustomerLanding">← Back</button>
-          <button class="btn-login" @click.prevent="goToAdminLogin">
-            <span class="icon">🔑</span>
-            <span>Staff Login</span>
-          </button>
+          <p>This is the separate staff landing page. Authorized staff should sign in below.</p>
+          <div class="cta-row">
+            <button class="btn-back" @click.prevent="goToCustomerLanding">← Back</button>
+            <button class="btn-login" @click.prevent="goToAdminLogin">
+              <span class="icon">🔑</span>
+              <span>Staff Login</span>
+            </button>
+          </div>
         </div>
-      </div>
-      <div class="hero-right">
-        <img :src="chikintayoImg" alt="Chikintayo" />
+        <div class="hero-right">
+          <img :src="chikintayoImg" alt="Chikintayo" />
+        </div>
       </div>
     </section>
   </main>
@@ -34,16 +40,25 @@ function goToCustomerLanding() {
 
 <style scoped>
   #staff-hero {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    position: relative;
     min-height: 100vh;
-    /* Use transparent so the global radial background on `.page` shows through */
+    width: 100%;
     background: transparent;
     color: var(--text-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
   }
+
+.hero-content {
+  width: 100%;
+  max-width: 1200px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+}
 
 .hero-left h1 {
   color: var(--text-dark);
@@ -92,32 +107,11 @@ function goToCustomerLanding() {
   transform: translateY(-1px);
 }
 
-.hero {
-  min-height: 100vh;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0;
-  align-items: center;
-  padding: 80px 40px;
-  position: relative;
-  z-index: 2;
-}
-
-
-
 .hero-left {
-  background: rgba(255,255,255,0.1);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,0.2);
-  border-radius: 20px;
-  position: relative;
-  z-index: 2;
   display: flex;
   flex-direction: column;
   gap: 24px;
   justify-content: center;
-  padding: 60px 40px;
-  max-width: 500px;
 }
 
 .badge {
@@ -159,8 +153,6 @@ p {
   margin-top: 20px;
 }
 
-
-
 .btn-login {
   border-radius: 999px;
   padding: 12px 28px;
@@ -182,31 +174,27 @@ p {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40px;
   position: relative;
-  z-index: 2;
 }
 
 .hero-right img {
-  max-width: 420px;
+  max-width: 100%;
+  width: 420px;
   border-radius: 12px;
   box-shadow: 0 20px 40px rgba(0,0,0,0.15);
 }
 
 /* Responsive */
 @media (max-width: 900px) {
-  .hero {
+  .hero-content {
     grid-template-columns: 1fr;
-    min-height: 100vh;
-    padding: 40px 20px;
     gap: 40px;
+    max-width: 500px;
   }
 
   .hero-left {
-    margin: 0 auto;
-    padding: 40px 20px;
     text-align: center;
-    max-width: 400px;
+    align-items: center;
   }
 
   h1 {
@@ -218,13 +206,9 @@ p {
     max-width: none;
   }
 
-  .hero-right {
-    padding: 20px;
-  }
-
   .hero-right img {
     width: 100%;
-    max-width: none;
+    max-width: 300px;
   }
 }
 </style>

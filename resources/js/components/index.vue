@@ -3,7 +3,36 @@
     <!-- CHIKIN TAYO LOADING OVERLAY PAG CLICK NG LOGIN -->
     <LoadingOverlay :show="showLoginLoader" :text="loaderText" :logo-src="mrLoaderImg" />
 
-    <section class="hero" id="scaffold-1">
+    <!-- Professional Navigation Bar -->
+    <nav class="navbar" :class="{ 'navbar-scrolled': scrolled }">
+      <div class="navbar-container">
+        <div class="navbar-brand">
+          <img :src="chikintayoImg" alt="Chikin Tayo" class="navbar-logo" />
+          <span class="navbar-brand-text">CHIKIN TAYO</span>
+        </div>
+
+        <button 
+          class="navbar-toggle" 
+          :class="{ active: mobileMenuOpen }"
+          @click="toggleMobileMenu"
+          aria-label="Toggle navigation menu"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+
+        <div class="navbar-menu" :class="{ active: mobileMenuOpen }">
+          <a href="#hero" class="navbar-link" @click="scrollToSection('hero')">Home</a>
+          <a href="#branches" class="navbar-link" @click="scrollToSection('branches')">Branches</a>
+          <a href="#menu" class="navbar-link" @click="scrollToSection('menu')">Menu</a>
+          <a href="#careers" class="navbar-link" @click="scrollToSection('careers')">Careers</a>
+          <a href="#about" class="navbar-link" @click="scrollToSection('about')">About</a>
+        </div>
+      </div>
+    </nav>
+
+    <section class="hero" id="hero">
       <!-- LEFT content -->
       <div class="hero-left">
         <h1>
@@ -50,7 +79,7 @@
     </section>
 
     <!-- SCAFFOLD 2: WHITE SECTION -->
-    <section class="scaffold scaffold-white">
+    <section class="scaffold scaffold-white" id="branches">
       <div class="scaffold-content">
         <h2>Our Branches</h2>
         <div class="branches-grid">
@@ -80,7 +109,7 @@
     </section>
 
     <!-- SCAFFOLD 3: ORANGE SECTION -->
-    <section class="scaffold scaffold-orange" id="scaffold-3">
+    <section class="scaffold scaffold-orange" id="menu">
       <div class="scaffold-content">
         <div class="what-we-offer-header">
           <h2>What We Offer</h2>
@@ -249,7 +278,7 @@
     </section>
 
     <!-- SCAFFOLD 4: OPEN POSITIONS (CUSTOMER) -->
-    <section class="scaffold scaffold-white scaffold-4">
+    <section class="scaffold scaffold-white scaffold-4" id="careers">
       <div class="scaffold-content about-section">
         <div class="positions-section-intro">
           <span class="positions-section-kicker">Join the team</span>
@@ -308,7 +337,7 @@
     </section>
 
     <!-- SCAFFOLD 5: WHITE SECTION -->
-    <section class="scaffold scaffold-white scaffold-5">
+    <section class="scaffold scaffold-white scaffold-5" id="about">
       <div class="scaffold-content about-section">
 
         <h2>About CHIKIN TAYO</h2>
@@ -795,6 +824,8 @@ const showLoginLoader = ref(false)
 const loaderText = ref('Loading admin login...')
 const showScrollTop = ref(false)
 const hideAdminLogin = ref(false)
+const scrolled = ref(false)
+const mobileMenuOpen = ref(false)
 
 const chikintayoImg = new URL('../assets/chikintayo.jpg', import.meta.url).href
 const mrLoaderImg   = new URL('../assets/chikinlogo.png', import.meta.url).href
@@ -902,6 +933,7 @@ watch(products, (newProducts) => {
 
 function handleScroll() {
   showScrollTop.value = window.scrollY > 400
+  scrolled.value = window.scrollY > 50
 }
 
 onMounted(() => {
@@ -937,6 +969,7 @@ onMounted(() => {
 
   handleScroll()
   window.addEventListener('scroll', handleScroll, { passive: true })
+  window.addEventListener('resize', handleResize)
   loadBranches()
   loadProducts()
   loadComments()
@@ -1107,16 +1140,35 @@ function insertEmoji(productId, emoji) {
 }
 
 function scrollToScaffold1() {
-  const target = document.getElementById('scaffold-1')
+  const target = document.getElementById('hero')
   if (target) {
     target.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 }
 
 function scrollToScaffold3() {
-  const target = document.getElementById('scaffold-3')
+  const target = document.getElementById('menu')
   if (target) {
     target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+}
+
+function scrollToSection(sectionId) {
+  const target = document.getElementById(sectionId)
+  if (target) {
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    // Close mobile menu after clicking
+    mobileMenuOpen.value = false
+  }
+}
+
+function toggleMobileMenu() {
+  mobileMenuOpen.value = !mobileMenuOpen.value
+}
+
+function handleResize() {
+  if (window.innerWidth > 768 && mobileMenuOpen.value) {
+    mobileMenuOpen.value = false
   }
 }
 

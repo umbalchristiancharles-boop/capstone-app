@@ -273,28 +273,55 @@
   margin-top: auto;
   display: flex;
   justify-content: flex-start;
+  padding-top: 8px;
 }
 
 .btn-apply-now {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   border: 0;
-  border-radius: 16px;
-  padding: 12px 14px;
-  background: linear-gradient(135deg, rgba(255, 107, 28, 0.95), rgba(255, 140, 50, 0.95));
-  color: #fff;
-  font-weight: 950;
+  border-radius: 14px;
+  padding: 14px 28px;
+  background: linear-gradient(135deg, #ff6b1c 0%, #ff8c32 100%);
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
   cursor: pointer;
-  transition: transform 0.15s ease, background 0.15s ease, opacity 0.15s ease;
-  box-shadow: 0 14px 34px rgba(255, 107, 28, 0.10);
+  transition: all 0.2s ease;
+  box-shadow: 0 8px 24px rgba(255, 107, 28, 0.25);
+  min-width: 140px;
+}
+
+.btn-apply-now::before {
+  content: '→';
+  font-size: 1.1rem;
+  font-weight: 700;
+  transition: transform 0.2s ease;
 }
 
 .btn-apply-now:hover {
-  transform: translateY(-1px);
-  background: linear-gradient(135deg, rgba(255, 107, 28, 1), rgba(255, 140, 50, 1));
+  transform: translateY(-2px);
+  background: linear-gradient(135deg, #ff8c32 0%, #ff9f4d 100%);
+  box-shadow: 0 12px 32px rgba(255, 107, 28, 0.35);
+}
+
+.btn-apply-now:hover::before {
+  transform: translateX(3px);
+}
+
+.btn-apply-now:active {
+  transform: translateY(0);
+  box-shadow: 0 6px 18px rgba(255, 107, 28, 0.20);
 }
 
 .btn-apply-now:disabled {
-  opacity: 0.65;
+  opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: 0 4px 12px rgba(255, 107, 28, 0.15);
 }
 
 /* APPLY MODAL (Customer Landing) */
