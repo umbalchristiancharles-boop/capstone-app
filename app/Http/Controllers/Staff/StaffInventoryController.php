@@ -14,9 +14,11 @@ use App\Models\ProcurementRequest;
 use App\Models\SupplierOrder;
 use App\Models\SupplierAuditLog;
 use App\Models\LogisticsTransaction;
+use App\Models\InventoryLot;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Models\Product as ProductModel;
+use DateTime;
 
 class StaffInventoryController extends Controller
 {
@@ -149,12 +151,35 @@ class StaffInventoryController extends Controller
             ->orderBy('name')
             ->get();
 
+        // Get the earliest expiration date from inventory_lots for each product
+        $productIds = $products->pluck('id')->toArray();
+        $earliestExpiryByProduct = [];
+        
+        if (!empty($productIds)) {
+            $inventoryLots = InventoryLot::whereIn('product_id', $productIds)
+                ->where('branch_id', $branchId)
+                ->where('quantity', '>', 0)
+                ->select('product_id', DB::raw('MIN(expires_at) as earliest_expiry'))
+                ->groupBy('product_id')
+                ->get();
+            
+            foreach ($inventoryLots as $lot) {
+                $earliestExpiryByProduct[$lot->product_id] = $lot->earliest_expiry;
+            }
+        }
+
         // Deduplicate by normalized name: prefer published items, otherwise most recently updated.
         try {
             $map = [];
             foreach ($products as $p) {
                 $key = trim(strtolower($p->name ?? ''));
                 if ($key === '') continue;
+                
+                // Override expires_at with the earliest expiry from inventory_lots if available
+                if (isset($earliestExpiryByProduct[$p->id])) {
+                    $p->expires_at = $earliestExpiryByProduct[$p->id];
+                }
+                
                 if (!isset($map[$key])) {
                     $map[$key] = $p;
                     continue;
@@ -631,10 +656,57 @@ class StaffInventoryController extends Controller
                 }
 
                 if ($prod) {
-                    // Increment product stock by the counted delivered quantity
+                // Increment product stock by the counted delivered quantity
                     $prod->increment('stock', $incrementBy);
                     $prod->has_been_ordered = true;
                     $prod->logistics_request_available = false;
+
+// Create inventory lot for this delivered batch using supplier order expiry
+                    // (one lot per supplier-order line)
+                    try {
+                        // ProcurementRequest has id = procurement_request_id on supplier_orders.
+                        $supplierOrder = SupplierOrder::where('procurement_request_id', $proc->id)->first();
+                    } catch (\Throwable $_) {
+                        $supplierOrder = null;
+                    }
+
+                    // Create a lot row using supplier order expiry.
+                    // If supplier order or expiry is missing, skip lot creation for now.
+                    if ($supplierOrder) {
+                        // Prefer supplier_order.expires_at.
+                        $expiresAt = $supplierOrder->expires_at ?? null;
+
+                        // Fallback: some deployments might store expiry in a different column.
+                        if (empty($expiresAt)) {
+                            $expiresAt = $supplierOrder->expiry_date ?? $supplierOrder->expiry ?? $supplierOrder->expiration_date ?? null;
+                        }
+
+                        if (!empty($expiresAt)) {
+                            try {
+                                \App\Models\InventoryLot::create([
+                                    'branch_id' => $proc->branch_id,
+                                    'product_id' => $prod->id,
+                                    'supplier_order_id' => $supplierOrder->id,
+                                    'procurement_request_id' => $proc->id,
+                                    'quantity' => $incrementBy,
+                                    'expires_at' => $expiresAt,
+                                ]);
+                            } catch (\Throwable $_lot) {
+                                Log::warning('Failed to create inventory_lot on delivery', [
+                                    'supplier_order_id' => $supplierOrder->id ?? null,
+                                    'procurement_request_id' => $proc->id,
+                                    'product_id' => $prod->id,
+                                    'error' => $_lot->getMessage(),
+                                ]);
+                            }
+                        }
+                    }
+
+
+
+
+
+
 
                     // Optionally update cost/price similar to procurement completion logic
                     try {
@@ -788,6 +860,242 @@ class StaffInventoryController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to load variance alerts', ['error' => $e->getMessage()]);
             return response()->json(['error' => 'Failed to fetch variance alerts'], 500);
+        }
+    }
+
+    // POST /api/staff/inventory/expired-reports
+    public function submitExpiredReport(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) return response()->json(['error' => 'Unauthenticated'], 401);
+
+        $branchId = $user->branch_id;
+
+        $validated = $request->validate([
+            'product_id' => 'required|integer|exists:products,id',
+            'quantity' => 'sometimes|integer|min:1',
+            'notes' => 'nullable|string|max:2000',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+        ]);
+
+        // Verify product belongs to user's branch
+        $product = Product::where('id', $validated['product_id'])
+            ->where('branch_id', $branchId)
+            ->first();
+
+        if (!$product) {
+            return response()->json(['error' => 'Product not found or access denied'], 404);
+        }
+
+        // Auto-calculate expired quantity from inventory lots if not provided
+        $currentStock = (int) ($product->stock ?? 0);
+        $expiredQuantity = (int) ($validated['quantity'] ?? 0);
+
+        // If quantity not provided, auto-calculate from expired inventory lots
+        if ($expiredQuantity === 0) {
+            $expiredLots = InventoryLot::where('product_id', $product->id)
+                ->where('branch_id', $branchId)
+                ->where('expires_at', '<', now())
+                ->where('quantity', '>', 0)
+                ->get();
+
+            $expiredQuantity = $expiredLots->sum('quantity');
+
+            // If no expired lots found, check if the product itself has an expired date
+            if ($expiredQuantity === 0 && !empty($product->expires_at) && $product->expires_at < now()) {
+                // Use current stock as the expired quantity since the product itself is expired
+                $expiredQuantity = $currentStock;
+            }
+
+            if ($expiredQuantity === 0) {
+                return response()->json([
+                    'error' => 'No expired inventory lots found for this product. Please enter quantity manually.'
+                ], 400);
+            }
+        }
+
+        // Validate quantity doesn't exceed current stock
+        if ($expiredQuantity > $currentStock) {
+            return response()->json([
+                'error' => "Cannot report more expired units than current stock. Current stock: {$currentStock}, Requested: {$expiredQuantity}"
+            ], 400);
+        }
+
+        try {
+            DB::transaction(function () use ($product, $validated, $user, $branchId, $expiredQuantity, $currentStock) {
+                $imagePath = null;
+
+                if (request()->hasFile('image')) {
+                    $file = request()->file('image');
+                    $filename = 'expired_report_' . $product->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+                    $path = $file->storeAs('expired-reports', $filename, 'public');
+                    $imagePath = '/storage/' . $path;
+                }
+
+                // Deduct expired quantity from product stock
+                $newStock = $currentStock - $expiredQuantity;
+                $product->stock = $newStock;
+                $product->save();
+
+                // Deduct from inventory lots (FIFO - oldest expiry first)
+                $remainingToDeduct = $expiredQuantity;
+                $expiredLots = InventoryLot::where('product_id', $product->id)
+                    ->where('branch_id', $branchId)
+                    ->where('quantity', '>', 0)
+                    ->orderBy('expires_at', 'asc')
+                    ->get();
+
+                foreach ($expiredLots as $lot) {
+                    if ($remainingToDeduct <= 0) break;
+
+                    $deductFromLot = min($remainingToDeduct, $lot->quantity);
+                    $lot->quantity = $lot->quantity - $deductFromLot;
+                    $lot->save();
+
+                    $remainingToDeduct -= $deductFromLot;
+                }
+
+                // Recompute persisted real_stock for the group after stock deduction
+                try {
+                    ProductModel::recomputeRealStockForGroup($product->branch_id, $product->sku, $product->name);
+                } catch (\Exception $e) {
+                    Log::warning('Failed to recompute real_stock after expired product report', [
+                        'error' => $e->getMessage(),
+                        'product_id' => $product->id
+                    ]);
+                }
+
+                // Create expired product report record
+                $report = \App\Models\ExpiredProductReport::create([
+                    'product_id' => $validated['product_id'],
+                    'branch_id' => $branchId,
+                    'reported_by' => $user->id,
+                    'quantity' => $expiredQuantity,
+                    'notes' => $validated['notes'] ?? null,
+                    'image_path' => $imagePath,
+                    'status' => 'pending',
+                ]);
+
+                Log::info('Expired product report submitted', [
+                    'report_id' => $report->id,
+                    'product_id' => $product->id,
+                    'product_name' => $product->name,
+                    'quantity_expired' => $expiredQuantity,
+                    'previous_stock' => $currentStock,
+                    'new_stock' => $newStock,
+                    'branch_id' => $branchId,
+                    'reported_by' => $user->id,
+                ]);
+            });
+
+            return response()->json([
+                'ok' => true,
+                'message' => 'Expired product report submitted successfully',
+            ], 201);
+        } catch (\Exception $e) {
+            Log::error('Failed to submit expired product report', [
+                'error' => $e->getMessage(),
+                'product_id' => $validated['product_id'],
+                'branch_id' => $branchId,
+            ]);
+            return response()->json(['error' => 'Failed to submit report: ' . $e->getMessage()], 500);
+        }
+    }
+
+    // GET /api/staff/inventory/expired-products
+    public function getExpiredProducts(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) return response()->json(['error' => 'Unauthenticated'], 401);
+
+        $branchId = $user->branch_id;
+
+        try {
+            // Get all expired product reports for this branch with product details
+            $reports = \App\Models\ExpiredProductReport::with(['product', 'reporter'])
+                ->where('branch_id', $branchId)
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            $payload = $reports->map(function ($report) {
+                // Get all inventory lots for this product to show expiry history
+                $inventoryLots = InventoryLot::where('product_id', $report->product_id)
+                    ->where('branch_id', $report->branch_id)
+                    ->orderBy('expires_at', 'desc')
+                    ->get(['id', 'quantity', 'expires_at', 'created_at']);
+
+                return [
+                    'id' => $report->id,
+                    'product_id' => $report->product_id,
+                    'product_name' => $report->product?->name,
+                    'product_sku' => $report->product?->sku,
+                    'product_stock' => $report->product?->stock ?? 0,
+                    'product_price' => $report->product?->price ?? 0,
+                    'expires_at' => $report->product?->expires_at,
+                    'notes' => $report->notes,
+                    'image_path' => $report->image_path,
+                    'status' => $report->status,
+                    'reported_by' => $report->reporter?->full_name ?? $report->reporter?->username ?? 'Unknown',
+                    'created_at' => $report->created_at,
+                    'inventory_lots' => $inventoryLots,
+                ];
+            });
+
+            return response()->json(['ok' => true, 'data' => $payload]);
+        } catch (\Exception $e) {
+            Log::error('Failed to load expired products', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to fetch expired products'], 500);
+        }
+    }
+
+    // GET /api/staff/inventory/products/{id}/inventory-lots
+    public function getProductInventoryLots(Request $request, $id)
+    {
+        $user = $request->user();
+        if (!$user) return response()->json(['error' => 'Unauthenticated'], 401);
+
+        $branchId = $user->branch_id;
+
+        try {
+            // Verify product belongs to user's branch
+            $product = Product::where('id', $id)
+                ->where('branch_id', $branchId)
+                ->first();
+
+            if (!$product) {
+                return response()->json(['error' => 'Product not found or access denied'], 404);
+            }
+
+            // Get all inventory lots for this product
+            $lots = InventoryLot::where('product_id', $id)
+                ->where('branch_id', $branchId)
+                ->orderBy('expires_at', 'asc')
+                ->get();
+
+            $totalQuantity = $lots->sum('quantity');
+
+            $payload = [
+                'product_id' => $id,
+                'product_name' => $product->name,
+                'current_stock' => $product->stock,
+                'total_lot_quantity' => $totalQuantity,
+                'lots' => $lots->map(function ($lot) {
+                    return [
+                        'id' => $lot->id,
+                        'quantity' => $lot->quantity,
+                        'expires_at' => $lot->expires_at,
+                        'supplier_order_id' => $lot->supplier_order_id,
+                        'procurement_request_id' => $lot->procurement_request_id,
+                        'created_at' => $lot->created_at,
+                        'is_expired' => $lot->expires_at < now(),
+                    ];
+                }),
+            ];
+
+            return response()->json(['ok' => true, 'data' => $payload]);
+        } catch (\Exception $e) {
+            Log::error('Failed to load inventory lots', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to fetch inventory lots'], 500);
         }
     }
 }

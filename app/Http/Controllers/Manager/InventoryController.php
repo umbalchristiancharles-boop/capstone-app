@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Product;
+use App\Models\InventoryLot;
 use Illuminate\Support\Facades\DB;
 
 class InventoryController extends Controller
@@ -40,9 +41,33 @@ class InventoryController extends Controller
         }
 
         $products = $productsQuery
-            ->select('id', 'name', 'slug', 'price', 'stock', 'real_stock', 'min_stock', 'sku', 'branch_id', 'supplier_name', 'is_published', 'created_at', 'updated_at')
+            ->select('id', 'name', 'slug', 'price', 'stock', 'real_stock', 'min_stock', 'sku', 'branch_id', 'supplier_name', 'is_published', 'created_at', 'updated_at', 'expires_at')
             ->orderBy('name', 'asc')
             ->get();
+
+        // Get the earliest expiration date from inventory_lots for each product
+        $productIds = $products->pluck('id')->toArray();
+        $earliestExpiryByProduct = [];
+        
+        if (!empty($productIds)) {
+            $inventoryLots = InventoryLot::whereIn('product_id', $productIds)
+                ->where('branch_id', $branchId)
+                ->where('quantity', '>', 0)
+                ->select('product_id', DB::raw('MIN(expires_at) as earliest_expiry'))
+                ->groupBy('product_id')
+                ->get();
+            
+            foreach ($inventoryLots as $lot) {
+                $earliestExpiryByProduct[$lot->product_id] = $lot->earliest_expiry;
+            }
+        }
+
+        // Override expires_at with the earliest expiry from inventory_lots if available
+        foreach ($products as $product) {
+            if (isset($earliestExpiryByProduct[$product->id])) {
+                $product->expires_at = $earliestExpiryByProduct[$product->id];
+            }
+        }
 
         return response()->json([
             'success' => true,

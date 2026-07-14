@@ -128,7 +128,7 @@ class SupplierOrderController extends Controller
             }
 
             if ($existingProduct) {
-                // Update existing product fields
+                // Update existing product fields (but NOT expiry date - that's now at order level)
                 Log::info('submitProduct: updating existing product', ['product_id' => $existingProduct->id, 'category' => $validated['category']]);
                 $existingProduct->update([
                     'name' => $validated['name'],
@@ -144,7 +144,7 @@ class SupplierOrderController extends Controller
                     'branch_id' => $order->branch_id,
                     'supplier_id' => $user->id,
                     'supplier_name' => $user->full_name ?? $user->username,
-                    'expires_at' => $validated['expires_at'],
+                    // 'expires_at' => $validated['expires_at'], // REMOVED - expiry now tracked at order level
                     'date_made' => $validated['date_made'] ?? null,
                     'is_published' => 1,
                     'is_active' => 1,
@@ -154,7 +154,7 @@ class SupplierOrderController extends Controller
                 $product = $existingProduct;
                 Log::info('submitProduct: product updated successfully', ['product_id' => $product->id, 'saved_category' => $product->fresh()->category]);
             } else {
-                // Create new product
+                // Create new product (without expiry date - that's now at order level)
                 Log::info('submitProduct: creating new product', ['category' => $validated['category']]);
                 $product = $ProductModel::create([
                     'name' => $validated['name'],
@@ -170,7 +170,7 @@ class SupplierOrderController extends Controller
                     'branch_id' => $order->branch_id,
                     'supplier_id' => $user->id,
                     'supplier_name' => $user->full_name ?? $user->username,
-                    'expires_at' => $validated['expires_at'],
+                    // 'expires_at' => $validated['expires_at'], // REMOVED - expiry now tracked at order level
                     'date_made' => $validated['date_made'] ?? null,
                     'is_published' => 1,
                     'is_active' => 1,
@@ -184,8 +184,15 @@ class SupplierOrderController extends Controller
             } catch (\Exception $e) {
                 Log::warning('Failed to recompute real_stock after supplier submitProduct', ['error' => $e->getMessage(), 'product_id' => $product->id, 'order_id' => $order->id]);
             }
-            // Attach product to supplier order
-            $order->update(['product_id' => $product->id]);
+            // Attach product to supplier order.
+            // NOTE: Do NOT update Product.expires_at here, to prevent overwriting expiry of existing inventory.
+            $order->update([
+                'product_id' => $product->id,
+                // expiry at order level can be set later when supplier completes the transaction
+                // 'expires_at' => $validated['expires_at'],
+                'date_made' => $validated['date_made'] ?? null,
+            ]);
+
 
             // Update linked procurement request with price/total only on first confirmation
             // Do NOT update product_id - each SupplierOrder has their own product
@@ -239,8 +246,19 @@ class SupplierOrderController extends Controller
             }
 
             $validated = $request->validate([
-                'status' => 'required|in:pending,fulfilled,cancelled,on_delivery'
+                'status' => 'required|in:pending,fulfilled,cancelled,on_delivery',
+                'expires_at' => 'nullable|date_format:Y-m-d\\TH:i',
             ]);
+
+            // When supplier completes/accepts -> requires expiry date
+            $newStatus = $validated['status'];
+            if ($newStatus === 'on_delivery') {
+                if (empty($validated['expires_at'])) {
+                    return response()->json(['error' => 'expires_at is required when status is on_delivery'], 422);
+                }
+            }
+
+
 
             // Handle fulfillment and on-delivery: update order and update linked procurement request appropriately
             if ($validated['status'] === 'fulfilled' || $validated['status'] === 'on_delivery') {
@@ -252,7 +270,10 @@ class SupplierOrderController extends Controller
                     $order->update([
                         'status' => $newStatus,
                         'fulfilled_at' => $newStatus === 'fulfilled' ? now() : $order->fulfilled_at,
+                        // expiry is stored per supplier order (batch), so later orders won't overwrite previous ones
+                        'expires_at' => ($newStatus === 'on_delivery') ? $validated['expires_at'] : $order->expires_at,
                     ]);
+
 
                     Log::info('SupplierOrder status updated', [
                         'order_id' => $order->id,

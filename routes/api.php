@@ -462,6 +462,9 @@ Route::prefix('manager')->middleware('auth:sanctum,web')->group(function () {
             Route::get('/inventory/confirmed-procurements', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'confirmedProcurements']);
             Route::get('/inventory/variance-alerts', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'varianceAlerts']);
             Route::post('/inventory/procurements/{id}/confirm-stock', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'confirmProcurementStock']);
+            Route::post('/inventory/expired-reports', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'submitExpiredReport']);
+            Route::get('/inventory/expired-products', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'getExpiredProducts']);
+            Route::get('/inventory/products/{id}/inventory-lots', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'getProductInventoryLots']);
 
             // Backwards-compatible aliases (old frontend used these paths)
             Route::post('/inventory/store', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'store']);

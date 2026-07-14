@@ -55,6 +55,7 @@
                 <th>Qty</th>
                 <th>Variance</th>
                 <th>Total</th>
+                <th>Expiry Date</th>
                 <th>Status</th>
                 <th>Action</th>
               </tr>
@@ -66,6 +67,7 @@
                 <td>{{ order.quantity }}</td>
                 <td>{{ formatVariance(order.procurementRequest?.variance_quantity) }}</td>
                 <td>{{ formatPrice(order.product?.price * order.quantity) }}</td>
+                <td>{{ order.expires_at ? formatDate(order.expires_at) : 'N/A' }}</td>
                 <td>
                   <span :class="['status-badge', getStatusClass(order.status)]">
                     {{ order.status }}
@@ -104,7 +106,7 @@
                 </td>
               </tr>
               <tr v-if="orders.length === 0">
-                <td colspan="6" class="empty-message">No orders yet.</td>
+                <td colspan="8" class="empty-message">No orders yet.</td>
               </tr>
             </tbody>
             </table>
@@ -128,12 +130,10 @@
                 <div class="product-type" v-if="p.per_pack_or_individual" :class="'type-' + p.per_pack_or_individual">
                   {{ formatPricingType(p.per_pack_or_individual) }}
                 </div>
-                <div class="product-meta">
-                  <div class="product-price">{{ formatPrice(p.price) }}</div>
-                  <div class="product-expiry" v-if="p.expires_at">
-                    <span class="expiry-label">Expires:</span> {{ formatDate(p.expires_at) }}
-                  </div>
-                </div>
+            <div class="product-meta">
+              <div class="product-price">{{ formatPrice(p.price) }}</div>
+              <!-- Expiry is now tracked at order level, not product level -->
+            </div>
               </div>
             </div>
               </section>
@@ -165,27 +165,165 @@
   <!-- RECEIPT MODAL -->
   <transition name="fade">
     <div v-if="showReceiptModal" class="modal-backdrop">
-      <div class="receipt-box">
-        <h3>Transaction Receipt</h3>
-        <div class="receipt-body">
-          <p><strong>Order ID:</strong> {{ receiptData.id }}</p>
-          <p><strong>Product:</strong> {{ receiptData.product?.name }}</p>
-          <p><strong>Branch:</strong> {{ receiptData.branch?.name || receiptData.branch_id }}</p>
-          <p><strong>Quantity:</strong> {{ receiptData.quantity }}</p>
-          <p><strong>Total:</strong> {{ formatPrice(receiptData.product?.price * receiptData.quantity) }}</p>
-          <p><strong>Status:</strong> <span :class="['status-badge', getStatusClass(receiptData.status)]">{{ receiptData.status }}</span></p>
-          <div v-if="receiptData.procurementRequest">
-            <p><strong>Procurement Request ID:</strong> {{ receiptData.procurementRequest.id }}</p>
-            <p><strong>Procurement Status:</strong> {{ receiptData.procurementRequest.status }}</p>
+      <div class="receipt-box receipt-box-enhanced">
+        <div class="receipt-header">
+          <div class="receipt-logo">
+            <img :src="logoImg" alt="Chikin Tayo" class="receipt-logo-img" />
+          </div>
+          <div class="receipt-title-section">
+            <h3 class="receipt-title">Transaction Receipt</h3>
+            <p class="receipt-subtitle">Official Delivery Confirmation</p>
           </div>
         </div>
-        <div class="receipt-actions">
-          <button class="btn-secondary" @click="closeReceipt">Close</button>
-          <button class="btn-primary" @click="printReceipt">Print</button>
+
+        <div class="receipt-body">
+          <!-- Order Information Section -->
+          <div class="receipt-section">
+            <div class="receipt-section-header">
+              <span class="section-icon">📋</span>
+              <h4>Order Information</h4>
+            </div>
+            <div class="receipt-details-grid">
+              <div class="receipt-detail-item">
+                <span class="detail-label">Order ID</span>
+                <span class="detail-value">{{ receiptData.id }}</span>
+              </div>
+              <div class="receipt-detail-item">
+                <span class="detail-label">Order Date</span>
+                <span class="detail-value">{{ formatDate(receiptData.created_at || receiptData.createdAt) }}</span>
+              </div>
+              <div class="receipt-detail-item">
+                <span class="detail-label">Status</span>
+                <span class="detail-value">
+                  <span :class="['status-badge', getStatusClass(receiptData.status)]">{{ receiptData.status }}</span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Product Details Section -->
+          <div class="receipt-section">
+            <div class="receipt-section-header">
+              <span class="section-icon">📦</span>
+              <h4>Product Details</h4>
+            </div>
+            <div class="receipt-details-grid">
+              <div class="receipt-detail-item full-width">
+                <span class="detail-label">Product Name</span>
+                <span class="detail-value detail-value-bold">{{ receiptData.product?.name }}</span>
+              </div>
+              <div class="receipt-detail-item">
+                <span class="detail-label">Category</span>
+                <span class="detail-value">{{ receiptData.product?.category || 'N/A' }}</span>
+              </div>
+              <div class="receipt-detail-item">
+                <span class="detail-label">Pricing Type</span>
+                <span class="detail-value">{{ formatPricingType(receiptData.product?.per_pack_or_individual) }}</span>
+              </div>
+              <div class="receipt-detail-item">
+                <span class="detail-label">Unit Price</span>
+                <span class="detail-value detail-value-price">{{ formatPrice(receiptData.product?.price) }}</span>
+              </div>
+              <div class="receipt-detail-item">
+                <span class="detail-label">Quantity</span>
+                <span class="detail-value detail-value-bold">{{ receiptData.quantity }} units</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Delivery Information Section -->
+          <div class="receipt-section">
+            <div class="receipt-section-header">
+              <span class="section-icon">🚚</span>
+              <h4>Delivery Information</h4>
+            </div>
+            <div class="receipt-details-grid">
+              <div class="receipt-detail-item">
+                <span class="detail-label">Branch</span>
+                <span class="detail-value">{{ receiptData.branch?.name || receiptData.branch_id }}</span>
+              </div>
+              <div class="receipt-detail-item">
+                <span class="detail-label">Variance</span>
+                <span class="detail-value">{{ formatVariance(receiptData.procurementRequest?.variance_quantity) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Financial Summary Section -->
+          <div class="receipt-section receipt-section-highlight">
+            <div class="receipt-section-header">
+              <span class="section-icon">💰</span>
+              <h4>Financial Summary</h4>
+            </div>
+            <div class="receipt-financial-summary">
+              <div class="receipt-financial-row">
+                <span class="financial-label">Unit Price</span>
+                <span class="financial-value">{{ formatPrice(receiptData.product?.price) }}</span>
+              </div>
+              <div class="receipt-financial-row">
+                <span class="financial-label">Quantity</span>
+                <span class="financial-value">× {{ receiptData.quantity }}</span>
+              </div>
+              <div class="receipt-divider"></div>
+              <div class="receipt-financial-row receipt-total-row">
+                <span class="financial-label">Total Amount</span>
+                <span class="financial-value financial-total">{{ formatPrice(receiptData.product?.price * receiptData.quantity) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Procurement Information Section -->
+          <div v-if="receiptData.procurementRequest" class="receipt-section">
+            <div class="receipt-section-header">
+              <span class="section-icon">📊</span>
+              <h4>Procurement Details</h4>
+            </div>
+            <div class="receipt-details-grid">
+              <div class="receipt-detail-item">
+                <span class="detail-label">Procurement Request ID</span>
+                <span class="detail-value">#{{ receiptData.procurementRequest.id }}</span>
+              </div>
+              <div class="receipt-detail-item">
+                <span class="detail-label">Procurement Status</span>
+                <span class="detail-value">{{ formatProcurementStatus(receiptData.procurementRequest.status) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Estimated Delivery Section -->
+          <div class="receipt-section receipt-section-delivery">
+            <div class="receipt-section-header">
+              <span class="section-icon">⏰</span>
+              <h4>Estimated Delivery</h4>
+            </div>
+            <div class="delivery-input-group">
+              <div class="form-group">
+                <label>Estimated Delivery Date & Time</label>
+                <input 
+                  v-model="estimatedDeliveryDateTime" 
+                  type="datetime-local" 
+                  class="delivery-input"
+                  :min="getCurrentDateTimeLocal()"
+                />
+                <span class="form-hint">Please provide your estimated delivery schedule</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="receipt-footer">
+          <div class="receipt-footer-info">
+            <p class="receipt-print-info">Receipt generated on {{ formatDate(new Date().toISOString()) }}</p>
+          </div>
+          <div class="receipt-actions">
+            <button class="btn-secondary" @click="closeReceipt">Close</button>
+            <button class="btn-primary" @click="printReceipt">Print Receipt</button>
+          </div>
         </div>
       </div>
     </div>
   </transition>
+
   <!-- Submit product modal for supplier to add product and price -->
   <transition name="fade">
     <div v-if="supplierSubmitModalVisible" class="modal-backdrop" @click.self="closeSupplierSubmitModal">
@@ -438,6 +576,7 @@ const overlayText = ref('Logging out...')
 // Receipt modal state
 const showReceiptModal = ref(false)
 const receiptData = ref({})
+const estimatedDeliveryDateTime = ref('')
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
 // Supplier submit modal state
 const supplierSubmitModalVisible = ref(false)
@@ -698,24 +837,49 @@ async function fulfillOrder(id) {
 
 async function completeTransaction(id) {
   try {
+    // Ask supplier to provide expiry at transaction complete (required)
     const result = await Swal.fire({
       title: 'Complete Transaction?',
-      text: 'This transaction will be marked as on delivery and the receipt will be shown.',
+      html: `
+        <div style="text-align:left; margin-top:10px;">
+          <div style="font-weight:700; margin-bottom:6px;">Expiration date (required)</div>
+          <input id="supplier-expiry-input" type="datetime-local" style="width:100%; padding:10px; border-radius:8px; border:1px solid #d1d5db;" />
+          <div style="color:#6b7280; font-size:12px; margin-top:6px;">This expiry is stored per supplier order, not per product.</div>
+        </div>
+      `,
       icon: 'info',
       showCancelButton: true,
       confirmButtonText: 'Yes, Complete',
       cancelButtonText: 'Cancel',
       confirmButtonColor: '#28a745',
-      cancelButtonColor: '#6c757d'
+      cancelButtonColor: '#6c757d',
+      preConfirm: () => {
+        const el = document.getElementById('supplier-expiry-input')
+        const v = el ? el.value : ''
+        if (!v) {
+          Swal.showValidationMessage('Expiry date is required')
+          return false
+        }
+        // Convert datetime-local value (YYYY-MM-DDTHH:mm) to what backend expects
+        return v
+      }
     })
+
     if (!result.isConfirmed) return
-    
-    // Mark the supplier order as on_delivery so the backend finalizes procurement
-    const res = await axios.put(`/api/supplier-orders/${id}/status`, { status: 'on_delivery' }, { withCredentials: true })
+
+    // Mark the supplier order as on_delivery and store expiry
+    const expiresAt = result.value
+    const res = await axios.put(
+      `/api/supplier-orders/${id}/status`,
+      { status: 'on_delivery', expires_at: expiresAt },
+      { withCredentials: true }
+    )
+
     if (res && res.data) {
       receiptData.value = normalizeSupplierOrder(res.data)
       showReceiptModal.value = true
     }
+
     try {
       await loadOrders()
     } catch (loadErr) {
@@ -726,6 +890,7 @@ async function completeTransaction(id) {
     showToast('Failed to complete transaction', 'error')
   }
 }
+
 
 function openSupplierSubmitModal(order) {
   // Prefill product name if procurement request provides it
@@ -870,29 +1035,255 @@ async function submitProductForm() {
 function closeReceipt() {
   showReceiptModal.value = false
   receiptData.value = {}
+  estimatedDeliveryDateTime.value = ''
 }
 
 function printReceipt() {
   try {
-    const html = document.createElement('div')
-    html.innerHTML = `
-      <h3>Transaction Receipt</h3>
-      <p>Order ID: ${receiptData.value.id || ''}</p>
-      <p>Product: ${receiptData.value.product?.name || ''}</p>
-      <p>Branch: ${receiptData.value.branch?.name || receiptData.value.branch_id || ''}</p>
-      <p>Quantity: ${receiptData.value.quantity || ''}</p>
-      <p>Total: ${receiptData.value.product ? (Number(receiptData.value.product.price || 0) * Number(receiptData.value.quantity || 0)).toFixed(2) : ''}</p>
+    const orderDate = receiptData.value.created_at || receiptData.value.createdAt || new Date().toISOString()
+    const deliveryDate = estimatedDeliveryDateTime.value ? new Date(estimatedDeliveryDateTime.value).toLocaleString() : 'Not specified'
+    
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Transaction Receipt - Order #${receiptData.value.id}</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: 'Arial', sans-serif; 
+            padding: 20px; 
+            color: #1f2937;
+            max-width: 800px;
+            margin: 0 auto;
+          }
+          .receipt-container {
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 30px;
+            background: white;
+          }
+          .receipt-header {
+            text-align: center;
+            border-bottom: 3px solid #0b6e3a;
+            padding-bottom: 20px;
+            margin-bottom: 25px;
+          }
+          .receipt-header h1 {
+            color: #0b6e3a;
+            font-size: 28px;
+            margin-bottom: 5px;
+          }
+          .receipt-header p {
+            color: #6b7280;
+            font-size: 14px;
+          }
+          .section {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: #f9fafb;
+            border-radius: 8px;
+            border-left: 4px solid #7c3aed;
+          }
+          .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          }
+          .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+          }
+          .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+          }
+          .detail-label {
+            font-weight: 600;
+            color: #6b7280;
+            font-size: 14px;
+          }
+          .detail-value {
+            color: #111827;
+            font-size: 14px;
+            font-weight: 500;
+          }
+          .financial-summary {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #0b6e3a;
+          }
+          .financial-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 15px;
+          }
+          .financial-total {
+            border-top: 2px solid #e5e7eb;
+            margin-top: 8px;
+            padding-top: 12px;
+            font-size: 20px;
+            font-weight: 700;
+            color: #0b6e3a;
+          }
+          .footer {
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 2px solid #e5e7eb;
+            text-align: center;
+            color: #6b7280;
+            font-size: 12px;
+          }
+          .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+          }
+          .status-approved { background: #d1fae5; color: #065f46; }
+          .status-pending { background: #fef3c7; color: #92400e; }
+          .status-on-delivery { background: #dbeafe; color: #1e40af; }
+          .status-rejected { background: #fee2e2; color: #991b1c; }
+        </style>
+      </head>
+      <body>
+        <div class="receipt-container">
+          <div class="receipt-header">
+            <h1>🏪 Chikin Tayo</h1>
+            <p>Transaction Receipt - Official Delivery Confirmation</p>
+          </div>
+
+          <div class="section">
+            <div class="section-title">📋 Order Information</div>
+            <div class="details-grid">
+              <div class="detail-row">
+                <span class="detail-label">Order ID:</span>
+                <span class="detail-value">#${receiptData.value.id || ''}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Order Date:</span>
+                <span class="detail-value">${formatDate(orderDate)}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Status:</span>
+                <span class="detail-value">
+                  <span class="status-badge ${getStatusClass(receiptData.value.status).replace('status-', 'status-')}">${receiptData.value.status || ''}</span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">📦 Product Details</div>
+            <div class="details-grid">
+              <div class="detail-row" style="grid-column: 1 / -1;">
+                <span class="detail-label">Product Name:</span>
+                <span class="detail-value" style="font-weight: 700;">${receiptData.value.product?.name || ''}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Category:</span>
+                <span class="detail-value">${receiptData.value.product?.category || 'N/A'}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Pricing Type:</span>
+                <span class="detail-value">${formatPricingType(receiptData.value.product?.per_pack_or_individual)}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Unit Price:</span>
+                <span class="detail-value">${formatPrice(receiptData.value.product?.price)}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Quantity:</span>
+                <span class="detail-value" style="font-weight: 700;">${receiptData.value.quantity || 0} units</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">🚚 Delivery Information</div>
+            <div class="details-grid">
+              <div class="detail-row">
+                <span class="detail-label">Branch:</span>
+                <span class="detail-value">${receiptData.value.branch?.name || receiptData.value.branch_id || ''}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Variance:</span>
+                <span class="detail-value">${formatVariance(receiptData.value.procurementRequest?.variance_quantity)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">💰 Financial Summary</div>
+            <div class="financial-summary">
+              <div class="financial-row">
+                <span class="detail-label">Unit Price:</span>
+                <span class="detail-value">${formatPrice(receiptData.value.product?.price)}</span>
+              </div>
+              <div class="financial-row">
+                <span class="detail-label">Quantity:</span>
+                <span class="detail-value">× ${receiptData.value.quantity || 0}</span>
+              </div>
+              <div class="financial-row financial-total">
+                <span class="detail-label" style="font-size: 18px;">Total Amount:</span>
+                <span class="detail-value" style="color: #0b6e3a; font-size: 22px;">${formatPrice(receiptData.value.product?.price * receiptData.value.quantity)}</span>
+              </div>
+            </div>
+          </div>
+
+          ${receiptData.value.procurementRequest ? `
+          <div class="section">
+            <div class="section-title">📊 Procurement Details</div>
+            <div class="details-grid">
+              <div class="detail-row">
+                <span class="detail-label">Procurement Request ID:</span>
+                <span class="detail-value">#${receiptData.value.procurementRequest.id}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Procurement Status:</span>
+                <span class="detail-value">${formatProcurementStatus(receiptData.value.procurementRequest.status)}</span>
+              </div>
+            </div>
+          </div>
+          ` : ''}
+
+          <div class="section" style="border-left-color: #f59e0b;">
+            <div class="section-title">⏰ Estimated Delivery</div>
+            <div class="detail-row">
+              <span class="detail-label">Estimated Delivery Date & Time:</span>
+              <span class="detail-value" style="font-weight: 600;">${deliveryDate}</span>
+            </div>
+          </div>
+
+          <div class="footer">
+            <p><strong>Receipt generated on ${formatDate(new Date().toISOString())}</strong></p>
+            <p style="margin-top: 5px;">Thank you for your business!</p>
+          </div>
+        </div>
+      </body>
+      </html>
     `
-    const w = window.open('', '_blank')
-    if (!w) return alert('Unable to open print window')
-    w.document.write('<html><head><title>Receipt</title></head><body>')
-    w.document.write(html.innerHTML)
-    w.document.write('</body></html>')
+    
+    const w = window.open('', '_blank', 'width=800,height=600')
+    if (!w) return alert('Unable to open print window. Please allow popups for this site.')
+    w.document.write(html)
     w.document.close()
     w.focus()
-    w.print()
-    w.close()
-    } catch (e) {
+    setTimeout(() => {
+      w.print()
+      w.close()
+    }, 250)
+  } catch (e) {
     console.warn('Print failed', e)
     showToast('Failed to print receipt', 'error')
   }
@@ -999,6 +1390,34 @@ function formatPricingType(type) {
   return typeMap[type] || type
 }
 
+function getCurrentDateTimeLocal() {
+  try {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    const hours = String(now.getHours()).padStart(2, '0')
+    const minutes = String(now.getMinutes()).padStart(2, '0')
+    return `${year}-${month}-${day}T${hours}:${minutes}`
+  } catch (e) {
+    return ''
+  }
+}
+
+function formatProcurementStatus(status) {
+  if (!status) return 'N/A'
+  const statusMap = {
+    'pending_order_to_supplier': 'Pending Order to Supplier',
+    'delivery_pending': 'Delivery Pending',
+    'ongoing_delivery': 'Ongoing Delivery',
+    'on_delivery': 'On Delivery',
+    'delivered': 'Delivered',
+    'completed': 'Completed',
+    'cancelled': 'Cancelled'
+  }
+  return statusMap[status] || status
+}
+
 function onProductAdded(newProduct) {
   // If we already have products loaded, add the new one at top; otherwise try reloading
   try {
@@ -1098,6 +1517,282 @@ function onProfileUpdated(newData) {
 .form-group input, .form-group select { padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:0.95rem }
 .form-group input:focus, .form-group select:focus { outline:none; border-color:#7c3aed; box-shadow:0 0 0 3px rgba(124,58,237,0.1) }
 .error-msg { background:#fee2e2; color:#dc2626; padding:10px 12px; border-radius:8px; font-size:0.9rem; margin-top:8px }
+
+/* Enhanced Receipt Styles */
+.receipt-box-enhanced {
+  width: 600px;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 0;
+}
+
+.receipt-header {
+  background: linear-gradient(135deg, #0b6e3a 0%, #065f46 100%);
+  color: white;
+  padding: 20px 25px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  border-radius: 10px 10px 0 0;
+}
+
+.receipt-logo {
+  width: 60px;
+  height: 60px;
+  background: white;
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.receipt-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.receipt-title-section {
+  flex: 1;
+}
+
+.receipt-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+}
+
+.receipt-subtitle {
+  margin: 4px 0 0 0;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.receipt-body {
+  padding: 20px 25px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.receipt-section {
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 15px;
+  border-left: 4px solid #7c3aed;
+}
+
+.receipt-section-highlight {
+  background: #f0fdf4;
+  border-left-color: #0b6e3a;
+}
+
+.receipt-section-delivery {
+  background: #fffbeb;
+  border-left-color: #f59e0b;
+}
+
+.receipt-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.section-icon {
+  font-size: 1.2rem;
+}
+
+.receipt-section-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.receipt-details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.receipt-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.receipt-detail-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.detail-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-value {
+  font-size: 0.95rem;
+  color: #111827;
+  font-weight: 500;
+}
+
+.detail-value-bold {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.detail-value-price {
+  color: #0b6e3a;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.receipt-financial-summary {
+  background: white;
+  border-radius: 6px;
+  padding: 12px;
+  border: 2px solid #0b6e3a;
+}
+
+.receipt-financial-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  font-size: 0.95rem;
+}
+
+.financial-label {
+  color: #374151;
+  font-weight: 500;
+}
+
+.financial-value {
+  color: #111827;
+  font-weight: 600;
+}
+
+.receipt-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 8px 0;
+}
+
+.receipt-total-row {
+  padding-top: 10px;
+}
+
+.financial-total {
+  font-size: 1.3rem;
+  color: #0b6e3a;
+  font-weight: 700;
+}
+
+.receipt-footer {
+  padding: 15px 25px;
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+  border-radius: 0 0 10px 10px;
+}
+
+.receipt-footer-info {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.receipt-print-info {
+  font-size: 0.8rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.receipt-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.receipt-actions .btn-secondary { 
+  background:#f3f4f6; 
+  border:1px solid #e5e7eb; 
+  padding:8px 16px; 
+  border-radius:6px;
+  color: #374151;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.receipt-actions .btn-secondary:hover {
+  background: #e5e7eb;
+}
+
+.receipt-actions .btn-primary { 
+  background:#0b6e3a; 
+  color:#fff; 
+  padding:8px 16px; 
+  border-radius:6px; 
+  border:none;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.receipt-actions .btn-primary:hover {
+  background: #065f46;
+}
+
+/* Delivery Input Styles */
+.delivery-input-group {
+  margin-top: 8px;
+}
+
+.delivery-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: 'Arial', sans-serif;
+  transition: all 0.2s;
+}
+
+.delivery-input:focus {
+  outline: none;
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+
+.form-hint {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+@media (max-width: 640px) {
+  .receipt-box-enhanced {
+    width: 100%;
+  }
+  
+  .receipt-details-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .receipt-header {
+    flex-direction: column;
+    text-align: center;
+  }
+}
 
 /* Field selector for edit modal */
 .field-selector { display:flex; flex-wrap:wrap; gap:0.5rem; padding:0.5rem 0; border-bottom:1px solid #e5e7eb; margin-bottom:1rem }

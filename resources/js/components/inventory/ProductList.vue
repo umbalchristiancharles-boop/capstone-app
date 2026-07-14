@@ -87,7 +87,16 @@
                         </span>
                       </div>
                     </td>
-                    <td class="col-status"><span :class="['status-badge', statusClass(p)]">{{ statusLabel(p) }}</span></td>
+                    <td class="col-status">
+                      <span 
+                        v-if="statusLabel(p) === 'EXPIRED'" 
+                        class="status-badge status-expired" 
+                        style="cursor: pointer;"
+                        @click="$emit('report-expired', p)"
+                        title="Click to report expired product"
+                      >{{ statusLabel(p) }}</span>
+                      <span v-else :class="['status-badge', statusClass(p)]">{{ statusLabel(p) }}</span>
+                    </td>
                     <td class="col-actions">
                       <div class="table-actions">
                         <button v-if="showProcurementButton(p)" class="btn btn-primary btn-small" type="button" @click="$emit('request-procurement', p)">Request Procurement</button>
@@ -141,7 +150,16 @@
                       </span>
                     </div>
                   </td>
-                  <td class="col-status"><span :class="['status-badge', statusClass(p)]">{{ statusLabel(p) }}</span></td>
+                  <td class="col-status">
+                    <span 
+                      v-if="statusLabel(p) === 'EXPIRED'" 
+                      class="status-badge status-expired" 
+                      style="cursor: pointer;"
+                      @click="$emit('report-expired', p)"
+                      title="Click to report expired product"
+                    >{{ statusLabel(p) }}</span>
+                    <span v-else :class="['status-badge', statusClass(p)]">{{ statusLabel(p) }}</span>
+                  </td>
                   <td class="col-actions">
                     <div class="table-actions">
                       <button v-if="showProcurementButton(p)" class="btn btn-primary btn-small" type="button" @click="$emit('request-procurement', p)">Request Procurement</button>
@@ -187,7 +205,16 @@
                 <span v-else class="expiry-none">—</span>
                 <span v-if="expiryIndicatorLabel(p)" class="expiry-indicator" :class="expiryIndicatorClass(p)">{{ expiryIndicatorLabel(p) }}</span>
               </div>
-              <div class="card-meta"><span :class="['status-badge', statusClass(p)]">{{ statusLabel(p) }}</span></div>
+              <div class="card-meta">
+                <span 
+                  v-if="statusLabel(p) === 'EXPIRED'" 
+                  class="status-badge status-expired" 
+                  style="cursor: pointer;"
+                  @click="$emit('report-expired', p)"
+                  title="Click to report expired product"
+                >{{ statusLabel(p) }}</span>
+                <span v-else :class="['status-badge', statusClass(p)]">{{ statusLabel(p) }}</span>
+              </div>
               <div class="card-actions">
                 <button v-if="showProcurementButton(p)" type="button" class="btn btn-small btn-primary" @click="$emit('request-procurement', p)">Request Procurement</button>
                 <button v-if="props.showPublishControls && p.is_published" type="button" class="btn btn-small" @click="$emit('toggle-publish', { id: p.id, publish: false })">Unpublish</button>
@@ -231,7 +258,7 @@ const props = defineProps({
   showPublishControls: { type: Boolean, default: true }
 })
 
-const emit = defineEmits(['open-add', 'edit', 'delete', 'count', 'adjust', 'toggle-publish', 'request-procurement'])
+const emit = defineEmits(['open-add', 'edit', 'delete', 'count', 'adjust', 'toggle-publish', 'request-procurement', 'report-expired'])
 
 const q = ref('')
 const stockFilter = ref('all')

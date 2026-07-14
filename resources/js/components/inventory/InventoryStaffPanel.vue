@@ -71,7 +71,54 @@
         </div>
 
         <div v-else>
-          <ProductList :fetchUrl="fetchUrl" :compact="true" :showPublishControls="(staffProfile.role || '').toUpperCase() === 'ADMIN'" ref="productListRef" @edit="handleEdit" @delete="deleteProduct" @toggle-publish="handleTogglePublish" @request-procurement="requestProcurement" />
+          <ProductList :fetchUrl="fetchUrl" :compact="true" :showPublishControls="(staffProfile.role || '').toUpperCase() === 'ADMIN'" ref="productListRef" @edit="handleEdit" @delete="deleteProduct" @toggle-publish="handleTogglePublish" @request-procurement="requestProcurement" @report-expired="openExpiredReportModal" />
+        </div>
+      </div>
+
+      <!-- Expired Products Section -->
+      <div class="panel-section" v-if="expiredProducts.length > 0">
+        <h2 class="section-title" style="color: #dc3545;">⚠️ Expired Products</h2>
+        <p class="section-description">Products that have been reported as expired</p>
+
+        <div class="expired-products-table">
+          <table class="inventory-table">
+            <thead>
+              <tr>
+                <th>Product Name</th>
+                <th>SKU</th>
+                <th>Stock</th>
+                <th>Expired Date</th>
+                <th>Inventory Lots (Expiry History)</th>
+                <th>Reported By</th>
+                <th>Report Date</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="report in expiredProducts" :key="report.id" class="expired-row">
+                <td class="product-name">{{ report.product_name }}</td>
+                <td class="product-sku">{{ report.product_sku || 'N/A' }}</td>
+                <td class="product-stock">{{ report.product_stock }}</td>
+                <td class="product-expiry">{{ formatDate(report.expires_at) }}</td>
+                <td class="inventory-lots">
+                  <div v-if="report.inventory_lots && report.inventory_lots.length > 0" class="lots-list">
+                    <div v-for="lot in report.inventory_lots" :key="lot.id" class="lot-item" :class="{ 'lot-expired': lot.is_expired }">
+                      <span class="lot-quantity">{{ lot.quantity }} units</span>
+                      <span class="lot-date">{{ formatDate(lot.expires_at) }}</span>
+                    </div>
+                  </div>
+                  <span v-else class="no-lots">No lot data</span>
+                </td>
+                <td class="reported-by">{{ report.reported_by }}</td>
+                <td class="report-date">{{ formatDate(report.created_at) }}</td>
+                <td class="report-status">
+                  <span :class="['status-badge', getReportStatusClass(report.status)]">
+                    {{ getReportStatusLabel(report.status) }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -108,53 +155,146 @@
     </template>
   </OwnerPanelLayout>
 
-      <!-- Product-related modals removed from staff panel per request -->
-
-      <!-- INFO MODAL -->
-      <transition name="fade">
-        <div v-if="showInfoModal" class="info-backdrop">
-          <div class="info-modal">
-            <h3>Staff Information</h3>
-            <p class="info-sub">Personal details for this staff can be updated from this panel.</p>
-            <div class="info-grid">
-              <div class="info-row"><span class="info-label">Full name</span><span class="info-value" v-if="!isEditingInfo">{{ staffProfile.fullName }}</span>
-                <input v-else v-model="staffProfile.fullName" class="info-input" type="text" />
-              </div>
-              <div class="info-row"><span class="info-label">Role</span><span class="info-value">{{ staffProfile.role }}</span></div>
-              <div class="info-row"><span class="info-label">Username</span><span class="info-value" v-if="!isEditingInfo">{{ staffProfile.username }}</span>
-                <input v-else v-model="staffProfile.username" class="info-input" type="text" placeholder="Enter username" />
-              </div>
-              <div class="info-row"><span class="info-label">Email</span><span class="info-value" v-if="!isEditingInfo">{{ staffProfile.email }}</span>
-                <input v-else v-model="staffProfile.email" class="info-input" type="email" />
-              </div>
-              <div class="info-row"><span class="info-label">Contact</span><span class="info-value" v-if="!isEditingInfo">{{ staffProfile.contact }}</span>
-                <input v-else v-model="staffProfile.contact" class="info-input" type="text" />
-              </div>
-              <!-- Password fields - only shown when editing -->
-              <template v-if="isEditingInfo">
-                <div class="info-row info-row--password">
-                  <span class="info-label">New Password</span>
-                  <input v-model="staffProfile.password" class="info-input" type="password" placeholder="Leave blank to keep current" />
-                </div>
-                <div class="info-row info-row--password">
-                  <span class="info-label">Confirm Password</span>
-                  <input v-model="staffProfile.password_confirmation" class="info-input" type="password" placeholder="Re-enter new password" />
-                </div>
-              </template>
+  <!-- INFO MODAL -->
+  <transition name="fade">
+    <div v-if="showInfoModal" class="info-backdrop">
+      <div class="info-modal">
+        <h3>Staff Information</h3>
+        <p class="info-sub">Personal details for this staff can be updated from this panel.</p>
+        <div class="info-grid">
+          <div class="info-row"><span class="info-label">Full name</span><span class="info-value" v-if="!isEditingInfo">{{ staffProfile.fullName }}</span>
+            <input v-else v-model="staffProfile.fullName" class="info-input" type="text" />
+          </div>
+          <div class="info-row"><span class="info-label">Role</span><span class="info-value">{{ staffProfile.role }}</span></div>
+          <div class="info-row"><span class="info-label">Username</span><span class="info-value" v-if="!isEditingInfo">{{ staffProfile.username }}</span>
+            <input v-else v-model="staffProfile.username" class="info-input" type="text" placeholder="Enter username" />
+          </div>
+          <div class="info-row"><span class="info-label">Email</span><span class="info-value" v-if="!isEditingInfo">{{ staffProfile.email }}</span>
+            <input v-else v-model="staffProfile.email" class="info-input" type="email" />
+          </div>
+          <div class="info-row"><span class="info-label">Contact</span><span class="info-value" v-if="!isEditingInfo">{{ staffProfile.contact }}</span>
+            <input v-else v-model="staffProfile.contact" class="info-input" type="text" />
+          </div>
+          <!-- Password fields - only shown when editing -->
+          <template v-if="isEditingInfo">
+            <div class="info-row info-row--password">
+              <span class="info-label">New Password</span>
+              <input v-model="staffProfile.password" class="info-input" type="password" placeholder="Leave blank to keep current" />
             </div>
-            <div v-if="profileError" class="info-error">{{ profileError }}</div>
-            <div v-if="profileSuccess" class="info-success">{{ profileSuccess }}</div>
-            <div class="info-actions">
-              <button class="btn-outline" @click="handleInfoClose">{{ isEditingInfo ? ' Cancel' : 'Close' }}</button>
-              <button class="btn-primary" @click="isEditingInfo ? saveStaffInfo() : (isEditingInfo = true)" :disabled="isSavingProfile">
-                {{ isEditingInfo ? (isSavingProfile ? 'Saving...' : 'Save changes') : 'Edit information' }}
+            <div class="info-row info-row--password">
+              <span class="info-label">Confirm Password</span>
+              <input v-model="staffProfile.password_confirmation" class="info-input" type="password" placeholder="Re-enter new password" />
+            </div>
+          </template>
+        </div>
+        <div v-if="profileError" class="info-error">{{ profileError }}</div>
+        <div v-if="profileSuccess" class="info-success">{{ profileSuccess }}</div>
+        <div class="info-actions">
+          <button class="btn-outline" @click="handleInfoClose">{{ isEditingInfo ? ' Cancel' : 'Close' }}</button>
+          <button class="btn-primary" @click="isEditingInfo ? saveStaffInfo() : (isEditingInfo = true)" :disabled="isSavingProfile">
+            {{ isEditingInfo ? (isSavingProfile ? 'Saving...' : 'Save changes') : 'Edit information' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </transition>
+
+  <!-- EXPIRED PRODUCT REPORT MODAL -->
+  <transition name="fade">
+    <div v-if="showExpiredReportModal" class="info-backdrop" @click.self="closeExpiredReportModal">
+      <div class="info-modal" style="max-width: 600px;">
+        <h3>Report Expired Product</h3>
+        <p class="info-sub">Submit a report for the expired product: <strong>{{ expiredReportProduct?.name }}</strong></p>
+        
+        <div v-if="expiredReportError" class="info-error">{{ expiredReportError }}</div>
+        <div v-if="expiredReportSuccess" class="info-success">{{ expiredReportSuccess }}</div>
+        
+        <div class="info-grid">
+          <div class="info-row">
+            <span class="info-label">Product:</span>
+            <span class="info-value">{{ expiredReportProduct?.name }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">SKU:</span>
+            <span class="info-value">{{ expiredReportProduct?.sku || 'N/A' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Expired Date:</span>
+            <span class="info-value">{{ expiredReportProduct?.expires_at ? formatDate(expiredReportProduct.expires_at) : 'N/A' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Current Stock:</span>
+            <span class="info-value">{{ expiredReportProduct?.stock || 0 }}</span>
+          </div>
+          
+          <div class="info-row">
+            <span class="info-label">Expired Quantity:</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input 
+                v-model="expiredReportForm.quantity" 
+                type="number" 
+                min="1" 
+                :max="expiredReportProduct?.stock || 1"
+                class="info-input"
+                style="width: 120px;"
+                @input="validateExpiredQuantity"
+              />
+              <button 
+                type="button" 
+                class="btn-outline" 
+                style="padding: 6px 12px; font-size: 0.85rem;"
+                @click="autoFillExpiredQuantity"
+                title="Auto-fill quantity from expired inventory lots"
+              >
+                Auto-Fill
               </button>
+            </div>
+            <span v-if="expiredReportError" style="color: #dc3545; font-size: 0.85rem; margin-left: 8px;">{{ expiredReportError }}</span>
+            <div v-if="expiredReportProduct" style="font-size: 0.8rem; color: #666; margin-top: 4px;">
+              Current stock: {{ expiredReportProduct.stock || 0 }} | 
+              <span v-if="expiredLotsSummary">Expired lots: {{ expiredLotsSummary.quantity }} units ({{ expiredLotsSummary.count }} lots)</span>
+            </div>
+          </div>
+          
+          <div class="info-row info-row--full">
+            <span class="info-label">Report Notes:</span>
+            <textarea 
+              v-model="expiredReportForm.notes" 
+              class="info-input" 
+              rows="4" 
+              placeholder="Describe the issue with the expired product..."
+              style="width: 100%; resize: vertical;"
+            ></textarea>
+          </div>
+          
+          <div class="info-row info-row--full">
+            <span class="info-label">Product Image:</span>
+            <input 
+              type="file" 
+              accept="image/*" 
+              @change="onExpiredImageChange" 
+              class="info-input"
+              style="width: 100%;"
+            />
+            <div v-if="expiredReportForm.image" class="info-success" style="margin-top: 8px;">
+              Image selected: {{ expiredReportForm.image.name }}
             </div>
           </div>
         </div>
-      </transition>
-
-      <!-- Logout handled via SweetAlert2 popup; no local confirm modal -->
+        
+        <div class="info-actions">
+          <button class="btn-outline" @click="closeExpiredReportModal">Cancel</button>
+          <button 
+            class="btn-primary" 
+            @click="submitExpiredReport" 
+            :disabled="expiredReportSubmitting"
+          >
+            {{ expiredReportSubmitting ? 'Submitting...' : 'Submit Report' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </transition>
 </template>
 
 <script setup>
@@ -565,6 +705,63 @@ const countValue = ref(0);
 const adjust = ref({ delta: 0, note: '' });
 const newProduct = ref({ name: '', price: 0, stock: 0, sku: '' });
 const previewSku = ref('');
+
+// Expired product report modal state
+const showExpiredReportModal = ref(false);
+const expiredReportProduct = ref(null);
+const expiredReportForm = ref({
+  quantity: 1,
+  notes: '',
+  image: null
+});
+const expiredReportSubmitting = ref(false);
+const expiredReportError = ref('');
+const expiredReportSuccess = ref('');
+
+// Expired products list
+const expiredProducts = ref([]);
+const expiredProductsLoading = ref(false);
+
+// Expired lots summary for the modal
+const expiredLotsSummary = ref(null);
+
+// Fetch expired products from the server
+async function fetchExpiredProducts() {
+  expiredProductsLoading.value = true
+  try {
+    const res = await axios.get('/api/staff/inventory/expired-products', { withCredentials: true })
+    if (res.data && res.data.ok) {
+      expiredProducts.value = res.data.data || []
+    } else {
+      expiredProducts.value = []
+    }
+  } catch (e) {
+    console.error('Failed to fetch expired products:', e)
+    expiredProducts.value = []
+  } finally {
+    expiredProductsLoading.value = false
+  }
+}
+
+// Helper functions for expired product reports
+function getReportStatusLabel(status) {
+  const labels = {
+    'pending': 'Pending Review',
+    'reviewed': 'Reviewed',
+    'resolved': 'Resolved'
+  }
+  return labels[status] || status || 'Unknown'
+}
+
+function getReportStatusClass(status) {
+  const classes = {
+    'pending': 'status-pending',
+    'reviewed': 'status-reviewed',
+    'resolved': 'status-resolved'
+  }
+  return classes[status] || 'status-unknown'
+}
+
 // small helper to force ProductList to refresh after server changes
 function refreshList() {
   if (productListRef.value && typeof productListRef.value.fetchProducts === 'function') {
@@ -836,6 +1033,9 @@ onMounted(async () => {
   await fetchInventory()
 
   await loadPanelNotifications()
+
+  // fetch expired products
+  await fetchExpiredProducts()
 
   // attach click-away listener (defined in setup scope)
   try { document.addEventListener('click', onDocClick) } catch (e) {}
@@ -1205,6 +1405,148 @@ async function performClockOut() {
     setTimeout(() => { attendanceMessage.value = '' }, 3000)
   }
 }
+
+// Expired product report functions
+function openExpiredReportModal(product) {
+  expiredReportProduct.value = product
+  
+  // Set default quantity to 1, allowing user to manually enter the actual expired quantity
+  // This handles cases where some stock may be expired and some may be fresh
+  expiredReportForm.value = {
+    quantity: 1,
+    notes: '',
+    image: null
+  }
+  
+  expiredReportError.value = ''
+  expiredReportSuccess.value = ''
+  showExpiredReportModal.value = true
+}
+
+function closeExpiredReportModal() {
+  showExpiredReportModal.value = false
+  expiredReportProduct.value = null
+  expiredReportForm.value = {
+    quantity: 1,
+    notes: '',
+    image: null
+  }
+  expiredReportError.value = ''
+  expiredReportSuccess.value = ''
+}
+
+function validateExpiredQuantity() {
+  const maxStock = expiredReportProduct.value?.stock || 1
+  const quantity = parseInt(expiredReportForm.value.quantity)
+  
+  if (isNaN(quantity) || quantity < 1) {
+    expiredReportError.value = 'Quantity must be at least 1'
+    return false
+  }
+  
+  if (quantity > maxStock) {
+    expiredReportError.value = `Quantity cannot exceed current stock (${maxStock})`
+    return false
+  }
+  
+  expiredReportError.value = ''
+  return true
+}
+
+function onExpiredImageChange(event) {
+  const file = event.target.files[0]
+  expiredReportForm.value.image = file
+}
+
+// Auto-fill expired quantity from inventory lots
+async function autoFillExpiredQuantity() {
+  if (!expiredReportProduct.value) return
+  
+  try {
+    const productId = expiredReportProduct.value.id
+    const res = await axios.get(`/api/staff/inventory/products/${productId}/inventory-lots`, { withCredentials: true })
+    
+    if (res.data && res.data.ok && res.data.data) {
+      const lots = res.data.data.lots || []
+      const expiredLots = lots.filter(lot => lot.is_expired && lot.quantity > 0)
+      
+      if (expiredLots.length > 0) {
+        const totalExpired = expiredLots.reduce((sum, lot) => sum + lot.quantity, 0)
+        expiredReportForm.value.quantity = totalExpired
+        expiredLotsSummary.value = {
+          quantity: totalExpired,
+          count: expiredLots.length
+        }
+        expiredReportError.value = ''
+        showToast(`Auto-filled: ${totalExpired} units from ${expiredLots.length} expired lot(s)`, 'info')
+      } else {
+        expiredReportError.value = 'No expired inventory lots found for this product'
+        expiredLotsSummary.value = null
+      }
+    }
+  } catch (e) {
+    console.error('Failed to fetch inventory lots:', e)
+    expiredReportError.value = 'Failed to load inventory lots. Please enter quantity manually.'
+  }
+}
+
+// Fetch expired lots summary when modal opens
+watch(showExpiredReportModal, (isOpen) => {
+  if (isOpen && expiredReportProduct.value) {
+    // Reset summary when modal opens
+    expiredLotsSummary.value = null
+    // Pre-fetch the summary in the background
+    autoFillExpiredQuantity()
+  }
+})
+
+async function submitExpiredReport() {
+  if (!expiredReportProduct.value) return
+  
+  // Validate quantity before submission
+  if (!validateExpiredQuantity()) {
+    return
+  }
+  
+  expiredReportSubmitting.value = true
+  expiredReportError.value = ''
+  
+  try {
+    await ensureCsrf()
+    
+    const formData = new FormData()
+    formData.append('product_id', expiredReportProduct.value.id)
+    formData.append('quantity', expiredReportForm.value.quantity)
+    formData.append('notes', expiredReportForm.value.notes || '')
+    
+    if (expiredReportForm.value.image) {
+      formData.append('image', expiredReportForm.value.image)
+    }
+    
+    const res = await axios.post('/api/staff/inventory/expired-reports', formData, {
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+    
+    if (res.data && (res.data.ok || res.data.success)) {
+      showToast('Expired product report submitted successfully', 'success')
+      closeExpiredReportModal()
+      // Refresh the list to show updated data
+      refreshList()
+      // Refresh expired products list
+      fetchExpiredProducts()
+    } else {
+      throw new Error(res.data?.message || 'Failed to submit report')
+    }
+  } catch (e) {
+    console.error('Submit expired report error:', e)
+    expiredReportError.value = e.response?.data?.message || e.message || 'Failed to submit report'
+  } finally {
+    expiredReportSubmitting.value = false
+  }
+}
 </script>
 
 <style>
@@ -1415,6 +1757,165 @@ ProductList[compact] { width:100% }
 .pending-table th { font-size:0.85rem; color:#6b6b6b; padding:8px 6px; text-align:left }
 .pending-table td { font-size:0.95rem; padding:8px 6px; border-bottom:1px solid rgba(0,0,0,0.04) }
 .pending-table button.btn-primary { padding:6px 10px; font-size:0.88rem }
+
+/* Expired Products Table */
+.expired-products-table {
+  margin-top: 16px;
+  overflow-x: auto;
+}
+
+.expired-products-table .inventory-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.expired-products-table .inventory-table thead {
+  background: #fee2e2;
+}
+
+.expired-products-table .inventory-table thead th {
+  padding: 12px 16px;
+  font-weight: 700;
+  color: #7f1d1d;
+  font-size: 0.9rem;
+  text-align: left;
+  border-bottom: 2px solid #fecaca;
+}
+
+.expired-products-table .inventory-table tbody tr {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.15s ease;
+}
+
+.expired-products-table .inventory-table tbody tr:hover {
+  background: #fef2f2;
+}
+
+.expired-products-table .inventory-table tbody td {
+  padding: 12px 16px;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.expired-products-table .product-name {
+  font-weight: 600;
+  color: #991b1b;
+}
+
+.expired-products-table .product-sku {
+  font-family: monospace;
+  color: #666;
+}
+
+.expired-products-table .product-stock {
+  font-weight: 600;
+}
+
+.expired-products-table .product-expiry {
+  color: #dc3545;
+  font-weight: 600;
+}
+
+.expired-products-table .reported-by {
+  color: #555;
+}
+
+.expired-products-table .report-date {
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.expired-products-table .report-status {
+  text-align: center;
+}
+
+.expired-products-table .status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.expired-products-table .status-pending {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fbbf24;
+}
+
+.expired-products-table .status-reviewed {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #3b82f6;
+}
+
+.expired-products-table .status-resolved {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #10b981;
+}
+
+.expired-products-table .status-unknown {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+/* Inventory Lots Display */
+.inventory-lots {
+  min-width: 200px;
+}
+
+.lots-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lot-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  background: #f8fafc;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  border: 1px solid #e2e8f0;
+}
+
+.lot-item.lot-expired {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.lot-quantity {
+  font-weight: 600;
+  color: #334155;
+}
+
+.lot-item.lot-expired .lot-quantity {
+  color: #991b1b;
+}
+
+.lot-date {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.lot-item.lot-expired .lot-date {
+  color: #dc3545;
+  font-weight: 600;
+}
+
+.no-lots {
+  color: #94a3b8;
+  font-style: italic;
+  font-size: 0.85rem;
+}
 
 /* Inventory Summary Cards - below Attendance card */
 .inventory-summary {

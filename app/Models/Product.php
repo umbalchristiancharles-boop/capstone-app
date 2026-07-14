@@ -166,5 +166,10 @@ class Product extends Model
     {
         return $this->hasMany(DishIngredient::class);
     }
+
+    public function inventoryLots(): HasMany
+    {
+        return $this->hasMany(InventoryLot::class);
+    }
 }
 

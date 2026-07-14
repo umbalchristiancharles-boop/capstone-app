@@ -774,22 +774,30 @@ async function fetchAnnouncements() {
 // Ensure a fresh CSRF cookie/header is present before mutating requests
 async function ensureCsrf() {
   try {
-    await axios.get('/sanctum/csrf-cookie', { withCredentials: true });
-    const match = document.cookie.match(new RegExp('(^|; )' + 'XSRF-TOKEN' + '=([^;]*)'));
-    const token = match ? decodeURIComponent(match[2]) : null;
-    if (token) axios.defaults.headers.common['X-XSRF-TOKEN'] = token;
-    return true;
+    await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
+    const match = document.cookie.match(new RegExp('(^|; )' + 'XSRF-TOKEN' + '=([^;]*)'))
+    const token = match ? decodeURIComponent(match[2]) : null
+    return token
   } catch (e) {
-    return false;
+    return null
   }
 }
 
 async function submitProductRequest() {
   productRequestSubmitting.value = true
   try {
-    await ensureCsrf()
-    const payload = { name: productRequestForm.value.name, description: productRequestForm.value.description || null, unit: productRequestForm.value.unit || null }
-    const res = await axios.post('/api/product-requests', payload, { withCredentials: true })
+    const xsrf = await ensureCsrf()
+    const payload = {
+      name: productRequestForm.value.name,
+      description: productRequestForm.value.description || null,
+      unit: productRequestForm.value.unit || null,
+    }
+
+    const res = await axios.post('/api/product-requests', payload, {
+      withCredentials: true,
+      headers: xsrf ? { 'X-XSRF-TOKEN': xsrf } : {},
+    })
+
     showToast('Product request submitted for approval', 'success')
     showProductRequestForm.value = false
     productRequestForm.value = { name: '', description: '', unit: '' }
@@ -800,6 +808,7 @@ async function submitProductRequest() {
     productRequestSubmitting.value = false
   }
 }
+
 
 function cancelProductRequest() {
   showProductRequestForm.value = false
