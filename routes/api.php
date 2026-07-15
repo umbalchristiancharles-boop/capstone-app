@@ -573,4 +573,19 @@ Route::prefix('manager')->middleware('auth:sanctum,web')->group(function () {
         Route::get('/cities', [LocationController::class, 'cities']);
         Route::get('/barangays', [LocationController::class, 'barangays']);
     });
+
+    // ==========================================
+    // CUSTOMER REPORTS / CRM - Contact Admin
+    // ==========================================
+    // Public endpoint for customers to submit reports/contact requests
+    Route::post('/customer-reports', [\App\Http\Controllers\Api\CustomerReportController::class, 'store']);
+    
+    // Admin endpoints for managing customer reports
+    Route::middleware('auth')->group(function () {
+        Route::get('/customer-reports', [\App\Http\Controllers\Api\CustomerReportController::class, 'index']);
+        Route::get('/customer-reports/stats', [\App\Http\Controllers\Api\CustomerReportController::class, 'stats']);
+        Route::get('/customer-reports/{id}', [\App\Http\Controllers\Api\CustomerReportController::class, 'show']);
+        Route::put('/customer-reports/{id}', [\App\Http\Controllers\Api\CustomerReportController::class, 'update']);
+        Route::delete('/customer-reports/{id}', [\App\Http\Controllers\Api\CustomerReportController::class, 'destroy']);
+    });
 });

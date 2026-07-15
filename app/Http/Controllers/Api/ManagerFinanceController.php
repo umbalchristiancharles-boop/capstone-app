@@ -100,8 +100,16 @@ class ManagerFinanceController extends Controller
     /**
      * Get date range based on 'range' param (matches frontend filter-bar)
      */
-    private function getDateRange($range)
+    private function getDateRange($range, $startDate = null, $endDate = null)
     {
+        // Handle custom date range
+        if ($range === 'custom' && $startDate && $endDate) {
+            return [
+                \Carbon\Carbon::parse($startDate)->startOfDay(),
+                \Carbon\Carbon::parse($endDate)->endOfDay()
+            ];
+        }
+
         $now = now();
         switch ($range) {
             case 'today':
@@ -146,8 +154,10 @@ class ManagerFinanceController extends Controller
         }
 
         $range = $request->query('range', 'all');
-        $dateRange = $this->getDateRange($range);
-        
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+        $dateRange = $this->getDateRange($range, $startDate, $endDate);
+
         // If branch_id is provided in query, use it (for filtering view)
         // Otherwise use user's own branch_id
         $requestedBranchId = $request->query('branch_id');

@@ -49,14 +49,33 @@
       </div>
       <div class="filter-group">
         <label>Date Range:</label>
-        <select v-model="selectedRange" @change="onRangeChange">
+        <select v-model="selectedRange" @change="onRangeChange" class="range-select">
           <option value="today">Today</option>
           <option value="yesterday">Yesterday</option>
           <option value="thisWeek">This Week</option>
           <option value="thisMonth">This Month</option>
           <option value="lastMonth">Last Month</option>
+          <option value="custom">Custom Range</option>
           <option value="all">All Time</option>
         </select>
+        <div v-if="selectedRange === 'custom'" class="custom-date-range">
+          <input 
+            type="date" 
+            v-model="customStartDate" 
+            @change="onCustomDateChange"
+            :max="customEndDate || today"
+            class="date-input"
+          />
+          <span class="date-separator">to</span>
+          <input 
+            type="date" 
+            v-model="customEndDate" 
+            @change="onCustomDateChange"
+            :min="customStartDate"
+            :max="today"
+            class="date-input"
+          />
+        </div>
       </div>
       <button class="btn-refresh" @click="refreshDashboard">Refresh</button>
     </div>
@@ -625,6 +644,11 @@ const isMainBranchFinanceManager = computed(() => {
 // UI filter state (used by new layout controls)
 const selectedRange = ref('all')
 const selectedBranchId = ref('')
+const customStartDate = ref('')
+const customEndDate = ref('')
+const today = computed(() => {
+  return new Date().toISOString().split('T')[0]
+})
 
 // Budget requests state
 const budgetRequests = ref([])
@@ -946,6 +970,11 @@ async function loadInitialData() {
     if (selectedBranchId.value) {
       params.branch_id = selectedBranchId.value
     }
+    // Add custom date range parameters if applicable
+    if (selectedRange.value === 'custom' && customStartDate.value && customEndDate.value) {
+      params.start_date = customStartDate.value
+      params.end_date = customEndDate.value
+    }
 
     const [profileRes, dashRes, reportsRes, txRes] = await Promise.all([
       axios.get('/api/manager/finance/profile', { withCredentials: true }),
@@ -1049,6 +1078,11 @@ async function refreshDashboard() {
     if (selectedBranchId.value) {
       params.branch_id = selectedBranchId.value
     }
+    // Add custom date range parameters if applicable
+    if (selectedRange.value === 'custom' && customStartDate.value && customEndDate.value) {
+      params.start_date = customStartDate.value
+      params.end_date = customEndDate.value
+    }
 
     const [dashRes, txRes, reportsRes] = await Promise.all([
       axios.get('/api/manager/finance/dashboard', { params, withCredentials: true }),
@@ -1080,6 +1114,13 @@ function onRangeChange() {
 
 function onBranchChange() {
   refreshDashboard()
+}
+
+function onCustomDateChange() {
+  if (customStartDate.value && customEndDate.value) {
+    selectedRange.value = 'custom'
+    refreshDashboard()
+  }
 }
 
 // Mark budget as given by finance (handed to procurement)

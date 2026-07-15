@@ -28,6 +28,7 @@
           <a href="#menu" class="navbar-link" @click="scrollToSection('menu')">Menu</a>
           <a href="#careers" class="navbar-link" @click="scrollToSection('careers')">Careers</a>
           <a href="#about" class="navbar-link" @click="scrollToSection('about')">About</a>
+          <a href="#contact" class="navbar-link" @click="scrollToSection('contact')">Contact Admin</a>
         </div>
       </div>
     </nav>
@@ -361,7 +362,12 @@
         </div>
       </div>
     </section>
-    <transition name="scroll-top">
+
+    <!-- Contact Admin Section -->
+    <CustomerContactForm />
+  </main>
+
+  <transition name="scroll-top">
       <button
         v-show="showScrollTop"
         type="button"
@@ -372,7 +378,6 @@
         ↑
       </button>
     </transition>
-  </main>
 
   <!-- Apply Now Modal -->
   <teleport to="body">
@@ -818,6 +823,7 @@ import axios from 'axios'
 import { useRouter, RouterLink } from 'vue-router'
 import LoadingOverlay from './LoadingOverlay.vue'
 import AddressCascaderWithMap from './AddressCascaderWithMap.vue'
+import CustomerContactForm from './CustomerContactForm.vue'
 
 const router = useRouter()
 const showLoginLoader = ref(false)

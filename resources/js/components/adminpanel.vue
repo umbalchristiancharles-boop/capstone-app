@@ -235,6 +235,18 @@
 
 
 
+          <!-- Customer Reports / CRM Section -->
+          <section class="panel-block">
+            <div class="panel-header">
+              <h2>Customer Reports / CRM</h2>
+              <button class="panel-action" @click="showCustomerReports = !showCustomerReports">
+                {{ showCustomerReports ? 'Hide' : 'View Reports' }}
+              </button>
+            </div>
+            <div v-if="showCustomerReports" class="panel-body panel-body--list">
+              <AdminCustomerReports />
+            </div>
+          </section>
         </main>
         <!-- RIGHT: SIDE PANELS -->
         <aside class="admin-side">
@@ -606,6 +618,7 @@ import { createApp, h, ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import LoadingOverlay from './LoadingOverlay.vue'
+import AdminCustomerReports from './AdminCustomerReports.vue'
 
 import { showToast } from './toastStore'
 
@@ -655,6 +668,7 @@ const showOverlay = ref(false)
 const showProductRequestForm = ref(false)
 const productRequestForm = ref({ name: '', description: '', unit: '' })
 const productRequestSubmitting = ref(false)
+const showCustomerReports = ref(false)
 const overlayText = ref('Logging out...')
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
 
