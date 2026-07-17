@@ -3,6 +3,7 @@
     :userProfile="userProfile"
     panelTitle="Owner Panel"
     panelDescription="Overview and controls for store owners"
+    :showHeader="false"
     :enableProfileUpdate="true"
     :canEditProfile="true"
     :canChangePassword="true"
@@ -70,41 +71,6 @@
               </div>
             </div>
           </div>
-        </div>
-
-        <div class="owner-action-grid" aria-label="Owner quick actions">
-          <router-link to="/owner/dish-approval" class="owner-action-card owner-action-card--orange">
-            <div class="owner-action-card__icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-            </div>
-            <div class="owner-action-card__body">
-              <span class="owner-action-card__label">Dish Approval</span>
-              <span class="owner-action-card__text">Review pending dishes before they reach the branch.</span>
-            </div>
-            <span class="owner-action-card__badge">{{ pendingCounts.kitchen }}</span>
-          </router-link>
-
-          <router-link to="/owner/branch-confirmations" class="owner-action-card owner-action-card--emerald">
-            <div class="owner-action-card__icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-            </div>
-            <div class="owner-action-card__body">
-              <span class="owner-action-card__label">Branch Confirmations</span>
-              <span class="owner-action-card__text">Confirm branch-related requests in one place.</span>
-            </div>
-            <span class="owner-action-card__badge">{{ pendingCounts.branchOwner }}</span>
-          </router-link>
-
-          <router-link to="/owner/price-markup-approvals" class="owner-action-card owner-action-card--rose">
-            <div class="owner-action-card__icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-            </div>
-            <div class="owner-action-card__body">
-              <span class="owner-action-card__label">Price Markup</span>
-              <span class="owner-action-card__text">Check pricing changes before they go live.</span>
-            </div>
-            <span class="owner-action-card__badge">{{ pendingCounts.priceMarkup }}</span>
-          </router-link>
         </div>
 
       </section>

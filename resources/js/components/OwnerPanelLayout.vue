@@ -60,7 +60,7 @@
         </aside>
         <!-- MIDDLE: MAIN DASHBOARD -->
         <main class="admin-main">
-          <header class="admin-main-header">
+          <header v-if="showHeader" class="admin-main-header">
             <div class="admin-main-header-top">
               <div class="header-left-slot">
                   <button v-if="showDefaultBack" class="back-to-dashboard-btn" @click="handleBack">← Back</button>
@@ -278,6 +278,7 @@ const props = defineProps({
   panelTitle: { type: String, required: true },
   panelDescription: { type: String, required: true },
   fullWidth: { type: Boolean, default: false },
+  showHeader: { type: Boolean, default: true },
   enableProfileUpdate: { type: Boolean, default: false },
   canEditProfile: { type: Boolean, default: false },
   canChangePassword: { type: Boolean, default: false },
