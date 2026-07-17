@@ -42,6 +42,21 @@
               </div>
             </div>
           </div>
+          <div class="admin-profile-column__below">
+            <slot
+              name="profileBottom"
+              :announcements="announcements"
+              :loadingAnnouncements="loadingAnnouncements"
+              :attendanceStatus="attendanceStatus"
+              :scheduledTimeOut="scheduledTimeOut"
+              :canClockOut="canClockOut"
+              :isAttendanceProcessing="isAttendanceProcessing"
+              :attendanceMessage="attendanceMessage"
+              :attendanceMessageType="attendanceMessageType"
+              :performClockIn="performClockIn"
+              :performClockOut="performClockOut"
+            ></slot>
+          </div>
         </aside>
         <!-- MIDDLE: MAIN DASHBOARD -->
         <main class="admin-main">

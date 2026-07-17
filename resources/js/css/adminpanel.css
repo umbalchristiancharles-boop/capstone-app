@@ -1041,7 +1041,7 @@ h1, h2, h3, h4, h5, h6, .section-subtitle, .admin-name, .admin-role {
 .admin-layout {
   width: 100%;
   max-width: 100%;
-  min-height: auto;
+  min-height: 0;
   background: var(--surface-card);
   border-radius: 8px;
   border: 1px solid var(--border-stroke);
@@ -1070,7 +1070,7 @@ h1, h2, h3, h4, h5, h6, .section-subtitle, .admin-name, .admin-role {
     padding: 16px;
     gap: 16px;
     border-radius: 12px;
-    min-height: auto;
+    min-height: 0;
   }
 }
 
@@ -1095,6 +1095,9 @@ h1, h2, h3, h4, h5, h6, .section-subtitle, .admin-name, .admin-role {
 /* LEFT COLUMN – ADMIN PROFILE */
 .admin-profile-column {
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
   width: 100%;
   order: 1;
 }
