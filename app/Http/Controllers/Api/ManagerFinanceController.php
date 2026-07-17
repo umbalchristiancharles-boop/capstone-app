@@ -490,5 +490,228 @@ class ManagerFinanceController extends Controller
             return response()->json(['ok' => false, 'message' => 'Failed to update budget'], 500);
         }
     }
+
+    /**
+     * POST /api/manager/clock-in
+     * Clock in with geofencing validation
+     */
+    public function clockIn(Request $request)
+    {
+        $user = $this->resolveAuthenticatedUser($request);
+        if (!$user || !$this->isFinanceManager($user)) {
+            return response()->json(['ok' => false, 'success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $today = \Carbon\Carbon::now()->toDateString();
+
+        // Check if already clocked in today
+        $attendance = \App\Models\Attendance::where('user_id', $user->id)
+            ->where('date', $today)
+            ->first();
+
+        if ($attendance && $attendance->time_in) {
+            return response()->json([
+                'ok' => false,
+                'success' => false,
+                'message' => 'Already clocked in today',
+                'time_in' => $attendance->time_in->format('H:i')
+            ], 400);
+        }
+
+        // Geofencing validation
+        $userLatitude = $request->input('latitude');
+        $userLongitude = $request->input('longitude');
+
+        if ($userLatitude && $userLongitude) {
+            $geofencingCheck = $this->validateGeofencing($user, $userLatitude, $userLongitude);
+            
+            if (!$geofencingCheck['valid']) {
+                return response()->json([
+                    'ok' => false,
+                    'success' => false,
+                    'message' => $geofencingCheck['message'],
+                    'geofencing_error' => true,
+                    'distance' => $geofencingCheck['distance'] ?? null,
+                    'allowed_radius' => $geofencingCheck['allowed_radius'] ?? null
+                ], 403);
+            }
+        }
+
+        // Create or update attendance
+        if (!$attendance) {
+            $attendance = new \App\Models\Attendance([
+                'user_id' => $user->id,
+                'date' => $today,
+            ]);
+        }
+
+        $timeIn = \Carbon\Carbon::now();
+        $attendance->time_in = $timeIn;
+        $attendance->status = $this->determineStatus($timeIn);
+        $attendance->save();
+
+        return response()->json([
+            'ok' => true,
+            'success' => true,
+            'message' => 'Clocked in successfully',
+            'time_in' => $timeIn->format('h:i A'),
+            'status' => $attendance->status,
+            'is_clocked_in' => true
+        ]);
+    }
+
+    /**
+     * POST /api/manager/clock-out
+     * Clock out with geofencing validation
+     */
+    public function clockOut(Request $request)
+    {
+        $user = $this->resolveAuthenticatedUser($request);
+        if (!$user || !$this->isFinanceManager($user)) {
+            return response()->json(['ok' => false, 'success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $today = \Carbon\Carbon::now()->toDateString();
+
+        $attendance = \App\Models\Attendance::where('user_id', $user->id)
+            ->where('date', $today)
+            ->first();
+
+        if (!$attendance || !$attendance->time_in) {
+            return response()->json([
+                'ok' => false,
+                'success' => false,
+                'message' => 'Not clocked in yet'
+            ], 400);
+        }
+
+        if ($attendance->time_out) {
+            return response()->json([
+                'ok' => false,
+                'success' => false,
+                'message' => 'Already clocked out today',
+                'time_out' => $attendance->time_out->format('H:i')
+            ], 400);
+        }
+
+        // Geofencing validation for clock out
+        $userLatitude = $request->input('latitude');
+        $userLongitude = $request->input('longitude');
+
+        if ($userLatitude && $userLongitude) {
+            $geofencingCheck = $this->validateGeofencing($user, $userLatitude, $userLongitude);
+            
+            if (!$geofencingCheck['valid']) {
+                return response()->json([
+                    'ok' => false,
+                    'success' => false,
+                    'message' => $geofencingCheck['message'],
+                    'geofencing_error' => true,
+                    'distance' => $geofencingCheck['distance'] ?? null,
+                    'allowed_radius' => $geofencingCheck['allowed_radius'] ?? null
+                ], 403);
+            }
+        }
+
+        $timeOut = \Carbon\Carbon::now();
+        $minutesWorked = $timeOut->diffInMinutes($attendance->time_in);
+
+        $attendance->time_out = $timeOut;
+        $attendance->hours_worked = $minutesWorked;
+        $attendance->save();
+
+        return response()->json([
+            'ok' => true,
+            'success' => true,
+            'message' => 'Clocked out successfully',
+            'time_out' => $timeOut->format('h:i A'),
+            'hours_worked' => round($minutesWorked / 60, 2),
+            'is_clocked_in' => false
+        ]);
+    }
+
+    /**
+     * Determine attendance status based on time in
+     */
+    private function determineStatus($timeIn)
+    {
+        // Assuming shift starts at 8:00 AM, late after 8:30 AM
+        $shiftStart = $timeIn->copy()->setTime(8, 0, 0);
+        $lateThreshold = $shiftStart->copy()->addMinutes(30);
+
+        if ($timeIn->greaterThan($lateThreshold)) {
+            return 'late';
+        }
+
+        return 'present';
+    }
+
+    /**
+     * Validate geofencing - check if user is within allowed radius of their branch
+     */
+    private function validateGeofencing($user, $userLatitude, $userLongitude)
+    {
+        // Get user's branch
+        $branch = Branch::find($user->branch_id);
+        
+        // If no branch assigned or branch doesn't exist, allow clock in/out
+        if (!$branch) {
+            return ['valid' => true];
+        }
+
+        // If branch has no coordinates, allow clock in/out (no geofencing configured)
+        if (!$branch->latitude || !$branch->longitude) {
+            return ['valid' => true];
+        }
+
+        // Get geofencing radius (in meters)
+        $radius = $branch->geofencing_radius;
+        
+        // If no radius configured, use default of 100 meters
+        if (!$radius || $radius <= 0) {
+            $radius = 100;
+        }
+
+        // Calculate distance between user and branch using Haversine formula
+        $distance = $this->calculateDistance(
+            $userLatitude,
+            $userLongitude,
+            $branch->latitude,
+            $branch->longitude
+        );
+
+        // Check if user is within allowed radius
+        if ($distance > $radius) {
+            return [
+                'valid' => false,
+                'message' => "You are not within the branch vicinity. You are {$distance} meters away. Allowed radius is {$radius} meters.",
+                'distance' => round($distance, 2),
+                'allowed_radius' => $radius
+            ];
+        }
+
+        return ['valid' => true];
+    }
+
+    /**
+     * Calculate distance between two coordinates using Haversine formula
+     * Returns distance in meters
+     */
+    private function calculateDistance($lat1, $lon1, $lat2, $lon2)
+    {
+        $earthRadius = 6371000; // Earth's radius in meters
+
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+
+        $a = sin($dLat / 2) * sin($dLat / 2) +
+             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+             sin($dLon / 2) * sin($dLon / 2);
+
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+        $distance = $earthRadius * $c;
+
+        return $distance;
+    }
 }
 

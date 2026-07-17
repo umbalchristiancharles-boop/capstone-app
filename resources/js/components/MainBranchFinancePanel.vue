@@ -32,8 +32,8 @@
           </span>
         </div>
         <div class="attendance-buttons">
-          <button @click="performClockIn" :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing" class="btn-clock-in">{{ isAttendanceProcessing ? '...' : 'Clock In' }}</button>
-          <button @click="performClockOut" :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockOut" class="btn-clock-out" :class="{ 'btn-disabled': !canClockOut && attendanceStatus.is_clocked_in }">{{ isAttendanceProcessing ? '...' : 'Clock Out' }}</button>
+          <button @click="performClockIn" :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockInGeofencing || locationLoading" class="btn-clock-in">{{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock In' }}</button>
+          <button @click="performClockOut" :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockOut || !canClockInGeofencing || locationLoading" class="btn-clock-out" :class="{ 'btn-disabled': !canClockOut && attendanceStatus.is_clocked_in }">{{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock Out' }}</button>
         </div>
         <div v-if="!canClockOut && attendanceStatus.is_clocked_in" class="clockout-restriction"><span class="restriction-icon">🔒</span><span>Cannot clock out before {{ scheduledTimeOut }}</span></div>
         <div v-if="attendanceMessage" :class="['attendance-message', attendanceMessageType]">{{ attendanceMessage }}</div>
@@ -54,6 +54,13 @@ const isAttendanceProcessing = ref(false)
 const attendanceMessage = ref('')
 const attendanceMessageType = ref('')
 const attendanceSettings = ref({ early_clockout_override: false, scheduled_time_out: '17:00:00' })
+
+// Geofencing state
+const userLocation = ref(null)
+const locationLoading = ref(false)
+const locationError = ref('')
+const canClockInGeofencing = ref(true)
+const geofencingMessage = ref('')
 
 const scheduledTimeOut = computed(() => {
   const time = attendanceSettings.value.scheduled_time_out || '17:00:00'
@@ -114,21 +121,46 @@ async function loadAttendanceSettings() {
 
 async function performClockIn() {
   if (isAttendanceProcessing.value) return
+
+  if (!userLocation.value) {
+    attendanceMessage.value = 'Please enable location services to clock in'
+    attendanceMessageType.value = 'warning'
+    await getUserLocation()
+    setTimeout(() => { attendanceMessage.value = '' }, 3000)
+    return
+  }
+
   isAttendanceProcessing.value = true
   attendanceMessage.value = ''
   try {
-    const res = await axios.post('/api/manager/clock-in', {}, { withCredentials: true })
+    const res = await axios.post('/api/manager/clock-in', {
+      latitude: userLocation.value.latitude,
+      longitude: userLocation.value.longitude
+    }, { withCredentials: true })
+    
     if (res.data && res.data.success) {
       attendanceMessage.value = 'Clocked in successfully!'
       attendanceMessageType.value = 'success'
       await loadAttendanceStatus()
+    } else if (res.data.geofencing_error) {
+      attendanceMessage.value = res.data.message || 'You are not within the branch vicinity'
+      attendanceMessageType.value = 'error'
+      canClockInGeofencing.value = false
+      geofencingMessage.value = res.data.message
     } else {
       attendanceMessage.value = res.data.message || 'Failed to clock in'
       attendanceMessageType.value = 'error'
     }
   } catch (e) {
-    attendanceMessage.value = e.response?.data?.message || 'Error clocking in'
-    attendanceMessageType.value = 'error'
+    if (e.response?.status === 403 && e.response?.data?.geofencing_error) {
+      attendanceMessage.value = e.response.data.message || 'You are not within the branch vicinity'
+      attendanceMessageType.value = 'error'
+      canClockInGeofencing.value = false
+      geofencingMessage.value = e.response.data.message
+    } else {
+      attendanceMessage.value = e.response?.data?.message || 'Error clocking in'
+      attendanceMessageType.value = 'error'
+    }
   } finally {
     isAttendanceProcessing.value = false
     setTimeout(() => { attendanceMessage.value = '' }, 3000)
@@ -137,24 +169,86 @@ async function performClockIn() {
 
 async function performClockOut() {
   if (isAttendanceProcessing.value) return
+
+  if (!userLocation.value) {
+    attendanceMessage.value = 'Please enable location services to clock out'
+    attendanceMessageType.value = 'warning'
+    await getUserLocation()
+    setTimeout(() => { attendanceMessage.value = '' }, 3000)
+    return
+  }
+
   isAttendanceProcessing.value = true
   attendanceMessage.value = ''
   try {
-    const res = await axios.post('/api/manager/clock-out', {}, { withCredentials: true })
+    const res = await axios.post('/api/manager/clock-out', {
+      latitude: userLocation.value.latitude,
+      longitude: userLocation.value.longitude
+    }, { withCredentials: true })
+    
     if (res.data && res.data.success) {
       attendanceMessage.value = 'Clocked out successfully!'
       attendanceMessageType.value = 'success'
       await loadAttendanceStatus()
+    } else if (res.data.geofencing_error) {
+      attendanceMessage.value = res.data.message || 'You are not within the branch vicinity'
+      attendanceMessageType.value = 'error'
+      canClockInGeofencing.value = false
+      geofencingMessage.value = res.data.message
     } else {
       attendanceMessage.value = res.data.message || 'Failed to clock out'
       attendanceMessageType.value = 'error'
     }
   } catch (e) {
-    attendanceMessage.value = e.response?.data?.message || 'Error clocking out'
-    attendanceMessageType.value = 'error'
+    if (e.response?.status === 403 && e.response?.data?.geofencing_error) {
+      attendanceMessage.value = e.response.data.message || 'You are not within the branch vicinity'
+      attendanceMessageType.value = 'error'
+      canClockInGeofencing.value = false
+      geofencingMessage.value = e.response.data.message
+    } else {
+      attendanceMessage.value = e.response?.data?.message || 'Error clocking out'
+      attendanceMessageType.value = 'error'
+    }
   } finally {
     isAttendanceProcessing.value = false
     setTimeout(() => { attendanceMessage.value = '' }, 3000)
+  }
+}
+
+// Geofencing methods
+const getUserLocation = async () => {
+  locationLoading.value = true
+  locationError.value = ''
+  canClockInGeofencing.value = true
+  geofencingMessage.value = ''
+
+  if (!navigator.geolocation) {
+    locationError.value = 'Geolocation is not supported by your browser'
+    canClockInGeofencing.value = false
+    locationLoading.value = false
+    return
+  }
+
+  try {
+    const position = await new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      })
+    })
+
+    userLocation.value = {
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude
+    }
+  } catch (error) {
+    console.error('Error getting location:', error)
+    locationError.value = 'Unable to retrieve your location. Please enable location services.'
+    canClockInGeofencing.value = false
+    userLocation.value = null
+  } finally {
+    locationLoading.value = false
   }
 }
 
@@ -177,6 +271,7 @@ onMounted(() => {
   if (!hideAttendanceCard.value) {
     loadAttendanceStatus()
     loadAttendanceSettings()
+    getUserLocation()
   }
 })
 </script>

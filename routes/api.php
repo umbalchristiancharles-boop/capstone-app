@@ -427,6 +427,10 @@ Route::prefix('manager')->middleware('auth:sanctum,web')->group(function () {
         Route::get('/finance/branches', [\App\Http\Controllers\Api\ManagerFinanceController::class, 'branches']);
         Route::put('/finance/branches/{id}/budget', [\App\Http\Controllers\Api\ManagerFinanceController::class, 'updateBranchBudget']);
 
+        // Finance Manager Attendance - Clock In/Out with geofencing
+        Route::post('/clock-in', [\App\Http\Controllers\Api\ManagerFinanceController::class, 'clockIn']);
+        Route::post('/clock-out', [\App\Http\Controllers\Api\ManagerFinanceController::class, 'clockOut']);
+
         Route::get('/inventory/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'invProfile']);
         Route::put('/inventory/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'updateInvProfile']);
         Route::get('/inventory/dashboard', [\App\Http\Controllers\Api\ManagerProfileController::class, 'invDashboard']);
@@ -587,5 +591,6 @@ Route::prefix('manager')->middleware('auth:sanctum,web')->group(function () {
         Route::get('/customer-reports/{id}', [\App\Http\Controllers\Api\CustomerReportController::class, 'show']);
         Route::put('/customer-reports/{id}', [\App\Http\Controllers\Api\CustomerReportController::class, 'update']);
         Route::delete('/customer-reports/{id}', [\App\Http\Controllers\Api\CustomerReportController::class, 'destroy']);
+        Route::post('/customer-reports/{id}/send-email', [\App\Http\Controllers\Api\CustomerReportController::class, 'sendEmail']);
     });
 });

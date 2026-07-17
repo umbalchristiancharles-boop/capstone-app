@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CustomerReport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class CustomerReportController extends Controller
 {
@@ -45,12 +46,26 @@ class CustomerReportController extends Controller
         ], 201);
     }
 
-    /** Get all customer reports (Admin only) */
+    /** Get all customer reports (Admin, Owner, SuperAdmin, HR, and Main Branch CRM) */
     public function index(Request $request)
     {
         $user = Auth::user();
         
-        if (!$user || !in_array($user->role, ['ADMIN', 'OWNER', 'SUPERADMIN', 'HR'])) {
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        // Check if user has authorized role
+        $hasAuthorizedRole = in_array($user->role, ['ADMIN', 'OWNER', 'SUPERADMIN', 'HR']);
+        
+        // Check if user is from main branch (for CRM access)
+        $isMainBranchUser = false;
+        if ($user->branch_id) {
+            $branch = \App\Models\Branch::find($user->branch_id);
+            $isMainBranchUser = $branch && ($branch->is_main_branch || (int) $branch->id === 1);
+        }
+
+        if (!$hasAuthorizedRole && !$isMainBranchUser) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -85,7 +100,18 @@ class CustomerReportController extends Controller
     {
         $user = Auth::user();
         
-        if (!$user || !in_array($user->role, ['ADMIN', 'OWNER', 'SUPERADMIN', 'HR'])) {
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $hasAuthorizedRole = in_array($user->role, ['ADMIN', 'OWNER', 'SUPERADMIN', 'HR']);
+        $isMainBranchUser = false;
+        if ($user->branch_id) {
+            $branch = \App\Models\Branch::find($user->branch_id);
+            $isMainBranchUser = $branch && ($branch->is_main_branch || (int) $branch->id === 1);
+        }
+
+        if (!$hasAuthorizedRole && !$isMainBranchUser) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -102,7 +128,18 @@ class CustomerReportController extends Controller
     {
         $user = Auth::user();
         
-        if (!$user || !in_array($user->role, ['ADMIN', 'OWNER', 'SUPERADMIN', 'HR'])) {
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $hasAuthorizedRole = in_array($user->role, ['ADMIN', 'OWNER', 'SUPERADMIN', 'HR']);
+        $isMainBranchUser = false;
+        if ($user->branch_id) {
+            $branch = \App\Models\Branch::find($user->branch_id);
+            $isMainBranchUser = $branch && ($branch->is_main_branch || (int) $branch->id === 1);
+        }
+
+        if (!$hasAuthorizedRole && !$isMainBranchUser) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -145,7 +182,18 @@ class CustomerReportController extends Controller
     {
         $user = Auth::user();
         
-        if (!$user || !in_array($user->role, ['ADMIN', 'OWNER', 'SUPERADMIN'])) {
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $hasAuthorizedRole = in_array($user->role, ['ADMIN', 'OWNER', 'SUPERADMIN']);
+        $isMainBranchUser = false;
+        if ($user->branch_id) {
+            $branch = \App\Models\Branch::find($user->branch_id);
+            $isMainBranchUser = $branch && ($branch->is_main_branch || (int) $branch->id === 1);
+        }
+
+        if (!$hasAuthorizedRole && !$isMainBranchUser) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -158,12 +206,84 @@ class CustomerReportController extends Controller
         ]);
     }
 
+    /** Send email to customer who reported */
+    public function sendEmail(Request $request, $id)
+    {
+        $user = Auth::user();
+        
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $hasAuthorizedRole = in_array($user->role, ['ADMIN', 'OWNER', 'SUPERADMIN', 'HR']);
+        $isMainBranchUser = false;
+        if ($user->branch_id) {
+            $branch = \App\Models\Branch::find($user->branch_id);
+            $isMainBranchUser = $branch && ($branch->is_main_branch || (int) $branch->id === 1);
+        }
+
+        if (!$hasAuthorizedRole && !$isMainBranchUser) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $report = CustomerReport::findOrFail($id);
+
+        $request->validate([
+            'subject' => 'required|string|max:255',
+            'message' => 'required|string|max:5000',
+        ]);
+
+        // Check if customer email exists
+        if (!$report->customer_email) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Customer email is not available for this report.',
+            ], 400);
+        }
+
+        try {
+            $emailSubject = $request->subject;
+            $emailBody = $request->message;
+            
+            // Send email using the helper function
+            send_raw_mail_notification($report->customer_email, $emailSubject, $emailBody);
+
+            return response()->json([
+                'ok' => true,
+                'message' => 'Email sent successfully to ' . $report->customer_email,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Failed to send email to customer', [
+                'error' => $e->getMessage(),
+                'report_id' => $report->id,
+                'customer_email' => $report->customer_email,
+            ]);
+
+            return response()->json([
+                'ok' => false,
+                'message' => 'Failed to send email. Please try again.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     /** Get report statistics for dashboard */
     public function stats()
     {
         $user = Auth::user();
         
-        if (!$user || !in_array($user->role, ['ADMIN', 'OWNER', 'SUPERADMIN', 'HR'])) {
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $hasAuthorizedRole = in_array($user->role, ['ADMIN', 'OWNER', 'SUPERADMIN', 'HR']);
+        $isMainBranchUser = false;
+        if ($user->branch_id) {
+            $branch = \App\Models\Branch::find($user->branch_id);
+            $isMainBranchUser = $branch && ($branch->is_main_branch || (int) $branch->id === 1);
+        }
+
+        if (!$hasAuthorizedRole && !$isMainBranchUser) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 

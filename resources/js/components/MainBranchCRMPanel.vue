@@ -41,6 +41,127 @@
           <p>Monitor and respond to all customer comments about your products. High engagement with comments helps improve customer satisfaction and product quality.</p>
         </section>
 
+        <!-- Customer Reports / CRM Section -->
+        <section class="panel-block" style="margin-top: 24px;">
+          <div class="reports-header">
+            <h3 style="margin: 0 0 16px 0;">Customer Reports / CRM</h3>
+            <div class="reports-stats">
+              <div class="stat-card">
+                <span class="stat-label">Total</span>
+                <span class="stat-value">{{ reportStats.total }}</span>
+              </div>
+              <div class="stat-card stat-pending">
+                <span class="stat-label">Pending</span>
+                <span class="stat-value">{{ reportStats.pending }}</span>
+              </div>
+              <div class="stat-card stat-progress">
+                <span class="stat-label">In Progress</span>
+                <span class="stat-value">{{ reportStats.in_progress }}</span>
+              </div>
+              <div class="stat-card stat-resolved">
+                <span class="stat-label">Resolved</span>
+                <span class="stat-value">{{ reportStats.resolved }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="reports-controls">
+            <div class="filter-group">
+              <select v-model="reportFilterStatus" @change="loadReports" class="filter-select">
+                <option value="all">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="in_progress">In Progress</option>
+                <option value="resolved">Resolved</option>
+                <option value="closed">Closed</option>
+              </select>
+
+              <input
+                v-model="reportSearchQuery"
+                @input="debouncedReportSearch"
+                type="text"
+                placeholder="Search reports..."
+                class="search-input"
+              />
+            </div>
+
+            <button @click="loadReports" class="refresh-btn" :disabled="reportsLoading">
+              {{ reportsLoading ? 'Loading...' : 'Refresh' }}
+            </button>
+          </div>
+
+          <div v-if="reportsLoading && reports.length === 0" class="loading-state">
+            <p>Loading reports...</p>
+          </div>
+
+          <div v-else-if="reports.length === 0" class="empty-state">
+            <p>No customer reports found</p>
+          </div>
+
+          <div v-else class="reports-table">
+            <div class="table-header">
+              <span>Customer</span>
+              <span>Subject</span>
+              <span>Status</span>
+              <span>Date</span>
+              <span>Actions</span>
+            </div>
+
+            <div
+              v-for="report in reports"
+              :key="report.id"
+              class="table-row"
+              :class="{ 'row-expanded': expandedReport === report.id }"
+            >
+              <div class="row-main" @click="toggleExpandReport(report.id)">
+                <span class="customer-info">
+                  <div class="customer-name">{{ report.customer_name }}</div>
+                  <div class="customer-email">{{ report.customer_email }}</div>
+                </span>
+                <span class="subject-text">{{ report.subject }}</span>
+                <span>
+                  <span class="badge" :class="getStatusClass(report.status)">
+                    {{ formatStatus(report.status) }}
+                  </span>
+                </span>
+                <span class="date-text">{{ formatDate(report.created_at) }}</span>
+                <span class="actions-cell" @click.stop>
+                  <button @click="openEditReportModal(report)" class="action-btn" title="Edit">
+                    ✏️
+                  </button>
+                  <button @click="deleteReport(report)" class="action-btn action-btn--danger" title="Delete">
+                    🗑️
+                  </button>
+                </span>
+              </div>
+
+              <div v-if="expandedReport === report.id" class="row-details">
+                <div class="details-grid">
+                  <div class="detail-item">
+                    <span class="detail-label">Phone:</span>
+                    <span class="detail-value">{{ report.customer_phone || 'N/A' }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="detail-label">Assigned To:</span>
+                    <span class="detail-value">{{ report.assigned_to ? report.assigned_to.full_name : 'Unassigned' }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="detail-label">Resolved At:</span>
+                    <span class="detail-value">{{ report.resolved_at ? formatDate(report.resolved_at) : 'N/A' }}</span>
+                  </div>
+                </div>
+                <div class="message-section">
+                  <span class="detail-label">Message:</span>
+                  <p class="message-text">{{ report.message }}</p>
+                </div>
+                <div v-if="report.admin_notes" class="notes-section">
+                  <span class="detail-label">Admin Notes:</span>
+                  <p class="notes-text">{{ report.admin_notes }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <!-- Comments List -->
         <section class="panel-block" style="margin-top: 24px;">
           <div class="comments-header">
@@ -143,6 +264,123 @@
         </section>
       </main>
 
+      <!-- Edit Report Modal -->
+      <transition name="fade">
+        <div v-if="showEditReportModal" class="modal-backdrop" @click.self="closeEditReportModal">
+          <div class="modal">
+            <div class="modal-header">
+              <h3>Update Report</h3>
+              <button class="modal-close" @click="closeEditReportModal">✕</button>
+            </div>
+
+            <div class="modal-body">
+              <div class="form-group">
+                <label>Status</label>
+                <select v-model="editingReport.status" class="form-input">
+                  <option value="pending">Pending</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="resolved">Resolved</option>
+                  <option value="closed">Closed</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Assign To</label>
+                <select v-model="editingReport.assigned_to" class="form-input">
+                  <option :value="null">Unassigned</option>
+                  <option v-for="user in staffList" :key="user.id" :value="user.id">
+                    {{ user.full_name }} ({{ user.role }})
+                  </option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Admin Notes</label>
+                <textarea
+                  v-model="editingReport.admin_notes"
+                  rows="4"
+                  class="form-input"
+                  placeholder="Add internal notes..."
+                ></textarea>
+              </div>
+
+              <div class="form-group" v-if="editingReport.customer_email">
+                <label>Customer Email: <strong>{{ editingReport.customer_email }}</strong></label>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button class="btn-cancel" @click="closeEditReportModal">Cancel</button>
+              <button 
+                v-if="editingReport.customer_email" 
+                class="btn-email" 
+                @click="openEmailModal"
+                :disabled="updating"
+                title="Send email to customer"
+              >
+                📧 Send Email
+              </button>
+              <button class="btn-primary" @click="updateReport" :disabled="updating">
+                {{ updating ? 'Saving...' : 'Save Changes' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
+
+      <!-- Email Modal -->
+      <transition name="fade">
+        <div v-if="showEmailModal" class="modal-backdrop" @click.self="closeEmailModal">
+          <div class="modal">
+            <div class="modal-header">
+              <h3>Send Email to Customer</h3>
+              <button class="modal-close" @click="closeEmailModal">✕</button>
+            </div>
+
+            <div class="modal-body">
+              <div class="form-group">
+                <label>To:</label>
+                <input
+                  type="email"
+                  :value="editingReport.customer_email"
+                  class="form-input"
+                  disabled
+                />
+              </div>
+
+              <div class="form-group">
+                <label>Subject *</label>
+                <input
+                  v-model="emailForm.subject"
+                  type="text"
+                  class="form-input"
+                  placeholder="Enter email subject"
+                  required
+                />
+              </div>
+
+              <div class="form-group">
+                <label>Message *</label>
+                <textarea
+                  v-model="emailForm.message"
+                  rows="8"
+                  class="form-input"
+                  placeholder="Enter your message to the customer..."
+                  required
+                ></textarea>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button class="btn-cancel" @click="closeEmailModal">Cancel</button>
+              <button class="btn-primary" @click="sendEmail" :disabled="sendingEmail">
+                {{ sendingEmail ? 'Sending...' : 'Send Email' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
+
       <aside class="side-col">
         <section class="panel-block">
           <h3>Quick Links</h3>
@@ -150,8 +388,6 @@
         </section>
       </aside>
     </section>
-
-
   </div>
 </template>
 
@@ -173,9 +409,37 @@ const selectedRating = ref('')
 const currentPage = ref(1)
 const itemsPerPage = ref(10)
 
+// Customer Reports state
+const reports = ref([])
+const reportStats = ref({
+  total: 0,
+  pending: 0,
+  in_progress: 0,
+  resolved: 0,
+  closed: 0,
+})
+const reportFilterStatus = ref('all')
+const reportSearchQuery = ref('')
+const reportsLoading = ref(false)
+const expandedReport = ref(null)
+const showEditReportModal = ref(false)
+const showEmailModal = ref(false)
+const editingReport = ref({
+  id: null,
+  status: 'pending',
+  admin_notes: '',
+  assigned_to: null,
+  customer_email: '',
+})
+const staffList = ref([])
+const updating = ref(false)
+const sendingEmail = ref(false)
+const emailForm = ref({
+  subject: '',
+  message: '',
+})
 
-
-
+let reportSearchTimeout = null
 
 function formatDate(dateStr) {
   try {
@@ -350,9 +614,209 @@ const uniqueCustomers = computed(() => {
   return authors.size
 })
 
+// Customer Reports Functions
+function debouncedReportSearch() {
+  clearTimeout(reportSearchTimeout)
+  reportSearchTimeout = setTimeout(() => {
+    loadReports()
+  }, 500)
+}
+
+async function loadReportStats() {
+  try {
+    const response = await axios.get('/api/customer-reports/stats', { withCredentials: true })
+    if (response.data.ok) {
+      reportStats.value = response.data.stats
+    }
+  } catch (error) {
+    console.error('Error loading report stats:', error)
+  }
+}
+
+async function loadReports() {
+  reportsLoading.value = true
+  try {
+    const params = {}
+    if (reportFilterStatus.value !== 'all') {
+      params.status = reportFilterStatus.value
+    }
+    if (reportSearchQuery.value.trim()) {
+      params.search = reportSearchQuery.value.trim()
+    }
+
+    const response = await axios.get('/api/customer-reports', { params, withCredentials: true })
+    if (response.data.ok) {
+      reports.value = response.data.reports.data || []
+    }
+  } catch (error) {
+    console.error('Error loading reports:', error)
+    if (window.swalAlert) {
+      await window.swalAlert('Failed to load reports. Please try again.', 'Error', 'error')
+    }
+  } finally {
+    reportsLoading.value = false
+  }
+}
+
+async function loadStaffList() {
+  try {
+    const response = await axios.get('/api/admin/staff', { withCredentials: true })
+    if (response.data) {
+      staffList.value = response.data
+    }
+  } catch (error) {
+    console.error('Error loading staff:', error)
+  }
+}
+
+function toggleExpandReport(id) {
+  expandedReport.value = expandedReport.value === id ? null : id
+}
+
+function openEditReportModal(report) {
+  editingReport.value = {
+    id: report.id,
+    status: report.status,
+    admin_notes: report.admin_notes || '',
+    assigned_to: report.assigned_to?.id || null,
+    customer_email: report.customer_email || '',
+  }
+  showEditReportModal.value = true
+}
+
+function closeEditReportModal() {
+  showEditReportModal.value = false
+  editingReport.value = {
+    id: null,
+    status: 'pending',
+    admin_notes: '',
+    assigned_to: null,
+    customer_email: '',
+  }
+}
+
+function openEmailModal() {
+  emailForm.value = {
+    subject: '',
+    message: '',
+  }
+  showEmailModal.value = true
+}
+
+function closeEmailModal() {
+  showEmailModal.value = false
+  emailForm.value = {
+    subject: '',
+    message: '',
+  }
+}
+
+async function sendEmail() {
+  if (!emailForm.value.subject.trim() || !emailForm.value.message.trim()) {
+    if (window.swalAlert) {
+      await window.swalAlert('Please fill in both subject and message', 'Error', 'error')
+    }
+    return
+  }
+
+  sendingEmail.value = true
+  try {
+    const response = await axios.post(`/api/customer-reports/${editingReport.value.id}/send-email`, {
+      subject: emailForm.value.subject,
+      message: emailForm.value.message,
+    }, { withCredentials: true })
+
+    if (response.data.ok) {
+      if (window.swalAlert) {
+        await window.swalAlert(response.data.message || 'Email sent successfully', 'Success', 'success')
+      }
+      closeEmailModal()
+    } else {
+      if (window.swalAlert) {
+        await window.swalAlert(response.data.message || 'Failed to send email', 'Error', 'error')
+      }
+    }
+  } catch (error) {
+    console.error('Error sending email:', error)
+    if (window.swalAlert) {
+      await window.swalAlert(error.response?.data?.message || 'Failed to send email. Please try again.', 'Error', 'error')
+    }
+  } finally {
+    sendingEmail.value = false
+  }
+}
+
+async function updateReport() {
+  try {
+    const response = await axios.put(`/api/customer-reports/${editingReport.value.id}`, {
+      status: editingReport.value.status,
+      admin_notes: editingReport.value.admin_notes,
+      assigned_to: editingReport.value.assigned_to,
+    }, { withCredentials: true })
+
+    if (response.data.ok) {
+      if (window.swalAlert) {
+        await window.swalAlert('Report updated successfully', 'Success', 'success')
+      }
+      closeEditReportModal()
+      await loadReports()
+      await loadReportStats()
+    }
+  } catch (error) {
+    console.error('Error updating report:', error)
+    if (window.swalAlert) {
+      await window.swalAlert('Failed to update report. Please try again.', 'Error', 'error')
+    }
+  }
+}
+
+async function deleteReport(report) {
+  const confirmed = await (window.swalConfirm ? window.swalConfirm(`Are you sure you want to delete this report from ${report.customer_name}?`, 'Delete Report') : Promise.resolve(false))
+  if (!confirmed) return
+
+  try {
+    const response = await axios.delete(`/api/customer-reports/${report.id}`, { withCredentials: true })
+    if (response.data.ok) {
+      if (window.swalAlert) {
+        await window.swalAlert('Report deleted successfully', 'Success', 'success')
+      }
+      await loadReports()
+      await loadReportStats()
+    }
+  } catch (error) {
+    console.error('Error deleting report:', error)
+    if (window.swalAlert) {
+      await window.swalAlert('Failed to delete report. Please try again.', 'Error', 'error')
+    }
+  }
+}
+
+function getStatusClass(status) {
+  const classes = {
+    pending: 'badge--warning',
+    in_progress: 'badge--info',
+    resolved: 'badge--success',
+    closed: 'badge--secondary',
+  }
+  return classes[status] || 'badge--secondary'
+}
+
+function formatStatus(status) {
+  const labels = {
+    pending: 'Pending',
+    in_progress: 'In Progress',
+    resolved: 'Resolved',
+    closed: 'Closed',
+  }
+  return labels[status] || status
+}
+
 onMounted(async () => {
   await loadProfile()
   await loadComments()
+  await loadReportStats()
+  await loadReports()
+  await loadStaffList()
 })
 </script>
 
@@ -485,6 +949,79 @@ onMounted(async () => {
 
 .fade-enter-active, .fade-leave-active { transition: opacity .18s ease; }
 
+/* Reports Section */
+.reports-header { margin-bottom: 20px; }
+.reports-header h3 { font-size: 1.25rem; font-weight: 600; color: #1F2937; }
+.reports-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 12px; }
+.stat-card { background: white; padding: 16px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); text-align: center; }
+.stat-label { display: block; font-size: 0.85rem; color: #6B7280; margin-bottom: 4px; }
+.stat-value { display: block; font-size: 1.5rem; font-weight: 700; color: #1F2937; }
+.stat-pending .stat-value { color: #F59E0B; }
+.stat-progress .stat-value { color: #3B82F6; }
+.stat-resolved .stat-value { color: #10B981; }
+
+.reports-controls { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+.filter-group { display: flex; gap: 12px; flex: 1; }
+.filter-select, .search-input { padding: 10px 16px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 0.95rem; font-family: inherit; }
+.filter-select { min-width: 150px; }
+.search-input { flex: 1; max-width: 300px; }
+.refresh-btn { padding: 10px 20px; background: #0066FF; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.refresh-btn:hover:not(:disabled) { background: #0057e6; }
+.refresh-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.reports-table-wrapper { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); overflow: hidden; }
+.reports-table { width: 100%; }
+.table-header { display: grid; grid-template-columns: 2fr 2fr 1fr 1.5fr 1fr; gap: 16px; padding: 16px 20px; background: #F9FAFB; border-bottom: 1px solid #E5E7EB; font-weight: 600; color: #374151; font-size: 0.9rem; }
+.table-row { border-bottom: 1px solid #E5E7EB; transition: background 0.2s; }
+.table-row:hover { background: #F9FAFB; }
+.row-main { display: grid; grid-template-columns: 2fr 2fr 1fr 1.5fr 1fr; gap: 16px; padding: 16px 20px; align-items: center; cursor: pointer; }
+.row-details { padding: 20px; background: #F9FAFB; border-top: 1px solid #E5E7EB; }
+.details-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.detail-item { display: flex; gap: 8px; }
+.detail-label { font-weight: 600; color: #374151; font-size: 0.9rem; }
+.detail-value { color: #6B7280; font-size: 0.9rem; }
+.message-section, .notes-section { margin-bottom: 12px; }
+.message-section .detail-label, .notes-section .detail-label { display: block; margin-bottom: 6px; }
+.message-text, .notes-text { margin: 0; padding: 12px; background: white; border-radius: 6px; color: #4B5563; line-height: 1.6; font-size: 0.95rem; }
+.notes-text { background: #FEF3C7; border-left: 3px solid #F59E0B; }
+.customer-info { display: flex; flex-direction: column; gap: 2px; }
+.customer-name { font-weight: 600; color: #1F2937; }
+.customer-email { font-size: 0.85rem; color: #6B7280; }
+.subject-text { color: #374151; font-size: 0.95rem; }
+.date-text { color: #6B7280; font-size: 0.85rem; }
+.actions-cell { display: flex; gap: 8px; }
+.action-btn { background: none; border: none; font-size: 1.1rem; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: all 0.2s; }
+.action-btn:hover { background: #F3F4F6; }
+.action-btn--danger:hover { background: #FEE2E2; }
+.badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 0.85rem; font-weight: 600; }
+.badge--warning { background: #FEF3C7; color: #92400E; }
+.badge--info { background: #DBEAFE; color: #1E40AF; }
+.badge--success { background: #D1FAE5; color: #065F46; }
+.badge--secondary { background: #E5E7EB; color: #374151; }
+
+/* Modal */
+.modal-backdrop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 24px; }
+.modal { background: white; border-radius: 12px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); }
+.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid #E5E7EB; }
+.modal-header h3 { margin: 0; font-size: 1.25rem; color: #1F2937; }
+.modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6B7280; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 6px; }
+.modal-close:hover { background: #F3F4F6; }
+.modal-body { padding: 24px; }
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #374151; font-size: 0.95rem; }
+.form-input { width: 100%; padding: 10px 14px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 0.95rem; font-family: inherit; }
+.form-input:focus { outline: none; border-color: #0066FF; box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1); }
+textarea.form-input { resize: vertical; min-height: 100px; }
+.modal-footer { display: flex; gap: 12px; justify-content: flex-end; padding: 16px 24px; border-top: 1px solid #E5E7EB; }
+.btn-cancel { padding: 10px 20px; background: #F3F4F6; color: #6B7280; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.btn-cancel:hover { background: #E5E7EB; }
+.btn-email { padding: 10px 20px; background: #10B981; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.btn-email:hover:not(:disabled) { background: #059669; }
+.btn-email:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-primary { padding: 10px 20px; background: #0066FF; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.btn-primary:hover:not(:disabled) { background: #0057e6; }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
 @media (max-width: 1024px) {
   .panel-layout { grid-template-columns: 1fr; }
   .overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -492,6 +1029,18 @@ onMounted(async () => {
   .comment-filters { flex-direction: column; }
   .search-input { width: 100%; }
   .rating-filter { width: 100%; }
+  .table-header, .row-main { grid-template-columns: 2fr 2fr 1fr 1fr; }
+  .table-header span:nth-child(4), .row-main span:nth-child(4) { display: none; }
+}
+
+@media (max-width: 768px) {
+  .reports-stats { grid-template-columns: repeat(2, 1fr); }
+  .filter-group { flex-direction: column; }
+  .search-input { max-width: none; }
+  .table-header, .row-main { grid-template-columns: 1fr; gap: 8px; }
+  .table-header { display: none; }
+  .row-main { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+  .actions-cell { width: 100%; justify-content: flex-end; }
 }
 
 </style>

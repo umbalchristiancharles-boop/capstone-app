@@ -37,21 +37,37 @@
       <div v-if="!isLogisticsAdmin" class="button-group">
         <button
           @click="performClockIn"
-          :disabled="status?.is_clocked_in || isProcessing"
+          :disabled="status?.is_clocked_in || isProcessing || !canClockInGeofencing || locationLoading"
           class="btn-clock-in"
         >
-          <span v-if="!isProcessing">Clock In</span>
+          <span v-if="!isProcessing && !locationLoading">Clock In</span>
+          <span v-else-if="locationLoading">Getting Location...</span>
           <span v-else>Processing...</span>
         </button>
         <button
           @click="performClockOut"
-          :disabled="!status?.is_clocked_in || isProcessing || !canClockOut"
+          :disabled="!status?.is_clocked_in || isProcessing || !canClockOut || !canClockInGeofencing || locationLoading"
           class="btn-clock-out"
           :class="{ 'btn-disabled': !canClockOut && status?.is_clocked_in }"
         >
-          <span v-if="!isProcessing">Clock Out</span>
+          <span v-if="!isProcessing && !locationLoading">Clock Out</span>
+          <span v-else-if="locationLoading">Getting Location...</span>
           <span v-else>Processing...</span>
         </button>
+      </div>
+
+      <!-- Geofencing Status -->
+      <div v-if="locationError" class="geofencing-status geofencing-error">
+        <span class="status-icon">⚠️</span>
+        <span>{{ locationError }}</span>
+      </div>
+      <div v-else-if="userLocation && canClockInGeofencing" class="geofencing-status geofencing-success">
+        <span class="status-icon">✓</span>
+        <span>Location verified - You are within branch vicinity</span>
+      </div>
+      <div v-else-if="!canClockInGeofencing && geofencingMessage" class="geofencing-status geofencing-error">
+        <span class="status-icon">🔒</span>
+        <span>{{ geofencingMessage }}</span>
       </div>
 
       <div v-if="!canClockOut && status?.is_clocked_in && !isLogisticsAdmin" class="clockout-restriction">
@@ -129,6 +145,13 @@ const attendanceSettings = ref({
 })
 const settingsLoading = ref(false)
 
+// Geofencing state
+const userLocation = ref(null)
+const locationLoading = ref(false)
+const locationError = ref('')
+const canClockInGeofencing = ref(true)
+const geofencingMessage = ref('')
+
 // Clock Update Interval
 let clockInterval = null
 
@@ -165,6 +188,46 @@ const canClockOut = computed(() => {
   // Allow clock out if current time >= scheduled time
   return currentTotalMinutes >= scheduledTotalMinutes
 })
+
+// Geofencing methods
+async function getUserLocation() {
+  locationLoading.value = true
+  locationError.value = ''
+  canClockInGeofencing.value = true
+  geofencingMessage.value = ''
+
+  // Check if geolocation is supported
+  if (!navigator.geolocation) {
+    locationError.value = 'Geolocation is not supported by your browser'
+    canClockInGeofencing.value = false
+    locationLoading.value = false
+    return
+  }
+
+  try {
+    const position = await new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      })
+    })
+
+    userLocation.value = {
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude
+    }
+    
+    console.log('User location obtained:', userLocation.value)
+  } catch (error) {
+    console.error('Error getting location:', error)
+    locationError.value = 'Unable to retrieve your location. Please enable location services.'
+    canClockInGeofencing.value = false
+    userLocation.value = null
+  } finally {
+    locationLoading.value = false
+  }
+}
 
 // Methods
 function updateClock() {
@@ -252,10 +315,20 @@ async function loadAttendanceSettings() {
 async function performClockIn() {
   if (isProcessing.value) return
 
+  // Check if user location is available
+  if (!userLocation.value) {
+    showMessage('Please enable location services to clock in', 'warning')
+    await getUserLocation()
+    return
+  }
+
   isProcessing.value = true
 
   try {
-    const res = await axios.post('/api/staff/clock-in', {}, {
+    const res = await axios.post('/api/staff/clock-in', {
+      latitude: userLocation.value.latitude,
+      longitude: userLocation.value.longitude
+    }, {
       withCredentials: true
     })
 
@@ -267,6 +340,11 @@ async function performClockIn() {
       if (res.data.restricted_role === 'logistics_admin') {
         isLogisticsAdmin.value = true
         showMessage(res.data.message, 'warning')
+      } else if (res.data.geofencing_error) {
+        // Geofencing error
+        showMessage(res.data.message || 'You are not within the branch vicinity', 'danger')
+        canClockInGeofencing.value = false
+        geofencingMessage.value = res.data.message
       } else {
         showMessage(res.data.message || 'Failed to clock in', 'danger')
       }
@@ -276,6 +354,10 @@ async function performClockIn() {
     if (error.response?.status === 403 && error.response?.data?.restricted_role === 'logistics_admin') {
       isLogisticsAdmin.value = true
       showMessage(error.response.data.message || 'Super Admin Logistics cannot perform clock operations', 'warning')
+    } else if (error.response?.status === 403 && error.response?.data?.geofencing_error) {
+      showMessage(error.response.data.message || 'You are not within the branch vicinity', 'danger')
+      canClockInGeofencing.value = false
+      geofencingMessage.value = error.response.data.message
     } else {
       console.error('Clock in error:', error)
       showMessage('Error clocking in. Please try again.', 'danger')
@@ -288,10 +370,20 @@ async function performClockIn() {
 async function performClockOut() {
   if (isProcessing.value) return
 
+  // Check if user location is available
+  if (!userLocation.value) {
+    showMessage('Please enable location services to clock out', 'warning')
+    await getUserLocation()
+    return
+  }
+
   isProcessing.value = true
 
   try {
-    const res = await axios.post('/api/staff/clock-out', {}, {
+    const res = await axios.post('/api/staff/clock-out', {
+      latitude: userLocation.value.latitude,
+      longitude: userLocation.value.longitude
+    }, {
       withCredentials: true
     })
 
@@ -304,6 +396,11 @@ async function performClockOut() {
       if (res.data.restricted_role === 'logistics_admin') {
         isLogisticsAdmin.value = true
         showMessage(res.data.message, 'warning')
+      } else if (res.data.geofencing_error) {
+        // Geofencing error
+        showMessage(res.data.message || 'You are not within the branch vicinity', 'danger')
+        canClockInGeofencing.value = false
+        geofencingMessage.value = res.data.message
       } else {
         showMessage(res.data.message || 'Failed to clock out', 'danger')
       }
@@ -313,6 +410,10 @@ async function performClockOut() {
     if (error.response?.status === 403 && error.response?.data?.restricted_role === 'logistics_admin') {
       isLogisticsAdmin.value = true
       showMessage(error.response.data.message || 'Super Admin Logistics cannot perform clock operations', 'warning')
+    } else if (error.response?.status === 403 && error.response?.data?.geofencing_error) {
+      showMessage(error.response.data.message || 'You are not within the branch vicinity', 'danger')
+      canClockInGeofencing.value = false
+      geofencingMessage.value = error.response.data.message
     } else {
       console.error('Clock out error:', error)
       showMessage('Error clocking out. Please try again.', 'danger')
@@ -341,11 +442,16 @@ onMounted(() => {
   loadStatus()
   loadHistory()
   loadAttendanceSettings()
+  
+  // Get user location for geofencing
+  getUserLocation()
 
   // Refresh status every 30 seconds
   setInterval(loadStatus, 30000)
   // Refresh settings every minute
   setInterval(loadAttendanceSettings, 60000)
+  // Refresh location every 5 minutes
+  setInterval(getUserLocation, 300000)
 })
 
 onUnmounted(() => {
@@ -541,6 +647,35 @@ onUnmounted(() => {
   background: #f8d7da;
   color: #721c24;
   border: 1px solid #f5c6cb;
+}
+
+.geofencing-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  margin-top: 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.geofencing-success {
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  color: #155724;
+}
+
+.geofencing-error {
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+}
+
+.status-icon {
+  font-size: 1.2rem;
+  font-weight: bold;
 }
 
 @keyframes slideIn {

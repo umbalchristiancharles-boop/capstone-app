@@ -727,6 +727,36 @@
   font-size: 0.9rem;
 }
 
+/* Geofencing Status Styles */
+.geofencing-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  margin-top: 10px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.geofencing-success {
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #15803d;
+}
+
+.geofencing-error {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #b91c1c;
+}
+
+.status-icon {
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
 .preview-image {
   display: flex;
   justify-content: center;

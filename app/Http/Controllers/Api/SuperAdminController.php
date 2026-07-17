@@ -933,6 +933,8 @@ class SuperAdminController extends Controller
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
             'budget' => 'nullable|integer|min:100000|max:1000000',
+            'square_meters' => 'nullable|numeric|min:0',
+            'geofencing_radius' => 'nullable|numeric|min:0',
             'accounts' => 'nullable|array',
             'accounts.admin' => 'nullable|boolean',
             'accounts.hr' => 'nullable|boolean',
@@ -955,6 +957,8 @@ class SuperAdminController extends Controller
         $latitude = $request->input('latitude');
         $longitude = $request->input('longitude');
         $requestedBudget = (int) ($request->input('budget', 100000));
+        $squareMeters = $request->input('square_meters');
+        $geofencingRadius = $request->input('geofencing_radius');
 
         $defaultPassword = config('chikintayo.default_password', 'Chikintayo_123');
 
@@ -1032,6 +1036,8 @@ class SuperAdminController extends Controller
                 'rejected_at' => null,
                 // Use provided budget or default to 100000
                 'budget' => $requestedBudget,
+                'square_meters' => $squareMeters,
+                'geofencing_radius' => $geofencingRadius,
             ]);
 
             $createdRoles = [];

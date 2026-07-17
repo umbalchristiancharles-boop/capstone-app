@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 15, 2026 at 12:04 PM
+-- Generation Time: Jul 17, 2026 at 02:11 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -73,7 +73,9 @@ CREATE TABLE `attendance` (
 INSERT INTO `attendance` (`id`, `user_id`, `date`, `time_in`, `time_out`, `hours_worked`, `status`, `notes`, `created_at`, `updated_at`) VALUES
 (10, 149, '2026-04-06', '03:16:44', NULL, 0, 'present', NULL, '2026-04-05 19:16:44', '2026-04-05 19:16:44'),
 (11, 149, '2026-06-26', '13:29:31', NULL, 0, 'late', NULL, '2026-06-26 05:29:31', '2026-06-26 05:29:31'),
-(12, 241, '2026-07-14', '16:33:50', '18:04:32', -91, 'late', NULL, '2026-07-14 08:33:50', '2026-07-14 10:04:32');
+(12, 241, '2026-07-14', '16:33:50', '18:04:32', -91, 'late', NULL, '2026-07-14 08:33:50', '2026-07-14 10:04:32'),
+(13, 153, '2026-07-17', '18:37:05', '18:37:07', 0, 'late', NULL, '2026-07-17 10:37:05', '2026-07-17 10:37:07'),
+(15, 149, '2026-07-17', '20:05:08', NULL, 0, 'late', NULL, '2026-07-17 12:05:08', '2026-07-17 12:05:08');
 
 -- --------------------------------------------------------
 
@@ -96,7 +98,7 @@ CREATE TABLE `attendance_settings` (
 INSERT INTO `attendance_settings` (`id`, `branch_id`, `early_clockout_override`, `created_at`, `updated_at`) VALUES
 (146, 31, 0, '2026-04-05 18:23:33', '2026-04-05 18:23:33'),
 (147, 32, 0, '2026-04-05 19:26:07', '2026-04-05 19:26:07'),
-(149, 48, 0, '2026-04-15 04:50:19', '2026-04-15 04:50:19');
+(150, 50, 0, '2026-07-17 10:57:06', '2026-07-17 10:57:06');
 
 -- --------------------------------------------------------
 
@@ -121,6 +123,8 @@ CREATE TABLE `branches` (
   `approved_at` timestamp NULL DEFAULT NULL,
   `rejected_at` timestamp NULL DEFAULT NULL,
   `budget` bigint(20) NOT NULL DEFAULT 100000,
+  `square_meters` decimal(10,2) DEFAULT NULL COMMENT 'Store area in square meters',
+  `geofencing_radius` decimal(10,2) DEFAULT NULL COMMENT 'Geofencing radius in meters (auto-calculated from square_meters)',
   `default_password` varchar(255) DEFAULT NULL COMMENT 'Current default password for branch staff accounts',
   `default_password_updated_at` timestamp NULL DEFAULT NULL COMMENT 'Last time the default password was updated',
   `created_at` timestamp NULL DEFAULT NULL,
@@ -131,10 +135,10 @@ CREATE TABLE `branches` (
 -- Dumping data for table `branches`
 --
 
-INSERT INTO `branches` (`id`, `code`, `name`, `address`, `latitude`, `longitude`, `is_active`, `is_main_branch`, `approval_status`, `requested_by`, `finance_confirmed_by`, `finance_confirmed_at`, `approved_by`, `approved_at`, `rejected_at`, `budget`, `default_password`, `default_password_updated_at`, `created_at`, `updated_at`) VALUES
-(31, 'BR743957', 'Dasma Branch', 'Dasma', NULL, NULL, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 73795, 'BDP202607159187CF', '2026-07-15 09:58:33', '2026-03-22 10:19:21', '2026-07-15 09:58:33'),
-(32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 800000, 'BDP20260713161C28', '2026-07-13 11:24:16', '2026-03-25 06:56:11', '2026-07-13 11:24:16'),
-(48, 'BR426492', 'Manila Branch', NULL, NULL, NULL, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 100000, 'BDP202607134EAC7C', '2026-07-13 11:24:16', '2026-04-15 04:14:07', '2026-07-13 11:24:16');
+INSERT INTO `branches` (`id`, `code`, `name`, `address`, `latitude`, `longitude`, `is_active`, `is_main_branch`, `approval_status`, `requested_by`, `finance_confirmed_by`, `finance_confirmed_at`, `approved_by`, `approved_at`, `rejected_at`, `budget`, `square_meters`, `geofencing_radius`, `default_password`, `default_password_updated_at`, `created_at`, `updated_at`) VALUES
+(31, 'BR743957', 'Dasma Branch', 'Dasma', 14.33000000, 120.94000000, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 73795, 100.00, 5.64, 'BDP20260717B2000C', '2026-07-17 09:24:00', '2026-03-22 10:19:21', '2026-07-17 10:32:09'),
+(32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 700000, NULL, NULL, 'BDP2026071735D9F9', '2026-07-17 09:31:14', '2026-03-25 06:56:11', '2026-07-17 10:54:59'),
+(50, 'BR577235', 'Quezon City Branch', NULL, 14.65105500, 121.09766006, 1, 0, 'approved', 159, 161, '2026-07-17 10:54:29', 31, '2026-07-17 10:54:59', NULL, 100000, 50.00, 500.00, 'BDP20260717D5227C', '2026-07-17 10:53:48', '2026-07-17 10:53:47', '2026-07-17 11:15:55');
 
 -- --------------------------------------------------------
 
@@ -708,7 +712,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (144, '2026_07_15_000001_add_quantity_to_expired_product_reports_table', 81),
 (145, '2026_07_14_000002_add_expiry_tracking_to_supplier_orders', 82),
 (146, '2026_07_14_000003_create_inventory_lots_table', 83),
-(147, '2026_07_15_000002_create_customer_reports_table', 84);
+(147, '2026_07_15_000002_create_customer_reports_table', 84),
+(148, '2026_07_17_000001_add_geofencing_to_branches_table', 85);
 
 -- --------------------------------------------------------
 
@@ -1997,7 +2002,10 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (2614, 'App\\Models\\User', 147, 'auth-token', '4059589b88b5d41b8cec031adde39ddbbcb6398cade734c06f78f665126cf984', '[\"*\"]', NULL, NULL, '2026-07-14 12:07:33', '2026-07-14 12:07:33'),
 (2615, 'App\\Models\\User', 31, 'auth-token', '75279145a8e93bfa957fb23380df4b33579ebfd2924cbfee22d65f6185257e06', '[\"*\"]', NULL, NULL, '2026-07-14 12:08:09', '2026-07-14 12:08:09'),
 (2617, 'App\\Models\\User', 31, 'auth-token', 'd3ee48252efaa9b8d4f8bda228e3c595dc1ebe4a657a857d3bd3d92ec56633cd', '[\"*\"]', NULL, NULL, '2026-07-14 12:08:53', '2026-07-14 12:08:53'),
-(2648, 'App\\Models\\User', 147, 'auth-token', '8a8710bf7be77e915f2aa922fd2e5beb49b81ab04b676a29de6b1a7aefe98e2f', '[\"*\"]', NULL, NULL, '2026-07-15 09:58:23', '2026-07-15 09:58:23');
+(2648, 'App\\Models\\User', 147, 'auth-token', '8a8710bf7be77e915f2aa922fd2e5beb49b81ab04b676a29de6b1a7aefe98e2f', '[\"*\"]', NULL, NULL, '2026-07-15 09:58:23', '2026-07-15 09:58:23'),
+(2649, 'App\\Models\\User', 147, 'auth-token', 'a4f3dd6288ff0df7d4c219585a02189fb37181a40b7a072127df8915ffeb032c', '[\"*\"]', NULL, NULL, '2026-07-17 09:23:03', '2026-07-17 09:23:03'),
+(2657, 'App\\Models\\User', 147, 'auth-token', '1b3f50b7a0b7fbd70507024bff1df3d052da84fc7afc3bf69912dc6223948c4b', '[\"*\"]', NULL, NULL, '2026-07-17 10:17:55', '2026-07-17 10:17:55'),
+(2664, 'App\\Models\\User', 31, 'auth-token', '5017b5c40dab461b7bc0b282845304fef5f3fbef92812891468ccb25c4461fd5', '[\"*\"]', NULL, NULL, '2026-07-17 10:54:46', '2026-07-17 10:54:46');
 
 -- --------------------------------------------------------
 
@@ -2146,7 +2154,8 @@ INSERT INTO `price_markup_percentages` (`id`, `branch_id`, `percentage`, `is_act
 (5, 32, 20.00, 1, NULL, NULL, NULL, '2026-03-30 04:26:15', '2026-03-30 04:26:15'),
 (6, 31, 31.00, 0, 31, '2026-03-30 04:38:28', 'Approved via price markup request #3', '2026-03-30 04:38:28', '2026-03-30 08:42:03'),
 (7, 31, 32.00, 0, 31, '2026-03-30 05:28:32', 'Approved via price markup request #4', '2026-03-30 05:28:32', '2026-03-30 08:42:03'),
-(10, 31, 35.00, 1, 31, '2026-03-30 08:42:03', 'Approved via price markup request #5', '2026-03-30 08:42:03', '2026-03-30 08:42:03');
+(10, 31, 35.00, 1, 31, '2026-03-30 08:42:03', 'Approved via price markup request #5', '2026-03-30 08:42:03', '2026-03-30 08:42:03'),
+(12, 50, 20.00, 1, NULL, NULL, NULL, '2026-07-17 10:57:08', '2026-07-17 10:57:08');
 
 -- --------------------------------------------------------
 
@@ -2413,10 +2422,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('0bhZU3J0lOTKwR97NI9oeCGQfc5E9hxxLEykDHZU', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoiQllWY08zTFR6NnhpSjczamxtTnh5UFc4RmlNRlFNV2lUYzdCUGVvSyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1784107695),
-('4ysTpeLEXfZmSs9v2vxCYTejgUTO5JYA4dqhhJHK', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoic1JiNHlBTzYydXlQT2lRbGtsWTBNaDF6WldtZGRDS1ZYeHdOMnRpRiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO319', 1784109831),
-('b2X0x4lZsmvQzPp3jItK2AICHorLCyRdxwsGymOn', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiM3pNZVdTZVVQNlB2cFVObjcyRlRqSktCTmRoMVd2dGRvMkt1SlJqayI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1784107063),
-('UYtCiOEHRSacKTHWeroRDb0xgAXksIDIZT0wT6PJ', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoic0E4czhGM0lFMElWYTlmUVlqVXp1d0dOTXlsZ25hc1hvQmQxMmliWSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1784107064);
+('il9PKh2cyYUqX039Fsq7RolupLrGXXmHYNALptTY', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiRW0xZGlHTzRwZ1RZbDYwVktCT3Q1VWFZUXVNUnhmeGdaUEhoZlZsSCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO319', 1784290251);
 
 -- --------------------------------------------------------
 
@@ -2481,7 +2487,14 @@ INSERT INTO `staff_documents` (`id`, `user_id`, `resume_path`, `government_id_pa
 (58, 148, NULL, NULL, NULL, NULL, NULL, NULL, 'account-setup-documents/148/drug_test_result.jpg', 'account-setup-documents/148/sss_id.jpg', 'account-setup-documents/148/philhealth_id.jpg', NULL, NULL, NULL, '2026-05-26 08:31:17', '2026-05-26 08:31:35'),
 (59, 152, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-06-08 03:53:09', '2026-06-08 03:53:09'),
 (60, 160, NULL, NULL, NULL, NULL, NULL, NULL, 'account-setup-documents/160/drug_test_result.png', 'account-setup-documents/160/sss_id.jpg', 'account-setup-documents/160/philhealth_id.jpg', NULL, NULL, NULL, '2026-06-23 06:06:25', '2026-06-23 06:06:39'),
-(61, 241, NULL, NULL, NULL, NULL, NULL, NULL, 'account-setup-documents/241/drug_test_result.png', 'account-setup-documents/241/sss_id.png', 'account-setup-documents/241/philhealth_id.png', NULL, NULL, NULL, '2026-07-13 11:29:44', '2026-07-14 08:39:44');
+(61, 241, NULL, NULL, NULL, NULL, NULL, NULL, 'account-setup-documents/241/drug_test_result.png', 'account-setup-documents/241/sss_id.png', 'account-setup-documents/241/philhealth_id.png', NULL, NULL, NULL, '2026-07-13 11:29:44', '2026-07-14 08:39:44'),
+(62, 242, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-17 09:51:42', '2026-07-17 09:51:42'),
+(63, 243, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-17 09:51:42', '2026-07-17 09:51:42'),
+(64, 244, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-17 09:51:42', '2026-07-17 09:51:42'),
+(65, 245, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-17 09:51:42', '2026-07-17 09:51:42'),
+(66, 246, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-17 09:51:42', '2026-07-17 09:51:42'),
+(67, 247, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-17 10:53:48', '2026-07-17 10:53:48'),
+(68, 248, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-17 10:53:48', '2026-07-17 10:53:48');
 
 -- --------------------------------------------------------
 
@@ -2600,7 +2613,14 @@ INSERT INTO `users` (`id`, `email`, `username`, `full_name`, `name`, `password`,
 (234, NULL, 'procurement_br687660', 'Procurement Manager - San Simon Branch', NULL, '$2y$12$GhDK5a/xOz6KlieTdsUmqOwHcE22vH0KnibWJCtaiSneiz0zgAWFy', NULL, 'MANAGER', 'PROCUREMENT', NULL, 47, NULL, '2026-04-14 14:13:36', '2026-04-14 14:13:36', NULL, 1, 1, 0, NULL, NULL, NULL, NULL, NULL, NULL),
 (235, NULL, 'logistics_br687660', 'Logistics Manager - San Simon Branch', NULL, '$2y$12$BFfjh5oLhi0C/ZaKaxuhOuwnvyvYg9F1Xi6uLABUiYmKq6BqEIbm.', NULL, 'MANAGER', 'LOGISTICS', NULL, 47, NULL, '2026-04-14 14:13:36', '2026-04-14 14:13:36', NULL, 1, 1, 0, NULL, NULL, NULL, NULL, NULL, NULL),
 (240, 'xmusics77@gmail.com', 'gab', NULL, NULL, '$2y$12$dVtcSpO1fUxFFNw/73Y8L.UUGdHlHvYH0v8a7iYFxLdnnH75rwKxa', '2026-05-26 09:34:09', 'customer', NULL, NULL, NULL, NULL, '2026-05-26 09:34:09', '2026-05-26 09:34:09', NULL, 1, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL),
-(241, 'penixa4713@ezimb.com', 'Custom_Ong', 'Gab', NULL, '$2y$12$/6ol/D1OmYNpShpDOmWy9.Zb4YJrafghjXEXVG0rsrkrjvDfeCJp.', '2026-07-13 11:32:34', 'CUSTOM', NULL, '{\"modules\":[\"admin\",\"finance\",\"logistics\",\"inventory\",\"procurement\",\"kitchen\",\"cashier\",\"hr\"],\"functions\":[]}', 31, NULL, '2026-07-13 11:29:44', '2026-07-13 11:32:34', NULL, 0, 1, 1, '', 14.33000000, 120.94000000, NULL, '09156818812', 'documents');
+(241, 'penixa4713@ezimb.com', 'Custom_Ong', 'Gab', NULL, '$2y$12$/6ol/D1OmYNpShpDOmWy9.Zb4YJrafghjXEXVG0rsrkrjvDfeCJp.', '2026-07-13 11:32:34', 'CUSTOM', NULL, '{\"modules\":[\"admin\",\"finance\",\"logistics\",\"inventory\",\"procurement\",\"kitchen\",\"cashier\",\"hr\"],\"functions\":[]}', 31, NULL, '2026-07-13 11:29:44', '2026-07-13 11:32:34', NULL, 0, 1, 1, '', 14.33000000, 120.94000000, NULL, '09156818812', 'documents'),
+(242, NULL, 'admin_br891826', 'Admin - Manila Branch', NULL, '$2y$12$aZ8w6Qndf3xr.//AaUJl..i1/jcktzbpbNk9WazB2w.m/WIzNL2Te', NULL, 'ADMIN', NULL, NULL, 49, NULL, '2026-07-17 09:51:42', '2026-07-17 09:51:42', NULL, 1, 1, 0, NULL, NULL, NULL, NULL, NULL, 'full'),
+(243, NULL, 'hr_br891826', 'HR Manager - Manila Branch', NULL, '$2y$12$chDm/oPFaK2.FqLaG3I7ieXY2cm7cAS6K1XHRZ7fvTV8C4cfAHM.C', NULL, 'MANAGER', 'HR', NULL, 49, NULL, '2026-07-17 09:51:42', '2026-07-17 09:51:42', NULL, 1, 1, 0, NULL, NULL, NULL, NULL, NULL, 'full'),
+(244, NULL, 'finance_br891826', 'Finance Manager - Manila Branch', NULL, '$2y$12$dxRdcG/Wr1X3LJRE.r4h1ORGXn63R56LhKo0eLmJtvq7OkJ9tYT.a', NULL, 'MANAGER', 'FINANCE', NULL, 49, NULL, '2026-07-17 09:51:42', '2026-07-17 09:51:42', NULL, 1, 1, 0, NULL, NULL, NULL, NULL, NULL, 'full'),
+(245, NULL, 'procurement_br891826', 'Procurement Manager - Manila Branch', NULL, '$2y$12$sJ2/hmzEqItz8NRbBgCLRO/HdudTOm1v6507jbQ25ur1ryqd5pH2i', NULL, 'MANAGER', 'PROCUREMENT', NULL, 49, NULL, '2026-07-17 09:51:42', '2026-07-17 09:51:42', NULL, 1, 1, 0, NULL, NULL, NULL, NULL, NULL, 'full'),
+(246, NULL, 'logistics_br891826', 'Logistics Manager - Manila Branch', NULL, '$2y$12$2OdOPDxKn1BeJsnyx6Ryru.i2ix3nz3mG9eenFocB1m73Mn979dTe', NULL, 'MANAGER', 'LOGISTICS', NULL, 49, NULL, '2026-07-17 09:51:42', '2026-07-17 09:51:42', NULL, 1, 1, 0, NULL, NULL, NULL, NULL, NULL, 'full'),
+(247, NULL, 'admin_br577235', 'Admin - Quezon City Branch', NULL, '$2y$12$oHUOGPypXqIOYdiKRW9KDu8fVPhU7cmnA1KknVYoLM3x7JrWTcP8C', NULL, 'ADMIN', NULL, NULL, 50, NULL, '2026-07-17 10:53:48', '2026-07-17 10:54:59', NULL, 1, 1, 1, NULL, NULL, NULL, NULL, NULL, 'full'),
+(248, NULL, 'finance_br577235', 'Finance Manager - Quezon City Branch', NULL, '$2y$12$iPI3QfDy60mQNcdTfHaWJeL75Sfgnnv.biDHBwFlp2HhzzwPn98eq', NULL, 'MANAGER', 'FINANCE', NULL, 50, NULL, '2026-07-17 10:53:48', '2026-07-17 10:57:04', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, 'full');
 
 --
 -- Indexes for dumped tables
@@ -2995,19 +3015,19 @@ ALTER TABLE `announcements`
 -- AUTO_INCREMENT for table `attendance`
 --
 ALTER TABLE `attendance`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `attendance_settings`
 --
 ALTER TABLE `attendance_settings`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=150;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=151;
 
 --
 -- AUTO_INCREMENT for table `branches`
 --
 ALTER TABLE `branches`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=49;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=51;
 
 --
 -- AUTO_INCREMENT for table `budget_requests`
@@ -3091,7 +3111,7 @@ ALTER TABLE `messages`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=148;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=149;
 
 --
 -- AUTO_INCREMENT for table `orders`
@@ -3109,7 +3129,7 @@ ALTER TABLE `order_items`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2649;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2675;
 
 --
 -- AUTO_INCREMENT for table `positions`
@@ -3139,7 +3159,7 @@ ALTER TABLE `price_audits`
 -- AUTO_INCREMENT for table `price_markup_percentages`
 --
 ALTER TABLE `price_markup_percentages`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `price_markup_requests`
@@ -3199,7 +3219,7 @@ ALTER TABLE `settlements`
 -- AUTO_INCREMENT for table `staff_documents`
 --
 ALTER TABLE `staff_documents`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=62;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=69;
 
 --
 -- AUTO_INCREMENT for table `supplier_audit_logs`
@@ -3217,7 +3237,7 @@ ALTER TABLE `supplier_orders`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=242;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=249;
 
 --
 -- Constraints for dumped tables

@@ -73,6 +73,18 @@
                 <input v-model.number="branchForm.budget" type="number" min="100000" max="1000000" step="1000" class="form-input" />
                 <small class="budget-helper">Min 100,000 - Max 1,000,000</small>
               </div>
+
+              <div class="form-group">
+                <label class="form-label">Store Area (Square Meters)</label>
+                <input v-model.number="branchForm.square_meters" type="number" min="1" step="0.01" class="form-input" placeholder="e.g. 50" @input="calculateGeofencingRadius" />
+                <small class="budget-helper">Enter the store area in square meters</small>
+              </div>
+
+              <div class="form-group" v-if="branchForm.geofencing_radius">
+                <label class="form-label">Geofencing Radius (meters)</label>
+                <input v-model.number="branchForm.geofencing_radius" type="number" step="0.01" class="form-input" readonly />
+                <small class="budget-helper">Auto-calculated based on store area</small>
+              </div>
             </div>
 
             <div class="default-accounts-info">
@@ -446,6 +458,8 @@ const getInitialBranchForm = () => ({
   latitude: null,
   longitude: null,
   budget: 100000,
+  square_meters: null,
+  geofencing_radius: null,
   selectedAccounts: defaultAccountSelection(),
   customAccount: {
     enabled: false,
@@ -466,6 +480,18 @@ const maskedPassword = computed(() => {
 
 function toggleShowPassword() {
   showPassword.value = !showPassword.value
+}
+
+function calculateGeofencingRadius() {
+  const squareMeters = branchForm.value.square_meters
+  if (squareMeters && squareMeters > 0) {
+    // Calculate radius from area: r = sqrt(area / π)
+    // This assumes a circular store footprint
+    const radius = Math.sqrt(squareMeters / Math.PI)
+    branchForm.value.geofencing_radius = Math.round(radius * 100) / 100 // Round to 2 decimal places
+  } else {
+    branchForm.value.geofencing_radius = null
+  }
 }
 
 // Add Branch Form
@@ -639,40 +665,43 @@ function onAddressUpdate(address) {
 }
 
 function onBranchAddressSaved(payload) {
-  // Extract address components from the new payload format
-  const addressComponents = payload.addressComponents || {}
-  
-  // Update address components
-  branchForm.value.region = addressComponents.region || ''
-  branchForm.value.province = addressComponents.province || ''
-  branchForm.value.city = addressComponents.city || ''
-  branchForm.value.barangay = addressComponents.barangay || ''
-  
-  // Update geolocation coordinates
-  branchForm.value.latitude = payload.lat
-  branchForm.value.longitude = payload.lng
-  
-  // Generate saved address display
-  const parts = []
-  if (payload.address && payload.address.trim() !== '') parts.push(payload.address.trim())
-  if (addressComponents.barangay) parts.push(addressComponents.barangay)
-  if (addressComponents.city) parts.push(addressComponents.city)
-  if (addressComponents.province) parts.push(addressComponents.province)
-  if (addressComponents.region) parts.push(addressComponents.region)
-  savedAddress.value = parts.join(', ')
-  addressSaved.value = true
-  
-  // Auto-generate or update branch name based on city
-  const cityName = (addressComponents.city || '').trim()
-  const currentName = (branchForm.value.name || '').trim()
-  
-  // Update if: city is available AND (name is empty OR name ends with " Branch" indicating auto-generated)
-  if (cityName) {
-    if (!currentName || currentName.endsWith(' Branch')) {
-      branchForm.value.name = `${cityName} Branch`
-    }
-  }
-}
+   // Extract address components from the new payload format
+   const addressComponents = payload.addressComponents || {}
+   
+   // Update address components
+   branchForm.value.region = addressComponents.region || ''
+   branchForm.value.province = addressComponents.province || ''
+   branchForm.value.city = addressComponents.city || ''
+   branchForm.value.barangay = addressComponents.barangay || ''
+   
+   // Update geolocation coordinates
+   branchForm.value.latitude = payload.lat
+   branchForm.value.longitude = payload.lng
+   
+   // Generate saved address display
+   const parts = []
+   if (payload.address && payload.address.trim() !== '') parts.push(payload.address.trim())
+   if (addressComponents.barangay) parts.push(addressComponents.barangay)
+   if (addressComponents.city) parts.push(addressComponents.city)
+   if (addressComponents.province) parts.push(addressComponents.province)
+   if (addressComponents.region) parts.push(addressComponents.region)
+   savedAddress.value = parts.join(', ')
+   
+   // CRITICAL: Set the address field that gets sent to the backend
+   branchForm.value.address = savedAddress.value
+   addressSaved.value = true
+   
+   // Auto-generate or update branch name based on city
+   const cityName = (addressComponents.city || '').trim()
+   const currentName = (branchForm.value.name || '').trim()
+   
+   // Update if: city is available AND (name is empty OR name ends with " Branch" indicating auto-generated)
+   if (cityName) {
+     if (!currentName || currentName.endsWith(' Branch')) {
+       branchForm.value.name = `${cityName} Branch`
+     }
+   }
+ }
 
 function onBranchAddressUpdate(address) {
   branchForm.value.region = address.region || branchForm.value.region
@@ -682,18 +711,36 @@ function onBranchAddressUpdate(address) {
 }
 
 function onBranchLocationUpdate(location) {
-  branchForm.value.latitude = location.lat
-  branchForm.value.longitude = location.lng
-  
-  // Auto-populate branch name instantly when clicking on map
-  if (location.addressComponents && location.addressComponents.city) {
-    const cityName = (location.addressComponents.city || '').trim()
-    // Always update the name if city is available (no matter what the current name is)
-    if (cityName) {
-      branchForm.value.name = `${cityName} Branch`
-    }
-  }
-}
+   branchForm.value.latitude = location.lat
+   branchForm.value.longitude = location.lng
+   
+   // Update address components if provided
+   if (location.addressComponents) {
+     branchForm.value.region = location.addressComponents.region || branchForm.value.region
+     branchForm.value.province = location.addressComponents.province || branchForm.value.province
+     branchForm.value.city = location.addressComponents.city || branchForm.value.city
+     branchForm.value.barangay = location.addressComponents.barangay || branchForm.value.barangay
+     
+     // Update the address string
+     const parts = []
+     if (location.address) parts.push(location.address)
+     if (branchForm.value.barangay) parts.push(branchForm.value.barangay)
+     if (branchForm.value.city) parts.push(branchForm.value.city)
+     if (branchForm.value.province) parts.push(branchForm.value.province)
+     if (branchForm.value.region) parts.push(branchForm.value.region)
+     branchForm.value.address = parts.join(', ')
+     savedAddress.value = branchForm.value.address
+   }
+   
+   // Auto-populate branch name instantly when clicking on map
+   if (location.addressComponents && location.addressComponents.city) {
+     const cityName = (location.addressComponents.city || '').trim()
+     // Always update the name if city is available (no matter what the current name is)
+     if (cityName) {
+       branchForm.value.name = `${cityName} Branch`
+     }
+   }
+ }
 
 function saveBranchAddress() {
   const parts = []
@@ -773,20 +820,22 @@ async function submitBranch() {
       }
     }
 
-    const res = await axios.post('/api/superadmin/branches', {
-      code: branchForm.value.code.trim(),
-      name: branchForm.value.name.trim(),
-      address: savedAddress.value || branchForm.value.address.trim(),
-      region: branchForm.value.region || '',
-      province: branchForm.value.province || '',
-      city: branchForm.value.city || '',
-      barangay: branchForm.value.barangay || '',
-      latitude: branchForm.value.latitude || null,
-      longitude: branchForm.value.longitude || null,
-      budget: Number(branchForm.value.budget) || 100000,
-      accounts: branchForm.value.selectedAccounts,
-      custom_account: customAccountPayload,
-    }, { withCredentials: true })
+     const res = await axios.post('/api/superadmin/branches', {
+       code: branchForm.value.code.trim(),
+       name: branchForm.value.name.trim(),
+       address: branchForm.value.address || savedAddress.value || '',
+       region: branchForm.value.region || '',
+       province: branchForm.value.province || '',
+       city: branchForm.value.city || '',
+       barangay: branchForm.value.barangay || '',
+       latitude: branchForm.value.latitude || null,
+       longitude: branchForm.value.longitude || null,
+       budget: Number(branchForm.value.budget) || 100000,
+       square_meters: branchForm.value.square_meters || null,
+       geofencing_radius: branchForm.value.geofencing_radius || null,
+       accounts: branchForm.value.selectedAccounts,
+       custom_account: customAccountPayload,
+     }, { withCredentials: true })
 
     if (res.data && res.data.ok) {
       formSuccess.value = res.data.message || 'Branch created successfully with default accounts!'

@@ -49,6 +49,25 @@ class AttendanceController extends Controller
             ], 400);
         }
 
+        // Geofencing validation
+        $userLatitude = $request->input('latitude');
+        $userLongitude = $request->input('longitude');
+
+        if ($userLatitude && $userLongitude) {
+            $geofencingCheck = $this->validateGeofencing($user, $userLatitude, $userLongitude);
+            
+            if (!$geofencingCheck['valid']) {
+                return response()->json([
+                    'ok' => false,
+                    'success' => false,
+                    'message' => $geofencingCheck['message'],
+                    'geofencing_error' => true,
+                    'distance' => $geofencingCheck['distance'] ?? null,
+                    'allowed_radius' => $geofencingCheck['allowed_radius'] ?? null
+                ], 403);
+            }
+        }
+
         // Create or update attendance
         if (!$attendance) {
             $attendance = new Attendance([
@@ -115,6 +134,25 @@ class AttendanceController extends Controller
                 'message' => 'Already clocked out today',
                 'time_out' => $attendance->time_out->format('H:i')
             ], 400);
+        }
+
+        // Geofencing validation for clock out
+        $userLatitude = $request->input('latitude');
+        $userLongitude = $request->input('longitude');
+
+        if ($userLatitude && $userLongitude) {
+            $geofencingCheck = $this->validateGeofencing($user, $userLatitude, $userLongitude);
+            
+            if (!$geofencingCheck['valid']) {
+                return response()->json([
+                    'ok' => false,
+                    'success' => false,
+                    'message' => $geofencingCheck['message'],
+                    'geofencing_error' => true,
+                    'distance' => $geofencingCheck['distance'] ?? null,
+                    'allowed_radius' => $geofencingCheck['allowed_radius'] ?? null
+                ], 403);
+            }
         }
 
         // Get user's branch ID
@@ -335,6 +373,74 @@ class AttendanceController extends Controller
         }
 
         return 'present';
+    }
+
+    /**
+     * Validate geofencing - check if user is within allowed radius of their branch
+     */
+    private function validateGeofencing($user, $userLatitude, $userLongitude)
+    {
+        // Get user's branch
+        $branch = \App\Models\Branch::find($user->branch_id);
+        
+        // If no branch assigned or branch doesn't exist, allow clock in/out
+        if (!$branch) {
+            return ['valid' => true];
+        }
+
+        // If branch has no coordinates, allow clock in/out (no geofencing configured)
+        if (!$branch->latitude || !$branch->longitude) {
+            return ['valid' => true];
+        }
+
+        // Get geofencing radius (in meters)
+        $radius = $branch->geofencing_radius;
+        
+        // If no radius configured, use default of 100 meters
+        if (!$radius || $radius <= 0) {
+            $radius = 100;
+        }
+
+        // Calculate distance between user and branch using Haversine formula
+        $distance = $this->calculateDistance(
+            $userLatitude,
+            $userLongitude,
+            $branch->latitude,
+            $branch->longitude
+        );
+
+        // Check if user is within allowed radius
+        if ($distance > $radius) {
+            return [
+                'valid' => false,
+                'message' => "You are not within the branch vicinity. You are {$distance} meters away. Allowed radius is {$radius} meters.",
+                'distance' => round($distance, 2),
+                'allowed_radius' => $radius
+            ];
+        }
+
+        return ['valid' => true];
+    }
+
+    /**
+     * Calculate distance between two coordinates using Haversine formula
+     * Returns distance in meters
+     */
+    private function calculateDistance($lat1, $lon1, $lat2, $lon2)
+    {
+        $earthRadius = 6371000; // Earth's radius in meters
+
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+
+        $a = sin($dLat / 2) * sin($dLat / 2) +
+             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+             sin($dLon / 2) * sin($dLon / 2);
+
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+        $distance = $earthRadius * $c;
+
+        return $distance;
     }
 
     /**
