@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen bg-gradient-to-b from-[#FF9A4A] to-[#FF6A3D]">
     <div class="admin-page" :class="{ 'admin-page--wider': fullWidth }">
-      <section class="admin-layout" :class="{ 'admin-layout--wider': fullWidth, 'admin-layout--owner-two-column': ownerTwoColumnLayout }">
+      <section class="admin-layout" :class="{ 'admin-layout--wider': fullWidth, 'admin-layout--owner-two-column': ownerTwoColumnLayout, 'admin-layout--single-column': singleColumnLayout }">
         <!-- MIDDLE: MAIN DASHBOARD -->
         <main class="admin-main">
           <header v-if="showHeader" class="admin-main-header">
@@ -22,7 +22,7 @@
           <slot name="main"></slot>
         </main>
         <!-- RIGHT: SIDE PANELS -->
-        <aside class="admin-side">
+        <aside v-if="!singleColumnLayout" class="admin-side">
           <div v-if="showProfileColumn && userProfile" class="admin-card admin-card--stacked">
             <div class="admin-card__header admin-card__header--stacked">
               <label class="admin-avatar admin-avatar--photo avatar-upload" for="avatar-input">
@@ -276,6 +276,7 @@ const props = defineProps({
   panelDescription: { type: String, required: true },
   fullWidth: { type: Boolean, default: false },
   ownerTwoColumnLayout: { type: Boolean, default: false },
+  singleColumnLayout: { type: Boolean, default: false },
   showHeader: { type: Boolean, default: true },
   enableProfileUpdate: { type: Boolean, default: false },
   canEditProfile: { type: Boolean, default: false },
@@ -826,6 +827,10 @@ async function onAvatarChange(event) {
 .admin-layout--owner-two-column {
   grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
   gap: 20px;
+}
+
+.admin-layout--single-column {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .admin-layout--owner-two-column .admin-main {

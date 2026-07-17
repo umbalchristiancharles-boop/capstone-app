@@ -6,13 +6,22 @@
     :enableProfileUpdate="true"
     :canEditProfile="false"
     :showProfileColumn="false"
+    :showAnnouncements="false"
+    :showAttendanceCard="false"
+    :singleColumnLayout="true"
     @profile-updated="onProfileUpdated"
     @logout="confirmLogout"
   >
-    <template #headerLeft>
-      <button class="back-btn" @click="goBackToOwnerPanel" title="Back to Owner Panel">
-        ← Back
-      </button>
+    <template #headerActions>
+      <div class="dish-approval-header-actions">
+        <button class="back-to-dashboard-btn" @click="goBackToOwnerPanel" title="Back to Owner Panel">
+          <svg class="back-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+          <span>Back to Dashboard</span>
+        </button>
+      </div>
     </template>
 
     <template #main>
@@ -316,38 +325,6 @@
       </section>
     </template>
 
-    <template #headerActions>
-      <div ref="profileWrapper" class="header-profile-wrapper" style="position:relative;">
-        <div
-          class="header-profile-container"
-          style="background:#fff;border:1px solid #eef2f5;border-radius:12px;padding:6px 10px;display:inline-flex;align-items:center;"
-        >
-          <button
-            class="header-profile-btn"
-            type="button"
-            style="background: transparent; border: 0; cursor: pointer; display: flex; align-items: center; gap: 0.6rem; padding:0;"
-            @click.stop="toggleProfileDropdown"
-          >
-            <div class="header-avatar" style="width:28px;height:28px;border-radius:50%;background:rgb(238,238,238);display:flex;align-items:center;justify-content:center;font-weight:600;">
-              <div class="header-avatar-initials">{{ (userProfile.fullName || userProfile.full_name || userProfile.name || 'O').charAt(0) }}</div>
-            </div>
-            <div class="header-name" style="font-size:0.85rem;font-weight:700;color:#111827;white-space:nowrap;">
-              {{ (userProfile.role || 'OWNER').toString().toUpperCase() }}
-              <span v-if="userProfile.branch || userProfile.branch_name" style="font-weight:600;opacity:0.85"> - {{ (userProfile.branch || userProfile.branch_name).toString().toUpperCase() }}</span>
-            </div>
-          </button>
-        </div>
-
-        <div
-          v-if="showProfileDropdown"
-          class="header-profile-dropdown"
-          style="position:absolute;right:0;top:46px;background:#fff;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,0.08);padding:8px;display:flex;flex-direction:column;gap:6px;min-width:140px;z-index:30"
-        >
-          <button class="dropdown-item" style="background:transparent;border:0;padding:8px;text-align:left;" @click.prevent="handleInfoClick">Info</button>
-          <button class="dropdown-item" style="background:transparent;border:0;padding:8px;text-align:left;" @click.prevent="handleLogoutClick">Logout</button>
-        </div>
-      </div>
-    </template>
   </OwnerPanelLayout>
 </template>
 
@@ -367,7 +344,6 @@ const loadingApproved = ref(false)
 const error = ref('')
 const approvingId = ref(null)
 const rejectingId = ref(null)
-const showProfileDropdown = ref(false)
 
 const approvalNotes = ref({})
 const rejectReason = ref({})
@@ -469,7 +445,7 @@ function approveDish(dishId) {
           approvedDishes.value.unshift(response.data.data)
           approvalNotes.value[dishId] = ''
           showRejectReason.value[dishId] = false
-          
+
           // Show success message
           try {
             window.swalAlert('✅ Dish approved successfully! Ingredients are now visible in logistics panel.', 'Success')
@@ -494,7 +470,7 @@ function approveDish(dishId) {
     if (!window.confirm('Are you sure you want to approve this dish?')) {
       return
     }
-    
+
     approvingId.value = dishId
     const notes = approvalNotes.value[dishId] || ''
 
@@ -559,7 +535,7 @@ function confirmReject(dishId) {
           pendingDishes.value = pendingDishes.value.filter(d => d.id !== dishId)
           rejectReason.value[dishId] = ''
           showRejectReason.value[dishId] = false
-          
+
           try {
             window.swalAlert('❌ Dish rejected. The kitchen staff will be notified.', 'Dish Rejected')
           } catch (e) {
@@ -603,20 +579,6 @@ function confirmReject(dishId) {
         rejectingId.value = null
       })
   }
-}
-
-function toggleProfileDropdown() {
-  showProfileDropdown.value = !showProfileDropdown.value
-}
-
-function handleInfoClick() {
-  showProfileDropdown.value = false
-  // Redirect to profile page or show modal
-  window.location.href = '/profile'
-}
-
-function handleLogoutClick() {
-  confirmLogout()
 }
 
 function confirmLogout() {
@@ -703,7 +665,7 @@ function approveProductRequest(prodReqId) {
       approvedProductRequests.value.unshift(response.data)
       approvalNotesProduct.value[prodReqId] = ''
       showRejectReasonProduct.value[prodReqId] = false
-      
+
       alert('✅ Product request approved successfully! Product is now available for procurement.')
     })
     .catch(err => {
@@ -745,7 +707,7 @@ function confirmRejectProduct(prodReqId) {
       pendingProductRequests.value = pendingProductRequests.value.filter(p => p.id !== prodReqId)
       rejectReasonProduct.value[prodReqId] = ''
       showRejectReasonProduct.value[prodReqId] = false
-      
+
       alert('❌ Product request rejected. The logistics manager will be notified.')
     })
     .catch(err => {
@@ -789,24 +751,54 @@ onMounted(() => {
   color: #111827;
 }
 
-.back-btn {
-  padding: 0.4rem 0.8rem;
-  background: transparent;
-  color: #ff6a3d;
-  border: none;
-  cursor: pointer;
-  font-weight: 600;
-  transition: opacity 0.2s;
-  font-size: 0.95rem;
+.dish-approval-header-actions {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 20;
   display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  position: relative;
-  z-index: 40;
+  justify-content: flex-end;
+  align-items: flex-start;
+  width: auto;
 }
 
-.back-btn:hover {
-  opacity: 0.8;
+:deep(.admin-main-header) {
+  position: relative;
+}
+
+:deep(.admin-main-header .header-left-slot) {
+  display: none;
+}
+
+.back-to-dashboard-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: #ff6a3d;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.92rem;
+  line-height: 1;
+  box-shadow: none;
+  border: 0;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
+.back-to-dashboard-btn:hover {
+  transform: translateY(-1px);
+  opacity: 0.82;
+}
+
+.back-to-dashboard-btn:active {
+  transform: translateY(0);
+}
+
+.back-icon {
+  flex-shrink: 0;
 }
 
 .refresh-btn {
