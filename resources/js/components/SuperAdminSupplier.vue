@@ -134,6 +134,7 @@
 </template>
 
 <script setup>
+      :ownerTwoColumnLayout="true"
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'

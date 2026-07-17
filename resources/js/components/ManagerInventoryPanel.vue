@@ -6,6 +6,7 @@
     :enableProfileUpdate="true"
     :canEditProfile="userProfile.role === 'OWNER'"
     :canChangePassword="true"
+    :ownerTwoColumnLayout="true"
     @logout="askLogout"
     @profile-updated="onProfileUpdated"
   >

@@ -825,6 +825,7 @@ async function onAvatarChange(event) {
 }
 
 .admin-layout--owner-two-column {
+  display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
   gap: 20px;
 }
@@ -841,6 +842,11 @@ async function onAvatarChange(event) {
 .admin-layout--owner-two-column .admin-side {
   grid-column: 2;
   width: 100%;
+}
+
+.admin-layout--owner-two-column.admin-layout--wider .admin-side,
+.admin-layout--owner-two-column .admin-side {
+  display: block;
 }
 
 .admin-layout--wider .admin-side {

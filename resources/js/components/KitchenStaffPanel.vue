@@ -6,6 +6,7 @@
     :enableProfileUpdate="true"
     :canEditProfile="false"
     :showProfileColumn="false"
+    :ownerTwoColumnLayout="true"
     @profile-updated="onProfileUpdated"
     @logout="confirmLogout"
   >
@@ -144,7 +145,8 @@
       </section>
     </template>
     <template #headerActions>
-      <div ref="profileWrapper" class="header-profile-wrapper" style="position:relative;">
+      <div ref="profileWrapper" class="kitchen-header-actions">
+        <div class="header-profile-wrapper">
         <div
           class="header-profile-container"
           style="background:#fff;border:1px solid #eef2f5;border-radius:12px;padding:6px 10px;display:inline-flex;align-items:center;"
@@ -173,6 +175,7 @@
           <button class="dropdown-item" style="background:transparent;border:0;padding:8px;text-align:left;" @click.prevent="handleInfoClick">Info</button>
           <button class="dropdown-item" style="background:transparent;border:0;padding:8px;text-align:left;" @click.prevent="handleLogoutClick">Logout</button>
         </div>
+      </div>
       </div>
     </template>
   </OwnerPanelLayout>
@@ -563,6 +566,29 @@ async function performLogout() {
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 10px rgba(239, 68, 68, 0.35);
+}
+
+:deep(.admin-main-header) {
+  position: relative;
+}
+
+.kitchen-header-actions {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 20;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+  transform: translate(-4px, 4px);
+}
+
+.header-profile-wrapper {
+  position: relative;
+}
+
+:deep(.admin-side .announcements-panel) {
+  margin-top: 40px;
 }
 
 /* Kitchen panel layout and form styles */

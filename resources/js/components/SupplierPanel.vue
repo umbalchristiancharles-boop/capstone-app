@@ -8,6 +8,7 @@
     :enableProfileUpdate="true"
     :canEditProfile="userProfile.role === 'OWNER'"
     :canChangePassword="true"
+    :ownerTwoColumnLayout="true"
     @logout="askLogout"
     @profile-updated="onProfileUpdated"
   >
@@ -299,9 +300,9 @@
             <div class="delivery-input-group">
               <div class="form-group">
                 <label>Estimated Delivery Date & Time</label>
-                <input 
-                  v-model="estimatedDeliveryDateTime" 
-                  type="datetime-local" 
+                <input
+                  v-model="estimatedDeliveryDateTime"
+                  type="datetime-local"
                   class="delivery-input"
                   :min="getCurrentDateTimeLocal()"
                 />
@@ -356,10 +357,10 @@
               <label>Pricing Type</label>
               <div class="pricing-type-options">
                 <div class="option-group">
-                  <input 
-                    type="radio" 
-                    id="submit-type-individual" 
-                    value="individual" 
+                  <input
+                    type="radio"
+                    id="submit-type-individual"
+                    value="individual"
                     v-model="submitForm.per_pack_or_individual"
                   />
                   <label for="submit-type-individual" class="option-label">
@@ -368,10 +369,10 @@
                   </label>
                 </div>
                 <div class="option-group">
-                  <input 
-                    type="radio" 
-                    id="submit-type-per_pack" 
-                    value="per_pack" 
+                  <input
+                    type="radio"
+                    id="submit-type-per_pack"
+                    value="per_pack"
                     v-model="submitForm.per_pack_or_individual"
                   />
                   <label for="submit-type-per_pack" class="option-label">
@@ -380,10 +381,10 @@
                   </label>
                 </div>
                 <div class="option-group">
-                  <input 
-                    type="radio" 
-                    id="submit-type-both" 
-                    value="both" 
+                  <input
+                    type="radio"
+                    id="submit-type-both"
+                    value="both"
                     v-model="submitForm.per_pack_or_individual"
                   />
                   <label for="submit-type-both" class="option-label">
@@ -441,8 +442,8 @@
           <div class="modal-body">
             <!-- Field selector -->
             <div class="field-selector">
-              <button 
-                v-for="field in editFields" 
+              <button
+                v-for="field in editFields"
                 :key="field.id"
                 class="field-btn"
                 :class="{ active: editFieldType === field.id }"
@@ -474,10 +475,10 @@
               <label>Edit Pricing Type</label>
               <div class="pricing-type-options">
                 <div class="option-group">
-                  <input 
-                    type="radio" 
-                    id="edit-type-individual" 
-                    value="individual" 
+                  <input
+                    type="radio"
+                    id="edit-type-individual"
+                    value="individual"
                     v-model="editForm.per_pack_or_individual"
                   />
                   <label for="edit-type-individual" class="option-label">
@@ -486,10 +487,10 @@
                   </label>
                 </div>
                 <div class="option-group">
-                  <input 
-                    type="radio" 
-                    id="edit-type-per_pack" 
-                    value="per_pack" 
+                  <input
+                    type="radio"
+                    id="edit-type-per_pack"
+                    value="per_pack"
                     v-model="editForm.per_pack_or_individual"
                   />
                   <label for="edit-type-per_pack" class="option-label">
@@ -498,10 +499,10 @@
                   </label>
                 </div>
                 <div class="option-group">
-                  <input 
-                    type="radio" 
-                    id="edit-type-both" 
-                    value="both" 
+                  <input
+                    type="radio"
+                    id="edit-type-both"
+                    value="both"
                     v-model="editForm.per_pack_or_individual"
                   />
                   <label for="edit-type-both" class="option-label">
@@ -939,21 +940,21 @@ function closeEditProductModal() {
 async function saveProductChanges() {
   if (!editForm.value.id) return
   if (!editFieldType.value) { editError.value = 'Please select a field to edit'; return }
-  
+
   // Validate only the selected field
-  if (editFieldType.value === 'category' && !editForm.value.category) { 
-    editError.value = 'Category is required'; return 
+  if (editFieldType.value === 'category' && !editForm.value.category) {
+    editError.value = 'Category is required'; return
   }
-  if (editFieldType.value === 'pricing' && !editForm.value.per_pack_or_individual) { 
-    editError.value = 'Pricing type is required'; return 
+  if (editFieldType.value === 'pricing' && !editForm.value.per_pack_or_individual) {
+    editError.value = 'Pricing type is required'; return
   }
-  if (editFieldType.value === 'price' && (!editForm.value.price || editForm.value.price <= 0)) { 
-    editError.value = 'Price is required and must be greater than 0'; return 
+  if (editFieldType.value === 'price' && (!editForm.value.price || editForm.value.price <= 0)) {
+    editError.value = 'Price is required and must be greater than 0'; return
   }
-  if (editFieldType.value === 'expiration' && !editForm.value.expires_at) { 
-    editError.value = 'Expiration date is required'; return 
+  if (editFieldType.value === 'expiration' && !editForm.value.expires_at) {
+    editError.value = 'Expiration date is required'; return
   }
-  
+
   editSubmitting.value = true
   editError.value = ''
   try {
@@ -963,7 +964,7 @@ async function saveProductChanges() {
     if (editFieldType.value === 'pricing') payload.per_pack_or_individual = editForm.value.per_pack_or_individual
     if (editFieldType.value === 'price') payload.price = editForm.value.price
     if (editFieldType.value === 'expiration') payload.expires_at = editForm.value.expires_at
-    
+
     const res = await axios.put(`/api/staff/inventory/products/${editForm.value.id}`, payload, { withCredentials: true })
     if (res && res.data) {
       showToast('Product updated successfully', 'success')
@@ -1001,8 +1002,8 @@ async function submitProductForm() {
   submitSubmitting.value = true
   submitError.value = ''
   try {
-    const payload = { 
-      name: submitForm.value.name, 
+    const payload = {
+      name: submitForm.value.name,
       price: submitForm.value.price,
       category: submitForm.value.category,
       per_pack_or_individual: submitForm.value.per_pack_or_individual,
@@ -1042,7 +1043,7 @@ function printReceipt() {
   try {
     const orderDate = receiptData.value.created_at || receiptData.value.createdAt || new Date().toISOString()
     const deliveryDate = estimatedDeliveryDateTime.value ? new Date(estimatedDeliveryDateTime.value).toLocaleString() : 'Not specified'
-    
+
     const html = `
       <!DOCTYPE html>
       <html>
@@ -1050,9 +1051,9 @@ function printReceipt() {
         <title>Transaction Receipt - Order #${receiptData.value.id}</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { 
-            font-family: 'Arial', sans-serif; 
-            padding: 20px; 
+          body {
+            font-family: 'Arial', sans-serif;
+            padding: 20px;
             color: #1f2937;
             max-width: 800px;
             margin: 0 auto;
@@ -1273,7 +1274,7 @@ function printReceipt() {
       </body>
       </html>
     `
-    
+
     const w = window.open('', '_blank', 'width=800,height=600')
     if (!w) return alert('Unable to open print window. Please allow popups for this site.')
     w.document.write(html)
@@ -1721,10 +1722,10 @@ function onProfileUpdated(newData) {
   gap: 0.5rem;
 }
 
-.receipt-actions .btn-secondary { 
-  background:#f3f4f6; 
-  border:1px solid #e5e7eb; 
-  padding:8px 16px; 
+.receipt-actions .btn-secondary {
+  background:#f3f4f6;
+  border:1px solid #e5e7eb;
+  padding:8px 16px;
   border-radius:6px;
   color: #374151;
   font-weight: 500;
@@ -1736,11 +1737,11 @@ function onProfileUpdated(newData) {
   background: #e5e7eb;
 }
 
-.receipt-actions .btn-primary { 
-  background:#0b6e3a; 
-  color:#fff; 
-  padding:8px 16px; 
-  border-radius:6px; 
+.receipt-actions .btn-primary {
+  background:#0b6e3a;
+  color:#fff;
+  padding:8px 16px;
+  border-radius:6px;
   border:none;
   font-weight: 500;
   cursor: pointer;
@@ -1783,11 +1784,11 @@ function onProfileUpdated(newData) {
   .receipt-box-enhanced {
     width: 100%;
   }
-  
+
   .receipt-details-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .receipt-header {
     flex-direction: column;
     text-align: center;

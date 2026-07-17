@@ -10,6 +10,7 @@
     :showProfileColumn="false"
     :showAnnouncements="false"
     :fullWidth="true"
+    :ownerTwoColumnLayout="true"
     @logout="askLogout"
     @profile-updated="onProfileUpdated"
   >
@@ -33,7 +34,7 @@
         <button @click="performClockIn" :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockInGeofencing || locationLoading" class="btn-clock-in">{{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock In' }}</button>
         <button @click="performClockOut" :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockOut || !canClockInGeofencing || locationLoading" class="btn-clock-out" :class="{ 'btn-disabled': !canClockOut && attendanceStatus.is_clocked_in }">{{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock Out' }}</button>
       </div>
-      
+
       <!-- Geofencing Status -->
       <div v-if="locationError" class="geofencing-status geofencing-error">
         <span class="status-icon">⚠️</span>
@@ -47,7 +48,7 @@
         <span class="status-icon">🔒</span>
         <span>{{ geofencingMessage }}</span>
       </div>
-      
+
       <div v-if="!canClockOut && attendanceStatus.is_clocked_in" class="clockout-restriction"><span class="restriction-icon">LOCK</span><span>Cannot clock out before {{ scheduledTimeOut }}</span></div>
       <div v-if="attendanceMessage" :class="['attendance-message', attendanceMessageType]">{{ attendanceMessage }}</div>
     </section>
@@ -74,17 +75,17 @@
           <option value="all">All Time</option>
         </select>
         <div v-if="selectedRange === 'custom'" class="custom-date-range">
-          <input 
-            type="date" 
-            v-model="customStartDate" 
+          <input
+            type="date"
+            v-model="customStartDate"
             @change="onCustomDateChange"
             :max="customEndDate || today"
             class="date-input"
           />
           <span class="date-separator">to</span>
-          <input 
-            type="date" 
-            v-model="customEndDate" 
+          <input
+            type="date"
+            v-model="customEndDate"
             @change="onCustomDateChange"
             :min="customStartDate"
             :max="today"
@@ -972,7 +973,7 @@ async function performClockIn() {
       latitude: userLocation.value.latitude,
       longitude: userLocation.value.longitude
     }, { withCredentials: true })
-    
+
     if (res.data && res.data.success) {
       attendanceMessage.value = 'Clocked in successfully!'
       attendanceMessageType.value = 'success'
@@ -1020,7 +1021,7 @@ async function performClockOut() {
       latitude: userLocation.value.latitude,
       longitude: userLocation.value.longitude
     }, { withCredentials: true })
-    
+
     if (res.data && res.data.success) {
       attendanceMessage.value = 'Clocked out successfully!'
       attendanceMessageType.value = 'success'
@@ -1070,7 +1071,7 @@ onMounted(() => {
     loadAttendanceStatus()
     loadAttendanceSettings()
     getUserLocation()
-    
+
     // Refresh location every 5 minutes
     setInterval(getUserLocation, 300000)
   }

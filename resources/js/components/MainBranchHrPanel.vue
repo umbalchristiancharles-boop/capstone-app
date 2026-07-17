@@ -8,6 +8,7 @@
       :canEditProfile="false"
       :canChangePassword="true"
       :showProfileColumn="false"
+      :ownerTwoColumnLayout="true"
       @logout="askLogout"
       @profile-updated="onProfileUpdated"
     >
@@ -15,7 +16,7 @@
         <div class="panel-section hero">
           <h2 class="section-title">Main Branch HR Panel</h2>
           <p class="section-description">Human Resources and staff management for Main Branch</p>
-          
+
           <div class="info-box">
             <p>This panel provides HR functions for Main Branch headquarters personnel.</p>
             <p>Manage staff schedules, attendance, benefits, and performance from this location.</p>

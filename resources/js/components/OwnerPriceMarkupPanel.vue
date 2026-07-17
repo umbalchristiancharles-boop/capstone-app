@@ -7,6 +7,7 @@
     :canEditProfile="false"
     :showProfileColumn="false"
     :showAnnouncements="false"
+    :ownerTwoColumnLayout="true"
     @profile-updated="onProfileUpdated"
     @logout="confirmLogout"
   >

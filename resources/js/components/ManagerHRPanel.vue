@@ -6,6 +6,7 @@
     :enableProfileUpdate="true"
     :canEditProfile="userProfile.role === 'OWNER'"
     :canChangePassword="true"
+    :ownerTwoColumnLayout="true"
     @logout="askLogout"
     @profile-updated="onProfileUpdated"
   >
@@ -193,10 +194,6 @@
         </div>
       </div>
 
-      </div>
-    </template>
-
-    <template #side>
       <section class="panel-block hr-attendance-panel">
         <div class="panel-header hr-attendance-header">
           <h2>
@@ -245,6 +242,11 @@
           </div>
         </div>
       </section>
+      </div>
+    </template>
+
+    <template #side>
+
     </template>
   </OwnerPanelLayout>
 

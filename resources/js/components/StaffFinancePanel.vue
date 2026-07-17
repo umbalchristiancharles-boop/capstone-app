@@ -5,6 +5,7 @@
     :panelDescription="'Record payments and view financial logs.'"
     :enableProfileUpdate="true"
     :canEditProfile="false"
+    :ownerTwoColumnLayout="true"
     @profile-updated="onProfileUpdated"
   >
     <template #main>

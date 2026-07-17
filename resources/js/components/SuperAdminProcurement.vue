@@ -9,6 +9,7 @@
     :showProfileColumn="false"
     :showAnnouncements="!!selectedBranch"
     :showBackButton="true"
+    :ownerTwoColumnLayout="true"
     @back="() => router.back()"
     @logout="askLogout"
     @profile-updated="onProfileUpdated"

@@ -7,6 +7,7 @@
       panelTitle="Super Admin Logistics Panel"
       panelDescription="Monitor inventory, procurement requests, and manage across all branches."
       :showProfileColumn="false"
+      :ownerTwoColumnLayout="true"
     >
       <template #headerLeft>
         <button class="btn-secondary back-to-superadmin-btn" @click="goBackToSuperAdmin">

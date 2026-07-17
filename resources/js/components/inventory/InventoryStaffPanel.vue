@@ -5,6 +5,7 @@
     panelDescription="Manage your branch inventory"
     :enableProfileUpdate="true"
     :showProfileColumn="false"
+    :ownerTwoColumnLayout="true"
     @logout="logout"
   >
     <template #headerActions>
@@ -205,10 +206,10 @@
       <div class="info-modal" style="max-width: 600px;">
         <h3>Report Expired Product</h3>
         <p class="info-sub">Submit a report for the expired product: <strong>{{ expiredReportProduct?.name }}</strong></p>
-        
+
         <div v-if="expiredReportError" class="info-error">{{ expiredReportError }}</div>
         <div v-if="expiredReportSuccess" class="info-success">{{ expiredReportSuccess }}</div>
-        
+
         <div class="info-grid">
           <div class="info-row">
             <span class="info-label">Product:</span>
@@ -226,22 +227,22 @@
             <span class="info-label">Current Stock:</span>
             <span class="info-value">{{ expiredReportProduct?.stock || 0 }}</span>
           </div>
-          
+
           <div class="info-row">
             <span class="info-label">Expired Quantity:</span>
             <div style="display: flex; align-items: center; gap: 8px;">
-              <input 
-                v-model="expiredReportForm.quantity" 
-                type="number" 
-                min="1" 
+              <input
+                v-model="expiredReportForm.quantity"
+                type="number"
+                min="1"
                 :max="expiredReportProduct?.stock || 1"
                 class="info-input"
                 style="width: 120px;"
                 @input="validateExpiredQuantity"
               />
-              <button 
-                type="button" 
-                class="btn-outline" 
+              <button
+                type="button"
+                class="btn-outline"
                 style="padding: 6px 12px; font-size: 0.85rem;"
                 @click="autoFillExpiredQuantity"
                 title="Auto-fill quantity from expired inventory lots"
@@ -251,28 +252,28 @@
             </div>
             <span v-if="expiredReportError" style="color: #dc3545; font-size: 0.85rem; margin-left: 8px;">{{ expiredReportError }}</span>
             <div v-if="expiredReportProduct" style="font-size: 0.8rem; color: #666; margin-top: 4px;">
-              Current stock: {{ expiredReportProduct.stock || 0 }} | 
+              Current stock: {{ expiredReportProduct.stock || 0 }} |
               <span v-if="expiredLotsSummary">Expired lots: {{ expiredLotsSummary.quantity }} units ({{ expiredLotsSummary.count }} lots)</span>
             </div>
           </div>
-          
+
           <div class="info-row info-row--full">
             <span class="info-label">Report Notes:</span>
-            <textarea 
-              v-model="expiredReportForm.notes" 
-              class="info-input" 
-              rows="4" 
+            <textarea
+              v-model="expiredReportForm.notes"
+              class="info-input"
+              rows="4"
               placeholder="Describe the issue with the expired product..."
               style="width: 100%; resize: vertical;"
             ></textarea>
           </div>
-          
+
           <div class="info-row info-row--full">
             <span class="info-label">Product Image:</span>
-            <input 
-              type="file" 
-              accept="image/*" 
-              @change="onExpiredImageChange" 
+            <input
+              type="file"
+              accept="image/*"
+              @change="onExpiredImageChange"
               class="info-input"
               style="width: 100%;"
             />
@@ -281,12 +282,12 @@
             </div>
           </div>
         </div>
-        
+
         <div class="info-actions">
           <button class="btn-outline" @click="closeExpiredReportModal">Cancel</button>
-          <button 
-            class="btn-primary" 
-            @click="submitExpiredReport" 
+          <button
+            class="btn-primary"
+            @click="submitExpiredReport"
             :disabled="expiredReportSubmitting"
           >
             {{ expiredReportSubmitting ? 'Submitting...' : 'Submit Report' }}
@@ -1421,7 +1422,7 @@ async function performClockIn() {
       latitude: userLocation.value.latitude,
       longitude: userLocation.value.longitude
     }, { withCredentials: true })
-    
+
     if (res.data && (res.data.success || res.data.ok)) {
       attendanceMessage.value = 'Clocked in successfully!'
       attendanceMessageType.value = 'success'
@@ -1470,7 +1471,7 @@ async function performClockOut() {
       latitude: userLocation.value.latitude,
       longitude: userLocation.value.longitude
     }, { withCredentials: true })
-    
+
     if (res.data && (res.data.success || res.data.ok)) {
       attendanceMessage.value = 'Clocked out successfully!'
       attendanceMessageType.value = 'success'
@@ -1503,7 +1504,7 @@ async function performClockOut() {
 // Expired product report functions
 function openExpiredReportModal(product) {
   expiredReportProduct.value = product
-  
+
   // Set default quantity to 1, allowing user to manually enter the actual expired quantity
   // This handles cases where some stock may be expired and some may be fresh
   expiredReportForm.value = {
@@ -1511,7 +1512,7 @@ function openExpiredReportModal(product) {
     notes: '',
     image: null
   }
-  
+
   expiredReportError.value = ''
   expiredReportSuccess.value = ''
   showExpiredReportModal.value = true
@@ -1532,17 +1533,17 @@ function closeExpiredReportModal() {
 function validateExpiredQuantity() {
   const maxStock = expiredReportProduct.value?.stock || 1
   const quantity = parseInt(expiredReportForm.value.quantity)
-  
+
   if (isNaN(quantity) || quantity < 1) {
     expiredReportError.value = 'Quantity must be at least 1'
     return false
   }
-  
+
   if (quantity > maxStock) {
     expiredReportError.value = `Quantity cannot exceed current stock (${maxStock})`
     return false
   }
-  
+
   expiredReportError.value = ''
   return true
 }
@@ -1555,15 +1556,15 @@ function onExpiredImageChange(event) {
 // Auto-fill expired quantity from inventory lots
 async function autoFillExpiredQuantity() {
   if (!expiredReportProduct.value) return
-  
+
   try {
     const productId = expiredReportProduct.value.id
     const res = await axios.get(`/api/staff/inventory/products/${productId}/inventory-lots`, { withCredentials: true })
-    
+
     if (res.data && res.data.ok && res.data.data) {
       const lots = res.data.data.lots || []
       const expiredLots = lots.filter(lot => lot.is_expired && lot.quantity > 0)
-      
+
       if (expiredLots.length > 0) {
         const totalExpired = expiredLots.reduce((sum, lot) => sum + lot.quantity, 0)
         expiredReportForm.value.quantity = totalExpired
@@ -1596,34 +1597,34 @@ watch(showExpiredReportModal, (isOpen) => {
 
 async function submitExpiredReport() {
   if (!expiredReportProduct.value) return
-  
+
   // Validate quantity before submission
   if (!validateExpiredQuantity()) {
     return
   }
-  
+
   expiredReportSubmitting.value = true
   expiredReportError.value = ''
-  
+
   try {
     await ensureCsrf()
-    
+
     const formData = new FormData()
     formData.append('product_id', expiredReportProduct.value.id)
     formData.append('quantity', expiredReportForm.value.quantity)
     formData.append('notes', expiredReportForm.value.notes || '')
-    
+
     if (expiredReportForm.value.image) {
       formData.append('image', expiredReportForm.value.image)
     }
-    
+
     const res = await axios.post('/api/staff/inventory/expired-reports', formData, {
       withCredentials: true,
       headers: {
         'Content-Type': 'multipart/form-data'
       }
     })
-    
+
     if (res.data && (res.data.ok || res.data.success)) {
       showToast('Expired product report submitted successfully', 'success')
       closeExpiredReportModal()

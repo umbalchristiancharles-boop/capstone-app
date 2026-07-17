@@ -10,6 +10,7 @@
       :canChangePassword="true"
       :showProfileColumn="false"
       :showAnnouncements="false"
+      :ownerTwoColumnLayout="true"
       @logout="askLogout"
       @profile-updated="onProfileUpdated"
     >
@@ -44,7 +45,7 @@
           <div v-else-if="financeError" class="error-state">{{ financeError }}</div>
           <div v-else class="finance-wrapper">
             <div v-if="selectedBranch !== 'all'" class="branch-info-banner">
-              Showing data for: 
+              Showing data for:
               <strong>{{ getSelectedBranchName() }}</strong>
             </div>
             <FinancePanelContent
@@ -184,20 +185,20 @@ async function loadFinance() {
     if (selectedBranch.value !== 'all') params.branch_id = selectedBranch.value
     console.log('Loading finance data with params:', params)
     const [reportsRes, txRes] = await Promise.all([
-      axios.get('/api/admin/finance/reports', { 
-        withCredentials: true, 
-        timeout: FINANCE_TIMEOUT_MS, 
+      axios.get('/api/admin/finance/reports', {
+        withCredentials: true,
+        timeout: FINANCE_TIMEOUT_MS,
         params,
-        headers: { 
+        headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache'
         }
       }),
-      axios.get('/api/admin/finance/transactions', { 
-        withCredentials: true, 
-        timeout: FINANCE_TIMEOUT_MS, 
+      axios.get('/api/admin/finance/transactions', {
+        withCredentials: true,
+        timeout: FINANCE_TIMEOUT_MS,
         params,
-        headers: { 
+        headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache'
         }
@@ -250,7 +251,7 @@ async function loadBranches() {
 onMounted(async () => {
   await loadBranches()
   await loadFinance()
-  
+
   // Auto-refresh finance data every 30 seconds to ensure fresh data
   autoRefreshInterval = setInterval(async () => {
     console.log('Auto-refreshing finance data...')
