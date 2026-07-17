@@ -9,6 +9,7 @@
     :canChangePassword="true"
     :showProfileColumn="false"
     :showAnnouncements="false"
+    :showAttendanceCard="false"
     :fullWidth="true"
     :ownerTwoColumnLayout="true"
     @logout="askLogout"

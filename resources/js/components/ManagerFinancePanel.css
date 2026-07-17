@@ -150,6 +150,7 @@
   color: #7c6758;
   font-size: 0.85rem;
   font-weight: 700;
+  -webkit-user-select: none;
   user-select: none;
 }
 
@@ -771,31 +772,6 @@
   height: auto;
   border-radius: 12px;
   border: 1px solid rgba(219, 188, 160, 0.45);
-}
-
-:deep(.admin-layout.no-profile-column) .admin-side {
-  position: static !important;
-  top: auto !important;
-  align-self: stretch !important;
-  margin-top: 0 !important;
-  max-height: none !important;
-  overflow: visible !important;
-  padding-right: 0 !important;
-}
-
-:deep(.announcements-panel .panel-header) {
-  position: static !important;
-}
-
-:deep(.announcements-panel .panel-body) {
-  overflow: visible !important;
-  max-height: none !important;
-}
-
-@media (min-width: 1000px) {
-  :deep(.admin-layout.no-profile-column) .admin-side {
-    margin-top: 200px !important;
-  }
 }
 
 @media (max-width: 900px) {
