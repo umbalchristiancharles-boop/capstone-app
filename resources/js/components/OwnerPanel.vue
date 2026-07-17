@@ -4,6 +4,7 @@
     panelTitle="Owner Panel"
     panelDescription="Overview and controls for store owners"
     :showHeader="false"
+    :ownerTwoColumnLayout="true"
     :enableProfileUpdate="true"
     :canEditProfile="true"
     :canChangePassword="true"

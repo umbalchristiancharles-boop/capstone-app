@@ -1,10 +1,29 @@
 <template>
   <div class="min-h-screen bg-gradient-to-b from-[#FF9A4A] to-[#FF6A3D]">
     <div class="admin-page" :class="{ 'admin-page--wider': fullWidth }">
-      <section class="admin-layout" :class="{ 'admin-layout--wider': fullWidth, 'no-profile-column': !showProfileColumn }">
-        <!-- LEFT: PROFILE COLUMN (can be hidden via prop) -->
-        <aside v-if="showProfileColumn" class="admin-profile-column">
-          <div v-if="userProfile" class="admin-card admin-card--stacked">
+      <section class="admin-layout" :class="{ 'admin-layout--wider': fullWidth, 'admin-layout--owner-two-column': ownerTwoColumnLayout }">
+        <!-- MIDDLE: MAIN DASHBOARD -->
+        <main class="admin-main">
+          <header v-if="showHeader" class="admin-main-header">
+            <div class="admin-main-header-top">
+              <div class="header-left-slot">
+                  <button v-if="showDefaultBack" class="back-to-dashboard-btn" @click="handleBack">← Back</button>
+                  <slot name="headerLeft"></slot>
+              </div>
+              <div>
+                <h1>{{ panelTitle }}</h1>
+                <p>{{ panelDescription }}</p>
+              </div>
+              <div class="header-actions-top">
+                <slot name="headerActions"></slot>
+              </div>
+            </div>
+          </header>
+          <slot name="main"></slot>
+        </main>
+        <!-- RIGHT: SIDE PANELS -->
+        <aside class="admin-side">
+          <div v-if="showProfileColumn && userProfile" class="admin-card admin-card--stacked">
             <div class="admin-card__header admin-card__header--stacked">
               <label class="admin-avatar admin-avatar--photo avatar-upload" for="avatar-input">
                 <img v-if="userProfile.avatarUrl" :src="userProfile.avatarUrl" alt="Profile picture" class="avatar-img" />
@@ -42,7 +61,7 @@
               </div>
             </div>
           </div>
-          <div class="admin-profile-column__below">
+          <div v-if="showProfileColumn" class="admin-profile-column__below">
             <slot
               name="profileBottom"
               :announcements="announcements"
@@ -57,28 +76,6 @@
               :performClockOut="performClockOut"
             ></slot>
           </div>
-        </aside>
-        <!-- MIDDLE: MAIN DASHBOARD -->
-        <main class="admin-main">
-          <header v-if="showHeader" class="admin-main-header">
-            <div class="admin-main-header-top">
-              <div class="header-left-slot">
-                  <button v-if="showDefaultBack" class="back-to-dashboard-btn" @click="handleBack">← Back</button>
-                  <slot name="headerLeft"></slot>
-              </div>
-              <div>
-                <h1>{{ panelTitle }}</h1>
-                <p>{{ panelDescription }}</p>
-              </div>
-              <div class="header-actions-top">
-                <slot name="headerActions"></slot>
-              </div>
-            </div>
-          </header>
-          <slot name="main"></slot>
-        </main>
-        <!-- RIGHT: SIDE PANELS -->
-        <aside class="admin-side">
           <slot name="sideTop"></slot>
           <section v-if="showAnnouncements" class="panel-block announcements-panel">
             <div class="panel-header announcements-header">
@@ -278,6 +275,7 @@ const props = defineProps({
   panelTitle: { type: String, required: true },
   panelDescription: { type: String, required: true },
   fullWidth: { type: Boolean, default: false },
+  ownerTwoColumnLayout: { type: Boolean, default: false },
   showHeader: { type: Boolean, default: true },
   enableProfileUpdate: { type: Boolean, default: false },
   canEditProfile: { type: Boolean, default: false },
@@ -822,6 +820,21 @@ async function onAvatarChange(event) {
 }
 
 .admin-layout--wider .admin-main {
+  width: 100%;
+}
+
+.admin-layout--owner-two-column {
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+  gap: 20px;
+}
+
+.admin-layout--owner-two-column .admin-main {
+  grid-column: 1;
+  width: 100%;
+}
+
+.admin-layout--owner-two-column .admin-side {
+  grid-column: 2;
   width: 100%;
 }
 
