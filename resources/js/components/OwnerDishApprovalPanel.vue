@@ -9,6 +9,7 @@
     :showAnnouncements="false"
     :showAttendanceCard="false"
     :singleColumnLayout="true"
+    :fullWidth="true"
     @profile-updated="onProfileUpdated"
     @logout="confirmLogout"
   >
@@ -25,6 +26,7 @@
     </template>
 
     <template #main>
+      <div class="dish-approval-page">
       <!-- Pending Product Requests Section -->
       <section class="panel-block">
         <div class="panel-header">
@@ -160,6 +162,7 @@
           </div>
         </div>
       </section>
+      </div>
     </template>
 
   </OwnerPanelLayout>
@@ -356,26 +359,63 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.dish-approval-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  width: 100%;
+  max-width: 100%;
+  padding: 0.15rem 0 1.5rem;
+}
+
 .panel-block {
-  margin-bottom: 2rem;
+  margin-bottom: 0;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(255, 106, 61, 0.16);
+  border-radius: 24px;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+  backdrop-filter: blur(16px);
 }
 
 .panel-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid #f0f0f0;
+  margin-bottom: 0;
+  padding: 1.2rem 1.4rem 1rem;
+  border-bottom: 1px solid rgba(255, 106, 61, 0.12);
+  background: linear-gradient(90deg, rgba(255, 244, 235, 0.95), rgba(255, 255, 255, 0.98));
 }
 
-.panel-header h2 { position: relative; }
-.panel-badge { position:absolute; top:-8px; right:-18px; min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:#ef4444; color:#ffffff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(239,68,68,0.35) }
-
 .panel-header h2 {
+  position: relative;
   margin: 0;
-  font-size: 1.5rem;
-  color: #111827;
+  font-size: 1.35rem;
+  color: #1f2937;
+  letter-spacing: -0.02em;
+}
+
+.panel-badge {
+  position: absolute;
+  top: -8px;
+  right: -18px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #fb923c, #ef4444);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 16px rgba(239, 68, 68, 0.24);
+}
+
+.panel-body {
+  padding: 1.2rem 1.4rem 1.4rem;
 }
 
 .dish-approval-header-actions {
@@ -391,6 +431,7 @@ onMounted(() => {
 
 :deep(.admin-main-header) {
   position: relative;
+  padding-bottom: 0.65rem;
 }
 
 :deep(.admin-main-header .header-left-slot) {
@@ -401,27 +442,23 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.6rem 1rem;
-  border: none;
-  border-radius: 10px;
-  background: transparent;
-  color: #ff6a3d;
+  padding: 0.7rem 1rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 106, 61, 0.12), rgba(251, 191, 36, 0.16));
+  color: #c2410c;
   cursor: pointer;
   font-weight: 700;
   font-size: 0.92rem;
   line-height: 1;
   box-shadow: none;
   border: 0;
-  transition: transform 0.18s ease, opacity 0.18s ease;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
 }
 
 .back-to-dashboard-btn:hover {
   transform: translateY(-1px);
-  opacity: 0.82;
-}
-
-.back-to-dashboard-btn:active {
-  transform: translateY(0);
+  box-shadow: 0 10px 20px rgba(255, 106, 61, 0.16);
+  opacity: 0.95;
 }
 
 .back-icon {
@@ -429,318 +466,294 @@ onMounted(() => {
 }
 
 .refresh-btn {
-  padding: 0.5rem 1rem;
-  background: #ff6a3d;
+  padding: 0.6rem 1rem;
+  background: linear-gradient(135deg, #ff6a3d, #f59e0b);
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 999px;
   cursor: pointer;
-  font-weight: 600;
-  transition: background 0.2s;
+  font-weight: 700;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  box-shadow: 0 10px 20px rgba(255, 106, 61, 0.18);
 }
 
 .refresh-btn:hover:not(:disabled) {
-  background: #ff5522;
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(255, 106, 61, 0.24);
 }
 
 .refresh-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.7;
   cursor: not-allowed;
 }
 
 .muted {
-  color: #9ca3af;
+  color: #64748b;
   text-align: center;
-  padding: 2rem;
+  padding: 2rem 1rem;
   font-size: 0.95rem;
 }
 
 .alert-error {
-  background: #fee2e2;
-  color: #dc2626;
-  padding: 1rem;
-  border-radius: 8px;
+  background: linear-gradient(90deg, rgba(254, 242, 242, 0.95), rgba(255, 247, 247, 0.95));
+  color: #b91c1c;
+  padding: 1rem 1.1rem;
+  border-radius: 14px;
   margin-bottom: 1rem;
+  border: 1px solid rgba(248, 113, 113, 0.24);
 }
 
-.dishes-grid {
+.products-grid {
   display: grid;
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1rem;
 }
 
-.dish-approval-card {
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
+.product-request-card {
+  background: linear-gradient(180deg, #fffdfb 0%, #ffffff 100%);
+  border: 1px solid rgba(251, 146, 60, 0.18);
+  border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  transition: box-shadow 0.2s;
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.dish-approval-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+.product-request-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 1.5rem;
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 1.2rem 1.2rem 1rem;
+  background: linear-gradient(90deg, rgba(255, 247, 237, 0.95), rgba(255, 250, 244, 0.95));
+  border-bottom: 1px solid rgba(255, 106, 61, 0.12);
 }
 
-.dish-title-info {
+.product-title-info {
   flex: 1;
 }
 
-.dish-name {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.3rem;
+.product-name {
+  margin: 0 0 0.45rem 0;
+  font-size: 1.15rem;
   color: #111827;
 }
 
-.dish-meta {
+.product-meta {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: #6b7280;
   line-height: 1.4;
 }
 
 .badge {
   display: inline-block;
-  padding: 0.4rem 0.8rem;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 700;
+  padding: 0.42rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
   white-space: nowrap;
 }
 
 .badge-pending {
-  background: #fef08a;
-  color: #854d0e;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+  box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.12);
 }
 
 .card-body {
-  padding: 1.5rem;
+  padding: 1.1rem 1.2rem 1.2rem;
 }
 
-.ingredients-section {
-  margin-bottom: 1.5rem;
+.description-section,
+.unit-section {
+  margin-bottom: 0.95rem;
 }
 
-.ingredients-section h4 {
-  margin: 0 0 0.8rem 0;
-  font-size: 0.95rem;
+.description-section h4,
+.unit-section h4 {
+  margin: 0 0 0.4rem 0;
+  font-size: 0.8rem;
   font-weight: 700;
-  color: #374151;
+  color: #f97316;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
 }
 
-.ingredients-list {
-  display: grid;
-  gap: 0.8rem;
-}
-
-.ingredient-item {
-  padding: 0.8rem;
-  background: #f3f4f6;
-  border-radius: 6px;
-  border-left: 3px solid #ff6a3d;
-}
-
-.ingredient-name {
-  font-weight: 600;
-  color: #111827;
-  margin-bottom: 0.3rem;
-}
-
-.ingredient-details {
-  display: flex;
-  gap: 0.8rem;
-  flex-wrap: wrap;
-}
-
-.detail {
-  font-size: 0.85rem;
-  color: #6b7280;
-}
-
-.product-badge {
-  display: inline-block;
-  background: #dbeafe;
-  color: #1e40af;
-  padding: 0.2rem 0.6rem;
-  border-radius: 4px;
-  font-weight: 600;
-}
-
-.missing-badge {
-  display: inline-block;
-  background: #fee2e2;
-  color: #dc2626;
-  padding: 0.2rem 0.6rem;
-  border-radius: 4px;
-  font-weight: 600;
+.description-text,
+.unit-text {
+  margin: 0;
+  color: #374151;
+  line-height: 1.55;
 }
 
 .approval-section {
-  border-top: 1px solid #e5e7eb;
-  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 106, 61, 0.12);
+  padding-top: 0.95rem;
 }
 
 .approval-form {
   display: grid;
-  gap: 1rem;
+  gap: 0.9rem;
 }
 
 .notes-input,
 .reason-input {
   width: 100%;
-  padding: 0.8rem;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid #f4c78f;
+  border-radius: 12px;
+  background: #fffaf4;
   font-family: inherit;
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   resize: vertical;
+  color: #111827;
 }
 
 .notes-input:focus,
 .reason-input:focus {
   outline: none;
-  border-color: #ff6a3d;
-  box-shadow: 0 0 0 3px rgba(255, 106, 61, 0.1);
+  border-color: #ff8a3d;
+  box-shadow: 0 0 0 3px rgba(255, 106, 61, 0.12);
 }
 
-.approval-actions {
+.approval-actions,
+.reject-actions {
   display: flex;
-  gap: 1rem;
+  gap: 0.7rem;
 }
 
 .btn-approve,
 .btn-reject,
 .btn-outline {
   flex: 1;
-  padding: 0.8rem 1.2rem;
+  padding: 0.75rem 0.9rem;
   border: none;
-  border-radius: 6px;
-  font-weight: 600;
+  border-radius: 999px;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
   font-size: 0.9rem;
 }
 
 .btn-approve {
-  background: #10b981;
+  background: linear-gradient(135deg, #10b981, #059669);
   color: white;
 }
 
 .btn-approve:hover:not(:disabled) {
-  background: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 16px rgba(5, 150, 105, 0.2);
 }
 
 .btn-reject {
-  background: #ef4444;
+  background: linear-gradient(135deg, #f43f5e, #dc2626);
   color: white;
 }
 
 .btn-reject:hover:not(:disabled) {
-  background: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 16px rgba(220, 38, 38, 0.2);
 }
 
 .btn-outline {
   background: white;
-  border: 1px solid #d1d5db;
-  color: #374151;
+  border: 1px solid rgba(251, 146, 60, 0.24);
+  color: #4b5563;
 }
 
 .btn-outline:hover:not(:disabled) {
-  background: #f3f4f6;
+  background: #fff7ed;
 }
 
 .btn-approve:disabled,
 .btn-reject:disabled,
 .btn-outline:disabled {
-  opacity: 0.6;
+  opacity: 0.67;
   cursor: not-allowed;
 }
 
 .reject-reason-form {
   display: grid;
   gap: 0.8rem;
-  padding: 1rem;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 6px;
-  margin-top: 1rem;
+  padding: 0.95rem;
+  background: linear-gradient(90deg, rgba(255, 247, 237, 0.95), rgba(254, 242, 242, 0.95));
+  border: 1px solid rgba(251, 146, 60, 0.18);
+  border-radius: 16px;
+  margin-top: 0.6rem;
 }
 
-.reject-actions {
-  display: flex;
-  gap: 0.8rem;
-}
-
-.reject-actions button {
-  flex: 1;
-}
-
-/* Approved Dishes Table */
-.approved-dishes-table {
+.approved-products-table {
   overflow-x: auto;
+  border: 1px solid rgba(251, 146, 60, 0.14);
+  border-radius: 18px;
+  overflow: hidden;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
+  background: #fff;
 }
 
 thead {
-  background: #f9fafb;
-  border-bottom: 2px solid #e5e7eb;
+  background: linear-gradient(90deg, rgba(255, 247, 237, 0.95), rgba(255, 250, 244, 0.95));
+  border-bottom: 1px solid rgba(255, 106, 61, 0.12);
 }
 
 th {
-  padding: 1rem;
+  padding: 0.95rem 1rem;
   text-align: left;
   font-weight: 700;
-  color: #374151;
-  font-size: 0.85rem;
+  color: #4b5563;
+  font-size: 0.8rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
 }
 
 tbody tr {
-  border-bottom: 1px solid #e5e7eb;
-  transition: background 0.2s;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background 0.2s ease;
 }
 
 tbody tr:hover {
-  background: #f9fafb;
+  background: #fffaf4;
 }
 
 td {
-  padding: 1rem;
+  padding: 0.95rem 1rem;
   color: #111827;
 }
 
-.dish-name-cell {
-  font-weight: 600;
+.product-name-cell {
+  font-weight: 700;
   color: #111827;
-}
-
-.ingredients-count {
-  display: inline-block;
-  background: #dbeafe;
-  color: #1e40af;
-  padding: 0.3rem 0.6rem;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  font-weight: 600;
 }
 
 small {
   font-size: 0.8rem;
   color: #6b7280;
+}
+
+@media (max-width: 768px) {
+  .panel-header {
+    padding: 1rem 1rem 0.9rem;
+  }
+
+  .panel-body {
+    padding: 1rem;
+  }
+
+  .products-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .approval-actions,
+  .reject-actions {
+    flex-direction: column;
+  }
 }
 </style>
