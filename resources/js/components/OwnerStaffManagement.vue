@@ -1,7 +1,7 @@
 <template>
   <div class="staff-management-page">
     <!-- Back to Dashboard Button -->
-    <button @click="router.push('/owner-panel')" class="btn-secondary back-to-dashboard-btn">
+    <button @click="router.push('/owner-panel')" class="back-to-dashboard-btn">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="back-icon">
         <line x1="19" y1="12" x2="5" y2="12"></line>
         <polyline points="12 19 5 12 12 5"></polyline>
@@ -607,7 +607,7 @@ function formatDate(dateString) {
 <style scoped>
 .staff-management-page {
   padding: 1.5rem;
-  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+  background: #f8fafc;
   min-height: 100vh;
   color: #1f2937;
 }
@@ -616,8 +616,8 @@ function formatDate(dateString) {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at top left, rgba(255,255,255,0.6), transparent 28%),
-              radial-gradient(circle at bottom right, rgba(255,255,255,0.5), transparent 30%);
+  background: radial-gradient(circle at top left, rgba(255,255,255,0.55), transparent 28%),
+              radial-gradient(circle at bottom right, rgba(255,255,255,0.4), transparent 30%);
   pointer-events: none;
 }
 .staff-header {
@@ -718,18 +718,28 @@ function formatDate(dateString) {
 .back-to-dashboard-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.8rem 1.1rem;
+  gap: 0.5rem;
+  padding: 0.7rem 1rem;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  background: rgba(255,255,255,0.86);
-  color: #1f2937;
+  background: linear-gradient(90deg, rgba(255, 106, 61, 0.12), rgba(251, 191, 36, 0.16));
+  color: #c2410c;
+  cursor: pointer;
   font-weight: 700;
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+  font-size: 0.92rem;
+  line-height: 1;
+  box-shadow: none;
+  border: 0;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
 }
 
 .back-to-dashboard-btn:hover {
   transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(255, 106, 61, 0.16);
+  opacity: 0.95;
+}
+
+.back-to-dashboard-btn:active {
+  transform: translateY(0);
 }
 
 .summary-card,

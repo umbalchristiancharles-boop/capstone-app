@@ -6,6 +6,7 @@
     :enableProfileUpdate="true"
     :canEditProfile="false"
     :showProfileColumn="false"
+    :showHeader="false"
     :showAnnouncements="false"
     :showAttendanceCard="false"
     :singleColumnLayout="true"
@@ -13,20 +14,21 @@
     @profile-updated="onProfileUpdated"
     @logout="confirmLogout"
   >
-    <template #headerActions>
-      <div class="dish-approval-header-actions">
-        <button class="back-to-dashboard-btn" @click="goBackToOwnerPanel" title="Back to Owner Panel">
+    <template #main>
+      <div class="dish-approval-page">
+        <button class="back-to-dashboard-btn dish-approval-back-button" @click="goBackToOwnerPanel" title="Back to Owner Panel">
           <svg class="back-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <line x1="19" y1="12" x2="5" y2="12"></line>
             <polyline points="12 19 5 12 12 5"></polyline>
           </svg>
           <span>Back to Dashboard</span>
         </button>
-      </div>
-    </template>
-
-    <template #main>
-      <div class="dish-approval-page">
+        <div class="dish-approval-header">
+          <div class="dish-approval-title-block">
+            <h1>Dish Approval</h1>
+            <p>Review and approve new dishes from kitchen staff.</p>
+          </div>
+        </div>
       <!-- Pending Product Requests Section -->
       <section class="panel-block">
         <div class="panel-header">
@@ -418,28 +420,38 @@ onMounted(() => {
   padding: 1.2rem 1.4rem 1.4rem;
 }
 
-.dish-approval-header-actions {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  z-index: 20;
-  display: flex;
-  justify-content: flex-end;
-  align-items: flex-start;
-  width: auto;
+.dish-approval-header {
+  display: block;
+  margin-bottom: 1.75rem;
+  padding: 1.25rem 1.5rem;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(255, 106, 61, 0.15);
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.08);
 }
 
-:deep(.admin-main-header) {
-  position: relative;
-  padding-bottom: 0.65rem;
+.dish-approval-back-button {
+  margin-bottom: 1rem;
 }
 
-:deep(.admin-main-header .header-left-slot) {
-  display: none;
+.dish-approval-title-block h1 {
+  margin: 0 0 0.25rem;
+  font-size: 2rem;
+  line-height: 1.05;
+  color: #1f2937;
 }
 
+.dish-approval-title-block p {
+  margin: 0;
+  color: #475569;
+  font-size: 0.98rem;
+}
+
+.dish-approval-back-button,
 .back-to-dashboard-btn {
   display: inline-flex;
+  width: auto;
+  max-width: fit-content;
   align-items: center;
   gap: 0.5rem;
   padding: 0.7rem 1rem;
@@ -452,6 +464,7 @@ onMounted(() => {
   line-height: 1;
   box-shadow: none;
   border: 0;
+  white-space: nowrap;
   transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
 }
 
