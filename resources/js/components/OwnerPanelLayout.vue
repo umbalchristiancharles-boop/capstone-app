@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen bg-gradient-to-b from-[#FF9A4A] to-[#FF6A3D]">
     <div class="admin-page" :class="{ 'admin-page--wider': fullWidth }">
-      <section class="admin-layout" :class="{ 'admin-layout--wider': fullWidth, 'admin-layout--owner-two-column': ownerTwoColumnLayout, 'admin-layout--single-column': singleColumnLayout }">
+      <section class="admin-layout" :class="{ 'admin-layout--wider': fullWidth, 'admin-layout--owner-two-column': ownerTwoColumnLayout, 'admin-layout--single-column': singleColumnLayout, 'no-profile-column': !showProfileColumn }">
         <!-- MIDDLE: MAIN DASHBOARD -->
         <main class="admin-main">
           <header v-if="showHeader" class="admin-main-header">
@@ -896,6 +896,11 @@ async function onAvatarChange(event) {
 :deep(.admin-layout.no-profile-column) {
   grid-template-columns: 1fr minmax(260px, 360px);
   gap: 1rem;
+}
+:deep(.admin-layout.admin-layout--wider.no-profile-column),
+:deep(.admin-layout.no-profile-column.admin-layout--wider) {
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 360px) !important;
+  gap: 24px !important;
 }
 :deep(.admin-layout.no-profile-column) .admin-main {
   width: 100%;

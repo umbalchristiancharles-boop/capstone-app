@@ -19,41 +19,6 @@
 
     <div class="manager-finance">
 
-    <section v-if="!hideAttendanceCard" class="attendance-card">
-      <div class="attendance-header">
-        <span class="attendance-title">Attendance</span>
-        <span :class="['attendance-status-badge', attendanceStatus.is_clocked_in ? 'status-on-duty' : 'status-off-duty']">
-          {{ attendanceStatus.is_clocked_in ? 'On Duty' : 'Off Duty' }}
-        </span>
-      </div>
-      <div class="attendance-times" v-if="attendanceStatus.clock_in_time || attendanceStatus.clock_out_time">
-        <div class="time-row"><span class="time-label">Clock In:</span><span class="time-value">{{ attendanceStatus.clock_in_time || '-' }}</span></div>
-        <div class="time-row"><span class="time-label">Clock Out:</span><span class="time-value">{{ attendanceStatus.clock_out_time || '-' }}</span></div>
-        <div class="time-row" v-if="attendanceStatus.hours_worked > 0"><span class="time-label">Hours:</span><span class="time-value">{{ attendanceStatus.hours_worked }} hrs</span></div>
-      </div>
-      <div class="attendance-buttons">
-        <button @click="performClockIn" :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockInGeofencing || locationLoading" class="btn-clock-in">{{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock In' }}</button>
-        <button @click="performClockOut" :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockOut || !canClockInGeofencing || locationLoading" class="btn-clock-out" :class="{ 'btn-disabled': !canClockOut && attendanceStatus.is_clocked_in }">{{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock Out' }}</button>
-      </div>
-
-      <!-- Geofencing Status -->
-      <div v-if="locationError" class="geofencing-status geofencing-error">
-        <span class="status-icon">⚠️</span>
-        <span>{{ locationError }}</span>
-      </div>
-      <div v-else-if="userLocation && canClockInGeofencing" class="geofencing-status geofencing-success">
-        <span class="status-icon">✓</span>
-        <span>Location verified</span>
-      </div>
-      <div v-else-if="!canClockInGeofencing && geofencingMessage" class="geofencing-status geofencing-error">
-        <span class="status-icon">🔒</span>
-        <span>{{ geofencingMessage }}</span>
-      </div>
-
-      <div v-if="!canClockOut && attendanceStatus.is_clocked_in" class="clockout-restriction"><span class="restriction-icon">LOCK</span><span>Cannot clock out before {{ scheduledTimeOut }}</span></div>
-      <div v-if="attendanceMessage" :class="['attendance-message', attendanceMessageType]">{{ attendanceMessage }}</div>
-    </section>
-
     <div class="filter-bar">
       <div class="filter-group">
         <label>Branch:</label>
@@ -383,6 +348,44 @@
       </div>
     </transition>
     </div> <!-- /.manager-finance -->
+    </template>
+
+    <template #side>
+      <div v-if="!hideAttendanceCard" class="manager-finance-side-card">
+        <section class="attendance-card">
+          <div class="attendance-header">
+            <span class="attendance-title">Attendance</span>
+            <span :class="['attendance-status-badge', attendanceStatus.is_clocked_in ? 'status-on-duty' : 'status-off-duty']">
+              {{ attendanceStatus.is_clocked_in ? 'On Duty' : 'Off Duty' }}
+            </span>
+          </div>
+          <div class="attendance-times" v-if="attendanceStatus.clock_in_time || attendanceStatus.clock_out_time">
+            <div class="time-row"><span class="time-label">Clock In:</span><span class="time-value">{{ attendanceStatus.clock_in_time || '-' }}</span></div>
+            <div class="time-row"><span class="time-label">Clock Out:</span><span class="time-value">{{ attendanceStatus.clock_out_time || '-' }}</span></div>
+            <div class="time-row" v-if="attendanceStatus.hours_worked > 0"><span class="time-label">Hours:</span><span class="time-value">{{ attendanceStatus.hours_worked }} hrs</span></div>
+          </div>
+          <div class="attendance-buttons">
+            <button @click="performClockIn" :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockInGeofencing || locationLoading" class="btn-clock-in">{{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock In' }}</button>
+            <button @click="performClockOut" :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockOut || !canClockInGeofencing || locationLoading" class="btn-clock-out" :class="{ 'btn-disabled': !canClockOut && attendanceStatus.is_clocked_in }">{{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock Out' }}</button>
+          </div>
+
+          <div v-if="locationError" class="geofencing-status geofencing-error">
+            <span class="status-icon">⚠️</span>
+            <span>{{ locationError }}</span>
+          </div>
+          <div v-else-if="userLocation && canClockInGeofencing" class="geofencing-status geofencing-success">
+            <span class="status-icon">✓</span>
+            <span>Location verified</span>
+          </div>
+          <div v-else-if="!canClockInGeofencing && geofencingMessage" class="geofencing-status geofencing-error">
+            <span class="status-icon">🔒</span>
+            <span>{{ geofencingMessage }}</span>
+          </div>
+
+          <div v-if="!canClockOut && attendanceStatus.is_clocked_in" class="clockout-restriction"><span class="restriction-icon">LOCK</span><span>Cannot clock out before {{ scheduledTimeOut }}</span></div>
+          <div v-if="attendanceMessage" :class="['attendance-message', attendanceMessageType]">{{ attendanceMessage }}</div>
+        </section>
+      </div>
     </template>
 
     <template #headerActions>

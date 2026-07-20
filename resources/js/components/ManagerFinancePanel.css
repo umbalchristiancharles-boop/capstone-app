@@ -245,6 +245,13 @@
   box-shadow: none;
 }
 
+.manager-finance-side-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 7.5rem;
+}
+
 .attendance-card {
   position: relative;
   display: flex;
@@ -256,6 +263,14 @@
   border: 1px solid rgba(219, 188, 160, 0.45);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 249, 242, 0.95));
   box-shadow: 0 14px 34px rgba(16, 24, 40, 0.06);
+}
+
+.manager-finance-side-card .attendance-card {
+  margin-bottom: 0;
+}
+
+.manager-finance-side-card .attendance-card {
+  margin-bottom: 0;
 }
 
 .attendance-header {
