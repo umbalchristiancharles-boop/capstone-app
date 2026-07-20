@@ -5,38 +5,38 @@
     :panelDescription="'Approve or reject new branch requests after finance confirmation'"
     :enableProfileUpdate="true"
     :canEditProfile="false"
+    :showHeader="false"
     :showProfileColumn="false"
     :showAnnouncements="false"
-    :ownerTwoColumnLayout="true"
+    :showAttendanceCard="false"
+    :singleColumnLayout="true"
+    :fullWidth="true"
     @logout="confirmLogout"
   >
-    <template #headerLeft>
-      <button class="back-btn" @click="goBackToOwnerPanel" title="Back to Owner Panel">
-        ← Back
-      </button>
-    </template>
-
     <template #main>
-      <section class="branch-approval">
-        <div class="branch-approval__header">
-          <div>
-            <h2>
-              Pending Branch Requests
-              <span v-if="pendingBranches.length > 0" class="panel-badge">{{ pendingBranches.length }}</span>
-            </h2>
-            <p>These branches were created by the main branch admin and need your approval.</p>
-          </div>
-          <div class="header-actions">
-            <button class="back-btn back-btn--inline" @click="goBackToOwnerPanel" title="Back to Owner Panel">
-              Back
-            </button>
-            <button class="refresh-btn" @click="loadPending" :disabled="loading">
-              {{ loading ? 'Loading...' : 'Refresh' }}
-            </button>
-          </div>
-        </div>
+      <div class="branch-approval-page">
+        <section class="branch-approval">
+          <button class="back-to-dashboard-btn branch-approval-back-button" @click="goBackToOwnerPanel" title="Back to Owner Panel">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            <span>Back to Dashboard</span>
+          </button>
 
-        <div v-if="loading" class="muted">Loading pending requests...</div>
+          <div class="branch-approval-header">
+            <div>
+              <h1>Branch Confirmations</h1>
+              <p>Approve or reject new branch requests after finance confirmation</p>
+            </div>
+            <div class="header-actions">
+              <button class="refresh-btn" @click="loadPending" :disabled="loading">
+                {{ loading ? 'Loading...' : 'Refresh' }}
+              </button>
+            </div>
+          </div>
+
+          <div v-if="loading" class="muted">Loading pending requests...</div>
         <div v-else-if="error" class="alert-error">Warning: {{ error }}</div>
         <div v-else-if="pendingBranches.length === 0" class="empty-state">
           <p>No pending branch requests right now.</p>
@@ -91,6 +91,7 @@
           </article>
         </div>
       </section>
+      </div>
     </template>
   </OwnerPanelLayout>
 </template>
@@ -280,33 +281,73 @@ onMounted(async () => {
   margin-bottom: 20px;
 }
 
+.branch-approval-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 1.25rem 1.5rem;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #fff7f0, #fff6f1);
+  border: 1px solid rgba(255, 106, 61, 0.15);
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.08);
+  margin-bottom: 1.5rem;
+}
+
 .header-actions {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.branch-approval__header h2 {
-  margin: 0 0 4px;
-  font-size: 1.6rem;
+.branch-approval-header h1 {
+  margin: 0 0 0.25rem;
+  font-size: 2rem;
+  line-height: 1.05;
   color: var(--ink);
-  letter-spacing: -0.02em;
 }
 
-.branch-approval__header p {
+.branch-approval-header p {
   margin: 0;
   color: rgba(47,38,31,0.7);
 }
 
-.back-btn {
-  background: transparent;
-  border: none;
-  color: #fff;
-  font-weight: 700;
-  cursor: pointer;
+.branch-approval-back-button {
+  margin-bottom: 1rem;
 }
 
-.branch-approval__header h2 { position: relative; }
+.back-to-dashboard-btn,
+.branch-approval-back-button {
+  display: inline-flex;
+  width: auto;
+  max-width: fit-content;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 106, 61, 0.12), rgba(251, 191, 36, 0.16));
+  color: #c2410c;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.92rem;
+  line-height: 1;
+  box-shadow: none;
+  border: 0;
+  white-space: nowrap;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+}
+
+.back-to-dashboard-btn:hover,
+.branch-approval-back-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(255, 106, 61, 0.16);
+  opacity: 0.95;
+}
+
+.back-icon {
+  flex-shrink: 0;
+}
+
 .panel-badge { position:absolute; top:-8px; right:-18px; min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:#ef4444; color:#ffffff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(239,68,68,0.35) }
 
 .back-btn--inline {
@@ -315,6 +356,16 @@ onMounted(async () => {
   padding: 8px 14px;
   border-radius: 999px;
   border: 1px solid rgba(47,38,31,0.15);
+}
+
+:deep(.admin-layout.no-profile-column),
+:deep(.admin-layout.admin-layout--wider.no-profile-column) {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+:deep(.admin-layout.no-profile-column) .admin-side,
+:deep(.admin-layout.admin-layout--wider.no-profile-column) .admin-side {
+  display: none !important;
 }
 
 .refresh-btn {

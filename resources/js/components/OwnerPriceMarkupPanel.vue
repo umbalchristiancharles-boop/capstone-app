@@ -5,30 +5,44 @@
     :panelDescription="'Review and approve price markup percentage changes for all branches'"
     :enableProfileUpdate="true"
     :canEditProfile="false"
+    :showHeader="false"
     :showProfileColumn="false"
     :showAnnouncements="false"
-    :ownerTwoColumnLayout="true"
+    :showAttendanceCard="false"
+    :singleColumnLayout="true"
+    :fullWidth="true"
     @profile-updated="onProfileUpdated"
     @logout="confirmLogout"
   >
-    <template #headerLeft>
-      <button class="back-btn" @click="goBackToOwnerPanel" title="Back to Owner Panel">
-        ← Back
-      </button>
-    </template>
-
     <template #main>
-      <div class="centered-wrapper">
-        <section class="panel-block">
-        <div class="panel-header">
-          <h2>
-            Pending Price Markup Approvals
-            <span v-if="pendingRequests.length > 0" class="panel-badge">{{ pendingRequests.length }}</span>
-          </h2>
-          <button class="refresh-btn" @click="loadPendingRequests" :disabled="loading">
-            {{ loading ? 'Loading...' : 'Refresh' }}
+      <div class="price-markup-page centered-wrapper">
+        <div class="page-header-row">
+          <button class="back-to-dashboard-btn price-markup-back-button" @click="goBackToOwnerPanel" title="Back to Owner Panel">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            <span>Back to Dashboard</span>
           </button>
+
+          <div class="price-markup-header">
+            <div class="price-markup-title-block">
+              <h1>Price Markup Approvals</h1>
+              <p>Review and approve price markup percentage changes for all branches</p>
+            </div>
+          </div>
         </div>
+
+        <section class="panel-block">
+          <div class="panel-header">
+            <h2>
+              Pending Price Markup Approvals
+              <span v-if="pendingRequests.length > 0" class="panel-badge">{{ pendingRequests.length }}</span>
+            </h2>
+            <button class="refresh-btn" @click="loadPendingRequests" :disabled="loading">
+              {{ loading ? 'Loading...' : 'Refresh' }}
+            </button>
+          </div>
 
         <div v-if="loading" class="muted">Loading pending approvals...</div>
         <div v-else-if="error" class="alert-error">⚠️ {{ error }}</div>
@@ -350,9 +364,11 @@ onMounted(async () => {
 
 <style scoped>
 .centered-wrapper {
-  max-width: 1000px;
-  margin: 0 auto;
+  max-width: 100%;
+  margin: 0;
   width: 100%;
+  padding: 0 24px;
+  box-sizing: border-box;
 }
 
 .panel-block {
@@ -361,6 +377,8 @@ onMounted(async () => {
   padding: 28px;
   box-shadow: 0 8px 32px rgba(255, 107, 28, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
   border: 2px solid rgba(255, 107, 28, 0.1);
+  width: 100%;
+  max-width: 100%;
 }
 
 .panel-header {
@@ -424,6 +442,83 @@ onMounted(async () => {
   background: #ff8a48;
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(255, 107, 28, 0.3);
+}
+
+.price-markup-page {
+  width: 100%;
+}
+
+.page-header-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.price-markup-header {
+  display: block;
+  width: 100%;
+  padding: 1.25rem 1.5rem;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #fff7f0, #fff6f1);
+  border: 1px solid rgba(255, 106, 61, 0.15);
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.08);
+}
+
+.price-markup-title-block h1 {
+  margin: 0 0 0.25rem;
+  font-size: 2rem;
+  line-height: 1.05;
+  color: #1f2937;
+}
+
+:deep(.admin-layout.no-profile-column),
+:deep(.admin-layout.admin-layout--wider.no-profile-column) {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 0 !important;
+}
+
+:deep(.admin-layout.no-profile-column) .admin-side,
+:deep(.admin-layout.admin-layout--wider.no-profile-column) .admin-side {
+  display: none !important;
+}
+
+.price-markup-title-block p {
+  margin: 0;
+  color: #475569;
+}
+
+.price-markup-back-button,
+.back-to-dashboard-btn {
+  display: inline-flex;
+  width: auto;
+  max-width: fit-content;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 106, 61, 0.12), rgba(251, 191, 36, 0.16));
+  color: #c2410c;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.92rem;
+  line-height: 1;
+  box-shadow: none;
+  border: 0;
+  white-space: nowrap;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+}
+
+.price-markup-back-button:hover,
+.back-to-dashboard-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(255, 106, 61, 0.16);
+  opacity: 0.95;
+}
+
+.price-markup-back-button {
+  margin-bottom: 1rem;
 }
 
 .muted {
