@@ -362,12 +362,25 @@ onMounted(() => {
 
 <style scoped>
 .dish-approval-page {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
   width: 100%;
   max-width: 100%;
-  padding: 0.15rem 0 1.5rem;
+  padding: 1.5rem 1.25rem 2rem;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+  color: #1f2937;
+}
+
+.dish-approval-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top left, rgba(255,255,255,0.55), transparent 28%),
+              radial-gradient(circle at bottom right, rgba(255,255,255,0.4), transparent 30%);
+  pointer-events: none;
 }
 
 .panel-block {
@@ -425,7 +438,7 @@ onMounted(() => {
   margin-bottom: 1.75rem;
   padding: 1.25rem 1.5rem;
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.96);
+  background: linear-gradient(135deg, #fff7f0, #fff6f1);
   border: 1px solid rgba(255, 106, 61, 0.15);
   box-shadow: 0 24px 64px rgba(15, 23, 42, 0.08);
 }
@@ -476,6 +489,17 @@ onMounted(() => {
 
 .back-icon {
   flex-shrink: 0;
+}
+
+/* Remove the reserved right side column for the dish approval page. */
+:deep(.admin-layout.no-profile-column),
+:deep(.admin-layout.admin-layout--wider.no-profile-column) {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+:deep(.admin-layout.no-profile-column) .admin-side,
+:deep(.admin-layout.admin-layout--wider.no-profile-column) .admin-side {
+  display: none !important;
 }
 
 .refresh-btn {
