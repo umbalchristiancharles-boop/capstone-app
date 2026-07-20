@@ -75,6 +75,58 @@
         </div>
 
       </section>
+
+      <!-- Create New Dish Section -->
+      <section class="panel-block owner-dish-section">
+        <div class="panel-header">
+          <h2>Create New Dish</h2>
+        </div>
+        <div class="panel-body">
+          <form @submit.prevent="submitDish" data-no-overlay="1">
+            <div class="form-row">
+              <label>Dish Name</label>
+              <input v-model="dishForm.name" type="text" required placeholder="Enter dish name" />
+            </div>
+
+            <div class="form-row">
+              <label>Ingredients</label>
+              <div class="ingredients">
+                <div v-for="(ing, idx) in dishForm.ingredients" :key="idx" class="ingredient-row">
+                  <select v-model="ing.product_id" @change="onProductSelect(idx)">
+                    <option value="">-- choose from stock (or leave blank to type new) --</option>
+                    <option v-for="p in products" :key="p.id" :value="p.id">
+                      {{ p.name }} ({{ p.stock }} in stock) <span v-if="!p.is_published">— unpublished</span>
+                    </option>
+                  </select>
+
+                  <input v-if="!ing.product_id" v-model="ing.name" placeholder="Ingredient name" required />
+                  <input v-else v-model="ing.name" placeholder="Ingredient name" readonly />
+
+                  <input v-model="ing.per_serving" placeholder="Per serving" class="small" type="number" step="0.0001" />
+                  <select v-model="ing.unit">
+                    <option value="">unspecified</option>
+                    <option value="pcs">pcs</option>
+                    <option value="g">g</option>
+                    <option value="kg">kg</option>
+                    <option value="ml">ml</option>
+                    <option value="l">l</option>
+                    <option value="pack">pack</option>
+                  </select>
+                  <button type="button" @click="removeIngredient(idx)">Remove</button>
+                </div>
+                <button type="button" @click="addIngredient">Add Ingredient</button>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" :disabled="dishSubmitting">
+                {{ dishSubmitting ? 'Creating Dish...' : 'Create Dish (All Branches)' }}
+              </button>
+            </div>
+          </form>
+          <div v-if="dishMessage" :class="['message', dishMessageType]">{{ dishMessage }}</div>
+        </div>
+      </section>
     </template>
 
     <template #profileBottom="{ announcements, loadingAnnouncements, attendanceStatus, scheduledTimeOut, canClockOut, isAttendanceProcessing, attendanceMessage, attendanceMessageType, performClockIn, performClockOut }">
@@ -265,6 +317,85 @@ onMounted(async () => {
     pendingCounts.value = { kitchen: 0, branchOwner: 0, priceMarkup: 0 }
   }
 })
+
+// Dish Creation State
+const dishForm = ref({
+  name: '',
+  ingredients: [{ name: '', product_id: '', unit: 'pcs', per_serving: 0 }]
+})
+const products = ref([])
+const dishSubmitting = ref(false)
+const dishMessage = ref('')
+const dishMessageType = ref('')
+
+// Load products for dish creation form
+onMounted(() => {
+  loadProducts().catch(() => {})
+})
+
+function addIngredient() {
+  dishForm.value.ingredients.push({ name: '', product_id: '', unit: 'pcs', per_serving: 0 })
+}
+
+function removeIngredient(idx) {
+  dishForm.value.ingredients.splice(idx, 1)
+}
+
+function onProductSelect(idx) {
+  const ing = dishForm.value.ingredients[idx]
+  if (!ing) return
+  if (ing.product_id) {
+    const already = dishForm.value.ingredients.find((it, i) => i !== idx && it.product_id && String(it.product_id) === String(ing.product_id))
+    if (already) {
+      alert('This ingredient is already selected in another row.')
+      ing.product_id = ''
+      return
+    }
+    const p = products.value.find(p => String(p.id) === String(ing.product_id))
+    if (p) {
+      ing.name = p.name
+    }
+  }
+}
+
+async function loadProducts() {
+  try {
+    const res = await axios.get('/api/staff/inventory/products?include_unpublished=1')
+    products.value = res.data || []
+  } catch (e) {
+    console.error('Failed to load products for dish form', e)
+    products.value = []
+  }
+}
+
+async function submitDish() {
+  dishMessage.value = ''
+  dishSubmitting.value = true
+  try {
+    const payload = {
+      name: dishForm.value.name,
+      ingredients: dishForm.value.ingredients.map(i => ({
+        name: i.name,
+        unit: i.unit,
+        per_serving: i.per_serving,
+        product_id: i.product_id || null
+      }))
+    }
+    const res = await axios.post('/api/owner/dishes', payload)
+    dishMessage.value = 'Dish created successfully and applied to all branches!'
+    dishMessageType.value = 'success'
+    dishForm.value.name = ''
+    dishForm.value.ingredients = [{ name: '', product_id: '', unit: 'pcs', per_serving: 0 }]
+    // Refresh products in case new placeholder products were created
+    await loadProducts()
+  } catch (e) {
+    console.error('Failed to create dish', e)
+    dishMessage.value = e?.response?.data?.message || e?.response?.data?.error || 'Failed to create dish'
+    dishMessageType.value = 'error'
+  } finally {
+    dishSubmitting.value = false
+  }
+}
 
 const handleLogout = async () => {
   const result = await Swal.fire({
@@ -987,6 +1118,168 @@ const handleLogout = async () => {
 
   .owner-action-card__badge {
     margin-top: 0.1rem;
+  }
+}
+
+/* ── Dish Creation Form ── */
+.owner-dish-section {
+  background: #ffffff;
+  border-radius: 1.125rem;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.07);
+  overflow: hidden;
+}
+
+.owner-dish-section .panel-header {
+  padding: 1.1rem 1.125rem;
+  background: linear-gradient(135deg, #fff7ed 0%, #fffbeb 100%);
+  border-bottom: 1px solid #fed7aa;
+}
+
+.owner-dish-section .panel-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.owner-dish-section .panel-body {
+  padding: 1.25rem;
+}
+
+.owner-dish-section .form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.owner-dish-section .form-row label {
+  font-weight: 600;
+  color: #111827;
+  font-size: 0.9rem;
+}
+
+.owner-dish-section .form-row input[type="text"],
+.owner-dish-section .form-row input[type="number"],
+.owner-dish-section .form-row select {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 0.9rem;
+}
+
+.owner-dish-section .form-row input:focus,
+.owner-dish-section .form-row select:focus {
+  outline: none;
+  border-color: #ff6a3d;
+  box-shadow: 0 0 0 3px rgba(255, 106, 61, 0.1);
+}
+
+.owner-dish-section .ingredients {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.owner-dish-section .ingredient-row {
+  display: grid;
+  grid-template-columns: 2fr 1.5fr 120px 100px 80px;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.6rem;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.owner-dish-section .ingredient-row input,
+.owner-dish-section .ingredient-row select {
+  padding: 0.4rem;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  font-size: 0.85rem;
+}
+
+.owner-dish-section .ingredient-row .small {
+  width: 100%;
+}
+
+.owner-dish-section .ingredient-row button {
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid #f3f4f6;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.owner-dish-section .ingredient-row button:hover {
+  background: #fee2e2;
+  border-color: #ef4444;
+  color: #dc2626;
+}
+
+.owner-dish-section .form-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.owner-dish-section .form-actions button[type="submit"] {
+  padding: 0.65rem 1.25rem;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(135deg, #ff6a3d, #ff8c42);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(255, 106, 61, 0.25);
+}
+
+.owner-dish-section .form-actions button[type="submit"]:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(255, 106, 61, 0.35);
+}
+
+.owner-dish-section .form-actions button[type="submit"]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.owner-dish-section .message {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.owner-dish-section .message.success {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+.owner-dish-section .message.error {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+@media (max-width: 900px) {
+  .owner-dish-section .ingredient-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem;
+  }
+  
+  .owner-dish-section .ingredient-row button {
+    grid-column: span 2;
   }
 }
 

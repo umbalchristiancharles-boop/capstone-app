@@ -16,90 +16,44 @@
         <div class="panel-body">
           <div class="kitchen-grid">
             <div class="kitchen-column">
-              <h3>Create Dish</h3>
-              <form @submit.prevent="submitDish" data-no-overlay="1">
-                <div class="form-row">
-                  <label>Dish name</label>
-                  <input v-model="form.name" type="text" required />
-                </div>
-
-                <div class="form-row">
-                  <label>Ingredients</label>
-                  <div class="ingredients">
-                    <div v-for="(ing, idx) in form.ingredients" :key="idx" class="ingredient-row">
-                      <select v-model="ing.product_id" @change="onProductSelect(idx)">
-                        <option value="">-- choose from stock (or leave blank to type new) --</option>
-                        <option v-for="p in products" :key="p.id" :value="p.id">
-                          {{ p.name }} ({{ p.stock }} in stock) <span v-if="!p.is_published">— unpublished</span>
-                        </option>
-                      </select>
-
-                      <input v-if="!ing.product_id" v-model="ing.name" placeholder="Ingredient name" required />
-                      <input v-else v-model="ing.name" placeholder="Ingredient name" readonly />
-
-                      <input v-model="ing.per_serving" placeholder="Per serving (optional)" class="small" />
-                      <select v-model="ing.unit">
-                        <option value="">unspecified</option>
-                        <option value="pcs">pcs</option>
-                        <option value="g">g</option>
-                        <option value="kg">kg</option>
-                        <option value="ml">ml</option>
-                        <option value="l">l</option>
-                        <option value="pack">pack</option>
-                      </select>
-                      <button type="button" @click="removeIngredient(idx)">Remove</button>
-                    </div>
-                    <button type="button" @click="addIngredient">Add ingredient</button>
-                  </div>
-                </div>
-
-                <div class="form-actions">
-                  <button type="submit">Create Dish</button>
-                </div>
-              </form>
-
-              <div v-if="message" class="message">{{ message }}</div>
-            </div>
-
-            <div class="kitchen-column">
               <h3>My Dishes</h3>
               <div v-if="loading">Loading...</div>
-                <div v-else>
-                  <div v-if="dishes.length === 0">No dishes yet.</div>
-                  <div class="dish-cards">
-                    <div class="dish-card" v-for="d in dishes" :key="d.id">
-                      <div class="dish-card-header">
-                        <div>
-                          <strong class="dish-name">{{ d.name }}</strong>
-                          <div class="dish-status"><small>({{ d.status }})</small></div>
-                        </div>
+              <div v-else>
+                <div v-if="dishes.length === 0">No dishes yet.</div>
+                <div class="dish-cards" v-else>
+                  <div class="dish-card" v-for="d in dishes" :key="d.id">
+                    <div class="dish-card-header">
+                      <div>
+                        <strong class="dish-name">{{ d.name }}</strong>
+                        <div class="dish-status"><small>({{ d.status }})</small></div>
                       </div>
+                    </div>
 
-                      <div class="dish-ingredients">
-                        <div class="ingredient-card" v-for="ing in d.ingredients" :key="ing.id || ing.name">
-                          <div class="ingredient-info">
-                            <div class="ingredient-name">{{ ing.name }}</div>
-                            <div class="ingredient-per" v-if="ing.unit"><em>- per serving: {{ formatPerServing(ing.per_serving) }} {{ ing.unit }}</em></div>
-                            <div class="ingredient-publish" v-if="ing.product">
-                              <small v-if="ing.product && !ing.product.is_published" style="color:#b91c1c">(product unpublished)</small>
-                              <small v-else style="color:#059669">(product published)</small>
-                            </div>
+                    <div class="dish-ingredients">
+                      <div class="ingredient-card" v-for="ing in d.ingredients" :key="ing.id || ing.name">
+                        <div class="ingredient-info">
+                          <div class="ingredient-name">{{ ing.name }}</div>
+                          <div class="ingredient-per" v-if="ing.unit"><em>- per serving: {{ formatPerServing(ing.per_serving) }} {{ ing.unit }}</em></div>
+                          <div class="ingredient-publish" v-if="ing.product">
+                            <small v-if="ing.product && !ing.product.is_published" style="color:#b91c1c">(product unpublished)</small>
+                            <small v-else style="color:#059669">(product published)</small>
                           </div>
-                          <div class="ingredient-actions">
-                            <button class="update-stock-btn" :disabled="(!ing.product_id)" @click.prevent="showUpdateStock(ing)">Reduce Stock</button>
-                            <div v-if="updateStockVisible[ingKey(ing)]" class="update-stock-form">
-                              <input type="number" v-model.number="updateStockForm[ingKey(ing)].reduce" min="1" max="9999" />
-                              <button @click.prevent="submitUpdateStock(ing)" :disabled="updateStockSubmitting[ingKey(ing)]">
-                                {{ updateStockSubmitting[ingKey(ing)] ? 'Saving...' : 'Save' }}
-                              </button>
-                              <button @click.prevent="hideUpdateStock(ing)" :disabled="updateStockSubmitting[ingKey(ing)]">Cancel</button>
-                            </div>
+                        </div>
+                        <div class="ingredient-actions">
+                          <button class="update-stock-btn" :disabled="(!ing.product_id)" @click.prevent="showUpdateStock(ing)">Reduce Stock</button>
+                          <div v-if="updateStockVisible[ingKey(ing)]" class="update-stock-form">
+                            <input type="number" v-model.number="updateStockForm[ingKey(ing)].reduce" min="1" max="9999" />
+                            <button @click.prevent="submitUpdateStock(ing)" :disabled="updateStockSubmitting[ingKey(ing)]">
+                              {{ updateStockSubmitting[ingKey(ing)] ? 'Saving...' : 'Save' }}
+                            </button>
+                            <button @click.prevent="hideUpdateStock(ing)" :disabled="updateStockSubmitting[ingKey(ing)]">Cancel</button>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
+              </div>
             </div>
           </div>
 
@@ -192,7 +146,6 @@ const dishes = ref([])
 const loading = ref(false)
 const queueLoading = ref(false)
 const markingDoneId = ref(null)
-const message = ref('')
 const products = ref([])
 const orderQueue = ref([])
 const queueForbidden = ref(false)
@@ -207,19 +160,6 @@ watch(pendingKitchenCount, (count) => {
   }
 })
 
-const form = ref({
-  name: '',
-  ingredients: [ { name: '', product_id: '', unit: 'pcs', per_serving: 0 } ]
-})
-
-function addIngredient() {
-  form.value.ingredients.push({ name: '', product_id: '', unit: 'pcs', per_serving: 0 })
-}
-
-function removeIngredient(idx) {
-  form.value.ingredients.splice(idx, 1)
-}
-
 async function loadDishes() {
   loading.value = true
   try {
@@ -229,24 +169,6 @@ async function loadDishes() {
     console.error('Failed to load dishes', e)
   } finally {
     loading.value = false
-  }
-}
-
-async function submitDish() {
-  message.value = ''
-  try {
-      const payload = {
-        name: form.value.name,
-        ingredients: form.value.ingredients.map(i => ({ name: i.name, unit: i.unit, per_serving: i.per_serving, product_id: i.product_id || null }))
-      }
-    const res = await axios.post('/api/staff/kitchen/dishes', payload)
-    message.value = 'Dish created'
-    form.value.name = ''
-    form.value.ingredients = [ { name: '', product_id: '', unit: 'pcs', per_serving: 0 } ]
-    await loadDishes()
-  } catch (e) {
-    console.error('Failed to create dish', e)
-    message.value = e?.response?.data?.error || 'Failed to create dish'
   }
 }
 
@@ -279,7 +201,6 @@ async function markOrderDone(orderId) {
   markingDoneId.value = orderId
   try {
     await axios.patch(`/api/orders/${orderId}/mark-completed`)
-    // Reload the queue to reflect the change
     await loadOrderQueue()
   } catch (e) {
     console.error('Failed to mark order as done', e)
@@ -314,51 +235,27 @@ async function loadOrderQueue() {
   }
 }
 
-function onProductSelect(idx) {
-  const ing = form.value.ingredients[idx]
-  if (!ing) return
-  // if a product was selected, set the name to that product and prevent duplicates
-  if (ing.product_id) {
-    const already = form.value.ingredients.find((it, i) => i !== idx && it.product_id && String(it.product_id) === String(ing.product_id))
-    if (already) {
-      alert('This ingredient is already selected in another row.');
-      ing.product_id = ''
-      return
-    }
-    const p = products.value.find(p => String(p.id) === String(ing.product_id))
-    if (p) {
-      ing.name = p.name
-    }
-  }
-}
-
 const updateStockVisible = reactive({})
 const updateStockForm = reactive({})
 const updateStockSubmitting = reactive({})
 
 function ingKey(ing) {
-  // prefer product id if available, otherwise fallback to ingredient id
   return String((ing.product && ing.product.id) || ing.product_id || ing.id || Math.random().toString(36).slice(2,9))
 }
 
 async function showUpdateStock(ing) {
-  console.log('[Kitchen] showUpdateStock click', ing)
   const key = ingKey(ing)
   updateStockVisible[key] = true
   if (!updateStockForm[key]) {
-    // Default to 1 for reduce amount; backend validates against aggregated stock
     updateStockForm[key] = { reduce: 1 }
   }
-  // Ensure we have product info: if global products are not loaded, fetch them first
   try {
     if (!ing.product && ing.product_id) {
       if (!products.value || products.value.length === 0) {
-        console.log('[Kitchen] products list empty — loading products before showing reduce UI')
         await loadProducts()
       }
       const p = products.value.find(p => String(p.id) === String(ing.product_id))
       if (p) {
-        // attach a shallow copy so v-model bindings update safely
         ing.product = { ...p }
       }
     }
@@ -386,27 +283,20 @@ async function submitUpdateStock(ing) {
       return
     }
 
-    // No client-side stock check; backend validates against aggregated group stock.
-    // This allows reducing even when individual row stock is 0 but group total is > 0.
-
     const payload = { reduce }
     updateStockSubmitting[key] = true
-    console.debug('[Kitchen] Reducing stock', { productId, reduce })
 
     const res = await axios.put(`/api/manager/inventory/${productId}`, payload, { withCredentials: true })
 
-    // Update UI from response: backend returns updated product with new stock and real_stock
     try {
       if (res.data && res.data.product) {
         const updated = res.data.product
-        // update ingredient product display
         if (ing.product) {
           ing.product.stock = updated.stock
           if (typeof updated.real_stock !== 'undefined') {
             ing.product.real_stock = updated.real_stock
           }
         }
-        // update global products list if present
         const globalP = products.value.find(p => String(p.id) === String(productId))
         if (globalP) {
           globalP.stock = updated.stock
@@ -419,14 +309,12 @@ async function submitUpdateStock(ing) {
 
     showToast(res.data.message || 'Stock reduced', 'success')
     updateStockVisible[key] = false
-    // refresh lists in background
     loadProducts().catch(()=>{})
     loadDishes().catch(()=>{})
   } catch (e) {
     console.error('Failed updating stock', e)
     const resp = e?.response
     if (resp && resp.data) {
-      // Laravel validation errors
       const body = resp.data
       let msg = body.message || 'Validation error'
       if (body.errors) {
@@ -476,10 +364,7 @@ onUnmounted(() => {
   document.removeEventListener('click', onDocumentClick)
 })
 
-// Logout state and handlers (consistent with other staff panels)
 const isLoggingOut = ref(false)
-
-// profile dropdown state for the top-right header profile
 const showProfileDropdown = ref(false)
 const profileWrapper = ref(null)
 
@@ -493,7 +378,6 @@ function closeProfileDropdown() {
 
 function handleInfoClick() {
   closeProfileDropdown()
-  // OwnerPanelLayout listens for this global event to open the info modal
   try { window.dispatchEvent(new Event('open-owner-info')) } catch (e) {}
 }
 
@@ -591,30 +475,10 @@ async function performLogout() {
   margin-top: 40px;
 }
 
-/* Kitchen panel layout and form styles */
-.kitchen-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start; }
+.kitchen-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; align-items: start; }
 .kitchen-column { background: #ffffff; border: 1px solid #eef2f5; border-radius: 8px; padding: 0.85rem; }
 .kitchen-column h3 { margin-top: 0; margin-bottom: 0.5rem; font-size: 1.05rem }
-.form-row { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.75rem }
-.form-row label { font-weight: 600; color: #111827 }
-.form-row input[type="text"], .form-row select, .form-row input[type="number"] { padding: 0.45rem 0.5rem; border: 1px solid #e6e7eb; border-radius: 6px; width: 100%; box-sizing: border-box }
-.form-actions { display: flex; gap: 0.5rem; }
-.form-actions button { padding: 0.5rem 0.85rem; border-radius: 6px; border: none; background: #2563eb; color: #fff; cursor: pointer }
 
-.ingredients { display:flex; flex-direction:column; gap:0.5rem }
-.ingredient-row { display: grid; grid-template-columns: 1fr 1fr 120px 80px 70px; gap: 0.5rem; align-items:center }
-.ingredient-row input, .ingredient-row select { padding: 0.4rem; border-radius:6px; border:1px solid #e6e7eb }
-.ingredient-row .small { width:100px }
-.ingredient-row button { padding:0.35rem 0.5rem; border-radius:6px; border:1px solid #f3f4f6; background:#fff; cursor:pointer }
-
-.dish-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem }
-.dish-list li { padding: 0.6rem; border: 1px solid #eef2f5; border-radius: 8px; background: #fff }
-.dish-list strong { display:block; font-size:1rem }
-.dish-list small { color: #6b7280 }
-.dish-list ul { margin: 0.4rem 0 0 0.6rem; padding-left: 0 }
-.low-stock { margin-top: 0.4rem }
-
-/* Dish card styles */
 .dish-cards { display:flex; flex-direction:column; gap:0.75rem }
 .dish-card { border:1px solid #eef2f5; border-radius:10px; padding:0.65rem; background:#fff }
 .dish-card-header { display:flex; align-items:center; gap:0.8rem; margin-bottom:0.5rem }
@@ -631,6 +495,5 @@ async function performLogout() {
 
 @media (max-width: 900px) {
   .kitchen-grid { grid-template-columns: 1fr; }
-  .ingredient-row { grid-template-columns: 1fr 1fr 100px 80px 70px }
 }
 </style>

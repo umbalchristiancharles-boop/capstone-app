@@ -811,8 +811,6 @@ async function requestWithFallback(method, url, options = {}) {
       }
     }
     throw e
-            try { if (window.hideRouteOverlay) window.hideRouteOverlay() } catch (e) {}
-            try { if (window.pageBlur && typeof window.pageBlur.hide === 'function') window.pageBlur.hide() } catch (e) {}
   }
 }
 

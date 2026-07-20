@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 17, 2026 at 02:11 PM
+-- Generation Time: Jul 20, 2026 at 11:26 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -136,9 +136,9 @@ CREATE TABLE `branches` (
 --
 
 INSERT INTO `branches` (`id`, `code`, `name`, `address`, `latitude`, `longitude`, `is_active`, `is_main_branch`, `approval_status`, `requested_by`, `finance_confirmed_by`, `finance_confirmed_at`, `approved_by`, `approved_at`, `rejected_at`, `budget`, `square_meters`, `geofencing_radius`, `default_password`, `default_password_updated_at`, `created_at`, `updated_at`) VALUES
-(31, 'BR743957', 'Dasma Branch', 'Dasma', 14.33000000, 120.94000000, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 73795, 100.00, 5.64, 'BDP20260717B2000C', '2026-07-17 09:24:00', '2026-03-22 10:19:21', '2026-07-17 10:32:09'),
-(32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 700000, NULL, NULL, 'BDP2026071735D9F9', '2026-07-17 09:31:14', '2026-03-25 06:56:11', '2026-07-17 10:54:59'),
-(50, 'BR577235', 'Quezon City Branch', NULL, 14.65105500, 121.09766006, 1, 0, 'approved', 159, 161, '2026-07-17 10:54:29', 31, '2026-07-17 10:54:59', NULL, 100000, 50.00, 500.00, 'BDP20260717D5227C', '2026-07-17 10:53:48', '2026-07-17 10:53:47', '2026-07-17 11:15:55');
+(31, 'BR743957', 'Dasma Branch', 'Dasma', 14.33000000, 120.94000000, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 73795, 100.00, 5.64, 'BDP2026072043EDD9', '2026-07-20 07:19:19', '2026-03-22 10:19:21', '2026-07-20 07:19:19'),
+(32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 700000, NULL, NULL, 'BDP20260720B0033F', '2026-07-20 07:19:19', '2026-03-25 06:56:11', '2026-07-20 07:19:19'),
+(50, 'BR577235', 'Quezon City Branch', NULL, 14.65105500, 121.09766006, 1, 0, 'approved', 159, 161, '2026-07-17 10:54:29', 31, '2026-07-17 10:54:59', NULL, 100000, 50.00, 500.00, 'BDP202607206DF65A', '2026-07-20 07:19:19', '2026-07-17 10:53:47', '2026-07-20 07:19:19');
 
 -- --------------------------------------------------------
 
@@ -2005,7 +2005,13 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (2648, 'App\\Models\\User', 147, 'auth-token', '8a8710bf7be77e915f2aa922fd2e5beb49b81ab04b676a29de6b1a7aefe98e2f', '[\"*\"]', NULL, NULL, '2026-07-15 09:58:23', '2026-07-15 09:58:23'),
 (2649, 'App\\Models\\User', 147, 'auth-token', 'a4f3dd6288ff0df7d4c219585a02189fb37181a40b7a072127df8915ffeb032c', '[\"*\"]', NULL, NULL, '2026-07-17 09:23:03', '2026-07-17 09:23:03'),
 (2657, 'App\\Models\\User', 147, 'auth-token', '1b3f50b7a0b7fbd70507024bff1df3d052da84fc7afc3bf69912dc6223948c4b', '[\"*\"]', NULL, NULL, '2026-07-17 10:17:55', '2026-07-17 10:17:55'),
-(2664, 'App\\Models\\User', 31, 'auth-token', '5017b5c40dab461b7bc0b282845304fef5f3fbef92812891468ccb25c4461fd5', '[\"*\"]', NULL, NULL, '2026-07-17 10:54:46', '2026-07-17 10:54:46');
+(2664, 'App\\Models\\User', 31, 'auth-token', '5017b5c40dab461b7bc0b282845304fef5f3fbef92812891468ccb25c4461fd5', '[\"*\"]', NULL, NULL, '2026-07-17 10:54:46', '2026-07-17 10:54:46'),
+(2676, 'App\\Models\\User', 31, 'auth-token', '410c0233a61013b15a02b7a035e55b058c45c1bf545550261f10e72c77a9b2f5', '[\"*\"]', NULL, NULL, '2026-07-20 07:18:01', '2026-07-20 07:18:01'),
+(2677, 'App\\Models\\User', 147, 'auth-token', '4661d218f53b86db56821c2be75741b0ccc0bec0dfac5969f506f699616f7826', '[\"*\"]', NULL, NULL, '2026-07-20 07:19:58', '2026-07-20 07:19:58'),
+(2681, 'App\\Models\\User', 31, 'auth-token', '41cb5b73177d76ff594cf74bdf8687186d186b0173a455bdb606fb1b9df73cb3', '[\"*\"]', NULL, NULL, '2026-07-20 07:24:23', '2026-07-20 07:24:23'),
+(2684, 'App\\Models\\User', 31, 'auth-token', '6e61c967423bf82f8bad5c602b3b17f7dedf60e2bd58aea61a7d68fa9b40cdbd', '[\"*\"]', NULL, NULL, '2026-07-20 08:36:21', '2026-07-20 08:36:21'),
+(2687, 'App\\Models\\User', 31, 'auth-token', '36ff2be2e3b839acee23afba3010d2354b6ac67d95b732ee0ed55d59a7a6a308', '[\"*\"]', NULL, NULL, '2026-07-20 09:12:42', '2026-07-20 09:12:42'),
+(2688, 'App\\Models\\User', 31, 'auth-token', '1f35f838972b676933f88c1cf96283a28a7ad386e94b6d69af452793f3e922f9', '[\"*\"]', NULL, NULL, '2026-07-20 09:13:29', '2026-07-20 09:13:29');
 
 -- --------------------------------------------------------
 
@@ -2290,7 +2296,8 @@ CREATE TABLE `products` (
 
 INSERT INTO `products` (`id`, `dish_id`, `name`, `category`, `per_pack_or_individual`, `pack_quantity`, `pack_unit`, `slug`, `created_at`, `updated_at`, `price`, `cost_price`, `stock`, `real_stock`, `open_pack_used`, `expires_at`, `date_made`, `min_stock`, `sku`, `branch_id`, `published_by`, `published_at`, `is_published`, `has_been_ordered`, `is_active`, `is_kitchen_dish`, `is_dish_product`, `supplier_name`, `supplier_id`, `logistics_request_available`, `status`, `requires_logistics`, `approved_by_logistics_main`, `approved_by_owner`, `rejection_reason`, `approved_at`) VALUES
 (191, NULL, 'Bread', NULL, 'individual', NULL, NULL, 'bread-29-1784030947', '2026-07-14 12:09:07', '2026-07-14 12:09:28', 0.00, 0.00, 0, 0, 0.0000, NULL, NULL, 0, 'PRODUCT-REQ-29-2394', 31, NULL, NULL, 1, 1, 1, 0, 0, 'TO BE ASSIGNED', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
-(192, NULL, 'Bread', 'Grain', 'per_pack', 6.00, 'pcs', 'bread', '2026-07-14 12:11:33', '2026-07-15 09:29:18', 60.50, 55.00, 20, 20, 0.0000, NULL, '2026-07-09', 10, 'sku-1784031093-2162', 31, NULL, NULL, 1, 1, 1, 0, 0, 'Umberto Batumbakal', 152, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL);
+(192, NULL, 'Bread', 'Grain', 'per_pack', 6.00, 'pcs', 'bread', '2026-07-14 12:11:33', '2026-07-15 09:29:18', 60.50, 55.00, 20, 20, 0.0000, NULL, '2026-07-09', 10, 'sku-1784031093-2162', 31, NULL, NULL, 1, 1, 1, 0, 0, 'Umberto Batumbakal', 152, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
+(204, 44, 'HotDog', NULL, 'individual', NULL, NULL, 'hotdog', '2026-07-20 09:13:05', '2026-07-20 09:13:05', 0.00, NULL, 0, 0, 0.0000, NULL, NULL, 0, 'HOTDOG-SJ9R', 31, 31, '2026-07-20 09:13:05', 1, 0, 1, 1, 1, NULL, NULL, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -2422,7 +2429,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('il9PKh2cyYUqX039Fsq7RolupLrGXXmHYNALptTY', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiRW0xZGlHTzRwZ1RZbDYwVktCT3Q1VWFZUXVNUnhmeGdaUEhoZlZsSCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO319', 1784290251);
+('EWuAgooRj8F0QTKFmsW878PzUC0Y5cdSARx1oRQY', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoid1NOUEdZb2JjRzgxOGZmamhROXFzNXdhVUxWUWZYZHZ2Q3VxRU5nZyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fX0=', 1784539387);
 
 -- --------------------------------------------------------
 
@@ -3051,13 +3058,13 @@ ALTER TABLE `customer_reports`
 -- AUTO_INCREMENT for table `dishes`
 --
 ALTER TABLE `dishes`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
 
 --
 -- AUTO_INCREMENT for table `dish_ingredients`
 --
 ALTER TABLE `dish_ingredients`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=65;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=68;
 
 --
 -- AUTO_INCREMENT for table `employee_timesheets`
@@ -3129,7 +3136,7 @@ ALTER TABLE `order_items`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2675;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2691;
 
 --
 -- AUTO_INCREMENT for table `positions`
@@ -3177,7 +3184,7 @@ ALTER TABLE `procurement_requests`
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=193;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=207;
 
 --
 -- AUTO_INCREMENT for table `product_comments`

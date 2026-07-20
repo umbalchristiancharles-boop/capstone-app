@@ -525,6 +525,9 @@ Route::prefix('manager')->middleware('auth:sanctum,web')->group(function () {
             Route::post('/dishes/{id}/approve', [\App\Http\Controllers\Admin\DishApprovalController::class, 'approveDish']);
             Route::post('/dishes/{id}/reject', [\App\Http\Controllers\Admin\DishApprovalController::class, 'rejectDish']);
             Route::post('/dishes/{id}/publish', [\App\Http\Controllers\Admin\DishApprovalController::class, 'publishDish']);
+            
+            // Owner Direct Dish Creation - No approval needed, affects all branches
+            Route::post('/dishes', [\App\Http\Controllers\Admin\DishApprovalController::class, 'ownerCreateDish']);
         });
     });
 
