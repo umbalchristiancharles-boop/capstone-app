@@ -664,7 +664,10 @@ function addToCart(product) {
 
   const existing = cart.value.find(i => i.product_id === chosen.id)
   if (existing) {
-    if (existing.quantity < (chosen.real_stock ?? chosen.stock)) {
+    // For kitchen dishes, use display stock (generous value from backend);
+    // for regular products, use real_stock to aggregate across supplier-specific rows
+    const maxQty = chosen.is_kitchen_dish ? chosen.stock : (chosen.real_stock ?? chosen.stock);
+    if (existing.quantity < maxQty) {
       existing.quantity++
       existing.subtotal = existing.quantity * existing.unit_price
     }
@@ -675,7 +678,9 @@ function addToCart(product) {
       unit_price: Number(chosen.price),
       quantity: 1,
       subtotal: Number(chosen.price),
-      max_stock: chosen.real_stock ?? chosen.stock,
+      // For kitchen dishes, use display stock (generous to allow multiple orders);
+      // for regular products, use real_stock to aggregate across supplier-specific rows
+      max_stock: chosen.is_kitchen_dish ? chosen.stock : (chosen.real_stock ?? chosen.stock),
     })
   }
 }

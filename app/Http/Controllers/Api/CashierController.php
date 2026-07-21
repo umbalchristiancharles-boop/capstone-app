@@ -483,6 +483,11 @@ class CashierController extends Controller
                         abort(422, "Insufficient ingredients/stock for {$product->name}.");
                     }
 
+                    // Validate that requested quantity doesn't exceed available servings
+                    if ($item['quantity'] > $maxServings) {
+                        abort(422, "Insufficient servings for {$product->name}. Available servings: {$maxServings}");
+                    }
+
                     $markup = $this->getMarkupMultiplier($request->branch_id);
                     $sellingPrice = $costSum > 0 ? round($costSum * $markup, 2) : (float) $product->price;
                     $unitPrice = $sellingPrice;

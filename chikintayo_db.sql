@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 21, 2026 at 12:23 PM
+-- Generation Time: Jul 21, 2026 at 01:27 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -138,7 +138,7 @@ CREATE TABLE `branches` (
 --
 
 INSERT INTO `branches` (`id`, `code`, `name`, `address`, `latitude`, `longitude`, `is_active`, `is_main_branch`, `approval_status`, `requested_by`, `finance_confirmed_by`, `finance_confirmed_at`, `approved_by`, `approved_at`, `rejected_at`, `budget`, `square_meters`, `geofencing_radius`, `default_password`, `default_password_updated_at`, `created_at`, `updated_at`) VALUES
-(31, 'BR743957', 'Dasma Branch', 'Dasma', 14.33000000, 120.94000000, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 72523, 100.00, 5.64, 'BDP20260721D89A10', '2026-07-21 05:02:45', '2026-03-22 10:19:21', '2026-07-21 10:20:50'),
+(31, 'BR743957', 'Dasma Branch', 'Dasma', 14.33000000, 120.94000000, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 72750, 100.00, 5.64, 'BDP20260721D89A10', '2026-07-21 05:02:45', '2026-03-22 10:19:21', '2026-07-21 11:26:24'),
 (32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 700000, NULL, NULL, 'BDP20260721EE6DD1', '2026-07-21 05:02:45', '2026-03-25 06:56:11', '2026-07-21 05:02:45'),
 (50, 'BR577235', 'Quezon City Branch', NULL, 14.65105500, 121.09766006, 1, 0, 'approved', 159, 161, '2026-07-17 10:54:29', 31, '2026-07-17 10:54:59', NULL, 100000, 50.00, 500.00, 'BDP202607210875B0', '2026-07-21 05:02:45', '2026-07-17 10:53:47', '2026-07-21 05:02:45');
 
@@ -791,7 +791,8 @@ INSERT INTO `orders` (`id`, `order_code`, `owner_id`, `cashier_id`, `branch_id`,
 (139, 'CT-0011', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-07-21 10:20:39', 37.80, 50.00, 12.20, 'none', 0.00, 0.00, 12.00, 4.05, 33.75, '2026-07-21 10:20:39', '2026-07-21 10:20:39', '2026-07-21 10:20:39', 153, NULL, NULL),
 (140, 'CT-0012', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-07-21 10:20:43', 37.80, 50.00, 12.20, 'none', 0.00, 0.00, 12.00, 4.05, 33.75, '2026-07-21 10:20:43', '2026-07-21 10:20:43', '2026-07-21 10:20:43', 153, NULL, NULL),
 (141, 'CT-0013', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-07-21 10:20:47', 37.80, 50.00, 12.20, 'none', 0.00, 0.00, 12.00, 4.05, 33.75, '2026-07-21 10:20:47', '2026-07-21 10:20:47', '2026-07-21 10:20:47', 153, NULL, NULL),
-(142, 'CT-0014', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-07-21 10:20:50', 37.80, 50.00, 12.20, 'none', 0.00, 0.00, 12.00, 4.05, 33.75, '2026-07-21 10:20:50', '2026-07-21 10:20:50', '2026-07-21 10:20:50', 153, NULL, NULL);
+(142, 'CT-0014', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-07-21 10:20:50', 37.80, 50.00, 12.20, 'none', 0.00, 0.00, 12.00, 4.05, 33.75, '2026-07-21 10:20:50', '2026-07-21 10:20:50', '2026-07-21 10:20:50', 153, NULL, NULL),
+(143, 'CT-0015', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-07-21 11:26:24', 226.80, 300.00, 73.20, 'none', 0.00, 0.00, 12.00, 24.30, 202.50, '2026-07-21 11:26:24', '2026-07-21 11:26:24', '2026-07-21 11:26:24', 153, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -821,7 +822,8 @@ INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `product_name`, `unit
 (90, 139, 211, 'HotDog', 33.75, 1, 33.75, '2026-07-21 10:20:39', '2026-07-21 10:20:39'),
 (91, 140, 211, 'HotDog', 33.75, 1, 33.75, '2026-07-21 10:20:43', '2026-07-21 10:20:43'),
 (92, 141, 211, 'HotDog', 33.75, 1, 33.75, '2026-07-21 10:20:47', '2026-07-21 10:20:47'),
-(93, 142, 211, 'HotDog', 33.75, 1, 33.75, '2026-07-21 10:20:50', '2026-07-21 10:20:50');
+(93, 142, 211, 'HotDog', 33.75, 1, 33.75, '2026-07-21 10:20:50', '2026-07-21 10:20:50'),
+(94, 143, 211, 'HotDog', 33.75, 6, 202.50, '2026-07-21 11:26:24', '2026-07-21 11:26:24');
 
 -- --------------------------------------------------------
 
@@ -2057,7 +2059,7 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (2696, 'App\\Models\\User', 31, 'auth-token', 'cbd9a4fe59b450e90e8de215c2b20ee2a9d2ad7b8ea249fed8cd2936f12ec52f', '[\"*\"]', NULL, NULL, '2026-07-21 09:36:27', '2026-07-21 09:36:27'),
 (2709, 'App\\Models\\User', 31, 'auth-token', 'ef2b89e7169ae86f782b50dc9bf2ca9c860a417904fea179c38d5a08ec82b7d7', '[\"*\"]', NULL, NULL, '2026-07-21 09:48:47', '2026-07-21 09:48:47'),
 (2719, 'App\\Models\\User', 147, 'auth-token', '9b969badda49bd9baf0190f06670635a62d8d59be7d846d19d6c9e3b2d7c35b4', '[\"*\"]', NULL, NULL, '2026-07-21 10:16:38', '2026-07-21 10:16:38'),
-(2721, 'App\\Models\\User', 153, 'auth-token', '0a00cc89e48577a469eb4b62c13e700d2d651210505caf99365652b9ff8bdcab', '[\"*\"]', NULL, NULL, '2026-07-21 10:20:13', '2026-07-21 10:20:13');
+(2723, 'App\\Models\\User', 153, 'auth-token', 'baca381a12d87745de285462b7b869ac08b2757178bb5628c73429cfad9b90c6', '[\"*\"]', NULL, NULL, '2026-07-21 11:26:07', '2026-07-21 11:26:07');
 
 -- --------------------------------------------------------
 
@@ -2348,8 +2350,8 @@ INSERT INTO `products` (`id`, `dish_id`, `name`, `category`, `per_pack_or_indivi
 (208, NULL, 'Frozen HotDog (Dish Ingredient)', NULL, 'individual', NULL, NULL, 'frozen-hotdog-dish-ingredient-45-31', '2026-07-21 09:39:36', '2026-07-21 09:39:36', 0.00, 0.00, 0, 0, 0.0000, NULL, NULL, 10, 'DISH-45-ING-0-B31', 31, NULL, NULL, 0, 0, 1, 0, 0, 'KITCHEN', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
 (209, NULL, 'Frozen HotDog (Dish Ingredient)', NULL, 'individual', NULL, NULL, 'frozen-hotdog-dish-ingredient-45-32', '2026-07-21 09:39:36', '2026-07-21 09:39:36', 0.00, 0.00, 0, 0, 0.0000, NULL, NULL, 10, 'DISH-45-ING-0-B32', 32, NULL, NULL, 0, 0, 1, 0, 0, 'KITCHEN', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
 (210, NULL, 'Frozen HotDog (Dish Ingredient)', NULL, 'individual', NULL, NULL, 'frozen-hotdog-dish-ingredient-45-50', '2026-07-21 09:39:36', '2026-07-21 09:39:36', 0.00, 0.00, 0, 0, 0.0000, NULL, NULL, 10, 'DISH-45-ING-0-B50', 50, NULL, NULL, 0, 0, 1, 0, 0, 'KITCHEN', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
-(211, 45, 'HotDog', NULL, 'individual', NULL, NULL, 'hotdog', '2026-07-21 09:39:36', '2026-07-21 10:20:50', 33.75, 25.00, 54, 0, 0.0000, NULL, NULL, 0, 'HOTDOG-F0FR', 31, 31, '2026-07-21 09:39:36', 1, 0, 1, 1, 1, NULL, NULL, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
-(214, NULL, 'Frozen HotDog (Dish Ingredient)', 'Meat', 'per_pack', 6.00, 'pcs', 'frozen-hotdog-dish-ingredient', '2026-07-21 09:43:27', '2026-07-21 10:20:50', 165.00, 150.00, 9, 10, 0.0000, NULL, '2026-07-21', 10, 'sku-1784627007-6954', 31, NULL, NULL, 1, 1, 1, 0, 0, 'Umberto Batumbakal', 152, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL);
+(211, 45, 'HotDog', NULL, 'individual', NULL, NULL, 'hotdog', '2026-07-21 09:39:36', '2026-07-21 11:26:24', 33.75, 25.00, 48, 0, 0.0000, NULL, NULL, 0, 'HOTDOG-F0FR', 31, 31, '2026-07-21 09:39:36', 1, 0, 1, 1, 1, NULL, NULL, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
+(214, NULL, 'Frozen HotDog (Dish Ingredient)', 'Meat', 'per_pack', 6.00, 'pcs', 'frozen-hotdog-dish-ingredient', '2026-07-21 09:43:27', '2026-07-21 11:26:24', 165.00, 150.00, 8, 10, 0.0000, NULL, '2026-07-21', 10, 'sku-1784627007-6954', 31, NULL, NULL, 1, 1, 1, 0, 0, 'Umberto Batumbakal', 152, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -2481,7 +2483,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('hwq1CI8bnOQORHEtJ3w2F778B4jAfPG4WZJ16aWu', 153, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiMjBiVUxZZExRR2ZYNWlIR0pNWmpmbUxqQnlUQWM4enlqT05zaElVOSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi9jYXNoaWVyIjtzOjU6InJvdXRlIjtOO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxNTM7czo3OiJ1c2VyX2lkIjtpOjE1MztzOjk6InVzZXJfcm9sZSI7czo1OiJTVEFGRiI7czo5OiJ1c2VyX25hbWUiO3M6MTU6Ikphbm5lIERlIEd1em1hbiI7czoxMzoicmVkaXJlY3RfcGF0aCI7czoxNDoiL3N0YWZmL2Nhc2hpZXIiO30=', 1784629277);
+('PEvLLqEFR1HZ0vthoj19ez5K3qoqO15yfL4HnMIS', 153, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiRDg1amc0RWhsY1E2WHQwQVAwTGVEdTVCNHhrTHBTNHk3UHdjem5jcSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi9jYXNoaWVyIjtzOjU6InJvdXRlIjtOO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxNTM7czo3OiJ1c2VyX2lkIjtpOjE1MztzOjk6InVzZXJfcm9sZSI7czo1OiJTVEFGRiI7czo5OiJ1c2VyX25hbWUiO3M6MTU6Ikphbm5lIERlIEd1em1hbiI7czoxMzoicmVkaXJlY3RfcGF0aCI7czoxNDoiL3N0YWZmL2Nhc2hpZXIiO30=', 1784633226);
 
 -- --------------------------------------------------------
 
@@ -3178,19 +3180,19 @@ ALTER TABLE `migrations`
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=143;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=144;
 
 --
 -- AUTO_INCREMENT for table `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=94;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=95;
 
 --
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2722;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2724;
 
 --
 -- AUTO_INCREMENT for table `positions`
