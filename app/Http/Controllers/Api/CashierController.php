@@ -292,6 +292,9 @@ class CashierController extends Controller
             ->values()
             ->all();
 
+        // Exclude products that have ingredient markers in their names (e.g., "(Dish Ingredient)", "(Ingredient)", etc.)
+        $ingredientMarkers = ['(DISH INGREDIENT)', '(INGREDIENT)', '(KITCHEN INGREDIENT)'];
+
         // 1) Regular sellable products (non-dish, not ingredient) - show all published, not just stock > 0
         $regularProductsQuery = Product::query()
             ->where('is_active', 1)
@@ -307,6 +310,11 @@ class CashierController extends Controller
 
         if (!empty($ingredientNames)) {
             $regularProductsQuery->whereNotIn(DB::raw('TRIM(UPPER(name))'), $ingredientNames);
+        }
+
+        // Exclude products with ingredient markers in their names
+        foreach ($ingredientMarkers as $marker) {
+            $regularProductsQuery->where(DB::raw('TRIM(UPPER(name))'), 'NOT LIKE', '%' . $marker . '%');
         }
 
         $out = $regularProductsQuery->orderBy('name')->get()->toArray();

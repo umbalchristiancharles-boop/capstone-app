@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 20, 2026 at 11:26 AM
+-- Generation Time: Jul 21, 2026 at 12:23 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -75,7 +75,9 @@ INSERT INTO `attendance` (`id`, `user_id`, `date`, `time_in`, `time_out`, `hours
 (11, 149, '2026-06-26', '13:29:31', NULL, 0, 'late', NULL, '2026-06-26 05:29:31', '2026-06-26 05:29:31'),
 (12, 241, '2026-07-14', '16:33:50', '18:04:32', -91, 'late', NULL, '2026-07-14 08:33:50', '2026-07-14 10:04:32'),
 (13, 153, '2026-07-17', '18:37:05', '18:37:07', 0, 'late', NULL, '2026-07-17 10:37:05', '2026-07-17 10:37:07'),
-(15, 149, '2026-07-17', '20:05:08', NULL, 0, 'late', NULL, '2026-07-17 12:05:08', '2026-07-17 12:05:08');
+(15, 149, '2026-07-17', '20:05:08', NULL, 0, 'late', NULL, '2026-07-17 12:05:08', '2026-07-17 12:05:08'),
+(16, 151, '2026-07-21', '17:44:43', NULL, 0, 'late', NULL, '2026-07-21 09:44:43', '2026-07-21 09:44:43'),
+(17, 149, '2026-07-21', '17:45:39', NULL, 0, 'late', NULL, '2026-07-21 09:45:39', '2026-07-21 09:45:39');
 
 -- --------------------------------------------------------
 
@@ -136,9 +138,9 @@ CREATE TABLE `branches` (
 --
 
 INSERT INTO `branches` (`id`, `code`, `name`, `address`, `latitude`, `longitude`, `is_active`, `is_main_branch`, `approval_status`, `requested_by`, `finance_confirmed_by`, `finance_confirmed_at`, `approved_by`, `approved_at`, `rejected_at`, `budget`, `square_meters`, `geofencing_radius`, `default_password`, `default_password_updated_at`, `created_at`, `updated_at`) VALUES
-(31, 'BR743957', 'Dasma Branch', 'Dasma', 14.33000000, 120.94000000, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 73795, 100.00, 5.64, 'BDP2026072043EDD9', '2026-07-20 07:19:19', '2026-03-22 10:19:21', '2026-07-20 07:19:19'),
-(32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 700000, NULL, NULL, 'BDP20260720B0033F', '2026-07-20 07:19:19', '2026-03-25 06:56:11', '2026-07-20 07:19:19'),
-(50, 'BR577235', 'Quezon City Branch', NULL, 14.65105500, 121.09766006, 1, 0, 'approved', 159, 161, '2026-07-17 10:54:29', 31, '2026-07-17 10:54:59', NULL, 100000, 50.00, 500.00, 'BDP202607206DF65A', '2026-07-20 07:19:19', '2026-07-17 10:53:47', '2026-07-20 07:19:19');
+(31, 'BR743957', 'Dasma Branch', 'Dasma', 14.33000000, 120.94000000, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 72523, 100.00, 5.64, 'BDP20260721D89A10', '2026-07-21 05:02:45', '2026-03-22 10:19:21', '2026-07-21 10:20:50'),
+(32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 700000, NULL, NULL, 'BDP20260721EE6DD1', '2026-07-21 05:02:45', '2026-03-25 06:56:11', '2026-07-21 05:02:45'),
+(50, 'BR577235', 'Quezon City Branch', NULL, 14.65105500, 121.09766006, 1, 0, 'approved', 159, 161, '2026-07-17 10:54:29', 31, '2026-07-17 10:54:59', NULL, 100000, 50.00, 500.00, 'BDP202607210875B0', '2026-07-21 05:02:45', '2026-07-17 10:53:47', '2026-07-21 05:02:45');
 
 -- --------------------------------------------------------
 
@@ -166,7 +168,8 @@ CREATE TABLE `budget_requests` (
 
 INSERT INTO `budget_requests` (`id`, `branch_id`, `user_id`, `purpose`, `requested_amount`, `status`, `date_requested`, `processed_by`, `date_processed`, `created_at`, `updated_at`) VALUES
 (108, 31, 150, 'Procurement Request #149: Bread x10', 500.00, 'Completed', '2026-07-14', 150, '2026-07-14', '2026-07-14 12:11:56', '2026-07-14 12:15:07'),
-(109, 31, 150, 'Procurement Request #150: Bread x10', 550.00, 'Completed', '2026-07-15', 150, '2026-07-15', '2026-07-15 09:21:06', '2026-07-15 09:28:49');
+(109, 31, 150, 'Procurement Request #150: Bread x10', 550.00, 'Completed', '2026-07-15', 150, '2026-07-15', '2026-07-15 09:21:06', '2026-07-15 09:28:49'),
+(110, 31, 150, 'Procurement Request #151: Frozen HotDog (Dish Ingredient) x10', 1500.00, 'Completed', '2026-07-21', 150, '2026-07-21', '2026-07-21 09:43:49', '2026-07-21 10:00:07');
 
 -- --------------------------------------------------------
 
@@ -260,7 +263,8 @@ CREATE TABLE `customer_reports` (
 --
 
 INSERT INTO `customer_reports` (`id`, `customer_account_id`, `customer_name`, `customer_email`, `customer_phone`, `subject`, `message`, `status`, `admin_notes`, `assigned_to`, `resolved_at`, `created_at`, `updated_at`) VALUES
-(1, NULL, 'Christian Charles Umbal', 'umbal.christiancharles@ncst.edu.ph', NULL, 'BAsta', 'Panis yung tubig', 'pending', NULL, NULL, NULL, '2026-07-15 09:56:31', '2026-07-15 09:56:31');
+(1, NULL, 'Christian Charles Umbal', 'umbal.christiancharles@ncst.edu.ph', NULL, 'BAsta', 'Panis yung tubig', 'pending', NULL, NULL, NULL, '2026-07-15 09:56:31', '2026-07-15 09:56:31'),
+(2, NULL, 'Gab', 'masone9408@suahi.com', '09156818857', 'Food', 'Panis Yung kanin', 'pending', NULL, NULL, NULL, '2026-07-21 09:55:13', '2026-07-21 09:55:13');
 
 -- --------------------------------------------------------
 
@@ -282,6 +286,13 @@ CREATE TABLE `dishes` (
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `dishes`
+--
+
+INSERT INTO `dishes` (`id`, `name`, `created_by`, `branch_id`, `status`, `approval_status`, `approved_by`, `approved_at`, `approval_notes`, `created_at`, `updated_at`) VALUES
+(45, 'HotDog', 31, 31, 'active', 'approved', 31, '2026-07-21 09:39:36', NULL, '2026-07-21 09:39:36', '2026-07-21 09:39:36');
+
 -- --------------------------------------------------------
 
 --
@@ -298,6 +309,13 @@ CREATE TABLE `dish_ingredients` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `dish_ingredients`
+--
+
+INSERT INTO `dish_ingredients` (`id`, `dish_id`, `product_id`, `name`, `unit`, `per_serving`, `created_at`, `updated_at`) VALUES
+(68, 45, 207, 'Frozen HotDog', 'pcs', 1.0000, '2026-07-21 09:39:36', '2026-07-21 09:39:36');
 
 -- --------------------------------------------------------
 
@@ -390,7 +408,8 @@ CREATE TABLE `inventory_lots` (
 
 INSERT INTO `inventory_lots` (`id`, `branch_id`, `product_id`, `supplier_order_id`, `procurement_request_id`, `quantity`, `expires_at`, `created_at`, `updated_at`) VALUES
 (2, 31, 192, 173, 149, 10, '2026-07-12 07:00:00', '2026-07-14 12:15:29', '2026-07-14 12:15:29'),
-(3, 31, 192, 175, 150, 10, '2026-07-16 17:22:00', '2026-07-15 09:29:18', '2026-07-15 09:29:18');
+(3, 31, 192, 175, 150, 10, '2026-07-16 17:22:00', '2026-07-15 09:29:18', '2026-07-15 09:29:18'),
+(4, 31, 214, 176, 151, 10, '2026-07-22 17:47:00', '2026-07-21 10:00:59', '2026-07-21 10:00:59');
 
 -- --------------------------------------------------------
 
@@ -450,7 +469,9 @@ INSERT INTO `jobs` (`id`, `queue`, `payload`, `attempts`, `reserved_at`, `availa
 (35, 'default', '{\"uuid\":\"ed2b337e-4467-4cab-88f2-057db7c5ec00\",\"displayName\":\"App\\\\Events\\\\ProcurementRequestUpdated\",\"job\":\"Illuminate\\\\Queue\\\\CallQueuedHandler@call\",\"maxTries\":null,\"maxExceptions\":null,\"failOnTimeout\":false,\"backoff\":null,\"timeout\":null,\"retryUntil\":null,\"data\":{\"commandName\":\"Illuminate\\\\Broadcasting\\\\BroadcastEvent\",\"command\":\"O:38:\\\"Illuminate\\\\Broadcasting\\\\BroadcastEvent\\\":17:{s:5:\\\"event\\\";O:36:\\\"App\\\\Events\\\\ProcurementRequestUpdated\\\":1:{s:18:\\\"procurementRequest\\\";O:45:\\\"Illuminate\\\\Contracts\\\\Database\\\\ModelIdentifier\\\":5:{s:5:\\\"class\\\";s:29:\\\"App\\\\Models\\\\ProcurementRequest\\\";s:2:\\\"id\\\";i:149;s:9:\\\"relations\\\";a:0:{}s:10:\\\"connection\\\";s:5:\\\"mysql\\\";s:15:\\\"collectionClass\\\";N;}}s:5:\\\"tries\\\";N;s:7:\\\"timeout\\\";N;s:7:\\\"backoff\\\";N;s:13:\\\"maxExceptions\\\";N;s:23:\\\"deleteWhenMissingModels\\\";b:1;s:10:\\\"connection\\\";N;s:5:\\\"queue\\\";N;s:12:\\\"messageGroup\\\";N;s:12:\\\"deduplicator\\\";N;s:5:\\\"delay\\\";N;s:11:\\\"afterCommit\\\";N;s:10:\\\"middleware\\\";a:0:{}s:7:\\\"chained\\\";a:0:{}s:15:\\\"chainConnection\\\";N;s:10:\\\"chainQueue\\\";N;s:19:\\\"chainCatchCallbacks\\\";N;}\",\"batchId\":null},\"createdAt\":1784031200,\"delay\":null}', 0, NULL, 1784031200, 1784031200);
 INSERT INTO `jobs` (`id`, `queue`, `payload`, `attempts`, `reserved_at`, `available_at`, `created_at`) VALUES
 (36, 'default', '{\"uuid\":\"07584370-136c-47f5-b54e-24a140f282b8\",\"displayName\":\"App\\\\Events\\\\ProcurementRequestUpdated\",\"job\":\"Illuminate\\\\Queue\\\\CallQueuedHandler@call\",\"maxTries\":null,\"maxExceptions\":null,\"failOnTimeout\":false,\"backoff\":null,\"timeout\":null,\"retryUntil\":null,\"data\":{\"commandName\":\"Illuminate\\\\Broadcasting\\\\BroadcastEvent\",\"command\":\"O:38:\\\"Illuminate\\\\Broadcasting\\\\BroadcastEvent\\\":17:{s:5:\\\"event\\\";O:36:\\\"App\\\\Events\\\\ProcurementRequestUpdated\\\":1:{s:18:\\\"procurementRequest\\\";O:45:\\\"Illuminate\\\\Contracts\\\\Database\\\\ModelIdentifier\\\":5:{s:5:\\\"class\\\";s:29:\\\"App\\\\Models\\\\ProcurementRequest\\\";s:2:\\\"id\\\";i:150;s:9:\\\"relations\\\";a:4:{i:0;s:7:\\\"product\\\";i:1;s:13:\\\"logisticsUser\\\";i:2;s:15:\\\"procurementUser\\\";i:3;s:11:\\\"financeUser\\\";}s:10:\\\"connection\\\";s:5:\\\"mysql\\\";s:15:\\\"collectionClass\\\";N;}}s:5:\\\"tries\\\";N;s:7:\\\"timeout\\\";N;s:7:\\\"backoff\\\";N;s:13:\\\"maxExceptions\\\";N;s:23:\\\"deleteWhenMissingModels\\\";b:1;s:10:\\\"connection\\\";N;s:5:\\\"queue\\\";N;s:12:\\\"messageGroup\\\";N;s:12:\\\"deduplicator\\\";N;s:5:\\\"delay\\\";N;s:11:\\\"afterCommit\\\";N;s:10:\\\"middleware\\\";a:0:{}s:7:\\\"chained\\\";a:0:{}s:15:\\\"chainConnection\\\";N;s:10:\\\"chainQueue\\\";N;s:19:\\\"chainCatchCallbacks\\\";N;}\",\"batchId\":null},\"createdAt\":1784107267,\"delay\":null}', 0, NULL, 1784107268, 1784107268),
-(37, 'default', '{\"uuid\":\"1dd92909-ceb6-49de-a578-647871edb224\",\"displayName\":\"App\\\\Events\\\\ProcurementRequestUpdated\",\"job\":\"Illuminate\\\\Queue\\\\CallQueuedHandler@call\",\"maxTries\":null,\"maxExceptions\":null,\"failOnTimeout\":false,\"backoff\":null,\"timeout\":null,\"retryUntil\":null,\"data\":{\"commandName\":\"Illuminate\\\\Broadcasting\\\\BroadcastEvent\",\"command\":\"O:38:\\\"Illuminate\\\\Broadcasting\\\\BroadcastEvent\\\":17:{s:5:\\\"event\\\";O:36:\\\"App\\\\Events\\\\ProcurementRequestUpdated\\\":1:{s:18:\\\"procurementRequest\\\";O:45:\\\"Illuminate\\\\Contracts\\\\Database\\\\ModelIdentifier\\\":5:{s:5:\\\"class\\\";s:29:\\\"App\\\\Models\\\\ProcurementRequest\\\";s:2:\\\"id\\\";i:150;s:9:\\\"relations\\\";a:0:{}s:10:\\\"connection\\\";s:5:\\\"mysql\\\";s:15:\\\"collectionClass\\\";N;}}s:5:\\\"tries\\\";N;s:7:\\\"timeout\\\";N;s:7:\\\"backoff\\\";N;s:13:\\\"maxExceptions\\\";N;s:23:\\\"deleteWhenMissingModels\\\";b:1;s:10:\\\"connection\\\";N;s:5:\\\"queue\\\";N;s:12:\\\"messageGroup\\\";N;s:12:\\\"deduplicator\\\";N;s:5:\\\"delay\\\";N;s:11:\\\"afterCommit\\\";N;s:10:\\\"middleware\\\";a:0:{}s:7:\\\"chained\\\";a:0:{}s:15:\\\"chainConnection\\\";N;s:10:\\\"chainQueue\\\";N;s:19:\\\"chainCatchCallbacks\\\";N;}\",\"batchId\":null},\"createdAt\":1784107354,\"delay\":null}', 0, NULL, 1784107354, 1784107354);
+(37, 'default', '{\"uuid\":\"1dd92909-ceb6-49de-a578-647871edb224\",\"displayName\":\"App\\\\Events\\\\ProcurementRequestUpdated\",\"job\":\"Illuminate\\\\Queue\\\\CallQueuedHandler@call\",\"maxTries\":null,\"maxExceptions\":null,\"failOnTimeout\":false,\"backoff\":null,\"timeout\":null,\"retryUntil\":null,\"data\":{\"commandName\":\"Illuminate\\\\Broadcasting\\\\BroadcastEvent\",\"command\":\"O:38:\\\"Illuminate\\\\Broadcasting\\\\BroadcastEvent\\\":17:{s:5:\\\"event\\\";O:36:\\\"App\\\\Events\\\\ProcurementRequestUpdated\\\":1:{s:18:\\\"procurementRequest\\\";O:45:\\\"Illuminate\\\\Contracts\\\\Database\\\\ModelIdentifier\\\":5:{s:5:\\\"class\\\";s:29:\\\"App\\\\Models\\\\ProcurementRequest\\\";s:2:\\\"id\\\";i:150;s:9:\\\"relations\\\";a:0:{}s:10:\\\"connection\\\";s:5:\\\"mysql\\\";s:15:\\\"collectionClass\\\";N;}}s:5:\\\"tries\\\";N;s:7:\\\"timeout\\\";N;s:7:\\\"backoff\\\";N;s:13:\\\"maxExceptions\\\";N;s:23:\\\"deleteWhenMissingModels\\\";b:1;s:10:\\\"connection\\\";N;s:5:\\\"queue\\\";N;s:12:\\\"messageGroup\\\";N;s:12:\\\"deduplicator\\\";N;s:5:\\\"delay\\\";N;s:11:\\\"afterCommit\\\";N;s:10:\\\"middleware\\\";a:0:{}s:7:\\\"chained\\\";a:0:{}s:15:\\\"chainConnection\\\";N;s:10:\\\"chainQueue\\\";N;s:19:\\\"chainCatchCallbacks\\\";N;}\",\"batchId\":null},\"createdAt\":1784107354,\"delay\":null}', 0, NULL, 1784107354, 1784107354),
+(38, 'default', '{\"uuid\":\"b3be5ec5-2135-4d83-a6d5-1d2ca3150cbf\",\"displayName\":\"App\\\\Events\\\\ProcurementRequestUpdated\",\"job\":\"Illuminate\\\\Queue\\\\CallQueuedHandler@call\",\"maxTries\":null,\"maxExceptions\":null,\"failOnTimeout\":false,\"backoff\":null,\"timeout\":null,\"retryUntil\":null,\"data\":{\"commandName\":\"Illuminate\\\\Broadcasting\\\\BroadcastEvent\",\"command\":\"O:38:\\\"Illuminate\\\\Broadcasting\\\\BroadcastEvent\\\":17:{s:5:\\\"event\\\";O:36:\\\"App\\\\Events\\\\ProcurementRequestUpdated\\\":1:{s:18:\\\"procurementRequest\\\";O:45:\\\"Illuminate\\\\Contracts\\\\Database\\\\ModelIdentifier\\\":5:{s:5:\\\"class\\\";s:29:\\\"App\\\\Models\\\\ProcurementRequest\\\";s:2:\\\"id\\\";i:151;s:9:\\\"relations\\\";a:4:{i:0;s:7:\\\"product\\\";i:1;s:13:\\\"logisticsUser\\\";i:2;s:15:\\\"procurementUser\\\";i:3;s:11:\\\"financeUser\\\";}s:10:\\\"connection\\\";s:5:\\\"mysql\\\";s:15:\\\"collectionClass\\\";N;}}s:5:\\\"tries\\\";N;s:7:\\\"timeout\\\";N;s:7:\\\"backoff\\\";N;s:13:\\\"maxExceptions\\\";N;s:23:\\\"deleteWhenMissingModels\\\";b:1;s:10:\\\"connection\\\";N;s:5:\\\"queue\\\";N;s:12:\\\"messageGroup\\\";N;s:12:\\\"deduplicator\\\";N;s:5:\\\"delay\\\";N;s:11:\\\"afterCommit\\\";N;s:10:\\\"middleware\\\";a:0:{}s:7:\\\"chained\\\";a:0:{}s:15:\\\"chainConnection\\\";N;s:10:\\\"chainQueue\\\";N;s:19:\\\"chainCatchCallbacks\\\";N;}\",\"batchId\":null},\"createdAt\":1784627030,\"delay\":null}', 0, NULL, 1784627030, 1784627030),
+(39, 'default', '{\"uuid\":\"3c1dce0c-8c7e-47e7-9eb2-ed7cf0c6d441\",\"displayName\":\"App\\\\Events\\\\ProcurementRequestUpdated\",\"job\":\"Illuminate\\\\Queue\\\\CallQueuedHandler@call\",\"maxTries\":null,\"maxExceptions\":null,\"failOnTimeout\":false,\"backoff\":null,\"timeout\":null,\"retryUntil\":null,\"data\":{\"commandName\":\"Illuminate\\\\Broadcasting\\\\BroadcastEvent\",\"command\":\"O:38:\\\"Illuminate\\\\Broadcasting\\\\BroadcastEvent\\\":17:{s:5:\\\"event\\\";O:36:\\\"App\\\\Events\\\\ProcurementRequestUpdated\\\":1:{s:18:\\\"procurementRequest\\\";O:45:\\\"Illuminate\\\\Contracts\\\\Database\\\\ModelIdentifier\\\":5:{s:5:\\\"class\\\";s:29:\\\"App\\\\Models\\\\ProcurementRequest\\\";s:2:\\\"id\\\";i:151;s:9:\\\"relations\\\";a:0:{}s:10:\\\"connection\\\";s:5:\\\"mysql\\\";s:15:\\\"collectionClass\\\";N;}}s:5:\\\"tries\\\";N;s:7:\\\"timeout\\\";N;s:7:\\\"backoff\\\";N;s:13:\\\"maxExceptions\\\";N;s:23:\\\"deleteWhenMissingModels\\\";b:1;s:10:\\\"connection\\\";N;s:5:\\\"queue\\\";N;s:12:\\\"messageGroup\\\";N;s:12:\\\"deduplicator\\\";N;s:5:\\\"delay\\\";N;s:11:\\\"afterCommit\\\";N;s:10:\\\"middleware\\\";a:0:{}s:7:\\\"chained\\\";a:0:{}s:15:\\\"chainConnection\\\";N;s:10:\\\"chainQueue\\\";N;s:19:\\\"chainCatchCallbacks\\\";N;}\",\"batchId\":null},\"createdAt\":1784627266,\"delay\":null}', 0, NULL, 1784627266, 1784627266);
 
 -- --------------------------------------------------------
 
@@ -527,7 +548,8 @@ CREATE TABLE `logistics_transactions` (
 
 INSERT INTO `logistics_transactions` (`id`, `procurement_request_id`, `supplier_order_id`, `product_id`, `source_branch_id`, `destination_branch_id`, `branch_id`, `type`, `status`, `quantity`, `quantity_verified`, `unit`, `reference_number`, `description`, `notes`, `created_by_user_id`, `updated_by_user_id`, `verified_by_user_id`, `initiated_at`, `in_transit_at`, `at_destination_at`, `verified_at`, `confirmed_at`, `completed_at`, `cancelled_at`, `expected_quantity`, `actual_quantity`, `variance_reason`, `source_location`, `destination_location`, `delivery_address`, `receipt_path`, `proof_of_delivery_path`, `documentation_files`, `cost_price`, `cost_reference`, `is_duplicate`, `duplicate_of_transaction_id`, `audit_notes`, `created_at`, `updated_at`) VALUES
 (14, 149, NULL, 191, 31, 31, 31, 'procurement', 'pending', 10, 10.00, 'unit', 'PR-149', 'Bread', NULL, 154, NULL, NULL, '2026-07-14 12:09:28', NULL, NULL, NULL, NULL, NULL, NULL, 10, 10, NULL, NULL, NULL, NULL, NULL, '/storage/delivery-proofs/delivery_proof_149_1784031329.png', NULL, NULL, NULL, 0, NULL, NULL, '2026-07-14 12:09:28', '2026-07-14 12:15:29'),
-(15, 150, NULL, 192, 31, 31, 31, 'procurement', 'pending', 10, 10.00, 'unit', 'PR-150', 'Bread', NULL, 154, NULL, NULL, '2026-07-15 09:20:34', NULL, NULL, NULL, NULL, NULL, NULL, 10, 10, NULL, NULL, NULL, NULL, NULL, '/storage/delivery-proofs/delivery_proof_150_1784107757.png', NULL, NULL, NULL, 0, NULL, NULL, '2026-07-15 09:20:34', '2026-07-15 09:29:18');
+(15, 150, NULL, 192, 31, 31, 31, 'procurement', 'pending', 10, 10.00, 'unit', 'PR-150', 'Bread', NULL, 154, NULL, NULL, '2026-07-15 09:20:34', NULL, NULL, NULL, NULL, NULL, NULL, 10, 10, NULL, NULL, NULL, NULL, NULL, '/storage/delivery-proofs/delivery_proof_150_1784107757.png', NULL, NULL, NULL, 0, NULL, NULL, '2026-07-15 09:20:34', '2026-07-15 09:29:18'),
+(16, 151, NULL, 207, 31, 31, 31, 'procurement', 'pending', 10, 10.00, 'unit', 'PR-151', 'Frozen HotDog (Dish Ingredient)', NULL, 154, NULL, NULL, '2026-07-21 09:41:59', NULL, NULL, NULL, NULL, NULL, NULL, 10, 10, NULL, NULL, NULL, NULL, NULL, '/storage/delivery-proofs/delivery_proof_151_1784628058.png', NULL, NULL, NULL, 0, NULL, NULL, '2026-07-21 09:41:59', '2026-07-21 10:00:59');
 
 -- --------------------------------------------------------
 
@@ -763,7 +785,13 @@ INSERT INTO `orders` (`id`, `order_code`, `owner_id`, `cashier_id`, `branch_id`,
 (133, 'CT-0005', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-06-26 11:22:05', 57.46, 100.00, 42.54, 'none', 0.00, 0.00, 12.00, 6.16, 51.30, '2026-06-26 11:22:05', '2026-06-26 11:22:05', '2026-06-26 11:22:05', 153, NULL, NULL),
 (134, 'CT-0006', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-06-26 11:22:17', 57.46, 100.00, 42.54, 'none', 0.00, 0.00, 12.00, 6.16, 51.30, '2026-06-26 11:22:17', '2026-06-26 11:22:17', '2026-06-26 11:22:17', 153, NULL, NULL),
 (135, 'CT-0007', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-06-26 11:22:20', 57.46, 100.00, 42.54, 'none', 0.00, 0.00, 12.00, 6.16, 51.30, '2026-06-26 11:22:20', '2026-06-26 11:22:20', '2026-06-26 11:22:20', 153, NULL, NULL),
-(136, 'CT-0008', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-06-26 11:22:24', 57.46, 100.00, 42.54, 'none', 0.00, 0.00, 12.00, 6.16, 51.30, '2026-06-26 11:22:24', '2026-06-26 11:22:24', '2026-06-26 11:22:24', 153, NULL, NULL);
+(136, 'CT-0008', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-06-26 11:22:24', 57.46, 100.00, 42.54, 'none', 0.00, 0.00, 12.00, 6.16, 51.30, '2026-06-26 11:22:24', '2026-06-26 11:22:24', '2026-06-26 11:22:24', 153, NULL, NULL),
+(137, 'CT-0009', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-07-21 10:03:54', 37.80, 50.00, 12.20, 'none', 0.00, 0.00, 12.00, 4.05, 33.75, '2026-07-21 10:03:54', '2026-07-21 10:03:54', '2026-07-21 10:03:54', 153, NULL, NULL),
+(138, 'CT-0010', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-07-21 10:13:34', 37.80, 150.00, 112.20, 'none', 0.00, 0.00, 12.00, 4.05, 33.75, '2026-07-21 10:13:34', '2026-07-21 10:13:34', '2026-07-21 10:13:34', 153, NULL, NULL),
+(139, 'CT-0011', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-07-21 10:20:39', 37.80, 50.00, 12.20, 'none', 0.00, 0.00, 12.00, 4.05, 33.75, '2026-07-21 10:20:39', '2026-07-21 10:20:39', '2026-07-21 10:20:39', 153, NULL, NULL),
+(140, 'CT-0012', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-07-21 10:20:43', 37.80, 50.00, 12.20, 'none', 0.00, 0.00, 12.00, 4.05, 33.75, '2026-07-21 10:20:43', '2026-07-21 10:20:43', '2026-07-21 10:20:43', 153, NULL, NULL),
+(141, 'CT-0013', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-07-21 10:20:47', 37.80, 50.00, 12.20, 'none', 0.00, 0.00, 12.00, 4.05, 33.75, '2026-07-21 10:20:47', '2026-07-21 10:20:47', '2026-07-21 10:20:47', 153, NULL, NULL),
+(142, 'CT-0014', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-07-21 10:20:50', 37.80, 50.00, 12.20, 'none', 0.00, 0.00, 12.00, 4.05, 33.75, '2026-07-21 10:20:50', '2026-07-21 10:20:50', '2026-07-21 10:20:50', 153, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -782,6 +810,18 @@ CREATE TABLE `order_items` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `order_items`
+--
+
+INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `product_name`, `unit_price`, `quantity`, `subtotal`, `created_at`, `updated_at`) VALUES
+(88, 137, 211, 'HotDog', 33.75, 1, 33.75, '2026-07-21 10:03:54', '2026-07-21 10:03:54'),
+(89, 138, 211, 'HotDog', 33.75, 1, 33.75, '2026-07-21 10:13:34', '2026-07-21 10:13:34'),
+(90, 139, 211, 'HotDog', 33.75, 1, 33.75, '2026-07-21 10:20:39', '2026-07-21 10:20:39'),
+(91, 140, 211, 'HotDog', 33.75, 1, 33.75, '2026-07-21 10:20:43', '2026-07-21 10:20:43'),
+(92, 141, 211, 'HotDog', 33.75, 1, 33.75, '2026-07-21 10:20:47', '2026-07-21 10:20:47'),
+(93, 142, 211, 'HotDog', 33.75, 1, 33.75, '2026-07-21 10:20:50', '2026-07-21 10:20:50');
 
 -- --------------------------------------------------------
 
@@ -2011,7 +2051,13 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (2681, 'App\\Models\\User', 31, 'auth-token', '41cb5b73177d76ff594cf74bdf8687186d186b0173a455bdb606fb1b9df73cb3', '[\"*\"]', NULL, NULL, '2026-07-20 07:24:23', '2026-07-20 07:24:23'),
 (2684, 'App\\Models\\User', 31, 'auth-token', '6e61c967423bf82f8bad5c602b3b17f7dedf60e2bd58aea61a7d68fa9b40cdbd', '[\"*\"]', NULL, NULL, '2026-07-20 08:36:21', '2026-07-20 08:36:21'),
 (2687, 'App\\Models\\User', 31, 'auth-token', '36ff2be2e3b839acee23afba3010d2354b6ac67d95b732ee0ed55d59a7a6a308', '[\"*\"]', NULL, NULL, '2026-07-20 09:12:42', '2026-07-20 09:12:42'),
-(2688, 'App\\Models\\User', 31, 'auth-token', '1f35f838972b676933f88c1cf96283a28a7ad386e94b6d69af452793f3e922f9', '[\"*\"]', NULL, NULL, '2026-07-20 09:13:29', '2026-07-20 09:13:29');
+(2688, 'App\\Models\\User', 31, 'auth-token', '1f35f838972b676933f88c1cf96283a28a7ad386e94b6d69af452793f3e922f9', '[\"*\"]', NULL, NULL, '2026-07-20 09:13:29', '2026-07-20 09:13:29'),
+(2691, 'App\\Models\\User', 31, 'auth-token', '7e8310f025b28447ddb64b49f6af5fe1ac6ac9d8301d7eeb0407504eb3cfbb7e', '[\"*\"]', NULL, NULL, '2026-07-21 05:02:37', '2026-07-21 05:02:37'),
+(2695, 'App\\Models\\User', 31, 'auth-token', 'bbccf2d9f4ff7d4853d92dae9540fecebcc16e275f09e94e6e8d11493f979b3d', '[\"*\"]', NULL, NULL, '2026-07-21 05:05:12', '2026-07-21 05:05:12'),
+(2696, 'App\\Models\\User', 31, 'auth-token', 'cbd9a4fe59b450e90e8de215c2b20ee2a9d2ad7b8ea249fed8cd2936f12ec52f', '[\"*\"]', NULL, NULL, '2026-07-21 09:36:27', '2026-07-21 09:36:27'),
+(2709, 'App\\Models\\User', 31, 'auth-token', 'ef2b89e7169ae86f782b50dc9bf2ca9c860a417904fea179c38d5a08ec82b7d7', '[\"*\"]', NULL, NULL, '2026-07-21 09:48:47', '2026-07-21 09:48:47'),
+(2719, 'App\\Models\\User', 147, 'auth-token', '9b969badda49bd9baf0190f06670635a62d8d59be7d846d19d6c9e3b2d7c35b4', '[\"*\"]', NULL, NULL, '2026-07-21 10:16:38', '2026-07-21 10:16:38'),
+(2721, 'App\\Models\\User', 153, 'auth-token', '0a00cc89e48577a469eb4b62c13e700d2d651210505caf99365652b9ff8bdcab', '[\"*\"]', NULL, NULL, '2026-07-21 10:20:13', '2026-07-21 10:20:13');
 
 -- --------------------------------------------------------
 
@@ -2243,7 +2289,8 @@ CREATE TABLE `procurement_requests` (
 
 INSERT INTO `procurement_requests` (`id`, `product_id`, `supplier_id`, `logistics_user_id`, `procurement_user_id`, `finance_user_id`, `quantity`, `price`, `total_amount`, `status`, `receipt_path`, `receipt_uploaded_by`, `receipt_uploaded_at`, `receipt_confirmed`, `receipt_confirmed_by`, `receipt_confirmed_at`, `confirmed_quantity`, `variance_quantity`, `variance_reason`, `variance_reported_at`, `delivery_proof_path`, `is_manual`, `budget_approved`, `supplier_confirmed`, `budget_amount`, `created_at`, `updated_at`, `branch_id`) VALUES
 (149, 192, 152, 154, 151, 149, 10, 50.00, 500.00, 'completed', '/receipts/receipt_149_1784031232.png', 150, '2026-07-14 12:13:52', 1, 149, '2026-07-14 12:14:38', 10, NULL, NULL, NULL, '/storage/delivery-proofs/delivery_proof_149_1784031329.png', 0, 1, 0, 500.00, '2026-07-14 12:09:28', '2026-07-14 12:15:29', 31),
-(150, 192, 152, 154, 151, 149, 10, 55.00, 550.00, 'completed', '/receipts/receipt_150_1784107650.png', 150, '2026-07-15 09:27:30', 1, 149, '2026-07-15 09:27:56', 10, NULL, NULL, NULL, '/storage/delivery-proofs/delivery_proof_150_1784107757.png', 0, 1, 0, 550.00, '2026-07-15 09:20:34', '2026-07-15 09:29:18', 31);
+(150, 192, 152, 154, 151, 149, 10, 55.00, 550.00, 'completed', '/receipts/receipt_150_1784107650.png', 150, '2026-07-15 09:27:30', 1, 149, '2026-07-15 09:27:56', 10, NULL, NULL, NULL, '/storage/delivery-proofs/delivery_proof_150_1784107757.png', 0, 1, 0, 550.00, '2026-07-15 09:20:34', '2026-07-15 09:29:18', 31),
+(151, 214, 152, 154, 151, 149, 10, 150.00, 1500.00, 'completed', '/receipts/receipt_151_1784627414.png', 150, '2026-07-21 09:50:14', 1, 149, '2026-07-21 09:58:52', 10, NULL, NULL, NULL, '/storage/delivery-proofs/delivery_proof_151_1784628058.png', 0, 1, 0, 1500.00, '2026-07-21 09:41:59', '2026-07-21 10:00:59', 31);
 
 -- --------------------------------------------------------
 
@@ -2297,7 +2344,12 @@ CREATE TABLE `products` (
 INSERT INTO `products` (`id`, `dish_id`, `name`, `category`, `per_pack_or_individual`, `pack_quantity`, `pack_unit`, `slug`, `created_at`, `updated_at`, `price`, `cost_price`, `stock`, `real_stock`, `open_pack_used`, `expires_at`, `date_made`, `min_stock`, `sku`, `branch_id`, `published_by`, `published_at`, `is_published`, `has_been_ordered`, `is_active`, `is_kitchen_dish`, `is_dish_product`, `supplier_name`, `supplier_id`, `logistics_request_available`, `status`, `requires_logistics`, `approved_by_logistics_main`, `approved_by_owner`, `rejection_reason`, `approved_at`) VALUES
 (191, NULL, 'Bread', NULL, 'individual', NULL, NULL, 'bread-29-1784030947', '2026-07-14 12:09:07', '2026-07-14 12:09:28', 0.00, 0.00, 0, 0, 0.0000, NULL, NULL, 0, 'PRODUCT-REQ-29-2394', 31, NULL, NULL, 1, 1, 1, 0, 0, 'TO BE ASSIGNED', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
 (192, NULL, 'Bread', 'Grain', 'per_pack', 6.00, 'pcs', 'bread', '2026-07-14 12:11:33', '2026-07-15 09:29:18', 60.50, 55.00, 20, 20, 0.0000, NULL, '2026-07-09', 10, 'sku-1784031093-2162', 31, NULL, NULL, 1, 1, 1, 0, 0, 'Umberto Batumbakal', 152, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
-(204, 44, 'HotDog', NULL, 'individual', NULL, NULL, 'hotdog', '2026-07-20 09:13:05', '2026-07-20 09:13:05', 0.00, NULL, 0, 0, 0.0000, NULL, NULL, 0, 'HOTDOG-SJ9R', 31, 31, '2026-07-20 09:13:05', 1, 0, 1, 1, 1, NULL, NULL, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL);
+(207, NULL, 'Frozen HotDog (Dish Ingredient)', NULL, 'individual', NULL, NULL, 'frozen-hotdog-dish-ingredient-45-1784626776', '2026-07-21 09:39:36', '2026-07-21 09:41:59', 0.00, 0.00, 0, 0, 0.0000, NULL, NULL, 10, 'ING-45-3VDFTT', 31, NULL, NULL, 0, 1, 1, 0, 0, 'KITCHEN', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
+(208, NULL, 'Frozen HotDog (Dish Ingredient)', NULL, 'individual', NULL, NULL, 'frozen-hotdog-dish-ingredient-45-31', '2026-07-21 09:39:36', '2026-07-21 09:39:36', 0.00, 0.00, 0, 0, 0.0000, NULL, NULL, 10, 'DISH-45-ING-0-B31', 31, NULL, NULL, 0, 0, 1, 0, 0, 'KITCHEN', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
+(209, NULL, 'Frozen HotDog (Dish Ingredient)', NULL, 'individual', NULL, NULL, 'frozen-hotdog-dish-ingredient-45-32', '2026-07-21 09:39:36', '2026-07-21 09:39:36', 0.00, 0.00, 0, 0, 0.0000, NULL, NULL, 10, 'DISH-45-ING-0-B32', 32, NULL, NULL, 0, 0, 1, 0, 0, 'KITCHEN', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
+(210, NULL, 'Frozen HotDog (Dish Ingredient)', NULL, 'individual', NULL, NULL, 'frozen-hotdog-dish-ingredient-45-50', '2026-07-21 09:39:36', '2026-07-21 09:39:36', 0.00, 0.00, 0, 0, 0.0000, NULL, NULL, 10, 'DISH-45-ING-0-B50', 50, NULL, NULL, 0, 0, 1, 0, 0, 'KITCHEN', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
+(211, 45, 'HotDog', NULL, 'individual', NULL, NULL, 'hotdog', '2026-07-21 09:39:36', '2026-07-21 10:20:50', 33.75, 25.00, 54, 0, 0.0000, NULL, NULL, 0, 'HOTDOG-F0FR', 31, 31, '2026-07-21 09:39:36', 1, 0, 1, 1, 1, NULL, NULL, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
+(214, NULL, 'Frozen HotDog (Dish Ingredient)', 'Meat', 'per_pack', 6.00, 'pcs', 'frozen-hotdog-dish-ingredient', '2026-07-21 09:43:27', '2026-07-21 10:20:50', 165.00, 150.00, 9, 10, 0.0000, NULL, '2026-07-21', 10, 'sku-1784627007-6954', 31, NULL, NULL, 1, 1, 1, 0, 0, 'Umberto Batumbakal', 152, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -2429,7 +2481,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('EWuAgooRj8F0QTKFmsW878PzUC0Y5cdSARx1oRQY', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoid1NOUEdZb2JjRzgxOGZmamhROXFzNXdhVUxWUWZYZHZ2Q3VxRU5nZyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fX0=', 1784539387);
+('hwq1CI8bnOQORHEtJ3w2F778B4jAfPG4WZJ16aWu', 153, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiMjBiVUxZZExRR2ZYNWlIR0pNWmpmbUxqQnlUQWM4enlqT05zaElVOSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi9jYXNoaWVyIjtzOjU6InJvdXRlIjtOO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxNTM7czo3OiJ1c2VyX2lkIjtpOjE1MztzOjk6InVzZXJfcm9sZSI7czo1OiJTVEFGRiI7czo5OiJ1c2VyX25hbWUiO3M6MTU6Ikphbm5lIERlIEd1em1hbiI7czoxMzoicmVkaXJlY3RfcGF0aCI7czoxNDoiL3N0YWZmL2Nhc2hpZXIiO30=', 1784629277);
 
 -- --------------------------------------------------------
 
@@ -2556,7 +2608,9 @@ CREATE TABLE `supplier_orders` (
 INSERT INTO `supplier_orders` (`id`, `procurement_request_id`, `product_id`, `supplier_id`, `quantity`, `price`, `expires_at`, `date_made`, `status`, `is_broadcast`, `fulfilled_at`, `branch_id`, `created_at`, `updated_at`) VALUES
 (173, 149, 192, 152, 10, NULL, '2026-07-14 20:12:00', '2026-07-09', 'fulfilled', 0, '2026-07-14 12:15:29', 31, '2026-07-14 12:09:55', '2026-07-14 12:15:29'),
 (174, 149, 191, 158, 10, NULL, NULL, NULL, 'pending', 1, NULL, 31, '2026-07-14 12:09:55', '2026-07-14 12:09:55'),
-(175, 150, 192, 152, 10, NULL, '2026-07-16 17:22:00', NULL, 'fulfilled', 0, '2026-07-15 09:29:18', 31, '2026-07-15 09:22:08', '2026-07-15 09:29:18');
+(175, 150, 192, 152, 10, NULL, '2026-07-16 17:22:00', NULL, 'fulfilled', 0, '2026-07-15 09:29:18', 31, '2026-07-15 09:22:08', '2026-07-15 09:29:18'),
+(176, 151, 214, 152, 10, NULL, '2026-07-22 17:47:00', '2026-07-21', 'fulfilled', 0, '2026-07-21 10:00:59', 31, '2026-07-21 09:42:37', '2026-07-21 10:00:59'),
+(177, 151, 207, 158, 10, NULL, NULL, NULL, 'pending', 1, NULL, 31, '2026-07-21 09:42:37', '2026-07-21 09:42:37');
 
 -- --------------------------------------------------------
 
@@ -3022,7 +3076,7 @@ ALTER TABLE `announcements`
 -- AUTO_INCREMENT for table `attendance`
 --
 ALTER TABLE `attendance`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT for table `attendance_settings`
@@ -3040,7 +3094,7 @@ ALTER TABLE `branches`
 -- AUTO_INCREMENT for table `budget_requests`
 --
 ALTER TABLE `budget_requests`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=110;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=111;
 
 --
 -- AUTO_INCREMENT for table `customer_accounts`
@@ -3052,19 +3106,19 @@ ALTER TABLE `customer_accounts`
 -- AUTO_INCREMENT for table `customer_reports`
 --
 ALTER TABLE `customer_reports`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `dishes`
 --
 ALTER TABLE `dishes`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=46;
 
 --
 -- AUTO_INCREMENT for table `dish_ingredients`
 --
 ALTER TABLE `dish_ingredients`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=68;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=69;
 
 --
 -- AUTO_INCREMENT for table `employee_timesheets`
@@ -3094,19 +3148,19 @@ ALTER TABLE `failed_jobs`
 -- AUTO_INCREMENT for table `inventory_lots`
 --
 ALTER TABLE `inventory_lots`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `jobs`
 --
 ALTER TABLE `jobs`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
 
 --
 -- AUTO_INCREMENT for table `logistics_transactions`
 --
 ALTER TABLE `logistics_transactions`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT for table `messages`
@@ -3124,19 +3178,19 @@ ALTER TABLE `migrations`
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=137;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=143;
 
 --
 -- AUTO_INCREMENT for table `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=88;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=94;
 
 --
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2691;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2722;
 
 --
 -- AUTO_INCREMENT for table `positions`
@@ -3178,13 +3232,13 @@ ALTER TABLE `price_markup_requests`
 -- AUTO_INCREMENT for table `procurement_requests`
 --
 ALTER TABLE `procurement_requests`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=151;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=152;
 
 --
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=207;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=215;
 
 --
 -- AUTO_INCREMENT for table `product_comments`
@@ -3238,7 +3292,7 @@ ALTER TABLE `supplier_audit_logs`
 -- AUTO_INCREMENT for table `supplier_orders`
 --
 ALTER TABLE `supplier_orders`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=176;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=178;
 
 --
 -- AUTO_INCREMENT for table `users`
