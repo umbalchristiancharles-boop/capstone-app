@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\CustomerReport;
+use App\Models\EmailCommunication;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -248,11 +249,46 @@ class CustomerReportController extends Controller
             // Send email using the helper function
             send_raw_mail_notification($report->customer_email, $emailSubject, $emailBody);
 
+            // Save email communication to database
+            EmailCommunication::create([
+                'customer_report_id' => $report->id,
+                'sender_email' => $user->email,
+                'sender_name' => $user->full_name ?? $user->name ?? 'Staff',
+                'recipient_email' => $report->customer_email,
+                'recipient_name' => $report->customer_name,
+                'subject' => $emailSubject,
+                'message' => $emailBody,
+                'direction' => 'outbound',
+                'status' => 'sent',
+                'sent_by' => $user->id,
+            ]);
+
             return response()->json([
                 'ok' => true,
                 'message' => 'Email sent successfully to ' . $report->customer_email,
             ]);
         } catch (\Throwable $e) {
+            // Save failed email communication to database
+            try {
+                EmailCommunication::create([
+                    'customer_report_id' => $report->id,
+                    'sender_email' => $user->email,
+                    'sender_name' => $user->full_name ?? $user->name ?? 'Staff',
+                    'recipient_email' => $report->customer_email,
+                    'recipient_name' => $report->customer_name,
+                    'subject' => $request->subject,
+                    'message' => $request->message,
+                    'direction' => 'outbound',
+                    'status' => 'failed',
+                    'error_message' => $e->getMessage(),
+                    'sent_by' => $user->id,
+                ]);
+            } catch (\Throwable $logError) {
+                Log::error('Failed to save email communication', [
+                    'error' => $logError->getMessage(),
+                ]);
+            }
+
             Log::error('Failed to send email to customer', [
                 'error' => $e->getMessage(),
                 'report_id' => $report->id,
@@ -263,6 +299,84 @@ class CustomerReportController extends Controller
                 'ok' => false,
                 'message' => 'Failed to send email. Please try again.',
                 'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /** Get email communications for a customer report */
+    public function getEmailCommunications($id)
+    {
+        $user = Auth::user();
+        
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $hasAuthorizedRole = in_array($user->role, ['ADMIN', 'OWNER', 'SUPERADMIN', 'HR']);
+        $isMainBranchUser = false;
+        if ($user->branch_id) {
+            $branch = \App\Models\Branch::find($user->branch_id);
+            $isMainBranchUser = $branch && ($branch->is_main_branch || (int) $branch->id === 1);
+        }
+
+        if (!$hasAuthorizedRole && !$isMainBranchUser) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $report = CustomerReport::findOrFail($id);
+        $emails = EmailCommunication::where('customer_report_id', $id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'ok' => true,
+            'emails' => $emails,
+        ]);
+    }
+
+    /** Receive/store inbound email from customer (for email reply tracking) */
+    public function receiveEmail(Request $request, $id)
+    {
+        $report = CustomerReport::findOrFail($id);
+
+        $request->validate([
+            'subject' => 'required|string|max:255',
+            'message' => 'required|string|max:5000',
+            'sender_email' => 'required|email|max:255',
+            'sender_name' => 'nullable|string|max:255',
+        ]);
+
+        try {
+            EmailCommunication::create([
+                'customer_report_id' => $report->id,
+                'sender_email' => $request->sender_email,
+                'sender_name' => $request->sender_name ?? $report->customer_name,
+                'recipient_email' => config('mail.from.address'),
+                'recipient_name' => 'Support Team',
+                'subject' => $request->subject,
+                'message' => $request->message,
+                'direction' => 'inbound',
+                'status' => 'sent',
+            ]);
+
+            // Optionally update report status to in_progress if it was pending
+            if ($report->status === 'pending') {
+                $report->update(['status' => 'in_progress']);
+            }
+
+            return response()->json([
+                'ok' => true,
+                'message' => 'Email received and saved successfully',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Failed to save inbound email', [
+                'error' => $e->getMessage(),
+                'report_id' => $report->id,
+            ]);
+
+            return response()->json([
+                'ok' => false,
+                'message' => 'Failed to save email. Please try again.',
             ], 500);
         }
     }

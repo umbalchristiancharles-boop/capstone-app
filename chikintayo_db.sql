@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 21, 2026 at 01:27 PM
+-- Generation Time: Jul 22, 2026 at 10:30 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -77,7 +77,8 @@ INSERT INTO `attendance` (`id`, `user_id`, `date`, `time_in`, `time_out`, `hours
 (13, 153, '2026-07-17', '18:37:05', '18:37:07', 0, 'late', NULL, '2026-07-17 10:37:05', '2026-07-17 10:37:07'),
 (15, 149, '2026-07-17', '20:05:08', NULL, 0, 'late', NULL, '2026-07-17 12:05:08', '2026-07-17 12:05:08'),
 (16, 151, '2026-07-21', '17:44:43', NULL, 0, 'late', NULL, '2026-07-21 09:44:43', '2026-07-21 09:44:43'),
-(17, 149, '2026-07-21', '17:45:39', NULL, 0, 'late', NULL, '2026-07-21 09:45:39', '2026-07-21 09:45:39');
+(17, 149, '2026-07-21', '17:45:39', NULL, 0, 'late', NULL, '2026-07-21 09:45:39', '2026-07-21 09:45:39'),
+(18, 159, '2026-07-22', '15:11:30', NULL, 0, 'late', NULL, '2026-07-22 07:11:30', '2026-07-22 07:11:30');
 
 -- --------------------------------------------------------
 
@@ -139,7 +140,7 @@ CREATE TABLE `branches` (
 
 INSERT INTO `branches` (`id`, `code`, `name`, `address`, `latitude`, `longitude`, `is_active`, `is_main_branch`, `approval_status`, `requested_by`, `finance_confirmed_by`, `finance_confirmed_at`, `approved_by`, `approved_at`, `rejected_at`, `budget`, `square_meters`, `geofencing_radius`, `default_password`, `default_password_updated_at`, `created_at`, `updated_at`) VALUES
 (31, 'BR743957', 'Dasma Branch', 'Dasma', 14.33000000, 120.94000000, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 72750, 100.00, 5.64, 'BDP20260721D89A10', '2026-07-21 05:02:45', '2026-03-22 10:19:21', '2026-07-21 11:26:24'),
-(32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 700000, NULL, NULL, 'BDP20260721EE6DD1', '2026-07-21 05:02:45', '2026-03-25 06:56:11', '2026-07-21 05:02:45'),
+(32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 700000, NULL, NULL, 'BDP202607224E4D6B', '2026-07-22 06:44:26', '2026-03-25 06:56:11', '2026-07-22 06:44:26'),
 (50, 'BR577235', 'Quezon City Branch', NULL, 14.65105500, 121.09766006, 1, 0, 'approved', 159, 161, '2026-07-17 10:54:29', 31, '2026-07-17 10:54:59', NULL, 100000, 50.00, 500.00, 'BDP202607210875B0', '2026-07-21 05:02:45', '2026-07-17 10:53:47', '2026-07-21 05:02:45');
 
 -- --------------------------------------------------------
@@ -263,8 +264,7 @@ CREATE TABLE `customer_reports` (
 --
 
 INSERT INTO `customer_reports` (`id`, `customer_account_id`, `customer_name`, `customer_email`, `customer_phone`, `subject`, `message`, `status`, `admin_notes`, `assigned_to`, `resolved_at`, `created_at`, `updated_at`) VALUES
-(1, NULL, 'Christian Charles Umbal', 'umbal.christiancharles@ncst.edu.ph', NULL, 'BAsta', 'Panis yung tubig', 'pending', NULL, NULL, NULL, '2026-07-15 09:56:31', '2026-07-15 09:56:31'),
-(2, NULL, 'Gab', 'masone9408@suahi.com', '09156818857', 'Food', 'Panis Yung kanin', 'pending', NULL, NULL, NULL, '2026-07-21 09:55:13', '2026-07-21 09:55:13');
+(5, NULL, 'Christian Charles Umbal', 'umbal.christiancharles@ncst.edu.ph', '09156818857', 'Complaint', 'I want a refund', 'in_progress', NULL, NULL, NULL, '2026-07-22 08:05:52', '2026-07-22 08:15:23');
 
 -- --------------------------------------------------------
 
@@ -316,6 +316,41 @@ CREATE TABLE `dish_ingredients` (
 
 INSERT INTO `dish_ingredients` (`id`, `dish_id`, `product_id`, `name`, `unit`, `per_serving`, `created_at`, `updated_at`) VALUES
 (68, 45, 207, 'Frozen HotDog', 'pcs', 1.0000, '2026-07-21 09:39:36', '2026-07-21 09:39:36');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `email_communications`
+--
+
+CREATE TABLE `email_communications` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `customer_report_id` bigint(20) UNSIGNED NOT NULL,
+  `sender_email` varchar(255) NOT NULL,
+  `sender_name` varchar(255) NOT NULL,
+  `recipient_email` varchar(255) NOT NULL,
+  `recipient_name` varchar(255) DEFAULT NULL,
+  `subject` varchar(255) NOT NULL,
+  `message` text NOT NULL,
+  `direction` enum('outbound','inbound') NOT NULL DEFAULT 'outbound',
+  `status` enum('sent','failed','pending') NOT NULL DEFAULT 'sent',
+  `message_id` varchar(255) DEFAULT NULL,
+  `in_reply_to` varchar(255) DEFAULT NULL,
+  `references` text DEFAULT NULL,
+  `error_message` text DEFAULT NULL,
+  `read_at` timestamp NULL DEFAULT NULL,
+  `sent_by` bigint(20) UNSIGNED DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `email_communications`
+--
+
+INSERT INTO `email_communications` (`id`, `customer_report_id`, `sender_email`, `sender_name`, `recipient_email`, `recipient_name`, `subject`, `message`, `direction`, `status`, `message_id`, `in_reply_to`, `references`, `error_message`, `read_at`, `sent_by`, `created_at`, `updated_at`) VALUES
+(3, 5, 'xecof21486@fun4k.com', 'Admin Main Branch', 'umbal.christiancharles@ncst.edu.ph', 'Christian Charles Umbal', 'Complaint', 'Wait sige', 'outbound', 'sent', NULL, NULL, NULL, NULL, NULL, 159, '2026-07-22 08:07:13', '2026-07-22 08:07:13'),
+(4, 5, 'umbal.christiancharles@ncst.edu.ph', 'Christian Charles Umbal', 'support@chikintayo.com', 'Support Team', 'Re: Complaint', 'anong wait', 'inbound', 'sent', NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-22 08:15:23', '2026-07-22 08:15:23');
 
 -- --------------------------------------------------------
 
@@ -735,7 +770,9 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (145, '2026_07_14_000002_add_expiry_tracking_to_supplier_orders', 82),
 (146, '2026_07_14_000003_create_inventory_lots_table', 83),
 (147, '2026_07_15_000002_create_customer_reports_table', 84),
-(148, '2026_07_17_000001_add_geofencing_to_branches_table', 85);
+(148, '2026_07_17_000001_add_geofencing_to_branches_table', 85),
+(149, '2026_07_22_000001_create_email_communications_table', 86),
+(150, '2026_07_22_000002_add_email_threading_fields_to_email_communications_table', 87);
 
 -- --------------------------------------------------------
 
@@ -2483,7 +2520,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('PEvLLqEFR1HZ0vthoj19ez5K3qoqO15yfL4HnMIS', 153, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiRDg1amc0RWhsY1E2WHQwQVAwTGVEdTVCNHhrTHBTNHk3UHdjem5jcSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi9jYXNoaWVyIjtzOjU6InJvdXRlIjtOO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxNTM7czo3OiJ1c2VyX2lkIjtpOjE1MztzOjk6InVzZXJfcm9sZSI7czo1OiJTVEFGRiI7czo5OiJ1c2VyX25hbWUiO3M6MTU6Ikphbm5lIERlIEd1em1hbiI7czoxMzoicmVkaXJlY3RfcGF0aCI7czoxNDoiL3N0YWZmL2Nhc2hpZXIiO30=', 1784633226);
+('tl2VsvuI8etQeuwDS0BXqGcinCfOYuFnxVZJ4WtB', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiNWJXWnc2SEtBWUxaVFN5ZlJDbW4wUzd2UVJvalhZOUdMeGRYS3F0QyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1784702470),
+('tueF9i9xMQHxEtWpxAzr6f9a6tgiA9maqVqUy3fo', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoieGx6eDlUaVF6cjBmTG8yc0J3RUQ1S1lMbTJkblpEOHIxWk1vV3VjWCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1784708964);
 
 -- --------------------------------------------------------
 
@@ -2776,6 +2814,17 @@ ALTER TABLE `dish_ingredients`
   ADD PRIMARY KEY (`id`),
   ADD KEY `dish_ingredients_dish_id_index` (`dish_id`),
   ADD KEY `dish_ingredients_product_id_index` (`product_id`);
+
+--
+-- Indexes for table `email_communications`
+--
+ALTER TABLE `email_communications`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `email_communications_sent_by_foreign` (`sent_by`),
+  ADD KEY `email_communications_customer_report_id_created_at_index` (`customer_report_id`,`created_at`),
+  ADD KEY `email_communications_customer_report_id_direction_index` (`customer_report_id`,`direction`),
+  ADD KEY `email_communications_message_id_index` (`message_id`),
+  ADD KEY `email_communications_in_reply_to_index` (`in_reply_to`);
 
 --
 -- Indexes for table `employee_timesheets`
@@ -3078,7 +3127,7 @@ ALTER TABLE `announcements`
 -- AUTO_INCREMENT for table `attendance`
 --
 ALTER TABLE `attendance`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
 -- AUTO_INCREMENT for table `attendance_settings`
@@ -3108,7 +3157,7 @@ ALTER TABLE `customer_accounts`
 -- AUTO_INCREMENT for table `customer_reports`
 --
 ALTER TABLE `customer_reports`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `dishes`
@@ -3121,6 +3170,12 @@ ALTER TABLE `dishes`
 --
 ALTER TABLE `dish_ingredients`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=69;
+
+--
+-- AUTO_INCREMENT for table `email_communications`
+--
+ALTER TABLE `email_communications`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `employee_timesheets`
@@ -3174,7 +3229,7 @@ ALTER TABLE `messages`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=149;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=151;
 
 --
 -- AUTO_INCREMENT for table `orders`
@@ -3192,7 +3247,7 @@ ALTER TABLE `order_items`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2724;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2729;
 
 --
 -- AUTO_INCREMENT for table `positions`
@@ -3350,6 +3405,13 @@ ALTER TABLE `customer_reports`
 --
 ALTER TABLE `dishes`
   ADD CONSTRAINT `dishes_approved_by_foreign` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `email_communications`
+--
+ALTER TABLE `email_communications`
+  ADD CONSTRAINT `email_communications_customer_report_id_foreign` FOREIGN KEY (`customer_report_id`) REFERENCES `customer_reports` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `email_communications_sent_by_foreign` FOREIGN KEY (`sent_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `expenses`

@@ -21,7 +21,7 @@
             <div><strong>Branch:</strong> Main Branch (HQ)</div>
           </div>
         </div>
-      </aside>
+      </aside>  
 
       <main class="main-col">
         <header class="panel-header">
@@ -284,28 +284,60 @@
                 </select>
               </div>
 
-              <div class="form-group">
-                <label>Assign To</label>
-                <select v-model="editingReport.assigned_to" class="form-input">
-                  <option :value="null">Unassigned</option>
-                  <option v-for="user in staffList" :key="user.id" :value="user.id">
-                    {{ user.full_name }} ({{ user.role }})
-                  </option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label>Admin Notes</label>
-                <textarea
-                  v-model="editingReport.admin_notes"
-                  rows="4"
-                  class="form-input"
-                  placeholder="Add internal notes..."
-                ></textarea>
+              <div class="form-group" v-if="editingReport.message">
+                <label>Customer Concern:</label>
+                <div class="customer-concern-display">
+                  {{ editingReport.message }}
+                </div>
               </div>
 
               <div class="form-group" v-if="editingReport.customer_email">
                 <label>Customer Email: <strong>{{ editingReport.customer_email }}</strong></label>
+              </div>
+
+              <!-- Email Communications History -->
+              <div class="email-history-section">
+                <div class="email-history-header">
+                  <span class="detail-label">Email Communications:</span>
+                  <button @click="toggleEmailHistory(editingReport.id)" class="btn-toggle-email">
+                    {{ expandedEmailHistory === editingReport.id ? 'Hide' : 'Show' }} Email History
+                  </button>
+                </div>
+                
+                <div v-if="expandedEmailHistory === editingReport.id" class="email-history-content">
+                  <div v-if="loadingEmails[editingReport.id]" class="loading-state">
+                    <p>Loading emails...</p>
+                  </div>
+                  <div v-else-if="getEmailHistory(editingReport.id).length === 0" class="empty-state">
+                    <p>No email communications yet</p>
+                  </div>
+                  <div v-else class="email-list">
+                    <div v-for="email in getEmailHistory(editingReport.id)" :key="email.id" class="email-item" :class="email.direction">
+                      <div class="email-header">
+                        <div class="email-direction-badge">
+                          {{ email.direction === 'outbound' ? '📤 Sent' : '📥 Received' }}
+                        </div>
+                        <div class="email-status-badge" :class="'status--' + email.status">
+                          {{ email.status }}
+                        </div>
+                        <span class="email-date">{{ formatDate(email.created_at) }}</span>
+                      </div>
+                      <div class="email-subject">
+                        <strong>Subject:</strong> {{ email.subject }}
+                      </div>
+                      <div class="email-participants">
+                        <div><strong>From:</strong> {{ email.sender_name }} ({{ email.sender_email }})</div>
+                        <div><strong>To:</strong> {{ email.recipient_name || email.recipient_email }} ({{ email.recipient_email }})</div>
+                      </div>
+                      <div class="email-message">
+                        {{ email.message }}
+                      </div>
+                      <div v-if="email.error_message" class="email-error">
+                        <strong>Error:</strong> {{ email.error_message }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -392,7 +424,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 
@@ -427,8 +459,8 @@ const showEmailModal = ref(false)
 const editingReport = ref({
   id: null,
   status: 'pending',
-  admin_notes: '',
-  assigned_to: null,
+  subject: '',
+  message: '',
   customer_email: '',
 })
 const staffList = ref([])
@@ -438,6 +470,10 @@ const emailForm = ref({
   subject: '',
   message: '',
 })
+const previousStatus = ref('')
+const expandedEmailHistory = ref(null)
+const emailHistoryCache = ref({})
+const loadingEmails = ref({})
 
 let reportSearchTimeout = null
 
@@ -677,10 +713,11 @@ function openEditReportModal(report) {
   editingReport.value = {
     id: report.id,
     status: report.status,
-    admin_notes: report.admin_notes || '',
-    assigned_to: report.assigned_to?.id || null,
+    subject: report.subject || '',
+    message: report.message || '',
     customer_email: report.customer_email || '',
   }
+  previousStatus.value = report.status
   showEditReportModal.value = true
 }
 
@@ -689,15 +726,14 @@ function closeEditReportModal() {
   editingReport.value = {
     id: null,
     status: 'pending',
-    admin_notes: '',
-    assigned_to: null,
+    message: '',
     customer_email: '',
   }
 }
 
 function openEmailModal() {
   emailForm.value = {
-    subject: '',
+    subject: editingReport.value.subject || '',
     message: '',
   }
   showEmailModal.value = true
@@ -750,8 +786,6 @@ async function updateReport() {
   try {
     const response = await axios.put(`/api/customer-reports/${editingReport.value.id}`, {
       status: editingReport.value.status,
-      admin_notes: editingReport.value.admin_notes,
-      assigned_to: editingReport.value.assigned_to,
     }, { withCredentials: true })
 
     if (response.data.ok) {
@@ -767,6 +801,53 @@ async function updateReport() {
     if (window.swalAlert) {
       await window.swalAlert('Failed to update report. Please try again.', 'Error', 'error')
     }
+  }
+}
+
+// Watch for status changes to "in_progress" and automatically open email modal
+watch(
+  () => editingReport.value.status,
+  (newStatus, oldStatus) => {
+    // Only trigger if status changed to "in_progress" and we have a customer email
+    if (newStatus === 'in_progress' && oldStatus !== 'in_progress' && editingReport.value.customer_email) {
+      // Small delay to ensure the status change is registered
+      setTimeout(() => {
+        openEmailModal()
+      }, 300)
+    }
+  }
+)
+
+function getEmailHistory(reportId) {
+  return emailHistoryCache.value[reportId] || []
+}
+
+async function toggleEmailHistory(reportId) {
+  if (expandedEmailHistory.value === reportId) {
+    expandedEmailHistory.value = null
+    return
+  }
+
+  expandedEmailHistory.value = reportId
+
+  // If we haven't loaded emails for this report yet, load them
+  if (!emailHistoryCache.value[reportId]) {
+    await loadEmailHistory(reportId)
+  }
+}
+
+async function loadEmailHistory(reportId) {
+  loadingEmails.value[reportId] = true
+  try {
+    const response = await axios.get(`/api/customer-reports/${reportId}/emails`, { withCredentials: true })
+    if (response.data.ok) {
+      emailHistoryCache.value[reportId] = response.data.emails || []
+    }
+  } catch (error) {
+    console.error('Error loading email history:', error)
+    emailHistoryCache.value[reportId] = []
+  } finally {
+    loadingEmails.value[reportId] = false
   }
 }
 
@@ -984,6 +1065,7 @@ onMounted(async () => {
 .message-section .detail-label, .notes-section .detail-label { display: block; margin-bottom: 6px; }
 .message-text, .notes-text { margin: 0; padding: 12px; background: white; border-radius: 6px; color: #4B5563; line-height: 1.6; font-size: 0.95rem; }
 .notes-text { background: #FEF3C7; border-left: 3px solid #F59E0B; }
+.customer-concern-display { padding: 12px; background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 6px; color: #0369A1; line-height: 1.6; font-size: 0.95rem; }
 .customer-info { display: flex; flex-direction: column; gap: 2px; }
 .customer-name { font-weight: 600; color: #1F2937; }
 .customer-email { font-size: 0.85rem; color: #6B7280; }
@@ -1001,7 +1083,7 @@ onMounted(async () => {
 
 /* Modal */
 .modal-backdrop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 24px; }
-.modal { background: white; border-radius: 12px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); }
+.modal { background: white; border-radius: 12px; max-width: 900px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); }
 .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid #E5E7EB; }
 .modal-header h3 { margin: 0; font-size: 1.25rem; color: #1F2937; }
 .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6B7280; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 6px; }
@@ -1021,9 +1103,7 @@ textarea.form-input { resize: vertical; min-height: 100px; }
 .btn-primary { padding: 10px 20px; background: #0066FF; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
 .btn-primary:hover:not(:disabled) { background: #0057e6; }
 .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-
 @media (max-width: 1024px) {
-  .panel-layout { grid-template-columns: 1fr; }
   .overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .comments-header { flex-direction: column; align-items: stretch; }
   .comment-filters { flex-direction: column; }
@@ -1041,6 +1121,172 @@ textarea.form-input { resize: vertical; min-height: 100px; }
   .table-header { display: none; }
   .row-main { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
   .actions-cell { width: 100%; justify-content: flex-end; }
+}
+
+/* Email History Styles */
+.email-history-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 2px solid #E5E7EB;
+}
+
+.email-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.btn-toggle-email {
+  padding: 8px 16px;
+  background: #8B5CF6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.btn-toggle-email:hover {
+  background: #7C3AED;
+  transform: translateY(-1px);
+}
+
+.email-history-content {
+  margin-top: 16px;
+  padding-right: 0;
+}
+
+.email-list {
+  display: block;
+}
+.email-list > * {
+  margin-bottom: 12px;
+}
+.email-list > *:last-child {
+  margin-bottom: 0;
+}
+
+.email-item {
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #E5E7EB;
+  transition: all 0.2s;
+  min-height: auto;
+  height: auto;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.email-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.email-item.outbound {
+  background: #F0FDF4;
+  border-left: 4px solid #10B981;
+}
+
+.email-item.inbound {
+  background: #FEF3C7;
+  border-left: 4px solid #F59E0B;
+}
+
+.email-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.email-direction-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: #10B981;
+  color: white;
+}
+
+.email-item.inbound .email-direction-badge {
+  background: #F59E0B;
+}
+
+.email-status-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.email-status-badge.status--sent {
+  background: #D1FAE5;
+  color: #065F46;
+}
+
+.email-status-badge.status--failed {
+  background: #FEE2E2;
+  color: #991B1B;
+}
+
+.email-status-badge.status--pending {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+.email-date {
+  font-size: 0.85rem;
+  color: #6B7280;
+}
+
+.email-subject {
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: white;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+.email-participants {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: white;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.email-participants div {
+  margin-bottom: 4px;
+}
+
+.email-message {
+  padding: 12px;
+  background: white;
+  border-radius: 6px;
+  color: #374151;
+  line-height: 1.6;
+  font-size: 0.95rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.email-error {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: #FEE2E2;
+  border: 1px solid #FECACA;
+  border-radius: 6px;
+  color: #991B1B;
+  font-size: 0.9rem;
 }
 
 </style>

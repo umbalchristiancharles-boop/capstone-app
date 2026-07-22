@@ -39,4 +39,10 @@ class CustomerReport extends Model
     {
         return $this->belongsTo(User::class, 'assigned_to');
     }
+
+    /** Relationship: Customer report has many email communications */
+    public function emailCommunications()
+    {
+        return $this->hasMany(EmailCommunication::class, 'customer_report_id');
+    }
 }

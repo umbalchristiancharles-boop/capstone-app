@@ -68,13 +68,20 @@
                 <label for="subject" class="field-label">
                   Subject <span class="req">*</span>
                 </label>
-                <input
+                <select
                   id="subject"
                   v-model="form.subject"
-                  type="text"
-                  placeholder="What is this about?"
                   :disabled="submitting"
-                />
+                  class="form-select"
+                >
+                  <option value="" disabled>Select a subject</option>
+                  <option value="General Inquiry">General Inquiry</option>
+                  <option value="Feedback">Feedback</option>
+                  <option value="Complaint">Complaint</option>
+                  <option value="Suggestion">Suggestion</option>
+                  <option value="Partnership">Partnership</option>
+                  <option value="Other">Other</option>
+                </select>
                 <div class="inline-error" v-if="fieldErrors.subject">{{ fieldErrors.subject }}</div>
               </div>
             </div>
@@ -314,7 +321,8 @@ async function submitReport() {
 }
 
 input,
-textarea {
+textarea,
+select {
   padding: 12px 16px;
   border: 1px solid #D1D5DB;
   border-radius: 8px;
@@ -322,20 +330,40 @@ textarea {
   font-family: inherit;
   transition: all 0.2s;
   background: white;
+  cursor: pointer;
 }
 
 input:focus,
-textarea:focus {
+textarea:focus,
+select:focus {
   outline: none;
   border-color: #FF6A3D;
   box-shadow: 0 0 0 3px rgba(255, 106, 61, 0.1);
 }
 
 input:disabled,
-textarea:disabled {
+textarea:disabled,
+select:disabled {
   background: #F3F4F6;
   cursor: not-allowed;
   opacity: 0.7;
+}
+
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  padding-right: 40px;
+}
+
+select option {
+  padding: 12px;
+  font-size: 0.95rem;
+}
+
+select option:disabled {
+  color: #9CA3AF;
 }
 
 textarea {
@@ -344,7 +372,8 @@ textarea {
 }
 
 .field--error input,
-.field--error textarea {
+.field--error textarea,
+.field--error select {
   border-color: #EF4444;
   background: #FEF2F2;
 }

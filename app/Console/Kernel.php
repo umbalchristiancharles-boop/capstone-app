@@ -3,6 +3,7 @@
 namespace App\Console;
 
 use App\Console\Commands\UpdateBranchPasswords;
+use App\Console\Commands\FetchGmailReplies;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 

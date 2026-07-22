@@ -160,12 +160,123 @@
                 placeholder="Add internal notes..."
               ></textarea>
             </div>
+
+            <div v-if="editingReport.customer_email" class="form-group">
+              <label>Customer Email: <strong>{{ editingReport.customer_email }}</strong></label>
+            </div>
+
+            <!-- Email Communications History -->
+            <div class="email-history-section">
+              <div class="email-history-header">
+                <span class="detail-label">Email Communications:</span>
+                <button @click="toggleEmailHistory(editingReport.id)" class="btn-toggle-email">
+                  {{ expandedEmailHistory === editingReport.id ? 'Hide' : 'Show' }} Email History
+                </button>
+              </div>
+              
+              <div v-if="expandedEmailHistory === editingReport.id" class="email-history-content">
+                <div v-if="loadingEmails[editingReport.id]" class="loading-state">
+                  <p>Loading emails...</p>
+                </div>
+                <div v-else-if="getEmailHistory(editingReport.id).length === 0" class="empty-state">
+                  <p>No email communications yet</p>
+                </div>
+                <div v-else class="email-list">
+                  <div v-for="email in getEmailHistory(editingReport.id)" :key="email.id" class="email-item" :class="email.direction">
+                    <div class="email-header">
+                      <div class="email-direction-badge">
+                        {{ email.direction === 'outbound' ? '📤 Sent' : '📥 Received' }}
+                      </div>
+                      <div class="email-status-badge" :class="'status--' + email.status">
+                        {{ email.status }}
+                      </div>
+                      <span class="email-date">{{ formatDate(email.created_at) }}</span>
+                    </div>
+                    <div class="email-subject">
+                      <strong>Subject:</strong> {{ email.subject }}
+                    </div>
+                    <div class="email-participants">
+                      <div><strong>From:</strong> {{ email.sender_name }} ({{ email.sender_email }})</div>
+                      <div><strong>To:</strong> {{ email.recipient_name || email.recipient_email }} ({{ email.recipient_email }})</div>
+                    </div>
+                    <div class="email-message">
+                      {{ email.message }}
+                    </div>
+                    <div v-if="email.error_message" class="email-error">
+                      <strong>Error:</strong> {{ email.error_message }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="modal-footer">
             <button class="btn-cancel" @click="closeEditModal">Cancel</button>
+            <button 
+              v-if="editingReport.customer_email" 
+              class="btn-email" 
+              @click="openEmailModal"
+              :disabled="updating"
+              title="Send email to customer"
+            >
+              📧 Send Email
+            </button>
             <button class="btn-primary" @click="updateReport" :disabled="updating">
               {{ updating ? 'Saving...' : 'Save Changes' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Email Modal -->
+    <transition name="fade">
+      <div v-if="showEmailModal" class="modal-backdrop" @click.self="closeEmailModal">
+        <div class="modal">
+          <div class="modal-header">
+            <h3>Send Email to Customer</h3>
+            <button class="modal-close" @click="closeEmailModal">✕</button>
+          </div>
+
+          <div class="modal-body">
+            <div class="form-group">
+              <label>To:</label>
+              <input
+                type="email"
+                :value="editingReport.customer_email"
+                class="form-input"
+                disabled
+              />
+            </div>
+
+            <div class="form-group">
+              <label>Subject *</label>
+              <input
+                v-model="emailForm.subject"
+                type="text"
+                class="form-input"
+                placeholder="Enter email subject"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label>Message *</label>
+              <textarea
+                v-model="emailForm.message"
+                rows="8"
+                class="form-input"
+                placeholder="Enter your message to the customer..."
+                required
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn-cancel" @click="closeEmailModal">Cancel</button>
+            <button class="btn-primary" @click="sendEmail" :disabled="sendingEmail">
+              {{ sendingEmail ? 'Sending...' : 'Send Email' }}
             </button>
           </div>
         </div>
@@ -195,10 +306,24 @@ const showEditModal = ref(false)
 const editingReport = ref({
   id: null,
   status: 'pending',
+  subject: '',
+  message: '',
+  customer_email: '',
   admin_notes: '',
   assigned_to: null,
 })
 const staffList = ref([])
+
+// Email history state
+const expandedEmailHistory = ref(null)
+const emailHistoryCache = ref({})
+const loadingEmails = ref({})
+const showEmailModal = ref(false)
+const emailForm = ref({
+  subject: '',
+  message: '',
+})
+const sendingEmail = ref(false)
 
 let searchTimeout = null
 
@@ -262,6 +387,9 @@ function openEditModal(report) {
   editingReport.value = {
     id: report.id,
     status: report.status,
+    subject: report.subject || '',
+    message: report.message || '',
+    customer_email: report.customer_email || '',
     admin_notes: report.admin_notes || '',
     assigned_to: report.assigned_to?.id || null,
   }
@@ -273,9 +401,15 @@ function closeEditModal() {
   editingReport.value = {
     id: null,
     status: 'pending',
+    subject: '',
+    message: '',
+    customer_email: '',
     admin_notes: '',
     assigned_to: null,
   }
+  // Close email modal if open
+  showEmailModal.value = false
+  emailForm.value = { subject: '', message: '' }
 }
 
 async function updateReport() {
@@ -349,6 +483,87 @@ function formatDate(dateString) {
     hour: '2-digit',
     minute: '2-digit',
   })
+}
+
+// Email history functions
+function getEmailHistory(reportId) {
+  return emailHistoryCache.value[reportId] || []
+}
+
+async function toggleEmailHistory(reportId) {
+  if (expandedEmailHistory.value === reportId) {
+    expandedEmailHistory.value = null
+    return
+  }
+
+  expandedEmailHistory.value = reportId
+
+  // If we haven't loaded emails for this report yet, load them
+  if (!emailHistoryCache.value[reportId]) {
+    await loadEmailHistory(reportId)
+  }
+}
+
+async function loadEmailHistory(reportId) {
+  loadingEmails.value[reportId] = true
+  try {
+    const response = await axios.get(`/api/customer-reports/${reportId}/emails`)
+    if (response.data.ok) {
+      emailHistoryCache.value[reportId] = response.data.emails || []
+    }
+  } catch (error) {
+    console.error('Error loading email history:', error)
+    emailHistoryCache.value[reportId] = []
+  } finally {
+    loadingEmails.value[reportId] = false
+  }
+}
+
+function openEmailModal() {
+  emailForm.value = {
+    subject: editingReport.value.subject || '',
+    message: '',
+  }
+  showEmailModal.value = true
+}
+
+function closeEmailModal() {
+  showEmailModal.value = false
+  emailForm.value = {
+    subject: '',
+    message: '',
+  }
+}
+
+async function sendEmail() {
+  if (!emailForm.value.subject.trim() || !emailForm.value.message.trim()) {
+    alert('Please fill in both subject and message')
+    return
+  }
+
+  sendingEmail.value = true
+  try {
+    const response = await axios.post(`/api/customer-reports/${editingReport.value.id}/send-email`, {
+      subject: emailForm.value.subject,
+      message: emailForm.value.message,
+    })
+
+    if (response.data.ok) {
+      alert(response.data.message || 'Email sent successfully')
+      closeEmailModal()
+      // Refresh email history if it was expanded
+      if (expandedEmailHistory.value === editingReport.value.id) {
+        await loadEmailHistory(editingReport.value.id)
+      }
+    } else {
+      alert(response.data.message || 'Failed to send email')
+    }
+  } catch (error) {
+    console.error('Error sending email:', error)
+    alert(error.response?.data?.message || 'Failed to send email. Please try again.')
+  } finally {
+    sendingEmail.value = false
+  }
 }
 
 onMounted(() => {
@@ -788,6 +1003,194 @@ textarea.form-input {
 .btn-primary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.btn-email {
+  padding: 10px 20px;
+  background: #10B981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-email:hover:not(:disabled) {
+  background: #059669;
+}
+
+.btn-email:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Email History Styles */
+.email-history-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 2px solid #E5E7EB;
+}
+
+.email-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.btn-toggle-email {
+  padding: 8px 16px;
+  background: #8B5CF6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.btn-toggle-email:hover {
+  background: #7C3AED;
+  transform: translateY(-1px);
+}
+
+.email-history-content {
+  margin-top: 16px;
+  padding-right: 0;
+}
+
+.email-list {
+  display: block;
+}
+
+.email-list > * {
+  margin-bottom: 12px;
+}
+
+.email-list > *:last-child {
+  margin-bottom: 0;
+}
+
+.email-item {
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #E5E7EB;
+  transition: all 0.2s;
+  min-height: auto;
+  height: auto;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.email-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.email-item.outbound {
+  background: #F0FDF4;
+  border-left: 4px solid #10B981;
+}
+
+.email-item.inbound {
+  background: #FEF3C7;
+  border-left: 4px solid #F59E0B;
+}
+
+.email-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.email-direction-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: #10B981;
+  color: white;
+}
+
+.email-item.inbound .email-direction-badge {
+  background: #F59E0B;
+}
+
+.email-status-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.email-status-badge.status--sent {
+  background: #D1FAE5;
+  color: #065F46;
+}
+
+.email-status-badge.status--failed {
+  background: #FEE2E2;
+  color: #991B1B;
+}
+
+.email-status-badge.status--pending {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+.email-date {
+  font-size: 0.85rem;
+  color: #6B7280;
+}
+
+.email-subject {
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: white;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+.email-participants {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: white;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.email-participants div {
+  margin-bottom: 4px;
+}
+
+.email-message {
+  padding: 12px;
+  background: white;
+  border-radius: 6px;
+  color: #374151;
+  line-height: 1.6;
+  font-size: 0.95rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.email-error {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: #FEE2E2;
+  border: 1px solid #FECACA;
+  border-radius: 6px;
+  color: #991B1B;
+  font-size: 0.9rem;
 }
 
 .fade-enter-active,

@@ -595,5 +595,7 @@ Route::prefix('manager')->middleware('auth:sanctum,web')->group(function () {
         Route::put('/customer-reports/{id}', [\App\Http\Controllers\Api\CustomerReportController::class, 'update']);
         Route::delete('/customer-reports/{id}', [\App\Http\Controllers\Api\CustomerReportController::class, 'destroy']);
         Route::post('/customer-reports/{id}/send-email', [\App\Http\Controllers\Api\CustomerReportController::class, 'sendEmail']);
+        Route::get('/customer-reports/{id}/emails', [\App\Http\Controllers\Api\CustomerReportController::class, 'getEmailCommunications']);
+        Route::post('/customer-reports/{id}/receive-email', [\App\Http\Controllers\Api\CustomerReportController::class, 'receiveEmail']);
     });
 });
