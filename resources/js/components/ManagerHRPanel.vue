@@ -6,15 +6,29 @@
     :enableProfileUpdate="true"
     :canEditProfile="userProfile.role === 'OWNER'"
     :canChangePassword="true"
+    :showHeader="false"
+    :showProfileColumn="false"
     :ownerTwoColumnLayout="true"
     @logout="askLogout"
     @profile-updated="onProfileUpdated"
   >
-    <template #profileFooter>
-      <div class="admin-actions-row manager-hr-profile-actions">
-        <button class="staff-btn staff-btn--center" @click="goToStaffManagement()">
-          Staff Management
+    <template #sideTop>
+      <div ref="profileWrapper" class="header-profile-wrapper manager-hr-compact-profile">
+        <button class="header-profile-btn" type="button" @click.stop="toggleProfileDropdown">
+          <div class="header-avatar">
+            <div class="header-avatar-initials">
+              {{ (userProfile.fullName || userProfile.full_name || userProfile.name || userProfile.role || 'H').toString().charAt(0).toUpperCase() }}
+            </div>
+          </div>
+          <div class="header-name">
+            {{ ((userProfile.role || 'HR').toString() + ' - ' + (userProfile.branch || userProfile.branch_name || 'Dasma Branch')).toUpperCase() }}
+          </div>
         </button>
+        <div v-if="showProfileDropdown" class="header-profile-dropdown">
+          <button class="dropdown-item" type="button" @click.prevent="openInfo">Info</button>
+          <button class="dropdown-item" type="button" @click.prevent="goToStaffManagement()">Staff Management</button>
+          <button class="dropdown-item" type="button" @click.prevent="askLogout">Logout</button>
+        </div>
       </div>
     </template>
     <template #main>
@@ -358,7 +372,7 @@
     </template>
 
     <template #side>
-
+      <!-- Side panel intentionally left empty because the compact profile widget is rendered in sideTop -->
     </template>
   </OwnerPanelLayout>
 
@@ -379,6 +393,50 @@
   </transition>
 
   <transition name="fade">
+    <div v-if="showProfileInfo" class="info-backdrop" @click.self="closeInfo">
+      <div class="info-modal">
+        <h3>Info</h3>
+        <p class="info-sub">Your account information.</p>
+
+        <div class="info-grid">
+          <div class="info-row">
+            <span class="info-label">Full name</span>
+            <span class="info-value">{{ userProfile.fullName || userProfile.full_name || '-' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Account I.D</span>
+            <span class="info-value">{{ userProfile.accountId || userProfile.account_id || userProfile.id || '-' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Role</span>
+            <span class="info-value">{{ (userProfile.role || '-').toString().toUpperCase() }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Username</span>
+            <span class="info-value">{{ userProfile.username || '-' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Email</span>
+            <span class="info-value">{{ userProfile.email || '-' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Contact</span>
+            <span class="info-value">{{ userProfile.contact || userProfile.phone_number || '-' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Department</span>
+            <span class="info-value">{{ userProfile.department || '-' }}</span>
+          </div>
+        </div>
+
+        <div class="info-actions">
+          <button class="btn-secondary" type="button" @click="closeInfo">Close</button>
+        </div>
+      </div>
+    </div>
+  </transition>
+
+  <transition name="fade">
     <div v-if="showOverlay" class="loading-overlay">
       <div class="logo-loading-box">
         <img :src="logoImg" alt="Chikin Tayo" class="logo-loading-img" />
@@ -389,7 +447,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import axios from 'axios'
@@ -420,6 +478,9 @@ const showLogoutConfirm = ref(false)
 const isLoggingOut = ref(false)
 const showOverlay = ref(false)
 const overlayText = ref('Logging out...')
+const showProfileDropdown = ref(false)
+const profileWrapper = ref(null)
+const showProfileInfo = ref(false)
 
 const extractArray = (response, key = null) => {
   if (Array.isArray(response)) return response
@@ -487,6 +548,29 @@ function formatDate(date) {
     hour: '2-digit',
     minute: '2-digit',
   })
+}
+
+function toggleProfileDropdown() {
+  showProfileDropdown.value = !showProfileDropdown.value
+}
+
+function closeProfileDropdown() {
+  showProfileDropdown.value = false
+}
+
+function openInfo() {
+  closeProfileDropdown()
+  showProfileInfo.value = true
+}
+
+function closeInfo() {
+  showProfileInfo.value = false
+}
+
+function onDocumentClick(event) {
+  if (profileWrapper.value && !profileWrapper.value.contains(event.target)) {
+    closeProfileDropdown()
+  }
 }
 
 function getStorageUrl(path) {
@@ -678,9 +762,9 @@ const userBranchName = computed(() => {
 async function loadPayrolls() {
   isLoadingPayroll.value = true
   try {
-    const res = await axios.get('/api/payroll', { 
+    const res = await axios.get('/api/payroll', {
       params: { period: 'all' },
-      withCredentials: true 
+      withCredentials: true
     })
     if (res.data && res.data.ok) {
       payrolls.value = res.data.data || []
@@ -759,7 +843,7 @@ async function markAsPaid(id) {
 
 async function rejectPayroll(id) {
   if (!confirm('Are you sure you want to reject this payroll?')) return
-  
+
   try {
     const res = await axios.post(`/api/payroll/${id}/reject`, {}, { withCredentials: true })
     if (res.data && res.data.ok) {
@@ -777,7 +861,7 @@ function openPayrollModal() {
   const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-  
+
   payrollForm.value = {
     period_start: startOfMonth.toISOString().split('T')[0],
     period_end: endOfMonth.toISOString().split('T')[0],
@@ -836,6 +920,7 @@ function formatNumber(num) {
 }
 
 onMounted(async () => {
+  document.addEventListener('click', onDocumentClick)
   try {
     const res = await axios.get('/api/manager/hr/profile', { withCredentials: true })
     userProfile.value = res.data.user
@@ -843,6 +928,10 @@ onMounted(async () => {
   await refreshAllData()
   loadAttendanceSettings()
   loadPayrolls()
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', onDocumentClick)
 })
 
 function onProfileUpdated(updatedProfile) { userProfile.value = { ...userProfile.value, ...updatedProfile } }
@@ -1025,6 +1114,16 @@ defineExpose({ refreshAllData, onProfileUpdated })
 .btn-primary:hover { background: #fabd83; }
 .btn-secondary { background: #6c757d; color: #fff; }
 .btn-secondary:hover { background: #5a6268; }
+
+.header-profile-wrapper { position: relative; display: inline-flex; flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+.header-profile-btn { display: inline-flex; align-items: center; gap: 0.8rem; background: #fff; border: 1px solid #d1d5db; border-radius: 12px; padding: 0.8rem 1rem; cursor: pointer; transition: box-shadow 0.2s, border-color 0.2s; }
+.header-profile-btn:hover { box-shadow: 0 10px 24px rgba(15,23,42,0.08); border-color: #cbd5e1; }
+.header-avatar { width: 36px; height: 36px; border-radius: 50%; background: #f3f4f6; display: flex; align-items: center; justify-content: center; color: #374151; font-weight: 700; }
+.header-avatar-initials { font-weight: 700; color: #374151; }
+.header-name { font-size: 0.95rem; font-weight: 700; color: #111827; white-space: nowrap; }
+.header-profile-dropdown { position: absolute; right: 0; top: calc(100% + 8px); background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 12px 32px rgba(15,23,42,0.12); padding: 8px; min-width: 180px; z-index: 50; display: flex; flex-direction: column; gap: 0.5rem; }
+.dropdown-item { background: transparent; border: none; width: 100%; text-align: left; padding: 0.75rem 0.85rem; border-radius: 10px; color: #111827; cursor: pointer; transition: background 0.2s; }
+.dropdown-item:hover { background: #f8fafc; }
 .btn-sm { padding: 0.35rem 0.7rem; font-size: 0.8rem; }
 .btn-info { background: #17a2b8; color: #fff; }
 .btn-success { background: #28a745; color: #fff; }
@@ -1034,6 +1133,17 @@ defineExpose({ refreshAllData, onProfileUpdated })
 .logout-confirm-box h3 { margin: 0 0 0.5rem; color: #333; }
 .logout-confirm-box p { margin: 0 0 1.5rem; color: #666; }
 .logout-actions { display: flex; gap: 1rem; justify-content: center; }
+
+.info-backdrop { position: fixed; inset: 0; background: rgba(15,23,42,0.35); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.info-modal { width: min(520px, calc(100% - 2rem)); background: #ffffff; border-radius: 18px; padding: 1.5rem 1.75rem; box-shadow: 0 20px 60px rgba(15,23,42,0.18); }
+.info-modal h3 { margin: 0 0 0.5rem 0; font-size: 1.25rem; color: #111827; }
+.info-sub { margin: 0 0 1.25rem 0; color: #6b7280; font-size: 0.95rem; }
+.info-grid { display: grid; gap: 1rem; }
+.info-row { display: grid; grid-template-columns: 150px 1fr; gap: 1rem; align-items: center; padding: 0.85rem 0; border-bottom: 1px solid #e5e7eb; }
+.info-row:last-child { border-bottom: none; }
+.info-label { color: #4b5563; font-weight: 600; font-size: 0.9rem; }
+.info-value { color: #111827; font-weight: 700; text-align: right; }
+.info-actions { display: flex; justify-content: flex-end; margin-top: 1.5rem; }
 .btn-cancel { padding: 0.625rem 1.25rem; background: #6c757d; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
 .btn-confirm { padding: 0.625rem 1.25rem; background: #dc3545; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
 .loading-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255, 255, 255, 0.95); display: flex; align-items: center; justify-content: center; z-index: 2000; }

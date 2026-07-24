@@ -4,13 +4,12 @@
   gap: 1rem;
 }
 
-.admin-layout,
-.admin-layout.admin-layout--wider {
+.admin-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px !important;
+  grid-template-columns: 300px minmax(0, 1fr);
   grid-template-areas:
-    'main profile'
-    'main side' !important;
+    'profile main'
+    'profile side';
   gap: 1rem;
   align-items: start;
 }
@@ -398,12 +397,11 @@
 }
 
 @media (max-width: 767px) {
-  .admin-layout,
-  .admin-layout.admin-layout--wider {
+  .admin-layout {
     grid-template-columns: 1fr;
     grid-template-areas:
-      'main'
       'profile'
+      'main'
       'side';
   }
 
