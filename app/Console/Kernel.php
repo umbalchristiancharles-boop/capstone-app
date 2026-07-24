@@ -4,6 +4,7 @@ namespace App\Console;
 
 use App\Console\Commands\UpdateBranchPasswords;
 use App\Console\Commands\FetchGmailReplies;
+use App\Console\Commands\AutoClockOut;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -23,6 +24,17 @@ class Kernel extends ConsoleKernel
                  })
                  ->onSuccess(function () {
                      \Illuminate\Support\Facades\Log::info('Successfully completed daily branch password update');
+                 });
+
+        // Auto clock out staff who forgot to clock out at 10 PM
+        $schedule->command('attendance:auto-clock-out')
+                 ->dailyAt('22:00')
+                 ->withoutOverlapping()
+                 ->onFailure(function () {
+                     \Illuminate\Support\Facades\Log::error('Failed to auto clock out staff');
+                 })
+                 ->onSuccess(function () {
+                     \Illuminate\Support\Facades\Log::info('Successfully completed auto clock out');
                  });
     }
 

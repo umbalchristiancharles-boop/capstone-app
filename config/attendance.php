@@ -11,7 +11,7 @@ return [
     | Format: H:i:s (24-hour format)
     |
     */
-    'default_time_out' => env('ATTENDANCE_DEFAULT_TIME_OUT', '17:00:00'),
+    'default_time_out' => env('ATTENDANCE_DEFAULT_TIME_OUT', '22:00:00'),
 
     /*
     |--------------------------------------------------------------------------

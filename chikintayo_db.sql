@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 24, 2026 at 11:12 AM
+-- Generation Time: Jul 24, 2026 at 02:41 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -79,7 +79,7 @@ INSERT INTO `attendance` (`id`, `user_id`, `date`, `time_in`, `time_out`, `hours
 (16, 151, '2026-07-21', '17:44:43', NULL, 0, 'late', NULL, '2026-07-21 09:44:43', '2026-07-21 09:44:43'),
 (17, 149, '2026-07-21', '17:45:39', NULL, 0, 'late', NULL, '2026-07-21 09:45:39', '2026-07-21 09:45:39'),
 (18, 159, '2026-07-22', '15:11:30', NULL, 0, 'late', NULL, '2026-07-22 07:11:30', '2026-07-22 07:11:30'),
-(19, 154, '2026-07-24', '15:04:46', NULL, 0, 'late', NULL, '2026-07-24 07:04:46', '2026-07-24 07:04:46');
+(19, 154, '2026-07-24', '15:04:46', '20:28:12', -323, 'late', NULL, '2026-07-24 07:04:46', '2026-07-24 12:28:12');
 
 -- --------------------------------------------------------
 
@@ -911,7 +911,7 @@ CREATE TABLE `payrolls` (
 
 INSERT INTO `payrolls` (`id`, `user_id`, `branch_id`, `pay_period_start`, `pay_period_end`, `payroll_type`, `pay_date`, `days_worked`, `days_late`, `days_overtime`, `total_hours_worked`, `total_overtime_hours`, `daily_rate`, `hourly_rate`, `base_salary`, `late_deductions`, `overtime_pay`, `gross_salary`, `net_salary`, `status`, `notes`, `confirmed_by`, `confirmed_at`, `finance_notes`, `created_at`, `updated_at`) VALUES
 (1, 153, 31, '2026-06-30', '2026-07-30', 'mid_month', '2026-06-15', 1, 1, 0, 0.00, 0.00, 600.00, 75.00, 600.00, 60.00, 0.00, 600.00, 540.00, 'pending', NULL, NULL, NULL, NULL, '2026-07-24 06:51:00', '2026-07-24 06:51:00'),
-(2, 154, 31, '2026-06-30', '2026-07-30', 'mid_month', '2026-06-15', 1, 1, 0, 0.00, 0.00, 600.00, 75.00, 600.00, 60.00, 0.00, 600.00, 540.00, 'pending', NULL, NULL, NULL, NULL, '2026-07-24 06:51:00', '2026-07-24 07:05:10'),
+(2, 154, 31, '2026-06-30', '2026-07-30', 'mid_month', '2026-06-15', 1, 1, 0, -323.00, 0.00, 600.00, 75.00, 600.00, 60.00, 0.00, 600.00, 540.00, 'pending', NULL, NULL, NULL, NULL, '2026-07-24 06:51:00', '2026-07-24 12:28:40'),
 (3, 157, 31, '2026-06-30', '2026-07-30', 'mid_month', '2026-06-15', 0, 0, 0, 0.00, 0.00, 600.00, 75.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'pending', NULL, NULL, NULL, NULL, '2026-07-24 06:51:00', '2026-07-24 06:51:00');
 
 -- --------------------------------------------------------
@@ -2137,7 +2137,8 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (2709, 'App\\Models\\User', 31, 'auth-token', 'ef2b89e7169ae86f782b50dc9bf2ca9c860a417904fea179c38d5a08ec82b7d7', '[\"*\"]', NULL, NULL, '2026-07-21 09:48:47', '2026-07-21 09:48:47'),
 (2719, 'App\\Models\\User', 147, 'auth-token', '9b969badda49bd9baf0190f06670635a62d8d59be7d846d19d6c9e3b2d7c35b4', '[\"*\"]', NULL, NULL, '2026-07-21 10:16:38', '2026-07-21 10:16:38'),
 (2723, 'App\\Models\\User', 153, 'auth-token', 'baca381a12d87745de285462b7b869ac08b2757178bb5628c73429cfad9b90c6', '[\"*\"]', NULL, NULL, '2026-07-21 11:26:07', '2026-07-21 11:26:07'),
-(2735, 'App\\Models\\User', 31, 'auth-token', '843076fb7735aba7c96324eed4a8aadb9970cd6566cc30d9c04cad782e16af50', '[\"*\"]', NULL, NULL, '2026-07-24 08:01:03', '2026-07-24 08:01:03');
+(2735, 'App\\Models\\User', 31, 'auth-token', '843076fb7735aba7c96324eed4a8aadb9970cd6566cc30d9c04cad782e16af50', '[\"*\"]', NULL, NULL, '2026-07-24 08:01:03', '2026-07-24 08:01:03'),
+(2737, 'App\\Models\\User', 148, 'auth-token', '5323bc70c560c9e0f9b1fdf18de1668ac704d352f251cd56b85b396f0b37f860', '[\"*\"]', NULL, NULL, '2026-07-24 12:28:31', '2026-07-24 12:28:31');
 
 -- --------------------------------------------------------
 
@@ -2561,7 +2562,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('i4Bhyn6JiOJ3Zlk2asJqWU4p05y1PNihYOBIOACD', 31, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiQmQ1YldDT1ZSQTNtVGhFdnJLNDBYQ2sxNlJhOTNRSVE3bDIwVGFRNCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzM6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9vd25lci1wYW5lbCI7czo1OiJyb3V0ZSI7Tjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MzE7czo3OiJ1c2VyX2lkIjtpOjMxO3M6OToidXNlcl9yb2xlIjtzOjU6Ik9XTkVSIjtzOjk6InVzZXJfbmFtZSI7czo4OiJNci5wYXJrcyI7czoxMzoicmVkaXJlY3RfcGF0aCI7czoxMjoiL293bmVyLXBhbmVsIjt9', 1784884233);
+('wRUckmeTVIeqnPaZipyoXav6LD6WopvSvl3R4krR', 148, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiOUdHenloRzJKVW9Wb1RaMnhCU25MMGZQMHBtTVdabzVFUU0xa1VqVCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTQ4O3M6NzoidXNlcl9pZCI7aToxNDg7czo5OiJ1c2VyX3JvbGUiO3M6NzoiTUFOQUdFUiI7czo5OiJ1c2VyX25hbWUiO3M6MjU6IkhSIE1hbmFnZXIgLSBEYXNtYSBCcmFuY2giO3M6MTM6InJlZGlyZWN0X3BhdGgiO3M6MTE6Ii9tYW5hZ2VyL2hyIjt9', 1784896844);
 
 -- --------------------------------------------------------
 
@@ -3303,7 +3304,7 @@ ALTER TABLE `payrolls`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2736;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2738;
 
 --
 -- AUTO_INCREMENT for table `positions`
