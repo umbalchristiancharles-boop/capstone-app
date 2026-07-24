@@ -108,22 +108,9 @@ class AuthController extends Controller
     $validRoles = ['SUPER_ADMIN', 'ADMIN', 'OWNER', 'MANAGER', 'MANAGER_HR', 'HR', 'STAFF', 'CUSTOM', 'SUPPLIER'];
         $roleUpper = strtoupper(trim($user->role ?? ''));
 
-        // Handle MANAGER_HR role specially - treat as MANAGER with HR department
-        if ($roleUpper === 'MANAGER_HR') {
-            $roleUpper = 'MANAGER';
-            // Set department to HR if not already set
-            if (empty($user->department)) {
-                $user->department = 'HR';
-                // Validate user is a valid User model instance before accessing properties
-                if ($user instanceof User) {
-                    $user->save();
-                } else {
-                    // User is not a valid instance, log error with safe access
-                    Log::error('Invalid user object during MANAGER_HR department assignment');
-                }
-            }
-        }
-
+        // Note: MANAGER_HR role is kept as-is in the database
+        // Role conversion to MANAGER is only done for routing purposes in getRedirectPath()
+        
         if (!in_array($roleUpper, $validRoles)) {
             Log::error('Unknown or invalid role detected during login', [
                 'user_id' => $user->id,

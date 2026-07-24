@@ -242,6 +242,118 @@
           </div>
         </div>
       </section>
+
+      <!-- Payroll Tracking Section -->
+      <section class="panel-block hr-payroll-panel">
+        <div class="panel-header hr-payroll-header">
+          <h2>Payroll Management</h2>
+          <div class="hr-payroll-actions">
+            <button class="panel-action panel-action--primary" @click="openPayrollModal">
+              Generate Payroll
+            </button>
+            <button class="panel-action" @click="loadPayrolls">Refresh</button>
+          </div>
+        </div>
+
+        <div class="panel-body panel-body--table">
+          <div class="table-header">
+            <span>Staff Name</span>
+            <span>Pay Period</span>
+            <span>Type</span>
+            <span>Days Worked</span>
+            <span>Late Days</span>
+            <span>Overtime</span>
+            <span>Net Salary</span>
+            <span>Status</span>
+            <span>Actions</span>
+          </div>
+
+          <div v-if="isLoadingPayroll" class="table-row">
+            <span colspan="9">Loading payroll...</span>
+          </div>
+
+          <div v-else-if="payrolls.length === 0" class="table-row">
+            <span colspan="9">No payroll records found. Click "Generate Payroll" to create payroll for this period.</span>
+          </div>
+
+          <div v-else v-for="payroll in payrolls" :key="payroll.id" class="table-row">
+            <span>{{ payroll.user?.full_name || '-' }}</span>
+            <span>{{ formatPayPeriod(payroll.pay_period_start, payroll.pay_period_end) }}</span>
+            <span>{{ payroll.payroll_type === 'mid_month' ? 'Mid-Month' : 'End of Month' }}</span>
+            <span>{{ payroll.days_worked }}</span>
+            <span>{{ payroll.days_late }}</span>
+            <span>{{ payroll.days_overtime }} days ({{ payroll.total_overtime_hours }} hrs)</span>
+            <span>₱{{ formatNumber(payroll.net_salary) }}</span>
+            <span>
+              <span class="badge" :class="getPayrollStatusClass(payroll.status)">{{ formatPayrollStatus(payroll.status) }}</span>
+            </span>
+            <span>
+              <button v-if="payroll.status === 'pending'" class="btn-sm btn-success" @click="approvePayroll(payroll.id)">
+                Approve
+              </button>
+              <button v-if="payroll.status === 'approved'" class="btn-sm btn-primary" @click="markAsPaid(payroll.id)">
+                Mark Paid
+              </button>
+              <button v-if="payroll.status === 'pending'" class="btn-sm btn-danger" @click="rejectPayroll(payroll.id)">
+                Reject
+              </button>
+              <span v-if="payroll.confirmed_by" class="text-muted" style="font-size: 0.75rem;">
+                by {{ payroll.confirmedBy?.full_name }}
+              </span>
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Payroll Generation Modal -->
+      <transition name="fade">
+        <div v-if="showPayrollModal" class="positions-modal-backdrop" @click.self="closePayrollModal">
+          <div class="positions-modal">
+            <div class="positions-modal__header">
+              <div>
+                <h3>Generate Payroll</h3>
+                <p class="muted">Select pay period and type to generate payroll for all staff.</p>
+              </div>
+              <button class="modal-close" @click="closePayrollModal" aria-label="Close">✕</button>
+            </div>
+
+            <div class="positions-modal__body">
+              <div class="form-group">
+                <label class="field-label">Pay Period Start</label>
+                <input type="date" class="field-input" v-model="payrollForm.period_start" />
+              </div>
+              <div class="form-group">
+                <label class="field-label">Pay Period End</label>
+                <input type="date" class="field-input" v-model="payrollForm.period_end" />
+              </div>
+              <div class="form-group">
+                <label class="field-label">Payroll Type</label>
+                <select class="field-input" v-model="payrollForm.payroll_type">
+                  <option value="mid_month">Mid-Month (15th)</option>
+                  <option value="end_month">End of Month</option>
+                </select>
+              </div>
+              <div class="form-group" v-if="canSelectBranch">
+                <label class="field-label">Branch</label>
+                <select class="field-input" v-model="payrollForm.branch_id">
+                  <option v-for="branch in branches" :key="branch.id" :value="branch.id">{{ branch.name }}</option>
+                </select>
+              </div>
+              <div class="form-group" v-else>
+                <label class="field-label">Branch</label>
+                <input type="text" class="field-input" :value="userBranchName" disabled />
+              </div>
+            </div>
+
+            <div class="positions-modal__footer">
+              <button class="btn-secondary" @click="closePayrollModal">Cancel</button>
+              <button class="btn-primary" @click="generatePayroll" :disabled="isGeneratingPayroll">
+                {{ isGeneratingPayroll ? 'Generating...' : 'Generate Payroll' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
       </div>
     </template>
 
@@ -418,6 +530,7 @@ async function refreshAllData() {
   try { const staff = await axios.get('/api/manager/hr/staff', { withCredentials: true }); staffList.value = extractArray(staff.data, 'staffList') } catch (err) { staffList.value = []; errorMessage.value = 'Failed to load staff list.' }
   try { const reports = await axios.get('/api/manager/hr/reports', { withCredentials: true }); hrReports.value = extractArray(reports.data, 'hrReports') } catch (err) { hrReports.value = []; errorMessage.value = 'Failed to load HR reports.' }
   loadHrAttendance(attendanceRange.value)
+  loadPayrolls()
 }
 
 async function loadHrAttendance(range = 'today') {
@@ -539,6 +652,189 @@ function attendanceStatusClass(status) {
   return 'badge--info'
 }
 
+// Payroll functions
+const payrolls = ref([])
+const isLoadingPayroll = ref(false)
+const showPayrollModal = ref(false)
+const isGeneratingPayroll = ref(false)
+const payrollForm = ref({
+  period_start: '',
+  period_end: '',
+  payroll_type: 'mid_month',
+  branch_id: ''
+})
+const branches = ref([])
+
+const canSelectBranch = computed(() => {
+  const role = (userProfile.value.role || '').toUpperCase()
+  return ['OWNER', 'ADMIN', 'SUPER_ADMIN'].includes(role)
+})
+
+const userBranchName = computed(() => {
+  const branch = branches.value.find(b => b.id === userProfile.value.branch_id)
+  return branch ? branch.name : 'Your Branch'
+})
+
+async function loadPayrolls() {
+  isLoadingPayroll.value = true
+  try {
+    const res = await axios.get('/api/payroll', { 
+      params: { period: 'all' },
+      withCredentials: true 
+    })
+    if (res.data && res.data.ok) {
+      payrolls.value = res.data.data || []
+    } else {
+      payrolls.value = []
+    }
+  } catch (e) {
+    console.error('Error loading payroll:', e)
+    payrolls.value = []
+  } finally {
+    isLoadingPayroll.value = false
+  }
+}
+
+async function generatePayroll() {
+  if (!payrollForm.value.period_start || !payrollForm.value.period_end) {
+    alert('Please select pay period dates')
+    return
+  }
+
+  isGeneratingPayroll.value = true
+  try {
+    const res = await axios.post('/api/payroll/generate', {
+      pay_period_start: payrollForm.value.period_start,
+      pay_period_end: payrollForm.value.period_end,
+      payroll_type: payrollForm.value.payroll_type,
+      branch_id: payrollForm.value.branch_id || null
+    }, { withCredentials: true })
+
+    if (res.data && res.data.ok) {
+      alert(res.data.message || 'Payroll generated successfully')
+      closePayrollModal()
+      loadPayrolls()
+    } else {
+      alert(res.data.message || 'Failed to generate payroll')
+    }
+  } catch (e) {
+    console.error('Error generating payroll:', e)
+    if (e.response?.status === 403) {
+      alert('Access denied. You do not have permission to generate payroll for this branch.')
+    } else {
+      alert(e.response?.data?.message || 'Failed to generate payroll')
+    }
+  } finally {
+    isGeneratingPayroll.value = false
+  }
+}
+
+async function approvePayroll(id) {
+  try {
+    const res = await axios.post(`/api/payroll/${id}/approve`, {}, { withCredentials: true })
+    if (res.data && res.data.ok) {
+      alert('Payroll approved successfully')
+      loadPayrolls()
+    } else {
+      alert(res.data.message || 'Failed to approve payroll')
+    }
+  } catch (e) {
+    alert(e.response?.data?.message || 'Failed to approve payroll')
+  }
+}
+
+async function markAsPaid(id) {
+  try {
+    const res = await axios.post(`/api/payroll/${id}/mark-paid`, {}, { withCredentials: true })
+    if (res.data && res.data.ok) {
+      alert('Payroll marked as paid successfully')
+      loadPayrolls()
+    } else {
+      alert(res.data.message || 'Failed to mark payroll as paid')
+    }
+  } catch (e) {
+    alert(e.response?.data?.message || 'Failed to mark payroll as paid')
+  }
+}
+
+async function rejectPayroll(id) {
+  if (!confirm('Are you sure you want to reject this payroll?')) return
+  
+  try {
+    const res = await axios.post(`/api/payroll/${id}/reject`, {}, { withCredentials: true })
+    if (res.data && res.data.ok) {
+      alert('Payroll rejected')
+      loadPayrolls()
+    } else {
+      alert(res.data.message || 'Failed to reject payroll')
+    }
+  } catch (e) {
+    alert(e.response?.data?.message || 'Failed to reject payroll')
+  }
+}
+
+function openPayrollModal() {
+  const now = new Date()
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+  
+  payrollForm.value = {
+    period_start: startOfMonth.toISOString().split('T')[0],
+    period_end: endOfMonth.toISOString().split('T')[0],
+    payroll_type: 'mid_month',
+    branch_id: userProfile.value.branch_id || ''
+  }
+  showPayrollModal.value = true
+  loadBranches()
+}
+
+function closePayrollModal() {
+  showPayrollModal.value = false
+}
+
+async function loadBranches() {
+  try {
+    const res = await axios.get('/api/branches', { withCredentials: true })
+    if (res.data && res.data.ok) {
+      branches.value = res.data.data || []
+    }
+  } catch (e) {
+    console.error('Error loading branches:', e)
+  }
+}
+
+function formatPayPeriod(start, end) {
+  if (!start || !end) return '-'
+  const s = new Date(start)
+  const e = new Date(end)
+  return s.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' - ' + e.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+function formatPayrollStatus(status) {
+  const statusMap = {
+    'pending': 'Pending',
+    'approved': 'Approved',
+    'paid': 'Paid',
+    'rejected': 'Rejected'
+  }
+  return statusMap[status] || status
+}
+
+function getPayrollStatusClass(status) {
+  const classMap = {
+    'pending': 'badge--warning',
+    'approved': 'badge--info',
+    'paid': 'badge--success',
+    'rejected': 'badge--danger'
+  }
+  return classMap[status] || 'badge--info'
+}
+
+function formatNumber(num) {
+  if (num === null || num === undefined) return '0.00'
+  return Number(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
 onMounted(async () => {
   try {
     const res = await axios.get('/api/manager/hr/profile', { withCredentials: true })
@@ -546,6 +842,7 @@ onMounted(async () => {
   } catch (err) { if (err.response && err.response.status === 401) { router.push('/staff-landing'); return } }
   await refreshAllData()
   loadAttendanceSettings()
+  loadPayrolls()
 })
 
 function onProfileUpdated(updatedProfile) { userProfile.value = { ...userProfile.value, ...updatedProfile } }
@@ -900,5 +1197,42 @@ defineExpose({ refreshAllData, onProfileUpdated })
   border-top: 1px solid #eee;
   background: #fafafa;
   border-radius: 0 0 12px 12px;
+}
+
+/* Payroll Panel Styles */
+.hr-payroll-panel {
+  margin-top: 1rem;
+}
+
+.hr-payroll-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.hr-payroll-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.hr-payroll-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.hr-payroll-actions .panel-action--primary {
+  background: #28a745;
+  color: #fff;
+}
+
+.hr-payroll-actions .panel-action--primary:hover {
+  background: #218838;
+}
+
+.text-muted {
+  color: #6c757d;
+  font-style: italic;
 }
 </style>

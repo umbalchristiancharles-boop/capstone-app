@@ -406,9 +406,10 @@ class ManagerProfileController extends Controller
 
         $isMainBranchHr = $this->isMainBranchHrManager($user);
         $range = $request->query('range', 'today');
-        $branchId = $request->query('branch_id');
 
-        if (!$isMainBranchHr) {
+        if ($isMainBranchHr) {
+            $branchId = $request->query('branch_id');
+        } else {
             $branchId = $user->branch_id;
         }
 

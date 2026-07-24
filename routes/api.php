@@ -572,6 +572,19 @@ Route::prefix('manager')->middleware('auth:sanctum,web')->group(function () {
     });
 
     // ==========================================
+    // PAYROLL API - HR Manager
+    // ==========================================
+    Route::prefix('payroll')->middleware('auth:sanctum,web')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\PayrollController::class, 'index']);
+        Route::get('/{id}', [\App\Http\Controllers\Api\PayrollController::class, 'show']);
+        Route::post('/generate', [\App\Http\Controllers\Api\PayrollController::class, 'generate']);
+        Route::post('/{id}/approve', [\App\Http\Controllers\Api\PayrollController::class, 'approve']);
+        Route::post('/{id}/mark-paid', [\App\Http\Controllers\Api\PayrollController::class, 'markAsPaid']);
+        Route::post('/{id}/reject', [\App\Http\Controllers\Api\PayrollController::class, 'reject']);
+        Route::get('/dashboard', [\App\Http\Controllers\Api\PayrollController::class, 'dashboard']);
+    });
+
+    // ==========================================
     // LOCATIONS API - REGIONS, PROVINCES, CITIES, BARANGAYS
     // ==========================================
     Route::prefix('locations')->middleware('auth')->group(function () {

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 22, 2026 at 10:30 AM
+-- Generation Time: Jul 24, 2026 at 09:58 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -78,7 +78,8 @@ INSERT INTO `attendance` (`id`, `user_id`, `date`, `time_in`, `time_out`, `hours
 (15, 149, '2026-07-17', '20:05:08', NULL, 0, 'late', NULL, '2026-07-17 12:05:08', '2026-07-17 12:05:08'),
 (16, 151, '2026-07-21', '17:44:43', NULL, 0, 'late', NULL, '2026-07-21 09:44:43', '2026-07-21 09:44:43'),
 (17, 149, '2026-07-21', '17:45:39', NULL, 0, 'late', NULL, '2026-07-21 09:45:39', '2026-07-21 09:45:39'),
-(18, 159, '2026-07-22', '15:11:30', NULL, 0, 'late', NULL, '2026-07-22 07:11:30', '2026-07-22 07:11:30');
+(18, 159, '2026-07-22', '15:11:30', NULL, 0, 'late', NULL, '2026-07-22 07:11:30', '2026-07-22 07:11:30'),
+(19, 154, '2026-07-24', '15:04:46', NULL, 0, 'late', NULL, '2026-07-24 07:04:46', '2026-07-24 07:04:46');
 
 -- --------------------------------------------------------
 
@@ -183,14 +184,6 @@ CREATE TABLE `cache` (
   `value` mediumtext NOT NULL,
   `expiration` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `cache`
---
-
-INSERT INTO `cache` (`key`, `value`, `expiration`) VALUES
-('laravel-cache-user_token_2qajzk6uWSkg6v7okR2DlzIJUGASfRaE5CpprZxQDRRh0awh56tfOQEDCKDz', 'i:240;', 1786519084),
-('laravel-cache-user_token_EquWKXxgMnLdjvGBeYbc8SAWk93ILf8KHh14sARoNWu733kKFWdNnhBqxobo', 'i:240;', 1785653466);
 
 -- --------------------------------------------------------
 
@@ -772,7 +765,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (147, '2026_07_15_000002_create_customer_reports_table', 84),
 (148, '2026_07_17_000001_add_geofencing_to_branches_table', 85),
 (149, '2026_07_22_000001_create_email_communications_table', 86),
-(150, '2026_07_22_000002_add_email_threading_fields_to_email_communications_table', 87);
+(150, '2026_07_22_000002_add_email_threading_fields_to_email_communications_table', 87),
+(151, '2026_07_24_000001_create_payrolls_table', 88);
 
 -- --------------------------------------------------------
 
@@ -873,6 +867,50 @@ CREATE TABLE `password_reset_tokens` (
   `token` varchar(255) NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `payrolls`
+--
+
+CREATE TABLE `payrolls` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `branch_id` bigint(20) UNSIGNED NOT NULL,
+  `pay_period_start` date NOT NULL,
+  `pay_period_end` date NOT NULL,
+  `payroll_type` varchar(255) NOT NULL,
+  `pay_date` date NOT NULL,
+  `days_worked` int(11) NOT NULL DEFAULT 0,
+  `days_late` int(11) NOT NULL DEFAULT 0,
+  `days_overtime` int(11) NOT NULL DEFAULT 0,
+  `total_hours_worked` decimal(8,2) NOT NULL DEFAULT 0.00,
+  `total_overtime_hours` decimal(8,2) NOT NULL DEFAULT 0.00,
+  `daily_rate` decimal(10,2) NOT NULL,
+  `hourly_rate` decimal(10,2) NOT NULL,
+  `base_salary` decimal(10,2) NOT NULL,
+  `late_deductions` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `overtime_pay` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `gross_salary` decimal(10,2) NOT NULL,
+  `net_salary` decimal(10,2) NOT NULL,
+  `status` varchar(255) NOT NULL DEFAULT 'pending',
+  `notes` text DEFAULT NULL,
+  `confirmed_by` bigint(20) UNSIGNED DEFAULT NULL,
+  `confirmed_at` timestamp NULL DEFAULT NULL,
+  `finance_notes` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `payrolls`
+--
+
+INSERT INTO `payrolls` (`id`, `user_id`, `branch_id`, `pay_period_start`, `pay_period_end`, `payroll_type`, `pay_date`, `days_worked`, `days_late`, `days_overtime`, `total_hours_worked`, `total_overtime_hours`, `daily_rate`, `hourly_rate`, `base_salary`, `late_deductions`, `overtime_pay`, `gross_salary`, `net_salary`, `status`, `notes`, `confirmed_by`, `confirmed_at`, `finance_notes`, `created_at`, `updated_at`) VALUES
+(1, 153, 31, '2026-06-30', '2026-07-30', 'mid_month', '2026-06-15', 1, 1, 0, 0.00, 0.00, 600.00, 75.00, 600.00, 60.00, 0.00, 600.00, 540.00, 'pending', NULL, NULL, NULL, NULL, '2026-07-24 06:51:00', '2026-07-24 06:51:00'),
+(2, 154, 31, '2026-06-30', '2026-07-30', 'mid_month', '2026-06-15', 1, 1, 0, 0.00, 0.00, 600.00, 75.00, 600.00, 60.00, 0.00, 600.00, 540.00, 'pending', NULL, NULL, NULL, NULL, '2026-07-24 06:51:00', '2026-07-24 07:05:10'),
+(3, 157, 31, '2026-06-30', '2026-07-30', 'mid_month', '2026-06-15', 0, 0, 0, 0.00, 0.00, 600.00, 75.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'pending', NULL, NULL, NULL, NULL, '2026-07-24 06:51:00', '2026-07-24 06:51:00');
 
 -- --------------------------------------------------------
 
@@ -2520,8 +2558,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('tl2VsvuI8etQeuwDS0BXqGcinCfOYuFnxVZJ4WtB', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiNWJXWnc2SEtBWUxaVFN5ZlJDbW4wUzd2UVJvalhZOUdMeGRYS3F0QyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1784702470),
-('tueF9i9xMQHxEtWpxAzr6f9a6tgiA9maqVqUy3fo', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoieGx6eDlUaVF6cjBmTG8yc0J3RUQ1S1lMbTJkblpEOHIxWk1vV3VjWCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1784708964);
+('UcaT28LzhvzsW1GzelhlhPFzJSomhBYeOWLhCA4F', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiMnNSZ3dDSThtVEM4dGI2WExPR21nWDhIbnNLcE43Y3lCNGtNM3NDaSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO319', 1784879927);
 
 -- --------------------------------------------------------
 
@@ -2932,6 +2969,16 @@ ALTER TABLE `password_reset_tokens`
   ADD PRIMARY KEY (`email`);
 
 --
+-- Indexes for table `payrolls`
+--
+ALTER TABLE `payrolls`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `payrolls_confirmed_by_foreign` (`confirmed_by`),
+  ADD KEY `payrolls_user_id_pay_period_start_pay_period_end_index` (`user_id`,`pay_period_start`,`pay_period_end`),
+  ADD KEY `payrolls_branch_id_status_index` (`branch_id`,`status`),
+  ADD KEY `payrolls_pay_date_status_index` (`pay_date`,`status`);
+
+--
 -- Indexes for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
@@ -3127,7 +3174,7 @@ ALTER TABLE `announcements`
 -- AUTO_INCREMENT for table `attendance`
 --
 ALTER TABLE `attendance`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT for table `attendance_settings`
@@ -3229,7 +3276,7 @@ ALTER TABLE `messages`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=151;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=152;
 
 --
 -- AUTO_INCREMENT for table `orders`
@@ -3244,10 +3291,16 @@ ALTER TABLE `order_items`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=95;
 
 --
+-- AUTO_INCREMENT for table `payrolls`
+--
+ALTER TABLE `payrolls`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2729;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2735;
 
 --
 -- AUTO_INCREMENT for table `positions`
@@ -3459,6 +3512,14 @@ ALTER TABLE `orders`
 ALTER TABLE `order_items`
   ADD CONSTRAINT `order_items_order_id_foreign` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `order_items_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `payrolls`
+--
+ALTER TABLE `payrolls`
+  ADD CONSTRAINT `payrolls_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `payrolls_confirmed_by_foreign` FOREIGN KEY (`confirmed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `payrolls_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `position_applications`
