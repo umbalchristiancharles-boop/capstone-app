@@ -33,6 +33,7 @@ class KitchenDishController extends Controller
             'name' => 'required|string',
             'ingredients' => 'nullable|array',
             'ingredients.*.name' => 'required|string',
+            'ingredients.*.brand' => 'nullable|string',
             'ingredients.*.unit' => 'nullable|string',
             'ingredients.*.per_serving' => 'nullable|numeric',
             'ingredients.*.product_id' => 'nullable|integer',
@@ -67,6 +68,7 @@ class KitchenDishController extends Controller
                 'dish_id' => $dish->id,
                 'product_id' => $productId,
                 'name' => $ing['name'],
+                'brand' => $ing['brand'] ?? null,
                 'unit' => $ing['unit'] ?? null,
                 'per_serving' => $ing['per_serving'] ?? null,
             ]);

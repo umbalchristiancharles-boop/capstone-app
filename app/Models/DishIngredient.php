@@ -14,6 +14,7 @@ class DishIngredient extends Model
         'dish_id',
         'product_id',
         'name',
+        'brand',
         'unit',
         'per_serving'
     ];

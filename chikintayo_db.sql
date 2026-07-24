@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 24, 2026 at 09:58 AM
+-- Generation Time: Jul 24, 2026 at 11:12 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -297,6 +297,7 @@ CREATE TABLE `dish_ingredients` (
   `dish_id` bigint(20) UNSIGNED NOT NULL,
   `product_id` bigint(20) UNSIGNED DEFAULT NULL,
   `name` varchar(255) NOT NULL,
+  `brand` varchar(255) DEFAULT NULL,
   `unit` varchar(255) DEFAULT NULL,
   `per_serving` decimal(12,4) NOT NULL DEFAULT 0.0000,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -307,8 +308,8 @@ CREATE TABLE `dish_ingredients` (
 -- Dumping data for table `dish_ingredients`
 --
 
-INSERT INTO `dish_ingredients` (`id`, `dish_id`, `product_id`, `name`, `unit`, `per_serving`, `created_at`, `updated_at`) VALUES
-(68, 45, 207, 'Frozen HotDog', 'pcs', 1.0000, '2026-07-21 09:39:36', '2026-07-21 09:39:36');
+INSERT INTO `dish_ingredients` (`id`, `dish_id`, `product_id`, `name`, `brand`, `unit`, `per_serving`, `created_at`, `updated_at`) VALUES
+(68, 45, 207, 'Frozen HotDog', NULL, 'pcs', 1.0000, '2026-07-21 09:39:36', '2026-07-21 09:39:36');
 
 -- --------------------------------------------------------
 
@@ -766,7 +767,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (148, '2026_07_17_000001_add_geofencing_to_branches_table', 85),
 (149, '2026_07_22_000001_create_email_communications_table', 86),
 (150, '2026_07_22_000002_add_email_threading_fields_to_email_communications_table', 87),
-(151, '2026_07_24_000001_create_payrolls_table', 88);
+(151, '2026_07_24_000001_create_payrolls_table', 88),
+(152, '2026_07_24_000005_add_brand_to_dish_ingredients', 89);
 
 -- --------------------------------------------------------
 
@@ -2134,7 +2136,8 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (2696, 'App\\Models\\User', 31, 'auth-token', 'cbd9a4fe59b450e90e8de215c2b20ee2a9d2ad7b8ea249fed8cd2936f12ec52f', '[\"*\"]', NULL, NULL, '2026-07-21 09:36:27', '2026-07-21 09:36:27'),
 (2709, 'App\\Models\\User', 31, 'auth-token', 'ef2b89e7169ae86f782b50dc9bf2ca9c860a417904fea179c38d5a08ec82b7d7', '[\"*\"]', NULL, NULL, '2026-07-21 09:48:47', '2026-07-21 09:48:47'),
 (2719, 'App\\Models\\User', 147, 'auth-token', '9b969badda49bd9baf0190f06670635a62d8d59be7d846d19d6c9e3b2d7c35b4', '[\"*\"]', NULL, NULL, '2026-07-21 10:16:38', '2026-07-21 10:16:38'),
-(2723, 'App\\Models\\User', 153, 'auth-token', 'baca381a12d87745de285462b7b869ac08b2757178bb5628c73429cfad9b90c6', '[\"*\"]', NULL, NULL, '2026-07-21 11:26:07', '2026-07-21 11:26:07');
+(2723, 'App\\Models\\User', 153, 'auth-token', 'baca381a12d87745de285462b7b869ac08b2757178bb5628c73429cfad9b90c6', '[\"*\"]', NULL, NULL, '2026-07-21 11:26:07', '2026-07-21 11:26:07'),
+(2735, 'App\\Models\\User', 31, 'auth-token', '843076fb7735aba7c96324eed4a8aadb9970cd6566cc30d9c04cad782e16af50', '[\"*\"]', NULL, NULL, '2026-07-24 08:01:03', '2026-07-24 08:01:03');
 
 -- --------------------------------------------------------
 
@@ -2558,7 +2561,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('UcaT28LzhvzsW1GzelhlhPFzJSomhBYeOWLhCA4F', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiMnNSZ3dDSThtVEM4dGI2WExPR21nWDhIbnNLcE43Y3lCNGtNM3NDaSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO319', 1784879927);
+('i4Bhyn6JiOJ3Zlk2asJqWU4p05y1PNihYOBIOACD', 31, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiQmQ1YldDT1ZSQTNtVGhFdnJLNDBYQ2sxNlJhOTNRSVE3bDIwVGFRNCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzM6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9vd25lci1wYW5lbCI7czo1OiJyb3V0ZSI7Tjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MzE7czo3OiJ1c2VyX2lkIjtpOjMxO3M6OToidXNlcl9yb2xlIjtzOjU6Ik9XTkVSIjtzOjk6InVzZXJfbmFtZSI7czo4OiJNci5wYXJrcyI7czoxMzoicmVkaXJlY3RfcGF0aCI7czoxMjoiL293bmVyLXBhbmVsIjt9', 1784884233);
 
 -- --------------------------------------------------------
 
@@ -3276,7 +3279,7 @@ ALTER TABLE `messages`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=152;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=153;
 
 --
 -- AUTO_INCREMENT for table `orders`
@@ -3300,7 +3303,7 @@ ALTER TABLE `payrolls`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2735;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2736;
 
 --
 -- AUTO_INCREMENT for table `positions`

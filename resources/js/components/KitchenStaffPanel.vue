@@ -33,6 +33,7 @@
                       <div class="ingredient-card" v-for="ing in d.ingredients" :key="ing.id || ing.name">
                         <div class="ingredient-info">
                           <div class="ingredient-name">{{ ing.name }}</div>
+                          <div class="ingredient-brand" v-if="ing.brand"><small>Brand: {{ ing.brand }}</small></div>
                           <div class="ingredient-per" v-if="ing.unit"><em>- per serving: {{ formatPerServing(ing.per_serving) }} {{ ing.unit }}</em></div>
                           <div class="ingredient-publish" v-if="ing.product">
                             <small v-if="ing.product && !ing.product.is_published" style="color:#b91c1c">(product unpublished)</small>
@@ -488,6 +489,7 @@ async function performLogout() {
 .ingredient-card { display:flex; align-items:center; justify-content:space-between; gap:0.5rem; padding:0.5rem; border-radius:8px; background:#fbfdff; border:1px solid #f1f5f9 }
 .ingredient-info { max-width:calc(100% - 120px) }
 .ingredient-name { font-weight:600 }
+.ingredient-brand { color:#6b7280; font-size:0.85rem; }
 .ingredient-per { color:#374151; font-style:italic }
 .ingredient-actions { display:flex; align-items:center; gap:0.5rem }
 .update-stock-btn { padding:0.35rem 0.5rem; border-radius:6px; border:1px solid #e6e7eb; background:#fff; cursor:pointer }

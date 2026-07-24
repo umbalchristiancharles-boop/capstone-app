@@ -102,6 +102,8 @@
                   <input v-if="!ing.product_id" v-model="ing.name" placeholder="Ingredient name" required />
                   <input v-else v-model="ing.name" placeholder="Ingredient name" readonly />
 
+                  <input v-model="ing.brand" placeholder="Brand (optional)" />
+
                   <input v-model="ing.per_serving" placeholder="Per serving" class="small" type="number" step="0.0001" />
                   <select v-model="ing.unit">
                     <option value="">unspecified</option>
@@ -321,7 +323,7 @@ onMounted(async () => {
 // Dish Creation State
 const dishForm = ref({
   name: '',
-  ingredients: [{ name: '', product_id: '', unit: 'pcs', per_serving: 0 }]
+  ingredients: [{ name: '', brand: '', product_id: '', unit: 'pcs', per_serving: 0 }]
 })
 const products = ref([])
 const dishSubmitting = ref(false)
@@ -334,7 +336,7 @@ onMounted(() => {
 })
 
 function addIngredient() {
-  dishForm.value.ingredients.push({ name: '', product_id: '', unit: 'pcs', per_serving: 0 })
+  dishForm.value.ingredients.push({ name: '', brand: '', product_id: '', unit: 'pcs', per_serving: 0 })
 }
 
 function removeIngredient(idx) {
@@ -376,6 +378,7 @@ async function submitDish() {
       name: dishForm.value.name,
       ingredients: dishForm.value.ingredients.map(i => ({
         name: i.name,
+        brand: i.brand || null,
         unit: i.unit,
         per_serving: i.per_serving,
         product_id: i.product_id || null
@@ -385,7 +388,7 @@ async function submitDish() {
     dishMessage.value = 'Dish created successfully and applied to all branches!'
     dishMessageType.value = 'success'
     dishForm.value.name = ''
-    dishForm.value.ingredients = [{ name: '', product_id: '', unit: 'pcs', per_serving: 0 }]
+    dishForm.value.ingredients = [{ name: '', brand: '', product_id: '', unit: 'pcs', per_serving: 0 }]
     // Refresh products in case new placeholder products were created
     await loadProducts()
   } catch (e) {

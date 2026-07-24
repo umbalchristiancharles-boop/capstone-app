@@ -481,6 +481,7 @@ class DishApprovalController extends Controller
             'name' => 'required|string|max:255',
             'ingredients' => 'nullable|array',
             'ingredients.*.name' => 'required|string|max:255',
+            'ingredients.*.brand' => 'nullable|string|max:255',
             'ingredients.*.unit' => 'nullable|string|max:50',
             'ingredients.*.per_serving' => 'nullable|numeric|min:0',
             'ingredients.*.product_id' => 'nullable|integer|exists:products,id',
@@ -588,6 +589,7 @@ class DishApprovalController extends Controller
                     'dish_id' => $dish->id,
                     'product_id' => $productId,
                     'name' => $ing['name'],
+                    'brand' => $ing['brand'] ?? null,
                     'unit' => $ing['unit'] ?? null,
                     'per_serving' => $ing['per_serving'] ?? null,
                 ]);
@@ -601,42 +603,87 @@ class DishApprovalController extends Controller
                 $ingredientProductIds[$branch->id] = [];
                 
                 foreach ($ingredientProducts as $index => $ingProduct) {
-                    // Create a unique SKU for this dish's ingredient in this branch
-                    $uniqueSku = 'DISH-' . $dish->id . '-ING-' . $index . '-B' . $branch->id;
+                    $originalProductId = $ingProduct['product_id'] ?? null;
+                    $product = null;
                     
-                    // CRITICAL: Always create a NEW product for this dish ingredient
-                    // Never reuse existing products to avoid stock contamination
-                    // Use the name from ingredientProducts which already has the unique suffix
-                    $product = Product::create([
-                        'name' => $ingProduct['name'],
-                        'slug' => Str::slug($ingProduct['name'] . '-' . $dish->id . '-' . $branch->id),
-                        'price' => 0,
-                        'cost_price' => 0,
-                        'stock' => 0, // IMPORTANT: Always start with 0 stock
-                        'min_stock' => 10,
-                        'sku' => $uniqueSku,
-                        'branch_id' => $branch->id,
-                        'supplier_name' => 'KITCHEN',
-                        'supplier_id' => null,
-                        'is_published' => false,
-                        'is_active' => true,
-                        'is_kitchen_dish' => false,
-                        'has_been_ordered' => false,
-                        'logistics_request_available' => true,
-                        'per_pack_or_individual' => 'individual',
-                        'pack_quantity' => null,
-                        'pack_unit' => null,
-                    ]);
+                    // If there's a linked product_id, try to find it in this branch first
+                    if ($originalProductId) {
+                        $product = Product::where('id', $originalProductId)
+                            ->where('branch_id', $branch->id)
+                            ->where('is_active', 1)
+                            ->first();
+                    }
                     
-                    $ingredientProductIds[$branch->id][$index] = $product->id;
+                    // If no product found by ID, try to find by normalized name (without the suffix)
+                    if (!$product) {
+                        $originalName = trim($ing['name'] ?? '');
+                        if (!empty($originalName)) {
+                            $nameUpper = strtoupper($originalName);
+                            $normalized = preg_replace('/[^A-Z0-9]+/', '', $nameUpper);
+                            
+                            $product = Product::where('branch_id', $branch->id)
+                                ->where('is_active', 1)
+                                ->get()
+                                ->filter(function ($p) use ($normalized, $nameUpper) {
+                                    $pn = strtoupper($p->name ?? '');
+                                    $pnNorm = preg_replace('/[^A-Z0-9]+/', '', $pn);
+                                    // Match exact normalized name or if product name contains the ingredient name
+                                    return $pnNorm === $normalized || str_contains($pn, $nameUpper);
+                                })
+                                ->sortByDesc(function ($p) {
+                                    return ($p->stock ?? 0);
+                                })
+                                ->first();
+                        }
+                    }
                     
-                    Log::info('Created NEW ingredient product for branch', [
-                        'dish_id' => $dish->id,
-                        'ingredient' => $ingProduct['name'],
-                        'branch_id' => $branch->id,
-                        'product_id' => $product->id,
-                        'sku' => $uniqueSku,
-                    ]);
+                    if ($product) {
+                        // Found existing product in this branch - reuse it
+                        $ingredientProductIds[$branch->id][$index] = $product->id;
+                        
+                        Log::info('Reusing EXISTING ingredient product for branch', [
+                            'dish_id' => $dish->id,
+                            'ingredient' => $ingProduct['name'],
+                            'branch_id' => $branch->id,
+                            'product_id' => $product->id,
+                            'product_name' => $product->name,
+                            'product_stock' => $product->stock,
+                        ]);
+                    } else {
+                        // No existing product found - create a new one
+                        $uniqueSku = 'DISH-' . $dish->id . '-ING-' . $index . '-B' . $branch->id;
+                        
+                        $product = Product::create([
+                            'name' => $ingProduct['name'],
+                            'slug' => Str::slug($ingProduct['name'] . '-' . $dish->id . '-' . $branch->id),
+                            'price' => 0,
+                            'cost_price' => 0,
+                            'stock' => 0, // IMPORTANT: Always start with 0 stock
+                            'min_stock' => 10,
+                            'sku' => $uniqueSku,
+                            'branch_id' => $branch->id,
+                            'supplier_name' => 'KITCHEN',
+                            'supplier_id' => null,
+                            'is_published' => false,
+                            'is_active' => true,
+                            'is_kitchen_dish' => false,
+                            'has_been_ordered' => false,
+                            'logistics_request_available' => true,
+                            'per_pack_or_individual' => 'individual',
+                            'pack_quantity' => null,
+                            'pack_unit' => null,
+                        ]);
+                        
+                        $ingredientProductIds[$branch->id][$index] = $product->id;
+                        
+                        Log::info('Created NEW ingredient product for branch', [
+                            'dish_id' => $dish->id,
+                            'ingredient' => $ingProduct['name'],
+                            'branch_id' => $branch->id,
+                            'product_id' => $product->id,
+                            'sku' => $uniqueSku,
+                        ]);
+                    }
                 }
             }
 
