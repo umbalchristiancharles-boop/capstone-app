@@ -15,6 +15,9 @@
                 <p>{{ panelDescription }}</p>
               </div>
               <div class="header-actions-top">
+                <button type="button" class="theme-toggle-btn" @click="toggleTheme">
+                  {{ themeButtonLabel }}
+                </button>
                 <slot name="headerActions"></slot>
               </div>
             </div>
@@ -56,6 +59,9 @@
             </div>
             <div class="admin-card__footer admin-card__footer--stacked">
               <slot name="profileFooter"></slot>
+              <button type="button" class="theme-toggle-btn logout-btn--center" @click="toggleTheme">
+                {{ themeButtonLabel }}
+              </button>
               <div class="admin-actions-row">
                 <button class="logout-btn logout-btn--center" @click="$emit('logout')">Logout</button>
               </div>
@@ -446,6 +452,71 @@ const showDefaultBack = computed(() => {
   }
 })
 
+const themeKey = 'owner_module_theme'
+const theme = ref('light')
+const isDarkMode = computed(() => theme.value === 'dark')
+const themeButtonLabel = computed(() => (isDarkMode.value ? 'Light Mode' : 'Dark Mode'))
+
+const applyThemeMode = () => {
+  try {
+    const root = document.documentElement
+    const body = document.body
+    if (theme.value === 'dark') {
+      root.classList.add('dark-mode')
+      root.classList.remove('light-mode')
+      body.classList.add('dark-mode')
+      body.classList.remove('light-mode')
+    } else {
+      root.classList.remove('dark-mode')
+      root.classList.add('light-mode')
+      body.classList.remove('dark-mode')
+      body.classList.add('light-mode')
+    }
+
+    document.querySelectorAll('.admin-page, .admin-layout, .admin-side, .admin-main, .panel-block, .panel-body, .admin-card, .owner-hero-card, .owner-quicklinks-card, .owner-announcements-card').forEach(el => {
+      el.classList.toggle('dark-mode', theme.value === 'dark')
+      el.classList.toggle('light-mode', theme.value !== 'dark')
+    })
+  } catch (e) {
+    console.warn('OwnerPanelLayout: failed to apply theme', e)
+  }
+}
+
+const persistThemeMode = () => {
+  try {
+    localStorage.setItem(themeKey, theme.value)
+  } catch (e) {
+    // ignore localStorage failures
+  }
+}
+
+const loadThemeMode = () => {
+  try {
+    const saved = localStorage.getItem(themeKey)
+    if (saved === 'dark' || saved === 'light') {
+      theme.value = saved
+    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      theme.value = 'dark'
+    } else {
+      theme.value = 'light'
+    }
+  } catch (e) {
+    theme.value = 'light'
+  }
+  applyThemeMode()
+}
+
+const toggleTheme = () => {
+  theme.value = theme.value === 'dark' ? 'light' : 'dark'
+  persistThemeMode()
+  applyThemeMode()
+}
+
+watch(theme, () => {
+  persistThemeMode()
+  applyThemeMode()
+})
+
 function handleBack() {
   try { emit('back') } catch (e) {}
   try { router.push('/custom-panel') } catch (e) { window.location.href = '/custom-panel' }
@@ -496,6 +567,7 @@ watch(() => props.userProfile, (newVal) => {
 
 onMounted(() => {
   try {
+    loadThemeMode()
     ;(async () => {
       try {
         await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
@@ -510,11 +582,14 @@ onMounted(() => {
       Promise.resolve(loadAttendanceStatus()).catch(() => {})
       Promise.resolve(loadAttendanceSettings()).catch(() => {})
     }
-  } catch (e) {}
+  } catch (e) {
+    // ignore initialization errors
+  }
+
   // If parent did not provide a populated `userProfile` prop, try fetching the
   // authoritative current user so the profile column is not empty after SPA
   // navigations (e.g. coming from the custom panel).
-  (async () => {
+  ;(async () => {
     try {
       const isEmpty = !props.userProfile || Object.keys(props.userProfile).length === 0
       if (isEmpty) {

@@ -1280,7 +1280,7 @@ const handleLogout = async () => {
     grid-template-columns: 1fr 1fr;
     gap: 0.4rem;
   }
-  
+
   .owner-dish-section .ingredient-row button {
     grid-column: span 2;
   }
@@ -1354,6 +1354,26 @@ const handleLogout = async () => {
   color: #fb923c;
 }
 
+:global(.dark-mode) .owner-hero-card,
+:global(.dark-mode) .owner-quicklinks-card,
+:global(.dark-mode) .owner-announcements-card,
+:global(.dark-mode) .owner-attendance-card,
+:global(.dark-mode) .owner-dish-section {
+  border-color: rgba(255,255,255,0.06) !important;
+}
+
+:global(.dark-mode) .owner-dish-section .panel-header {
+  border-bottom-color: rgba(255,255,255,0.05) !important;
+}
+
+:global(.dark-mode) .owner-announcements-card__header {
+  border-bottom-color: rgba(255,255,255,0.05) !important;
+}
+
+:global(.dark-mode) .owner-quicklink-row {
+  border: 1px solid transparent !important;
+}
+
 :global(.dark-mode) .owner-quicklink-icon--orange  { background: rgba(249, 115, 22, 0.2); color: #fb923c; }
 :global(.dark-mode) .owner-quicklink-icon--blue    { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
 :global(.dark-mode) .owner-quicklink-icon--emerald { background: rgba(16, 185, 129, 0.15); color: #34d399; }
@@ -1362,6 +1382,111 @@ const handleLogout = async () => {
 :global(.dark-mode) .owner-quicklink-badge {
   background: rgba(239, 68, 68, 0.2);
   color: #fca5a5;
+}
+
+:global(.dark-mode) .owner-dish-section {
+  background: #181a20;
+  border-color: #2d3342;
+}
+
+:global(.dark-mode) .owner-dish-section .panel-header {
+  background: #16181f;
+  border-bottom-color: rgba(255,255,255,0.08);
+}
+
+:global(.dark-mode) .owner-dish-section .panel-body {
+  background: #1f2028;
+}
+
+:global(.dark-mode) .owner-dish-section .form-row {
+  background: transparent;
+}
+
+:global(.dark-mode) .owner-dish-section .form-row input,
+:global(.dark-mode) .owner-dish-section .form-row select,
+:global(.dark-mode) .owner-dish-section .ingredient-row input,
+:global(.dark-mode) .owner-dish-section .ingredient-row select {
+  background: #1f2028;
+  color: #f8fafc;
+  border-color: rgba(255,255,255,0.12);
+}
+
+:global(.dark-mode) .owner-dish-section .ingredient-row {
+  background: #1f2028;
+  border-color: rgba(255,255,255,0.10);
+}
+
+:global(.dark-mode) .owner-dish-section .ingredient-row button {
+  background: #22252f;
+  color: #f8fafc;
+  border-color: rgba(255,255,255,0.12);
+}
+
+:global(.dark-mode) .owner-attendance-card {
+  background: #181a20;
+  border-color: #2d3342;
+}
+
+:global(.dark-mode) .owner-attendance-card__header,
+:global(.dark-mode) .owner-attendance-card__times,
+:global(.dark-mode) .owner-attendance-card__actions {
+  background: transparent;
+}
+
+:global(.dark-mode) .owner-attendance-card__title,
+:global(.dark-mode) .owner-attendance-card__status,
+:global(.dark-mode) .owner-attendance-card__time-row strong {
+  color: #f8fafc;
+}
+
+:global(.dark-mode) .owner-attendance-card__status--off {
+  background: rgba(248, 113, 113, 0.18);
+  color: #fecaca;
+}
+
+:global(.dark-mode) .owner-attendance-card__status--on {
+  background: rgba(34, 197, 94, 0.18);
+  color: #bbf7d0;
+}
+
+:global(.dark-mode) .owner-attendance-card__clock-btn--out {
+  background: #272b37;
+  color: #e2e8f0;
+}
+
+:global(.dark-mode) .owner-attendance-card__clock-btn--in {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+:global(.dark-mode) .owner-attendance-card__restriction {
+  background: rgba(248, 113, 113, 0.12);
+  color: #f8fafc;
+  border: 1px solid rgba(248, 113, 113, 0.28);
+}
+
+:global(.dark-mode) .owner-attendance-card__message.success {
+  background: rgba(16, 185, 129, 0.18);
+  color: #a7f3d0;
+  border: 1px solid rgba(16, 185, 129, 0.28);
+}
+
+:global(.dark-mode) .owner-attendance-card__message.error {
+  background: rgba(248, 113, 113, 0.16);
+  color: #fecaca;
+  border: 1px solid rgba(248, 113, 113, 0.28);
+}
+
+:global(.dark-mode) .owner-announcement-item__meta {
+  color: rgba(248, 250, 252, 0.72);
+}
+
+:global(.dark-mode) .owner-announcement-item__message {
+  color: rgba(248, 250, 252, 0.84);
+}
+
+:global(.dark-mode) .owner-quicklink-row:hover {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 :global(.dark-mode) .owner-quicklink-chevron {

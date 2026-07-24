@@ -130,7 +130,10 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import '../css/adminpanel.css'
+import { useTheme } from '../composables/useTheme'
 import OwnerStaffModal from './OwnerStaffModal.vue'
+
+const { initializeTheme } = useTheme()
 
 function onStaffModalSuccess() {
   showAddStaffModal.value = false
@@ -576,6 +579,12 @@ async function toggleStatus(member) {
 }
 
 onMounted(async () => {
+  try {
+    initializeTheme()
+  } catch (e) {
+    console.warn('Theme initialize failed', e)
+  }
+
   await loadCurrentOwner()
   await loadBranches()
   await loadStaff()
@@ -612,6 +621,18 @@ function formatDate(dateString) {
   color: #1f2937;
 }
 
+.dark-mode .staff-management-page,
+.staff-management-page.dark-mode {
+  background: #0f1720 !important;
+  color: #e5e7eb !important;
+}
+
+.dark-mode .staff-management-page::before,
+.staff-management-page.dark-mode::before {
+  background: radial-gradient(circle at top left, rgba(255,255,255,0.03), transparent 28%),
+              radial-gradient(circle at bottom right, rgba(255,255,255,0.02), transparent 30%);
+}
+
 .staff-management-page::before {
   content: '';
   position: absolute;
@@ -634,6 +655,158 @@ function formatDate(dateString) {
   box-shadow: 0 28px 80px rgba(15, 23, 42, 0.08);
   position: relative;
   z-index: 1;
+}
+
+.dark-mode .staff-header,
+.staff-management-page.dark-mode .staff-header {
+  background: rgba(15, 23, 42, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45) !important;
+}
+
+.dark-mode .staff-header h1,
+.staff-management-page.dark-mode .staff-header h1,
+.dark-mode .owner-staff-title,
+.staff-management-page.dark-mode .owner-staff-title {
+  color: #f8fafc !important;
+}
+
+.dark-mode .header-actions,
+.staff-management-page.dark-mode .header-actions {
+  gap: 0.85rem;
+}
+
+.dark-mode .filter-select,
+.dark-mode .search-input,
+.staff-management-page.dark-mode .filter-select,
+.staff-management-page.dark-mode .search-input {
+  background: #13181f !important;
+  color: #e5e7eb !important;
+  border: 1px solid #32343a !important;
+  box-shadow: inset 0 1px 2px rgba(255,255,255,0.04) !important;
+}
+
+.dark-mode .filter-select:focus,
+.dark-mode .search-input:focus,
+.staff-management-page.dark-mode .filter-select:focus,
+.staff-management-page.dark-mode .search-input:focus {
+  background: #161b23 !important;
+  border-color: #ff8a50 !important;
+}
+
+.dark-mode .btn-primary,
+.staff-management-page.dark-mode .btn-primary {
+  background: linear-gradient(135deg, #0f766e, #059669) !important;
+  color: #fff !important;
+}
+
+.dark-mode .back-to-dashboard-btn,
+.staff-management-page.dark-mode .back-to-dashboard-btn {
+  background: #1f2937 !important;
+  color: #f8fafc !important;
+  border: 1px solid #374151 !important;
+}
+
+.dark-mode .summary-card,
+.staff-management-page.dark-mode .summary-card,
+.dark-mode .branch-header,
+.staff-management-page.dark-mode .branch-header,
+.dark-mode .staff-table-wrapper,
+.staff-management-page.dark-mode .staff-table-wrapper,
+.dark-mode .empty-state,
+.staff-management-page.dark-mode .empty-state,
+.dark-mode .loading-state,
+.staff-management-page.dark-mode .loading-state {
+  background: #111827 !important;
+  border-color: #2f3843 !important;
+}
+
+.dark-mode .branch-title,
+.staff-management-page.dark-mode .branch-title,
+.dark-mode .branch-count,
+.staff-management-page.dark-mode .branch-count {
+  color: #e5e7eb !important;
+}
+
+.dark-mode .branch-count,
+.staff-management-page.dark-mode .branch-count {
+  background: rgba(255,255,255,0.06) !important;
+}
+
+.dark-mode .staff-table,
+.staff-management-page.dark-mode .staff-table {
+  background: #111827 !important;
+}
+
+.dark-mode .staff-table thead,
+.staff-management-page.dark-mode .staff-table thead {
+  background: #1d2430 !important;
+}
+
+.dark-mode .staff-table th,
+.staff-management-page.dark-mode .staff-table th {
+  color: #e5e7eb !important;
+  border-color: #2f3843 !important;
+}
+
+.dark-mode .staff-table td,
+.staff-management-page.dark-mode .staff-table td {
+  color: #cbd5e1 !important;
+  border-color: #2f3843 !important;
+}
+
+.dark-mode .staff-table tbody tr:hover,
+.staff-management-page.dark-mode .staff-table tbody tr:hover {
+  background: rgba(255,255,255,0.03) !important;
+}
+
+.dark-mode .badge-online,
+.staff-management-page.dark-mode .badge-online {
+  background: rgba(16, 185, 129, 0.18) !important;
+  color: #a7f3d0 !important;
+}
+
+.dark-mode .badge-offline,
+.staff-management-page.dark-mode .badge-offline {
+  background: rgba(100, 116, 139, 0.18) !important;
+  color: #cbd5e1 !important;
+}
+
+.dark-mode .badge-inactive,
+.staff-management-page.dark-mode .badge-inactive {
+  background: rgba(248, 113, 113, 0.2) !important;
+  color: #fecaca !important;
+}
+
+.dark-mode .alert,
+.staff-management-page.dark-mode .alert {
+  background: rgba(220, 38, 38, 0.12) !important;
+  color: #fee2e2 !important;
+  border-color: rgba(248, 113, 113, 0.3) !important;
+}
+
+.dark-mode .form-input,
+.staff-management-page.dark-mode .form-input {
+  background: #111827 !important;
+  color: #e5e7eb !important;
+  border: 1px solid #2f3843 !important;
+}
+
+.dark-mode .form-input:focus,
+.staff-management-page.dark-mode .form-input:focus {
+  border-color: #ff8a50 !important;
+  box-shadow: 0 0 0 3px rgba(255, 138, 80, 0.14) !important;
+}
+
+.dark-mode .btn-primary:hover,
+.staff-management-page.dark-mode .btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(5, 150, 105, 0.24) !important;
+}
+
+.dark-mode .back-to-dashboard-btn:hover,
+.staff-management-page.dark-mode .back-to-dashboard-btn:hover {
+  box-shadow: 0 10px 20px rgba(255, 255, 255, 0.12) !important;
 }
 
 .staff-header h1 {

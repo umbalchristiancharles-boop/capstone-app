@@ -72,8 +72,474 @@ html.dark .admin-page,
   background: transparent !important;
 }
 
-.dark-mode .admin-main-header h1 {
+.dark-mode .admin-main,
+.dark-mode .admin-side,
+.dark-mode .admin-page,
+.dark-mode .admin-layout {
+  background: var(--bg-main) !important;
   color: var(--text-primary) !important;
+}
+
+.dark-mode .panel-block,
+.dark-mode .panel-header,
+.dark-mode .panel-body,
+.dark-mode .admin-card,
+.dark-mode .owner-hero-card,
+.dark-mode .owner-quicklinks-card,
+.dark-mode .owner-announcements-card,
+.dark-mode .owner-attendance-card,
+.dark-mode .owner-dish-section {
+  background: var(--surface-card) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-stroke) !important;
+}
+
+.dark-mode .owner-dish-section .panel-header,
+.dark-mode .owner-dish-section .panel-body {
+  background: var(--surface-card) !important;
+}
+
+/* Stronger dark mode contrast for owner UI elements */
+.dark-mode .admin-page,
+.dark-mode .admin-layout,
+.dark-mode .admin-main,
+.dark-mode .admin-side,
+.dark-mode .panel-block,
+.dark-mode .panel-header,
+.dark-mode .panel-body,
+.dark-mode .admin-card,
+.dark-mode .admin-card__header,
+.dark-mode .admin-card__body,
+.dark-mode .admin-card__footer,
+.dark-mode .owner-hero-card,
+.dark-mode .owner-hero-content,
+.dark-mode .owner-hero-left,
+.dark-mode .owner-hero-stats,
+.dark-mode .owner-stat-pill,
+.dark-mode .owner-quicklinks-card,
+.dark-mode .owner-announcements-card,
+.dark-mode .owner-attendance-card,
+.dark-mode .owner-dish-section,
+.dark-mode .owner-profile-bottom,
+.dark-mode .owner-quicklink-row,
+.dark-mode .owner-announcement-item,
+.dark-mode .owner-attendance-card__header,
+.dark-mode .owner-attendance-card__times,
+.dark-mode .owner-quicklink-badge,
+.dark-mode .owner-quicklinks-header,
+.dark-mode .owner-announcements-card__body,
+.dark-mode .owner-announcements-card__header,
+.dark-mode .owner-attendance-card__actions,
+.dark-mode .admin-actions-row,
+.dark-mode .info-modal,
+.dark-mode .info-grid,
+.dark-mode .info-row,
+.dark-mode .info-actions,
+.dark-mode .table,
+.dark-mode .data-table,
+.dark-mode .data-table thead th,
+.dark-mode .data-table td::before,
+.dark-mode .status-badge,
+.dark-mode .badge,
+.dark-mode .badge--success,
+.dark-mode .badge--warning,
+.dark-mode .badge--info,
+.dark-mode .info-label,
+.dark-mode .info-value,
+.dark-mode .info-error,
+.dark-mode .info-success,
+.dark-mode .form-group-custom label,
+.dark-mode .owner-dish-section .ingredient-row,
+.dark-mode .owner-dish-section .form-row,
+.dark-mode .owner-dish-section .ingredient-row input,
+.dark-mode .owner-dish-section .ingredient-row select,
+.dark-mode .owner-quicklink-icon,
+.dark-mode .owner-hero-eyebrow,
+.dark-mode .owner-hero-title,
+.dark-mode .owner-hero-name,
+.dark-mode .owner-hero-subtitle,
+.dark-mode .owner-quicklink-label,
+.dark-mode .owner-announcement-item__title,
+.dark-mode .owner-announcement-item__meta,
+.dark-mode .owner-announcement-item__message {
+  background: #22252f !important;
+  color: var(--text-primary) !important;
+  border-color: #3d4251 !important;
+}
+
+.dark-mode .admin-main-header h1,
+.dark-mode .admin-main-header p,
+.dark-mode .panel-header h2,
+.dark-mode .owner-hero-title,
+.dark-mode .owner-hero-name,
+.dark-mode .owner-hero-subtitle,
+.dark-mode .owner-hero-eyebrow,
+.dark-mode .owner-quicklink-label,
+.dark-mode .owner-announcement-item__title,
+.dark-mode .owner-announcement-item__meta,
+.dark-mode .owner-announcement-item__message,
+.dark-mode .owner-attendance-card__title,
+.dark-mode .owner-attendance-card__status,
+.dark-mode .owner-attendance-card__time-row strong,
+.dark-mode .owner-dish-section .form-row label,
+.dark-mode .info-label,
+.dark-mode .info-value {
+  color: #f8fafc !important;
+}
+
+.dark-mode input,
+.dark-mode textarea,
+.dark-mode select,
+.dark-mode .info-input,
+.dark-mode .owner-dish-section input,
+.dark-mode .owner-dish-section select,
+.dark-mode .owner-dish-section .ingredient-row select,
+.dark-mode .owner-dish-section .ingredient-row input {
+  background: #1f2028 !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+}
+
+.dark-mode input::placeholder,
+.dark-mode textarea::placeholder,
+.dark-mode select::placeholder {
+  color: rgba(248,250,252,0.55) !important;
+}
+
+.dark-mode .owner-quicklink-row:hover,
+.dark-mode .admin-card:hover,
+.dark-mode .panel-block:hover,
+.dark-mode .owner-announcement-item:hover,
+.dark-mode .owner-hero-card:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark-mode .owner-quicklink-icon--orange,
+.dark-mode .owner-quicklink-icon--blue,
+.dark-mode .owner-quicklink-icon--emerald,
+.dark-mode .owner-quicklink-icon--rose,
+.dark-mode .owner-stat-pill--orange,
+.dark-mode .owner-stat-pill--amber,
+.dark-mode .owner-stat-pill--rose {
+  background: rgba(255,255,255,0.06) !important;
+  color: #f8fafc !important;
+}
+
+.dark-mode .owner-quicklink-row,
+.dark-mode .owner-quicklink-row svg,
+.dark-mode .owner-quicklink-icon svg,
+.dark-mode .owner-attendance-card__status {
+  color: #f8fafc !important;
+}
+
+.dark-mode .owner-quicklink-badge,
+.dark-mode .badge,
+.dark-mode .status-badge,
+.dark-mode .logout-btn,
+.dark-mode .btn-primary,
+.dark-mode .btn-secondary,
+.dark-mode .btn-outline,
+.dark-mode .btn-danger,
+.dark-mode .btn-info,
+.dark-mode .theme-toggle-btn {
+  border-color: rgba(255,255,255,0.2) !important;
+}
+
+.dark-mode .admin-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.dark-mode .logout-btn {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #fff !important;
+}
+
+.dark-mode .btn-primary {
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .btn-secondary,
+.dark-mode .btn-outline {
+  background: transparent !important;
+  color: #f8fafc !important;
+  border-color: rgba(255,255,255,0.25) !important;
+}
+
+.dark-mode .btn-outline:hover {
+  background: rgba(255,255,255,0.1) !important;
+}
+
+.dark-mode .owner-attendance-card,
+.dark-mode .owner-dish-section,
+.dark-mode .owner-quicklink-row,
+.dark-mode .owner-announcement-item {
+  background: #181b24 !important;
+  border-color: #2d3142 !important;
+}
+
+.dark-mode .owner-attendance-card__header,
+.dark-mode .owner-quicklinks-header,
+.dark-mode .owner-announcements-card__header,
+.dark-mode .owner-announcements-card__body,
+.dark-mode .owner-dish-section .panel-header {
+  background: #16181f !important;
+}
+
+.dark-mode .owner-dish-section .panel-header h2,
+.dark-mode .owner-quicklinks-header__title,
+.dark-mode .owner-quicklinks-header__eyebrow {
+  color: #f8fafc !important;
+}
+
+.dark-mode .owner-dish-section .form-row label {
+  color: #e2e8f0 !important;
+}
+
+.dark-mode .owner-dish-section .ingredient-row {
+  background: #1f2028 !important;
+  border-color: rgba(255,255,255,0.1) !important;
+}
+
+.dark-mode .owner-dish-section .ingredient-row button {
+  background: #22252f !important;
+  color: #f8fafc !important;
+  border-color: rgba(255,255,255,0.12) !important;
+}
+
+.dark-mode .owner-attendance-card__status--off {
+  background: rgba(248, 113, 113, 0.18) !important;
+  color: #fecaca !important;
+}
+
+.dark-mode .owner-attendance-card__status--on {
+  background: rgba(34, 197, 94, 0.18) !important;
+  color: #bbf7d0 !important;
+}
+
+.dark-mode .owner-attendance-card__clock-btn--out {
+  background: #2b2f3b !important;
+  color: #e2e8f0 !important;
+}
+
+.dark-mode .owner-attendance-card__clock-btn--in {
+  background: #16a34a !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .owner-attendance-card__restriction {
+  background: rgba(248, 113, 113, 0.12) !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(248, 113, 113, 0.24) !important;
+}
+
+.dark-mode .owner-attendance-card__message.success {
+  background: rgba(16, 185, 129, 0.18) !important;
+  color: #a7f3d0 !important;
+  border: 1px solid rgba(16, 185, 129, 0.28) !important;
+}
+
+.dark-mode .owner-attendance-card__message.error {
+  background: rgba(248, 113, 113, 0.16) !important;
+  color: #fecaca !important;
+  border: 1px solid rgba(248, 113, 113, 0.28) !important;
+}
+
+.dark-mode .owner-announcement-item__meta {
+  color: rgba(248, 250, 252, 0.72) !important;
+}
+
+.dark-mode .owner-announcement-item__message {
+  color: rgba(248, 250, 252, 0.84) !important;
+}
+
+.dark-mode .owner-quicklink-row:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark-mode .owner-quicklink-row {
+  background: #1f2028 !important;
+}
+
+.dark-mode .owner-announcement-item {
+  background: #181a20 !important;
+}
+
+.dark-mode .owner-quicklinks-header,
+.dark-mode .owner-announcements-card__header,
+.dark-mode .owner-announcements-card__body {
+  background: rgba(255,255,255,0.06) !important;
+}
+
+.dark-mode .owner-attendance-card__actions button {
+  min-width: 120px;
+}
+
+.theme-toggle-btn {
+  border-radius: 999px;
+  padding: 0.65rem 1rem;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.dark-mode input,
+.dark-mode textarea,
+.dark-mode select,
+.dark-mode .info-input,
+.dark-mode .owner-dish-section input,
+.dark-mode .owner-dish-section select {
+  background: #1f1f26 !important;
+  color: var(--text-primary) !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+}
+
+.dark-mode input::placeholder,
+.dark-mode textarea::placeholder,
+.dark-mode select::placeholder {
+  color: rgba(229,231,235,0.55) !important;
+}
+
+.dark-mode .owner-quicklink-row:hover,
+.dark-mode .admin-card:hover,
+.dark-mode .panel-block:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+.dark-mode .owner-quicklink-icon--orange,
+.dark-mode .owner-quicklink-icon--blue,
+.dark-mode .owner-quicklink-icon--emerald,
+.dark-mode .owner-quicklink-icon--rose,
+.dark-mode .owner-stat-pill--orange,
+.dark-mode .owner-stat-pill--amber,
+.dark-mode .owner-stat-pill--rose {
+  background: rgba(255,255,255,0.04) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark-mode .owner-quicklink-row,
+.dark-mode .owner-quicklink-row svg,
+.dark-mode .owner-quicklink-icon svg,
+.dark-mode .owner-attendance-card__status {
+  color: var(--text-primary) !important;
+}
+
+.dark-mode .owner-quicklink-badge,
+.dark-mode .badge,
+.dark-mode .status-badge,
+.dark-mode .logout-btn,
+.dark-mode .btn-primary,
+.dark-mode .btn-secondary,
+.dark-mode .btn-outline,
+.dark-mode .btn-danger,
+.dark-mode .btn-info,
+.dark-mode .theme-toggle-btn {
+  border-color: rgba(255,255,255,0.16) !important;
+}
+
+.dark-mode .admin-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.dark-mode .logout-btn {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #ffe5e5 !important;
+}
+
+.dark-mode .btn-primary {
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .btn-secondary,
+.dark-mode .btn-outline {
+  background: transparent !important;
+  color: var(--text-primary) !important;
+  border-color: rgba(255,255,255,0.18) !important;
+}
+
+.dark-mode .btn-outline:hover {
+  background: rgba(255,255,255,0.08) !important;
+}
+
+.dark-mode .owner-quicklink-row {
+  background: #242731 !important;
+}
+
+.dark-mode .owner-announcement-item {
+  background: #23252f !important;
+}
+
+.dark-mode .owner-quicklinks-header,
+.dark-mode .owner-announcements-card__header {
+  background: rgba(255,255,255,0.05) !important;
+}
+
+.dark-mode .owner-attendance-card__actions button {
+  min-width: 120px;
+}
+
+.theme-toggle-btn {
+  border-radius: 999px;
+  padding: 0.65rem 1rem;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.dark-mode .theme-toggle-btn {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+}
+
+.dark-mode .theme-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.14) !important;
+}
+
+.dark-mode .btn-primary,
+.dark-mode .btn-secondary,
+.dark-mode .btn-outline,
+.dark-mode .btn-danger,
+.dark-mode .btn-info {
+  border-color: var(--border-stroke) !important;
+}
+
+.dark-mode .table,
+.dark-mode th,
+.dark-mode td {
+  background: var(--surface-card) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-stroke) !important;
+}
+
+.dark-mode .theme-toggle-btn {
+  border-radius: 9999px;
+  padding: 0.55rem 0.9rem;
+}
+
+.dark-mode .owner-card,
+.dark-mode .owner-hero-card,
+.dark-mode .owner-quicklinks-card,
+.dark-mode .owner-announcements-card,
+.dark-mode .owner-attendance-card {
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.15) !important;
+}
+
+.admin-actions-row .theme-toggle-btn {
+  margin-bottom: 0;
+}
+
+.dark-mode .admin-actions-row .logout-btn {
+  margin: 0;
+}
+
+.dark-mode .owner-quicklink-row:hover,
+.dark-mode .admin-card:hover,
+.dark-mode .panel-block:hover {
+  background: rgba(255, 255, 255, 0.04) !important;
 }
 
 .dark-mode .admin-main-header p {
@@ -341,6 +807,410 @@ textarea {
 .dark-mode .logout-btn {
   background: #dc2626;
   color: white;
+}
+
+/* Owner Dish Approval / general dark mode readability fixes */
+.dark-mode .dish-approval-page {
+  background: linear-gradient(180deg, #101216 0%, #161a20 100%) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark-mode .dish-approval-page::before {
+  background: radial-gradient(circle at top left, rgba(255,255,255,0.04), transparent 28%),
+              radial-gradient(circle at bottom right, rgba(255,255,255,0.02), transparent 30%) !important;
+}
+
+.dark-mode .dish-approval-header {
+  background: #16181f !important;
+  border-color: rgba(255,255,255,0.08) !important;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.45) !important;
+}
+
+.dark-mode .dish-approval-title-block h1,
+.dark-mode .dish-approval-title-block p {
+  color: var(--text-primary) !important;
+}
+
+.dark-mode .product-request-card {
+  background: #171b22 !important;
+  border-color: rgba(255,255,255,0.08) !important;
+  box-shadow: 0 14px 32px rgba(0,0,0,0.48) !important;
+}
+
+.dark-mode .product-request-card:hover {
+  background: #1d212b !important;
+  box-shadow: 0 18px 36px rgba(0,0,0,0.6) !important;
+}
+
+.dark-mode .card-header {
+  background: #181c25 !important;
+  border-color: rgba(255,255,255,0.06) !important;
+}
+
+.dark-mode .product-name {
+  color: #f8fafc !important;
+}
+
+.dark-mode .product-meta,
+.dark-mode small {
+  color: rgba(248,250,252,0.72) !important;
+}
+
+.dark-mode .badge-pending {
+  background: rgba(249,115,22,0.16) !important;
+  color: #ffddb0 !important;
+  box-shadow: none !important;
+  border-color: rgba(255,255,255,0.08) !important;
+}
+
+.dark-mode .description-section h4,
+.dark-mode .unit-section h4 {
+  color: #fbbf24 !important;
+}
+
+.dark-mode .description-text,
+.dark-mode .unit-text {
+  color: rgba(248,250,252,0.86) !important;
+}
+
+.dark-mode .approval-section {
+  border-top-color: rgba(255,255,255,0.1) !important;
+}
+
+.dark-mode .notes-input,
+.dark-mode .reason-input {
+  background: #1c1f28 !important;
+  color: #f8fafc !important;
+  border-color: rgba(255,255,255,0.12) !important;
+}
+
+.dark-mode .notes-input:focus,
+.dark-mode .reason-input:focus {
+  border-color: #ff8a50 !important;
+  box-shadow: 0 0 0 3px rgba(255,138,80,0.16) !important;
+}
+
+.dark-mode .btn-outline {
+  background: rgba(255,255,255,0.03) !important;
+  color: #f8fafc !important;
+  border-color: rgba(255,255,255,0.12) !important;
+}
+
+.dark-mode .btn-outline:hover {
+  background: rgba(255,255,255,0.08) !important;
+}
+
+.dark-mode .reject-reason-form {
+  background: rgba(255,255,255,0.02) !important;
+  border-color: rgba(255,255,255,0.08) !important;
+}
+
+.dark-mode .approved-products-table {
+  background: #16181f !important;
+  border-color: rgba(255,255,255,0.08) !important;
+}
+
+.dark-mode .branch-approval-page {
+  background: linear-gradient(180deg, #101216 0%, #161a20 100%) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark-mode .branch-approval-page::before {
+  background: radial-gradient(circle at top left, rgba(255,255,255,0.04), transparent 28%),
+              radial-gradient(circle at bottom right, rgba(255,255,255,0.02), transparent 30%) !important;
+}
+
+.dark-mode .price-markup-page,
+.dark-mode .price-markup-page .centered-wrapper {
+  background: #0f1720 !important;
+  color: var(--text-primary) !important;
+}
+
+.dark-mode .price-markup-page .price-markup-header {
+  background: #171b22 !important;
+  border-color: rgba(255,255,255,0.08) !important;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.45) !important;
+}
+
+.dark-mode .price-markup-page .price-markup-title-block h1,
+.dark-mode .price-markup-page .price-markup-title-block p {
+  color: var(--text-primary) !important;
+}
+
+.dark-mode .price-markup-page .price-markup-back-button,
+.dark-mode .price-markup-page .back-to-dashboard-btn {
+  background: #111827 !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+}
+
+.dark-mode .price-markup-page .price-markup-back-button:hover,
+.dark-mode .price-markup-page .back-to-dashboard-btn:hover {
+  background: #1f2937 !important;
+  box-shadow: 0 10px 20px rgba(255,255,255,0.12) !important;
+}
+
+.dark-mode .price-markup-page .panel-block {
+  background: #161b22 !important;
+  border-color: rgba(255,255,255,0.08) !important;
+  box-shadow: 0 18px 48px rgba(0,0,0,0.5) !important;
+}
+
+.dark-mode .price-markup-page .panel-header {
+  background: #1a1f28 !important;
+  border-color: rgba(255,255,255,0.08) !important;
+}
+
+.dark-mode .price-markup-page .panel-header h2 {
+  color: var(--text-primary) !important;
+}
+
+.dark-mode .price-markup-page .refresh-btn {
+  background: linear-gradient(135deg, #0f172a, #111827) !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+}
+
+.dark-mode .price-markup-page .muted,
+.dark-mode .price-markup-page .alert-error,
+.dark-mode .price-markup-page .request-title h3,
+.dark-mode .price-markup-page .request-meta,
+.dark-mode .price-markup-page .reason-section h4,
+.dark-mode .price-markup-page .reason-section p,
+.dark-mode .price-markup-page .timeline-date,
+.dark-mode .price-markup-page .timeline-user,
+.dark-mode .price-markup-page .timeline-notes,
+.dark-mode .price-markup-page .request-card .badge,
+.dark-mode .price-markup-page .timeline-content strong {
+  color: var(--text-primary) !important;
+}
+
+.dark-mode .price-markup-page .muted {
+  background: rgba(255,255,255,0.03) !important;
+  border: 1px dashed rgba(255,255,255,0.08) !important;
+}
+
+.dark-mode .price-markup-page .alert-error {
+  background: rgba(248,113,113,0.14) !important;
+  border-color: rgba(248,113,113,0.32) !important;
+  color: #fee2e2 !important;
+}
+
+.dark-mode .price-markup-page .request-card {
+  background: #171b22 !important;
+  border-color: rgba(255,255,255,0.08) !important;
+  box-shadow: 0 16px 36px rgba(0,0,0,0.55) !important;
+}
+
+.dark-mode .price-markup-page .request-card:hover {
+  background: #1d212b !important;
+}
+
+.dark-mode .price-markup-page .card-header {
+  background: #171b22 !important;
+  border-color: rgba(255,255,255,0.08) !important;
+}
+
+.dark-mode .price-markup-page .request-title h3 {
+  color: #f8fafc !important;
+}
+
+.dark-mode .price-markup-page .request-meta,
+.dark-mode .price-markup-page .multiplier-info,
+.dark-mode .price-markup-page .timeline-date,
+.dark-mode .price-markup-page .timeline-user {
+  color: rgba(248,250,252,0.72) !important;
+}
+
+.dark-mode .price-markup-page .change-summary,
+.dark-mode .price-markup-page .percentage,
+.dark-mode .price-markup-page .percentage.highlight,
+.dark-mode .price-markup-page .arrow {
+  color: var(--text-primary) !important;
+}
+
+.dark-mode .price-markup-page .badge-pending {
+  background: rgba(249,115,22,0.16) !important;
+  color: #ffddb0 !important;
+  border-color: rgba(255,255,255,0.08) !important;
+}
+
+.dark-mode .price-markup-page .reason-section,
+.dark-mode .price-markup-page .approval-timeline {
+  border-color: rgba(255,255,255,0.08) !important;
+}
+
+.dark-mode .price-markup-page .timeline::before {
+  background: rgba(255,255,255,0.08) !important;
+}
+
+.dark-mode .price-markup-page .timeline-marker {
+  border-color: rgba(255,255,255,0.12) !important;
+}
+
+.dark-mode .price-markup-page .timeline-item.completed .timeline-marker {
+  background: #22c55e !important;
+}
+
+.dark-mode .price-markup-page .timeline-item.pending .timeline-marker {
+  background: #f59e0b !important;
+}
+
+.dark-mode .price-markup-page .timeline-notes {
+  background: #111827 !important;
+  color: rgba(248,250,252,0.78) !important;
+}
+
+.dark-mode .price-markup-page .notes-input,
+.dark-mode .price-markup-page .reason-input {
+  background: #111827 !important;
+  color: #e5e7eb !important;
+  border-color: rgba(255,255,255,0.12) !important;
+}
+
+.dark-mode .price-markup-page .notes-input:focus,
+.dark-mode .price-markup-page .reason-input:focus {
+  border-color: #ff8a50 !important;
+  box-shadow: 0 0 0 3px rgba(255,138,80,0.16) !important;
+}
+
+.dark-mode .price-markup-page .reject-reason-form {
+  background: rgba(255,255,255,0.03) !important;
+  border-color: rgba(255,255,255,0.08) !important;
+}
+
+.dark-mode .price-markup-page .btn-approve,
+.dark-mode .price-markup-page .btn-reject,
+.dark-mode .price-markup-page .btn-outline,
+.dark-mode .price-markup-page .btn-reject-confirm {
+  color: #ffffff !important;
+}
+
+.dark-mode .price-markup-page .btn-approve {
+  background: linear-gradient(135deg, #16a34a, #0f766e) !important;
+}
+
+.dark-mode .price-markup-page .btn-reject,
+.dark-mode .price-markup-page .btn-reject-confirm {
+  background: linear-gradient(135deg, #dc2626, #991b1b) !important;
+}
+
+.dark-mode .price-markup-page .btn-outline {
+  background: rgba(255,255,255,0.03) !important;
+  border-color: rgba(255,255,255,0.08) !important;
+}
+
+.dark-mode .price-markup-page .btn-outline:hover {
+  background: rgba(255,255,255,0.08) !important;
+}
+
+.dark-mode .branch-approval-header {
+  background: #171b22 !important;
+  border-color: rgba(255,255,255,0.08) !important;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.45) !important;
+}
+
+.dark-mode .branch-approval-header h1,
+.dark-mode .branch-approval-header p {
+  color: var(--text-primary) !important;
+}
+
+.dark-mode .branch-approval {
+  background: linear-gradient(180deg, #0f1720 0%, #111827 100%) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark-mode .branch-approval__header {
+  background: #171b22 !important;
+  border-color: rgba(255,255,255,0.08) !important;
+  box-shadow: 0 18px 42px rgba(0,0,0,0.45) !important;
+}
+
+.dark-mode .empty-state {
+  background: rgba(255,255,255,0.03) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+  color: var(--text-secondary) !important;
+}
+
+.dark-mode .request-card {
+  background: #171b22 !important;
+  color: var(--text-primary) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  box-shadow: 0 16px 36px rgba(0,0,0,0.55) !important;
+}
+
+.dark-mode .request-card:hover {
+  background: #1d212b !important;
+  box-shadow: 0 18px 40px rgba(0,0,0,0.6) !important;
+}
+
+.dark-mode .request-title h3,
+.dark-mode .request-meta,
+.dark-mode .request-id,
+.dark-mode .address-block .label,
+.dark-mode .address-block .value,
+.dark-mode .badge-pending {
+  color: var(--text-primary) !important;
+}
+
+.dark-mode .badge-pending {
+  background: rgba(249,115,22,0.16) !important;
+  color: #ffddb0 !important;
+  border-color: rgba(255,255,255,0.08) !important;
+}
+
+.dark-mode .refresh-btn {
+  background: linear-gradient(135deg, #0f172a, #111827) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.45) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+}
+
+.dark-mode .refresh-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #111827, #0f172a) !important;
+}
+
+.dark-mode .btn-approve {
+  background: linear-gradient(135deg, #16a34a, #0f766e) !important;
+  color: #fff !important;
+}
+
+.dark-mode .btn-reject {
+  background: linear-gradient(135deg, #dc2626, #991b1b) !important;
+  color: #fff !important;
+}
+
+.dark-mode table {
+  background: transparent !important;
+}
+
+.dark-mode thead {
+  background: rgba(255,255,255,0.04) !important;
+  border-color: rgba(255,255,255,0.08) !important;
+}
+
+.dark-mode th,
+.dark-mode td {
+  color: rgba(248,250,252,0.9) !important;
+  border-color: rgba(255,255,255,0.08) !important;
+}
+
+.dark-mode tbody tr {
+  border-color: rgba(255,255,255,0.06) !important;
+}
+
+.dark-mode tbody tr:hover {
+  background: rgba(255,255,255,0.03) !important;
+}
+
+.dark-mode .muted {
+  color: rgba(248,250,252,0.65) !important;
+}
+
+.dark-mode .alert-error {
+  background: rgba(248,113,113,0.14) !important;
+  color: #fee2e2 !important;
+  border-color: rgba(248,113,113,0.3) !important;
 }
 
 .dark-mode .logout-btn:hover {
@@ -2811,6 +3681,7 @@ h1, h2, h3, h4, h5, h6, .section-subtitle, .admin-name, .admin-role {
   background: #1f1f1f;
   color: #e5e7eb;
   border: 1px solid #404040;
+}
 
 /* Stronger dark overrides for the staff table (some components set a light gradient inline/scoped) */
 .dark-mode .staff-management-page .staff-table {
@@ -2832,7 +3703,6 @@ h1, h2, h3, h4, h5, h6, .section-subtitle, .admin-name, .admin-role {
 }
 .dark-mode .staff-management-page .staff-table tbody tr:hover {
   background: rgba(255,255,255,0.02) !important;
-}
 }
 
 .dark-mode .search-input::placeholder {
