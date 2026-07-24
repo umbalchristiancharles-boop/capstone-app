@@ -866,8 +866,11 @@ window.addEventListener('click', () => {
   border-top: 1px solid #e5e7eb;
 }
 
-.btn-success {
-  background: #22c55e;
+.btn-success,
+.btn-danger,
+.btn-secondary,
+.btn-primary {
+  background: #4b5563;
   color: white;
   border: none;
   padding: 6px 12px;
@@ -877,35 +880,20 @@ window.addEventListener('click', () => {
   font-size: 12px;
 }
 
-.btn-success:hover { background: #16a34a; }
-.btn-success:disabled { opacity: 0.6; cursor: not-allowed; }
-
-.btn-danger {
-  background: #dc3545;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  font-size: 12px;
+.btn-success:hover,
+.btn-danger:hover,
+.btn-secondary:hover,
+.btn-primary:hover {
+  background: #374151;
 }
 
-.btn-danger:hover { background: #c82333; }
-.btn-danger:disabled { opacity: 0.6; cursor: not-allowed; }
-
-.btn-secondary {
-  background: #6b7280;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  font-size: 12px;
+.btn-success:disabled,
+.btn-danger:disabled,
+.btn-secondary:disabled,
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
-
-.btn-secondary:hover { background: #4b5563; }
 
 /* Reject Modal */
 .reject-modal-backdrop {
