@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-b from-[#FF9A4A] to-[#FF6A3D]">
+  <div class="min-h-screen bg-gradient-to-b from-[#F8F1E4] to-[#FFFFFF]">
     <div class="admin-page">
       <section class="admin-layout">
         <div class="admin-topbar">
@@ -1407,7 +1407,7 @@ function goToAddBranches() {
 }
 
 h1, h2 {
-  color: var(--text-dark) !important;
+  color: #1f2937 !important;
   font-weight: 800 !important;
   font-family: 'Inter', 'Poppins', sans-serif !important;
   letter-spacing: -0.5px !important;
@@ -1415,7 +1415,36 @@ h1, h2 {
 }
 
 .admin-label, .metric-label, .overview-label, .branch-count {
-  color: #64748B !important;
+  color: #6b7280 !important;
+}
+
+.admin-page,
+.admin-layout,
+.panel-block,
+.overview-card,
+.panel-header,
+.panel-body,
+.admin-topbar,
+.admin-left,
+.admin-main,
+.admin-side,
+.range-tabs {
+  background: transparent !important;
+}
+
+.panel-block,
+.overview-card,
+.panel-header,
+.panel-body {
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06) !important;
+    border-radius: 8px !important;
+  background: transparent !important;
+}
+
+.admin-page {
+  background: #f8f1e4;
 }
 
 
