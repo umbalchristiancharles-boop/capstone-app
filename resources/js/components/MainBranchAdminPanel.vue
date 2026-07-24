@@ -312,7 +312,7 @@ window.addEventListener('click', () => {
 .add-branch:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(17,24,39,0.18); opacity: 0.98 }
 .add-branch:active { transform: translateY(0); box-shadow: 0 6px 14px rgba(17,24,39,0.14) }
 .crm-button {
-  background: linear-gradient(180deg, #06b6d4, #0891b2);
+  background: #4b5563;
   color: #fff;
   border: none;
   padding: 10px 14px;
@@ -325,16 +325,16 @@ window.addEventListener('click', () => {
   align-items: center;
   justify-content: center;
 }
-.crm-button:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(6,182,212,0.18); opacity: 0.98 }
-.crm-button:active { transform: translateY(0); box-shadow: 0 6px 14px rgba(6,182,212,0.14) }
+.crm-button:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(75,85,99,0.18); opacity: 0.98 }
+.crm-button:active { transform: translateY(0); box-shadow: 0 6px 14px rgba(75,85,99,0.14) }
 .refresh-finance {
-  background: linear-gradient(180deg, #ff8a42, #ff6a00);
+  background: #4b5563;
   color: #fff;
   border: none;
   padding: 10px 16px;
   border-radius: 10px;
   font-weight: 700;
-  box-shadow: 0 6px 18px rgba(255,106,0,0.14);
+  box-shadow: 0 4px 12px rgba(75,85,99,0.12);
   cursor: pointer;
   transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
   height: 40px;
@@ -342,8 +342,8 @@ window.addEventListener('click', () => {
   align-items: center;
   justify-content: center;
 }
-.refresh-finance:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(255,106,0,0.18); opacity: 0.98 }
-.refresh-finance:active { transform: translateY(0); box-shadow: 0 6px 18px rgba(255,106,0,0.14) }
+.refresh-finance:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(75,85,99,0.18); opacity: 0.98 }
+.refresh-finance:active { transform: translateY(0); box-shadow: 0 6px 14px rgba(75,85,99,0.14) }
 .loading-state { color: #6b7280; padding: 10px 0 }
 .error-state { color: #ef4444; padding: 10px 0 }
 .finance-wrapper { margin-top: 6px }
@@ -356,6 +356,13 @@ window.addEventListener('click', () => {
   margin-bottom: 16px;
   font-size: 14px;
   font-weight: 500;
+}
+
+/* Move attendance card down slightly */
+:deep(.attendance-section),
+:deep(.attendance-card),
+:deep([class*="attendance"]) {
+  margin-top: 12px;
 }
 
 @media (max-width: 800px) {
