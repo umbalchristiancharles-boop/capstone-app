@@ -421,7 +421,8 @@ async function performLogout() {
 .queue-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .queue-header h3 { margin: 0; position: relative; display: inline-block; }
 .sub { margin: 0; color: #6b7280; font-size: 0.9rem; }
-.refresh-btn { padding: 0.5rem 0.9rem; border: 1px solid #d1d5db; background: #fff; border-radius: 6px; cursor: pointer; }
+.refresh-btn { padding: 0.5rem 0.9rem; border: 1px solid #d1d5db; background: #f8fafc; color: #374151; border-radius: 6px; cursor: pointer; transition: background 0.2s, border-color 0.2s; }
+.refresh-btn:hover:not(:disabled) { background: #f1f5f9; border-color: #cbd5e1; }
 .queue-list { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.75rem; }
 .queue-item { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; }
 .queue-main { display: flex; flex-direction: column; gap: 4px; }
@@ -431,8 +432,8 @@ async function performLogout() {
 .badge { padding: 0.25rem 0.6rem; border-radius: 999px; font-size: 0.82rem; text-transform: capitalize; }
 .badge--warning { background: #fff7ed; color: #b45309; }
 .badge--info { background: #e0f2fe; color: #0369a1; }
-.btn-done { padding: 0.4rem 0.8rem; background: #10b981; color: white; border: none; border-radius: 6px; font-size: 0.85rem; cursor: pointer; transition: background 0.2s; }
-.btn-done:hover:not(:disabled) { background: #059669; }
+.btn-done { padding: 0.4rem 0.8rem; background: #4b5563; color: white; border: none; border-radius: 6px; font-size: 0.85rem; cursor: pointer; transition: background 0.2s; }
+.btn-done:hover:not(:disabled) { background: #374151; }
 .btn-done:disabled { background: #d1d5db; cursor: not-allowed; }
 
 .panel-badge {
@@ -472,8 +473,8 @@ async function performLogout() {
   position: relative;
 }
 
-:deep(.admin-side .announcements-panel) {
-  margin-top: 40px;
+:deep(.admin-layout.no-profile-column) .admin-side .announcements-panel {
+  margin-top: 120px !important;
 }
 
 .kitchen-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; align-items: start; }
@@ -492,7 +493,8 @@ async function performLogout() {
 .ingredient-brand { color:#6b7280; font-size:0.85rem; }
 .ingredient-per { color:#374151; font-style:italic }
 .ingredient-actions { display:flex; align-items:center; gap:0.5rem }
-.update-stock-btn { padding:0.35rem 0.5rem; border-radius:6px; border:1px solid #e6e7eb; background:#fff; cursor:pointer }
+.update-stock-btn { padding:0.35rem 0.5rem; border-radius:6px; border:1px solid #cbd5e1; background:#f8fafc; color:#1f2937; cursor:pointer; transition: background 0.2s, border-color 0.2s; }
+.update-stock-btn:hover:not(:disabled) { background:#f1f5f9; border-color:#94a3b8; }
 .update-stock-form { display:flex; gap:0.5rem; align-items:center }
 
 @media (max-width: 900px) {
