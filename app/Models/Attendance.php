@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Attendance extends Model
 {
     protected $table = 'attendance';
-    protected $fillable = ['user_id', 'date', 'time_in', 'time_out', 'hours_worked', 'status', 'notes'];
+    protected $fillable = ['user_id', 'date', 'time_in', 'time_out', 'hours_worked', 'status', 'notes', 'face_image'];
     protected $casts = [
         'date' => 'date',
         'time_in' => 'datetime',

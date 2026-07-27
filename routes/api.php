@@ -248,6 +248,7 @@ Route::middleware('web')->group(function () {
 
         // HR: View applications for the HR's branch
         Route::get('/positions/applications', [\App\Http\Controllers\Api\PositionApplicationController::class, 'listForHrBranch']);
+        Route::post('/positions/applications/{id}/send-interview-email', [\App\Http\Controllers\Api\PositionApplicationController::class, 'sendInterviewEmail']);
 
     // HR Positions - Main HR approval endpoints
     Route::get('/positions/requests/pending', [\App\Http\Controllers\Api\HrPositionRequestController::class, 'pendingRequests']);

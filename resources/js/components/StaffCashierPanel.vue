@@ -115,11 +115,40 @@
           <div class="time-row" v-if="attendanceStatus.hours_worked > 0"><span class="time-label">Hours:</span><span class="time-value">{{ attendanceStatus.hours_worked }} hrs</span></div>
         </div>
         <div class="attendance-buttons">
-          <button @click="performClockIn" :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing" class="btn-clock-in">{{ isAttendanceProcessing ? '...' : 'Clock In' }}</button>
+          <button @click="initiateClockIn" :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing || locationLoading" class="btn-clock-in">{{ isAttendanceProcessing ? '...' : 'Clock In' }}</button>
           <button @click="performClockOut" :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockOut" class="btn-clock-out" :class="{ 'btn-disabled': !canClockOut && attendanceStatus.is_clocked_in }">{{ isAttendanceProcessing ? '...' : 'Clock Out' }}</button>
         </div>
         <div v-if="!canClockOut && attendanceStatus.is_clocked_in" class="clockout-restriction"><span class="restriction-icon">LOCK</span><span>Cannot clock out before {{ scheduledTimeOut }}</span></div>
         <div v-if="attendanceMessage" :class="['attendance-message', attendanceMessageType]">{{ attendanceMessage }}</div>
+      </div>
+
+      <!-- Face Capture Modal -->
+      <div v-if="showFaceCapture" class="face-capture-modal">
+        <div class="face-capture-content">
+          <h3>Take a Photo for Clock In</h3>
+          <p class="face-capture-instruction">Please position your face in the frame and click capture</p>
+          
+          <div class="camera-container">
+            <video ref="video" autoplay playsinline></video>
+            <canvas ref="canvas" style="display: none;"></canvas>
+            <div v-if="cameraError" class="camera-error">
+              {{ cameraError }}
+            </div>
+          </div>
+
+          <div class="face-capture-buttons">
+            <button @click="capturePhoto" :disabled="isCapturing" class="btn-capture">
+              <span v-if="!isCapturing">📸 Capture Photo</span>
+              <span v-else>Capturing...</span>
+            </button>
+            <button @click="cancelFaceCapture" class="btn-cancel">Cancel</button>
+          </div>
+
+          <div v-if="capturedImage" class="captured-preview">
+            <img :src="capturedImage" alt="Captured face" />
+            <p class="preview-label">Photo captured!</p>
+          </div>
+        </div>
       </div>
 
       <!-- Branch Budget Card -->
@@ -262,7 +291,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
@@ -310,6 +339,15 @@ const attendanceSettings = ref({
   early_clockout_override: false,
   scheduled_time_out: '17:00:00'
 })
+
+// Face capture state
+const showFaceCapture = ref(false)
+const capturedImage = ref(null)
+const cameraStream = ref(null)
+const cameraError = ref('')
+const isCapturing = ref(false)
+const locationLoading = ref(false)
+const userLocation = ref(null)
 
 async function fetchAnnouncements() {
   loadingAnnouncements.value = true
@@ -646,6 +684,182 @@ async function performClockOut() {
   } finally {
     isAttendanceProcessing.value = false
     setTimeout(() => { attendanceMessage.value = '' }, 3000)
+  }
+}
+
+// Face capture methods
+async function initiateClockIn() {
+  // Show face capture modal first
+  showFaceCapture.value = true
+  capturedImage.value = null
+  cameraError.value = ''
+  
+  // Initialize camera
+  await startCamera()
+}
+
+async function startCamera() {
+  try {
+    // Wait for the modal to be rendered in the DOM
+    await nextTick()
+    
+    // Request camera access
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        width: { ideal: 640 },
+        height: { ideal: 480 },
+        facingMode: 'user' // Front camera
+      }
+    })
+    
+    cameraStream.value = stream
+    cameraError.value = ''
+    
+    // Wait for video element to be available
+    await nextTick()
+    
+    // Set video source
+    const video = document.querySelector('.camera-container video')
+    if (video) {
+      video.srcObject = stream
+    }
+  } catch (error) {
+    console.error('Camera access error:', error)
+    cameraError.value = 'Unable to access camera. Please grant camera permission.'
+    stopCamera()
+  }
+}
+
+function stopCamera() {
+  if (cameraStream.value) {
+    cameraStream.value.getTracks().forEach(track => track.stop())
+    cameraStream.value = null
+  }
+}
+
+function capturePhoto() {
+  const video = document.querySelector('.camera-container video')
+  const canvas = document.querySelector('.camera-container canvas')
+  
+  if (!video || !canvas) {
+    attendanceMessage.value = 'Camera not ready. Please try again.'
+    attendanceMessageType.value = 'error'
+    return
+  }
+  
+  isCapturing.value = true
+  
+  try {
+    // Set canvas dimensions to match video
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    
+    // Draw video frame to canvas
+    const context = canvas.getContext('2d')
+    context.drawImage(video, 0, 0, canvas.width, canvas.height)
+    
+    // Convert to base64 image
+    capturedImage.value = canvas.toDataURL('image/jpeg', 0.8)
+    
+    // Stop camera after capture
+    stopCamera()
+    
+    // Proceed with clock in after a short delay
+    setTimeout(() => {
+      showFaceCapture.value = false
+      proceedWithClockIn()
+    }, 1500)
+    
+  } catch (error) {
+    console.error('Capture error:', error)
+    attendanceMessage.value = 'Failed to capture photo. Please try again.'
+    attendanceMessageType.value = 'error'
+    isCapturing.value = false
+  }
+}
+
+function cancelFaceCapture() {
+  stopCamera()
+  showFaceCapture.value = false
+  capturedImage.value = null
+  cameraError.value = ''
+  isCapturing.value = false
+}
+
+async function proceedWithClockIn() {
+  if (isAttendanceProcessing.value) return
+  
+  // Check if user location is available
+  if (!userLocation.value) {
+    attendanceMessage.value = 'Please enable location services to clock in'
+    attendanceMessageType.value = 'error'
+    await getUserLocation()
+    
+    // Check again after attempting to get location
+    if (!userLocation.value) {
+      return
+    }
+  }
+  
+  // Check if face was captured
+  if (!capturedImage.value) {
+    attendanceMessage.value = 'Face photo is required to clock in'
+    attendanceMessageType.value = 'error'
+    return
+  }
+
+  isAttendanceProcessing.value = true
+
+  try {
+    const res = await axios.post('/api/staff/clock-in', {
+      latitude: userLocation.value.latitude,
+      longitude: userLocation.value.longitude,
+      face_image: capturedImage.value
+    }, { withCredentials: true })
+
+    if (res.data && (res.data.success || res.data.ok)) {
+      attendanceMessage.value = 'Clocked in successfully!'
+      attendanceMessageType.value = 'success'
+      capturedImage.value = null
+      await loadAttendanceStatus()
+    } else {
+      attendanceMessage.value = res.data.message || 'Failed to clock in'
+      attendanceMessageType.value = 'error'
+    }
+  } catch (e) {
+    attendanceMessage.value = e.response?.data?.message || 'Error clocking in'
+    attendanceMessageType.value = 'error'
+  } finally {
+    isAttendanceProcessing.value = false
+    isCapturing.value = false
+  }
+}
+
+async function getUserLocation() {
+  locationLoading.value = true
+  
+  try {
+    const position = await new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      })
+    })
+
+    userLocation.value = {
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude
+    }
+    
+    console.log('User location obtained:', userLocation.value)
+  } catch (error) {
+    console.error('Error getting location:', error)
+    attendanceMessage.value = 'Unable to retrieve your location. Please enable location services.'
+    attendanceMessageType.value = 'error'
+    userLocation.value = null
+  } finally {
+    locationLoading.value = false
   }
 }
 
@@ -1453,6 +1667,143 @@ async function performLogout() {
   .cashier-body {
     grid-template-columns: 1fr;
   }
+}
+
+/* Face Capture Modal Styles */
+.face-capture-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1rem;
+}
+
+.face-capture-content {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 600px;
+  width: 100%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.face-capture-content h3 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+  font-size: 1.5rem;
+  text-align: center;
+}
+
+.face-capture-instruction {
+  text-align: center;
+  color: #666;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+}
+
+.camera-container {
+  position: relative;
+  width: 100%;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.camera-container video {
+  width: 100%;
+  height: auto;
+  display: block;
+  transform: scaleX(-1); /* Mirror the video for better UX */
+}
+
+.camera-error {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  text-align: center;
+  padding: 1rem;
+  background: rgba(220, 53, 69, 0.9);
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.face-capture-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.btn-capture {
+  padding: 1rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: linear-gradient(135deg, #28a745, #20c997);
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.btn-capture:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.btn-capture:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.btn-cancel {
+  padding: 1rem;
+  border: 2px solid #dc3545;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: white;
+  color: #dc3545;
+  transition: all 0.3s ease;
+}
+
+.btn-cancel:hover {
+  background: #dc3545;
+  color: white;
+}
+
+.captured-preview {
+  text-align: center;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 2px solid #28a745;
+}
+
+.captured-preview img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  transform: scaleX(-1); /* Mirror the captured image */
+}
+
+.preview-label {
+  color: #28a745;
+  font-weight: 600;
+  margin: 0;
+  font-size: 0.95rem;
 }
 </style>
 <style scoped>

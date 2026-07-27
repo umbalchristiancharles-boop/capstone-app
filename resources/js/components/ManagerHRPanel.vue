@@ -93,18 +93,99 @@
                     <span class="value">{{ a.applicant_email }} • {{ a.applicant_phone }}</span>
                   </div>
 
-                  <div class="request-card__actions" style="margin-top: 12px;">
-                    <a v-if="a.resume_path" :href="getStorageUrl(a.resume_path)" target="_blank" class="btn-success btn-sm">
-                      View Resume
-                    </a>
-                    <button v-else class="btn-secondary btn-sm" disabled>Resume Unavailable</button>
-                  </div>
+                   <div class="request-card__actions" style="margin-top: 12px; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                     <a v-if="a.resume_path" :href="getStorageUrl(a.resume_path)" target="_blank" class="btn-success btn-sm">
+                       View Resume
+                     </a>
+                     <button v-else class="btn-secondary btn-sm" disabled>Resume Unavailable</button>
+                     
+                     <!-- Show button only if status is NOT "Ready for Interview" -->
+                     <button 
+                       v-if="!isReadyForInterview(a.status)"
+                       class="btn-primary btn-sm" 
+                       @click="openInterviewScheduleModal(a)"
+                       :disabled="sendingInterviewEmail[a.id]"
+                     >
+                       {{ sendingInterviewEmail[a.id] ? 'Sending...' : 'Ready for Interview' }}
+                     </button>
+                     
+                     <!-- Show indicator when status is "Ready for Interview" -->
+                     <span v-else class="badge badge--success" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">
+                       ✓ Interview Scheduled
+                     </span>
+                   </div>
                 </div>
               </div>
             </div>
 
             <div class="positions-modal__footer">
               <button class="btn-secondary" @click="closeApplicationsModal">Close</button>
+            </div>
+          </div>
+        </div>
+      </transition>
+
+      <!-- Interview Schedule Modal -->
+      <transition name="fade">
+        <div v-if="showInterviewScheduleModal" class="positions-modal-backdrop" @click.self="closeInterviewScheduleModal">
+          <div class="positions-modal">
+            <div class="positions-modal__header">
+              <div>
+                <h3>Schedule Interview</h3>
+                <p class="muted">Select date and time for the interview with {{ selectedApplication?.applicant_full_name }}</p>
+              </div>
+              <button class="modal-close" @click="closeInterviewScheduleModal" aria-label="Close">✕</button>
+            </div>
+
+            <div class="positions-modal__body">
+              <div v-if="selectedApplication" class="interview-schedule-form">
+                <div class="form-group">
+                  <label class="field-label">Interview Date *</label>
+                  <input 
+                    type="date" 
+                    class="field-input" 
+                    v-model="interviewSchedule.date"
+                    :min="getMinDate()"
+                    required
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label class="field-label">Interview Time *</label>
+                  <input 
+                    type="time" 
+                    class="field-input" 
+                    v-model="interviewSchedule.time"
+                    required
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label class="field-label">Additional Notes (Optional)</label>
+                  <textarea 
+                    class="field-textarea" 
+                    rows="3" 
+                    v-model="interviewSchedule.notes"
+                    placeholder="e.g., Bring portfolio, interview with HR Manager, etc."
+                  ></textarea>
+                </div>
+
+                <div class="interview-summary" v-if="interviewSchedule.date && interviewSchedule.time">
+                  <p><strong>Interview Scheduled:</strong></p>
+                  <p>{{ formatInterviewDate(interviewSchedule.date) }} at {{ formatInterviewTime(interviewSchedule.time) }}</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="positions-modal__footer">
+              <button class="btn-secondary" @click="closeInterviewScheduleModal">Cancel</button>
+              <button 
+                class="btn-primary" 
+                @click="confirmInterviewSchedule"
+                :disabled="!isInterviewScheduleValid() || sendingInterviewEmail[selectedApplication?.id]"
+              >
+                {{ sendingInterviewEmail[selectedApplication?.id] ? 'Sending...' : 'Send Interview Email' }}
+              </button>
             </div>
           </div>
         </div>
@@ -468,8 +549,16 @@ const applications = ref([])
 const applicationsCount = computed(() => {
   return Array.isArray(applications.value) ? applications.value.length : 0
 })
-
-
+  const sendingInterviewEmail = ref({})
+  
+  // Interview Scheduling Modal state
+  const showInterviewScheduleModal = ref(false)
+  const selectedApplication = ref(null)
+  const interviewSchedule = ref({
+    date: '',
+    time: '',
+    notes: ''
+  })
 
 const router = useRouter()
 const errorMessage = ref('')
@@ -536,6 +625,11 @@ const earlyClockoutOverride = ref(false)
 const isTogglingOverride = ref(false)
 
 // Formatter used by the Job Applications modal
+function isReadyForInterview(status) {
+  const s = (status || '').toString().toLowerCase().trim()
+  return s === 'ready for interview' || s === 'ready_for_interview' || s === 'interview scheduled'
+}
+
 function formatDate(date) {
   if (!date) return '-'
   const d = new Date(date)
@@ -980,6 +1074,102 @@ function closeApplicationsModal() {
   showApplicationsModal.value = false
 }
 
+function openInterviewScheduleModal(application) {
+  if (!application?.id || !application?.applicant_email) {
+    alert('Invalid application data')
+    return
+  }
+  
+  selectedApplication.value = application
+  interviewSchedule.value = {
+    date: '',
+    time: '',
+    notes: ''
+  }
+  showInterviewScheduleModal.value = true
+}
+
+function closeInterviewScheduleModal() {
+  showInterviewScheduleModal.value = false
+  selectedApplication.value = null
+  interviewSchedule.value = {
+    date: '',
+    time: '',
+    notes: ''
+  }
+}
+
+function isInterviewScheduleValid() {
+  return interviewSchedule.value.date && interviewSchedule.value.time
+}
+
+function getMinDate() {
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = String(today.getMonth() + 1).padStart(2, '0')
+  const day = String(today.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function formatInterviewDate(dateStr) {
+  if (!dateStr) return ''
+  const date = new Date(dateStr + 'T00:00:00')
+  return date.toLocaleDateString('en-US', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  })
+}
+
+function formatInterviewTime(timeStr) {
+  if (!timeStr) return ''
+  const [hours, minutes] = timeStr.split(':')
+  const date = new Date()
+  date.setHours(parseInt(hours), parseInt(minutes))
+  return date.toLocaleTimeString('en-US', { 
+    hour: 'numeric', 
+    minute: '2-digit',
+    hour12: true 
+  })
+}
+
+async function confirmInterviewSchedule() {
+  const applicationId = selectedApplication.value?.id
+  if (!applicationId || !isInterviewScheduleValid()) {
+    alert('Please select both date and time for the interview')
+    return
+  }
+
+  sendingInterviewEmail.value[applicationId] = true
+  try {
+    const res = await axios.post(
+      `/api/hr/positions/applications/${applicationId}/send-interview-email`,
+      {
+        interview_date: interviewSchedule.value.date,
+        interview_time: interviewSchedule.value.time,
+        notes: interviewSchedule.value.notes
+      },
+      { withCredentials: true }
+    )
+
+    if (res.data && res.data.ok) {
+      alert(res.data.message || 'Interview email sent successfully!')
+      // Update local status
+      const app = applications.value.find(a => a.id === applicationId)
+      if (app) app.status = 'Ready for Interview'
+      closeInterviewScheduleModal()
+    } else {
+      alert(res.data.message || 'Failed to send interview email')
+    }
+  } catch (err) {
+    console.error('Failed to send interview email:', err)
+    alert(err.response?.data?.message || 'Failed to send interview email. Please try again.')
+  } finally {
+    sendingInterviewEmail.value[applicationId] = false
+  }
+}
+
 async function openPositionsModal() {
   showPositionsModal.value = true
   positionsLoading.value = true
@@ -1344,5 +1534,31 @@ defineExpose({ refreshAllData, onProfileUpdated })
 .text-muted {
   color: #6c757d;
   font-style: italic;
+}
+
+/* Interview Schedule Modal Styles */
+.interview-schedule-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.interview-summary {
+  background: #f8f9fa;
+  border-left: 4px solid #ff9f43;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-top: 0.5rem;
+}
+
+.interview-summary p {
+  margin: 0.25rem 0;
+  color: #333;
+  font-size: 0.9rem;
+}
+
+.interview-summary p:first-child {
+  font-weight: 600;
+  color: #555;
 }
 </style>

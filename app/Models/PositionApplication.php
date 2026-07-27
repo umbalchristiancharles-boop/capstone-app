@@ -37,6 +37,9 @@ class PositionApplication extends Model
         'supporting_documents_paths',
 
         'status',
+        'interview_date',
+        'interview_time',
+        'interview_notes',
     ];
 
     protected $casts = [

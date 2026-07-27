@@ -13,6 +13,35 @@
         <div class="current-date">{{ currentDate }}</div>
       </div>
 
+      <!-- Face Capture Modal -->
+      <div v-if="showFaceCapture" class="face-capture-modal">
+        <div class="face-capture-content">
+          <h3>Take a Photo for Clock In</h3>
+          <p class="face-capture-instruction">Please position your face in the frame and click capture</p>
+          
+          <div class="camera-container">
+            <video ref="video" autoplay playsinline></video>
+            <canvas ref="canvas" style="display: none;"></canvas>
+            <div v-if="cameraError" class="camera-error">
+              {{ cameraError }}
+            </div>
+          </div>
+
+          <div class="face-capture-buttons">
+            <button @click="capturePhoto" :disabled="isCapturing" class="btn-capture">
+              <span v-if="!isCapturing">📸 Capture Photo</span>
+              <span v-else>Capturing...</span>
+            </button>
+            <button @click="cancelFaceCapture" class="btn-cancel">Cancel</button>
+          </div>
+
+          <div v-if="capturedImage" class="captured-preview">
+            <img :src="capturedImage" alt="Captured face" />
+            <p class="preview-label">Photo captured!</p>
+          </div>
+        </div>
+      </div>
+
       <div v-if="status" class="status-info">
         <div class="status-row">
           <span class="label">Clock In Time:</span>
@@ -36,8 +65,8 @@
 
       <div v-if="!isLogisticsAdmin" class="button-group">
         <button
-          @click="performClockIn"
-          :disabled="status?.is_clocked_in || isProcessing || !canClockInGeofencing || locationLoading"
+          @click="initiateClockIn"
+          :disabled="status?.is_clocked_in || isProcessing || locationLoading"
           class="btn-clock-in"
         >
           <span v-if="!isProcessing && !locationLoading">Clock In</span>
@@ -138,6 +167,13 @@ const message = ref('')
 const messageType = ref('')
 const isLogisticsAdmin = ref(false)  // Track if user is logistics admin
 
+// Face capture state
+const showFaceCapture = ref(false)
+const capturedImage = ref(null)
+const cameraStream = ref(null)
+const cameraError = ref('')
+const isCapturing = ref(false)
+
 // Attendance settings state
 const attendanceSettings = ref({
   early_clockout_override: false,
@@ -226,6 +262,165 @@ async function getUserLocation() {
     userLocation.value = null
   } finally {
     locationLoading.value = false
+  }
+}
+
+// Face capture methods
+async function initiateClockIn() {
+  // Show face capture modal first
+  showFaceCapture.value = true
+  capturedImage.value = null
+  cameraError.value = ''
+  
+  // Initialize camera
+  await startCamera()
+}
+
+async function startCamera() {
+  try {
+    // Request camera access
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        width: { ideal: 640 },
+        height: { ideal: 480 },
+        facingMode: 'user' // Front camera
+      }
+    })
+    
+    cameraStream.value = stream
+    cameraError.value = ''
+    
+    // Set video source
+    const video = document.querySelector('.camera-container video')
+    if (video) {
+      video.srcObject = stream
+    }
+  } catch (error) {
+    console.error('Camera access error:', error)
+    cameraError.value = 'Unable to access camera. Please grant camera permission.'
+    stopCamera()
+  }
+}
+
+function stopCamera() {
+  if (cameraStream.value) {
+    cameraStream.value.getTracks().forEach(track => track.stop())
+    cameraStream.value = null
+  }
+}
+
+function capturePhoto() {
+  const video = document.querySelector('.camera-container video')
+  const canvas = document.querySelector('.camera-container canvas')
+  
+  if (!video || !canvas) {
+    showMessage('Camera not ready. Please try again.', 'danger')
+    return
+  }
+  
+  isCapturing.value = true
+  
+  try {
+    // Set canvas dimensions to match video
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    
+    // Draw video frame to canvas
+    const context = canvas.getContext('2d')
+    context.drawImage(video, 0, 0, canvas.width, canvas.height)
+    
+    // Convert to base64 image
+    capturedImage.value = canvas.toDataURL('image/jpeg', 0.8)
+    
+    // Stop camera after capture
+    stopCamera()
+    
+    // Proceed with clock in after a short delay
+    setTimeout(() => {
+      showFaceCapture.value = false
+      proceedWithClockIn()
+    }, 1500)
+    
+  } catch (error) {
+    console.error('Capture error:', error)
+    showMessage('Failed to capture photo. Please try again.', 'danger')
+    isCapturing.value = false
+  }
+}
+
+function cancelFaceCapture() {
+  stopCamera()
+  showFaceCapture.value = false
+  capturedImage.value = null
+  cameraError.value = ''
+  isCapturing.value = false
+}
+
+async function proceedWithClockIn() {
+  if (isProcessing.value) return
+  
+  // Check if user location is available
+  if (!userLocation.value) {
+    showMessage('Please enable location services to clock in', 'warning')
+    await getUserLocation()
+    
+    // Check again after attempting to get location
+    if (!userLocation.value) {
+      return
+    }
+  }
+  
+  // Check if face was captured
+  if (!capturedImage.value) {
+    showMessage('Face photo is required to clock in', 'warning')
+    return
+  }
+
+  isProcessing.value = true
+
+  try {
+    const res = await axios.post('/api/staff/clock-in', {
+      latitude: userLocation.value.latitude,
+      longitude: userLocation.value.longitude,
+      face_image: capturedImage.value
+    }, {
+      withCredentials: true
+    })
+
+    if (res.data.success) {
+      showMessage('Clocked in successfully! ✓', 'success')
+      capturedImage.value = null
+      await loadStatus()
+    } else {
+      // Check if this is a logistics admin restriction
+      if (res.data.restricted_role === 'logistics_admin') {
+        isLogisticsAdmin.value = true
+        showMessage(res.data.message, 'warning')
+      } else if (res.data.geofencing_error) {
+        // Geofencing error
+        showMessage(res.data.message || 'You are not within the branch vicinity', 'danger')
+        canClockInGeofencing.value = false
+        geofencingMessage.value = res.data.message
+      } else {
+        showMessage(res.data.message || 'Failed to clock in', 'danger')
+      }
+    }
+  } catch (error) {
+    // Check error response for logistics admin restriction
+    if (error.response?.status === 403 && error.response?.data?.restricted_role === 'logistics_admin') {
+      isLogisticsAdmin.value = true
+      showMessage(error.response.data.message || 'Super Admin Logistics cannot perform clock operations', 'warning')
+    } else if (error.response?.status === 403 && error.response?.data?.geofencing_error) {
+      showMessage(error.response.data.message || 'You are not within the branch vicinity', 'danger')
+      canClockInGeofencing.value = false
+      geofencingMessage.value = error.response.data.message
+    } else {
+      console.error('Clock in error:', error)
+      showMessage('Error clocking in. Please try again.', 'danger')
+    }
+  } finally {
+    isProcessing.value = false
+    isCapturing.value = false
   }
 }
 
@@ -319,7 +514,11 @@ async function performClockIn() {
   if (!userLocation.value) {
     showMessage('Please enable location services to clock in', 'warning')
     await getUserLocation()
-    return
+    
+    // Check again after attempting to get location
+    if (!userLocation.value) {
+      return
+    }
   }
 
   isProcessing.value = true
@@ -374,7 +573,11 @@ async function performClockOut() {
   if (!userLocation.value) {
     showMessage('Please enable location services to clock out', 'warning')
     await getUserLocation()
-    return
+    
+    // Check again after attempting to get location
+    if (!userLocation.value) {
+      return
+    }
   }
 
   isProcessing.value = true
@@ -767,5 +970,142 @@ onUnmounted(() => {
   .history-table td {
     padding: 0.75rem 0.5rem;
   }
+}
+
+/* Face Capture Modal Styles */
+.face-capture-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1rem;
+}
+
+.face-capture-content {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 600px;
+  width: 100%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.face-capture-content h3 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+  font-size: 1.5rem;
+  text-align: center;
+}
+
+.face-capture-instruction {
+  text-align: center;
+  color: #666;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+}
+
+.camera-container {
+  position: relative;
+  width: 100%;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.camera-container video {
+  width: 100%;
+  height: auto;
+  display: block;
+  transform: scaleX(-1); /* Mirror the video for better UX */
+}
+
+.camera-error {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  text-align: center;
+  padding: 1rem;
+  background: rgba(220, 53, 69, 0.9);
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.face-capture-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.btn-capture {
+  padding: 1rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: linear-gradient(135deg, #28a745, #20c997);
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.btn-capture:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.btn-capture:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.btn-cancel {
+  padding: 1rem;
+  border: 2px solid #dc3545;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: white;
+  color: #dc3545;
+  transition: all 0.3s ease;
+}
+
+.btn-cancel:hover {
+  background: #dc3545;
+  color: white;
+}
+
+.captured-preview {
+  text-align: center;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 2px solid #28a745;
+}
+
+.captured-preview img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  transform: scaleX(-1); /* Mirror the captured image */
+}
+
+.preview-label {
+  color: #28a745;
+  font-weight: 600;
+  margin: 0;
+  font-size: 0.95rem;
 }
 </style>

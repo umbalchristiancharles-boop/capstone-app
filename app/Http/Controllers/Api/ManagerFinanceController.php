@@ -548,6 +548,12 @@ class ManagerFinanceController extends Controller
         $timeIn = \Carbon\Carbon::now();
         $attendance->time_in = $timeIn;
         $attendance->status = $this->determineStatus($timeIn);
+        
+        // Save face image if provided
+        if ($request->has('face_image')) {
+            $attendance->face_image = $request->input('face_image');
+        }
+        
         $attendance->save();
 
         return response()->json([

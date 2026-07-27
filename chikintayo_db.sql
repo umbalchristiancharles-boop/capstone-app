@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 24, 2026 at 02:41 PM
+-- Generation Time: Jul 27, 2026 at 08:29 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -79,7 +79,9 @@ INSERT INTO `attendance` (`id`, `user_id`, `date`, `time_in`, `time_out`, `hours
 (16, 151, '2026-07-21', '17:44:43', NULL, 0, 'late', NULL, '2026-07-21 09:44:43', '2026-07-21 09:44:43'),
 (17, 149, '2026-07-21', '17:45:39', NULL, 0, 'late', NULL, '2026-07-21 09:45:39', '2026-07-21 09:45:39'),
 (18, 159, '2026-07-22', '15:11:30', NULL, 0, 'late', NULL, '2026-07-22 07:11:30', '2026-07-22 07:11:30'),
-(19, 154, '2026-07-24', '15:04:46', '20:28:12', -323, 'late', NULL, '2026-07-24 07:04:46', '2026-07-24 12:28:12');
+(19, 154, '2026-07-24', '15:04:46', '20:28:12', -323, 'late', NULL, '2026-07-24 07:04:46', '2026-07-24 12:28:12'),
+(20, 149, '2026-07-27', '13:03:44', NULL, 0, 'late', NULL, '2026-07-27 05:03:44', '2026-07-27 05:03:44'),
+(23, 153, '2026-07-27', '14:28:33', NULL, 0, 'late', NULL, '2026-07-27 06:28:33', '2026-07-27 06:28:33');
 
 -- --------------------------------------------------------
 
@@ -140,7 +142,7 @@ CREATE TABLE `branches` (
 --
 
 INSERT INTO `branches` (`id`, `code`, `name`, `address`, `latitude`, `longitude`, `is_active`, `is_main_branch`, `approval_status`, `requested_by`, `finance_confirmed_by`, `finance_confirmed_at`, `approved_by`, `approved_at`, `rejected_at`, `budget`, `square_meters`, `geofencing_radius`, `default_password`, `default_password_updated_at`, `created_at`, `updated_at`) VALUES
-(31, 'BR743957', 'Dasma Branch', 'Dasma', 14.33000000, 120.94000000, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 72750, 100.00, 5.64, 'BDP20260721D89A10', '2026-07-21 05:02:45', '2026-03-22 10:19:21', '2026-07-21 11:26:24'),
+(31, 'BR743957', 'Dasma Branch', 'Dasma', 14.33000000, 120.94000000, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 72977, 100.00, 5.64, 'BDP20260721D89A10', '2026-07-21 05:02:45', '2026-03-22 10:19:21', '2026-07-27 05:56:44'),
 (32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 700000, NULL, NULL, 'BDP202607224E4D6B', '2026-07-22 06:44:26', '2026-03-25 06:56:11', '2026-07-22 06:44:26'),
 (50, 'BR577235', 'Quezon City Branch', NULL, 14.65105500, 121.09766006, 1, 0, 'approved', 159, 161, '2026-07-17 10:54:29', 31, '2026-07-17 10:54:59', NULL, 100000, 50.00, 500.00, 'BDP202607210875B0', '2026-07-21 05:02:45', '2026-07-17 10:53:47', '2026-07-21 05:02:45');
 
@@ -768,7 +770,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (149, '2026_07_22_000001_create_email_communications_table', 86),
 (150, '2026_07_22_000002_add_email_threading_fields_to_email_communications_table', 87),
 (151, '2026_07_24_000001_create_payrolls_table', 88),
-(152, '2026_07_24_000005_add_brand_to_dish_ingredients', 89);
+(152, '2026_07_24_000005_add_brand_to_dish_ingredients', 89),
+(153, '2026_07_27_000001_add_interview_fields_to_position_applications_table', 90);
 
 -- --------------------------------------------------------
 
@@ -825,7 +828,8 @@ INSERT INTO `orders` (`id`, `order_code`, `owner_id`, `cashier_id`, `branch_id`,
 (140, 'CT-0012', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-07-21 10:20:43', 37.80, 50.00, 12.20, 'none', 0.00, 0.00, 12.00, 4.05, 33.75, '2026-07-21 10:20:43', '2026-07-21 10:20:43', '2026-07-21 10:20:43', 153, NULL, NULL),
 (141, 'CT-0013', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-07-21 10:20:47', 37.80, 50.00, 12.20, 'none', 0.00, 0.00, 12.00, 4.05, 33.75, '2026-07-21 10:20:47', '2026-07-21 10:20:47', '2026-07-21 10:20:47', 153, NULL, NULL),
 (142, 'CT-0014', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-07-21 10:20:50', 37.80, 50.00, 12.20, 'none', 0.00, 0.00, 12.00, 4.05, 33.75, '2026-07-21 10:20:50', '2026-07-21 10:20:50', '2026-07-21 10:20:50', 153, NULL, NULL),
-(143, 'CT-0015', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-07-21 11:26:24', 226.80, 300.00, 73.20, 'none', 0.00, 0.00, 12.00, 24.30, 202.50, '2026-07-21 11:26:24', '2026-07-21 11:26:24', '2026-07-21 11:26:24', 153, NULL, NULL);
+(143, 'CT-0015', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-07-21 11:26:24', 226.80, 300.00, 73.20, 'none', 0.00, 0.00, 12.00, 24.30, 202.50, '2026-07-21 11:26:24', '2026-07-21 11:26:24', '2026-07-21 11:26:24', 153, NULL, NULL),
+(144, 'CT-0016', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-07-27 05:56:44', 226.80, 300.00, 73.20, 'none', 0.00, 0.00, 12.00, 24.30, 202.50, '2026-07-27 05:56:44', '2026-07-27 05:56:44', '2026-07-27 05:56:44', 153, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -856,7 +860,8 @@ INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `product_name`, `unit
 (91, 140, 211, 'HotDog', 33.75, 1, 33.75, '2026-07-21 10:20:43', '2026-07-21 10:20:43'),
 (92, 141, 211, 'HotDog', 33.75, 1, 33.75, '2026-07-21 10:20:47', '2026-07-21 10:20:47'),
 (93, 142, 211, 'HotDog', 33.75, 1, 33.75, '2026-07-21 10:20:50', '2026-07-21 10:20:50'),
-(94, 143, 211, 'HotDog', 33.75, 6, 202.50, '2026-07-21 11:26:24', '2026-07-21 11:26:24');
+(94, 143, 211, 'HotDog', 33.75, 6, 202.50, '2026-07-21 11:26:24', '2026-07-21 11:26:24'),
+(95, 144, 211, 'HotDog', 33.75, 6, 202.50, '2026-07-27 05:56:44', '2026-07-27 05:56:44');
 
 -- --------------------------------------------------------
 
@@ -2138,7 +2143,9 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (2719, 'App\\Models\\User', 147, 'auth-token', '9b969badda49bd9baf0190f06670635a62d8d59be7d846d19d6c9e3b2d7c35b4', '[\"*\"]', NULL, NULL, '2026-07-21 10:16:38', '2026-07-21 10:16:38'),
 (2723, 'App\\Models\\User', 153, 'auth-token', 'baca381a12d87745de285462b7b869ac08b2757178bb5628c73429cfad9b90c6', '[\"*\"]', NULL, NULL, '2026-07-21 11:26:07', '2026-07-21 11:26:07'),
 (2735, 'App\\Models\\User', 31, 'auth-token', '843076fb7735aba7c96324eed4a8aadb9970cd6566cc30d9c04cad782e16af50', '[\"*\"]', NULL, NULL, '2026-07-24 08:01:03', '2026-07-24 08:01:03'),
-(2737, 'App\\Models\\User', 148, 'auth-token', '5323bc70c560c9e0f9b1fdf18de1668ac704d352f251cd56b85b396f0b37f860', '[\"*\"]', NULL, NULL, '2026-07-24 12:28:31', '2026-07-24 12:28:31');
+(2738, 'App\\Models\\User', 31, 'auth-token', '655daaf2ba90c9bddee861130ca0968337170c7364dcbdf156039ff83e31360b', '[\"*\"]', NULL, NULL, '2026-07-27 05:00:09', '2026-07-27 05:00:09'),
+(2743, 'App\\Models\\User', 147, 'auth-token', '05ff5c27ba6fcfaf1227c8bc5ee4d07942b41cec45e9e98cc0739ada171a773e', '[\"*\"]', NULL, NULL, '2026-07-27 05:06:57', '2026-07-27 05:06:57'),
+(2745, 'App\\Models\\User', 153, 'auth-token', '604786c489c080f4a805282e246a5b1c80639d459927c6f093e4544e91ac4cc9', '[\"*\"]', NULL, NULL, '2026-07-27 05:56:30', '2026-07-27 05:56:30');
 
 -- --------------------------------------------------------
 
@@ -2200,6 +2207,9 @@ CREATE TABLE `position_applications` (
   `resume_path` varchar(255) NOT NULL,
   `supporting_documents_paths` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`supporting_documents_paths`)),
   `status` varchar(255) NOT NULL DEFAULT 'Submitted',
+  `interview_date` date DEFAULT NULL,
+  `interview_time` time DEFAULT NULL,
+  `interview_notes` text DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -2208,8 +2218,8 @@ CREATE TABLE `position_applications` (
 -- Dumping data for table `position_applications`
 --
 
-INSERT INTO `position_applications` (`id`, `position_open_request_id`, `position_id`, `branch_id`, `department`, `job_title`, `applicant_full_name`, `applicant_email`, `applicant_phone`, `applicant_address`, `cover_letter`, `years_of_experience`, `education`, `available_start_date`, `linkedin_url`, `portfolio_url`, `privacy_consent`, `website`, `resume_path`, `supporting_documents_paths`, `status`, `created_at`, `updated_at`) VALUES
-(2, 19, 8, 31, 'LOGISTICS', 'Logistics Manager', 'gab ongs', 'marac21139@lovadio.com', '09156818812', 'Pinned location: 14.330000, 120.940000', 'asd', 12, 'BSIT', '2000-07-06', NULL, NULL, 1, NULL, 'position-applications/19/042d90e6-c32a-403c-9f78-3286ae6908cc/resume_cv.docx', '[\"position-applications\\/19\\/042d90e6-c32a-403c-9f78-3286ae6908cc\\/supporting\\/supporting_1.docx\"]', 'Submitted', '2026-07-06 06:50:30', '2026-07-06 06:50:30');
+INSERT INTO `position_applications` (`id`, `position_open_request_id`, `position_id`, `branch_id`, `department`, `job_title`, `applicant_full_name`, `applicant_email`, `applicant_phone`, `applicant_address`, `cover_letter`, `years_of_experience`, `education`, `available_start_date`, `linkedin_url`, `portfolio_url`, `privacy_consent`, `website`, `resume_path`, `supporting_documents_paths`, `status`, `interview_date`, `interview_time`, `interview_notes`, `created_at`, `updated_at`) VALUES
+(2, 19, 8, 31, 'LOGISTICS', 'Logistics Manager', 'gab ongs', 'umbal.christiancharles@ncst.edu.ph', '09156818812', 'Pinned location: 14.330000, 120.940000', 'asd', 12, 'BSIT', '2000-07-06', NULL, NULL, 1, NULL, 'position-applications/19/042d90e6-c32a-403c-9f78-3286ae6908cc/resume_cv.docx', '[\"position-applications\\/19\\/042d90e6-c32a-403c-9f78-3286ae6908cc\\/supporting\\/supporting_1.docx\"]', 'Ready for Interview', '2026-07-28', '07:00:00', NULL, '2026-07-06 06:50:30', '2026-07-27 05:51:43');
 
 -- --------------------------------------------------------
 
@@ -2429,8 +2439,8 @@ INSERT INTO `products` (`id`, `dish_id`, `name`, `category`, `per_pack_or_indivi
 (208, NULL, 'Frozen HotDog (Dish Ingredient)', NULL, 'individual', NULL, NULL, 'frozen-hotdog-dish-ingredient-45-31', '2026-07-21 09:39:36', '2026-07-21 09:39:36', 0.00, 0.00, 0, 0, 0.0000, NULL, NULL, 10, 'DISH-45-ING-0-B31', 31, NULL, NULL, 0, 0, 1, 0, 0, 'KITCHEN', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
 (209, NULL, 'Frozen HotDog (Dish Ingredient)', NULL, 'individual', NULL, NULL, 'frozen-hotdog-dish-ingredient-45-32', '2026-07-21 09:39:36', '2026-07-21 09:39:36', 0.00, 0.00, 0, 0, 0.0000, NULL, NULL, 10, 'DISH-45-ING-0-B32', 32, NULL, NULL, 0, 0, 1, 0, 0, 'KITCHEN', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
 (210, NULL, 'Frozen HotDog (Dish Ingredient)', NULL, 'individual', NULL, NULL, 'frozen-hotdog-dish-ingredient-45-50', '2026-07-21 09:39:36', '2026-07-21 09:39:36', 0.00, 0.00, 0, 0, 0.0000, NULL, NULL, 10, 'DISH-45-ING-0-B50', 50, NULL, NULL, 0, 0, 1, 0, 0, 'KITCHEN', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
-(211, 45, 'HotDog', NULL, 'individual', NULL, NULL, 'hotdog', '2026-07-21 09:39:36', '2026-07-21 11:26:24', 33.75, 25.00, 48, 0, 0.0000, NULL, NULL, 0, 'HOTDOG-F0FR', 31, 31, '2026-07-21 09:39:36', 1, 0, 1, 1, 1, NULL, NULL, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
-(214, NULL, 'Frozen HotDog (Dish Ingredient)', 'Meat', 'per_pack', 6.00, 'pcs', 'frozen-hotdog-dish-ingredient', '2026-07-21 09:43:27', '2026-07-21 11:26:24', 165.00, 150.00, 8, 10, 0.0000, NULL, '2026-07-21', 10, 'sku-1784627007-6954', 31, NULL, NULL, 1, 1, 1, 0, 0, 'Umberto Batumbakal', 152, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL);
+(211, 45, 'HotDog', NULL, 'individual', NULL, NULL, 'hotdog', '2026-07-21 09:39:36', '2026-07-27 05:56:44', 33.75, 25.00, 42, 0, 0.0000, NULL, NULL, 0, 'HOTDOG-F0FR', 31, 31, '2026-07-21 09:39:36', 1, 0, 1, 1, 1, NULL, NULL, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
+(214, NULL, 'Frozen HotDog (Dish Ingredient)', 'Meat', 'per_pack', 6.00, 'pcs', 'frozen-hotdog-dish-ingredient', '2026-07-21 09:43:27', '2026-07-27 05:56:44', 165.00, 150.00, 7, 10, 0.0000, NULL, '2026-07-21', 10, 'sku-1784627007-6954', 31, NULL, NULL, 1, 1, 1, 0, 0, 'Umberto Batumbakal', 152, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -2562,7 +2572,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('wRUckmeTVIeqnPaZipyoXav6LD6WopvSvl3R4krR', 148, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiOUdHenloRzJKVW9Wb1RaMnhCU25MMGZQMHBtTVdabzVFUU0xa1VqVCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTQ4O3M6NzoidXNlcl9pZCI7aToxNDg7czo5OiJ1c2VyX3JvbGUiO3M6NzoiTUFOQUdFUiI7czo5OiJ1c2VyX25hbWUiO3M6MjU6IkhSIE1hbmFnZXIgLSBEYXNtYSBCcmFuY2giO3M6MTM6InJlZGlyZWN0X3BhdGgiO3M6MTE6Ii9tYW5hZ2VyL2hyIjt9', 1784896844);
+('0EiaGNksynIhgB8kIWLKO3gG9jQTD7Qt5dVZwrfD', 153, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiak9XNmNJVjVaSW55S0xua2VERlpGVERNYThpM0ZVUDRaZFVqWVEybSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE1MztzOjc6InVzZXJfaWQiO2k6MTUzO3M6OToidXNlcl9yb2xlIjtzOjU6IlNUQUZGIjtzOjk6InVzZXJfbmFtZSI7czoxNToiSmFubmUgRGUgR3V6bWFuIjtzOjEzOiJyZWRpcmVjdF9wYXRoIjtzOjE0OiIvc3RhZmYvY2FzaGllciI7fQ==', 1785133749);
 
 -- --------------------------------------------------------
 
@@ -3178,7 +3188,7 @@ ALTER TABLE `announcements`
 -- AUTO_INCREMENT for table `attendance`
 --
 ALTER TABLE `attendance`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
 -- AUTO_INCREMENT for table `attendance_settings`
@@ -3280,19 +3290,19 @@ ALTER TABLE `messages`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=153;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=154;
 
 --
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=144;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=145;
 
 --
 -- AUTO_INCREMENT for table `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=95;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=96;
 
 --
 -- AUTO_INCREMENT for table `payrolls`
@@ -3304,7 +3314,7 @@ ALTER TABLE `payrolls`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2738;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2746;
 
 --
 -- AUTO_INCREMENT for table `positions`
