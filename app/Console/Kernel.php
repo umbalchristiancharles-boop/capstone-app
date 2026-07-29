@@ -36,6 +36,17 @@ class Kernel extends ConsoleKernel
                  ->onSuccess(function () {
                      \Illuminate\Support\Facades\Log::info('Successfully completed auto clock out');
                  });
+
+        // Fetch customer email replies from Gmail every 5 minutes
+        $schedule->command('emails:fetch-gmail')
+                 ->everyFiveMinutes()
+                 ->withoutOverlapping()
+                 ->onFailure(function () {
+                     \Illuminate\Support\Facades\Log::error('Failed to fetch Gmail replies');
+                 })
+                 ->onSuccess(function () {
+                     \Illuminate\Support\Facades\Log::info('Successfully completed Gmail fetch');
+                 });
     }
 
     /**

@@ -274,16 +274,6 @@
             </div>
 
             <div class="modal-body">
-              <div class="form-group">
-                <label>Status</label>
-                <select v-model="editingReport.status" class="form-input">
-                  <option value="pending">Pending</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="resolved">Resolved</option>
-                  <option value="closed">Closed</option>
-                </select>
-              </div>
-
               <div class="form-group" v-if="editingReport.message">
                 <label>Customer Concern:</label>
                 <div class="customer-concern-display">
@@ -315,7 +305,7 @@
                     <div v-for="email in getEmailHistory(editingReport.id)" :key="email.id" class="email-item" :class="email.direction">
                       <div class="email-header">
                         <div class="email-direction-badge">
-                          {{ email.direction === 'outbound' ? '📤 Sent' : '📥 Received' }}
+                          {{ email.direction === 'outbound' ? '📤 Outbound' : '📥 Inbound' }}
                         </div>
                         <div class="email-status-badge" :class="'status--' + email.status">
                           {{ email.status }}
@@ -347,13 +337,10 @@
                 v-if="editingReport.customer_email" 
                 class="btn-email" 
                 @click="openEmailModal"
-                :disabled="updating"
+                :disabled="sendingEmail"
                 title="Send email to customer"
               >
                 📧 Send Email
-              </button>
-              <button class="btn-primary" @click="updateReport" :disabled="updating">
-                {{ updating ? 'Saving...' : 'Save Changes' }}
               </button>
             </div>
           </div>
@@ -400,6 +387,30 @@
                   placeholder="Enter your message to the customer..."
                   required
                 ></textarea>
+              </div>
+
+              <!-- Automatic Response Preview -->
+              <div v-if="isFirstEmail" class="auto-response-preview">
+                <div class="auto-response-header">
+                  <span class="auto-response-icon">📧</span>
+                  <strong>Automatic Acknowledgment Will Be Sent First</strong>
+                </div>
+                <div class="auto-response-content">
+                  <p class="auto-response-label">The customer will receive this automatic response before your message:</p>
+                  <div class="auto-response-box">
+                    <div class="auto-response-subject">
+                      <strong>Subject:</strong> Re: {{ editingReport.subject || emailForm.subject }}
+                    </div>
+                    <div class="auto-response-message">
+                      <strong>Message:</strong><br />
+                      Dear {{ editingReport.customer_name }},<br /><br />
+                      Thank you for reaching out to us. We have received your message and our team is reviewing it.<br /><br />
+                      We will get back to you as soon as possible.<br /><br />
+                      Best regards,<br />
+                      Customer Support Team
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -464,16 +475,16 @@ const editingReport = ref({
   customer_email: '',
 })
 const staffList = ref([])
-const updating = ref(false)
 const sendingEmail = ref(false)
 const emailForm = ref({
   subject: '',
   message: '',
 })
-const previousStatus = ref('')
 const expandedEmailHistory = ref(null)
 const emailHistoryCache = ref({})
 const loadingEmails = ref({})
+const isFirstEmail = ref(false)
+const checkingFirstEmail = ref(false)
 
 let reportSearchTimeout = null
 
@@ -717,7 +728,6 @@ function openEditReportModal(report) {
     message: report.message || '',
     customer_email: report.customer_email || '',
   }
-  previousStatus.value = report.status
   showEditReportModal.value = true
 }
 
@@ -731,11 +741,30 @@ function closeEditReportModal() {
   }
 }
 
-function openEmailModal() {
+async function openEmailModal() {
   emailForm.value = {
     subject: editingReport.value.subject || '',
     message: '',
   }
+  
+  // Check if this is the first email for this report
+  checkingFirstEmail.value = true
+  try {
+    const response = await axios.get(`/api/customer-reports/${editingReport.value.id}/emails`, { withCredentials: true })
+    if (response.data.ok) {
+      const emails = response.data.emails || []
+      const hasOutboundEmails = emails.some(email => email.direction === 'outbound')
+      isFirstEmail.value = !hasOutboundEmails
+    } else {
+      isFirstEmail.value = false
+    }
+  } catch (error) {
+    console.error('Error checking email history:', error)
+    isFirstEmail.value = false
+  } finally {
+    checkingFirstEmail.value = false
+  }
+  
   showEmailModal.value = true
 }
 
@@ -748,9 +777,18 @@ function closeEmailModal() {
 }
 
 async function sendEmail() {
-  if (!emailForm.value.subject.trim() || !emailForm.value.message.trim()) {
+  // For first emails, only subject is required (message is optional since auto-acknowledgment is sent)
+  // For subsequent emails, both subject and message are required
+  if (!emailForm.value.subject.trim()) {
     if (window.swalAlert) {
-      await window.swalAlert('Please fill in both subject and message', 'Error', 'error')
+      await window.swalAlert('Please fill in the subject', 'Error', 'error')
+    }
+    return
+  }
+  
+  if (!isFirstEmail.value && !emailForm.value.message.trim()) {
+    if (window.swalAlert) {
+      await window.swalAlert('Please fill in the message', 'Error', 'error')
     }
     return
   }
@@ -763,10 +801,25 @@ async function sendEmail() {
     }, { withCredentials: true })
 
     if (response.data.ok) {
-      if (window.swalAlert) {
-        await window.swalAlert(response.data.message || 'Email sent successfully', 'Success', 'success')
+      // Automatically update status to "in_progress" after sending email
+      await updateReportStatusToInProgress()
+      
+      let successMessage = response.data.message || 'Email sent successfully'
+      
+      // Show additional notification if automatic acknowledgment was sent
+      if (response.data.is_first_email && window.swalAlert) {
+        await window.swalAlert(
+          'First email sent! An automatic acknowledgment has been sent to the customer notifying them that their message has been received.',
+          'Automatic Acknowledgment Sent',
+          'info'
+        )
+      } else if (window.swalAlert) {
+        await window.swalAlert(successMessage, 'Success', 'success')
       }
+      
       closeEmailModal()
+      await loadReports()
+      await loadReportStats()
     } else {
       if (window.swalAlert) {
         await window.swalAlert(response.data.message || 'Failed to send email', 'Error', 'error')
@@ -782,41 +835,22 @@ async function sendEmail() {
   }
 }
 
-async function updateReport() {
+async function updateReportStatusToInProgress() {
   try {
     const response = await axios.put(`/api/customer-reports/${editingReport.value.id}`, {
-      status: editingReport.value.status,
+      status: 'in_progress',
     }, { withCredentials: true })
-
+    
     if (response.data.ok) {
-      if (window.swalAlert) {
-        await window.swalAlert('Report updated successfully', 'Success', 'success')
-      }
-      closeEditReportModal()
-      await loadReports()
-      await loadReportStats()
+      // Update local editing report status
+      editingReport.value.status = 'in_progress'
     }
   } catch (error) {
-    console.error('Error updating report:', error)
-    if (window.swalAlert) {
-      await window.swalAlert('Failed to update report. Please try again.', 'Error', 'error')
-    }
+    console.error('Error updating report status:', error)
   }
 }
 
-// Watch for status changes to "in_progress" and automatically open email modal
-watch(
-  () => editingReport.value.status,
-  (newStatus, oldStatus) => {
-    // Only trigger if status changed to "in_progress" and we have a customer email
-    if (newStatus === 'in_progress' && oldStatus !== 'in_progress' && editingReport.value.customer_email) {
-      // Small delay to ensure the status change is registered
-      setTimeout(() => {
-        openEmailModal()
-      }, 300)
-    }
-  }
-)
+
 
 function getEmailHistory(reportId) {
   return emailHistoryCache.value[reportId] || []
@@ -1083,18 +1117,18 @@ onMounted(async () => {
 
 /* Modal */
 .modal-backdrop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 24px; }
-.modal { background: white; border-radius: 12px; max-width: 900px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); }
-.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid #E5E7EB; }
+.modal { background: white; border-radius: 12px; max-width: 800px; width: 100%; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); }
+.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid #E5E7EB; flex-shrink: 0; }
 .modal-header h3 { margin: 0; font-size: 1.25rem; color: #1F2937; }
 .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6B7280; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 6px; }
 .modal-close:hover { background: #F3F4F6; }
-.modal-body { padding: 24px; }
+.modal-body { padding: 24px; overflow-y: auto; flex: 1; }
 .form-group { margin-bottom: 20px; }
 .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #374151; font-size: 0.95rem; }
-.form-input { width: 100%; padding: 10px 14px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 0.95rem; font-family: inherit; }
+.form-input { width: 100%; padding: 10px 14px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 0.95rem; font-family: inherit; box-sizing: border-box; }
 .form-input:focus { outline: none; border-color: #0066FF; box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1); }
 textarea.form-input { resize: vertical; min-height: 100px; }
-.modal-footer { display: flex; gap: 12px; justify-content: flex-end; padding: 16px 24px; border-top: 1px solid #E5E7EB; }
+.modal-footer { display: flex; gap: 12px; justify-content: flex-end; padding: 16px 24px; border-top: 1px solid #E5E7EB; flex-shrink: 0; }
 .btn-cancel { padding: 10px 20px; background: #F3F4F6; color: #6B7280; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
 .btn-cancel:hover { background: #E5E7EB; }
 .btn-email { padding: 10px 20px; background: #10B981; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
@@ -1123,9 +1157,30 @@ textarea.form-input { resize: vertical; min-height: 100px; }
   .actions-cell { width: 100%; justify-content: flex-end; }
 }
 
+/* Modal Form Layout */
+.modal-body .form-group {
+  margin-bottom: 20px;
+}
+
+.modal-body .form-group:last-child {
+  margin-bottom: 0;
+}
+
+.customer-concern-display {
+  padding: 12px;
+  background: #F0F9FF;
+  border: 1px solid #BAE6FD;
+  border-radius: 6px;
+  color: #0369A1;
+  line-height: 1.6;
+  font-size: 0.95rem;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
 /* Email History Styles */
 .email-history-section {
-  margin-top: 20px;
+  margin-top: 24px;
   padding-top: 20px;
   border-top: 2px solid #E5E7EB;
 }
@@ -1173,7 +1228,7 @@ textarea.form-input { resize: vertical; min-height: 100px; }
 }
 
 .email-item {
-  padding: 16px;
+  padding: 14px;
   border-radius: 8px;
   border: 1px solid #E5E7EB;
   transition: all 0.2s;
@@ -1181,6 +1236,7 @@ textarea.form-input { resize: vertical; min-height: 100px; }
   height: auto;
   max-width: 100%;
   box-sizing: border-box;
+  background: #fafafa;
 }
 
 .email-item:hover {
@@ -1287,6 +1343,68 @@ textarea.form-input { resize: vertical; min-height: 100px; }
   border-radius: 6px;
   color: #991B1B;
   font-size: 0.9rem;
+}
+
+/* Automatic Response Preview */
+.auto-response-preview {
+  margin-top: 24px;
+  padding: 20px;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 2px solid #10b981;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+}
+
+.auto-response-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #10b981;
+}
+
+.auto-response-icon {
+  font-size: 1.5rem;
+}
+
+.auto-response-header strong {
+  color: #065f46;
+  font-size: 1rem;
+}
+
+.auto-response-content {
+  margin-top: 12px;
+}
+
+.auto-response-label {
+  color: #374151;
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+.auto-response-box {
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.auto-response-subject {
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #e5e7eb;
+  color: #374151;
+  font-size: 0.95rem;
+}
+
+.auto-response-message {
+  color: #4b5563;
+  font-size: 0.95rem;
+  line-height: 1.7;
+  white-space: pre-line;
 }
 
 </style>

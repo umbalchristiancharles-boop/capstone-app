@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 27, 2026 at 08:29 AM
+-- Generation Time: Jul 29, 2026 at 09:49 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -142,9 +142,9 @@ CREATE TABLE `branches` (
 --
 
 INSERT INTO `branches` (`id`, `code`, `name`, `address`, `latitude`, `longitude`, `is_active`, `is_main_branch`, `approval_status`, `requested_by`, `finance_confirmed_by`, `finance_confirmed_at`, `approved_by`, `approved_at`, `rejected_at`, `budget`, `square_meters`, `geofencing_radius`, `default_password`, `default_password_updated_at`, `created_at`, `updated_at`) VALUES
-(31, 'BR743957', 'Dasma Branch', 'Dasma', 14.33000000, 120.94000000, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 72977, 100.00, 5.64, 'BDP20260721D89A10', '2026-07-21 05:02:45', '2026-03-22 10:19:21', '2026-07-27 05:56:44'),
-(32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 700000, NULL, NULL, 'BDP202607224E4D6B', '2026-07-22 06:44:26', '2026-03-25 06:56:11', '2026-07-22 06:44:26'),
-(50, 'BR577235', 'Quezon City Branch', NULL, 14.65105500, 121.09766006, 1, 0, 'approved', 159, 161, '2026-07-17 10:54:29', 31, '2026-07-17 10:54:59', NULL, 100000, 50.00, 500.00, 'BDP202607210875B0', '2026-07-21 05:02:45', '2026-07-17 10:53:47', '2026-07-21 05:02:45');
+(31, 'BR743957', 'Dasma Branch', 'Dasma', 14.33000000, 120.94000000, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 72977, 100.00, 5.64, 'BDP20260729E03C7B', '2026-07-29 04:13:52', '2026-03-22 10:19:21', '2026-07-29 04:13:52'),
+(32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 700000, NULL, NULL, 'BDP20260729146D5C', '2026-07-29 04:13:52', '2026-03-25 06:56:11', '2026-07-29 04:13:52'),
+(50, 'BR577235', 'Quezon City Branch', NULL, 14.65105500, 121.09766006, 1, 0, 'approved', 159, 161, '2026-07-17 10:54:29', 31, '2026-07-17 10:54:59', NULL, 100000, 50.00, 500.00, 'BDP20260729337D34', '2026-07-29 04:13:52', '2026-07-17 10:53:47', '2026-07-29 04:13:52');
 
 -- --------------------------------------------------------
 
@@ -259,7 +259,7 @@ CREATE TABLE `customer_reports` (
 --
 
 INSERT INTO `customer_reports` (`id`, `customer_account_id`, `customer_name`, `customer_email`, `customer_phone`, `subject`, `message`, `status`, `admin_notes`, `assigned_to`, `resolved_at`, `created_at`, `updated_at`) VALUES
-(5, NULL, 'Christian Charles Umbal', 'umbal.christiancharles@ncst.edu.ph', '09156818857', 'Complaint', 'I want a refund', 'in_progress', NULL, NULL, NULL, '2026-07-22 08:05:52', '2026-07-22 08:15:23');
+(12, NULL, 'Christian Charles Umbal', 'umbal.christiancharles@ncst.edu.ph', '09156818857', 'General Inquiry', 'Ano ba to talaga perd', 'in_progress', NULL, NULL, NULL, '2026-07-29 05:50:11', '2026-07-29 06:34:15');
 
 -- --------------------------------------------------------
 
@@ -345,8 +345,15 @@ CREATE TABLE `email_communications` (
 --
 
 INSERT INTO `email_communications` (`id`, `customer_report_id`, `sender_email`, `sender_name`, `recipient_email`, `recipient_name`, `subject`, `message`, `direction`, `status`, `message_id`, `in_reply_to`, `references`, `error_message`, `read_at`, `sent_by`, `created_at`, `updated_at`) VALUES
-(3, 5, 'xecof21486@fun4k.com', 'Admin Main Branch', 'umbal.christiancharles@ncst.edu.ph', 'Christian Charles Umbal', 'Complaint', 'Wait sige', 'outbound', 'sent', NULL, NULL, NULL, NULL, NULL, 159, '2026-07-22 08:07:13', '2026-07-22 08:07:13'),
-(4, 5, 'umbal.christiancharles@ncst.edu.ph', 'Christian Charles Umbal', 'support@chikintayo.com', 'Support Team', 'Re: Complaint', 'anong wait', 'inbound', 'sent', NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-22 08:15:23', '2026-07-22 08:15:23');
+(14, 12, 'support@chikintayo.com', 'Chikin Tayo', 'umbal.christiancharles@ncst.edu.ph', 'Christian Charles Umbal', 'Re: General Inquiry', 'Dear Christian Charles Umbal,\n\nThank you for reaching out to us. We have received your message and our team is reviewing it.\n\nWe will get back to you as soon as possible.\n\nBest regards,\nCustomer Support Team', 'outbound', 'sent', '1785306849.d9a403e45cab51d8@localhost', NULL, NULL, NULL, NULL, 159, '2026-07-29 06:34:14', '2026-07-29 06:34:14'),
+(15, 12, 'xecof21486@fun4k.com', 'Admin Main Branch', 'umbal.christiancharles@ncst.edu.ph', 'Christian Charles Umbal', 'General Inquiry', 'asd', 'outbound', 'sent', '1785306971.502e6805ebdc9afe@localhost', NULL, NULL, NULL, NULL, 159, '2026-07-29 06:36:16', '2026-07-29 06:36:16'),
+(16, 12, 'umbal.christiancharles@ncst.edu.ph', 'Christian Charles Umbal', 'ccsumbal12@gmail.com', 'Support Team', 'Re: General Inquiry', 'asd\r\n\r\nOn Wed, Jul 29, 2026 at 2:36 PM Chikin Tayo <ccsumbal12@gmail.com> wrote:\r\n\r\n> asd\r\n>\r\n\r\n-- \r\n**DISCLAIMER*. The content of this email and any attachments are \r\nconfidential and intended solely for the use of the named recipient(s). If \r\nyou have received this email by mistake, please notify the National College \r\nof Science and Technology (NCST) by sending the original message to the \r\nsender and delete this email from your system immediately. If you are not \r\nthe intended recipient, you are hereby notified that any dissemination, \r\ndistribution, copying or taking any action in reliance on the contents of \r\nthis information is strictly prohibited. Any views and opinions expressed \r\nin this e-mail are those of the sender. They do not necessarily reflect the \r\nviews of NCST management and its personnel.*', 'inbound', 'sent', '<CABs0QTW0X1bf1rNp-pQQfmzmqny-+Jdk+=nvPuuZdyGRtAf+2Q@mail.gmail.com>', '<e3d023baac3083551361982d0ca68b64@chikintayo.com>', '<e3d023baac3083551361982d0ca68b64@chikintayo.com>', NULL, NULL, NULL, '2026-07-29 07:43:55', '2026-07-29 07:43:55'),
+(17, 12, 'umbal.christiancharles@ncst.edu.ph', 'Christian Charles Umbal', 'ccsumbal12@gmail.com', 'Support Team', 'Re: General Inquiry', 'Eyy\r\n\r\n\r\nOn Wed, Jul 29, 2026 at 2:34 PM Chikin Tayo <ccsumbal12@gmail.com> wrote:\r\n\r\n> Dear Christian Charles Umbal,\r\n>\r\n> Thank you for reaching out to us. We have received your message and our\r\n> team is reviewing it.\r\n>\r\n> We will get back to you as soon as possible.\r\n>\r\n> Best regards,\r\n> Customer Support Team\r\n>\r\n\r\n-- \r\n**DISCLAIMER*. The content of this email and any attachments are \r\nconfidential and intended solely for the use of the named recipient(s). If \r\nyou have received this email by mistake, please notify the National College \r\nof Science and Technology (NCST) by sending the original message to the \r\nsender and delete this email from your system immediately. If you are not \r\nthe intended recipient, you are hereby notified that any dissemination, \r\ndistribution, copying or taking any action in reliance on the contents of \r\nthis information is strictly prohibited. Any views and opinions expressed \r\nin this e-mail are those of the sender. They do not necessarily reflect the \r\nviews of NCST management and its personnel.*', 'inbound', 'sent', '<CABs0QTUvH3c_L3ZukMV5O+rS2a4hL8FN66OKpMUyzvtfQm0sTg@mail.gmail.com>', '<45e6fb27e4e937dad66435025c13ae73@chikintayo.com>', '<45e6fb27e4e937dad66435025c13ae73@chikintayo.com>', NULL, NULL, NULL, '2026-07-29 07:43:56', '2026-07-29 07:43:56'),
+(18, 12, 'umbal.christiancharles@ncst.edu.ph', 'Christian Charles Umbal', 'ccsumbal12@gmail.com', 'Support Team', 'Re: Feedback', 'Thank you for your response.\r\n\r\nOn Wed, Jul 29, 2026 at 1:42 PM Chikin Tayo <ccsumbal12@gmail.com> wrote:\r\n\r\n> Dear Christian Charles Umbal, Thank you for reaching out to us. We have\r\n> received your message and our team is reviewing it. We will get back to you\r\n> as soon as possible. Best regards, Customer Support Team\r\n\r\n-- \r\n**DISCLAIMER*. The content of this email and any attachments are \r\nconfidential and intended solely for the use of the named recipient(s). If \r\nyou have received this email by mistake, please notify the National College \r\nof Science and Technology (NCST) by sending the original message to the \r\nsender and delete this email from your system immediately. If you are not \r\nthe intended recipient, you are hereby notified that any dissemination, \r\ndistribution, copying or taking any action in reliance on the contents of \r\nthis information is strictly prohibited. Any views and opinions expressed \r\nin this e-mail are those of the sender. They do not necessarily reflect the \r\nviews of NCST management and its personnel.*', 'inbound', 'sent', '<CABs0QTUCEF2NcboVg993OfUM6+GWnh=gyEL1fh4uW56FuEZf_A@mail.gmail.com>', '<89e440b973646070025097e4af0ba94c@chikintayo.com>', '<89e440b973646070025097e4af0ba94c@chikintayo.com>', NULL, NULL, NULL, '2026-07-29 07:43:57', '2026-07-29 07:43:57'),
+(19, 12, 'umbal.christiancharles@ncst.edu.ph', 'Christian Charles Umbal', 'ccsumbal12@gmail.com', 'Support Team', 'Re: General Inquiry', 'hi\r\n\r\n\r\nOn Wed, Jul 29, 2026 at 1:37 PM Chikin Tayo <ccsumbal12@gmail.com> wrote:\r\n\r\n> hello\r\n\r\n-- \r\n**DISCLAIMER*. The content of this email and any attachments are \r\nconfidential and intended solely for the use of the named recipient(s). If \r\nyou have received this email by mistake, please notify the National College \r\nof Science and Technology (NCST) by sending the original message to the \r\nsender and delete this email from your system immediately. If you are not \r\nthe intended recipient, you are hereby notified that any dissemination, \r\ndistribution, copying or taking any action in reliance on the contents of \r\nthis information is strictly prohibited. Any views and opinions expressed \r\nin this e-mail are those of the sender. They do not necessarily reflect the \r\nviews of NCST management and its personnel.*', 'inbound', 'sent', '<CABs0QTXih8N3ZTT5vs0-PDgba9Pun5BFcEjViG_uQmUiggGS8A@mail.gmail.com>', '<d572562d916a87284b2d89198f75952e@chikintayo.com>', '<d572562d916a87284b2d89198f75952e@chikintayo.com>', NULL, NULL, NULL, '2026-07-29 07:43:57', '2026-07-29 07:43:57'),
+(20, 12, 'umbal.christiancharles@ncst.edu.ph', 'Christian Charles Umbal', 'ccsumbal12@gmail.com', 'Support Team', 'Re: Complaint', 'pakyu\r\n\r\nOn Wed, Jul 29, 2026 at 12:44 PM Chikin Tayo <ccsumbal12@gmail.com> wrote:\r\n\r\n> HOy anong mabaho ulul\r\n>\r\n\r\n-- \r\n**DISCLAIMER*. The content of this email and any attachments are \r\nconfidential and intended solely for the use of the named recipient(s). If \r\nyou have received this email by mistake, please notify the National College \r\nof Science and Technology (NCST) by sending the original message to the \r\nsender and delete this email from your system immediately. If you are not \r\nthe intended recipient, you are hereby notified that any dissemination, \r\ndistribution, copying or taking any action in reliance on the contents of \r\nthis information is strictly prohibited. Any views and opinions expressed \r\nin this e-mail are those of the sender. They do not necessarily reflect the \r\nviews of NCST management and its personnel.*', 'inbound', 'sent', '<CABs0QTWre4vEB92xE4yNN3n=L0sEGcREr1VS48iDGKdZnt057Q@mail.gmail.com>', '<8660d65215f289e83e1eb7e8c40229f2@chikintayo.com>', '<8660d65215f289e83e1eb7e8c40229f2@chikintayo.com>', NULL, NULL, NULL, '2026-07-29 07:44:01', '2026-07-29 07:44:01'),
+(21, 12, 'umbal.christiancharles@ncst.edu.ph', 'Christian Charles Umbal', 'ccsumbal12@gmail.com', 'Support Team', 'Re: Complaint', 'anong wait\r\n\r\nOn Wed, Jul 22, 2026 at 4:07 PM Chikin Tayo <ccsumbal12@gmail.com> wrote:\r\n\r\n> Wait sige\r\n>\r\n\r\n-- \r\n**DISCLAIMER*. The content of this email and any attachments are \r\nconfidential and intended solely for the use of the named recipient(s). If \r\nyou have received this email by mistake, please notify the National College \r\nof Science and Technology (NCST) by sending the original message to the \r\nsender and delete this email from your system immediately. If you are not \r\nthe intended recipient, you are hereby notified that any dissemination, \r\ndistribution, copying or taking any action in reliance on the contents of \r\nthis information is strictly prohibited. Any views and opinions expressed \r\nin this e-mail are those of the sender. They do not necessarily reflect the \r\nviews of NCST management and its personnel.*', 'inbound', 'sent', '<CABs0QTURHKqKtQNQFU3_HnxDrN0rUJFNCCj=uqKumZ5s+uR3WA@mail.gmail.com>', '<5e67da5bb665262e5261016bbb613243@chikintayo.com>', '<5e67da5bb665262e5261016bbb613243@chikintayo.com>', NULL, NULL, NULL, '2026-07-29 07:44:15', '2026-07-29 07:44:15'),
+(22, 12, 'umbal.christiancharles@ncst.edu.ph', 'Christian Charles Umbal', 'ccsumbal12@gmail.com', 'Support Team', 'Re: Complaint', 'Laah pakyu\r\n\r\nOn Wed, Jul 22, 2026 at 3:29 PM Chikin Tayo <ccsumbal12@gmail.com> wrote:\r\n\r\n> Sorry na po\r\n>\r\n\r\n-- \r\n**DISCLAIMER*. The content of this email and any attachments are \r\nconfidential and intended solely for the use of the named recipient(s). If \r\nyou have received this email by mistake, please notify the National College \r\nof Science and Technology (NCST) by sending the original message to the \r\nsender and delete this email from your system immediately. If you are not \r\nthe intended recipient, you are hereby notified that any dissemination, \r\ndistribution, copying or taking any action in reliance on the contents of \r\nthis information is strictly prohibited. Any views and opinions expressed \r\nin this e-mail are those of the sender. They do not necessarily reflect the \r\nviews of NCST management and its personnel.*', 'inbound', 'sent', '<CABs0QTVxfjC+kUGGJ_LSDT3THL+S27hEDKczv9s11JTSttGNWQ@mail.gmail.com>', '<9ff7a49296f9703deb5d8faa44edaf66@chikintayo.com>', '<9ff7a49296f9703deb5d8faa44edaf66@chikintayo.com>', NULL, NULL, NULL, '2026-07-29 07:44:16', '2026-07-29 07:44:16');
 
 -- --------------------------------------------------------
 
@@ -2141,11 +2148,11 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (2696, 'App\\Models\\User', 31, 'auth-token', 'cbd9a4fe59b450e90e8de215c2b20ee2a9d2ad7b8ea249fed8cd2936f12ec52f', '[\"*\"]', NULL, NULL, '2026-07-21 09:36:27', '2026-07-21 09:36:27'),
 (2709, 'App\\Models\\User', 31, 'auth-token', 'ef2b89e7169ae86f782b50dc9bf2ca9c860a417904fea179c38d5a08ec82b7d7', '[\"*\"]', NULL, NULL, '2026-07-21 09:48:47', '2026-07-21 09:48:47'),
 (2719, 'App\\Models\\User', 147, 'auth-token', '9b969badda49bd9baf0190f06670635a62d8d59be7d846d19d6c9e3b2d7c35b4', '[\"*\"]', NULL, NULL, '2026-07-21 10:16:38', '2026-07-21 10:16:38'),
-(2723, 'App\\Models\\User', 153, 'auth-token', 'baca381a12d87745de285462b7b869ac08b2757178bb5628c73429cfad9b90c6', '[\"*\"]', NULL, NULL, '2026-07-21 11:26:07', '2026-07-21 11:26:07'),
 (2735, 'App\\Models\\User', 31, 'auth-token', '843076fb7735aba7c96324eed4a8aadb9970cd6566cc30d9c04cad782e16af50', '[\"*\"]', NULL, NULL, '2026-07-24 08:01:03', '2026-07-24 08:01:03'),
 (2738, 'App\\Models\\User', 31, 'auth-token', '655daaf2ba90c9bddee861130ca0968337170c7364dcbdf156039ff83e31360b', '[\"*\"]', NULL, NULL, '2026-07-27 05:00:09', '2026-07-27 05:00:09'),
 (2743, 'App\\Models\\User', 147, 'auth-token', '05ff5c27ba6fcfaf1227c8bc5ee4d07942b41cec45e9e98cc0739ada171a773e', '[\"*\"]', NULL, NULL, '2026-07-27 05:06:57', '2026-07-27 05:06:57'),
-(2745, 'App\\Models\\User', 153, 'auth-token', '604786c489c080f4a805282e246a5b1c80639d459927c6f093e4544e91ac4cc9', '[\"*\"]', NULL, NULL, '2026-07-27 05:56:30', '2026-07-27 05:56:30');
+(2746, 'App\\Models\\User', 31, 'auth-token', 'efe255d03f34d5cf44337b3a63e99849bb49efc92d187ade764f9eaae66addad', '[\"*\"]', NULL, NULL, '2026-07-27 06:31:16', '2026-07-27 06:31:16'),
+(2756, 'App\\Models\\User', 159, 'auth-token', 'd1fb61a04e4016f3f54bd5d5c88d7c21d849753aacba20426d5ca76ef8e693fd', '[\"*\"]', NULL, NULL, '2026-07-29 06:09:50', '2026-07-29 06:09:50');
 
 -- --------------------------------------------------------
 
@@ -2572,7 +2579,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('0EiaGNksynIhgB8kIWLKO3gG9jQTD7Qt5dVZwrfD', 153, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiak9XNmNJVjVaSW55S0xua2VERlpGVERNYThpM0ZVUDRaZFVqWVEybSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE1MztzOjc6InVzZXJfaWQiO2k6MTUzO3M6OToidXNlcl9yb2xlIjtzOjU6IlNUQUZGIjtzOjk6InVzZXJfbmFtZSI7czoxNToiSmFubmUgRGUgR3V6bWFuIjtzOjEzOiJyZWRpcmVjdF9wYXRoIjtzOjE0OiIvc3RhZmYvY2FzaGllciI7fQ==', 1785133749);
+('9mFkcFLCcnXws9tvTJA9tg5Bdd2sgwbBOYrbnKKO', 159, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiS2RackpOSjlNbG81ZkNJaHhiUkRGR3ppdTlZUzIxdmo2V2J3emplMSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTU5O3M6NzoidXNlcl9pZCI7aToxNTk7czo5OiJ1c2VyX3JvbGUiO3M6NToiQURNSU4iO3M6OToidXNlcl9uYW1lIjtzOjE3OiJBZG1pbiBNYWluIEJyYW5jaCI7czoxMzoicmVkaXJlY3RfcGF0aCI7czoxMjoiL2FkbWluLXBhbmVsIjtzOjk6Il9wcmV2aW91cyI7YToyOntzOjM6InVybCI7czo3MDoiaHR0cDovL2xvY2FsaG9zdDo4MDAwLy53ZWxsLWtub3duL2FwcHNwZWNpZmljL2NvbS5jaHJvbWUuZGV2dG9vbHMuanNvbiI7czo1OiJyb3V0ZSI7Tjt9fQ==', 1785311361);
 
 -- --------------------------------------------------------
 
@@ -3218,7 +3225,7 @@ ALTER TABLE `customer_accounts`
 -- AUTO_INCREMENT for table `customer_reports`
 --
 ALTER TABLE `customer_reports`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `dishes`
@@ -3236,7 +3243,7 @@ ALTER TABLE `dish_ingredients`
 -- AUTO_INCREMENT for table `email_communications`
 --
 ALTER TABLE `email_communications`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
 -- AUTO_INCREMENT for table `employee_timesheets`
@@ -3314,7 +3321,7 @@ ALTER TABLE `payrolls`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2746;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2757;
 
 --
 -- AUTO_INCREMENT for table `positions`

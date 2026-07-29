@@ -35,7 +35,10 @@ class FetchGmailReplies extends Command
             return 1;
         }
 
-        $mailbox = config('mail.from.address');
+        // Use the actual Gmail account username for IMAP login, not the from address alias
+        // MAIL_USERNAME is the real Gmail account (e.g. ccsumbal12@gmail.com)
+        // MAIL_FROM_ADDRESS may be a "Send As" alias (e.g. support@chikintayo.com)
+        $mailbox = config('mail.mailers.smtp.username') ?: config('mail.from.address');
         $password = config('services.gmail.app_password') ?: env('GMAIL_APP_PASSWORD');
         
         if (!$password) {
@@ -121,13 +124,23 @@ class FetchGmailReplies extends Command
             throw new \Exception("Failed to fetch email structure");
         }
 
-        // Get email headers
-        $headers = imap_headerinfo($inbox, $emailId, FT_UID);
+        // Get email headers using msgno (sequence number) - FT_UID is NOT valid for imap_headerinfo!
+        // imap_headerinfo expects a message sequence number, not a UID
+        $msgNo = imap_msgno($inbox, $emailId);
+        if (!$msgNo) {
+            throw new \Exception("Could not convert UID {$emailId} to message number");
+        }
+        
+        $headers = imap_headerinfo($inbox, $msgNo);
+        
+        if (!$headers) {
+            throw new \Exception("Failed to fetch headers for message #{$msgNo}");
+        }
         
         $subject = $this->decodeMimeStr($headers->subject ?? '(No Subject)');
         $fromEmail = $headers->from[0]->mailbox . '@' . $headers->from[0]->host;
         $fromName = $headers->from[0]->personal ?? $fromEmail;
-        $toEmail = $headers->to[0]->mailbox . '@' . $headers->to[0]->host;
+        $toEmail = isset($headers->to[0]) ? $headers->to[0]->mailbox . '@' . $headers->to[0]->host : '';
         $messageId = $headers->message_id ?? null;
         $inReplyTo = $headers->in_reply_to ?? null;
         $references = $headers->references ?? null;
@@ -199,28 +212,52 @@ class FetchGmailReplies extends Command
      */
     private function findMatchingReport($fromEmail, $subject, $messageId, $inReplyTo)
     {
-        // First, try to match by Message-ID or In-Reply-To (thread matching)
+        // First, try to match by In-Reply-To header against outbound message_id
+        // This is the most reliable method - the customer's reply has In-Reply-To set
+        // to the Message-ID of the email we sent them
         if ($inReplyTo) {
-            $outboundEmail = EmailCommunication::where('message_id', $inReplyTo)
+            // Clean angle brackets from the in-reply-to value if present
+            $cleanInReplyTo = trim($inReplyTo, '<> ');
+            
+            // Check against message_id of any outbound email
+            $outboundEmail = EmailCommunication::where('message_id', $cleanInReplyTo)
                 ->where('direction', 'outbound')
                 ->first();
             
             if ($outboundEmail) {
                 return CustomerReport::find($outboundEmail->customer_report_id);
             }
+
+            // Also check if in_reply_to appears in any email's references or in_reply_to columns
+            $referencedEmail = EmailCommunication::where('customer_report_id', '>', 0)
+                ->where(function ($q) use ($cleanInReplyTo) {
+                    $q->where('message_id', $cleanInReplyTo)
+                      ->orWhere('references', 'like', "%{$cleanInReplyTo}%")
+                      ->orWhere('in_reply_to', $cleanInReplyTo);
+                })
+                ->where('direction', 'outbound')
+                ->first();
+            
+            if ($referencedEmail) {
+                return CustomerReport::find($referencedEmail->customer_report_id);
+            }
         }
 
+        // Second, try to match by References header threading
+        // If the inbound email has References header, check if any outbound communication
+        // contains those reference message IDs
         if ($messageId) {
-            $outboundEmail = EmailCommunication::where('references', 'like', "%{$messageId}%")
+            // Check if any outbound email has this message_id in its references
+            $referencingEmail = EmailCommunication::where('references', 'like', "%{$messageId}%")
                 ->where('direction', 'outbound')
                 ->first();
             
-            if ($outboundEmail) {
-                return CustomerReport::find($outboundEmail->customer_report_id);
+            if ($referencingEmail) {
+                return CustomerReport::find($referencingEmail->customer_report_id);
             }
         }
 
-        // Second, try to match by sender email
+        // Third, try to match by sender email to active reports
         $report = CustomerReport::where('customer_email', $fromEmail)
             ->whereIn('status', ['pending', 'in_progress'])
             ->orderBy('created_at', 'desc')
@@ -230,10 +267,20 @@ class FetchGmailReplies extends Command
             return $report;
         }
 
-        // Third, try to match by subject (Re: or Fwd:)
+        // Fourth, try to match by cleaned subject (remove Re:/Fwd: prefixes)
         $cleanSubject = preg_replace('/^(Re:|Fwd:|Fw:)\s*/i', '', $subject);
         $report = CustomerReport::where('subject', 'like', "%{$cleanSubject}%")
             ->whereIn('status', ['pending', 'in_progress'])
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        if ($report) {
+            return $report;
+        }
+
+        // Fifth, try to match by sender email to any report regardless of status
+        // (the customer may have replied even if the report was marked resolved)
+        $report = CustomerReport::where('customer_email', $fromEmail)
             ->orderBy('created_at', 'desc')
             ->first();
 
@@ -248,13 +295,24 @@ class FetchGmailReplies extends Command
         $body = '';
 
         if ($structure->type == 1) { // multipart
-            $parts = imap_fetchstructure($inbox, $emailId, FT_UID)->parts;
-            foreach ($parts as $part) {
-                if ($part->type == 0) { // text
+            // Fetch parts properly - use the full structure with parts
+            $parts = $structure->parts ?? [];
+            foreach ($parts as $partNum => $part) {
+                if ($part->type == 0 || $part->ifsubtype) { // text/plain or text/html
+                    $sectionNum = $partNum + 1; // IMAP part numbers are 1-indexed
                     $encoding = $part->encoding;
-                    $bodyPart = imap_fetchbody($inbox, $emailId, 1, FT_UID);
-                    $body = $this->decodeText($bodyPart, $encoding);
-                    break;
+                    $bodyPart = @imap_fetchbody($inbox, $emailId, $sectionNum, FT_UID);
+                    if ($bodyPart) {
+                        $decodedBody = $this->decodeText($bodyPart, $encoding);
+                        // Prefer plain text over HTML
+                        if ($part->subtype == 'PLAIN' || empty($body)) {
+                            $body = $decodedBody;
+                        }
+                        // If we found plain text, stop looking
+                        if ($part->subtype == 'PLAIN') {
+                            break;
+                        }
+                    }
                 }
             }
         } else { // not multipart
@@ -263,7 +321,7 @@ class FetchGmailReplies extends Command
             $body = $this->decodeText($body, $encoding);
         }
 
-        return $body;
+        return trim($body);
     }
 
     /**

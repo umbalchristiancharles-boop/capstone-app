@@ -182,16 +182,16 @@
                   <p>No email communications yet</p>
                 </div>
                 <div v-else class="email-list">
-                  <div v-for="email in getEmailHistory(editingReport.id)" :key="email.id" class="email-item" :class="email.direction">
-                    <div class="email-header">
-                      <div class="email-direction-badge">
-                        {{ email.direction === 'outbound' ? '📤 Sent' : '📥 Received' }}
-                      </div>
-                      <div class="email-status-badge" :class="'status--' + email.status">
-                        {{ email.status }}
-                      </div>
-                      <span class="email-date">{{ formatDate(email.created_at) }}</span>
-                    </div>
+                   <div v-for="email in getEmailHistory(editingReport.id)" :key="email.id" class="email-item" :class="email.direction">
+                     <div class="email-header">
+                       <div class="email-direction-badge">
+                         {{ email.direction === 'outbound' ? '📤 Outbound' : '📥 Inbound' }}
+                       </div>
+                       <div class="email-status-badge" :class="'status--' + email.status">
+                         {{ email.status }}
+                       </div>
+                       <span class="email-date">{{ formatDate(email.created_at) }}</span>
+                     </div>
                     <div class="email-subject">
                       <strong>Subject:</strong> {{ email.subject }}
                     </div>
@@ -324,6 +324,8 @@ const emailForm = ref({
   message: '',
 })
 const sendingEmail = ref(false)
+const isFirstEmail = ref(false)
+const checkingFirstEmail = ref(false)
 
 let searchTimeout = null
 
@@ -524,6 +526,27 @@ function openEmailModal() {
     subject: editingReport.value.subject || '',
     message: '',
   }
+  
+  // Check if this is the first email for this report
+  checkingFirstEmail.value = true
+  axios.get(`/api/customer-reports/${editingReport.value.id}/emails`)
+    .then(response => {
+      if (response.data.ok) {
+        const emails = response.data.emails || []
+        const hasOutboundEmails = emails.some(email => email.direction === 'outbound')
+        isFirstEmail.value = !hasOutboundEmails
+      } else {
+        isFirstEmail.value = false
+      }
+    })
+    .catch(error => {
+      console.error('Error checking email history:', error)
+      isFirstEmail.value = false
+    })
+    .finally(() => {
+      checkingFirstEmail.value = false
+    })
+  
   showEmailModal.value = true
 }
 

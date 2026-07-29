@@ -229,10 +229,23 @@ class CustomerReportController extends Controller
 
         $report = CustomerReport::findOrFail($id);
 
-        $request->validate([
+        // Check if this is the first email (no outbound emails yet)
+        $existingOutboundEmails = EmailCommunication::where('customer_report_id', $report->id)
+            ->where('direction', 'outbound')
+            ->exists();
+        $isFirstEmail = !$existingOutboundEmails;
+
+        // For first emails, only subject is required (message is optional)
+        // For subsequent emails, both subject and message are required
+        $validationRules = [
             'subject' => 'required|string|max:255',
-            'message' => 'required|string|max:5000',
-        ]);
+        ];
+        
+        if (!$isFirstEmail) {
+            $validationRules['message'] = 'required|string|max:5000';
+        }
+        
+        $request->validate($validationRules);
 
         // Check if customer email exists
         if (!$report->customer_email) {
@@ -244,30 +257,74 @@ class CustomerReportController extends Controller
 
         try {
             $emailSubject = $request->subject;
-            $emailBody = $request->message;
-            
-            // Send email using the helper function
-            send_raw_mail_notification($report->customer_email, $emailSubject, $emailBody);
+            $emailBody = $request->message ?? '';
 
-            // Save email communication to database
-            EmailCommunication::create([
-                'customer_report_id' => $report->id,
-                'sender_email' => $user->email,
-                'sender_name' => $user->full_name ?? $user->name ?? 'Staff',
-                'recipient_email' => $report->customer_email,
-                'recipient_name' => $report->customer_name,
-                'subject' => $emailSubject,
-                'message' => $emailBody,
-                'direction' => 'outbound',
-                'status' => 'sent',
-                'sent_by' => $user->id,
-            ]);
+            // If this is the first email, send an automatic acknowledgment
+            if ($isFirstEmail) {
+                $autoResponseSubject = 'Re: ' . $report->subject;
+                $autoResponseMessage = "Dear " . $report->customer_name . ",\n\n";
+                $autoResponseMessage .= "Thank you for reaching out to us. We have received your message and our team is reviewing it.\n\n";
+                $autoResponseMessage .= "We will get back to you as soon as possible.\n\n";
+                $autoResponseMessage .= "Best regards,\n";
+                $autoResponseMessage .= "Customer Support Team";
+                
+                // Send the automatic response first and capture Message-ID
+                $autoResponseMessageId = send_raw_mail_notification($report->customer_email, $autoResponseSubject, $autoResponseMessage);
+
+                // Save the automatic response to database
+                EmailCommunication::create([
+                    'customer_report_id' => $report->id,
+                    'sender_email' => config('mail.from.address'),
+                    'sender_name' => config('mail.from.name', 'Customer Support'),
+                    'recipient_email' => $report->customer_email,
+                    'recipient_name' => $report->customer_name,
+                    'subject' => $autoResponseSubject,
+                    'message' => $autoResponseMessage,
+                    'direction' => 'outbound',
+                    'status' => $autoResponseMessageId ? 'sent' : 'failed',
+                    'message_id' => $autoResponseMessageId,
+                    'sent_by' => $user->id,
+                ]);
+            }
+            
+            // Only send the staff's email if message is provided
+            if (!empty($emailBody)) {
+                // Send the actual email using the helper function and capture Message-ID
+                $staffMessageId = send_raw_mail_notification($report->customer_email, $emailSubject, $emailBody);
+
+                // Save email communication to database
+                EmailCommunication::create([
+                    'customer_report_id' => $report->id,
+                    'sender_email' => $user->email,
+                    'sender_name' => $user->full_name ?? $user->name ?? 'Staff',
+                    'recipient_email' => $report->customer_email,
+                    'recipient_name' => $report->customer_name,
+                    'subject' => $emailSubject,
+                    'message' => $emailBody,
+                    'direction' => 'outbound',
+                    'status' => $staffMessageId ? 'sent' : 'failed',
+                    'message_id' => $staffMessageId,
+                    'sent_by' => $user->id,
+                ]);
+            }
+
+            $responseMessage = $existingOutboundEmails 
+                ? 'Email sent successfully to ' . $report->customer_email
+                : 'First email sent successfully with automatic acknowledgment to ' . $report->customer_email;
 
             return response()->json([
                 'ok' => true,
-                'message' => 'Email sent successfully to ' . $report->customer_email,
+                'message' => $responseMessage,
+                'is_first_email' => !$existingOutboundEmails,
             ]);
         } catch (\Throwable $e) {
+            Log::error('Failed to send email to customer', [
+                'error' => $e->getMessage(),
+                'report_id' => $report->id,
+                'customer_email' => $report->customer_email,
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             // Save failed email communication to database
             try {
                 EmailCommunication::create([
@@ -277,23 +334,17 @@ class CustomerReportController extends Controller
                     'recipient_email' => $report->customer_email,
                     'recipient_name' => $report->customer_name,
                     'subject' => $request->subject,
-                    'message' => $request->message,
+                    'message' => $emailBody ?: '(No message body - auto-acknowledgment only)',
                     'direction' => 'outbound',
                     'status' => 'failed',
                     'error_message' => $e->getMessage(),
                     'sent_by' => $user->id,
                 ]);
             } catch (\Throwable $logError) {
-                Log::error('Failed to save email communication', [
+                Log::error('Failed to save failed email communication record', [
                     'error' => $logError->getMessage(),
                 ]);
             }
-
-            Log::error('Failed to send email to customer', [
-                'error' => $e->getMessage(),
-                'report_id' => $report->id,
-                'customer_email' => $report->customer_email,
-            ]);
 
             return response()->json([
                 'ok' => false,

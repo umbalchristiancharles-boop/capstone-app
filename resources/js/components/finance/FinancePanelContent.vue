@@ -189,8 +189,17 @@ function toNumber(val) {
   return isNaN(n) ? 0 : n
 }
 
+let isDestroying = false
+
 function renderChart() {
+  // Skip rendering if component is being destroyed or ref is null
+  if (isDestroying) return
   if (!chartRef.value) return
+  
+  // Ensure canvas is actually in the DOM and visible
+  if (!chartRef.value.isConnected) return
+  if (chartRef.value.offsetParent === null && chartRef.value.style.display !== 'none') return
+  
   if (chartInstance.value) {
     chartInstance.value.destroy()
     chartInstance.value = null
@@ -207,6 +216,11 @@ function renderChart() {
   const ctx = chartRef.value.getContext('2d')
   if (!ctx) {
     // Canvas context couldn't be obtained (element detached or not ready). Skip rendering.
+    return
+  }
+
+  // Additional guard: ensure canvas is still attached to DOM
+  if (!chartRef.value.isConnected) {
     return
   }
 
@@ -276,7 +290,10 @@ function renderChart() {
 }
 
 watch(normalizedReports, () => {
-  renderChart()
+  // Only render if canvas is available and component is not being destroyed
+  if (!isDestroying && chartRef.value && chartRef.value.isConnected) {
+    renderChart()
+  }
 })
 
 onMounted(() => {
@@ -284,9 +301,16 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  isDestroying = true
   if (chartInstance.value) {
-    try { chartInstance.value.destroy() } catch (e) {}
+    try { 
+      chartInstance.value.destroy() 
+    } catch (e) {
+      // Ignore errors during cleanup
+    }
+    chartInstance.value = null
   }
+  chartRef.value = null
 })
 </script>
 

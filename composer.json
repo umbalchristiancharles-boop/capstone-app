@@ -3,7 +3,8 @@
     "type": "project",
     "require": {
         "laravel/framework": "^12.0",
-        "laravel/sanctum": "^4.2"
+        "laravel/sanctum": "^4.2",
+        "symfony/mime": "*"
     },
     "autoload": {
         "psr-4": {

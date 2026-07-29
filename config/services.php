@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'gmail' => [
+        'app_password' => env('GMAIL_APP_PASSWORD'),
+    ],
+
 ];
