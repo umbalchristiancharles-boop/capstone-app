@@ -147,6 +147,12 @@ const routes = [
     meta: { requiresAuth: true, role: 'staff', department: 'inventory' }
   },
   {
+    path: '/staff/inventory/disposal-list',
+    name: 'DisposalList',
+    component: () => import('../components/inventory/DisposalList.vue'),
+    meta: { requiresAuth: true, role: 'staff', department: 'inventory' }
+  },
+  {
     path: '/staff/kitchen',
     name: 'StaffKitchenPanel',
     component: () => import('../components/KitchenStaffPanel.vue'),

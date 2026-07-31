@@ -277,6 +277,11 @@ Route::middleware('web')->group(function () {
         Route::get('/branches',         [StaffController::class, 'apiBranches']);
         Route::get('/attendance', [\App\Http\Controllers\Admin\AttendanceController::class, 'index']);
 
+        // Admin Expired Product Review Routes
+        Route::get('/expired-products', [\App\Http\Controllers\Admin\ExpiredProductController::class, 'index']);
+        Route::put('/expired-products/{id}/status', [\App\Http\Controllers\Admin\ExpiredProductController::class, 'updateStatus']);
+        Route::get('/expired-products/statistics', [\App\Http\Controllers\Admin\ExpiredProductController::class, 'statistics']);
+
         // Admin Finance Routes
         Route::prefix('finance')->group(function () {
             Route::get('/dashboard',    [AdminFinanceController::class, 'dashboard']);
@@ -468,7 +473,8 @@ Route::prefix('manager')->middleware('auth:sanctum,web')->group(function () {
             Route::get('/inventory/variance-alerts', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'varianceAlerts']);
             Route::post('/inventory/procurements/{id}/confirm-stock', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'confirmProcurementStock']);
             Route::post('/inventory/expired-reports', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'submitExpiredReport']);
-            Route::get('/inventory/expired-products', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'getExpiredProducts']);
+            Route::get('/inventory/expired-products', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'getExpiredProducts'])->name('staff.inventory.expired-products');
+            Route::post('/inventory/expired-products/{id}/resolve', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'resolveExpiredProduct']);
             Route::get('/inventory/products/{id}/inventory-lots', [\App\Http\Controllers\Staff\StaffInventoryController::class, 'getProductInventoryLots']);
 
             // Backwards-compatible aliases (old frontend used these paths)

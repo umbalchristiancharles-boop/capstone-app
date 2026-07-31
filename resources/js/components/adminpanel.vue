@@ -247,6 +247,58 @@
               <AdminCustomerReports />
             </div>
           </section>
+
+          <!-- Expired Products Review Section -->
+          <section class="panel-block">
+            <div class="panel-header">
+              <h2>Expired Products Review</h2>
+              <button class="panel-action" @click="showExpiredProducts = !showExpiredProducts">
+                {{ showExpiredProducts ? 'Hide' : 'View Reports' }}
+              </button>
+            </div>
+            <div v-if="showExpiredProducts" class="panel-body panel-body--list">
+              <div v-if="expiredProductsLoading" class="loading-message">Loading expired products...</div>
+              <div v-else-if="expiredProductsError" class="error-message">{{ expiredProductsError }}</div>
+              <div v-else-if="expiredProducts.length === 0" class="empty-message">No expired product reports found.</div>
+              <div v-else class="expired-products-admin-list">
+                <div v-for="report in expiredProducts" :key="report.id" class="expired-product-admin-item">
+                  <div class="expired-product-admin-header">
+                    <div class="expired-product-admin-info">
+                      <h4>{{ report.product_name }}</h4>
+                      <p class="expired-product-meta">
+                        <span>SKU: {{ report.product_sku || 'N/A' }}</span>
+                        <span>Branch: {{ report.branch_name }}</span>
+                        <span>Quantity: {{ report.quantity }}</span>
+                      </p>
+                      <p class="expired-product-reporter">Reported by: {{ report.reported_by }} on {{ formatDate(report.created_at) }}</p>
+                    </div>
+                    <div class="expired-product-admin-actions">
+                      <span :class="['status-badge', getReportStatusClass(report.status)]">
+                        {{ getReportStatusLabel(report.status) }}
+                      </span>
+                    </div>
+                  </div>
+                  <div v-if="report.notes" class="expired-product-notes">
+                    <strong>Notes:</strong> {{ report.notes }}
+                  </div>
+                  <div v-if="report.image_path" class="expired-product-image">
+                    <img :src="report.image_path" alt="Expired product image" />
+                  </div>
+                  <div v-if="report.inventory_lots && report.inventory_lots.length > 0" class="expired-product-lots">
+                    <strong>Inventory Lots:</strong>
+                    <div v-for="lot in report.inventory_lots" :key="lot.id" class="lot-item">
+                      <span>{{ lot.quantity }} units - {{ formatDate(lot.expires_at) }}</span>
+                    </div>
+                  </div>
+                  <div v-if="report.status === 'pending'" class="expired-product-admin-buttons">
+                    <button @click="reviewExpiredProduct(report.id, 'resolved')" class="btn-resolve">
+                      Mark as Resolved
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
         </main>
         <!-- RIGHT: SIDE PANELS -->
         <aside class="admin-side">
@@ -669,6 +721,10 @@ const showProductRequestForm = ref(false)
 const productRequestForm = ref({ name: '', description: '', unit: '' })
 const productRequestSubmitting = ref(false)
 const showCustomerReports = ref(false)
+const showExpiredProducts = ref(false)
+const expiredProducts = ref([])
+const expiredProductsLoading = ref(false)
+const expiredProductsError = ref('')
 const overlayText = ref('Logging out...')
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
 
@@ -1316,6 +1372,80 @@ function goToAddBranches() {
   }
 }
 
+// Expired Products functions
+async function fetchExpiredProducts() {
+  expiredProductsLoading.value = true
+  expiredProductsError.value = ''
+  try {
+    const res = await axios.get('/api/admin/expired-products', { withCredentials: true })
+    if (res.data && res.data.ok) {
+      expiredProducts.value = res.data.data || []
+    } else {
+      expiredProducts.value = []
+    }
+  } catch (e) {
+    console.error('Failed to fetch expired products:', e)
+    expiredProductsError.value = 'Failed to load expired products'
+    expiredProducts.value = []
+  } finally {
+    expiredProductsLoading.value = false
+  }
+}
+
+async function reviewExpiredProduct(reportId, status) {
+  try {
+    const notes = prompt(`Enter review notes for marking as ${status}:`)
+    if (notes === null) return // User cancelled
+
+    const res = await axios.put(`/api/admin/expired-products/${reportId}/status`, {
+      status: status,
+      notes: notes
+    }, { withCredentials: true })
+
+    if (res.data && res.data.ok) {
+      showToast(`Report marked as ${status}`, 'success')
+      // Refresh the list
+      await fetchExpiredProducts()
+    } else {
+      showToast(res.data?.message || 'Failed to update report', 'error')
+    }
+  } catch (e) {
+    console.error('Failed to update report status:', e)
+    showToast(e.response?.data?.message || 'Failed to update report', 'error')
+  }
+}
+
+function getReportStatusLabel(status) {
+  const labels = {
+    'pending': 'Pending Review',
+    'reviewed': 'Reviewed',
+    'resolved': 'Resolved'
+  }
+  return labels[status] || status || 'Unknown'
+}
+
+function getReportStatusClass(status) {
+  const classes = {
+    'pending': 'status-pending',
+    'reviewed': 'status-reviewed',
+    'resolved': 'status-resolved'
+  }
+  return classes[status] || 'status-unknown'
+}
+
+function formatDate(dateString) {
+  if (!dateString) return '-'
+  const date = new Date(dateString)
+  if (isNaN(date.getTime())) return dateString
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
   onMounted(() => {
     loadDashboard(activeRange.value)
     // load branches + attendance overview for admin
@@ -1336,6 +1466,9 @@ function goToAddBranches() {
 
     // load announcements for side panel
     fetchAnnouncements()
+
+    // load expired products for admin review
+    fetchExpiredProducts()
   })
 
   onUnmounted(() => {
@@ -1753,4 +1886,225 @@ h1, h2 {
   min-width: 80px;
 }
 
+/* Expired Products Review Styles */
+.expired-products-admin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.expired-product-admin-item {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem;
+  transition: all 0.2s;
+}
+
+.expired-product-admin-item:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border-color: #d1d5db;
+}
+
+.expired-product-admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.expired-product-admin-info {
+  flex: 1;
+}
+
+.expired-product-admin-info h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
+}
+
+.expired-product-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  color: #4b5563;
+}
+
+.expired-product-meta span {
+  display: inline-flex;
+  align-items: center;
+}
+
+.expired-product-meta span::after {
+  content: "•";
+  margin-left: 1rem;
+  color: #9ca3af;
+}
+
+.expired-product-meta span:last-child::after {
+  content: "";
+  margin-left: 0;
+}
+
+.expired-product-reporter {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.expired-product-admin-actions {
+  flex-shrink: 0;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.status-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-reviewed {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.status-resolved {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-unknown {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.expired-product-notes {
+  background: #fffbeb;
+  border-left: 3px solid #f59e0b;
+  padding: 0.75rem;
+  margin: 0.75rem 0;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: #4b5563;
+}
+
+.expired-product-notes strong {
+  color: #92400e;
+  font-weight: 600;
+}
+
+.expired-product-image {
+  margin: 0.75rem 0;
+  max-width: 300px;
+}
+
+.expired-product-image img {
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  display: block;
+}
+
+.expired-product-lots {
+  margin: 0.75rem 0;
+  font-size: 0.9rem;
+  color: #4b5563;
+}
+
+.expired-product-lots strong {
+  color: #111827;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.lot-item {
+  padding: 0.35rem 0;
+  color: #6b7280;
+  font-size: 0.85rem;
+}
+
+.expired-product-admin-buttons {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.btn-review {
+  flex: 1;
+  padding: 0.5rem 1rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-review:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.btn-resolve {
+  flex: 1;
+  padding: 0.5rem 1rem;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-resolve:hover {
+  background: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+@media (max-width: 640px) {
+  .expired-product-admin-header {
+    flex-direction: column;
+  }
+  
+  .expired-product-meta {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .expired-product-meta span::after {
+    content: "";
+    margin-left: 0;
+  }
+  
+  .expired-product-admin-buttons {
+    flex-direction: column;
+  }
+  
+  .btn-review,
+  .btn-resolve {
+    width: 100%;
+  }
+}
 </style>

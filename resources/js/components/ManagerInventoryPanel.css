@@ -495,3 +495,180 @@
   }
 }
 
+/* Disposal List Section */
+.disposal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.disposal-header h2 {
+  margin: 0;
+}
+
+.disposal-subtitle {
+  color: #7c6758;
+  font-size: 0.85rem;
+  margin: 0 0 1rem 0;
+  font-weight: 600;
+}
+
+.btn-view-disposal {
+  padding: 0.6rem 1.2rem;
+  background: linear-gradient(135deg, #ff9f43 0%, #ff8a1f 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 900;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+  box-shadow: 0 8px 20px rgba(255, 159, 67, 0.18);
+}
+
+.btn-view-disposal:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(255, 159, 67, 0.24);
+}
+
+.disposal-stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.disposal-stat-mini {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 249, 242, 0.92));
+  border: 1px solid rgba(219, 188, 160, 0.45);
+  border-radius: 14px;
+  padding: 1rem;
+  box-shadow: 0 10px 24px rgba(16, 24, 40, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.disposal-stat-mini .disposal-stat-label {
+  font-size: 0.78rem;
+  color: #7c6758;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.disposal-stat-mini .disposal-stat-value {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #3d2a1f;
+  letter-spacing: -0.02em;
+}
+
+.disposal-table-wrapper {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid rgba(219, 188, 160, 0.35);
+}
+
+.disposal-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.9rem;
+}
+
+.disposal-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, #fff7ef 0%, #fff1e6 100%);
+  color: #6b4e39;
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid rgba(219, 188, 160, 0.35);
+  white-space: nowrap;
+}
+
+.disposal-table tbody td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid rgba(219, 188, 160, 0.35);
+  color: #4b3528;
+  font-size: 0.9rem;
+  vertical-align: middle;
+}
+
+.disposal-table tbody tr:hover td {
+  background: rgba(255, 159, 67, 0.05);
+}
+
+.btn-resolve {
+  padding: 0.45rem 0.9rem;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 900;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+  box-shadow: 0 8px 18px rgba(16, 185, 129, 0.18);
+}
+
+.btn-resolve:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 22px rgba(16, 185, 129, 0.22);
+}
+
+.text-muted {
+  color: #9ca3af;
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+.loading-message,
+.error-message {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: #6b7280;
+}
+
+.btn-retry {
+  margin-top: 0.75rem;
+  padding: 0.6rem 1.2rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.btn-retry:hover {
+  background: #2563eb;
+}
+
+@media (max-width: 768px) {
+  .disposal-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .disposal-stats-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .disposal-table {
+    font-size: 0.82rem;
+  }
+
+  .disposal-table thead th,
+  .disposal-table tbody td {
+    padding: 0.7rem 0.85rem;
+  }
+}
+

@@ -875,7 +875,7 @@ class StaffInventoryController extends Controller
             'product_id' => 'required|integer|exists:products,id',
             'quantity' => 'sometimes|integer|min:1',
             'notes' => 'nullable|string|max:2000',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ]);
 
         // Verify product belongs to user's branch
@@ -1096,6 +1096,46 @@ class StaffInventoryController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to load inventory lots', ['error' => $e->getMessage()]);
             return response()->json(['error' => 'Failed to fetch inventory lots'], 500);
+        }
+    }
+
+    // POST /api/staff/inventory/expired-products/{id}/resolve
+    public function resolveExpiredProduct(Request $request, $id)
+    {
+        $user = $request->user();
+        if (!$user) return response()->json(['error' => 'Unauthenticated'], 401);
+
+        try {
+            $report = \App\Models\ExpiredProductReport::where('id', $id)
+                ->where('branch_id', $user->branch_id)
+                ->first();
+
+            if (!$report) {
+                return response()->json(['error' => 'Report not found or access denied'], 404);
+            }
+
+            $report->status = 'resolved';
+            $report->reviewed_by = $user->id;
+            $report->reviewed_at = now();
+            $report->save();
+
+            Log::info('Expired product report resolved by staff', [
+                'report_id' => $report->id,
+                'resolved_by' => $user->id,
+                'branch_id' => $user->branch_id,
+            ]);
+
+            return response()->json([
+                'ok' => true,
+                'message' => 'Disposal marked as resolved',
+                'data' => $report
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to resolve expired product report', [
+                'error' => $e->getMessage(),
+                'report_id' => $id,
+            ]);
+            return response()->json(['error' => 'Failed to resolve report'], 500);
         }
     }
 }

@@ -76,46 +76,69 @@
         </div>
       </div>
 
-      <!-- Expired Products Section -->
-      <div class="panel-section" v-if="expiredProducts.length > 0">
-        <h2 class="section-title" style="color: #dc3545;">⚠️ Expired Products</h2>
-        <p class="section-description">Products that have been reported as expired</p>
+      <!-- Product Disposal List Section -->
+      <div class="panel-section">
+        <h2 class="section-title">Product Disposal List</h2>
+        <p class="section-description">View and manage all expired product disposal reports</p>
+        
+        <!-- Disposal Stats -->
+        <div class="disposal-stats-row">
+          <div class="disposal-stat-mini">
+            <span class="disposal-stat-label">Total Disposals</span>
+            <span class="disposal-stat-value">{{ disposalStats.total }}</span>
+          </div>
+          <div class="disposal-stat-mini">
+            <span class="disposal-stat-label">Pending Review</span>
+            <span class="disposal-stat-value">{{ disposalStats.pending }}</span>
+          </div>
+          <div class="disposal-stat-mini">
+            <span class="disposal-stat-label">Resolved</span>
+            <span class="disposal-stat-value">{{ disposalStats.resolved }}</span>
+          </div>
+          <div class="disposal-stat-mini">
+            <span class="disposal-stat-label">Total Units</span>
+            <span class="disposal-stat-value">{{ disposalStats.totalQuantity }}</span>
+          </div>
+        </div>
 
-        <div class="expired-products-table">
-          <table class="inventory-table">
+        <!-- Disposal List Table -->
+        <div v-if="isLoadingDisposals" class="loading-container">
+          <p>Loading disposal records...</p>
+        </div>
+        <div v-else-if="disposalError" class="error-container">
+          <p class="error-message">{{ disposalError }}</p>
+          <button @click="loadDisposals" class="btn-retry">Retry</button>
+        </div>
+        <div v-else-if="!disposals.length" class="empty-message">
+          <p>No disposal records found.</p>
+        </div>
+        <div v-else class="disposal-table-wrapper">
+          <table class="disposal-table">
             <thead>
               <tr>
+                <th>Date</th>
                 <th>Product Name</th>
                 <th>SKU</th>
-                <th>Stock</th>
-                <th>Expired Date</th>
-                <th>Inventory Lots (Expiry History)</th>
+                <th>Quantity</th>
                 <th>Reported By</th>
-                <th>Report Date</th>
                 <th>Status</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="report in expiredProducts" :key="report.id" class="expired-row">
-                <td class="product-name">{{ report.product_name }}</td>
-                <td class="product-sku">{{ report.product_sku || 'N/A' }}</td>
-                <td class="product-stock">{{ report.product_stock }}</td>
-                <td class="product-expiry">{{ formatDate(report.expires_at) }}</td>
-                <td class="inventory-lots">
-                  <div v-if="report.inventory_lots && report.inventory_lots.length > 0" class="lots-list">
-                    <div v-for="lot in report.inventory_lots" :key="lot.id" class="lot-item" :class="{ 'lot-expired': lot.is_expired }">
-                      <span class="lot-quantity">{{ lot.quantity }} units</span>
-                      <span class="lot-date">{{ formatDate(lot.expires_at) }}</span>
-                    </div>
-                  </div>
-                  <span v-else class="no-lots">No lot data</span>
-                </td>
-                <td class="reported-by">{{ report.reported_by }}</td>
-                <td class="report-date">{{ formatDate(report.created_at) }}</td>
-                <td class="report-status">
-                  <span :class="['status-badge', getReportStatusClass(report.status)]">
-                    {{ getReportStatusLabel(report.status) }}
+              <tr v-for="disposal in recentDisposals" :key="disposal.id">
+                <td>{{ formatDate(disposal.created_at) }}</td>
+                <td>{{ disposal.product_name }}</td>
+                <td>{{ disposal.product_sku || 'N/A' }}</td>
+                <td>{{ disposal.quantity }}</td>
+                <td>{{ disposal.reported_by }}</td>
+                <td>
+                  <span :class="['status-badge', getDisposalStatusClass(disposal.status)]">
+                    {{ getDisposalStatusLabel(disposal.status) }}
                   </span>
+                </td>
+                <td>
+                  <span class="text-muted">-</span>
                 </td>
               </tr>
             </tbody>
@@ -269,16 +292,20 @@
           </div>
 
           <div class="info-row info-row--full">
-            <span class="info-label">Product Image:</span>
+            <span class="info-label">Product Image: <span style="color: #dc3545;">*</span></span>
             <input
               type="file"
               accept="image/*"
               @change="onExpiredImageChange"
               class="info-input"
               style="width: 100%;"
+              required
             />
             <div v-if="expiredReportForm.image" class="info-success" style="margin-top: 8px;">
               Image selected: {{ expiredReportForm.image.name }}
+            </div>
+            <div v-else-if="expiredReportError" style="color: #dc3545; font-size: 0.85rem; margin-top: 4px;">
+              Product image is required
             </div>
           </div>
         </div>
@@ -730,6 +757,17 @@ const expiredReportSuccess = ref('');
 const expiredProducts = ref([]);
 const expiredProductsLoading = ref(false);
 
+// Disposal list data
+const disposals = ref([])
+const isLoadingDisposals = ref(false)
+const disposalError = ref('')
+const disposalStats = ref({
+  total: 0,
+  pending: 0,
+  resolved: 0,
+  totalQuantity: 0
+})
+
 // Expired lots summary for the modal
 const expiredLotsSummary = ref(null);
 
@@ -748,6 +786,87 @@ async function fetchExpiredProducts() {
     expiredProducts.value = []
   } finally {
     expiredProductsLoading.value = false
+  }
+}
+
+// Disposal list functions
+async function loadDisposals() {
+  isLoadingDisposals.value = true
+  disposalError.value = ''
+
+  try {
+    const res = await axios.get('/api/staff/inventory/expired-products', { withCredentials: true })
+    if (res.data && res.data.ok) {
+      const data = res.data.data || []
+      disposals.value = data
+      calculateDisposalStats()
+    } else {
+      disposals.value = []
+      calculateDisposalStats()
+    }
+  } catch (e) {
+    console.error('Failed to fetch disposals:', e)
+    disposalError.value = 'Failed to load disposal records: ' + (e.response?.data?.message || e.message)
+    disposals.value = []
+    calculateDisposalStats()
+  } finally {
+    isLoadingDisposals.value = false
+  }
+}
+
+function calculateDisposalStats() {
+  const stats = {
+    total: disposals.value.length,
+    pending: 0,
+    resolved: 0,
+    totalQuantity: 0
+  }
+
+  disposals.value.forEach(disposal => {
+    stats.totalQuantity += disposal.quantity || 0
+    
+    const status = (disposal.status || '').toLowerCase()
+    if (status === 'pending') stats.pending++
+    else if (status === 'resolved') stats.resolved++
+  })
+
+  disposalStats.value = stats
+}
+
+const recentDisposals = computed(() => {
+  return disposals.value.slice(0, 10) // Show only the 10 most recent disposals
+})
+
+function getDisposalStatusLabel(status) {
+  const labels = {
+    'pending': 'Pending Review',
+    'reviewed': 'Reviewed',
+    'resolved': 'Resolved'
+  }
+  return labels[status] || status || 'Unknown'
+}
+
+function getDisposalStatusClass(status) {
+  const classes = {
+    'pending': 'status-pending',
+    'reviewed': 'status-reviewed',
+    'resolved': 'status-resolved'
+  }
+  return classes[status] || 'status-unknown'
+}
+
+async function markDisposalResolved(disposalId) {
+  try {
+    await axios.post(
+      `/api/staff/inventory/expired-products/${disposalId}/resolve`,
+      {},
+      { withCredentials: true }
+    )
+    showToast('Disposal marked as resolved', 'success')
+    await loadDisposals()
+  } catch (e) {
+    console.error('Failed to mark disposal as resolved:', e)
+    showToast(e.response?.data?.message || 'Failed to update disposal status', 'error')
   }
 }
 
@@ -1042,6 +1161,9 @@ onMounted(async () => {
 
   // fetch expired products
   await fetchExpiredProducts()
+  
+  // load disposal list
+  await loadDisposals()
 
   // attach click-away listener (defined in setup scope)
   try { document.addEventListener('click', onDocClick) } catch (e) {}
@@ -1499,6 +1621,11 @@ async function performClockOut() {
   }
 }
 
+// Navigation to disposal list
+function goToDisposalList() {
+  router.push('/staff/inventory/disposal-list')
+}
+
 // Expired product report functions
 function openExpiredReportModal(product) {
   expiredReportProduct.value = product
@@ -1565,13 +1692,25 @@ async function autoFillExpiredQuantity() {
 
       if (expiredLots.length > 0) {
         const totalExpired = expiredLots.reduce((sum, lot) => sum + lot.quantity, 0)
-        expiredReportForm.value.quantity = totalExpired
+        const currentStock = expiredReportProduct.value.stock || 0
+        
+        // Cap the auto-filled quantity to current stock to prevent validation errors
+        const cappedQuantity = Math.min(totalExpired, currentStock)
+        
+        expiredReportForm.value.quantity = cappedQuantity
         expiredLotsSummary.value = {
           quantity: totalExpired,
           count: expiredLots.length
         }
-        expiredReportError.value = ''
-        showToast(`Auto-filled: ${totalExpired} units from ${expiredLots.length} expired lot(s)`, 'info')
+        
+        // Show appropriate message based on whether capping was needed
+        if (totalExpired > currentStock) {
+          expiredReportError.value = `Note: Auto-filled quantity capped to current stock (${currentStock}) from ${totalExpired} lot units`
+          showToast(`Auto-filled: ${cappedQuantity} units (capped from ${totalExpired} to match current stock)`, 'info')
+        } else {
+          expiredReportError.value = ''
+          showToast(`Auto-filled: ${cappedQuantity} units from ${expiredLots.length} expired lot(s)`, 'info')
+        }
       } else {
         expiredReportError.value = 'No expired inventory lots found for this product'
         expiredLotsSummary.value = null
@@ -1851,6 +1990,204 @@ ProductList[compact] { width:100% }
 .pending-table td { font-size:0.95rem; padding:8px 6px; border-bottom:1px solid rgba(0,0,0,0.04) }
 .pending-table button.btn-primary { padding:6px 10px; font-size:0.88rem }
 
+/* Disposal List Section */
+.disposal-stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.disposal-stat-mini {
+  background: white;
+  border-radius: 10px;
+  padding: 14px 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.disposal-stat-mini:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+.disposal-stat-label {
+  font-size: 0.8rem;
+  color: #6b7280;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.disposal-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.disposal-table-wrapper {
+  overflow-x: auto;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.disposal-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  font-size: 0.9rem;
+}
+
+.disposal-table thead {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+}
+
+.disposal-table thead th {
+  padding: 12px 14px;
+  font-weight: 700;
+  color: #92400e;
+  font-size: 0.85rem;
+  text-align: left;
+  border-bottom: 2px solid #fbbf24;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.disposal-table tbody tr {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.15s ease;
+}
+
+.disposal-table tbody tr:hover {
+  background: #fffbeb;
+}
+
+.disposal-table tbody td {
+  padding: 12px 14px;
+  font-size: 0.9rem;
+  color: #333;
+  vertical-align: middle;
+}
+
+.disposal-table .status-badge {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.disposal-table .status-pending {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fbbf24;
+}
+
+.disposal-table .status-reviewed {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #3b82f6;
+}
+
+.disposal-table .status-resolved {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #10b981;
+}
+
+.disposal-table .status-unknown {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.disposal-table .btn-resolve {
+  padding: 6px 14px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.disposal-table .btn-resolve:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.disposal-table .btn-resolve:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.disposal-table .text-muted {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.loading-container,
+.error-container,
+.empty-message {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6b7280;
+}
+
+.error-message {
+  color: #dc3545;
+  background: #f8d7da;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.btn-retry {
+  margin-top: 12px;
+  padding: 8px 16px;
+  background: #ff8a00;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-retry:hover {
+  background: #e67a00;
+}
+
+@media (max-width: 768px) {
+  .disposal-stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .disposal-table {
+    font-size: 0.85rem;
+  }
+  
+  .disposal-table thead th,
+  .disposal-table tbody td {
+    padding: 8px 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .disposal-stats-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Expired Products Table */
 .expired-products-table {
   margin-top: 16px;
@@ -2008,6 +2345,75 @@ ProductList[compact] { width:100% }
   color: #94a3b8;
   font-style: italic;
   font-size: 0.85rem;
+}
+
+/* Disposal Navigation Card */
+.disposal-nav-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.2s ease;
+}
+
+.disposal-nav-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+.disposal-nav-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+.disposal-nav-icon {
+  font-size: 2.5rem;
+  flex-shrink: 0;
+}
+
+.disposal-nav-text {
+  flex: 1;
+}
+
+.disposal-nav-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 4px 0;
+}
+
+.disposal-nav-description {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.disposal-nav-button {
+  flex-shrink: 0;
+  padding: 10px 20px;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 768px) {
+  .disposal-nav-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .disposal-nav-content {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .disposal-nav-button {
+    width: 100%;
+  }
 }
 
 /* Inventory Summary Cards - below Attendance card */

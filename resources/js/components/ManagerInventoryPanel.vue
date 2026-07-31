@@ -136,6 +136,7 @@
             </div>
           </div>
         </div>
+
       </div>
     </template>
   </OwnerPanelLayout>
@@ -215,6 +216,17 @@ const isConfirming = ref(false)
 const activeProcurement = ref(null)
 const confirmStock = ref(0)
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
+
+// Disposal list data
+const disposals = ref([])
+const isLoadingDisposals = ref(false)
+const disposalError = ref('')
+const disposalStats = ref({
+  total: 0,
+  pending: 0,
+  resolved: 0,
+  totalQuantity: 0
+})
 
 // Detect if this is a staff or manager user to use correct API endpoint
 function getApiPrefix() {
@@ -327,6 +339,7 @@ onMounted(async () => {
   } catch (e) { console.warn('Failed to load confirmed procurements', e) }
 
   await loadPanelNotifications()
+  await loadDisposals()
 })
 
 async function loadPanelNotifications() {
@@ -338,6 +351,99 @@ async function loadPanelNotifications() {
     }
   } catch (e) {
     notificationCounts.value = { inventory: 0 }
+  }
+}
+
+// Disposal list functions
+async function loadDisposals() {
+  console.log('[ManagerInventoryPanel] loadDisposals() called')
+  isLoadingDisposals.value = true
+  disposalError.value = ''
+
+  try {
+    console.log('[ManagerInventoryPanel] Fetching expired products...')
+    const res = await axios.get('/api/staff/inventory/expired-products', { withCredentials: true })
+    console.log('[ManagerInventoryPanel] API Response:', res.data)
+    console.log('[ManagerInventoryPanel] Response status:', res.status)
+    
+    if (res.data && res.data.ok) {
+      const data = res.data.data || []
+      console.log('[ManagerInventoryPanel] Received disposals:', data.length, 'records')
+      disposals.value = data
+      calculateDisposalStats()
+      console.log('[ManagerInventoryPanel] Stats calculated:', disposalStats.value)
+    } else {
+      console.warn('[ManagerInventoryPanel] API returned ok=false or no data')
+      disposals.value = []
+      calculateDisposalStats()
+    }
+  } catch (e) {
+    console.error('[ManagerInventoryPanel] Failed to fetch disposals:', e)
+    console.error('[ManagerInventoryPanel] Error response:', e.response?.data)
+    console.error('[ManagerInventoryPanel] Error status:', e.response?.status)
+    disposalError.value = 'Failed to load disposal records: ' + (e.response?.data?.message || e.message)
+    disposals.value = []
+    calculateDisposalStats()
+  } finally {
+    isLoadingDisposals.value = false
+    console.log('[ManagerInventoryPanel] loadDisposals() completed, isLoading:', isLoadingDisposals.value)
+    console.log('[ManagerInventoryPanel] Current disposals count:', disposals.value.length)
+  }
+}
+
+function calculateDisposalStats() {
+  const stats = {
+    total: disposals.value.length,
+    pending: 0,
+    resolved: 0,
+    totalQuantity: 0
+  }
+
+  disposals.value.forEach(disposal => {
+    stats.totalQuantity += disposal.quantity || 0
+    
+    const status = (disposal.status || '').toLowerCase()
+    if (status === 'pending') stats.pending++
+    else if (status === 'resolved') stats.resolved++
+  })
+
+  disposalStats.value = stats
+}
+
+const recentDisposals = computed(() => {
+  return disposals.value.slice(0, 10) // Show only the 10 most recent disposals
+})
+
+function getDisposalStatusLabel(status) {
+  const labels = {
+    'pending': 'Pending Review',
+    'reviewed': 'Reviewed',
+    'resolved': 'Resolved'
+  }
+  return labels[status] || status || 'Unknown'
+}
+
+function getDisposalStatusClass(status) {
+  const classes = {
+    'pending': 'status-pending',
+    'reviewed': 'status-reviewed',
+    'resolved': 'status-resolved'
+  }
+  return classes[status] || 'status-unknown'
+}
+
+async function markDisposalResolved(disposalId) {
+  try {
+    await axios.post(
+      `/api/staff/inventory/expired-products/${disposalId}/resolve`,
+      {},
+      { withCredentials: true }
+    )
+    showToast('Disposal marked as resolved', 'success')
+    await loadDisposals()
+  } catch (e) {
+    console.error('Failed to mark disposal as resolved:', e)
+    showToast(e.response?.data?.message || 'Failed to update disposal status', 'error')
   }
 }
 
