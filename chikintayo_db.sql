@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 31, 2026 at 01:48 PM
+-- Generation Time: Jul 31, 2026 at 03:05 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -62,6 +62,7 @@ CREATE TABLE `attendance` (
   `hours_worked` int(11) NOT NULL DEFAULT 0,
   `status` varchar(255) NOT NULL DEFAULT 'absent',
   `notes` text DEFAULT NULL,
+  `face_image` varchar(255) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -70,18 +71,18 @@ CREATE TABLE `attendance` (
 -- Dumping data for table `attendance`
 --
 
-INSERT INTO `attendance` (`id`, `user_id`, `date`, `time_in`, `time_out`, `hours_worked`, `status`, `notes`, `created_at`, `updated_at`) VALUES
-(10, 149, '2026-04-06', '03:16:44', NULL, 0, 'present', NULL, '2026-04-05 19:16:44', '2026-04-05 19:16:44'),
-(11, 149, '2026-06-26', '13:29:31', NULL, 0, 'late', NULL, '2026-06-26 05:29:31', '2026-06-26 05:29:31'),
-(12, 241, '2026-07-14', '16:33:50', '18:04:32', -91, 'late', NULL, '2026-07-14 08:33:50', '2026-07-14 10:04:32'),
-(13, 153, '2026-07-17', '18:37:05', '18:37:07', 0, 'late', NULL, '2026-07-17 10:37:05', '2026-07-17 10:37:07'),
-(15, 149, '2026-07-17', '20:05:08', NULL, 0, 'late', NULL, '2026-07-17 12:05:08', '2026-07-17 12:05:08'),
-(16, 151, '2026-07-21', '17:44:43', NULL, 0, 'late', NULL, '2026-07-21 09:44:43', '2026-07-21 09:44:43'),
-(17, 149, '2026-07-21', '17:45:39', NULL, 0, 'late', NULL, '2026-07-21 09:45:39', '2026-07-21 09:45:39'),
-(18, 159, '2026-07-22', '15:11:30', NULL, 0, 'late', NULL, '2026-07-22 07:11:30', '2026-07-22 07:11:30'),
-(19, 154, '2026-07-24', '15:04:46', '20:28:12', -323, 'late', NULL, '2026-07-24 07:04:46', '2026-07-24 12:28:12'),
-(20, 149, '2026-07-27', '13:03:44', NULL, 0, 'late', NULL, '2026-07-27 05:03:44', '2026-07-27 05:03:44'),
-(23, 153, '2026-07-27', '14:28:33', NULL, 0, 'late', NULL, '2026-07-27 06:28:33', '2026-07-27 06:28:33');
+INSERT INTO `attendance` (`id`, `user_id`, `date`, `time_in`, `time_out`, `hours_worked`, `status`, `notes`, `face_image`, `created_at`, `updated_at`) VALUES
+(10, 149, '2026-04-06', '03:16:44', NULL, 0, 'present', NULL, NULL, '2026-04-05 19:16:44', '2026-04-05 19:16:44'),
+(11, 149, '2026-06-26', '13:29:31', NULL, 0, 'late', NULL, NULL, '2026-06-26 05:29:31', '2026-06-26 05:29:31'),
+(12, 241, '2026-07-14', '16:33:50', '18:04:32', -91, 'late', NULL, NULL, '2026-07-14 08:33:50', '2026-07-14 10:04:32'),
+(13, 153, '2026-07-17', '18:37:05', '18:37:07', 0, 'late', NULL, NULL, '2026-07-17 10:37:05', '2026-07-17 10:37:07'),
+(15, 149, '2026-07-17', '20:05:08', NULL, 0, 'late', NULL, NULL, '2026-07-17 12:05:08', '2026-07-17 12:05:08'),
+(16, 151, '2026-07-21', '17:44:43', NULL, 0, 'late', NULL, NULL, '2026-07-21 09:44:43', '2026-07-21 09:44:43'),
+(17, 149, '2026-07-21', '17:45:39', NULL, 0, 'late', NULL, NULL, '2026-07-21 09:45:39', '2026-07-21 09:45:39'),
+(18, 159, '2026-07-22', '15:11:30', NULL, 0, 'late', NULL, NULL, '2026-07-22 07:11:30', '2026-07-22 07:11:30'),
+(19, 154, '2026-07-24', '15:04:46', '20:28:12', -323, 'late', NULL, NULL, '2026-07-24 07:04:46', '2026-07-24 12:28:12'),
+(20, 149, '2026-07-27', '13:03:44', NULL, 0, 'late', NULL, NULL, '2026-07-27 05:03:44', '2026-07-27 05:03:44'),
+(23, 153, '2026-07-27', '14:28:33', NULL, 0, 'late', NULL, NULL, '2026-07-27 06:28:33', '2026-07-27 06:28:33');
 
 -- --------------------------------------------------------
 
@@ -131,6 +132,10 @@ CREATE TABLE `branches` (
   `budget` bigint(20) NOT NULL DEFAULT 100000,
   `square_meters` decimal(10,2) DEFAULT NULL COMMENT 'Store area in square meters',
   `geofencing_radius` decimal(10,2) DEFAULT NULL COMMENT 'Geofencing radius in meters (auto-calculated from square_meters)',
+  `permit_bills` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'Array of permit types and their costs' CHECK (json_valid(`permit_bills`)),
+  `construction_costs` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'Detailed construction cost breakdown' CHECK (json_valid(`construction_costs`)),
+  `equipment_costs` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'Array of equipment with types, quantities, and costs' CHECK (json_valid(`equipment_costs`)),
+  `total_investment` decimal(15,2) DEFAULT NULL COMMENT 'Total initial investment including permits, construction, and equipment',
   `default_password` varchar(255) DEFAULT NULL COMMENT 'Current default password for branch staff accounts',
   `default_password_updated_at` timestamp NULL DEFAULT NULL COMMENT 'Last time the default password was updated',
   `created_at` timestamp NULL DEFAULT NULL,
@@ -141,10 +146,10 @@ CREATE TABLE `branches` (
 -- Dumping data for table `branches`
 --
 
-INSERT INTO `branches` (`id`, `code`, `name`, `address`, `latitude`, `longitude`, `is_active`, `is_main_branch`, `approval_status`, `requested_by`, `finance_confirmed_by`, `finance_confirmed_at`, `approved_by`, `approved_at`, `rejected_at`, `budget`, `square_meters`, `geofencing_radius`, `default_password`, `default_password_updated_at`, `created_at`, `updated_at`) VALUES
-(31, 'BR743957', 'Dasma Branch', 'Dasma', 14.33000000, 120.94000000, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 72977, 100.00, 5.64, 'BDP20260731809146', '2026-07-31 11:08:42', '2026-03-22 10:19:21', '2026-07-31 11:08:42'),
-(32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 700000, NULL, NULL, 'BDP20260729146D5C', '2026-07-29 04:13:52', '2026-03-25 06:56:11', '2026-07-29 04:13:52'),
-(50, 'BR577235', 'Quezon City Branch', NULL, 14.65105500, 121.09766006, 1, 0, 'approved', 159, 161, '2026-07-17 10:54:29', 31, '2026-07-17 10:54:59', NULL, 100000, 50.00, 500.00, 'BDP20260729337D34', '2026-07-29 04:13:52', '2026-07-17 10:53:47', '2026-07-29 04:13:52');
+INSERT INTO `branches` (`id`, `code`, `name`, `address`, `latitude`, `longitude`, `is_active`, `is_main_branch`, `approval_status`, `requested_by`, `finance_confirmed_by`, `finance_confirmed_at`, `approved_by`, `approved_at`, `rejected_at`, `budget`, `square_meters`, `geofencing_radius`, `permit_bills`, `construction_costs`, `equipment_costs`, `total_investment`, `default_password`, `default_password_updated_at`, `created_at`, `updated_at`) VALUES
+(31, 'BR743957', 'Dasma Branch', 'Dasma', 14.33000000, 120.94000000, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 72977, 100.00, 5.64, NULL, NULL, NULL, NULL, 'BDP20260731809146', '2026-07-31 11:08:42', '2026-03-22 10:19:21', '2026-07-31 11:08:42'),
+(32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 700000, NULL, NULL, NULL, NULL, NULL, NULL, 'BDP2026073156DEDB', '2026-07-31 12:20:29', '2026-03-25 06:56:11', '2026-07-31 12:20:29'),
+(50, 'BR577235', 'Quezon City Branch', NULL, 14.65105500, 121.09766006, 1, 0, 'approved', 159, 161, '2026-07-17 10:54:29', 31, '2026-07-17 10:54:59', NULL, 100000, 50.00, 500.00, NULL, NULL, NULL, NULL, 'BDP202607313EBAA0', '2026-07-31 12:20:29', '2026-07-17 10:53:47', '2026-07-31 12:20:29');
 
 -- --------------------------------------------------------
 
@@ -787,7 +792,9 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (150, '2026_07_22_000002_add_email_threading_fields_to_email_communications_table', 87),
 (151, '2026_07_24_000001_create_payrolls_table', 88),
 (152, '2026_07_24_000005_add_brand_to_dish_ingredients', 89),
-(153, '2026_07_27_000001_add_interview_fields_to_position_applications_table', 90);
+(153, '2026_07_27_000001_add_interview_fields_to_position_applications_table', 90),
+(154, '2026_07_27_000001_add_face_image_to_attendance_table', 91),
+(155, '2026_07_31_000001_add_branch_cost_details_to_branches_table', 91);
 
 -- --------------------------------------------------------
 
@@ -2164,7 +2171,8 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (2756, 'App\\Models\\User', 159, 'auth-token', 'd1fb61a04e4016f3f54bd5d5c88d7c21d849753aacba20426d5ca76ef8e693fd', '[\"*\"]', NULL, NULL, '2026-07-29 06:09:50', '2026-07-29 06:09:50'),
 (2758, 'App\\Models\\User', 147, 'auth-token', '6046ce5548b23b429ef933a5daad8c2e6f74f8c6606b8b962df4c897ad172cf3', '[\"*\"]', NULL, NULL, '2026-07-31 11:06:10', '2026-07-31 11:06:10'),
 (2761, 'App\\Models\\User', 147, 'auth-token', '3b372dfa3d51176071673dd5d762e33c0a5d11d4e31de3289b730d9586ad70b3', '[\"*\"]', NULL, NULL, '2026-07-31 11:17:03', '2026-07-31 11:17:03'),
-(2763, 'App\\Models\\User', 147, 'auth-token', '95ba787ea29c8009428de0519cfd7956ad1c5d4769d91d4fbc5d5d1169df803d', '[\"*\"]', NULL, NULL, '2026-07-31 11:21:45', '2026-07-31 11:21:45');
+(2763, 'App\\Models\\User', 147, 'auth-token', '95ba787ea29c8009428de0519cfd7956ad1c5d4769d91d4fbc5d5d1169df803d', '[\"*\"]', NULL, NULL, '2026-07-31 11:21:45', '2026-07-31 11:21:45'),
+(2767, 'App\\Models\\User', 159, 'auth-token', 'a1325780be13b3c7b1e10e8650eb470aa6addab12ab8d19256b71a0e87f02758', '[\"*\"]', NULL, NULL, '2026-07-31 12:20:22', '2026-07-31 12:20:22');
 
 -- --------------------------------------------------------
 
@@ -2592,7 +2600,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('ZoirZ3VdY53cAPqCtOh8FaJT6uzjWkveAD2yz7kf', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiOUt3Y05leVFqQnAxOTUzcGN1cUhtY0xQaWRZV093cEZGQ2ltVDFSUyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fX0=', 1785498480);
+('AXlkJs5XuoHMMAaPd4LqfS6rcUhqIU9XTaI2LhyS', 159, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiY2htNjB4TGhDd1Q2Z1RCSkVnTjluM1RtckpabUlVemdGVnRRZjNoeiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mzc6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9tYWluLWJyYW5jaC9jcm0iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE1OTtzOjc6InVzZXJfaWQiO2k6MTU5O3M6OToidXNlcl9yb2xlIjtzOjU6IkFETUlOIjtzOjk6InVzZXJfbmFtZSI7czoxNzoiQWRtaW4gTWFpbiBCcmFuY2giO3M6MTM6InJlZGlyZWN0X3BhdGgiO3M6MTI6Ii9hZG1pbi1wYW5lbCI7fQ==', 1785503099);
 
 -- --------------------------------------------------------
 
@@ -3310,7 +3318,7 @@ ALTER TABLE `messages`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=154;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=156;
 
 --
 -- AUTO_INCREMENT for table `orders`
@@ -3334,7 +3342,7 @@ ALTER TABLE `payrolls`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2765;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2768;
 
 --
 -- AUTO_INCREMENT for table `positions`

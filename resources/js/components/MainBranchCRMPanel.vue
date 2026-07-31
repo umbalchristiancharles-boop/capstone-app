@@ -389,6 +389,51 @@
                 ></textarea>
               </div>
 
+              <!-- Email Communications History -->
+              <div class="email-history-section">
+                <div class="email-history-header">
+                  <span class="detail-label">Email Communications:</span>
+                  <button @click="toggleEmailHistory(editingReport.id)" class="btn-toggle-email">
+                    {{ expandedEmailHistory === editingReport.id ? 'Hide' : 'Show' }} Email History
+                  </button>
+                </div>
+                
+                <div v-if="expandedEmailHistory === editingReport.id" class="email-history-content">
+                  <div v-if="loadingEmails[editingReport.id]" class="loading-state">
+                    <p>Loading emails...</p>
+                  </div>
+                  <div v-else-if="getEmailHistory(editingReport.id).length === 0" class="empty-state">
+                    <p>No email communications yet</p>
+                  </div>
+                  <div v-else class="email-list">
+                    <div v-for="email in getEmailHistory(editingReport.id)" :key="email.id" class="email-item" :class="email.direction">
+                      <div class="email-header">
+                        <div class="email-direction-badge">
+                          {{ email.direction === 'outbound' ? '📤 Outbound' : '📥 Inbound' }}
+                        </div>
+                        <div class="email-status-badge" :class="'status--' + email.status">
+                          {{ email.status }}
+                        </div>
+                        <span class="email-date">{{ formatDate(email.created_at) }}</span>
+                      </div>
+                      <div class="email-subject">
+                        <strong>Subject:</strong> {{ email.subject }}
+                      </div>
+                      <div class="email-participants">
+                        <div><strong>From:</strong> {{ email.sender_name }} ({{ email.sender_email }})</div>
+                        <div><strong>To:</strong> {{ email.recipient_name || email.recipient_email }} ({{ email.recipient_email }})</div>
+                      </div>
+                      <div class="email-message">
+                        {{ email.message }}
+                      </div>
+                      <div v-if="email.error_message" class="email-error">
+                        <strong>Error:</strong> {{ email.error_message }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <!-- Automatic Response Preview -->
               <div v-if="isFirstEmail" class="auto-response-preview">
                 <div class="auto-response-header">
@@ -1181,7 +1226,7 @@ textarea.form-input { resize: vertical; min-height: 100px; }
 /* Email History Styles */
 .email-history-section {
   margin-top: 24px;
-  padding-top: 20px;
+  padding-top: 24px;
   border-top: 2px solid #E5E7EB;
 }
 
@@ -1189,98 +1234,108 @@ textarea.form-input { resize: vertical; min-height: 100px; }
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
   flex-wrap: wrap;
   gap: 12px;
 }
 
+.email-history-header .detail-label {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1F2937;
+}
+
 .btn-toggle-email {
-  padding: 8px 16px;
+  padding: 10px 20px;
   background: #8B5CF6;
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.2);
 }
 
 .btn-toggle-email:hover {
   background: #7C3AED;
   transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(139, 92, 246, 0.3);
 }
 
 .email-history-content {
-  margin-top: 16px;
+  margin-top: 20px;
   padding-right: 0;
 }
 
 .email-list {
-  display: block;
-}
-.email-list > * {
-  margin-bottom: 12px;
-}
-.email-list > *:last-child {
-  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .email-item {
-  padding: 14px;
-  border-radius: 8px;
+  padding: 20px;
+  border-radius: 12px;
   border: 1px solid #E5E7EB;
   transition: all 0.2s;
   min-height: auto;
   height: auto;
   max-width: 100%;
   box-sizing: border-box;
-  background: #fafafa;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .email-item:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
 }
 
 .email-item.outbound {
   background: #F0FDF4;
-  border-left: 4px solid #10B981;
+  border-left: 5px solid #10B981;
 }
 
 .email-item.inbound {
   background: #FEF3C7;
-  border-left: 4px solid #F59E0B;
+  border-left: 5px solid #F59E0B;
 }
 
 .email-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .email-direction-badge {
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 0.85rem;
+  padding: 6px 14px;
+  border-radius: 14px;
+  font-size: 0.9rem;
   font-weight: 600;
   background: #10B981;
   color: white;
+  box-shadow: 0 1px 2px rgba(16, 185, 129, 0.2);
 }
 
 .email-item.inbound .email-direction-badge {
   background: #F59E0B;
+  box-shadow: 0 1px 2px rgba(245, 158, 11, 0.2);
 }
 
 .email-status-badge {
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 0.85rem;
+  padding: 6px 14px;
+  border-radius: 14px;
+  font-size: 0.9rem;
   font-weight: 600;
   text-transform: capitalize;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .email-status-badge.status--sent {
@@ -1299,50 +1354,66 @@ textarea.form-input { resize: vertical; min-height: 100px; }
 }
 
 .email-date {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: #6B7280;
+  font-weight: 500;
 }
 
 .email-subject {
-  margin-bottom: 12px;
-  padding: 8px 12px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
   background: white;
-  border-radius: 6px;
-  font-size: 0.95rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #1F2937;
+  border-left: 3px solid #0066FF;
 }
 
 .email-participants {
-  margin-bottom: 12px;
-  padding: 10px 12px;
+  margin-bottom: 16px;
+  padding: 14px 16px;
   background: white;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  line-height: 1.6;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: #4B5563;
 }
 
 .email-participants div {
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+}
+
+.email-participants div:last-child {
+  margin-bottom: 0;
+}
+
+.email-participants strong {
+  color: #1F2937;
+  font-weight: 600;
 }
 
 .email-message {
-  padding: 12px;
+  padding: 16px;
   background: white;
-  border-radius: 6px;
+  border-radius: 8px;
   color: #374151;
-  line-height: 1.6;
+  line-height: 1.7;
   font-size: 0.95rem;
   white-space: pre-wrap;
   word-break: break-word;
+  border: 1px solid #F3F4F6;
 }
 
 .email-error {
-  margin-top: 12px;
-  padding: 10px 12px;
+  margin-top: 16px;
+  padding: 12px 16px;
   background: #FEE2E2;
   border: 1px solid #FECACA;
-  border-radius: 6px;
+  border-radius: 8px;
   color: #991B1B;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  font-weight: 500;
 }
 
 /* Automatic Response Preview */

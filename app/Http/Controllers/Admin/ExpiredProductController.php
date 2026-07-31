@@ -58,9 +58,7 @@ class ExpiredProductController extends Controller
         }
     }
 
-    /**
-     * Update expired product report status (review/resolve)
-     */
+   
     public function updateStatus(Request $request, $id)
     {
         $user = Auth::user();
@@ -103,10 +101,7 @@ class ExpiredProductController extends Controller
         }
     }
 
-    /**
-     * Get statistics for expired products
-     */
-    public function statistics(Request $request)
+       public function statistics(Request $request)
     {
         try {
             $pending = ExpiredProductReport::where('status', 'pending')->count();

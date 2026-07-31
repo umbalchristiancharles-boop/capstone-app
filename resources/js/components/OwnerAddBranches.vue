@@ -85,6 +85,55 @@
                 <input v-model.number="branchForm.geofencing_radius" type="number" step="0.01" class="form-input" readonly />
                 <small class="budget-helper">Auto-calculated based on store area</small>
               </div>
+
+              <!-- Permit Bills Section -->
+              <div class="form-group full-span">
+                <label class="form-label">Permit Bills</label>
+                <div class="cost-items-container">
+                  <div v-for="(permit, index) in branchForm.permit_bills" :key="index" class="cost-item-row">
+                    <input v-model="permit.type" class="form-input" placeholder="Permit type (e.g., Business Permit)" style="flex: 2;" />
+                    <input v-model.number="permit.amount" type="number" class="form-input" placeholder="Amount (PHP)" style="flex: 1;" min="0" />
+                    <button type="button" @click="removePermit(index)" class="btn-remove-item" :disabled="branchForm.permit_bills.length === 1">&times;</button>
+                  </div>
+                  <button type="button" @click="addPermit" class="btn-add-item">+ Add Permit</button>
+                </div>
+              </div>
+
+              <!-- Construction Costs Section -->
+              <div class="form-group full-span">
+                <label class="form-label">Construction Costs</label>
+                <div class="cost-items-container">
+                  <div v-for="(cost, index) in branchForm.construction_costs" :key="index" class="cost-item-row">
+                    <input v-model="cost.category" class="form-input" placeholder="Category (e.g., Materials, Labor)" style="flex: 2;" />
+                    <input v-model.number="cost.amount" type="number" class="form-input" placeholder="Amount (PHP)" style="flex: 1;" min="0" />
+                    <button type="button" @click="removeConstructionCost(index)" class="btn-remove-item" :disabled="branchForm.construction_costs.length === 1">&times;</button>
+                  </div>
+                  <button type="button" @click="addConstructionCost" class="btn-add-item">+ Add Construction Cost</button>
+                </div>
+              </div>
+
+              <!-- Equipment Costs Section -->
+              <div class="form-group full-span">
+                <label class="form-label">Equipment Costs</label>
+                <div class="cost-items-container">
+                  <div v-for="(equip, index) in branchForm.equipment_costs" :key="index" class="cost-item-row equipment-row">
+                    <input v-model="equip.name" class="form-input" placeholder="Equipment name" style="flex: 2;" />
+                    <input v-model="equip.type" class="form-input" placeholder="Type/Category" style="flex: 1.5;" />
+                    <input v-model.number="equip.quantity" type="number" class="form-input" placeholder="Qty" style="flex: 0.8;" min="1" />
+                    <input v-model.number="equip.unit_cost" type="number" class="form-input" placeholder="Unit Cost" style="flex: 1;" min="0" />
+                    <button type="button" @click="removeEquipment(index)" class="btn-remove-item" :disabled="branchForm.equipment_costs.length === 1">&times;</button>
+                  </div>
+                  <button type="button" @click="addEquipment" class="btn-add-item">+ Add Equipment</button>
+                </div>
+              </div>
+
+              <!-- Total Investment Display -->
+              <div class="form-group full-span" v-if="calculatedTotalInvestment > 0">
+                <div class="total-investment-display">
+                  <strong>Total Initial Investment: </strong>
+                  <span class="total-amount">{{ formatCurrency(calculatedTotalInvestment) }}</span>
+                </div>
+              </div>
             </div>
 
             <div class="default-accounts-info">
@@ -460,6 +509,15 @@ const getInitialBranchForm = () => ({
   budget: 100000,
   square_meters: null,
   geofencing_radius: null,
+  permit_bills: [
+    { type: '', amount: 0 }
+  ],
+  construction_costs: [
+    { category: '', amount: 0 }
+  ],
+  equipment_costs: [
+    { name: '', type: '', quantity: 1, unit_cost: 0 }
+  ],
   selectedAccounts: defaultAccountSelection(),
   customAccount: {
     enabled: false,
@@ -493,6 +551,67 @@ function calculateGeofencingRadius() {
     branchForm.value.geofencing_radius = null
   }
 }
+
+// Cost management functions
+function addPermit() {
+  branchForm.value.permit_bills.push({ type: '', amount: 0 })
+}
+
+function removePermit(index) {
+  if (branchForm.value.permit_bills.length > 1) {
+    branchForm.value.permit_bills.splice(index, 1)
+  }
+}
+
+function addConstructionCost() {
+  branchForm.value.construction_costs.push({ category: '', amount: 0 })
+}
+
+function removeConstructionCost(index) {
+  if (branchForm.value.construction_costs.length > 1) {
+    branchForm.value.construction_costs.splice(index, 1)
+  }
+}
+
+function addEquipment() {
+  branchForm.value.equipment_costs.push({ name: '', type: '', quantity: 1, unit_cost: 0 })
+}
+
+function removeEquipment(index) {
+  if (branchForm.value.equipment_costs.length > 1) {
+    branchForm.value.equipment_costs.splice(index, 1)
+  }
+}
+
+// Calculate total investment
+const calculatedTotalInvestment = computed(() => {
+  let total = 0
+  
+  // Sum permit bills
+  if (branchForm.value.permit_bills) {
+    branchForm.value.permit_bills.forEach(permit => {
+      total += Number(permit.amount) || 0
+    })
+  }
+  
+  // Sum construction costs
+  if (branchForm.value.construction_costs) {
+    branchForm.value.construction_costs.forEach(cost => {
+      total += Number(cost.amount) || 0
+    })
+  }
+  
+  // Sum equipment costs (quantity * unit_cost)
+  if (branchForm.value.equipment_costs) {
+    branchForm.value.equipment_costs.forEach(equip => {
+      const qty = Number(equip.quantity) || 0
+      const unitCost = Number(equip.unit_cost) || 0
+      total += qty * unitCost
+    })
+  }
+  
+  return total
+})
 
 // Add Branch Form
 const showAddBranchForm = ref(false)
@@ -833,6 +952,10 @@ async function submitBranch() {
        budget: Number(branchForm.value.budget) || 100000,
        square_meters: branchForm.value.square_meters || null,
        geofencing_radius: branchForm.value.geofencing_radius || null,
+       permit_bills: branchForm.value.permit_bills.filter(p => p.type && p.amount > 0),
+       construction_costs: branchForm.value.construction_costs.filter(c => c.category && c.amount > 0),
+       equipment_costs: branchForm.value.equipment_costs.filter(e => e.name && e.unit_cost > 0),
+       total_investment: calculatedTotalInvestment.value,
        accounts: branchForm.value.selectedAccounts,
        custom_account: customAccountPayload,
      }, { withCredentials: true })
@@ -1208,5 +1331,82 @@ textarea.form-input { resize: vertical; }
   background: #fff;
   border-radius: 8px;
   overflow: hidden;
+}
+
+/* Cost Items Styles */
+.cost-items-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cost-item-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.cost-item-row.equipment-row {
+  flex-wrap: wrap;
+}
+
+.btn-remove-item {
+  background: #dc3545;
+  color: white;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.btn-remove-item:hover:not(:disabled) {
+  background: #c82333;
+  transform: scale(1.1);
+}
+
+.btn-remove-item:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.btn-add-item {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  align-self: flex-start;
+}
+
+.btn-add-item:hover {
+  background: #218838;
+  transform: translateY(-1px);
+}
+
+.total-investment-display {
+  background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%);
+  border: 2px solid #ffc107;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  color: #856404;
+}
+
+.total-amount {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #856404;
+  margin-left: 0.5rem;
 }
 </style>

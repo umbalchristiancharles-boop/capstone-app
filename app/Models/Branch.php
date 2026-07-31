@@ -31,6 +31,10 @@ class Branch extends Model
         'budget',
         'default_password',
         'default_password_updated_at',
+        'permit_bills',
+        'construction_costs',
+        'equipment_costs',
+        'total_investment',
     ];
 
     protected function casts(): array
@@ -48,6 +52,10 @@ class Branch extends Model
             'default_password_updated_at' => 'datetime',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
+            'permit_bills' => 'array',
+            'construction_costs' => 'array',
+            'equipment_costs' => 'array',
+            'total_investment' => 'decimal:2',
         ];
     }
 

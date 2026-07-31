@@ -935,6 +935,18 @@ class SuperAdminController extends Controller
             'budget' => 'nullable|integer|min:100000|max:1000000',
             'square_meters' => 'nullable|numeric|min:0',
             'geofencing_radius' => 'nullable|numeric|min:0',
+            'permit_bills' => 'nullable|array',
+            'permit_bills.*.type' => 'nullable|string|max:100',
+            'permit_bills.*.amount' => 'nullable|numeric|min:0',
+            'construction_costs' => 'nullable|array',
+            'construction_costs.*.category' => 'nullable|string|max:100',
+            'construction_costs.*.amount' => 'nullable|numeric|min:0',
+            'equipment_costs' => 'nullable|array',
+            'equipment_costs.*.name' => 'nullable|string|max:150',
+            'equipment_costs.*.type' => 'nullable|string|max:100',
+            'equipment_costs.*.quantity' => 'nullable|integer|min:1',
+            'equipment_costs.*.unit_cost' => 'nullable|numeric|min:0',
+            'total_investment' => 'nullable|numeric|min:0',
             'accounts' => 'nullable|array',
             'accounts.admin' => 'nullable|boolean',
             'accounts.hr' => 'nullable|boolean',
@@ -959,6 +971,12 @@ class SuperAdminController extends Controller
         $requestedBudget = (int) ($request->input('budget', 100000));
         $squareMeters = $request->input('square_meters');
         $geofencingRadius = $request->input('geofencing_radius');
+        
+        // Cost details
+        $permitBills = $request->input('permit_bills', []);
+        $constructionCosts = $request->input('construction_costs', []);
+        $equipmentCosts = $request->input('equipment_costs', []);
+        $totalInvestment = $request->input('total_investment');
 
         $defaultPassword = config('chikintayo.default_password', 'Chikintayo_123');
 
@@ -1038,6 +1056,11 @@ class SuperAdminController extends Controller
                 'budget' => $requestedBudget,
                 'square_meters' => $squareMeters,
                 'geofencing_radius' => $geofencingRadius,
+                // Cost details
+                'permit_bills' => !empty($permitBills) ? $permitBills : null,
+                'construction_costs' => !empty($constructionCosts) ? $constructionCosts : null,
+                'equipment_costs' => !empty($equipmentCosts) ? $equipmentCosts : null,
+                'total_investment' => $totalInvestment,
             ]);
 
             $createdRoles = [];
