@@ -495,12 +495,21 @@ const themeKey = 'owner_module_theme'
 const theme = ref('light')
 const isDarkMode = computed(() => theme.value === 'dark')
 const themeButtonLabel = computed(() => (isDarkMode.value ? 'Light Mode' : 'Dark Mode'))
-const showThemeToggle = computed(() => !isInventoryRoute() && !isRightColumnHeaderRoute())
+const showThemeToggle = computed(() => !isInventoryRoute() && !isRightColumnHeaderRoute() && !isKitchenStaffRoute())
 
 const isInventoryRoute = () => {
   try {
     const route = (window.location.pathname || '').toLowerCase()
     return route.includes('/manager/inventory') || route.includes('/staff/inventory') || route.includes('/inventory')
+  } catch (e) {
+    return false
+  }
+}
+
+const isKitchenStaffRoute = () => {
+  try {
+    const route = (window.location.pathname || '').toLowerCase()
+    return route.includes('/staff/kitchen')
   } catch (e) {
     return false
   }

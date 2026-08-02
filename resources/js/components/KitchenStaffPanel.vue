@@ -99,38 +99,38 @@
         </div>
       </section>
     </template>
-    <template #headerActions>
-      <div ref="profileWrapper" class="kitchen-header-actions">
+    <template #sideTop>
+      <div ref="profileWrapper" class="kitchen-header-actions" style="margin-bottom: 12px;">
         <div class="header-profile-wrapper">
-        <div
-          class="header-profile-container"
-          style="background:#fff;border:1px solid #eef2f5;border-radius:12px;padding:6px 10px;display:inline-flex;align-items:center;"
-        >
-          <button
-            class="header-profile-btn"
-            type="button"
-            style="background: transparent; border: 0; cursor: pointer; display: flex; align-items: center; gap: 0.6rem; padding:0;"
-            @click.stop="toggleProfileDropdown"
+          <div
+            class="header-profile-container"
+            style="background:#fff;border:1px solid #eef2f5;border-radius:12px;padding:6px 10px;display:inline-flex;align-items:center;"
           >
-            <div class="header-avatar" style="width:28px;height:28px;border-radius:50%;background:rgb(238,238,238);display:flex;align-items:center;justify-content:center;font-weight:600;">
-              <div class="header-avatar-initials">{{ (userProfile.fullName || userProfile.full_name || userProfile.name || 'K').charAt(0) }}</div>
-            </div>
-            <div class="header-name" style="font-size:0.85rem;font-weight:700;color:#111827;white-space:nowrap;">
-              {{ (userProfile.role || 'STAFF').toString().toUpperCase() }}
-              <span v-if="userProfile.branch || userProfile.branch_name" style="font-weight:600;opacity:0.85"> - {{ (userProfile.branch || userProfile.branch_name).toString().toUpperCase() }}</span>
-            </div>
-          </button>
-        </div>
+            <button
+              class="header-profile-btn"
+              type="button"
+              style="background: transparent; border: 0; cursor: pointer; display: flex; align-items: center; gap: 0.6rem; padding:0;"
+              @click.stop="toggleProfileDropdown"
+            >
+              <div class="header-avatar" style="width:28px;height:28px;border-radius:50%;background:rgb(238,238,238);display:flex;align-items:center;justify-content:center;font-weight:600;">
+                <div class="header-avatar-initials">{{ (userProfile.fullName || userProfile.full_name || userProfile.name || 'K').charAt(0) }}</div>
+              </div>
+              <div class="header-name" style="font-size:0.85rem;font-weight:700;color:#111827;white-space:nowrap;">
+                {{ (userProfile.role || 'STAFF').toString().toUpperCase() }}
+                <span v-if="userProfile.branch || userProfile.branch_name" style="font-weight:600;opacity:0.85"> - {{ (userProfile.branch || userProfile.branch_name).toString().toUpperCase() }}</span>
+              </div>
+            </button>
+          </div>
 
-        <div
-          v-if="showProfileDropdown"
-          class="header-profile-dropdown"
-          style="position:absolute;right:0;top:46px;background:#fff;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,0.08);padding:8px;display:flex;flex-direction:column;gap:6px;min-width:140px;z-index:30"
-        >
-          <button class="dropdown-item" style="background:transparent;border:0;padding:8px;text-align:left;" @click.prevent="handleInfoClick">Info</button>
-          <button class="dropdown-item" style="background:transparent;border:0;padding:8px;text-align:left;" @click.prevent="handleLogoutClick">Logout</button>
+          <div
+            v-if="showProfileDropdown"
+            class="header-profile-dropdown"
+            style="position:absolute;right:0;top:46px;background:#fff;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,0.08);padding:8px;display:flex;flex-direction:column;gap:6px;min-width:140px;z-index:30"
+          >
+            <button class="dropdown-item" style="background:transparent;border:0;padding:8px;text-align:left;" @click.prevent="handleInfoClick">Info</button>
+            <button class="dropdown-item" style="background:transparent;border:0;padding:8px;text-align:left;" @click.prevent="handleLogoutClick">Logout</button>
+          </div>
         </div>
-      </div>
       </div>
     </template>
   </OwnerPanelLayout>
