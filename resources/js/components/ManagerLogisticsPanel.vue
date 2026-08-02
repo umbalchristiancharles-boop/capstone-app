@@ -448,8 +448,8 @@
       </div>
     </template>
 
-    <template #headerActions>
-      <div class="header-profile-wrapper" @click.stop>
+    <template #sideTop>
+      <div class="header-profile-wrapper" style="margin:-200px 0 12px;" @click.stop>
         <button class="header-profile-btn" @click="toggleProfileDropdown">
           <div class="header-avatar">
             <div v-if="userProfile.avatarUrl" class="header-avatar-img" :style="{ backgroundImage: 'url('+userProfile.avatarUrl+')' }"></div>

@@ -495,7 +495,7 @@ const themeKey = 'owner_module_theme'
 const theme = ref('light')
 const isDarkMode = computed(() => theme.value === 'dark')
 const themeButtonLabel = computed(() => (isDarkMode.value ? 'Light Mode' : 'Dark Mode'))
-const showThemeToggle = computed(() => !isInventoryRoute() && !isRightColumnHeaderRoute() && !isKitchenStaffRoute())
+const showThemeToggle = computed(() => !isInventoryRoute() && !isRightColumnHeaderRoute() && !isKitchenStaffRoute() && !isManagerLogisticsRoute())
 
 const isInventoryRoute = () => {
   try {
