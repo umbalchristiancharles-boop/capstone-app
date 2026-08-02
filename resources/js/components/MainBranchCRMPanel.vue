@@ -6,23 +6,6 @@
       </svg>
     </button>
     <section class="panel-layout">
-      <aside class="profile-col">
-        <div class="profile-card">
-          <div class="profile-head">
-            <div class="avatar">CRM</div>
-            <div>
-              <div class="label">Main Branch Account</div>
-              <h2>{{ profile.full_name || 'CRM Officer' }}</h2>
-              <p>CUSTOMER RELATIONS</p>
-            </div>
-          </div>
-          <div class="profile-meta">
-            <div><strong>Username:</strong> {{ profile.username || 'crm_main_branch' }}</div>
-            <div><strong>Branch:</strong> Main Branch (HQ)</div>
-          </div>
-        </div>
-      </aside>  
-
       <main class="main-col">
         <header class="panel-header">
           <h1>Customer Relationship Management Dashboard</h1>
@@ -293,7 +276,7 @@
                     {{ expandedEmailHistory === editingReport.id ? 'Hide' : 'Show' }} Email History
                   </button>
                 </div>
-                
+
                 <div v-if="expandedEmailHistory === editingReport.id" class="email-history-content">
                   <div v-if="loadingEmails[editingReport.id]" class="loading-state">
                     <p>Loading emails...</p>
@@ -333,9 +316,9 @@
 
             <div class="modal-footer">
               <button class="btn-cancel" @click="closeEditReportModal">Cancel</button>
-              <button 
-                v-if="editingReport.customer_email" 
-                class="btn-email" 
+              <button
+                v-if="editingReport.customer_email"
+                class="btn-email"
                 @click="openEmailModal"
                 :disabled="sendingEmail"
                 title="Send email to customer"
@@ -397,7 +380,7 @@
                     {{ expandedEmailHistory === editingReport.id ? 'Hide' : 'Show' }} Email History
                   </button>
                 </div>
-                
+
                 <div v-if="expandedEmailHistory === editingReport.id" class="email-history-content">
                   <div v-if="loadingEmails[editingReport.id]" class="loading-state">
                     <p>Loading emails...</p>
@@ -469,12 +452,6 @@
         </div>
       </transition>
 
-      <aside class="side-col">
-        <section class="panel-block">
-          <h3>Quick Links</h3>
-          <button class="link-btn" @click="refreshComments" style="background: linear-gradient(180deg, #10b981, #059669);">Refresh Comments</button>
-        </section>
-      </aside>
     </section>
   </div>
 </template>
@@ -791,7 +768,7 @@ async function openEmailModal() {
     subject: editingReport.value.subject || '',
     message: '',
   }
-  
+
   // Check if this is the first email for this report
   checkingFirstEmail.value = true
   try {
@@ -809,7 +786,7 @@ async function openEmailModal() {
   } finally {
     checkingFirstEmail.value = false
   }
-  
+
   showEmailModal.value = true
 }
 
@@ -830,7 +807,7 @@ async function sendEmail() {
     }
     return
   }
-  
+
   if (!isFirstEmail.value && !emailForm.value.message.trim()) {
     if (window.swalAlert) {
       await window.swalAlert('Please fill in the message', 'Error', 'error')
@@ -848,9 +825,9 @@ async function sendEmail() {
     if (response.data.ok) {
       // Automatically update status to "in_progress" after sending email
       await updateReportStatusToInProgress()
-      
+
       let successMessage = response.data.message || 'Email sent successfully'
-      
+
       // Show additional notification if automatic acknowledgment was sent
       if (response.data.is_first_email && window.swalAlert) {
         await window.swalAlert(
@@ -861,7 +838,7 @@ async function sendEmail() {
       } else if (window.swalAlert) {
         await window.swalAlert(successMessage, 'Success', 'success')
       }
-      
+
       closeEmailModal()
       await loadReports()
       await loadReportStats()
@@ -885,7 +862,7 @@ async function updateReportStatusToInProgress() {
     const response = await axios.put(`/api/customer-reports/${editingReport.value.id}`, {
       status: 'in_progress',
     }, { withCredentials: true })
-    
+
     if (response.data.ok) {
       // Update local editing report status
       editingReport.value.status = 'in_progress'
@@ -1009,7 +986,7 @@ onMounted(async () => {
 .back-btn:hover { transform: translateY(-2px); }
 .back-btn svg { display:block }
 
-.panel-layout { display: grid; grid-template-columns: 300px 1fr 260px; gap: 20px; align-items: start; }
+.panel-layout { display: grid; grid-template-columns: 1fr; gap: 20px; align-items: start; }
 .profile-card, .panel-block, .overview-card, .panel-header { background: #ffffff; border-radius: 12px; padding: 18px; box-shadow: 0 4px 14px rgba(16,24,40,0.04); border: 1px solid #eef2f7; }
 
 .profile-head { display: flex; gap: 14px; align-items: center; }
