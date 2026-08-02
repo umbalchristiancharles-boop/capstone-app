@@ -8,7 +8,7 @@
     :ownerTwoColumnLayout="true"
     @logout="logout"
   >
-    <template #headerActions>
+    <template #sideTop>
       <div class="header-profile-wrapper" ref="headerProfileWrapper" style="margin: 0 0 12px;">
         <button class="header-profile-btn" @click.stop="toggleProfileMenu" type="button">
           <div class="header-avatar">
@@ -25,7 +25,6 @@
           <button class="dropdown-item" @click="openLogoutFromMenu">Logout</button>
         </div>
       </div>
-
     </template>
 
     <template #main>
@@ -80,7 +79,7 @@
       <div class="panel-section">
         <h2 class="section-title">Product Disposal List</h2>
         <p class="section-description">View and manage all expired product disposal reports</p>
-        
+
         <!-- Disposal Stats -->
         <div class="disposal-stats-row">
           <div class="disposal-stat-mini">
@@ -824,7 +823,7 @@ function calculateDisposalStats() {
 
   disposals.value.forEach(disposal => {
     stats.totalQuantity += disposal.quantity || 0
-    
+
     const status = (disposal.status || '').toLowerCase()
     if (status === 'pending') stats.pending++
     else if (status === 'resolved') stats.resolved++
@@ -1161,7 +1160,7 @@ onMounted(async () => {
 
   // fetch expired products
   await fetchExpiredProducts()
-  
+
   // load disposal list
   await loadDisposals()
 
@@ -1693,16 +1692,16 @@ async function autoFillExpiredQuantity() {
       if (expiredLots.length > 0) {
         const totalExpired = expiredLots.reduce((sum, lot) => sum + lot.quantity, 0)
         const currentStock = expiredReportProduct.value.stock || 0
-        
+
         // Cap the auto-filled quantity to current stock to prevent validation errors
         const cappedQuantity = Math.min(totalExpired, currentStock)
-        
+
         expiredReportForm.value.quantity = cappedQuantity
         expiredLotsSummary.value = {
           quantity: totalExpired,
           count: expiredLots.length
         }
-        
+
         // Show appropriate message based on whether capping was needed
         if (totalExpired > currentStock) {
           expiredReportError.value = `Note: Auto-filled quantity capped to current stock (${currentStock}) from ${totalExpired} lot units`
@@ -2171,11 +2170,11 @@ ProductList[compact] { width:100% }
   .disposal-stats-row {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .disposal-table {
     font-size: 0.85rem;
   }
-  
+
   .disposal-table thead th,
   .disposal-table tbody td {
     padding: 8px 10px;
@@ -2819,7 +2818,7 @@ ProductList[compact] { width:100% }
    with the ProductList header area in this inventory panel. Tune value as needed. */
 @media (min-width: 880px) {
   .admin-side .announcements-panel {
-    margin-top: 220px !important;
+    margin-top: 60px !important;
   }
 }
 </style>
