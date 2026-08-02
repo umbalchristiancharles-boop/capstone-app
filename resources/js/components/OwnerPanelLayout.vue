@@ -1143,7 +1143,7 @@ async function onAvatarChange(event) {
     top: 96px;
     align-self: start;
     max-height: calc(100vh - 120px);
-    overflow: auto;
+    overflow: visible;
     padding-right: 8px;
   }
 
