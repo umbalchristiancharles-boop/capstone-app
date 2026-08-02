@@ -15,6 +15,7 @@
                 <p>{{ panelDescription }}</p>
               </div>
               <div class="header-actions-top">
+                <slot name="headerActions"></slot>
                 <button type="button" class="theme-toggle-btn" @click="toggleTheme" :title="isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
                   <span class="theme-toggle-btn__icon" aria-hidden="true">
                     <svg v-if="isDarkMode" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -34,7 +35,6 @@
                   </span>
                   <span class="theme-toggle-btn__text">{{ themeButtonLabel }}</span>
                 </button>
-                <slot name="headerActions"></slot>
               </div>
             </div>
           </header>

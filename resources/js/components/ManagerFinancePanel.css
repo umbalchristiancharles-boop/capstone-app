@@ -1,3 +1,165 @@
+:global(.dark-mode) .manager-finance {
+  color: #f8fafc;
+  background:
+    radial-gradient(circle at top left, rgba(249, 115, 22, 0.16), transparent 28%),
+    radial-gradient(circle at top right, rgba(59, 130, 246, 0.12), transparent 22%),
+    linear-gradient(180deg, #0f172a 0%, #111827 100%);
+}
+
+:global(.dark-mode) .manager-finance .filter-bar,
+:global(.dark-mode) .manager-finance .kpi-card,
+:global(.dark-mode) .manager-finance .branch-stats,
+:global(.dark-mode) .manager-finance .panel-section,
+:global(.dark-mode) .manager-finance .attendance-card,
+:global(.dark-mode) .manager-finance .loading-container,
+:global(.dark-mode) .manager-finance .logout-confirm-box,
+:global(.dark-mode) .manager-finance .receipt-preview-modal,
+:global(.dark-mode) .manager-finance .preview-image {
+  background: linear-gradient(180deg, rgba(17, 24, 39, 0.98), rgba(15, 23, 42, 0.98));
+  border-color: rgba(148, 163, 184, 0.18);
+  box-shadow: 0 14px 34px rgba(2, 6, 23, 0.42);
+}
+
+:global(.dark-mode) .manager-finance .filter-group label,
+:global(.dark-mode) .manager-finance .date-separator,
+:global(.dark-mode) .manager-finance .attendance-title,
+:global(.dark-mode) .manager-finance .time-value,
+:global(.dark-mode) .manager-finance .kpi-label,
+:global(.dark-mode) .manager-finance .kpi-value,
+:global(.dark-mode) .manager-finance .section-title,
+:global(.dark-mode) .manager-finance .section-description,
+:global(.dark-mode) .manager-finance .processed-info,
+:global(.dark-mode) .manager-finance .header-name,
+:global(.dark-mode) .manager-finance .logout-confirm-box h3,
+:global(.dark-mode) .manager-finance .receipt-preview-modal .modal-header h3,
+:global(.dark-mode) .manager-finance .preview-meta,
+:global(.dark-mode) .manager-finance .chart-title,
+:global(.dark-mode) .manager-finance .chart-label,
+:global(.dark-mode) .manager-finance .chart-value {
+  color: #f8fafc;
+}
+
+:global(.dark-mode) .manager-finance .filter-group select,
+:global(.dark-mode) .manager-finance .range-select,
+:global(.dark-mode) .manager-finance .date-input,
+:global(.dark-mode) .manager-finance .branch-table td,
+:global(.dark-mode) .manager-finance .transactions-table td,
+:global(.dark-mode) .manager-finance .data-table td {
+  background: #111827;
+  color: #f8fafc;
+  border-color: rgba(148, 163, 184, 0.22);
+}
+
+:global(.dark-mode) .manager-finance .branch-table th,
+:global(.dark-mode) .manager-finance .transactions-table th,
+:global(.dark-mode) .manager-finance .data-table th {
+  background: linear-gradient(180deg, #1e293b 0%, #162032 100%);
+  color: #f8fafc;
+}
+
+:global(.dark-mode) .manager-finance .branch-table td,
+:global(.dark-mode) .manager-finance .transactions-table td,
+:global(.dark-mode) .manager-finance .data-table td,
+:global(.dark-mode) .manager-finance .status-badge,
+:global(.dark-mode) .manager-finance .processed-info small,
+:global(.dark-mode) .manager-finance .empty-message,
+:global(.dark-mode) .manager-finance .time-label,
+:global(.dark-mode) .manager-finance .logout-confirm-box p,
+:global(.dark-mode) .manager-finance .chart-wrapper,
+:global(.dark-mode) .manager-finance .chart-legend small {
+  color: #dbe2ed;
+}
+
+:global(.dark-mode) .manager-finance .kpi-icon {
+  background: rgba(249, 115, 22, 0.16);
+  color: #fdba74;
+}
+
+:global(.dark-mode) .manager-finance .revenue-icon {
+  background: rgba(34, 197, 94, 0.16);
+  color: #86efac;
+}
+
+:global(.dark-mode) .manager-finance .orders-icon {
+  background: rgba(59, 130, 246, 0.16);
+  color: #93c5fd;
+}
+
+:global(.dark-mode) .manager-finance .expenses-icon {
+  background: rgba(245, 158, 11, 0.18);
+  color: #fcd34d;
+}
+
+:global(.dark-mode) .manager-finance .profit-icon {
+  background: rgba(249, 115, 22, 0.16);
+  color: #fdba74;
+}
+
+:global(.dark-mode) .manager-finance .btn-secondary,
+:global(.dark-mode) .manager-finance .btn-cancel,
+:global(.dark-mode) .manager-finance .btn-success,
+:global(.dark-mode) .manager-finance .btn-info {
+  background: linear-gradient(180deg, #111827 0%, #182235 100%);
+  color: #f8fafc;
+  border-color: rgba(148, 163, 184, 0.24);
+}
+
+:global(.dark-mode) .manager-finance .btn-clock-in,
+:global(.dark-mode) .manager-finance .btn-clock-out,
+:global(.dark-mode) .manager-finance .btn-approve,
+:global(.dark-mode) .manager-finance .btn-confirm,
+:global(.dark-mode) .manager-finance .btn-refresh,
+:global(.dark-mode) .manager-finance .btn-primary {
+  box-shadow: 0 10px 24px rgba(249, 115, 22, 0.18);
+}
+
+:global(.dark-mode) .manager-finance .attendance-status-badge.status-on-duty {
+  background: rgba(34, 197, 94, 0.18);
+  color: #bbf7d0;
+}
+
+:global(.dark-mode) .manager-finance .attendance-status-badge.status-off-duty {
+  background: rgba(248, 113, 113, 0.18);
+  color: #fecaca;
+}
+
+:global(.dark-mode) .manager-finance .clockout-restriction,
+:global(.dark-mode) .manager-finance .attendance-message.error {
+  color: #fecaca;
+}
+
+:global(.dark-mode) .manager-finance .attendance-message.success {
+  background: rgba(16, 185, 129, 0.16);
+  color: #a7f3d0;
+}
+
+:global(.dark-mode) .manager-finance .attendance-message.error {
+  background: rgba(239, 68, 68, 0.16);
+}
+
+:global(.dark-mode) .manager-finance .clockout-restriction {
+  background: linear-gradient(180deg, rgba(120, 53, 15, 0.38), rgba(101, 42, 14, 0.46));
+  border-color: rgba(251, 191, 36, 0.42);
+}
+
+:global(.dark-mode) .manager-finance .loading-spinner {
+  border-color: rgba(148, 163, 184, 0.22);
+  border-top-color: #f59e0b;
+}
+
+:global(.dark-mode) .manager-finance .chart-wrapper {
+  background: #0f172a;
+  border-color: rgba(148, 163, 184, 0.18);
+}
+
+:global(.dark-mode) .manager-finance .panel-action,
+:global(.dark-mode) .manager-finance .btn-refresh,
+:global(.dark-mode) .manager-finance .theme-toggle-btn {
+  background: #111827;
+  color: #f8fafc;
+  border-color: rgba(148, 163, 184, 0.18);
+}
+
 .manager-finance {
   position: relative;
   min-height: 100vh;
@@ -36,6 +198,101 @@
 
 .page-header {
   margin-bottom: 1.5rem;
+}
+
+:global(.dark-mode) .manager-finance .panel-body.dark-mode,
+:global(.dark-mode) .manager-finance .panel-body.dark-mode .chart-wrap,
+:global(.dark-mode) .manager-finance .panel-body.dark-mode .chart-wrap canvas,
+:global(.dark-mode) .manager-finance .panel-body.dark-mode .chart-wrap .chart-legend,
+:global(.dark-mode) .manager-finance .panel-body.dark-mode .chart-wrap .chart-legend small {
+  background: #0f172a;
+  color: #f8fafc;
+}
+
+:global(.dark-mode) .manager-finance .filter-bar,
+:global(.dark-mode) .manager-finance .kpi-card,
+:global(.dark-mode) .manager-finance .branch-stats,
+:global(.dark-mode) .manager-finance .panel-section,
+:global(.dark-mode) .manager-finance .attendance-card,
+:global(.dark-mode) .manager-finance .loading-container,
+:global(.dark-mode) .manager-finance .logout-confirm-box,
+:global(.dark-mode) .manager-finance .receipt-preview-modal,
+:global(.dark-mode) .manager-finance .preview-image {
+  background: linear-gradient(180deg, rgba(17, 24, 39, 0.98), rgba(15, 23, 42, 0.98));
+  border-color: rgba(148, 163, 184, 0.18);
+  box-shadow: 0 14px 34px rgba(2, 6, 23, 0.42);
+}
+
+:global(.dark-mode) .manager-finance .filter-group label,
+:global(.dark-mode) .manager-finance .time-label,
+:global(.dark-mode) .manager-finance .kpi-label,
+:global(.dark-mode) .manager-finance .section-description,
+:global(.dark-mode) .manager-finance .empty-message,
+:global(.dark-mode) .manager-finance .processed-info small,
+:global(.dark-mode) .manager-finance .logout-confirm-box p,
+:global(.dark-mode) .manager-finance .chart-label,
+:global(.dark-mode) .manager-finance .chart-legend small {
+  color: #cbd5e1;
+}
+
+:global(.dark-mode) .manager-finance .filter-group select,
+:global(.dark-mode) .manager-finance .range-select,
+:global(.dark-mode) .manager-finance .date-input,
+:global(.dark-mode) .manager-finance .branch-table td,
+:global(.dark-mode) .manager-finance .transactions-table td,
+:global(.dark-mode) .manager-finance .data-table td {
+  background: #111827;
+  color: #f8fafc;
+  border-color: rgba(148, 163, 184, 0.2);
+}
+
+:global(.dark-mode) .manager-finance .branch-table th,
+:global(.dark-mode) .manager-finance .transactions-table th,
+:global(.dark-mode) .manager-finance .data-table th {
+  background: linear-gradient(180deg, #1e293b 0%, #162032 100%);
+  color: #f8fafc;
+}
+
+:global(.dark-mode) .manager-finance .status-badge,
+:global(.dark-mode) .manager-finance .attendance-title,
+:global(.dark-mode) .manager-finance .time-value,
+:global(.dark-mode) .manager-finance .kpi-value,
+:global(.dark-mode) .manager-finance .section-title,
+:global(.dark-mode) .manager-finance .header-name,
+:global(.dark-mode) .manager-finance .preview-meta,
+:global(.dark-mode) .manager-finance .receipt-preview-modal .modal-header h3,
+:global(.dark-mode) .manager-finance .logout-confirm-box h3 {
+  color: #f8fafc;
+}
+
+:global(.dark-mode) .manager-finance .attendance-status-badge.status-on-duty {
+  background: rgba(34, 197, 94, 0.18);
+  color: #bbf7d0;
+}
+
+:global(.dark-mode) .manager-finance .attendance-status-badge.status-off-duty {
+  background: rgba(248, 113, 113, 0.18);
+  color: #fecaca;
+}
+
+:global(.dark-mode) .manager-finance .panel-action,
+:global(.dark-mode) .manager-finance .btn-primary,
+:global(.dark-mode) .manager-finance .btn-refresh,
+:global(.dark-mode) .manager-finance .theme-toggle-btn {
+  background: #111827;
+  color: #f8fafc;
+  border-color: rgba(148, 163, 184, 0.18);
+}
+
+:deep(.admin-main-header .header-actions-top) {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+:deep(.admin-main-header .header-actions-top .theme-toggle-btn) {
+  margin-top: 0.1rem;
 }
 
 .panel-badge {
@@ -182,6 +439,17 @@
   color: #ffffff;
   background: linear-gradient(135deg, #ff9f43 0%, #ff8a1f 100%);
   box-shadow: 0 10px 24px rgba(255, 159, 67, 0.18);
+}
+
+.btn-refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 6rem;
+  min-height: 2.8rem;
+  padding: 0.72rem 1rem;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .btn-primary:hover:not(:disabled),

@@ -195,11 +195,11 @@ function renderChart() {
   // Skip rendering if component is being destroyed or ref is null
   if (isDestroying) return
   if (!chartRef.value) return
-  
+
   // Ensure canvas is actually in the DOM and visible
   if (!chartRef.value.isConnected) return
   if (chartRef.value.offsetParent === null && chartRef.value.style.display !== 'none') return
-  
+
   if (chartInstance.value) {
     chartInstance.value.destroy()
     chartInstance.value = null
@@ -275,8 +275,8 @@ function renderChart() {
         }
       },
       scales: {
-        y: { 
-          beginAtZero: true, 
+        y: {
+          beginAtZero: true,
           ticks: { callback: (v) => `₱${Number(v).toLocaleString('en-PH')}` }
         }
       }
@@ -303,8 +303,8 @@ onMounted(() => {
 onUnmounted(() => {
   isDestroying = true
   if (chartInstance.value) {
-    try { 
-      chartInstance.value.destroy() 
+    try {
+      chartInstance.value.destroy()
     } catch (e) {
       // Ignore errors during cleanup
     }
@@ -315,6 +315,66 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+:global(.dark-mode) .finance-content,
+:global(.dark-mode) .panel-section,
+:global(.dark-mode) .chart-wrapper,
+:global(.dark-mode) .tx-details-row,
+:global(.dark-mode) .data-table th,
+:global(.dark-mode) .data-table td,
+:global(.dark-mode) .loading-container,
+:global(.dark-mode) .table-container {
+  background: linear-gradient(180deg, rgba(17, 24, 39, 0.98), rgba(15, 23, 42, 0.98));
+  border-color: rgba(148, 163, 184, 0.18);
+  color: #f8fafc;
+}
+
+:global(.dark-mode) .section-title,
+:global(.dark-mode) .chart-title,
+:global(.dark-mode) .data-table th,
+:global(.dark-mode) .data-table td,
+:global(.dark-mode) .details-btn,
+:global(.dark-mode) .empty-message,
+:global(.dark-mode) .loading-container p,
+:global(.dark-mode) .breakdown,
+:global(.dark-mode) .tx-details,
+:global(.dark-mode) .items,
+:global(.dark-mode) .items li,
+:global(.dark-mode) .chart-legend small {
+  color: #f8fafc;
+}
+
+:global(.dark-mode) .data-table th {
+  background: linear-gradient(180deg, #1e293b 0%, #162032 100%);
+}
+
+:global(.dark-mode) .chart-wrapper {
+  border-color: rgba(148, 163, 184, 0.18);
+}
+
+:global(.dark-mode) .data-table td,
+:global(.dark-mode) .data-table th {
+  border-bottom-color: rgba(148, 163, 184, 0.18);
+}
+
+:global(.dark-mode) .status-badge.status-approved {
+  background: rgba(16, 185, 129, 0.16);
+  color: #a7f3d0;
+}
+
+:global(.dark-mode) .status-badge.status-pending {
+  background: rgba(245, 158, 11, 0.18);
+  color: #fde68a;
+}
+
+:global(.dark-mode) .status-badge.status-rejected {
+  background: rgba(248, 113, 113, 0.18);
+  color: #fecaca;
+}
+
+:global(.dark-mode) .details-btn {
+  background: #2563eb;
+}
+
 .finance-content {
   display: flex;
   flex-direction: column;
@@ -494,7 +554,7 @@ onUnmounted(() => {
   .charts-container {
     grid-template-columns: 1fr;
   }
-  
+
   .chart-wrapper canvas {
     height: 250px !important;
   }

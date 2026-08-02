@@ -520,6 +520,81 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+:global(.dark-mode) .price-markup-manager-section,
+:global(.dark-mode) .financial-chart-card,
+:global(.dark-mode) .price-markup-card,
+:global(.dark-mode) .chart-wrapper,
+:global(.dark-mode) .chart-info,
+:global(.dark-mode) .chart-canvas-wrap,
+:global(.dark-mode) .alert,
+:global(.dark-mode) .form-group,
+:global(.dark-mode) .form-field input,
+:global(.dark-mode) .form-field textarea,
+:global(.dark-mode) .input-with-unit,
+:global(.dark-mode) .current-markup,
+:global(.dark-mode) .request-form,
+:global(.dark-mode) .card-header,
+:global(.dark-mode) .form-actions {
+  background: linear-gradient(180deg, rgba(17, 24, 39, 0.98), rgba(15, 23, 42, 0.98));
+  border-color: rgba(148, 163, 184, 0.18);
+  color: #f8fafc;
+}
+
+:global(.dark-mode) .card-title,
+:global(.dark-mode) .chart-label,
+:global(.dark-mode) .chart-value,
+:global(.dark-mode) .center-value,
+:global(.dark-mode) .form-field label,
+:global(.dark-mode) .help-text,
+:global(.dark-mode) .preview-text,
+:global(.dark-mode) .error-text,
+:global(.dark-mode) .alert p,
+:global(.dark-mode) .alert strong,
+:global(.dark-mode) .description,
+:global(.dark-mode) .current-info,
+:global(.dark-mode) .unit-suffix {
+  color: #f8fafc;
+}
+
+:global(.dark-mode) .chart-label,
+:global(.dark-mode) .help-text,
+:global(.dark-mode) .description,
+:global(.dark-mode) .chart-info,
+:global(.dark-mode) .alert p,
+:global(.dark-mode) .error-text {
+  color: #cbd5e1;
+}
+
+:global(.dark-mode) .form-field input,
+:global(.dark-mode) .form-field textarea,
+:global(.dark-mode) .input-with-unit {
+  background: #111827;
+  color: #f8fafc;
+  border-color: rgba(148, 163, 184, 0.2);
+}
+
+:global(.dark-mode) .form-field input::placeholder,
+:global(.dark-mode) .form-field textarea::placeholder {
+  color: #94a3b8;
+}
+
+:global(.dark-mode) .refresh-btn {
+  background: #1f2937;
+  border-color: rgba(148, 163, 184, 0.22);
+  color: #f8fafc;
+}
+
+:global(.dark-mode) .alert-warning,
+:global(.dark-mode) .alert-success,
+:global(.dark-mode) .alert-error {
+  background: rgba(15, 23, 42, 0.92);
+  border-color: rgba(148, 163, 184, 0.18);
+}
+
+:global(.dark-mode) .status-badge {
+  color: #f8fafc;
+}
+
 .price-markup-manager-section {
   display: grid;
   grid-template-columns: 1fr;
