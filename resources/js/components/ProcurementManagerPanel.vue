@@ -362,8 +362,8 @@
       </transition>
     </template>
 
-    <template #headerActions>
-      <div class="header-profile-wrapper" @click.stop>
+    <template #sideTop>
+      <div class="header-profile-wrapper" style="margin-bottom:12px;" @click.stop>
         <button class="header-profile-btn" @click="toggleProfileDropdown">
           <div class="header-avatar">
             <div v-if="userProfile.avatarUrl" class="header-avatar-img" :style="{ backgroundImage: 'url('+userProfile.avatarUrl+')' }"></div>
@@ -1718,6 +1718,24 @@ onUnmounted(() => {
 .hr-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; align-items: start; }
 .hr-stat-card { background: white; border-radius: 8px; padding: 1rem; display:flex; gap:0.75rem; align-items:center; color: #1b1b1f; }
 .hr-stat-value { font-weight:700; font-size:1.25rem; }
+
+/* Procurement panel layout improvements */
+/* Align header actions and profile neatly */
+.admin-main-header .admin-main-header-top { align-items: center; gap: 1rem; }
+.header-actions-top { display:flex; align-items:center; gap:12px; }
+
+/* Make stat cards consistent height and spacing */
+.hr-stats-grid { align-items: stretch; }
+.hr-stat-card { min-height: 84px; display:flex; align-items:center; padding: 1rem; }
+
+/* Slightly reduce vertical spacing of sections to compact layout */
+.panel-section { margin-top: 0.75rem; }
+
+/* Narrow the right-side column slightly for this panel for better balance */
+.admin-side { width: 300px; }
+
+/* Ensure announcements card fits nicely inside the right column */
+.announcements-panel { max-width: 100%; }
 
 /* Modal overrides for better contrast and layout inside this panel */
 .modal {

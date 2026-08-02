@@ -495,7 +495,7 @@ const themeKey = 'owner_module_theme'
 const theme = ref('light')
 const isDarkMode = computed(() => theme.value === 'dark')
 const themeButtonLabel = computed(() => (isDarkMode.value ? 'Light Mode' : 'Dark Mode'))
-const showThemeToggle = computed(() => !isInventoryRoute() && !isRightColumnHeaderRoute() && !isKitchenStaffRoute() && !isManagerLogisticsRoute())
+const showThemeToggle = computed(() => !isInventoryRoute() && !isRightColumnHeaderRoute() && !isKitchenStaffRoute() && !isManagerLogisticsRoute() && !isManagerProcurementRoute())
 
 const isInventoryRoute = () => {
   try {
@@ -551,6 +551,15 @@ const isManagerLogisticsRoute = () => {
   }
 }
 
+const isManagerProcurementRoute = () => {
+  try {
+    const route = (window.location.pathname || '').toLowerCase()
+    return route.includes('/manager/procurement') || route.includes('/main-branch/procurement')
+  } catch (e) {
+    return false
+  }
+}
+
 const applyThemeMode = () => {
   try {
     const root = document.documentElement
@@ -586,7 +595,7 @@ const persistThemeMode = () => {
 
 const loadThemeMode = () => {
   try {
-    if (isManagerLogisticsRoute()) {
+    if (isManagerLogisticsRoute() || isManagerProcurementRoute()) {
       theme.value = 'light'
       applyThemeMode()
       return
@@ -607,7 +616,7 @@ const loadThemeMode = () => {
 }
 
 const toggleTheme = () => {
-  if (isManagerLogisticsRoute()) {
+  if (isManagerLogisticsRoute() || isManagerProcurementRoute()) {
     theme.value = 'light'
     persistThemeMode()
     applyThemeMode()
