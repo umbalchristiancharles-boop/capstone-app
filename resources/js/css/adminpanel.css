@@ -379,9 +379,43 @@ html.dark .admin-page,
 }
 
 .theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
   border-radius: 999px;
   padding: 0.65rem 1rem;
-  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.theme-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  transform: translateY(-1px);
+}
+
+.theme-toggle-btn__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.theme-toggle-btn__icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.theme-toggle-btn__text {
+  white-space: nowrap;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
 .dark-mode input,
@@ -484,9 +518,43 @@ html.dark .admin-page,
 }
 
 .theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
   border-radius: 999px;
   padding: 0.65rem 1rem;
-  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.theme-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  transform: translateY(-1px);
+}
+
+.theme-toggle-btn__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.theme-toggle-btn__icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.theme-toggle-btn__text {
+  white-space: nowrap;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
 .dark-mode .theme-toggle-btn {
@@ -518,6 +586,10 @@ html.dark .admin-page,
 .dark-mode .theme-toggle-btn {
   border-radius: 9999px;
   padding: 0.55rem 0.9rem;
+}
+
+.dark-mode .theme-toggle-btn__icon {
+  color: inherit;
 }
 
 .dark-mode .owner-card,

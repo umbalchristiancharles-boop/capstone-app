@@ -15,8 +15,24 @@
                 <p>{{ panelDescription }}</p>
               </div>
               <div class="header-actions-top">
-                <button type="button" class="theme-toggle-btn" @click="toggleTheme">
-                  {{ themeButtonLabel }}
+                <button type="button" class="theme-toggle-btn" @click="toggleTheme" :title="isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
+                  <span class="theme-toggle-btn__icon" aria-hidden="true">
+                    <svg v-if="isDarkMode" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="4"></circle>
+                      <path d="M12 2v2"></path>
+                      <path d="M12 20v2"></path>
+                      <path d="M4.93 4.93l1.41 1.41"></path>
+                      <path d="M17.66 17.66l1.41 1.41"></path>
+                      <path d="M2 12h2"></path>
+                      <path d="M20 12h2"></path>
+                      <path d="M4.93 19.07l1.41-1.41"></path>
+                      <path d="M17.66 6.34l1.41-1.41"></path>
+                    </svg>
+                    <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"></path>
+                    </svg>
+                  </span>
+                  <span class="theme-toggle-btn__text">{{ themeButtonLabel }}</span>
                 </button>
                 <slot name="headerActions"></slot>
               </div>
@@ -59,8 +75,24 @@
             </div>
             <div class="admin-card__footer admin-card__footer--stacked">
               <slot name="profileFooter"></slot>
-              <button type="button" class="theme-toggle-btn logout-btn--center" @click="toggleTheme">
-                {{ themeButtonLabel }}
+              <button type="button" class="theme-toggle-btn logout-btn--center" @click="toggleTheme" :title="isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
+                <span class="theme-toggle-btn__icon" aria-hidden="true">
+                  <svg v-if="isDarkMode" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="4"></circle>
+                    <path d="M12 2v2"></path>
+                    <path d="M12 20v2"></path>
+                    <path d="M4.93 4.93l1.41 1.41"></path>
+                    <path d="M17.66 17.66l1.41 1.41"></path>
+                    <path d="M2 12h2"></path>
+                    <path d="M20 12h2"></path>
+                    <path d="M4.93 19.07l1.41-1.41"></path>
+                    <path d="M17.66 6.34l1.41-1.41"></path>
+                  </svg>
+                  <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"></path>
+                  </svg>
+                </span>
+                <span class="theme-toggle-btn__text">{{ themeButtonLabel }}</span>
               </button>
               <div class="admin-actions-row">
                 <button class="logout-btn logout-btn--center" @click="$emit('logout')">Logout</button>
