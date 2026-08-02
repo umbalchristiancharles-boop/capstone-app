@@ -16,7 +16,7 @@
               </div>
               <div class="header-actions-top">
                 <slot name="headerActions"></slot>
-                <button type="button" class="theme-toggle-btn" @click="toggleTheme" :title="isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
+                <button v-if="showThemeToggle" type="button" class="theme-toggle-btn" @click="toggleTheme" :title="isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
                   <span class="theme-toggle-btn__icon" aria-hidden="true">
                     <svg v-if="isDarkMode" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <circle cx="12" cy="12" r="4"></circle>
@@ -75,7 +75,7 @@
             </div>
             <div class="admin-card__footer admin-card__footer--stacked">
               <slot name="profileFooter"></slot>
-              <button type="button" class="theme-toggle-btn logout-btn--center" @click="toggleTheme" :title="isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
+              <button v-if="showThemeToggle" type="button" class="theme-toggle-btn logout-btn--center" @click="toggleTheme" :title="isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
                 <span class="theme-toggle-btn__icon" aria-hidden="true">
                   <svg v-if="isDarkMode" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="4"></circle>
@@ -488,6 +488,34 @@ const themeKey = 'owner_module_theme'
 const theme = ref('light')
 const isDarkMode = computed(() => theme.value === 'dark')
 const themeButtonLabel = computed(() => (isDarkMode.value ? 'Light Mode' : 'Dark Mode'))
+const showThemeToggle = computed(() => !isInventoryRoute())
+
+const isInventoryRoute = () => {
+  try {
+    const route = (window.location.pathname || '').toLowerCase()
+    return route.includes('/manager/inventory') || route.includes('/staff/inventory') || route.includes('/inventory')
+  } catch (e) {
+    return false
+  }
+}
+
+const isManagerLogisticsRoute = () => {
+  try {
+    const route = (window.location.pathname || '').toLowerCase()
+    return route.includes('/manager/logistics') ||
+      route.includes('/main-branch/logistics') ||
+      route.includes('/manager/finance') ||
+      route.includes('/main-branch/finance') ||
+      route.includes('/manager/hr') ||
+      route.includes('/manager/inventory') ||
+      route.includes('/staff/inventory') ||
+      route.includes('/inventory') ||
+      route.includes('/staff/kitchen') ||
+      route.includes('/staff/cashier')
+  } catch (e) {
+    return false
+  }
+}
 
 const applyThemeMode = () => {
   try {
@@ -524,6 +552,12 @@ const persistThemeMode = () => {
 
 const loadThemeMode = () => {
   try {
+    if (isManagerLogisticsRoute()) {
+      theme.value = 'light'
+      applyThemeMode()
+      return
+    }
+
     const saved = localStorage.getItem(themeKey)
     if (saved === 'dark' || saved === 'light') {
       theme.value = saved
@@ -539,6 +573,13 @@ const loadThemeMode = () => {
 }
 
 const toggleTheme = () => {
+  if (isManagerLogisticsRoute()) {
+    theme.value = 'light'
+    persistThemeMode()
+    applyThemeMode()
+    return
+  }
+
   theme.value = theme.value === 'dark' ? 'light' : 'dark'
   persistThemeMode()
   applyThemeMode()
