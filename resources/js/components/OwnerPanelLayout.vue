@@ -15,7 +15,9 @@
                 <p>{{ panelDescription }}</p>
               </div>
               <div class="header-actions-top">
-                <slot name="headerActions"></slot>
+                <template v-if="!isRightColumnHeaderRoute()">
+                  <slot name="headerActions"></slot>
+                </template>
                 <button v-if="showThemeToggle" type="button" class="theme-toggle-btn" @click="toggleTheme" :title="isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
                   <span class="theme-toggle-btn__icon" aria-hidden="true">
                     <svg v-if="isDarkMode" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -114,6 +116,11 @@
               :performClockOut="performClockOut"
             ></slot>
           </div>
+          <template v-if="isRightColumnHeaderRoute()">
+            <div class="header-actions-side">
+              <slot name="headerActions"></slot>
+            </div>
+          </template>
           <slot name="sideTop"></slot>
           <section v-if="showAnnouncements" class="panel-block announcements-panel">
             <div class="panel-header announcements-header">
@@ -137,8 +144,8 @@
             <slot name="side"></slot>
           </template>
           <template v-else>
-            <div v-if="!hideAttendanceCard" class="attendance-card" style="margin-top:12px; background:#ffffff;">
-              <div class="attendance-header">
+            <div v-if="!hideAttendanceCard" class="attendance-card" style="background:#ffffff;">
+              <div class="attendance-header" style="margin-top:50px;">
                 <span class="attendance-title">Attendance</span>
                 <span :class="['attendance-status-badge', attendanceStatus.is_clocked_in ? 'status-on-duty' : 'status-off-duty']">
                   {{ attendanceStatus.is_clocked_in ? 'On Duty' : 'Off Duty' }}
@@ -488,12 +495,30 @@ const themeKey = 'owner_module_theme'
 const theme = ref('light')
 const isDarkMode = computed(() => theme.value === 'dark')
 const themeButtonLabel = computed(() => (isDarkMode.value ? 'Light Mode' : 'Dark Mode'))
-const showThemeToggle = computed(() => !isInventoryRoute())
+const showThemeToggle = computed(() => !isInventoryRoute() && !isRightColumnHeaderRoute())
 
 const isInventoryRoute = () => {
   try {
     const route = (window.location.pathname || '').toLowerCase()
     return route.includes('/manager/inventory') || route.includes('/staff/inventory') || route.includes('/inventory')
+  } catch (e) {
+    return false
+  }
+}
+
+const isMainBranchAdminRoute = () => {
+  try {
+    const route = (window.location.pathname || '').toLowerCase()
+    return route.includes('/main-branch/admin')
+  } catch (e) {
+    return false
+  }
+}
+
+const isRightColumnHeaderRoute = () => {
+  try {
+    const route = (window.location.pathname || '').toLowerCase()
+    return route.includes('/main-branch/admin') || route.includes('/manager/finance') || route.includes('/main-branch/finance')
   } catch (e) {
     return false
   }
@@ -1035,7 +1060,18 @@ async function onAvatarChange(event) {
 
 /* When profile column hidden, float the header action to the top-right of the layout */
 :deep(.admin-layout.no-profile-column) { position: relative }
-:deep(.admin-layout.no-profile-column) .header-actions-top { position: absolute; right: 24px; top: 12px; z-index: 120 }
+:deep(.admin-layout.no-profile-column) .header-actions-top {
+  position: relative;
+  right: auto;
+  top: auto;
+  z-index: 120;
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+:deep(.admin-layout.no-profile-column) .header-actions-top .header-profile-wrapper {
+  position: relative;
+}
 :deep(.header-actions-top .header-profile-btn) { display: inline-flex; align-items: center }
 
 /* Keep grid columns stable when profile column is hidden so main content
@@ -1066,6 +1102,20 @@ async function onAvatarChange(event) {
 /* Small avatar-only button inside announcements (proxies to header slot) */
 /* announcements avatar styles removed */
 
+.header-actions-top {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.header-actions-top .header-profile-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 @media (min-width: 640px) {
   .admin-layout--wider {
     padding: 1.5rem 1.5rem;
@@ -1076,6 +1126,13 @@ async function onAvatarChange(event) {
   .admin-layout--wider {
     padding: 1.5rem 2.5rem;
   }
+}
+
+.header-actions-side {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  margin-bottom: 1rem;
 }
 
 @media (min-width: 1000px) {

@@ -358,6 +358,60 @@ window.addEventListener('click', () => {
   font-weight: 500;
 }
 
+.dark-mode .main-branch-admin-panel .finance-panel {
+  background: #161b26;
+  border: 1px solid rgba(148,163,184,0.16);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.28);
+}
+
+.dark-mode .main-branch-admin-panel .finance-header {
+  border-bottom-color: rgba(148,163,184,0.18);
+}
+
+.dark-mode .main-branch-admin-panel .finance-title,
+.dark-mode .main-branch-admin-panel .loading-state,
+.dark-mode .main-branch-admin-panel .error-state {
+  color: #e2e8f0;
+}
+
+.dark-mode .main-branch-admin-panel .finance-sub {
+  color: rgba(226,232,240,0.75);
+}
+
+.dark-mode .main-branch-admin-panel .branch-select {
+  background: #111827;
+  color: #e2e8f0;
+  border-color: rgba(148,163,184,0.25);
+}
+
+.dark-mode .main-branch-admin-panel .branch-select option {
+  background: #111827;
+  color: #e2e8f0;
+}
+
+.dark-mode .main-branch-admin-panel .branch-info-banner {
+  background: linear-gradient(135deg, #4f46e5 0%, #9333ea 100%);
+}
+
+.dark-mode .main-branch-admin-panel .header-profile-btn {
+  color: #e2e8f0;
+}
+
+.dark-mode .main-branch-admin-panel .header-profile-dropdown {
+  background: #0f172a;
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.4);
+}
+
+.dark-mode .main-branch-admin-panel .header-profile-dropdown .dropdown-item {
+  color: #e2e8f0;
+  background: transparent;
+}
+
+.dark-mode .main-branch-admin-panel .header-profile-dropdown .dropdown-item:hover {
+  background: rgba(255,255,255,0.08);
+}
+
 /* Move attendance card down slightly */
 :deep(.attendance-section),
 :deep(.attendance-card),
