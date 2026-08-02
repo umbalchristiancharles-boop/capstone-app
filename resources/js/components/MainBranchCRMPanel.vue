@@ -1,10 +1,13 @@
 <template>
   <div class="main-branch-page">
-    <button class="back-btn" aria-label="Back" @click="goBack">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M15 18l-6-6 6-6" stroke="#111827" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </button>
+    <div class="page-toolbar">
+      <button class="back-btn" aria-label="Back" @click="goBack">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M15 18l-6-6 6-6" stroke="#111827" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+
     <section class="panel-layout">
       <main class="main-col">
         <header class="panel-header">
@@ -961,30 +964,52 @@ onMounted(async () => {
 .main-branch-page {
   min-height: 100vh;
   padding: 28px;
-  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  background: #f3f4f7;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
   color: var(--text-dark);
   font-size: 15px;
 }
 
-/* Back button top-left */
-.back-btn {
-  position: absolute;
-  top: 18px;
-  left: 18px;
-  width: 38px;
-  height: 38px;
-  display: grid;
-  place-items: center;
-  background: #fff;
-  border: 1px solid #eef2f7;
-  border-radius: 8px;
-  box-shadow: 0 6px 14px rgba(16,24,40,0.06);
-  cursor: pointer;
-  z-index: 40;
+/* Back button placement inside content flow */
+.page-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 22px;
 }
-.back-btn:hover { transform: translateY(-2px); }
-.back-btn svg { display:block }
+
+.back-btn {
+  position: static;
+  min-width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  padding: 0 12px;
+  gap: 6px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
+}
+.back-btn:hover {
+  transform: translateY(-1px);
+  border-color: #9ca3af;
+  background: #f8fafc;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.1);
+}
+.back-btn:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.18), 0 14px 30px rgba(15, 23, 42, 0.08);
+}
+.back-btn svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+}
 
 .panel-layout { display: grid; grid-template-columns: 1fr; gap: 20px; align-items: start; }
 .profile-card, .panel-block, .overview-card, .panel-header { background: #ffffff; border-radius: 12px; padding: 18px; box-shadow: 0 4px 14px rgba(16,24,40,0.04); border: 1px solid #eef2f7; }
@@ -995,12 +1020,12 @@ onMounted(async () => {
 .profile-meta { margin: 12px 0; display: grid; gap: 6px; font-size: 14px; color: rgba(66,33,11,0.9); }
 
 .overview-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
-.overview-card { display: flex; flex-direction: column; gap: 8px; padding: 16px; }
-.overview-card .k { color: rgba(66,33,11,0.9); font-size: 13px; }
-.overview-card strong { font-size: 24px; color: var(--text-dark); }
+.overview-card { display: flex; flex-direction: column; gap: 8px; padding: 20px; background: #ffffff; border: 1px solid #e5e7eb; }
+.overview-card .k { color: #6b7280; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; }
+.overview-card strong { font-size: 26px; color: #111827; }
 
 .panel-header h1 { margin: 0 0 6px; font-size: 34px; letter-spacing: -0.5px; color: var(--text-dark); }
-.panel-header p { margin: 0; color: rgba(66,33,11,0.9); }
+.panel-header p { margin: 0; color: rgba(66,33,11,0.75); }
 
 .main-col { display: grid; gap: 18px; }
 .side-col { display: grid; gap: 14px; align-content: start; }
@@ -1097,18 +1122,18 @@ onMounted(async () => {
 .stat-progress .stat-value { color: #3B82F6; }
 .stat-resolved .stat-value { color: #10B981; }
 
-.reports-controls { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
-.filter-group { display: flex; gap: 12px; flex: 1; }
-.filter-select, .search-input { padding: 10px 16px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 0.95rem; font-family: inherit; }
-.filter-select { min-width: 150px; }
-.search-input { flex: 1; max-width: 300px; }
-.refresh-btn { padding: 10px 20px; background: #0066FF; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-.refresh-btn:hover:not(:disabled) { background: #0057e6; }
-.refresh-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.reports-controls { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+.filter-group { display: flex; gap: 12px; flex: 1; flex-wrap: wrap; }
+.filter-select, .search-input { padding: 12px 16px; border: 1px solid #d1d5db; border-radius: 12px; font-size: 0.95rem; font-family: inherit; background: #fff; }
+.filter-select { min-width: 170px; }
+.search-input { flex: 1; max-width: 360px; }
+.refresh-btn { padding: 12px 22px; background: #f3f4f6; color: #1f2937; border: 1px solid #d1d5db; border-radius: 10px; font-weight: 700; cursor: pointer; transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease; box-shadow: 0 10px 20px rgba(15, 23, 42, 0.06); }
+.refresh-btn:hover:not(:disabled) { background: #e5e7eb; border-color: #cbd5e1; transform: translateY(-1px); }
+.refresh-btn:disabled { opacity: 0.6; cursor: not-allowed; background: #f8fafc; border-color: #e5e7eb; box-shadow: none; color: #6b7280; }
 
 .reports-table-wrapper { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); overflow: hidden; }
 .reports-table { width: 100%; }
-.table-header { display: grid; grid-template-columns: 2fr 2fr 1fr 1.5fr 1fr; gap: 16px; padding: 16px 20px; background: #F9FAFB; border-bottom: 1px solid #E5E7EB; font-weight: 600; color: #374151; font-size: 0.9rem; }
+.table-header { display: grid; grid-template-columns: 2fr 2fr 1fr 1.5fr 1fr; gap: 16px; padding: 18px 20px; background: #ffffff; border-bottom: 1px solid #E5E7EB; font-weight: 600; color: #374151; font-size: 0.9rem; }
 .table-row { border-bottom: 1px solid #E5E7EB; transition: background 0.2s; }
 .table-row:hover { background: #F9FAFB; }
 .row-main { display: grid; grid-template-columns: 2fr 2fr 1fr 1.5fr 1fr; gap: 16px; padding: 16px 20px; align-items: center; cursor: pointer; }
