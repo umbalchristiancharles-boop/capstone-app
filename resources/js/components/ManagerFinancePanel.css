@@ -99,9 +99,18 @@
 :global(.dark-mode) .manager-finance .btn-cancel,
 :global(.dark-mode) .manager-finance .btn-success,
 :global(.dark-mode) .manager-finance .btn-info {
-  background: linear-gradient(180deg, #111827 0%, #182235 100%);
-  color: #f8fafc;
-  border-color: rgba(148, 163, 184, 0.24);
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  color: #e2e8f0;
+  border-color: rgba(148, 163, 184, 0.26);
+}
+
+:global(.dark-mode) .manager-finance .btn-secondary:hover:not(:disabled),
+:global(.dark-mode) .manager-finance .btn-cancel:hover:not(:disabled),
+:global(.dark-mode) .manager-finance .btn-success:hover:not(:disabled),
+:global(.dark-mode) .manager-finance .btn-info:hover:not(:disabled) {
+  background: linear-gradient(180deg, #243244 0%, #111827 100%);
+  border-color: rgba(255, 159, 67, 0.24);
+  box-shadow: 0 10px 20px rgba(2, 6, 23, 0.26);
 }
 
 :global(.dark-mode) .manager-finance .btn-clock-in,
@@ -437,8 +446,8 @@
 .btn-clock-in,
 .btn-confirm {
   color: #ffffff;
-  background: linear-gradient(135deg, #ff9f43 0%, #ff8a1f 100%);
-  box-shadow: 0 10px 24px rgba(255, 159, 67, 0.18);
+  background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+  box-shadow: 0 10px 24px rgba(217, 119, 6, 0.18);
 }
 
 .btn-refresh {
@@ -465,10 +474,18 @@
 .btn-cancel,
 .btn-success,
 .btn-info {
-  background: linear-gradient(180deg, #ffffff 0%, #fff7ef 100%);
-  color: #5c4333;
-  border: 1px solid rgba(219, 188, 160, 0.55);
-  box-shadow: 0 8px 18px rgba(16, 24, 40, 0.04);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.55rem;
+  min-width: 5.25rem;
+  padding: 0.62rem 0.95rem;
+  line-height: 1;
+  white-space: nowrap;
+  background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+  color: #334155;
+  border: 1px solid rgba(148, 163, 184, 0.55);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
 }
 
 .btn-secondary:hover:not(:disabled),
@@ -476,23 +493,40 @@
 .btn-success:hover:not(:disabled),
 .btn-info:hover:not(:disabled) {
   transform: translateY(-1px);
-  border-color: rgba(255, 159, 67, 0.28);
-  box-shadow: 0 12px 22px rgba(16, 24, 40, 0.06);
+  background: linear-gradient(180deg, #f1f5f9 0%, #dbe4ee 100%);
+  border-color: rgba(148, 163, 184, 0.78);
+  box-shadow: 0 12px 22px rgba(15, 23, 42, 0.08);
+}
+
+.branch-table .action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.branch-table .action-buttons .btn-secondary,
+.branch-table .action-buttons .btn-approve,
+.branch-table .action-buttons .btn-reject {
+  min-height: 2.25rem;
+  padding: 0.56rem 0.82rem;
+  font-size: 0.8rem;
 }
 
 .btn-danger,
 .btn-reject,
 .btn-clock-out {
   color: #ffffff;
-  background: linear-gradient(135deg, #dc2626 0%, #f97316 100%);
-  box-shadow: 0 10px 24px rgba(220, 38, 38, 0.16);
+  background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%);
+  box-shadow: 0 10px 24px rgba(153, 27, 27, 0.18);
 }
 
 .btn-danger:hover:not(:disabled),
 .btn-reject:hover:not(:disabled),
 .btn-clock-out:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 14px 28px rgba(220, 38, 38, 0.18);
+  background: linear-gradient(135deg, #991b1b 0%, #b91c1c 100%);
+  box-shadow: 0 14px 28px rgba(153, 27, 27, 0.2);
 }
 
 .btn-primary:disabled,

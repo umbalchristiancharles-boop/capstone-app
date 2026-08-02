@@ -343,6 +343,11 @@ onUnmounted(() => {
   color: #f8fafc;
 }
 
+:global(.dark-mode) .panel-section .section-title,
+:global(.dark-mode) .panel-section .chart-title {
+  color: #f8fafc;
+}
+
 :global(.dark-mode) .data-table th {
   background: linear-gradient(180deg, #1e293b 0%, #162032 100%);
 }

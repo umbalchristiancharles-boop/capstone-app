@@ -283,11 +283,11 @@
                 </div>
               </td>
               <td>
-                <div v-if="editingBudgetId === b.id">
+                <div v-if="editingBudgetId === b.id" class="action-buttons">
                   <button class="btn-approve" @click="saveBudget(b.id)">Save</button>
                   <button class="btn-reject" @click="cancelEditBudget">Cancel</button>
                 </div>
-                <div v-else>
+                <div v-else class="action-buttons">
                   <button class="btn-secondary" @click="startEditBudget(b.id, b.budget)">Edit</button>
                 </div>
               </td>
