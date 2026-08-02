@@ -595,7 +595,7 @@ const persistThemeMode = () => {
 
 const loadThemeMode = () => {
   try {
-    if (isManagerLogisticsRoute() || isManagerProcurementRoute()) {
+    if (isManagerLogisticsRoute() || isManagerProcurementRoute() || isMainBranchAdminRoute()) {
       theme.value = 'light'
       applyThemeMode()
       return
@@ -616,7 +616,7 @@ const loadThemeMode = () => {
 }
 
 const toggleTheme = () => {
-  if (isManagerLogisticsRoute() || isManagerProcurementRoute()) {
+  if (isManagerLogisticsRoute() || isManagerProcurementRoute() || isMainBranchAdminRoute()) {
     theme.value = 'light'
     persistThemeMode()
     applyThemeMode()
