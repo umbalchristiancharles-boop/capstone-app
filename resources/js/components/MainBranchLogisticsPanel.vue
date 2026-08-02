@@ -186,6 +186,42 @@
               <button class="dropdown-item" @click="askLogout">Logout</button>
             </div>
           </div>
+
+          <section class="panel-block announcements-panel">
+            <div class="panel-header announcements-header">
+              <h2>Announcements</h2>
+            </div>
+            <div class="panel-body">
+              <div v-if="loadingAnnouncements" style="text-align:center; padding:12px; color:#9ca3af;">Loading...</div>
+              <div v-else-if="announcements.length === 0" style="text-align:center; padding:12px; color:#9ca3af;">No announcements</div>
+              <ul v-else class="announcement-list">
+                <li v-for="a in announcements" :key="a.id" class="announcement-item">
+                  <div class="announcement-title">{{ a.title }}</div>
+                  <div class="announcement-meta">{{ new Date(a.created_at).toLocaleString() }} • {{ a.target || 'all' }}</div>
+                  <div class="announcement-message">{{ a.message }}</div>
+                </li>
+              </ul>
+            </div>
+          </section>
+
+          <div class="attendance-card" style="margin-top:12px; background:#ffffff;">
+            <div class="attendance-header" style="margin-top:12px;">
+              <span class="attendance-title">Attendance</span>
+              <span :class="['attendance-status-badge', attendanceStatus.is_clocked_in ? 'status-on-duty' : 'status-off-duty']">
+                {{ attendanceStatus.is_clocked_in ? 'On Duty' : 'Off Duty' }}
+              </span>
+            </div>
+            <div class="attendance-buttons">
+              <button @click="performClockIn" :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockInGeofencing || locationLoading" class="btn-clock-in">
+                {{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock In' }}
+              </button>
+              <button @click="performClockOut" :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockOut || !canClockInGeofencing || locationLoading" class="btn-clock-out" :class="{ 'btn-disabled': !canClockOut && attendanceStatus.is_clocked_in }">
+                {{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock Out' }}
+              </button>
+            </div>
+            <div v-if="!canClockOut && attendanceStatus.is_clocked_in" class="clockout-restriction"><span class="restriction-icon">🔒</span><span>Cannot clock out before {{ scheduledTimeOut }}</span></div>
+            <div v-if="attendanceMessage" :class="['attendance-message', attendanceMessageType]">{{ attendanceMessage }}</div>
+          </div>
         </div>
       </aside>
     </section>
@@ -233,6 +269,18 @@ const prError = ref('')
 const suppliers = ref([])
 const suppliersLoading = ref(false)
 const suppliersError = ref('')
+const announcements = ref([])
+const loadingAnnouncements = ref(false)
+const attendanceStatus = ref({ is_clocked_in: false, clock_in_time: null, clock_out_time: null, hours_worked: 0 })
+const isAttendanceProcessing = ref(false)
+const attendanceMessage = ref('')
+const attendanceMessageType = ref('')
+const attendanceSettings = ref({ early_clockout_override: false, scheduled_time_out: '17:00:00' })
+const userLocation = ref(null)
+const locationLoading = ref(false)
+const locationError = ref('')
+const canClockInGeofencing = ref(true)
+const geofencingMessage = ref('')
 const notificationCounts = ref({ logistics: 0 })
 const hasNotified = ref(false)
 const pendingDeliveriesCount = computed(() => {
@@ -411,10 +459,215 @@ onMounted(async () => {
     await Promise.all([fetchInventory(), fetchProcRequests(), fetchSuppliers()])
   })
 
-  await Promise.all([fetchInventory().catch(()=>{}), fetchProcRequests().catch(()=>{}), fetchSuppliers().catch(()=>{})])
+  await Promise.all([fetchInventory().catch(()=>{}), fetchProcRequests().catch(()=>{}), fetchSuppliers().catch(()=>{}), fetchAnnouncements().catch(()=>{})])
+  if (!hideAttendanceCard.value) {
+    await Promise.all([loadAttendanceStatus().catch(()=>{}), loadAttendanceSettings().catch(()=>{}), getUserLocation().catch(()=>{})])
+  }
   // fetch pending product requests for logistics approval
   await fetchPendingProductRequests().catch(()=>{})
 })
+
+async function fetchAnnouncements() {
+  loadingAnnouncements.value = true
+  try {
+    const res = await axios.get('/api/announcements', { withCredentials: true })
+    const data = res.data?.announcements ?? res.data?.data ?? res.data ?? []
+    announcements.value = Array.isArray(data) ? data : []
+  } catch (e) {
+    announcements.value = []
+  } finally {
+    loadingAnnouncements.value = false
+  }
+}
+
+const scheduledTimeOut = computed(() => {
+  const time = attendanceSettings.value.scheduled_time_out || '17:00:00'
+  const [hours, minutes] = time.split(':')
+  const hour = parseInt(hours)
+  const ampm = hour >= 12 ? 'PM' : 'AM'
+  const hour12 = hour % 12 || 12
+  return `${hour12}:${minutes} ${ampm}`
+})
+
+const canClockOut = computed(() => {
+  if (!attendanceStatus.value.is_clocked_in) return false
+  if (attendanceSettings.value.early_clockout_override) return true
+  const now = new Date()
+  const currentTotalMinutes = now.getHours() * 60 + now.getMinutes()
+  const [scheduledHours, scheduledMinutes] = (attendanceSettings.value.scheduled_time_out || '17:00:00').split(':')
+  const scheduledTotalMinutes = parseInt(scheduledHours) * 60 + parseInt(scheduledMinutes)
+  return currentTotalMinutes >= scheduledTotalMinutes
+})
+
+const hideAttendanceCard = computed(() => {
+  try {
+    return new URLSearchParams(window.location.search).get('from') === 'custom-panel'
+  } catch (e) {
+    return false
+  }
+})
+
+async function loadAttendanceStatus() {
+  try {
+    const res = await axios.get('/api/manager/attendance/status', { withCredentials: true })
+    if (res.data && res.data.success) {
+      attendanceStatus.value = {
+        is_clocked_in: !!res.data.clocked_in,
+        clock_in_time: res.data.time_in || res.data.status?.clock_in_time || null,
+        clock_out_time: res.data.time_out || res.data.status?.clock_out_time || null,
+        hours_worked: res.data.status?.hours_worked || 0
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+}
+
+async function loadAttendanceSettings() {
+  try {
+    const res = await axios.get('/api/attendance/settings', { withCredentials: true })
+    if (res.data && res.data.ok && res.data.data) {
+      attendanceSettings.value = {
+        early_clockout_override: res.data.data.early_clockout_override || false,
+        scheduled_time_out: res.data.data.scheduled_time_out || '17:00:00'
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+}
+
+async function getUserLocation() {
+  locationLoading.value = true
+  locationError.value = ''
+  canClockInGeofencing.value = true
+  geofencingMessage.value = ''
+
+  if (!navigator.geolocation) {
+    locationError.value = 'Geolocation is not supported by your browser'
+    canClockInGeofencing.value = false
+    locationLoading.value = false
+    return
+  }
+
+  try {
+    const position = await new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      })
+    })
+
+    userLocation.value = {
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude
+    }
+  } catch (error) {
+    console.error('Error getting location:', error)
+    locationError.value = 'Unable to retrieve your location. Please enable location services.'
+    canClockInGeofencing.value = false
+    userLocation.value = null
+  } finally {
+    locationLoading.value = false
+  }
+}
+
+async function performClockIn() {
+  if (isAttendanceProcessing.value) return
+
+  if (!userLocation.value) {
+    attendanceMessage.value = 'Please enable location services to clock in'
+    attendanceMessageType.value = 'warning'
+    await getUserLocation()
+    setTimeout(() => { attendanceMessage.value = '' }, 3000)
+    return
+  }
+
+  isAttendanceProcessing.value = true
+  attendanceMessage.value = ''
+  try {
+    const res = await axios.post('/api/manager/clock-in', {
+      latitude: userLocation.value.latitude,
+      longitude: userLocation.value.longitude
+    }, { withCredentials: true })
+
+    if (res.data && res.data.success) {
+      attendanceMessage.value = 'Clocked in successfully!'
+      attendanceMessageType.value = 'success'
+      await loadAttendanceStatus()
+    } else if (res.data.geofencing_error) {
+      attendanceMessage.value = res.data.message || 'You are not within the branch vicinity'
+      attendanceMessageType.value = 'error'
+      canClockInGeofencing.value = false
+      geofencingMessage.value = res.data.message
+    } else {
+      attendanceMessage.value = res.data.message || 'Failed to clock in'
+      attendanceMessageType.value = 'error'
+    }
+  } catch (e) {
+    if (e.response?.status === 403 && e.response?.data?.geofencing_error) {
+      attendanceMessage.value = e.response.data.message || 'You are not within the branch vicinity'
+      attendanceMessageType.value = 'error'
+      canClockInGeofencing.value = false
+      geofencingMessage.value = e.response.data.message
+    } else {
+      attendanceMessage.value = e.response?.data?.message || 'Error clocking in'
+      attendanceMessageType.value = 'error'
+    }
+  } finally {
+    isAttendanceProcessing.value = false
+    setTimeout(() => { attendanceMessage.value = '' }, 3000)
+  }
+}
+
+async function performClockOut() {
+  if (isAttendanceProcessing.value) return
+
+  if (!userLocation.value) {
+    attendanceMessage.value = 'Please enable location services to clock out'
+    attendanceMessageType.value = 'warning'
+    await getUserLocation()
+    setTimeout(() => { attendanceMessage.value = '' }, 3000)
+    return
+  }
+
+  isAttendanceProcessing.value = true
+  attendanceMessage.value = ''
+  try {
+    const res = await axios.post('/api/manager/clock-out', {
+      latitude: userLocation.value.latitude,
+      longitude: userLocation.value.longitude
+    }, { withCredentials: true })
+
+    if (res.data && res.data.success) {
+      attendanceMessage.value = 'Clocked out successfully!'
+      attendanceMessageType.value = 'success'
+      await loadAttendanceStatus()
+    } else if (res.data.geofencing_error) {
+      attendanceMessage.value = res.data.message || 'You are not within the branch vicinity'
+      attendanceMessageType.value = 'error'
+      canClockInGeofencing.value = false
+      geofencingMessage.value = res.data.message
+    } else {
+      attendanceMessage.value = res.data.message || 'Failed to clock out'
+      attendanceMessageType.value = 'error'
+    }
+  } catch (e) {
+    if (e.response?.status === 403 && e.response?.data?.geofencing_error) {
+      attendanceMessage.value = e.response.data.message || 'You are not within the branch vicinity'
+      attendanceMessageType.value = 'error'
+      canClockInGeofencing.value = false
+      geofencingMessage.value = e.response.data.message
+    } else {
+      attendanceMessage.value = e.response?.data?.message || 'Error clocking out'
+      attendanceMessageType.value = 'error'
+    }
+  } finally {
+    isAttendanceProcessing.value = false
+    setTimeout(() => { attendanceMessage.value = '' }, 3000)
+  }
+}
 
 async function fetchSuppliers() {
   suppliersLoading.value = true
