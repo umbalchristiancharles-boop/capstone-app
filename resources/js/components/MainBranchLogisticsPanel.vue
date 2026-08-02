@@ -1,22 +1,7 @@
 <template>
   <div class="main-branch-page">
     <section class="panel-layout">
-      <aside class="profile-col">
-        <div class="profile-card">
-          <div class="profile-head">
-            <div class="avatar">LG</div>
-            <div>
-              <div class="label">Main Branch Account</div>
-              <h2>{{ profile.full_name || 'Logistics Main Branch' }}</h2>
-              <p>MANAGER - LOGISTICS</p>
-            </div>
-          </div>
-          <div class="profile-meta">
-            <div><strong>Username:</strong> {{ profile.username || 'logistics_main_branch' }}</div>
-            <div><strong>Branch:</strong> Main Branch (HQ)</div>
-          </div>
-        </div>
-      </aside>
+      <!-- Left profile column removed for Main Branch layout -->
 
       <main class="main-col">
         <header class="panel-header">
@@ -187,11 +172,21 @@
       </main>
 
       <aside class="side-col">
-        <section class="panel-block">
-          <h3>Quick Links</h3>
-          <!-- Logistics Dashboard link removed for Main Branch panel -->
-          <button class="logout-btn" @click="askLogout">Logout</button>
-        </section>
+        <div class="header-actions-side">
+          <div class="header-profile-wrapper" style="margin:0 0 12px;">
+            <button class="header-profile-btn" type="button" @click.stop="toggleProfileDropdown">
+              <div class="header-avatar">
+                <div v-if="profile.avatarUrl" class="header-avatar-img" :style="{ backgroundImage: 'url(' + profile.avatarUrl + ')' }"></div>
+                <div v-else class="header-avatar-initials">{{ (profile.full_name || profile.fullName || 'M').charAt(0) }}</div>
+              </div>
+              <div class="header-name">{{ ((profile.branch_name || profile.branch || '') ? (profile.branch_name || profile.branch) + ' - ' : '') + ((profile.role || profile.position || 'MANAGER')).toString().toUpperCase() }}</div>
+            </button>
+            <div v-if="profileDropdownVisible" class="header-profile-dropdown" @click.stop>
+              <button class="dropdown-item" @click="openProfileInfo">Info</button>
+              <button class="dropdown-item" @click="askLogout">Logout</button>
+            </div>
+          </div>
+        </div>
       </aside>
     </section>
 
@@ -247,6 +242,11 @@ const pendingDeliveriesCount = computed(() => {
 })
 const pendingProductRequestsCount = computed(() => (pendingProductRequests.value || []).length)
 const logisticsAlertCount = computed(() => Math.max(pendingDeliveriesCount.value, pendingProductRequestsCount.value, 0))
+
+// Header profile dropdown state (compact header in profile column)
+const profileDropdownVisible = ref(false)
+function toggleProfileDropdown() { profileDropdownVisible.value = !profileDropdownVisible.value }
+function openProfileInfo() { profileDropdownVisible.value = false; try { showToast('Profile info') } catch(e) {} }
 
 // Branch selector for Main Branch HQ users
 const branches = ref([])
@@ -496,7 +496,7 @@ watch(selectedBranch, async () => {
   font-size: 15px;
 }
 
-.panel-layout { display: grid; grid-template-columns: 300px 1fr 260px; gap: 20px; align-items: start; }
+.panel-layout { display: grid; grid-template-columns: 1fr 260px; gap: 20px; align-items: start; }
 .profile-card, .panel-block, .overview-card, .panel-header { background: #ffffff; border-radius: 12px; padding: 18px; box-shadow: 0 4px 14px rgba(16,24,40,0.04); border: 1px solid #eef2f7; }
 
 .profile-head { display: flex; gap: 14px; align-items: center; }
