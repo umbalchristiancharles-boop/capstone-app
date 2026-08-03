@@ -348,6 +348,35 @@
       </div>
     </transition>
     </div> <!-- /.manager-finance -->
+    
+    <!-- Face Capture Modal -->
+    <div v-if="showFaceCapture" class="face-capture-modal">
+      <div class="face-capture-content">
+        <h3>Take a Photo for Clock In</h3>
+        <p class="face-capture-instruction">Please position your face in the frame and click capture</p>
+        
+        <div class="camera-container">
+          <video ref="video" autoplay playsinline></video>
+          <canvas ref="canvas" style="display: none;"></canvas>
+          <div v-if="cameraError" class="camera-error">
+            {{ cameraError }}
+          </div>
+        </div>
+
+        <div class="face-capture-buttons">
+          <button @click="capturePhoto" :disabled="isCapturing" class="btn-capture">
+            <span v-if="!isCapturing">📸 Capture Photo</span>
+            <span v-else>Capturing...</span>
+          </button>
+          <button @click="cancelFaceCapture" class="btn-cancel">Cancel</button>
+        </div>
+
+        <div v-if="capturedImage" class="captured-preview">
+          <img :src="capturedImage" alt="Captured face" />
+          <p class="preview-label">Photo captured!</p>
+        </div>
+      </div>
+    </div>
     </template>
 
     <template #side>
@@ -464,19 +493,26 @@ const overlayText = ref('Logging out...')
 const profileDropdownVisible = ref(false)
 const ownerLayout = ref(null)
 
-const attendanceStatus = ref({
-  is_clocked_in: false,
-  clock_in_time: null,
-  clock_out_time: null,
-  hours_worked: 0
-})
-const isAttendanceProcessing = ref(false)
-const attendanceMessage = ref('')
-const attendanceMessageType = ref('')
-const attendanceSettings = ref({
-  early_clockout_override: false,
-  scheduled_time_out: '17:00:00'
-})
+  const attendanceStatus = ref({
+    is_clocked_in: false,
+    clock_in_time: null,
+    clock_out_time: null,
+    hours_worked: 0
+  })
+  const isAttendanceProcessing = ref(false)
+  const attendanceMessage = ref('')
+  const attendanceMessageType = ref('')
+  const attendanceSettings = ref({
+    early_clockout_override: false,
+    scheduled_time_out: '17:00:00'
+  })
+
+  // Face capture state
+  const showFaceCapture = ref(false)
+  const capturedImage = ref(null)
+  const cameraStream = ref(null)
+  const cameraError = ref('')
+  const isCapturing = ref(false)
 
 // Geofencing state
 const userLocation = ref(null)
@@ -970,12 +1006,117 @@ async function performClockIn() {
     return
   }
 
+  // Show face capture modal first
+  showFaceCapture.value = true
+  capturedImage.value = null
+  cameraError.value = ''
+  
+  // Initialize camera
+  await startCamera()
+}
+
+// Face capture methods
+async function startCamera() {
+  try {
+    // Request camera access
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        width: { ideal: 640 },
+        height: { ideal: 480 },
+        facingMode: 'user' // Front camera
+      }
+    })
+    
+    cameraStream.value = stream
+    cameraError.value = ''
+    
+    // Set video source
+    const video = document.querySelector('.face-capture-modal video')
+    if (video) {
+      video.srcObject = stream
+    }
+  } catch (error) {
+    console.error('Camera access error:', error)
+    cameraError.value = 'Unable to access camera. Please grant camera permission.'
+    stopCamera()
+  }
+}
+
+function stopCamera() {
+  if (cameraStream.value) {
+    cameraStream.value.getTracks().forEach(track => track.stop())
+    cameraStream.value = null
+  }
+}
+
+function capturePhoto() {
+  const video = document.querySelector('.face-capture-modal video')
+  const canvas = document.querySelector('.face-capture-modal canvas')
+  
+  if (!video || !canvas) {
+    attendanceMessage.value = 'Camera not ready. Please try again.'
+    attendanceMessageType.value = 'error'
+    return
+  }
+  
+  isCapturing.value = true
+  
+  try {
+    // Set canvas dimensions to match video
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    
+    // Draw video frame to canvas
+    const context = canvas.getContext('2d')
+    context.drawImage(video, 0, 0, canvas.width, canvas.height)
+    
+    // Convert to base64 image
+    capturedImage.value = canvas.toDataURL('image/jpeg', 0.8)
+    
+    // Stop camera after capture
+    stopCamera()
+    
+    // Proceed with clock in after a short delay
+    setTimeout(() => {
+      showFaceCapture.value = false
+      proceedWithClockIn()
+    }, 1500)
+    
+  } catch (error) {
+    console.error('Capture error:', error)
+    attendanceMessage.value = 'Failed to capture photo. Please try again.'
+    attendanceMessageType.value = 'error'
+    isCapturing.value = false
+  }
+}
+
+function cancelFaceCapture() {
+  stopCamera()
+  showFaceCapture.value = false
+  capturedImage.value = null
+  cameraError.value = ''
+  isCapturing.value = false
+}
+
+async function proceedWithClockIn() {
+  if (isAttendanceProcessing.value) return
+  
+  // Check if face was captured
+  if (!capturedImage.value) {
+    attendanceMessage.value = 'Face photo is required to clock in'
+    attendanceMessageType.value = 'warning'
+    setTimeout(() => { attendanceMessage.value = '' }, 3000)
+    return
+  }
+
   isAttendanceProcessing.value = true
   attendanceMessage.value = ''
+  
   try {
     const res = await axios.post('/api/manager/clock-in', {
       latitude: userLocation.value.latitude,
-      longitude: userLocation.value.longitude
+      longitude: userLocation.value.longitude,
+      face_image: capturedImage.value
     }, { withCredentials: true })
 
     if (res.data && res.data.success) {
@@ -1003,6 +1144,7 @@ async function performClockIn() {
     }
   } finally {
     isAttendanceProcessing.value = false
+    isCapturing.value = false
     setTimeout(() => { attendanceMessage.value = '' }, 3000)
   }
 }

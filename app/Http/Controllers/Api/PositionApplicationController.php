@@ -50,10 +50,21 @@ class PositionApplicationController extends Controller
                 'applicant_full_name',
                 'applicant_email',
                 'applicant_phone',
+                'applicant_address',
+                'cover_letter',
+                'years_of_experience',
+                'education',
                 'available_start_date',
+                'linkedin_url',
+                'portfolio_url',
+                'privacy_consent',
+                'website',
                 'status',
                 'resume_path',
                 'supporting_documents_paths',
+                'interview_date',
+                'interview_time',
+                'interview_notes',
                 'created_at'
             ]);
 

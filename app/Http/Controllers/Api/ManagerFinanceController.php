@@ -537,6 +537,17 @@ class ManagerFinanceController extends Controller
             }
         }
 
+        // Face verification - require face image for clock in
+        $faceImage = $request->input('face_image');
+        if (!$faceImage) {
+            return response()->json([
+                'ok' => false,
+                'success' => false,
+                'message' => 'Face verification is required. Please take a photo to clock in.',
+                'face_verification_error' => true
+            ], 400);
+        }
+
         // Create or update attendance
         if (!$attendance) {
             $attendance = new \App\Models\Attendance([
@@ -548,12 +559,7 @@ class ManagerFinanceController extends Controller
         $timeIn = \Carbon\Carbon::now();
         $attendance->time_in = $timeIn;
         $attendance->status = $this->determineStatus($timeIn);
-        
-        // Save face image if provided
-        if ($request->has('face_image')) {
-            $attendance->face_image = $request->input('face_image');
-        }
-        
+        $attendance->face_image = $faceImage; // Save the captured face image
         $attendance->save();
 
         return response()->json([

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 02, 2026 at 07:41 PM
+-- Generation Time: Aug 03, 2026 at 10:23 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -61,6 +61,10 @@ CREATE TABLE `attendance` (
   `hours_worked` int(11) NOT NULL DEFAULT 0,
   `status` varchar(255) NOT NULL DEFAULT 'absent',
   `notes` text DEFAULT NULL,
+  `face_image` text DEFAULT NULL,
+  `confirmed` tinyint(1) NOT NULL DEFAULT 0,
+  `confirmed_by` bigint(20) UNSIGNED DEFAULT NULL,
+  `confirmed_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -69,9 +73,10 @@ CREATE TABLE `attendance` (
 -- Dumping data for table `attendance`
 --
 
-INSERT INTO `attendance` (`id`, `user_id`, `date`, `time_in`, `time_out`, `hours_worked`, `status`, `notes`, `created_at`, `updated_at`) VALUES
-(10, 149, '2026-04-06', '03:16:44', NULL, 0, 'present', NULL, '2026-04-05 19:16:44', '2026-04-05 19:16:44'),
-(11, 149, '2026-06-26', '13:29:31', NULL, 0, 'late', NULL, '2026-06-26 05:29:31', '2026-06-26 05:29:31');
+INSERT INTO `attendance` (`id`, `user_id`, `date`, `time_in`, `time_out`, `hours_worked`, `status`, `notes`, `face_image`, `confirmed`, `confirmed_by`, `confirmed_at`, `created_at`, `updated_at`) VALUES
+(10, 149, '2026-04-06', '03:16:44', NULL, 0, 'present', NULL, NULL, 0, NULL, NULL, '2026-04-05 19:16:44', '2026-04-05 19:16:44'),
+(11, 149, '2026-06-26', '13:29:31', NULL, 0, 'late', NULL, NULL, 0, NULL, NULL, '2026-06-26 05:29:31', '2026-06-26 05:29:31'),
+(15, 149, '2026-08-03', '14:51:24', NULL, 0, 'late', NULL, 'data:image/jpeg;base64,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', 0, NULL, NULL, '2026-08-03 06:51:24', '2026-08-03 06:51:24');
 
 -- --------------------------------------------------------
 
@@ -119,6 +124,12 @@ CREATE TABLE `branches` (
   `approved_at` timestamp NULL DEFAULT NULL,
   `rejected_at` timestamp NULL DEFAULT NULL,
   `budget` bigint(20) NOT NULL DEFAULT 100000,
+  `square_meters` decimal(10,2) DEFAULT NULL COMMENT 'Store area in square meters',
+  `geofencing_radius` decimal(10,2) DEFAULT NULL COMMENT 'Geofencing radius in meters (auto-calculated from square_meters)',
+  `permit_bills` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'Array of permit types and their costs' CHECK (json_valid(`permit_bills`)),
+  `construction_costs` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'Detailed construction cost breakdown' CHECK (json_valid(`construction_costs`)),
+  `equipment_costs` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'Array of equipment with types, quantities, and costs' CHECK (json_valid(`equipment_costs`)),
+  `total_investment` decimal(15,2) DEFAULT NULL COMMENT 'Total initial investment including permits, construction, and equipment',
   `default_password` varchar(255) DEFAULT NULL COMMENT 'Current default password for branch staff accounts',
   `default_password_updated_at` timestamp NULL DEFAULT NULL COMMENT 'Last time the default password was updated',
   `created_at` timestamp NULL DEFAULT NULL,
@@ -129,10 +140,10 @@ CREATE TABLE `branches` (
 -- Dumping data for table `branches`
 --
 
-INSERT INTO `branches` (`id`, `code`, `name`, `address`, `latitude`, `longitude`, `is_active`, `is_main_branch`, `approval_status`, `requested_by`, `finance_confirmed_by`, `finance_confirmed_at`, `approved_by`, `approved_at`, `rejected_at`, `budget`, `default_password`, `default_password_updated_at`, `created_at`, `updated_at`) VALUES
-(31, 'BR743957', 'Dasma Branch', 'Dasma', NULL, NULL, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 94836, 'BDP20260802B458F2', '2026-08-02 09:42:31', '2026-03-22 10:19:21', '2026-08-02 09:42:31'),
-(32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 800000, 'BDP2026080309395C', '2026-08-02 16:01:05', '2026-03-25 06:56:11', '2026-08-02 16:01:05'),
-(48, 'BR426492', 'Manila Branch', NULL, NULL, NULL, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 100000, 'BDP20260623D5EDD8', '2026-06-23 08:01:26', '2026-04-15 04:14:07', '2026-05-26 08:23:16');
+INSERT INTO `branches` (`id`, `code`, `name`, `address`, `latitude`, `longitude`, `is_active`, `is_main_branch`, `approval_status`, `requested_by`, `finance_confirmed_by`, `finance_confirmed_at`, `approved_by`, `approved_at`, `rejected_at`, `budget`, `square_meters`, `geofencing_radius`, `permit_bills`, `construction_costs`, `equipment_costs`, `total_investment`, `default_password`, `default_password_updated_at`, `created_at`, `updated_at`) VALUES
+(31, 'BR743957', 'Dasma Branch', 'Dasma', NULL, NULL, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 94836, NULL, NULL, NULL, NULL, NULL, NULL, 'BDP20260803D2C017', '2026-08-03 05:29:24', '2026-03-22 10:19:21', '2026-08-03 05:29:24'),
+(32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 800000, NULL, NULL, NULL, NULL, NULL, NULL, 'BDP2026080309395C', '2026-08-02 16:01:05', '2026-03-25 06:56:11', '2026-08-02 16:01:05'),
+(48, 'BR426492', 'Manila Branch', NULL, NULL, NULL, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 100000, NULL, NULL, NULL, NULL, NULL, NULL, 'BDP20260803A57446', '2026-08-03 05:29:24', '2026-04-15 04:14:07', '2026-08-03 05:29:24');
 
 -- --------------------------------------------------------
 
@@ -230,6 +241,28 @@ INSERT INTO `customer_accounts` (`id`, `user_id`, `email`, `full_name`, `phone_n
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `customer_reports`
+--
+
+CREATE TABLE `customer_reports` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `customer_account_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `customer_name` varchar(255) NOT NULL,
+  `customer_email` varchar(255) DEFAULT NULL,
+  `customer_phone` varchar(255) DEFAULT NULL,
+  `subject` varchar(255) NOT NULL,
+  `message` text NOT NULL,
+  `status` enum('pending','in_progress','resolved','closed') NOT NULL DEFAULT 'pending',
+  `admin_notes` text DEFAULT NULL,
+  `assigned_to` bigint(20) UNSIGNED DEFAULT NULL,
+  `resolved_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `dishes`
 --
 
@@ -265,6 +298,7 @@ CREATE TABLE `dish_ingredients` (
   `dish_id` bigint(20) UNSIGNED NOT NULL,
   `product_id` bigint(20) UNSIGNED DEFAULT NULL,
   `name` varchar(255) NOT NULL,
+  `brand` varchar(255) DEFAULT NULL,
   `unit` varchar(255) DEFAULT NULL,
   `per_serving` decimal(12,4) NOT NULL DEFAULT 0.0000,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -275,10 +309,37 @@ CREATE TABLE `dish_ingredients` (
 -- Dumping data for table `dish_ingredients`
 --
 
-INSERT INTO `dish_ingredients` (`id`, `dish_id`, `product_id`, `name`, `unit`, `per_serving`, `created_at`, `updated_at`) VALUES
-(61, 40, 180, 'Hotdog', 'pcs', 1.0000, '2026-06-26 06:15:07', '2026-06-26 06:16:56'),
-(62, 40, 181, 'Flour', 'g', 100.0000, '2026-06-26 06:15:07', '2026-06-26 06:16:56'),
-(63, 40, 182, 'Salt', 'pcs', 0.0000, '2026-06-26 06:15:07', '2026-06-26 06:16:56');
+INSERT INTO `dish_ingredients` (`id`, `dish_id`, `product_id`, `name`, `brand`, `unit`, `per_serving`, `created_at`, `updated_at`) VALUES
+(61, 40, 180, 'Hotdog', NULL, 'pcs', 1.0000, '2026-06-26 06:15:07', '2026-06-26 06:16:56'),
+(62, 40, 181, 'Flour', NULL, 'g', 100.0000, '2026-06-26 06:15:07', '2026-06-26 06:16:56'),
+(63, 40, 182, 'Salt', NULL, 'pcs', 0.0000, '2026-06-26 06:15:07', '2026-06-26 06:16:56');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `email_communications`
+--
+
+CREATE TABLE `email_communications` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `customer_report_id` bigint(20) UNSIGNED NOT NULL,
+  `sender_email` varchar(255) NOT NULL,
+  `sender_name` varchar(255) NOT NULL,
+  `recipient_email` varchar(255) NOT NULL,
+  `recipient_name` varchar(255) DEFAULT NULL,
+  `subject` varchar(255) NOT NULL,
+  `message` text NOT NULL,
+  `direction` enum('outbound','inbound') NOT NULL DEFAULT 'outbound',
+  `status` enum('sent','failed','pending') NOT NULL DEFAULT 'sent',
+  `message_id` varchar(255) DEFAULT NULL,
+  `in_reply_to` varchar(255) DEFAULT NULL,
+  `references` text DEFAULT NULL,
+  `error_message` text DEFAULT NULL,
+  `read_at` timestamp NULL DEFAULT NULL,
+  `sent_by` bigint(20) UNSIGNED DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -312,6 +373,28 @@ CREATE TABLE `expenses` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `expired_product_reports`
+--
+
+CREATE TABLE `expired_product_reports` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `product_id` bigint(20) UNSIGNED NOT NULL,
+  `quantity` int(10) UNSIGNED NOT NULL DEFAULT 1,
+  `branch_id` bigint(20) UNSIGNED NOT NULL,
+  `reported_by` bigint(20) UNSIGNED NOT NULL,
+  `notes` text DEFAULT NULL,
+  `image_path` varchar(255) DEFAULT NULL,
+  `status` enum('pending','reviewed','resolved') NOT NULL DEFAULT 'pending',
+  `reviewed_at` timestamp NULL DEFAULT NULL,
+  `reviewed_by` bigint(20) UNSIGNED DEFAULT NULL,
+  `review_notes` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `failed_jobs`
 --
 
@@ -323,6 +406,24 @@ CREATE TABLE `failed_jobs` (
   `payload` longtext NOT NULL,
   `exception` longtext NOT NULL,
   `failed_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `inventory_lots`
+--
+
+CREATE TABLE `inventory_lots` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `branch_id` bigint(20) UNSIGNED NOT NULL,
+  `product_id` bigint(20) UNSIGNED NOT NULL,
+  `supplier_order_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `procurement_request_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `quantity` int(11) NOT NULL DEFAULT 0,
+  `expires_at` datetime DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -444,7 +545,8 @@ CREATE TABLE `logistics_transactions` (
 INSERT INTO `logistics_transactions` (`id`, `procurement_request_id`, `supplier_order_id`, `product_id`, `source_branch_id`, `destination_branch_id`, `branch_id`, `type`, `status`, `quantity`, `quantity_verified`, `unit`, `reference_number`, `description`, `notes`, `created_by_user_id`, `updated_by_user_id`, `verified_by_user_id`, `initiated_at`, `in_transit_at`, `at_destination_at`, `verified_at`, `confirmed_at`, `completed_at`, `cancelled_at`, `expected_quantity`, `actual_quantity`, `variance_reason`, `source_location`, `destination_location`, `delivery_address`, `receipt_path`, `proof_of_delivery_path`, `documentation_files`, `cost_price`, `cost_reference`, `is_duplicate`, `duplicate_of_transaction_id`, `audit_notes`, `created_at`, `updated_at`) VALUES
 (2, 137, NULL, 181, 31, 31, 31, 'procurement', 'pending', 10, 10.00, 'unit', 'PR-137', 'Flour', NULL, 154, NULL, NULL, '2026-06-26 06:17:50', NULL, NULL, NULL, NULL, NULL, NULL, 10, 10, NULL, NULL, NULL, NULL, NULL, '/storage/delivery-proofs/delivery_proof_137_1782458107.png', NULL, NULL, NULL, 0, NULL, NULL, '2026-06-26 06:17:50', '2026-06-26 07:15:07'),
 (3, 138, NULL, 180, 31, 31, 31, 'procurement', 'pending', 10, 9.00, 'unit', 'PR-138', 'Hotdog', NULL, 154, NULL, NULL, '2026-06-26 06:17:52', NULL, NULL, NULL, NULL, NULL, NULL, 10, 9, 'Variance: -1 units', NULL, NULL, NULL, NULL, '/storage/delivery-proofs/delivery_proof_138_1782458093.png', NULL, NULL, NULL, 0, NULL, NULL, '2026-06-26 06:17:52', '2026-06-26 07:14:53'),
-(4, 139, NULL, 182, 31, 31, 31, 'procurement', 'pending', 10, 10.00, 'unit', 'PR-139', 'Salt', NULL, 154, NULL, NULL, '2026-06-26 06:17:55', NULL, NULL, NULL, NULL, NULL, NULL, 10, 10, NULL, NULL, NULL, NULL, NULL, '/storage/delivery-proofs/delivery_proof_139_1782458082.jpg', NULL, NULL, NULL, 0, NULL, NULL, '2026-06-26 06:17:55', '2026-06-26 07:14:43');
+(4, 139, NULL, 182, 31, 31, 31, 'procurement', 'pending', 10, 10.00, 'unit', 'PR-139', 'Salt', NULL, 154, NULL, NULL, '2026-06-26 06:17:55', NULL, NULL, NULL, NULL, NULL, NULL, 10, 10, NULL, NULL, NULL, NULL, NULL, '/storage/delivery-proofs/delivery_proof_139_1782458082.jpg', NULL, NULL, NULL, 0, NULL, NULL, '2026-06-26 06:17:55', '2026-06-26 07:14:43'),
+(6, 141, NULL, 185, 31, 31, 31, 'procurement', 'pending', 10, NULL, 'unit', 'PR-141', 'Flour', NULL, 154, NULL, NULL, '2026-08-03 05:38:12', NULL, NULL, NULL, NULL, NULL, NULL, 10, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, '2026-08-03 05:38:12', '2026-08-03 05:38:12');
 
 -- --------------------------------------------------------
 
@@ -624,7 +726,22 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (139, '2026_06_23_000000_create_position_open_requests_table', 77),
 (140, '2026_06_26_000000_add_branch_id_to_position_open_requests_table', 78),
 (141, '2026_06_26_000001_add_approval_fields_to_position_open_requests_table', 78),
-(142, '2026_07_03_000000_create_position_applications_table', 79);
+(142, '2026_07_03_000000_create_position_applications_table', 79),
+(143, '2026_07_14_000001_create_expired_product_reports_table', 80),
+(144, '2026_07_14_000002_add_expiry_tracking_to_supplier_orders', 80),
+(145, '2026_07_14_000003_create_inventory_lots_table', 80),
+(146, '2026_07_15_000001_add_quantity_to_expired_product_reports_table', 80),
+(147, '2026_07_15_000002_create_customer_reports_table', 80),
+(148, '2026_07_17_000001_add_geofencing_to_branches_table', 80),
+(149, '2026_07_22_000001_create_email_communications_table', 80),
+(150, '2026_07_22_000002_add_email_threading_fields_to_email_communications_table', 80),
+(151, '2026_07_24_000001_create_payrolls_table', 80),
+(152, '2026_07_24_000005_add_brand_to_dish_ingredients', 80),
+(153, '2026_07_27_000001_add_face_image_to_attendance_table', 80),
+(154, '2026_07_27_000001_add_interview_fields_to_position_applications_table', 80),
+(155, '2026_07_31_000001_add_branch_cost_details_to_branches_table', 80),
+(156, '2026_08_03_000001_change_face_image_to_text_in_attendance_table', 81),
+(157, '2026_08_03_000002_add_confirmation_fields_to_attendance_table', 82);
 
 -- --------------------------------------------------------
 
@@ -719,6 +836,50 @@ CREATE TABLE `password_reset_tokens` (
   `token` varchar(255) NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `payrolls`
+--
+
+CREATE TABLE `payrolls` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `branch_id` bigint(20) UNSIGNED NOT NULL,
+  `pay_period_start` date NOT NULL,
+  `pay_period_end` date NOT NULL,
+  `payroll_type` varchar(255) NOT NULL,
+  `pay_date` date NOT NULL,
+  `days_worked` int(11) NOT NULL DEFAULT 0,
+  `days_late` int(11) NOT NULL DEFAULT 0,
+  `days_overtime` int(11) NOT NULL DEFAULT 0,
+  `total_hours_worked` decimal(8,2) NOT NULL DEFAULT 0.00,
+  `total_overtime_hours` decimal(8,2) NOT NULL DEFAULT 0.00,
+  `daily_rate` decimal(10,2) NOT NULL,
+  `hourly_rate` decimal(10,2) NOT NULL,
+  `base_salary` decimal(10,2) NOT NULL,
+  `late_deductions` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `overtime_pay` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `gross_salary` decimal(10,2) NOT NULL,
+  `net_salary` decimal(10,2) NOT NULL,
+  `status` varchar(255) NOT NULL DEFAULT 'pending',
+  `notes` text DEFAULT NULL,
+  `confirmed_by` bigint(20) UNSIGNED DEFAULT NULL,
+  `confirmed_at` timestamp NULL DEFAULT NULL,
+  `finance_notes` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `payrolls`
+--
+
+INSERT INTO `payrolls` (`id`, `user_id`, `branch_id`, `pay_period_start`, `pay_period_end`, `payroll_type`, `pay_date`, `days_worked`, `days_late`, `days_overtime`, `total_hours_worked`, `total_overtime_hours`, `daily_rate`, `hourly_rate`, `base_salary`, `late_deductions`, `overtime_pay`, `gross_salary`, `net_salary`, `status`, `notes`, `confirmed_by`, `confirmed_at`, `finance_notes`, `created_at`, `updated_at`) VALUES
+(1, 153, 31, '2026-07-31', '2026-08-30', 'mid_month', '2026-07-15', 0, 0, 0, 0.00, 0.00, 600.00, 75.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'approved', NULL, NULL, NULL, NULL, '2026-08-03 06:38:26', '2026-08-03 06:38:42'),
+(2, 154, 31, '2026-07-31', '2026-08-30', 'mid_month', '2026-07-15', 0, 0, 0, 0.00, 0.00, 600.00, 75.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'pending', NULL, NULL, NULL, NULL, '2026-08-03 06:38:26', '2026-08-03 06:38:26'),
+(3, 157, 31, '2026-07-31', '2026-08-30', 'mid_month', '2026-07-15', 0, 0, 0, 0.00, 0.00, 600.00, 75.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'pending', NULL, NULL, NULL, NULL, '2026-08-03 06:38:26', '2026-08-03 06:38:26');
 
 -- --------------------------------------------------------
 
@@ -1997,6 +2158,9 @@ CREATE TABLE `position_applications` (
   `resume_path` varchar(255) NOT NULL,
   `supporting_documents_paths` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`supporting_documents_paths`)),
   `status` varchar(255) NOT NULL DEFAULT 'Submitted',
+  `interview_date` date DEFAULT NULL,
+  `interview_time` time DEFAULT NULL,
+  `interview_notes` text DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -2005,8 +2169,9 @@ CREATE TABLE `position_applications` (
 -- Dumping data for table `position_applications`
 --
 
-INSERT INTO `position_applications` (`id`, `position_open_request_id`, `position_id`, `branch_id`, `department`, `job_title`, `applicant_full_name`, `applicant_email`, `applicant_phone`, `applicant_address`, `cover_letter`, `years_of_experience`, `education`, `available_start_date`, `linkedin_url`, `portfolio_url`, `privacy_consent`, `website`, `resume_path`, `supporting_documents_paths`, `status`, `created_at`, `updated_at`) VALUES
-(2, 19, 8, 31, 'LOGISTICS', 'Logistics Manager', 'gab ongs', 'marac21139@lovadio.com', '09156818812', 'Pinned location: 14.330000, 120.940000', 'asd', 12, 'BSIT', '2000-07-06', NULL, NULL, 1, NULL, 'position-applications/19/042d90e6-c32a-403c-9f78-3286ae6908cc/resume_cv.docx', '[\"position-applications\\/19\\/042d90e6-c32a-403c-9f78-3286ae6908cc\\/supporting\\/supporting_1.docx\"]', 'Submitted', '2026-07-06 06:50:30', '2026-07-06 06:50:30');
+INSERT INTO `position_applications` (`id`, `position_open_request_id`, `position_id`, `branch_id`, `department`, `job_title`, `applicant_full_name`, `applicant_email`, `applicant_phone`, `applicant_address`, `cover_letter`, `years_of_experience`, `education`, `available_start_date`, `linkedin_url`, `portfolio_url`, `privacy_consent`, `website`, `resume_path`, `supporting_documents_paths`, `status`, `interview_date`, `interview_time`, `interview_notes`, `created_at`, `updated_at`) VALUES
+(2, 19, 8, 31, 'LOGISTICS', 'Logistics Manager', 'gab ongs', 'marac21139@lovadio.com', '09156818812', 'Pinned location: 14.330000, 120.940000', 'asd', 12, 'BSIT', '2000-07-06', NULL, NULL, 1, NULL, 'position-applications/19/042d90e6-c32a-403c-9f78-3286ae6908cc/resume_cv.docx', '[\"position-applications\\/19\\/042d90e6-c32a-403c-9f78-3286ae6908cc\\/supporting\\/supporting_1.docx\"]', 'Submitted', NULL, NULL, NULL, '2026-07-06 06:50:30', '2026-07-06 06:50:30'),
+(3, 19, 8, 31, 'LOGISTICS', 'Logistics Manager', 'Christian Charles Umbal', 'umbal.christiancharles@ncst.edu.ph', '09156818856', 'Pinned location: 14.330000, 120.940000', 'sdfsdfs', 5, 'BSIT', '1995-07-06', 'http://localhost/phpmyadmin/index.php?route=/sql&pos=0&db=chikintayo_db&table=attendance', 'http://localhost/phpmyadmin/index.php?route=/sql&pos=0&db=chikintayo_db&table=attendance', 1, NULL, 'position-applications/19/f1f95e8b-c4bc-415e-a19b-fe1bd98ee5db/resume_cv.docx', '[\"position-applications\\/19\\/f1f95e8b-c4bc-415e-a19b-fe1bd98ee5db\\/supporting\\/supporting_1.docx\"]', 'Ready for Interview', '2026-08-05', '08:20:00', 'BAsta', '2026-08-03 08:05:29', '2026-08-03 08:20:41');
 
 -- --------------------------------------------------------
 
@@ -2166,7 +2331,8 @@ CREATE TABLE `procurement_requests` (
 INSERT INTO `procurement_requests` (`id`, `product_id`, `supplier_id`, `logistics_user_id`, `procurement_user_id`, `finance_user_id`, `quantity`, `price`, `total_amount`, `status`, `receipt_path`, `receipt_uploaded_by`, `receipt_uploaded_at`, `receipt_confirmed`, `receipt_confirmed_by`, `receipt_confirmed_at`, `confirmed_quantity`, `variance_quantity`, `variance_reason`, `variance_reported_at`, `delivery_proof_path`, `is_manual`, `budget_approved`, `supplier_confirmed`, `budget_amount`, `created_at`, `updated_at`, `branch_id`) VALUES
 (137, 185, 152, 154, 151, 149, 10, 50.00, 500.00, 'completed', '/receipts/receipt_137_1782457916.jpg', 150, '2026-06-26 07:11:56', 1, 149, '2026-06-26 07:13:44', 10, NULL, NULL, NULL, '/storage/delivery-proofs/delivery_proof_137_1782458107.png', 0, 1, 0, 500.00, '2026-06-26 06:17:50', '2026-06-26 07:15:07', 31),
 (138, 186, 152, 154, 151, 149, 10, 100.00, 1000.00, 'completed', '/receipts/receipt_138_1782457928.jpg', 150, '2026-06-26 07:12:08', 1, 149, '2026-06-26 07:13:41', 9, -1, 'Variance: -1 units', '2026-06-26 07:14:53', '/storage/delivery-proofs/delivery_proof_138_1782458093.png', 0, 1, 0, 1000.00, '2026-06-26 06:17:52', '2026-06-26 07:14:53', 31),
-(139, 184, 152, 154, 151, 149, 10, 10.00, 100.00, 'completed', '/receipts/receipt_139_1782457982.jpg', 150, '2026-06-26 07:13:02', 1, 149, '2026-06-26 07:13:29', 10, NULL, NULL, NULL, '/storage/delivery-proofs/delivery_proof_139_1782458082.jpg', 0, 1, 0, 100.00, '2026-06-26 06:17:55', '2026-06-26 07:14:43', 31);
+(139, 184, 152, 154, 151, 149, 10, 10.00, 100.00, 'completed', '/receipts/receipt_139_1782457982.jpg', 150, '2026-06-26 07:13:02', 1, 149, '2026-06-26 07:13:29', 10, NULL, NULL, NULL, '/storage/delivery-proofs/delivery_proof_139_1782458082.jpg', 0, 1, 0, 100.00, '2026-06-26 06:17:55', '2026-06-26 07:14:43', 31),
+(141, 185, NULL, 154, NULL, NULL, 10, 55.00, 550.00, 'pending', NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, NULL, '2026-08-03 05:38:12', '2026-08-03 05:38:12', 31);
 
 -- --------------------------------------------------------
 
@@ -2349,10 +2515,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('1malgZxRShHYW1ckQf5lgzWTeKcw3IJwMii5YD5j', 162, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiUTU0U1JoTzl3TUFKUkg0WjFSV1VRRHI0QzNPNGRBNDhFMjllT1RSQSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTYyO3M6NzoidXNlcl9pZCI7aToxNjI7czo5OiJ1c2VyX3JvbGUiO3M6NzoiTUFOQUdFUiI7czo5OiJ1c2VyX25hbWUiO3M6MjE6IkxvZ2lzdGljcyBNYWluIEJyYW5jaCI7czoxMzoicmVkaXJlY3RfcGF0aCI7czoyMjoiL21haW4tYnJhbmNoL2xvZ2lzdGljcyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDM6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9tYWluLWJyYW5jaC9sb2dpc3RpY3MiO3M6NToicm91dGUiO3M6MjA6Im1haW5icmFuY2gubG9naXN0aWNzIjt9fQ==', 1785692444),
-('gG4Ttx2IIc348OJzVudNCcmdk8Lz49UWroBkIdSi', 151, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiMjd5TnE5ano1Y3pqVDk3TWNVellvU2RNc2RmVnpiVjU3WEdiRkt0dCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTUxO3M6NzoidXNlcl9pZCI7aToxNTE7czo5OiJ1c2VyX3JvbGUiO3M6NzoiTUFOQUdFUiI7czo5OiJ1c2VyX25hbWUiO3M6MzI6IkxvZ2lzdGljcyBNYW5hZ2VyIC0gRGFzbWEgQnJhbmNoIjtzOjEzOiJyZWRpcmVjdF9wYXRoIjtzOjE4OiIvbWFuYWdlci9sb2dpc3RpY3MiO30=', 1785692416),
-('n6s1g0pCOUubdxGzifjRvGiw1ApDG46VA6DiQcKK', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoiOHBxOU05a0lXZUUySFdIUUxRcVNNczg5VFdrWXplSUZod2V3SzkwaiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1785689006),
-('uuIdnHc3h24MVKakbbxv3g4bp7tqA9VXMvLGvPdQ', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiUHhiRnd2YTZYbjFKQmhNWHNMaFozN3JRc2w4WThWTnlXY3RYalJ0MCI7czo3OiJzdWNjZXNzIjtzOjI0OiJMb2dnZWQgb3V0IHN1Y2Nlc3NmdWxseS4iO3M6NjoiX2ZsYXNoIjthOjI6e3M6MzoibmV3IjthOjA6e31zOjM6Im9sZCI7YToxOntpOjA7czo3OiJzdWNjZXNzIjt9fXM6OToiX3ByZXZpb3VzIjthOjI6e3M6MzoidXJsIjtzOjI4OiJodHRwOi8vbG9jYWxob3N0OjgwMDAvbG9nb3V0IjtzOjU6InJvdXRlIjtzOjY6ImxvZ291dCI7fX0=', 1785689951);
+('WpjxEGtevOM10eZTMFxYKqwgCflMDyg3liuYOhsF', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiTkszUTQ0WktsTFlLeUxWbzJ4ek5uWU95eFBFWjNmVmRqelZvczNSOCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fX0=', 1785745314);
 
 -- --------------------------------------------------------
 
@@ -2461,6 +2624,8 @@ CREATE TABLE `supplier_orders` (
   `supplier_id` bigint(20) UNSIGNED DEFAULT NULL,
   `quantity` int(11) NOT NULL DEFAULT 0,
   `price` decimal(10,2) DEFAULT NULL,
+  `expires_at` datetime DEFAULT NULL,
+  `date_made` date DEFAULT NULL,
   `status` varchar(255) NOT NULL DEFAULT 'pending',
   `is_broadcast` tinyint(1) NOT NULL DEFAULT 0,
   `fulfilled_at` timestamp NULL DEFAULT NULL,
@@ -2473,13 +2638,13 @@ CREATE TABLE `supplier_orders` (
 -- Dumping data for table `supplier_orders`
 --
 
-INSERT INTO `supplier_orders` (`id`, `procurement_request_id`, `product_id`, `supplier_id`, `quantity`, `price`, `status`, `is_broadcast`, `fulfilled_at`, `branch_id`, `created_at`, `updated_at`) VALUES
-(160, 138, 186, 152, 10, NULL, 'fulfilled', 0, '2026-06-26 07:14:53', 31, '2026-06-26 06:35:27', '2026-06-26 07:14:53'),
-(161, 138, 180, 158, 10, NULL, 'pending', 1, NULL, 31, '2026-06-26 06:35:27', '2026-06-26 06:35:27'),
-(162, 137, 185, 152, 10, NULL, 'fulfilled', 0, '2026-06-26 07:15:07', 31, '2026-06-26 06:35:30', '2026-06-26 07:15:07'),
-(163, 137, 181, 158, 10, NULL, 'pending', 1, NULL, 31, '2026-06-26 06:35:30', '2026-06-26 06:35:30'),
-(164, 139, 184, 152, 10, NULL, 'fulfilled', 0, '2026-06-26 07:14:43', 31, '2026-06-26 06:35:33', '2026-06-26 07:14:43'),
-(165, 139, 182, 158, 10, NULL, 'pending', 1, NULL, 31, '2026-06-26 06:35:33', '2026-06-26 06:35:33');
+INSERT INTO `supplier_orders` (`id`, `procurement_request_id`, `product_id`, `supplier_id`, `quantity`, `price`, `expires_at`, `date_made`, `status`, `is_broadcast`, `fulfilled_at`, `branch_id`, `created_at`, `updated_at`) VALUES
+(160, 138, 186, 152, 10, NULL, NULL, NULL, 'fulfilled', 0, '2026-06-26 07:14:53', 31, '2026-06-26 06:35:27', '2026-06-26 07:14:53'),
+(161, 138, 180, 158, 10, NULL, NULL, NULL, 'pending', 1, NULL, 31, '2026-06-26 06:35:27', '2026-06-26 06:35:27'),
+(162, 137, 185, 152, 10, NULL, NULL, NULL, 'fulfilled', 0, '2026-06-26 07:15:07', 31, '2026-06-26 06:35:30', '2026-06-26 07:15:07'),
+(163, 137, 181, 158, 10, NULL, NULL, NULL, 'pending', 1, NULL, 31, '2026-06-26 06:35:30', '2026-06-26 06:35:30'),
+(164, 139, 184, 152, 10, NULL, NULL, NULL, 'fulfilled', 0, '2026-06-26 07:14:43', 31, '2026-06-26 06:35:33', '2026-06-26 07:14:43'),
+(165, 139, 182, 158, 10, NULL, NULL, NULL, 'pending', 1, NULL, 31, '2026-06-26 06:35:33', '2026-06-26 06:35:33');
 
 -- --------------------------------------------------------
 
@@ -2564,7 +2729,8 @@ ALTER TABLE `attendance`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `attendance_user_id_date_unique` (`user_id`,`date`),
   ADD KEY `attendance_date_index` (`date`),
-  ADD KEY `attendance_status_index` (`status`);
+  ADD KEY `attendance_status_index` (`status`),
+  ADD KEY `attendance_confirmed_by_foreign` (`confirmed_by`);
 
 --
 -- Indexes for table `attendance_settings`
@@ -2613,6 +2779,15 @@ ALTER TABLE `customer_accounts`
   ADD KEY `customer_accounts_created_at_index` (`created_at`);
 
 --
+-- Indexes for table `customer_reports`
+--
+ALTER TABLE `customer_reports`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `customer_reports_customer_account_id_foreign` (`customer_account_id`),
+  ADD KEY `customer_reports_assigned_to_foreign` (`assigned_to`),
+  ADD KEY `customer_reports_status_created_at_index` (`status`,`created_at`);
+
+--
 -- Indexes for table `dishes`
 --
 ALTER TABLE `dishes`
@@ -2626,6 +2801,17 @@ ALTER TABLE `dish_ingredients`
   ADD PRIMARY KEY (`id`),
   ADD KEY `dish_ingredients_dish_id_index` (`dish_id`),
   ADD KEY `dish_ingredients_product_id_index` (`product_id`);
+
+--
+-- Indexes for table `email_communications`
+--
+ALTER TABLE `email_communications`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `email_communications_sent_by_foreign` (`sent_by`),
+  ADD KEY `email_communications_customer_report_id_created_at_index` (`customer_report_id`,`created_at`),
+  ADD KEY `email_communications_customer_report_id_direction_index` (`customer_report_id`,`direction`),
+  ADD KEY `email_communications_message_id_index` (`message_id`),
+  ADD KEY `email_communications_in_reply_to_index` (`in_reply_to`);
 
 --
 -- Indexes for table `employee_timesheets`
@@ -2642,11 +2828,32 @@ ALTER TABLE `expenses`
   ADD KEY `expenses_created_by_foreign` (`created_by`);
 
 --
+-- Indexes for table `expired_product_reports`
+--
+ALTER TABLE `expired_product_reports`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `expired_product_reports_reported_by_foreign` (`reported_by`),
+  ADD KEY `expired_product_reports_reviewed_by_foreign` (`reviewed_by`),
+  ADD KEY `expired_product_reports_product_id_branch_id_index` (`product_id`,`branch_id`),
+  ADD KEY `expired_product_reports_branch_id_status_index` (`branch_id`,`status`),
+  ADD KEY `expired_product_reports_created_at_index` (`created_at`);
+
+--
 -- Indexes for table `failed_jobs`
 --
 ALTER TABLE `failed_jobs`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `failed_jobs_uuid_unique` (`uuid`);
+
+--
+-- Indexes for table `inventory_lots`
+--
+ALTER TABLE `inventory_lots`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `inventory_lots_branch_id_product_id_index` (`branch_id`,`product_id`),
+  ADD KEY `inventory_lots_supplier_order_id_index` (`supplier_order_id`),
+  ADD KEY `inventory_lots_procurement_request_id_index` (`procurement_request_id`),
+  ADD KEY `inventory_lots_expires_at_index` (`expires_at`);
 
 --
 -- Indexes for table `jobs`
@@ -2710,6 +2917,16 @@ ALTER TABLE `order_items`
 --
 ALTER TABLE `password_reset_tokens`
   ADD PRIMARY KEY (`email`);
+
+--
+-- Indexes for table `payrolls`
+--
+ALTER TABLE `payrolls`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `payrolls_confirmed_by_foreign` (`confirmed_by`),
+  ADD KEY `payrolls_user_id_pay_period_start_pay_period_end_index` (`user_id`,`pay_period_start`,`pay_period_end`),
+  ADD KEY `payrolls_branch_id_status_index` (`branch_id`,`status`),
+  ADD KEY `payrolls_pay_date_status_index` (`pay_date`,`status`);
 
 --
 -- Indexes for table `personal_access_tokens`
@@ -2907,7 +3124,7 @@ ALTER TABLE `announcements`
 -- AUTO_INCREMENT for table `attendance`
 --
 ALTER TABLE `attendance`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `attendance_settings`
@@ -2934,6 +3151,12 @@ ALTER TABLE `customer_accounts`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
+-- AUTO_INCREMENT for table `customer_reports`
+--
+ALTER TABLE `customer_reports`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `dishes`
 --
 ALTER TABLE `dishes`
@@ -2944,6 +3167,12 @@ ALTER TABLE `dishes`
 --
 ALTER TABLE `dish_ingredients`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=64;
+
+--
+-- AUTO_INCREMENT for table `email_communications`
+--
+ALTER TABLE `email_communications`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `employee_timesheets`
@@ -2958,9 +3187,21 @@ ALTER TABLE `expenses`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `expired_product_reports`
+--
+ALTER TABLE `expired_product_reports`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `failed_jobs`
 --
 ALTER TABLE `failed_jobs`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `inventory_lots`
+--
+ALTER TABLE `inventory_lots`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
@@ -2973,7 +3214,7 @@ ALTER TABLE `jobs`
 -- AUTO_INCREMENT for table `logistics_transactions`
 --
 ALTER TABLE `logistics_transactions`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `messages`
@@ -2985,7 +3226,7 @@ ALTER TABLE `messages`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=143;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=158;
 
 --
 -- AUTO_INCREMENT for table `orders`
@@ -3000,10 +3241,16 @@ ALTER TABLE `order_items`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=88;
 
 --
+-- AUTO_INCREMENT for table `payrolls`
+--
+ALTER TABLE `payrolls`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2625;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2637;
 
 --
 -- AUTO_INCREMENT for table `positions`
@@ -3015,7 +3262,7 @@ ALTER TABLE `positions`
 -- AUTO_INCREMENT for table `position_applications`
 --
 ALTER TABLE `position_applications`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `position_open_requests`
@@ -3045,7 +3292,7 @@ ALTER TABLE `price_markup_requests`
 -- AUTO_INCREMENT for table `procurement_requests`
 --
 ALTER TABLE `procurement_requests`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=141;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=142;
 
 --
 -- AUTO_INCREMENT for table `products`
@@ -3127,6 +3374,7 @@ ALTER TABLE `announcements`
 -- Constraints for table `attendance`
 --
 ALTER TABLE `attendance`
+  ADD CONSTRAINT `attendance_confirmed_by_foreign` FOREIGN KEY (`confirmed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `attendance_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
@@ -3150,10 +3398,24 @@ ALTER TABLE `customer_accounts`
   ADD CONSTRAINT `customer_accounts_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
+-- Constraints for table `customer_reports`
+--
+ALTER TABLE `customer_reports`
+  ADD CONSTRAINT `customer_reports_assigned_to_foreign` FOREIGN KEY (`assigned_to`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `customer_reports_customer_account_id_foreign` FOREIGN KEY (`customer_account_id`) REFERENCES `customer_accounts` (`id`) ON DELETE SET NULL;
+
+--
 -- Constraints for table `dishes`
 --
 ALTER TABLE `dishes`
   ADD CONSTRAINT `dishes_approved_by_foreign` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `email_communications`
+--
+ALTER TABLE `email_communications`
+  ADD CONSTRAINT `email_communications_customer_report_id_foreign` FOREIGN KEY (`customer_report_id`) REFERENCES `customer_reports` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `email_communications_sent_by_foreign` FOREIGN KEY (`sent_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `expenses`
@@ -3161,6 +3423,15 @@ ALTER TABLE `dishes`
 ALTER TABLE `expenses`
   ADD CONSTRAINT `expenses_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `expenses_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `expired_product_reports`
+--
+ALTER TABLE `expired_product_reports`
+  ADD CONSTRAINT `expired_product_reports_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `expired_product_reports_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `expired_product_reports_reported_by_foreign` FOREIGN KEY (`reported_by`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `expired_product_reports_reviewed_by_foreign` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `logistics_transactions`
@@ -3192,6 +3463,14 @@ ALTER TABLE `orders`
 ALTER TABLE `order_items`
   ADD CONSTRAINT `order_items_order_id_foreign` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `order_items_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `payrolls`
+--
+ALTER TABLE `payrolls`
+  ADD CONSTRAINT `payrolls_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `payrolls_confirmed_by_foreign` FOREIGN KEY (`confirmed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `payrolls_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `position_applications`

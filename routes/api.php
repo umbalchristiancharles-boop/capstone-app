@@ -383,6 +383,11 @@ Route::prefix('manager')->middleware('auth:sanctum,web')->group(function () {
         Route::put('/hr/staff/{id}', [\App\Http\Controllers\Api\ManagerProfileController::class, 'updateHrStaff']);
         Route::delete('/hr/staff/{id}', [\App\Http\Controllers\Api\ManagerProfileController::class, 'deleteHrStaff']);
         Route::get('/hr/reports', [\App\Http\Controllers\Api\ManagerProfileController::class, 'hrReports']);
+        
+        // Clock-in confirmation endpoints for HR Manager
+        Route::get('/hr/attendance/pending-confirmations', [\App\Http\Controllers\Api\ManagerProfileController::class, 'pendingClockInConfirmations']);
+        Route::post('/hr/attendance/{attendanceId}/confirm', [\App\Http\Controllers\Api\ManagerProfileController::class, 'confirmClockIn']);
+        Route::post('/hr/attendance/{attendanceId}/reject', [\App\Http\Controllers\Api\ManagerProfileController::class, 'rejectClockIn']);
 
         Route::get('/finance/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'financeProfile']);
         Route::put('/finance/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'updateFinanceProfile']);

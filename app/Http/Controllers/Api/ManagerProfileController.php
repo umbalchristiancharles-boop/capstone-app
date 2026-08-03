@@ -915,6 +915,133 @@ class ManagerProfileController extends Controller
         ]);
     }
 
+    /**
+     * Get pending clock-in confirmations for HR manager
+     * Shows attendance records with face images that need verification
+     */
+    public function pendingClockInConfirmations(Request $request)
+    {
+        try {
+            $user = $this->getAuthenticatedManager($request);
+
+            if (!$this->allowManagerDept($user, 'hr')) {
+                return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
+            }
+
+            $isMainBranchHr = $this->isMainBranchHrManager($user);
+            $branchId = $user->branch_id;
+
+            // Build query for attendance records with face images
+            $query = Attendance::with(['user.branch', 'confirmedBy'])
+                ->whereHas('user', function ($q) use ($branchId, $isMainBranchHr) {
+                    if ($branchId && !$isMainBranchHr) {
+                        $q->where('branch_id', $branchId);
+                    }
+                })
+                ->whereNotNull('face_image')
+                ->where('face_image', '!=', '')
+                ->where('date', Carbon::now()->toDateString())
+                ->orderBy('time_in', 'desc');
+
+            $records = $query->get()->map(function ($att) {
+                return [
+                    'id' => $att->id,
+                    'user_id' => $att->user_id,
+                    'user_name' => $att->user?->full_name ?? ($att->user?->username ?? 'Unknown'),
+                    'branch_id' => $att->user?->branch?->id ?? null,
+                    'branch_name' => $att->user?->branch?->name ?? null,
+                    'date' => $att->date?->format('Y-m-d') ?? null,
+                    'time_in' => $att->time_in?->format('h:i A') ?? null,
+                    'time_out' => $att->time_out?->format('h:i A') ?? null,
+                    'status' => $att->status,
+                    'face_image' => $att->face_image,
+                    'confirmed' => $att->confirmed ?? false,
+                    'confirmed_by' => $att->confirmedBy?->full_name ?? null,
+                    'confirmed_at' => $att->confirmed_at?->format('Y-m-d H:i A') ?? null,
+                ];
+            });
+
+            return response()->json([
+                'ok' => true,
+                'data' => $records
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error in pendingClockInConfirmations: ' . $e->getMessage(), [
+                'exception' => $e,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'ok' => false,
+                'message' => 'Failed to load pending confirmations',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+
+    /**
+     * Confirm a clock-in photo (HR Manager approval)
+     */
+    public function confirmClockIn(Request $request, $attendanceId)
+    {
+        $user = $this->getAuthenticatedManager($request);
+
+        if (!$this->allowManagerDept($user, 'hr')) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $attendance = Attendance::findOrFail($attendanceId);
+
+        // Verify the attendance record belongs to a user in the HR manager's branch
+        $isMainBranchHr = $this->isMainBranchHrManager($user);
+        if (!$isMainBranchHr && $attendance->user->branch_id !== $user->branch_id) {
+            return response()->json(['ok' => false, 'message' => 'Forbidden'], 403);
+        }
+
+        // Update attendance record
+        $attendance->confirmed = true;
+        $attendance->confirmed_by = $user->id;
+        $attendance->confirmed_at = Carbon::now();
+        $attendance->save();
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'Clock-in confirmed successfully'
+        ]);
+    }
+
+    /**
+     * Reject a clock-in photo (HR Manager rejection)
+     */
+    public function rejectClockIn(Request $request, $attendanceId)
+    {
+        $user = $this->getAuthenticatedManager($request);
+
+        if (!$this->allowManagerDept($user, 'hr')) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $attendance = Attendance::findOrFail($attendanceId);
+
+        // Verify the attendance record belongs to a user in the HR manager's branch
+        $isMainBranchHr = $this->isMainBranchHrManager($user);
+        if (!$isMainBranchHr && $attendance->user->branch_id !== $user->branch_id) {
+            return response()->json(['ok' => false, 'message' => 'Forbidden'], 403);
+        }
+
+        // Clear the face image to mark as rejected
+        $attendance->face_image = null;
+        $attendance->confirmed = false;
+        $attendance->confirmed_by = null;
+        $attendance->confirmed_at = null;
+        $attendance->save();
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'Clock-in rejected. Staff needs to clock in again.'
+        ]);
+    }
+
     // ==========================================
     // Finance Manager Profile Endpoints
     // ==========================================

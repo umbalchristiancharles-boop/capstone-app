@@ -94,10 +94,9 @@
                   </div>
 
                    <div class="request-card__actions" style="margin-top: 12px; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                     <a v-if="a.resume_path" :href="getStorageUrl(a.resume_path)" target="_blank" class="btn-success btn-sm">
-                       View Resume
-                     </a>
-                     <button v-else class="btn-secondary btn-sm" disabled>Resume Unavailable</button>
+                     <button class="btn-success btn-sm" @click="openApplicationDetails(a)">
+                       View Application Details
+                     </button>
                      
                      <!-- Show button only if status is NOT "Ready for Interview" -->
                      <button 
@@ -186,6 +185,196 @@
               >
                 {{ sendingInterviewEmail[selectedApplication?.id] ? 'Sending...' : 'Send Interview Email' }}
               </button>
+            </div>
+          </div>
+        </div>
+      </transition>
+
+      <!-- Application Details Modal -->
+      <transition name="fade">
+        <div v-if="showApplicationDetailsModal && selectedApplicationDetails" class="positions-modal-backdrop" @click.self="closeApplicationDetailsModal">
+          <div class="positions-modal" style="max-width: 800px;">
+            <div class="positions-modal__header">
+              <div>
+                <h3>Application Details</h3>
+                <p class="muted">Complete application form information for {{ selectedApplicationDetails.applicant_full_name }}</p>
+              </div>
+              <button class="modal-close" @click="closeApplicationDetailsModal" aria-label="Close">✕</button>
+            </div>
+
+            <div class="positions-modal__body">
+              <div v-if="selectedApplicationDetails" class="application-details-content">
+                <!-- Personal Information Section -->
+                <div class="details-section">
+                  <h4 class="details-section__title">Personal Information</h4>
+                  <div class="details-grid">
+                    <div class="detail-item">
+                      <span class="detail-label">Full Name:</span>
+                      <span class="detail-value">{{ selectedApplicationDetails.applicant_full_name || '-' }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Email:</span>
+                      <span class="detail-value">{{ selectedApplicationDetails.applicant_email || '-' }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Phone:</span>
+                      <span class="detail-value">{{ selectedApplicationDetails.applicant_phone || '-' }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Address:</span>
+                      <span class="detail-value">{{ selectedApplicationDetails.applicant_address || '-' }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Website:</span>
+                      <span class="detail-value">
+                        <a v-if="selectedApplicationDetails.website" :href="selectedApplicationDetails.website" target="_blank" rel="noopener noreferrer">{{ selectedApplicationDetails.website }}</a>
+                        <span v-else>-</span>
+                      </span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">LinkedIn:</span>
+                      <span class="detail-value">
+                        <a v-if="selectedApplicationDetails.linkedin_url" :href="selectedApplicationDetails.linkedin_url" target="_blank" rel="noopener noreferrer">{{ selectedApplicationDetails.linkedin_url }}</a>
+                        <span v-else>-</span>
+                      </span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Portfolio:</span>
+                      <span class="detail-value">
+                        <a v-if="selectedApplicationDetails.portfolio_url" :href="selectedApplicationDetails.portfolio_url" target="_blank" rel="noopener noreferrer">{{ selectedApplicationDetails.portfolio_url }}</a>
+                        <span v-else>-</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Position Information Section -->
+                <div class="details-section">
+                  <h4 class="details-section__title">Position Information</h4>
+                  <div class="details-grid">
+                    <div class="detail-item">
+                      <span class="detail-label">Job Title:</span>
+                      <span class="detail-value">{{ selectedApplicationDetails.job_title || '-' }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Department:</span>
+                      <span class="detail-value">{{ selectedApplicationDetails.department || '-' }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Years of Experience:</span>
+                      <span class="detail-value">{{ selectedApplicationDetails.years_of_experience || '-' }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Education:</span>
+                      <span class="detail-value">{{ selectedApplicationDetails.education || '-' }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Available Start Date:</span>
+                      <span class="detail-value">{{ formatDate(selectedApplicationDetails.available_start_date) }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Status:</span>
+                      <span class="detail-value">
+                        <span class="badge" :class="getApplicationStatusClass(selectedApplicationDetails.status)">
+                          {{ selectedApplicationDetails.status || 'Submitted' }}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Cover Letter Section -->
+                <div class="details-section" v-if="selectedApplicationDetails.cover_letter">
+                  <h4 class="details-section__title">Cover Letter</h4>
+                  <div class="cover-letter-content">
+                    {{ selectedApplicationDetails.cover_letter }}
+                  </div>
+                </div>
+
+                <!-- Documents Section -->
+                <div class="details-section">
+                  <h4 class="details-section__title">Documents</h4>
+                  <div class="details-grid">
+                    <div class="detail-item">
+                      <span class="detail-label">Resume/CV:</span>
+                      <span class="detail-value">
+                        <a v-if="selectedApplicationDetails.resume_path" 
+                           :href="getStorageUrl(selectedApplicationDetails.resume_path)" 
+                           target="_blank" 
+                           rel="noopener noreferrer"
+                           class="btn-link">
+                          📄 View Resume
+                        </a>
+                        <span v-else class="text-muted">Not provided</span>
+                      </span>
+                    </div>
+                    <div class="detail-item" v-if="selectedApplicationDetails.supporting_documents_paths && selectedApplicationDetails.supporting_documents_paths.length > 0">
+                      <span class="detail-label">Supporting Documents:</span>
+                      <span class="detail-value">
+                        <div v-for="(doc, index) in selectedApplicationDetails.supporting_documents_paths" :key="index" style="margin-top: 0.25rem;">
+                          <a :href="getStorageUrl(doc)" target="_blank" rel="noopener noreferrer" class="btn-link">
+                            📎 Supporting Document {{ index + 1 }}
+                          </a>
+                        </div>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Interview Information Section (if available) -->
+                <div class="details-section" v-if="selectedApplicationDetails.interview_date || selectedApplicationDetails.interview_time">
+                  <h4 class="details-section__title">Interview Schedule</h4>
+                  <div class="details-grid">
+                    <div class="detail-item" v-if="selectedApplicationDetails.interview_date">
+                      <span class="detail-label">Interview Date:</span>
+                      <span class="detail-value">{{ formatInterviewDate(selectedApplicationDetails.interview_date) }}</span>
+                    </div>
+                    <div class="detail-item" v-if="selectedApplicationDetails.interview_time">
+                      <span class="detail-label">Interview Time:</span>
+                      <span class="detail-value">{{ formatInterviewTime(selectedApplicationDetails.interview_time) }}</span>
+                    </div>
+                    <div class="detail-item" v-if="selectedApplicationDetails.interview_notes">
+                      <span class="detail-label">Interview Notes:</span>
+                      <span class="detail-value">{{ selectedApplicationDetails.interview_notes }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Application Metadata -->
+                <div class="details-section">
+                  <h4 class="details-section__title">Application Information</h4>
+                  <div class="details-grid">
+                    <div class="detail-item">
+                      <span class="detail-label">Application ID:</span>
+                      <span class="detail-value">#{{ selectedApplicationDetails.id }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Submitted On:</span>
+                      <span class="detail-value">{{ formatDate(selectedApplicationDetails.created_at) }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Privacy Consent:</span>
+                      <span class="detail-value">
+                        <span v-if="selectedApplicationDetails.privacy_consent" class="badge badge--success">✓ Given</span>
+                        <span v-else class="badge badge--warning">Not Given</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="positions-modal__footer">
+              <button class="btn-secondary" @click="closeApplicationDetailsModal">Close</button>
+              <a v-if="selectedApplicationDetails.resume_path" 
+                 :href="getStorageUrl(selectedApplicationDetails.resume_path)" 
+                 target="_blank" 
+                 rel="noopener noreferrer"
+                 class="btn-primary" 
+                 style="text-decoration: none; display: inline-block; padding: 0.625rem 1.25rem; border-radius: 4px;"
+                 @click.prevent="openResume(getStorageUrl(selectedApplicationDetails.resume_path))">
+                Open Resume in New Tab
+              </a>
             </div>
           </div>
         </div>
@@ -288,6 +477,56 @@
           </div>
         </div>
       </div>
+
+      <!-- Clock-in Confirmation Section -->
+      <section class="panel-block hr-confirmation-panel">
+        <div class="panel-header hr-confirmation-header">
+          <h2>
+            📸 Pending Clock-in Confirmations
+            <span v-if="pendingConfirmations.length > 0" class="panel-badge">{{ pendingConfirmations.length }}</span>
+          </h2>
+          <button class="panel-action" @click="loadPendingConfirmations" :disabled="isLoadingConfirmations">
+            {{ isLoadingConfirmations ? 'Loading...' : 'Refresh' }}
+          </button>
+        </div>
+
+        <div class="panel-body panel-body--table">
+          <div v-if="isLoadingConfirmations" class="table-row">
+            <span colspan="6">Loading pending confirmations...</span>
+          </div>
+
+          <div v-else-if="pendingConfirmations.length === 0" class="table-row">
+            <span colspan="6">No pending clock-in confirmations for today.</span>
+          </div>
+
+          <div v-else class="confirmations-list">
+            <div v-for="conf in pendingConfirmations" :key="conf.id" class="confirmation-card">
+              <div class="confirmation-info">
+                <div class="confirmation-header">
+                  <span class="confirmation-name">{{ conf.user_name }}</span>
+                  <span class="confirmation-branch">{{ conf.branch_name }}</span>
+                </div>
+                <div class="confirmation-details">
+                  <span>⏰ {{ conf.time_in }}</span>
+                  <span>📅 {{ conf.date }}</span>
+                  <span class="badge" :class="attendanceStatusClass(conf.status)">{{ conf.status }}</span>
+                </div>
+              </div>
+              <div class="confirmation-actions">
+                <button class="btn-sm btn-success" @click="viewConfirmation(conf)">
+                  View Photo
+                </button>
+                <button class="btn-sm btn-primary" @click="confirmClockIn(conf.id)">
+                  ✓ Confirm
+                </button>
+                <button class="btn-sm btn-danger" @click="rejectClockIn(conf.id)">
+                  ✗ Reject
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section class="panel-block hr-attendance-panel">
         <div class="panel-header hr-attendance-header">
@@ -517,11 +756,59 @@
     </div>
   </transition>
 
+  <!-- Photo Viewing Modal -->
   <transition name="fade">
-    <div v-if="showOverlay" class="loading-overlay">
-      <div class="logo-loading-box">
-        <img :src="logoImg" alt="Chikin Tayo" class="logo-loading-img" />
-        <p>{{ overlayText }}</p>
+    <div v-if="showConfirmationModal && selectedConfirmation" class="photo-modal-backdrop" @click.self="showConfirmationModal = false">
+      <div class="photo-modal">
+        <div class="photo-modal__header">
+          <h3>📸 Clock-in Photo Review</h3>
+          <button class="modal-close" @click="showConfirmationModal = false" aria-label="Close">✕</button>
+        </div>
+
+        <div class="photo-modal__body">
+          <img 
+            :src="selectedConfirmation.face_image" 
+            :alt="`Clock-in photo for ${selectedConfirmation.user_name}`"
+            class="photo-modal__image"
+          />
+
+          <div class="photo-modal__info">
+            <div class="photo-modal__info-row">
+              <span class="photo-modal__label">Staff Name:</span>
+              <span class="photo-modal__value">{{ selectedConfirmation.user_name }}</span>
+            </div>
+            <div class="photo-modal__info-row">
+              <span class="photo-modal__label">Branch:</span>
+              <span class="photo-modal__value">{{ selectedConfirmation.branch_name }}</span>
+            </div>
+            <div class="photo-modal__info-row">
+              <span class="photo-modal__label">Time In:</span>
+              <span class="photo-modal__value">{{ selectedConfirmation.time_in }}</span>
+            </div>
+            <div class="photo-modal__info-row">
+              <span class="photo-modal__label">Date:</span>
+              <span class="photo-modal__value">{{ selectedConfirmation.date }}</span>
+            </div>
+            <div class="photo-modal__info-row">
+              <span class="photo-modal__label">Status:</span>
+              <span class="photo-modal__value">
+                <span class="badge" :class="attendanceStatusClass(selectedConfirmation.status)">
+                  {{ selectedConfirmation.status }}
+                </span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="photo-modal__footer">
+          <button class="btn-secondary" @click="showConfirmationModal = false">Close</button>
+          <button class="btn-danger" @click="rejectClockIn(selectedConfirmation.id); showConfirmationModal = false">
+            ✗ Reject
+          </button>
+          <button class="btn-primary" @click="confirmClockIn(selectedConfirmation.id); showConfirmationModal = false">
+            ✓ Confirm
+          </button>
+        </div>
       </div>
     </div>
   </transition>
@@ -549,16 +836,20 @@ const applications = ref([])
 const applicationsCount = computed(() => {
   return Array.isArray(applications.value) ? applications.value.length : 0
 })
-  const sendingInterviewEmail = ref({})
-  
-  // Interview Scheduling Modal state
-  const showInterviewScheduleModal = ref(false)
-  const selectedApplication = ref(null)
-  const interviewSchedule = ref({
-    date: '',
-    time: '',
-    notes: ''
-  })
+const sendingInterviewEmail = ref({})
+
+// Interview Scheduling Modal state
+const showInterviewScheduleModal = ref(false)
+const selectedApplication = ref(null)
+const interviewSchedule = ref({
+  date: '',
+  time: '',
+  notes: ''
+})
+
+// Application Details Modal state
+const showApplicationDetailsModal = ref(false)
+const selectedApplicationDetails = ref(null)
 
 const router = useRouter()
 const errorMessage = ref('')
@@ -591,13 +882,19 @@ const isEditing = ref(false)
 const isSubmitting = ref(false)
 const formError = ref('')
 const editingStaffId = ref(null)
-const hrAttendance = ref([])
-const attendanceRange = ref('today')
-const isLoadingAttendance = ref(false)
-const hasNotified = ref(false)
-const hrAlertCount = computed(() => {
-  return (hrAttendance.value || []).filter(a => (a.status || '').toLowerCase() !== 'present').length
-})
+  const hrAttendance = ref([])
+  const attendanceRange = ref('today')
+  const isLoadingAttendance = ref(false)
+  const hasNotified = ref(false)
+  const hrAlertCount = computed(() => {
+    return (hrAttendance.value || []).filter(a => (a.status || '').toLowerCase() !== 'present').length
+  })
+  
+  // Clock-in confirmation state
+  const pendingConfirmations = ref([])
+  const isLoadingConfirmations = ref(false)
+  const showConfirmationModal = ref(false)
+  const selectedConfirmation = ref(null)
 
 watch(hrAlertCount, (count) => {
   if (!hasNotified.value && count > 0) {
@@ -670,6 +967,11 @@ function onDocumentClick(event) {
 function getStorageUrl(path) {
   if (!path) return ''
   return path.startsWith('http') ? path : `/storage/${String(path).replace(/^\/+/, '')}`
+}
+
+function openResume(url) {
+  if (!url) return
+  window.open(url, '_blank', 'noopener,noreferrer')
 }
 
 
@@ -828,6 +1130,25 @@ function attendanceStatusClass(status) {
   if (s === 'on_duty') return 'badge--success'
   if (s === 'completed') return 'badge--success'
   return 'badge--info'
+}
+
+function getApplicationStatusClass(status) {
+  const s = (status || '').toString().toLowerCase().trim()
+  if (s === 'submitted') return 'badge--info'
+  if (s === 'ready for interview' || s === 'ready_for_interview' || s === 'interview scheduled') return 'badge--success'
+  if (s === 'rejected') return 'badge--warning'
+  if (s === 'hired') return 'badge--success'
+  return 'badge--info'
+}
+
+function openApplicationDetails(application) {
+  selectedApplicationDetails.value = application
+  showApplicationDetailsModal.value = true
+}
+
+function closeApplicationDetailsModal() {
+  showApplicationDetailsModal.value = false
+  selectedApplicationDetails.value = null
 }
 
 // Payroll functions
@@ -1230,6 +1551,65 @@ async function submitPositionsRequests() {
   }
 }
 
+// Clock-in confirmation functions
+async function loadPendingConfirmations() {
+  isLoadingConfirmations.value = true
+  try {
+    const res = await axios.get('/api/manager/hr/attendance/pending-confirmations', { withCredentials: true })
+    if (res.data && res.data.ok) {
+      pendingConfirmations.value = res.data.data || []
+    } else {
+      pendingConfirmations.value = []
+    }
+  } catch (e) {
+    console.error('Error loading pending confirmations:', e)
+    pendingConfirmations.value = []
+  } finally {
+    isLoadingConfirmations.value = false
+  }
+}
+
+function viewConfirmation(conf) {
+  selectedConfirmation.value = conf
+  showConfirmationModal.value = true
+}
+
+async function confirmClockIn(attendanceId) {
+  if (!confirm('Are you sure you want to confirm this clock-in?')) return
+
+  try {
+    const res = await axios.post(`/api/manager/hr/attendance/${attendanceId}/confirm`, {}, { withCredentials: true })
+    if (res.data && res.data.ok) {
+      alert('Clock-in confirmed successfully')
+      loadPendingConfirmations()
+      loadHrAttendance(attendanceRange.value)
+    } else {
+      alert(res.data.message || 'Failed to confirm clock-in')
+    }
+  } catch (e) {
+    console.error('Error confirming clock-in:', e)
+    alert(e.response?.data?.message || 'Failed to confirm clock-in. Please try again.')
+  }
+}
+
+async function rejectClockIn(attendanceId) {
+  if (!confirm('Are you sure you want to reject this clock-in? The staff member will need to clock in again.')) return
+
+  try {
+    const res = await axios.post(`/api/manager/hr/attendance/${attendanceId}/reject`, {}, { withCredentials: true })
+    if (res.data && res.data.ok) {
+      alert('Clock-in rejected. Staff member needs to clock in again.')
+      loadPendingConfirmations()
+      loadHrAttendance(attendanceRange.value)
+    } else {
+      alert(res.data.message || 'Failed to reject clock-in')
+    }
+  } catch (e) {
+    console.error('Error rejecting clock-in:', e)
+    alert(e.response?.data?.message || 'Failed to reject clock-in. Please try again.')
+  }
+}
+
 defineExpose({ refreshAllData, onProfileUpdated })
 </script>
 
@@ -1560,5 +1940,249 @@ defineExpose({ refreshAllData, onProfileUpdated })
 .interview-summary p:first-child {
   font-weight: 600;
   color: #555;
+}
+
+/* Clock-in Confirmation Styles */
+.hr-confirmation-panel {
+  margin-bottom: 1.5rem;
+}
+
+.hr-confirmation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.hr-confirmation-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.confirmations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.confirmation-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fafafa;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #eee;
+  gap: 1rem;
+}
+
+.confirmation-info {
+  flex: 1;
+}
+
+.confirmation-header {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.confirmation-name {
+  font-weight: 600;
+  color: #333;
+  font-size: 1rem;
+}
+
+.confirmation-branch {
+  font-size: 0.85rem;
+  color: #666;
+  background: #e9ecef;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+.confirmation-details {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.confirmation-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* Photo Viewing Modal */
+.photo-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 2rem;
+}
+
+.photo-modal {
+  background: white;
+  border-radius: 12px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.photo-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #eee;
+}
+
+.photo-modal__header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.25rem;
+}
+
+.photo-modal__body {
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.photo-modal__image {
+  width: 100%;
+  max-width: 500px;
+  border-radius: 8px;
+  border: 2px solid #ddd;
+}
+
+.photo-modal__info {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  text-align: left;
+}
+
+.photo-modal__info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.photo-modal__info-row:last-child {
+  border-bottom: none;
+}
+
+.photo-modal__label {
+  font-weight: 600;
+  color: #555;
+}
+
+.photo-modal__value {
+  color: #333;
+}
+
+.photo-modal__footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #eee;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  background: #fafafa;
+}
+
+/* Application Details Modal Styles */
+.application-details-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.details-section {
+  background: #fafafa;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #eee;
+}
+
+.details-section__title {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #ff9f43;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 0.75rem;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.detail-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-value {
+  font-size: 0.9rem;
+  color: #333;
+  word-break: break-word;
+}
+
+.detail-value a {
+  color: #ff9f43;
+  text-decoration: none;
+}
+
+.detail-value a:hover {
+  text-decoration: underline;
+}
+
+.cover-letter-content {
+  background: white;
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #333;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.btn-link {
+  color: #ff9f43;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+.btn-link:hover {
+  text-decoration: underline;
 }
 </style>
