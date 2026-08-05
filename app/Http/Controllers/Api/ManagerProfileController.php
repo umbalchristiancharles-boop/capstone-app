@@ -596,8 +596,17 @@ class ManagerProfileController extends Controller
         // Determine role (allow manager to create MANAGER if requested)
         $role = strtoupper($validated['role'] ?? 'STAFF');
 
+        // Normalize combined roles like MANAGER_LOGISTICS, MANAGER_FINANCE, etc.
+        // These should be split into role = MANAGER and department = the suffix
+        $combinedManagerRoles = ['MANAGER_LOGISTICS', 'MANAGER_FINANCE', 'MANAGER_HR', 'MANAGER_INVENTORY', 'MANAGER_PROCUREMENT', 'MANAGER_CASHIER', 'MANAGER_KITCHEN'];
+        if (in_array($role, $combinedManagerRoles)) {
+            $parts = explode('_', $role, 2);
+            $role = 'MANAGER';
+            $department = strtoupper($parts[1] ?? '');
+        }
+
         // Normalize department value
-        $department = isset($validated['department']) && is_string($validated['department']) ? strtoupper($validated['department']) : null;
+        $department = isset($validated['department']) && is_string($validated['department']) ? strtoupper($validated['department']) : $department;
         $customAccountTypes = [];
 
         // If creating MANAGER or STAFF require a valid department
@@ -931,7 +940,7 @@ class ManagerProfileController extends Controller
             $isMainBranchHr = $this->isMainBranchHrManager($user);
             $branchId = $user->branch_id;
 
-            // Build query for attendance records with face images
+            // Build query for attendance records with face images that need confirmation
             $query = Attendance::with(['user.branch', 'confirmedBy'])
                 ->whereHas('user', function ($q) use ($branchId, $isMainBranchHr) {
                     if ($branchId && !$isMainBranchHr) {
@@ -941,6 +950,7 @@ class ManagerProfileController extends Controller
                 ->whereNotNull('face_image')
                 ->where('face_image', '!=', '')
                 ->where('date', Carbon::now()->toDateString())
+                ->where('confirmed', false)
                 ->orderBy('time_in', 'desc');
 
             $records = $query->get()->map(function ($att) {

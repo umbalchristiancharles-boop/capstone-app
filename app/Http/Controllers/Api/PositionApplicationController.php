@@ -12,6 +12,50 @@ use Illuminate\Support\Str;
 
 class PositionApplicationController extends Controller
 {
+    /**
+     * Determine the appropriate role based on job title and department
+     */
+    private function determineRoleFromPosition(?string $jobTitle, ?string $department): string
+    {
+        $jobTitle = strtolower($jobTitle ?? '');
+        
+        // Check for manager positions
+        if (str_contains($jobTitle, 'manager') || str_contains($jobTitle, 'head')) {
+            return 'MANAGER';
+        }
+        
+        // Default to STAFF for non-manager positions
+        return 'STAFF';
+    }
+
+    /**
+     * Generate a random password
+     */
+    private function generateRandomPassword(int $length = 12): string
+    {
+        $uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $lowercase = 'abcdefghijklmnopqrstuvwxyz';
+        $numbers = '0123456789';
+        $specialChars = '!@#$%^&*';
+        
+        $password = '';
+        
+        // Ensure at least one of each character type
+        $password .= $uppercase[random_int(0, strlen($uppercase) - 1)];
+        $password .= $lowercase[random_int(0, strlen($lowercase) - 1)];
+        $password .= $numbers[random_int(0, strlen($numbers) - 1)];
+        $password .= $specialChars[random_int(0, strlen($specialChars) - 1)];
+        
+        // Fill the rest with random characters
+        $allChars = $uppercase . $lowercase . $numbers . $specialChars;
+        for ($i = 4; $i < $length; $i++) {
+            $password .= $allChars[random_int(0, strlen($allChars) - 1)];
+        }
+        
+        // Shuffle the password
+        return str_shuffle($password);
+    }
+
     public function listForHrBranch(\Illuminate\Http\Request $request): JsonResponse
     {
         $user = \Illuminate\Support\Facades\Auth::user();
@@ -173,6 +217,163 @@ class PositionApplicationController extends Controller
             return response()->json([
                 'ok' => false,
                 'message' => 'Failed to send interview email: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function markAsPassed(\Illuminate\Http\Request $request, $id): JsonResponse
+    {
+        $application = PositionApplication::findOrFail($id);
+
+        try {
+            $application->update(['status' => 'Passed - Ready for Hiring']);
+
+            // Create staff account from applicant information
+            // Generate random password
+            $randomPassword = $this->generateRandomPassword();
+            
+            // Generate username from email (use part before @)
+            $email = $application->applicant_email;
+            $username = explode('@', $email)[0];
+            
+            // Ensure username is unique by adding numbers if needed
+            $originalUsername = $username;
+            $counter = 1;
+            while (\App\Models\User::where('username', $username)->exists()) {
+                $username = $originalUsername . $counter;
+                $counter++;
+            }
+
+            // Determine role based on job title/position
+            $role = $this->determineRoleFromPosition($application->job_title, $application->department);
+            
+            // Create the staff user
+            $staff = \App\Models\User::create([
+                'username' => $username,
+                'email' => $application->applicant_email,
+                'full_name' => $application->applicant_full_name,
+                'phone_number' => $application->applicant_phone,
+                'address' => $application->applicant_address,
+                'department' => $application->department,
+                'password' => $randomPassword,
+                'role' => $role,
+                'branch_id' => $application->branch_id,
+                'is_active' => 1,
+                'must_change_password' => 1,
+            ]);
+
+            // Send email notification to applicant with credentials
+            $applicantName = $application->applicant_full_name ?? 'Applicant';
+            $jobTitle = $application->job_title ?? 'the position';
+            $submittedOn = \Carbon\Carbon::parse($application->created_at)->format('F j, Y g:i A');
+
+            $message = "Dear {$applicantName},\n\n"
+                . "Congratulations! We are pleased to inform you that you have successfully passed your interview for the {$jobTitle} position.\n\n"
+                . "ACCOUNT CREDENTIALS:\n"
+                . "- Username: {$username}\n"
+                . "- Password: {$randomPassword}\n\n"
+                . "IMPORTANT: You are required to change your password upon first login.\n\n"
+                . "You can now access the CHIKIN TAYO staff portal using the credentials above.\n\n"
+                . "NEXT STEPS:\n"
+                . "Our HR team will contact you shortly with the employment offer and onboarding details. "
+                . "Please prepare the following documents:\n"
+                . "- Valid ID (2 copies)\n"
+                . "- SSS ID\n"
+                . "- PhilHealth ID\n"
+                . "- TIN ID\n"
+                . "- NBI Clearance (if applicable)\n"
+                . "- Medical Certificate\n\n"
+                . "If you have any questions, please reply to this email or contact us at hr@chikintayo.com.\n\n"
+                . "Welcome to the CHIKIN TAYO family!\n\n"
+                . "Best regards,\n"
+                . "CHIKIN TAYO HR Team\n"
+                . "Application ID: {$application->id}\n"
+                . "Applied on: {$submittedOn}";
+
+            \send_raw_mail_notification(
+                $application->applicant_email,
+                'CHIKIN TAYO - Congratulations! You Passed the Interview',
+                $message
+            );
+
+            \Illuminate\Support\Facades\Log::info('Applicant marked as passed and staff account created', [
+                'application_id' => $application->id,
+                'email' => $application->applicant_email,
+                'staff_id' => $staff->id,
+                'username' => $username,
+            ]);
+
+            return response()->json([
+                'ok' => true,
+                'message' => 'Applicant marked as passed. Staff account created and email notification sent to ' . $application->applicant_email,
+                'staff' => [
+                    'id' => $staff->id,
+                    'username' => $username,
+                    'email' => $staff->email,
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to mark applicant as passed', [
+                'application_id' => $application->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'ok' => false,
+                'message' => 'Failed to mark applicant as passed: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function markAsNotPassed(\Illuminate\Http\Request $request, $id): JsonResponse
+    {
+        $application = PositionApplication::findOrFail($id);
+
+        try {
+            $application->update(['status' => 'Not Passed']);
+
+            // Send email notification to applicant
+            $applicantName = $application->applicant_full_name ?? 'Applicant';
+            $jobTitle = $application->job_title ?? 'the position';
+            $submittedOn = \Carbon\Carbon::parse($application->created_at)->format('F j, Y g:i A');
+
+            $message = "Dear {$applicantName},\n\n"
+                . "Thank you for your interest in the {$jobTitle} position at CHIKIN TAYO and for taking the time to interview with us.\n\n"
+                . "After careful consideration, we regret to inform you that you have not been selected for this position. "
+                . "This decision was not easy, as we were impressed by your qualifications and experience.\n\n"
+                . "We encourage you to apply for future openings that match your skills and experience. "
+                . "We will keep your resume on file for 6 months and may contact you if a suitable position becomes available.\n\n"
+                . "If you have any questions or would like feedback on your interview, please reply to this email or contact us at hr@chikintayo.com.\n\n"
+                . "We wish you the best in your job search and future endeavors.\n\n"
+                . "Best regards,\n"
+                . "CHIKIN TAYO HR Team\n"
+                . "Application ID: {$application->id}\n"
+                . "Applied on: {$submittedOn}";
+
+            \send_raw_mail_notification(
+                $application->applicant_email,
+                'CHIKIN TAYO - Update on Your Application',
+                $message
+            );
+
+            \Illuminate\Support\Facades\Log::info('Applicant marked as not passed', [
+                'application_id' => $application->id,
+                'email' => $application->applicant_email,
+            ]);
+
+            return response()->json([
+                'ok' => true,
+                'message' => 'Applicant marked as not passed. Email notification sent to ' . $application->applicant_email,
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to mark applicant as not passed', [
+                'application_id' => $application->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'ok' => false,
+                'message' => 'Failed to mark applicant as not passed: ' . $e->getMessage(),
             ], 500);
         }
     }

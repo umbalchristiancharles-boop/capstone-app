@@ -94,25 +94,49 @@
                   </div>
 
                    <div class="request-card__actions" style="margin-top: 12px; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                     <button class="btn-success btn-sm" @click="openApplicationDetails(a)">
-                       View Application Details
-                     </button>
-                     
-                     <!-- Show button only if status is NOT "Ready for Interview" -->
-                     <button 
-                       v-if="!isReadyForInterview(a.status)"
-                       class="btn-primary btn-sm" 
-                       @click="openInterviewScheduleModal(a)"
-                       :disabled="sendingInterviewEmail[a.id]"
-                     >
-                       {{ sendingInterviewEmail[a.id] ? 'Sending...' : 'Ready for Interview' }}
-                     </button>
-                     
-                     <!-- Show indicator when status is "Ready for Interview" -->
-                     <span v-else class="badge badge--success" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">
-                       ✓ Interview Scheduled
-                     </span>
-                   </div>
+                      <button class="btn-success btn-sm" @click="openApplicationDetails(a)">
+                        View Application Details
+                      </button>
+                      
+                      <!-- Show "Ready for Interview" button if status is NOT "Ready for Interview" -->
+                      <button 
+                        v-if="!isReadyForInterview(a.status)"
+                        class="btn-primary btn-sm" 
+                        @click="openInterviewScheduleModal(a)"
+                        :disabled="sendingInterviewEmail[a.id]"
+                      >
+                        {{ sendingInterviewEmail[a.id] ? 'Sending...' : 'Ready for Interview' }}
+                      </button>
+                      
+                       <!-- Show "Mark as Passed" and "Mark as Not Passed" buttons when status is "Ready for Interview" -->
+                       <button 
+                         v-if="isReadyForInterview(a.status) && !isPassedForHiring(a.status)"
+                         class="btn-success btn-sm" 
+                         @click="markAsPassed(a)"
+                         :disabled="markingAsPassed[a.id]"
+                       >
+                         {{ markingAsPassed[a.id] ? 'Processing...' : '✓ Mark as Passed' }}
+                       </button>
+                       
+                       <button 
+                         v-if="isReadyForInterview(a.status) && !isPassedForHiring(a.status)"
+                         class="btn-danger btn-sm" 
+                         @click="markAsNotPassed(a)"
+                         :disabled="markingAsNotPassed[a.id]"
+                       >
+                         {{ markingAsNotPassed[a.id] ? 'Processing...' : '✗ Mark as Not Passed' }}
+                       </button>
+                       
+                       <!-- Show indicator when status is "Passed - Ready for Hiring" -->
+                       <span v-else-if="isPassedForHiring(a.status)" class="badge badge--success" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">
+                         ✓ Passed - Ready for Hiring
+                       </span>
+                       
+                       <!-- Show indicator when status is "Not Passed" -->
+                       <span v-else-if="(a.status || '').toString().toLowerCase().trim() === 'not passed'" class="badge badge--warning" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">
+                         ✗ Not Passed
+                       </span>
+                    </div>
                 </div>
               </div>
             </div>
@@ -837,6 +861,8 @@ const applicationsCount = computed(() => {
   return Array.isArray(applications.value) ? applications.value.length : 0
 })
 const sendingInterviewEmail = ref({})
+const markingAsPassed = ref({})
+const markingAsNotPassed = ref({})
 
 // Interview Scheduling Modal state
 const showInterviewScheduleModal = ref(false)
@@ -925,6 +951,11 @@ const isTogglingOverride = ref(false)
 function isReadyForInterview(status) {
   const s = (status || '').toString().toLowerCase().trim()
   return s === 'ready for interview' || s === 'ready_for_interview' || s === 'interview scheduled'
+}
+
+function isPassedForHiring(status) {
+  const s = (status || '').toString().toLowerCase().trim()
+  return s === 'passed - ready for hiring' || s === 'passed_ready_for_hiring' || s === 'passed'
 }
 
 function formatDate(date) {
@@ -1136,6 +1167,7 @@ function getApplicationStatusClass(status) {
   const s = (status || '').toString().toLowerCase().trim()
   if (s === 'submitted') return 'badge--info'
   if (s === 'ready for interview' || s === 'ready_for_interview' || s === 'interview scheduled') return 'badge--success'
+  if (s === 'passed - ready for hiring' || s === 'passed_ready_for_hiring' || s === 'passed') return 'badge--success'
   if (s === 'rejected') return 'badge--warning'
   if (s === 'hired') return 'badge--success'
   return 'badge--info'
@@ -1488,6 +1520,72 @@ async function confirmInterviewSchedule() {
     alert(err.response?.data?.message || 'Failed to send interview email. Please try again.')
   } finally {
     sendingInterviewEmail.value[applicationId] = false
+  }
+}
+
+async function markAsPassed(application) {
+  if (!application?.id) {
+    alert('Invalid application data')
+    return
+  }
+
+  const confirmMessage = `Are you sure you want to mark ${application.applicant_full_name} as passed? This will send them a congratulations email and update their status to "Ready for Hiring".`
+  if (!confirm(confirmMessage)) return
+
+  markingAsPassed.value[application.id] = true
+  try {
+    const res = await axios.post(
+      `/api/hr/positions/applications/${application.id}/mark-as-passed`,
+      {},
+      { withCredentials: true }
+    )
+
+    if (res.data && res.data.ok) {
+      alert(res.data.message || 'Applicant marked as passed successfully!')
+      // Update local status
+      const app = applications.value.find(a => a.id === application.id)
+      if (app) app.status = 'Passed - Ready for Hiring'
+    } else {
+      alert(res.data.message || 'Failed to mark applicant as passed')
+    }
+  } catch (err) {
+    console.error('Failed to mark applicant as passed:', err)
+    alert(err.response?.data?.message || 'Failed to mark applicant as passed. Please try again.')
+  } finally {
+    markingAsPassed.value[application.id] = false
+  }
+}
+
+async function markAsNotPassed(application) {
+  if (!application?.id) {
+    alert('Invalid application data')
+    return
+  }
+
+  const confirmMessage = `Are you sure you want to mark ${application.applicant_full_name} as not passed? This will send them a notification email and update their status to "Not Passed".`
+  if (!confirm(confirmMessage)) return
+
+  markingAsNotPassed.value[application.id] = true
+  try {
+    const res = await axios.post(
+      `/api/hr/positions/applications/${application.id}/mark-as-not-passed`,
+      {},
+      { withCredentials: true }
+    )
+
+    if (res.data && res.data.ok) {
+      alert(res.data.message || 'Applicant marked as not passed successfully!')
+      // Update local status
+      const app = applications.value.find(a => a.id === application.id)
+      if (app) app.status = 'Not Passed'
+    } else {
+      alert(res.data.message || 'Failed to mark applicant as not passed')
+    }
+  } catch (err) {
+    console.error('Failed to mark applicant as not passed:', err)
+    alert(err.response?.data?.message || 'Failed to mark applicant as not passed. Please try again.')
+  } finally {
+    markingAsNotPassed.value[application.id] = false
   }
 }
 

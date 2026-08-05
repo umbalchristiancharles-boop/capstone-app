@@ -104,8 +104,10 @@ class AuthController extends Controller
         }
 
         // Validate role exists and is valid
-        // Include all expected roles: SUPER_ADMIN, ADMIN, OWNER, MANAGER, MANAGER_HR, HR, STAFF, CUSTOM, SUPPLIER
-    $validRoles = ['SUPER_ADMIN', 'ADMIN', 'OWNER', 'MANAGER', 'MANAGER_HR', 'HR', 'STAFF', 'CUSTOM', 'SUPPLIER'];
+        // Include all expected roles: SUPER_ADMIN, ADMIN, OWNER, MANAGER, MANAGER_HR, HR, STAFF, CUSTOM, SUPPLIER, BRANCH_MANAGER
+        // Also include combined roles for backward compatibility (MANAGER_LOGISTICS, MANAGER_FINANCE, etc.)
+        $validRoles = ['SUPER_ADMIN', 'ADMIN', 'OWNER', 'MANAGER', 'MANAGER_HR', 'HR', 'STAFF', 'CUSTOM', 'SUPPLIER', 'BRANCH_MANAGER', 
+                       'MANAGER_LOGISTICS', 'MANAGER_FINANCE', 'MANAGER_INVENTORY', 'MANAGER_PROCUREMENT', 'MANAGER_CASHIER', 'MANAGER_KITCHEN'];
         $roleUpper = strtoupper(trim($user->role ?? ''));
 
         // Note: MANAGER_HR role is kept as-is in the database
@@ -242,6 +244,15 @@ class AuthController extends Controller
             $isMainBranchUser = false;
         }
 
+        // Handle combined manager roles (MANAGER_LOGISTICS, MANAGER_FINANCE, etc.)
+        // These should be treated as MANAGER with the suffix as department
+        $combinedManagerRoles = ['MANAGER_LOGISTICS', 'MANAGER_FINANCE', 'MANAGER_INVENTORY', 'MANAGER_PROCUREMENT', 'MANAGER_CASHIER', 'MANAGER_KITCHEN'];
+        if (in_array($role, $combinedManagerRoles)) {
+            $parts = explode('_', $role, 2);
+            $role = 'MANAGER';
+            $department = strtoupper($parts[1] ?? $department);
+        }
+
         // Handle MANAGER_HR - treat as MANAGER with HR department
         if ($role === 'MANAGER_HR') {
             $role = 'MANAGER';
@@ -266,6 +277,11 @@ class AuthController extends Controller
         // HR
         if ($role === 'HR') {
             return '/hr-panel';
+        }
+
+        // BRANCH_MANAGER - redirect to manager dashboard
+        if ($role === 'BRANCH_MANAGER') {
+            return '/manager/dashboard';
         }
 
         // MANAGER - check department for specific panel
