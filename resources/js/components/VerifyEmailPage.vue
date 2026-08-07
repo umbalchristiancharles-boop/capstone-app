@@ -1,8 +1,13 @@
 <template>
   <div class="verify-email-page">
-    <div class="card">
-      <h2>Verify Your Email</h2>
-      <p>{{ isPostLoginFlow ? 'Please verify your email to continue.' : 'Please provide and verify an email address so we can confirm your account.' }}</p>
+      <div class="card">
+        <div class="card-header">
+          <div class="brand-mark">🔒</div>
+          <div>
+            <h2>Verify Your Email</h2>
+            <p class="muted">{{ isPostLoginFlow ? 'Please verify your email to continue.' : 'Provide an email and verify it so we can confirm your account.' }}</p>
+          </div>
+        </div>
 
       <div v-if="error" class="error-text">{{ error }}</div>
       <div v-if="success" class="success-text">{{ success }}</div>
@@ -12,22 +17,22 @@
         <input v-model="email" type="email" class="form-input" placeholder="your@email.com" :readonly="isPostLoginFlow" />
       </div>
 
-      <div class="form-group" style="display:flex; gap:0.5rem;">
-        <button class="btn-secondary" @click="sendCode" :disabled="isSending">{{ isSending ? 'Sending...' : 'Send Code' }}</button>
-        <small style="align-self:center; color:#6b6b6b;">A 6-digit code will be sent to this email.</small>
+      <div class="form-group horizontal-note">
+        <button class="btn-primary" @click="sendCode" :disabled="isSending">{{ isSending ? 'Sending...' : 'Send Code' }}</button>
+        <small class="note">A 6-digit code will be sent to this email.</small>
       </div>
 
       <div v-if="codeSent" class="form-group">
         <label>Verification Code</label>
         <input v-model="code" type="text" class="form-input" placeholder="Enter 6-digit code" />
-        <div style="margin-top:0.5rem; display:flex; gap:0.5rem;">
+        <div class="verify-actions">
           <button class="btn-primary" @click="confirm" :disabled="isVerifying">{{ isVerifying ? 'Verifying...' : 'Verify Email' }}</button>
-          <button class="btn-secondary" @click="resend" :disabled="isSending">Resend</button>
+          <button class="btn-ghost" @click="resend" :disabled="isSending">Resend</button>
         </div>
       </div>
 
-      <div v-if="!isPostLoginFlow" style="margin-top:1rem; display:flex; gap:0.5rem; justify-content:flex-end;">
-        <button class="btn-secondary" @click="backToLogin">Back to Login</button>
+      <div v-if="!isPostLoginFlow" class="footer-actions">
+        <button class="btn-ghost" @click="backToLogin">Back to Login</button>
       </div>
     </div>
   </div>
@@ -113,7 +118,7 @@ async function confirm() {
   try {
     await axios.post('/api/auth/confirm-email', { email: email.value, code: code.value }, { withCredentials: true })
     success.value = 'Email verified successfully. Redirecting...'
-    
+
     // Determine redirect path
     let redirectPath = '/admin-panel'
     if (isPostLoginFlow.value) {
@@ -132,7 +137,7 @@ async function confirm() {
         redirectPath = '/staff-landing'
       }
     }
-    
+
     setTimeout(() => router.push(redirectPath), 900)
   } catch (e) {
     error.value = e.response?.data?.message || 'Failed to verify email.'
@@ -143,12 +148,22 @@ async function confirm() {
 </script>
 
 <style scoped>
-.verify-email-page { min-height: 100vh; display:flex; align-items:center; justify-content:center; background: linear-gradient(120deg, #ff9a4a 0%, #ff6a3d 100%); padding:1rem }
-.card { width:100%; max-width:520px; background:#fff; padding:1.25rem; border-radius:12px }
+.verify-email-page { min-height: 100vh; display:flex; align-items:center; justify-content:center; padding:1.5rem; background:
+  radial-gradient(circle at top left, rgba(255, 106, 61, 0.08), transparent 28%),
+  radial-gradient(circle at top right, rgba(251, 191, 36, 0.08), transparent 24%),
+  linear-gradient(180deg, rgba(248, 250, 252, 0.96), rgba(241, 245, 249, 1)); }
+.card { width:100%; max-width:540px; background:linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.98)); padding:1.5rem; border-radius:16px; box-shadow: 0 10px 30px rgba(16,24,40,0.12); border: 1px solid rgba(0,0,0,0.04) }
+.card-header { display:flex; gap:0.75rem; align-items:center; margin-bottom:0.5rem }
+.brand-mark { width:44px; height:44px; display:flex; align-items:center; justify-content:center; font-size:22px; background: linear-gradient(135deg,#ff6a3d,#f59e0b); color:#fff; border-radius:10px }
+.muted { color:#6b7280; margin:0 }
 .form-group { margin-bottom:1rem }
-.form-input { width:100%; padding:0.7rem; border-radius:8px; border:1px solid #eee }
-.error-text { color:#c23b3b; background:#fdecec; padding:0.6rem; border-radius:8px; margin-bottom:0.5rem }
-.success-text { color:#1c7c54; background:#e8f8f0; padding:0.6rem; border-radius:8px; margin-bottom:0.5rem }
-.btn-primary { background: linear-gradient(135deg,#ff9a4a,#ff6a3d); color:#fff; border:none; padding:0.6rem 1rem; border-radius:8px }
-.btn-secondary { background:#fff; color:#ff6a3d; border:2px solid #ff9a4a; padding:0.6rem 1rem; border-radius:8px }
+.form-input { width:100%; padding:0.75rem; border-radius:10px; border:1px solid rgba(15,23,42,0.06); background:#fff }
+.error-text { color:#9b1c1c; background:#fff5f5; padding:0.6rem; border-radius:8px; margin-bottom:0.5rem }
+.success-text { color:#065f46; background:#ecfdf5; padding:0.6rem; border-radius:8px; margin-bottom:0.5rem }
+.btn-primary { background: linear-gradient(90deg,#ff6a3d,#f59e0b); color:#fff; border:none; padding:0.7rem 1.1rem; border-radius:10px; box-shadow: 0 6px 18px rgba(255,106,61,0.18) }
+.btn-ghost { background:transparent; color:#374151; border:1px solid rgba(15,23,42,0.06); padding:0.6rem 1rem; border-radius:10px }
+.horizontal-note { display:flex; align-items:center; gap:0.75rem }
+.note { color:#6b7280 }
+.verify-actions { margin-top:0.5rem; display:flex; gap:0.6rem }
+.footer-actions { margin-top:1rem; display:flex; gap:0.5rem; justify-content:flex-end }
 </style>
