@@ -10,24 +10,38 @@
           <div class="msg-left-header">Branch Users</div>
           <div class="msg-users">
             <div v-for="u in users" :key="u.id" :class="['msg-user', selected && selected.id === u.id ? 'active' : '']" @click="selectUser(u)">
-              <div class="msg-user-name">{{ u.name }}</div>
-              <div class="msg-user-role">{{ roleLabel(u.role) }}</div>
+              <div class="msg-user-avatar" v-if="u.avatar"><img :src="u.avatar" alt="" /></div>
+              <div class="msg-user-avatar" v-else><span>{{ (u.name||'').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase() }}</span></div>
+              <div class="msg-user-meta">
+                <div class="msg-user-name">{{ u.name }}</div>
+                <div class="msg-user-role">{{ roleLabel(u.role) }}</div>
+              </div>
             </div>
           </div>
         </div>
         <div class="msg-right">
           <div class="msg-right-header">
-            <div>{{ selected ? ('Conversation with ' + selected.name + ' (' + roleLabel(selected.role) + ')') : 'Select a user' }}</div>
+            <div class="msg-right-title">
+              <div class="msg-right-avatar" v-if="selected && selected.avatar"><img :src="selected.avatar" alt="" /></div>
+              <div class="msg-right-avatar" v-else-if="selected"><span>{{ (selected.name||'').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase() }}</span></div>
+              <div class="msg-right-text">{{ selected ? ('Conversation with ' + selected.name + ' (' + roleLabel(selected.role) + ')') : 'Select a user' }}</div>
+            </div>
             <button class="close-btn" @click="open = false">Close</button>
           </div>
 
           <div class="msg-messages" ref="messagesPane">
             <div v-if="!selected" class="msg-empty">Choose a user to start</div>
             <div v-else class="msg-thread">
-              <div v-for="m in messages" :key="m.id" :class="['msg-bubble', m.from_user_id === meId ? 'mine' : 'theirs']">
-                  <div v-if="m.from_user && m.from_user.name && m.from_user_id !== meId" class="msg-sender">{{ m.from_user.name }} ({{ roleLabel(m.from_user.role) }})</div>
-                <div class="msg-body" v-html="escapeHtml(m.body)"></div>
-                <div class="msg-ts">{{ formatDate(m.created_at) }}</div>
+              <div v-for="m in messages" :key="m.id" :class="['msg-row', m.from_user_id === meId ? 'row-mine' : 'row-theirs']">
+                <div v-if="m.from_user_id !== meId" class="msg-avatar-small">
+                  <img v-if="m.from_user && m.from_user.avatar" :src="m.from_user.avatar" />
+                  <div v-else class="avatar-initial">{{ (m.from_user?.name||'').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase() }}</div>
+                </div>
+                <div :class="['msg-bubble', m.from_user_id === meId ? 'mine' : 'theirs']">
+                  <div v-if="m.from_user && m.from_user.name && m.from_user_id !== meId" class="msg-sender">{{ m.from_user.name }} <span class="msg-sender-role">({{ roleLabel(m.from_user.role) }})</span></div>
+                  <div class="msg-body" v-html="escapeHtml(m.body)"></div>
+                  <div class="msg-ts">{{ formatDate(m.created_at) }}</div>
+                </div>
               </div>
             </div>
           </div>
@@ -272,30 +286,45 @@ export default {
 
 <style scoped>
 /* Improve message widget layout and contrast for logistics panel */
-.msg-fab{position:fixed;right:18px;bottom:18px;z-index:10010;width:56px;height:56px;border-radius:999px;background:#2563eb;color:#fff;border:none;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 22px rgba(37,99,235,0.22);cursor:pointer}
+.msg-fab{position:fixed;right:18px;bottom:18px;z-index:10010;width:56px;height:56px;border-radius:999px;background:linear-gradient(90deg,#ff6a3d,#f59e0b);color:#fff;border:none;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 28px rgba(255,106,61,0.18);cursor:pointer}
 .msg-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:10000}
-.msg-modal{width:980px;max-width:98%;height:78vh;background:#ffffff;border-radius:10px;display:flex;overflow:hidden;box-shadow:0 10px 40px rgba(2,6,23,0.2)}
-.msg-left{width:280px;min-width:220px;border-right:1px solid #eef2f7;display:flex;flex-direction:column;background:#fbfeff}
-.msg-left-header{padding:14px;font-weight:700;border-bottom:1px solid #f3f6f9;color:#0f172a}
-.msg-users{overflow:auto;padding:8px}
-.msg-user{padding:10px;border-radius:8px;margin-bottom:8px;cursor:pointer;border:1px solid transparent}
-.msg-user.active{background:#eef8ff;border-color:#dbeffd}
-.msg-user-name{font-weight:700;color:#0f172a}
+.msg-modal{width:980px;max-width:98%;height:78vh;background:linear-gradient(180deg,rgba(255,255,255,0.98),rgba(250,250,250,1));border-radius:12px;display:flex;overflow:hidden;box-shadow:0 18px 60px rgba(2,6,23,0.18)}
+.msg-left{width:300px;min-width:240px;border-right:1px solid rgba(15,23,42,0.04);display:flex;flex-direction:column;background:linear-gradient(180deg, #fbfeff, #fff)}
+.msg-left-header{padding:16px;font-weight:800;border-bottom:1px solid rgba(15,23,42,0.04);color:#0f172a}
+.msg-users{overflow:auto;padding:10px;display:flex;flex-direction:column}
+.msg-user{display:flex;gap:10px;align-items:center;padding:10px;border-radius:10px;margin-bottom:8px;cursor:pointer;border:1px solid transparent;transition:background .12s, transform .08s}
+.msg-user:hover{transform:translateY(-1px)}
+.msg-user.active{background:linear-gradient(90deg, rgba(255,106,61,0.08), rgba(251,191,36,0.04));border-color:rgba(255,170,120,0.08)}
+.msg-user-avatar{width:44px;height:44px;border-radius:10px;overflow:hidden;flex:0 0 44px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#ff6a3d,#f59e0b);color:#fff;font-weight:700}
+.msg-user-avatar img{width:100%;height:100%;object-fit:cover}
+.msg-user-meta{flex:1;min-width:0}
+.msg-user-name{font-weight:800;color:#0f172a}
 .msg-user-role{font-size:12px;color:#64748b;margin-top:4px}
-.msg-right{flex:1;display:flex;flex-direction:column;background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%)}
-.msg-right-header{display:flex;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #f3f6f9}
-.close-btn{background:#ef4444;color:#fff;border:none;padding:6px 10px;border-radius:6px}
-.msg-messages{flex:1;padding:16px;overflow:auto;background:transparent}
-.msg-thread{display:flex;flex-direction:column;gap:10px}
-.msg-bubble{max-width:78%;padding:12px;border-radius:10px;display:block;word-break:break-word;border:1px solid rgba(15,23,42,0.04);box-shadow:0 2px 6px rgba(2,6,23,0.04)}
-.msg-bubble.mine{background:#dcfce7;align-self:flex-end;margin-left:auto}
-.msg-bubble.theirs{background:#ffffff;align-self:flex-start;margin-right:auto}
-.msg-sender{font-size:12px;color:#1f2937;font-weight:700;margin-bottom:6px}
-.msg-ts{font-size:11px;color:#6b7280;margin-top:8px;text-align:right}
-.msg-composer{padding:12px;border-top:1px solid #eef2f7;background:#ffffff}
-.msg-composer textarea{width:100%;height:80px;padding:10px;border:1px solid #e6eef7;border-radius:8px;resize:vertical}
-.composer-actions{display:flex;justify-content:flex-end;margin-top:8px}
-.composer-actions button{background:#2563eb;color:#fff;border:none;padding:8px 14px;border-radius:8px}
+.msg-right{flex:1;display:flex;flex-direction:column;background:transparent}
+.msg-right-header{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid rgba(15,23,42,0.04)}
+.msg-right-title{display:flex;align-items:center;gap:12px}
+.msg-right-avatar{width:40px;height:40px;border-radius:999px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#f3f4f6;color:#374151;font-weight:700}
+.msg-right-avatar img{width:100%;height:100%;object-fit:cover}
+.msg-right-text{font-weight:800;color:#0f172a}
+.close-btn{background:#ef4444;color:#fff;border:none;padding:6px 10px;border-radius:8px}
+.msg-messages{flex:1;padding:18px;overflow:auto;background:transparent;display:flex;flex-direction:column;gap:12px}
+.msg-thread{display:flex;flex-direction:column;gap:12px}
+.msg-row{display:flex;align-items:flex-end;gap:10px}
+.row-mine{justify-content:flex-end}
+.row-theirs{justify-content:flex-start}
+.msg-avatar-small{width:36px;height:36px;border-radius:10px;overflow:hidden;flex:0 0 36px;display:flex;align-items:center;justify-content:center;background:#f3f4f6;color:#374151;font-weight:700}
+.msg-avatar-small img{width:100%;height:100%;object-fit:cover}
+.avatar-initial{font-weight:700;color:#374151}
+.msg-bubble{max-width:72%;padding:12px;border-radius:16px;display:block;word-break:break-word;border:1px solid rgba(15,23,42,0.04);box-shadow:0 6px 18px rgba(2,6,23,0.04)}
+.msg-bubble.mine{background:linear-gradient(90deg,#ff6a3d,#f59e0b);color:#fff;align-self:flex-end;margin-left:auto;border:none}
+.msg-bubble.theirs{background:#f8fafc;color:#0f172a;align-self:flex-start;margin-right:auto}
+.msg-sender{font-size:12px;color:#0f172a;font-weight:700;margin-bottom:6px}
+.msg-sender-role{font-weight:600;color:#6b7280;font-size:11px;margin-left:6px}
+.msg-ts{font-size:11px;color:rgba(15,23,42,0.45);margin-top:8px;text-align:right}
+.msg-composer{padding:12px;border-top:1px solid rgba(15,23,42,0.04);background:linear-gradient(180deg,#fff,#fbfdff);display:flex;gap:12px;align-items:flex-end}
+.msg-composer textarea{flex:1;min-height:48px;max-height:160px;padding:10px;border:1px solid rgba(15,23,42,0.04);border-radius:12px;resize:vertical}
+.composer-actions{display:flex;gap:8px;align-items:center}
+.composer-actions button{background:linear-gradient(90deg,#ff6a3d,#f59e0b);color:#fff;border:none;padding:10px 16px;border-radius:10px;box-shadow:0 8px 20px rgba(255,106,61,0.12)}
 .msg-empty{color:#6b7280;padding:20px}
 
 /* Ensure messages wrap long words and code-like content */
