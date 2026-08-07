@@ -69,7 +69,7 @@ class SupplierOrderController extends Controller
             // Keep required_if to force presence when per_pack is selected.
             'pack_quantity' => 'sometimes|required_if:per_pack_or_individual,per_pack|nullable|numeric|min:0',
             'pack_unit' => 'sometimes|required_if:per_pack_or_individual,per_pack|nullable|string|max:50',
-            'expires_at' => 'required|date_format:Y-m-d\TH:i',
+            'expires_at' => 'nullable|date_format:Y-m-d\TH:i',
             'date_made' => 'nullable|date_format:Y-m-d',
             'stock' => 'nullable|integer|min:0',
             'sku' => 'nullable|string|max:255'
@@ -87,7 +87,7 @@ class SupplierOrderController extends Controller
                 'name' => $validated['name'],
                 'category' => $validated['category'],
                 'price' => $validated['price'],
-                'expires_at' => $validated['expires_at'],
+                'expires_at' => $validated['expires_at'] ?? null,
             ]);
 
             // Create or update product for supplier to fulfill the order
@@ -140,7 +140,7 @@ class SupplierOrderController extends Controller
                     'price' => $validated['price'],
                     'cost_price' => $validated['price'],
                     'stock' => $validated['stock'] ?? $existingProduct->stock ?? 0,
-                    'sku' => $validated['sku'] ?? $existingProduct->sku ?? $generatedSku,
+                    'sku' => $validated['sku'] ?: $existingProduct->sku ?: $generatedSku,
                     'branch_id' => $order->branch_id,
                     'supplier_id' => $user->id,
                     'supplier_name' => $user->full_name ?? $user->username,
@@ -248,6 +248,7 @@ class SupplierOrderController extends Controller
             $validated = $request->validate([
                 'status' => 'required|in:pending,fulfilled,cancelled,on_delivery',
                 'expires_at' => 'nullable|date_format:Y-m-d\\TH:i',
+                'estimated_delivery_datetime' => 'nullable|date_format:Y-m-d\\TH:i',
             ]);
 
             // When supplier completes/accepts -> requires expiry date
@@ -272,6 +273,8 @@ class SupplierOrderController extends Controller
                         'fulfilled_at' => $newStatus === 'fulfilled' ? now() : $order->fulfilled_at,
                         // expiry is stored per supplier order (batch), so later orders won't overwrite previous ones
                         'expires_at' => ($newStatus === 'on_delivery') ? $validated['expires_at'] : $order->expires_at,
+                        // Update estimated delivery if provided
+                        'estimated_delivery_datetime' => $validated['estimated_delivery_datetime'] ?? $order->estimated_delivery_datetime,
                     ]);
 
 
@@ -340,6 +343,48 @@ class SupplierOrderController extends Controller
         } catch (\Throwable $e) {
             Log::error('SupplierOrderController@updateStatus exception', ['order_id' => $id, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString(), 'input' => $request->all()]);
             return response()->json(['error' => 'Server error', 'message' => config('app.debug') ? $e->getMessage() : 'Failed to update order status'], 500);
+        }
+    }
+
+    public function updateEstimatedDelivery(Request $request, $id)
+    {
+        try {
+            $user = $request->user();
+            Log::info('SupplierOrderController@updateEstimatedDelivery called', ['user' => $user ? ['id' => $user->id, 'role' => $user->role ?? null] : null, 'order_id' => $id]);
+
+            if (!$user) {
+                Log::warning('SupplierOrderController@updateEstimatedDelivery unauthorized - no user');
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
+            if (!in_array(strtoupper($user->role ?? ''), ['SUPPLIER', 'SUPPLIER_MANAGER'])) {
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
+
+            try {
+                $order = SupplierOrder::findOrFail($id);
+            } catch (ModelNotFoundException $e) {
+                Log::warning('SupplierOrder not found', ['order_id' => $id]);
+                return response()->json(['error' => 'Order not found'], 404);
+            }
+
+            if ($order->supplier_id != $user->id) {
+                return response()->json(['error' => 'Not your order'], 403);
+            }
+
+            $validated = $request->validate([
+                'estimated_delivery_datetime' => 'nullable|date_format:Y-m-d\\TH:i',
+            ]);
+
+            $order->update([
+                'estimated_delivery_datetime' => $validated['estimated_delivery_datetime'],
+            ]);
+
+            Log::info('SupplierOrder estimated delivery updated', ['order_id' => $order->id, 'estimated_delivery' => $validated['estimated_delivery_datetime']]);
+
+            return response()->json(['ok' => true, 'message' => 'Estimated delivery updated', 'order' => $order->fresh()->load(['product', 'procurementRequest'])]);
+        } catch (\Throwable $e) {
+            Log::error('SupplierOrderController@updateEstimatedDelivery exception', ['order_id' => $id, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString(), 'input' => $request->all()]);
+            return response()->json(['error' => 'Server error', 'message' => config('app.debug') ? $e->getMessage() : 'Failed to update estimated delivery'], 500);
         }
     }
 }

@@ -573,7 +573,14 @@ public function requestedProducts(Request $request)
                 ->unique()
                 ->toArray();
 
-            $products = $products->map(function ($p) use ($requestsByProduct, $broadcastedProcReqIds, $confirmedSupplierProcReqIds) {
+            // Prefetch existing supplier orders for these procurement requests to get estimated_delivery_datetime
+            $existingOrders = \App\Models\SupplierOrder::whereIn('procurement_request_id', $requests->pluck('id')->toArray())
+                ->whereNotNull('product_id')
+                ->with(['product', 'procurementRequest'])
+                ->get()
+                ->keyBy('procurement_request_id');
+
+            $products = $products->map(function ($p) use ($requestsByProduct, $broadcastedProcReqIds, $confirmedSupplierProcReqIds, $existingOrders) {
                 $req = $requestsByProduct->get($p->id);
                 $p->procurement_request_id = $req ? $req->id : null;
                 $p->procurement_status = $req ? $req->status : null;
@@ -607,6 +614,11 @@ public function requestedProducts(Request $request)
                 } elseif ($req && in_array($req->id, $confirmedSupplierProcReqIds)) {
                     // Suppliers have confirmed - don't need to request more suppliers
                     $p->needs_supplier = false;
+                }
+
+                // Attach existing order data (including estimated_delivery_datetime) if available
+                if ($req && isset($existingOrders[$req->id])) {
+                    $p->existingOrder = $existingOrders[$req->id];
                 }
 
                 return $p;

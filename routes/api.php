@@ -344,6 +344,7 @@ Route::middleware('auth:sanctum,web')->group(function () {
 
     Route::apiResource('supplier-orders', \App\Http\Controllers\Api\SupplierOrderController::class)->only(['index']);
     Route::put('supplier-orders/{id}/status', [\App\Http\Controllers\Api\SupplierOrderController::class, 'updateStatus']);
+    Route::put('supplier-orders/{id}/estimated-delivery', [\App\Http\Controllers\Api\SupplierOrderController::class, 'updateEstimatedDelivery']);
     Route::post('supplier-orders/{id}/submit-product', [\App\Http\Controllers\Api\SupplierOrderController::class, 'submitProduct']);
 });
 

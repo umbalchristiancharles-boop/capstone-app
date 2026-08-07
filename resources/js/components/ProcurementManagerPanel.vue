@@ -243,43 +243,61 @@
                   <template v-else-if="p.procurement_status === 'budget_pending' || p.status === 'budget_pending'">
                     <button class="btn-small btn-outline" disabled>Budget to be received</button>
                   </template>
-                  <template v-else-if="p.procurement_status === 'pending_order_to_supplier' || p.status === 'pending_order_to_supplier' || p.procurement_status === 'ongoing_delivery' || p.status === 'ongoing_delivery' || p.procurement_status === 'receipt_confirmed' || p.receipt_confirmed || isReceiptChecking(p)">
-                    <div v-if="isReceiptChecking(p)">
-                      <button class="btn-small btn-outline" disabled>Waiting receipt confirmation</button>
-                    </div>
-                    <div v-else-if="p.existingOrder" class="inline-row gap-sm align-center">
-                      <div class="status-badge status-warning">
-                        Transaction Pending (ID: {{ p.existingOrder.id }})
-                      </div>
-                      <div v-if="(p.existingOrder && (p.existingOrder.status === 'on_delivery' || p.existingOrder.status === 'ongoing_delivery' || p.existingOrder.status === 'fulfilled')) || p.procurement_status === 'delivery_pending' || p.procurement_status === 'ongoing_delivery'">
-                          <template v-if="p.receipt_confirmed || p.procurement_status === 'ongoing_delivery' || p.procurement_status === 'receipt_confirmed' || (p.existingOrder && p.existingOrder.receipt_confirmed)">
-                            <button class="btn-small btn-primary" @click="markDeliveryComplete(p)" :disabled="completingDeliveryIds[(p.procurement_request_id || p.id)]">
-                              {{ completingDeliveryIds[(p.procurement_request_id || p.id)] ? 'Submitting...' : 'Complete Order' }}
-                            </button>
-                          </template>
-                          <template v-else>
-                            <button class="btn-small btn-primary" @click="openReceiptModal(p)" :disabled="completingDeliveryIds[(p.procurement_request_id || p.id)]">
-                              {{ completingDeliveryIds[(p.procurement_request_id || p.id)] ? 'Submitting...' : 'Delivery complete' }}
-                            </button>
-                          </template>
-                        </div>
-                    </div>
-                      <div v-else-if="p.procurement_status === 'ongoing_delivery' || p.status === 'ongoing_delivery' || p.procurement_status === 'receipt_confirmed' || p.receipt_confirmed">
-                      <button class="btn-small btn-primary"
-                        @click="p.receipt_confirmed || p.procurement_status === 'receipt_confirmed' ? markDeliveryComplete(p) : openReceiptModal(p)"
-                        :disabled="completingDeliveryIds[(p.procurement_request_id || p.id)]">
-                        {{ completingDeliveryIds[(p.procurement_request_id || p.id)] ? 'Submitting...' : ((p.receipt_confirmed || p.procurement_status === 'receipt_confirmed') ? 'Complete Order' : 'Delivery complete') }}
-                      </button>
-                    </div>
-                      <div v-else>
-                      <button class="btn-small btn-primary"
-                        @click="placeOrder(p)"
-                        :disabled="placingOrderIds[p.id] || orderPlacedIds[p.id] || p.waiting_for_supplier">
-                        {{ orderPlacedIds[p.id] ? 'Order placed' : (placingOrderIds[p.id] ? 'Placing...' : 'Place Order') }}
-                      </button>
-                      <div v-if="p.waiting_for_supplier" class="note-warning">Waiting for supplier confirmation</div>
-                    </div>
-                  </template>
+                   <template v-else-if="p.procurement_status === 'pending_order_to_supplier' || p.status === 'pending_order_to_supplier' || p.procurement_status === 'ongoing_delivery' || p.status === 'ongoing_delivery' || p.procurement_status === 'receipt_confirmed' || p.receipt_confirmed || isReceiptChecking(p) || (p.procurement_budget_approved && (p.procurement_status === 'cash_in_transit' || p.status === 'cash_in_transit'))">
+                     <div v-if="isReceiptChecking(p)">
+                       <button class="btn-small btn-outline" disabled>Waiting receipt confirmation</button>
+                     </div>
+                     <div v-else-if="p.existingOrder" class="inline-row gap-sm align-center">
+                       <div class="status-badge status-warning">
+                         Transaction Pending (ID: {{ p.existingOrder.id }})
+                       </div>
+                       <div v-if="(p.existingOrder && (p.existingOrder.status === 'on_delivery' || p.existingOrder.status === 'ongoing_delivery' || p.existingOrder.status === 'fulfilled')) || p.procurement_status === 'delivery_pending' || p.procurement_status === 'ongoing_delivery'">
+                           <template v-if="p.receipt_confirmed || p.procurement_status === 'ongoing_delivery' || p.procurement_status === 'receipt_confirmed' || (p.existingOrder && p.existingOrder.receipt_confirmed)">
+                             <button class="btn-small btn-primary" @click="markDeliveryComplete(p)" :disabled="completingDeliveryIds[(p.procurement_request_id || p.id)]">
+                               {{ completingDeliveryIds[(p.procurement_request_id || p.id)] ? 'Submitting...' : 'Complete Order' }}
+                             </button>
+                           </template>
+                           <template v-else>
+                             <button class="btn-small btn-primary" @click="openReceiptModal(p)" :disabled="completingDeliveryIds[(p.procurement_request_id || p.id)]">
+                               {{ completingDeliveryIds[(p.procurement_request_id || p.id)] ? 'Submitting...' : 'Upload Receipt' }}
+                             </button>
+                           </template>
+                         </div>
+                       <div v-else-if="p.receipt_confirmed || p.procurement_status === 'receipt_confirmed' || (p.existingOrder && p.existingOrder.receipt_confirmed)">
+                         <button class="btn-small btn-primary" @click="markDeliveryComplete(p)" :disabled="completingDeliveryIds[(p.procurement_request_id || p.id)]">
+                           {{ completingDeliveryIds[(p.procurement_request_id || p.id)] ? 'Submitting...' : 'Complete Order' }}
+                         </button>
+                       </div>
+                       <div v-else>
+                         <button class="btn-small btn-primary" @click="openReceiptModal(p)" :disabled="completingDeliveryIds[(p.procurement_request_id || p.id)]">
+                           {{ completingDeliveryIds[(p.procurement_request_id || p.id)] ? 'Submitting...' : 'Upload Receipt' }}
+                         </button>
+                       </div>
+                       <div v-if="p.existingOrder?.estimated_delivery_datetime" class="estimated-delivery-info">
+                         <span class="estimated-delivery-label">Est. Delivery:</span>
+                         <span class="estimated-delivery-value">{{ formatDateTime(p.existingOrder.estimated_delivery_datetime) }}</span>
+                       </div>
+                     </div>
+                       <div v-else-if="p.procurement_status === 'ongoing_delivery' || p.status === 'ongoing_delivery' || p.procurement_status === 'receipt_confirmed' || p.receipt_confirmed">
+                       <button class="btn-small btn-primary"
+                         @click="openReceiptModal(p)"
+                         :disabled="completingDeliveryIds[(p.procurement_request_id || p.id)]">
+                         {{ completingDeliveryIds[(p.procurement_request_id || p.id)] ? 'Submitting...' : 'Upload Receipt' }}
+                       </button>
+                       <div v-if="p.existingOrder?.estimated_delivery_datetime" class="estimated-delivery-info">
+                         <span class="estimated-delivery-label">Est. Delivery:</span>
+                         <span class="estimated-delivery-value">{{ formatDateTime(p.existingOrder.estimated_delivery_datetime) }}</span>
+                       </div>
+                     </div>
+                       <div v-else>
+                       <button class="btn-small btn-primary"
+                         @click="placeOrder(p)"
+                         :disabled="placingOrderIds[p.id] || orderPlacedIds[p.id] || p.waiting_for_supplier">
+                         {{ orderPlacedIds[p.id] ? 'Order placed' : (placingOrderIds[p.id] ? 'Placing...' : 'Place Order') }}
+                       </button>
+                       <div v-if="p.waiting_for_supplier" class="note-warning">Waiting for supplier confirmation</div>
+                     </div>
+                   </template>
                   <template v-else>
                     <button class="btn-small btn-outline" disabled>Unavailable</button>
                   </template>
@@ -1401,6 +1419,23 @@ function formatPricingType(type) {
   return typeMap[type] || type
 }
 
+function formatDateTime(dt) {
+  if (!dt) return ''
+  try {
+    const d = new Date(dt)
+    if (isNaN(d.getTime())) return ''
+    return d.toLocaleString('en-PH', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  } catch (e) {
+    return ''
+  }
+}
+
 async function placeOrder(product) {
   if (!product || !product.id || placingOrderIds.value[product.id]) return
 
@@ -1586,6 +1621,18 @@ async function submitReceipt() {
 
 async function markDeliveryComplete(product) {
   if (!product || !product.procurement_request_id) return
+  
+  // Check if receipt is required but not yet uploaded or confirmed
+  const needsReceipt = !product.receipt_confirmed && 
+                       product.procurement_status !== 'receipt_confirmed' &&
+                       (!product.existingOrder || !product.existingOrder.receipt_confirmed)
+  
+  if (needsReceipt) {
+    // Open receipt modal instead of proceeding to completion
+    openReceiptModal(product)
+    return
+  }
+  
   if (!(await window.swalConfirm(`Mark delivery complete for ${product.name || 'this item'}? This will set the request as completed.`))) return
   const rid = product.procurement_request_id
   if (completingDeliveryIds.value[rid]) return
@@ -2032,6 +2079,29 @@ button:focus, a:focus, input:focus, select:focus { outline: 3px solid rgba(3,37,
 .supplier-list-scroll { max-height: 260px; overflow: auto; }
 .supplier-row { display:flex; align-items:center; gap:0.5rem; padding:6px 0; }
 .note-warning { margin-top:6px; color:#92400e; font-weight:600; font-size:0.9rem }
+
+/* Estimated delivery info display */
+.estimated-delivery-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: #fffbeb;
+  border: 1px solid #f59e0b;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.estimated-delivery-label {
+  font-weight: 600;
+  color: #92400e;
+}
+
+.estimated-delivery-value {
+  font-weight: 700;
+  color: #78350f;
+}
 
 /* Header profile dropdown styles (procurement panel only) */
 .header-profile-wrapper { position:relative; display:flex; align-items:center }

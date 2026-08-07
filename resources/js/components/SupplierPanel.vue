@@ -308,6 +308,13 @@
                 />
                 <span class="form-hint">Please provide your estimated delivery schedule</span>
               </div>
+              <button 
+                class="btn-confirm-delivery" 
+                @click="confirmEstimatedDelivery"
+                :disabled="!estimatedDeliveryDateTime || savingEstimatedDelivery"
+              >
+                {{ savingEstimatedDelivery ? 'Saving...' : 'Confirm Delivery Schedule' }}
+              </button>
             </div>
           </div>
         </div>
@@ -397,10 +404,6 @@
             <div class="form-group">
               <label>Unit Price (PHP)</label>
               <input v-model.number="submitForm.price" type="number" min="0.01" step="0.01" placeholder="0.00" />
-            </div>
-            <div class="form-group">
-              <label>Expiration Date</label>
-              <input v-model="submitForm.expires_at" type="datetime-local" />
             </div>
             <div class="form-group">
               <label>Date Product Made</label>
@@ -519,12 +522,6 @@
               <input v-model.number="editForm.price" type="number" step="0.01" placeholder="0.00" class="full-width-input" />
             </div>
 
-            <!-- Expiration Date field -->
-            <div v-if="editFieldType === 'expiration'" class="edit-field-section">
-              <label>Edit Expiration Date</label>
-              <input v-model="editForm.expires_at" type="datetime-local" class="full-width-input" />
-            </div>
-
             <div v-if="editError" class="error-msg">{{ editError }}</div>
           </div>
           <div class="modal-footer">
@@ -578,10 +575,11 @@ const overlayText = ref('Logging out...')
 const showReceiptModal = ref(false)
 const receiptData = ref({})
 const estimatedDeliveryDateTime = ref('')
+const savingEstimatedDelivery = ref(false)
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
 // Supplier submit modal state
 const supplierSubmitModalVisible = ref(false)
-const submitForm = ref({ name: '', price: null, category: '', per_pack_or_individual: '', expires_at: '', date_made: '', pack_quantity: null, pack_unit: '' })
+const submitForm = ref({ name: '', price: null, category: '', per_pack_or_individual: '', date_made: '', pack_quantity: null, pack_unit: '' })
 const submitSubmitting = ref(false)
 const submitError = ref('')
 const currentSubmitOrderId = ref(null)
@@ -593,8 +591,7 @@ const editFieldType = ref(null) // 'category', 'pricing', 'price', 'expiration'
 const editFields = [
   { id: 'category', label: 'Category' },
   { id: 'pricing', label: 'Pricing Type' },
-  { id: 'price', label: 'Price' },
-  { id: 'expiration', label: 'Expiration' }
+  { id: 'price', label: 'Price' }
 ]
 const editForm = ref({ id: null, name: '', price: null, category: '', per_pack_or_individual: '', expires_at: '' })
 const editSubmitting = ref(false)
@@ -896,7 +893,7 @@ async function completeTransaction(id) {
 function openSupplierSubmitModal(order) {
   // Prefill product name if procurement request provides it
   submitError.value = ''
-  submitForm.value = { name: '', price: null, category: '', per_pack_or_individual: '', expires_at: '', date_made: '', pack_quantity: null, pack_unit: '' }
+  submitForm.value = { name: '', price: null, category: '', per_pack_or_individual: '', date_made: '', pack_quantity: null, pack_unit: '' }
   currentSubmitOrderId.value = null
   if (!order) return
   currentSubmitOrderId.value = order.id
@@ -910,7 +907,7 @@ function closeSupplierSubmitModal() {
   if (submitSubmitting.value) return
   supplierSubmitModalVisible.value = false
   submitError.value = ''
-  submitForm.value = { name: '', price: null, category: '', per_pack_or_individual: '', expires_at: '', date_made: '', pack_quantity: null, pack_unit: '' }
+  submitForm.value = { name: '', price: null, category: '', per_pack_or_individual: '', date_made: '', pack_quantity: null, pack_unit: '' }
   currentSubmitOrderId.value = null
 }
 
@@ -951,9 +948,6 @@ async function saveProductChanges() {
   if (editFieldType.value === 'price' && (!editForm.value.price || editForm.value.price <= 0)) {
     editError.value = 'Price is required and must be greater than 0'; return
   }
-  if (editFieldType.value === 'expiration' && !editForm.value.expires_at) {
-    editError.value = 'Expiration date is required'; return
-  }
 
   editSubmitting.value = true
   editError.value = ''
@@ -963,7 +957,6 @@ async function saveProductChanges() {
     if (editFieldType.value === 'category') payload.category = editForm.value.category
     if (editFieldType.value === 'pricing') payload.per_pack_or_individual = editForm.value.per_pack_or_individual
     if (editFieldType.value === 'price') payload.price = editForm.value.price
-    if (editFieldType.value === 'expiration') payload.expires_at = editForm.value.expires_at
 
     const res = await axios.put(`/api/staff/inventory/products/${editForm.value.id}`, payload, { withCredentials: true })
     if (res && res.data) {
@@ -998,7 +991,6 @@ async function submitProductForm() {
   if (submitForm.value.price === null || submitForm.value.price === undefined) { await Swal.fire({ icon: 'error', title: 'Validation', text: 'Price is required' }); return }
   // Ensure price is greater than zero
   if (Number(submitForm.value.price) <= 0) { await Swal.fire({ icon: 'error', title: 'Validation', text: 'Price must be greater than 0' }); return }
-  if (!submitForm.value.expires_at) { await Swal.fire({ icon: 'error', title: 'Validation', text: 'Expiration date is required' }); return }
   submitSubmitting.value = true
   submitError.value = ''
   try {
@@ -1009,7 +1001,6 @@ async function submitProductForm() {
       per_pack_or_individual: submitForm.value.per_pack_or_individual,
       pack_quantity: submitForm.value.pack_quantity,
       pack_unit: submitForm.value.pack_unit,
-      expires_at: submitForm.value.expires_at,
       date_made: submitForm.value.date_made || null
     }
     const res = await axios.post(`/api/supplier-orders/${currentSubmitOrderId.value}/submit-product`, payload, { withCredentials: true })
@@ -1429,6 +1420,31 @@ function onProductAdded(newProduct) {
     }
   } catch (e) {
     loadProducts()
+  }
+}
+
+async function confirmEstimatedDelivery() {
+  if (!estimatedDeliveryDateTime.value || !receiptData.value?.id) return
+  
+  savingEstimatedDelivery.value = true
+  try {
+    const res = await axios.put(
+      `/api/supplier-orders/${receiptData.value.id}/estimated-delivery`,
+      { estimated_delivery_datetime: estimatedDeliveryDateTime.value },
+      { withCredentials: true }
+    )
+    
+    if (res && res.data) {
+      showToast('Delivery schedule confirmed successfully', 'success')
+      // Update receipt data with the new estimated delivery
+      receiptData.value = { ...receiptData.value, estimated_delivery_datetime: estimatedDeliveryDateTime.value }
+    }
+  } catch (e) {
+    console.error('confirmEstimatedDelivery failed', e)
+    const msg = e.response?.data?.error || e.response?.data?.message || 'Failed to save delivery schedule'
+    showToast(msg, 'error')
+  } finally {
+    savingEstimatedDelivery.value = false
   }
 }
 

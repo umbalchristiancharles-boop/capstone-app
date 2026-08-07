@@ -395,15 +395,14 @@ class CashierController extends Controller
             // Also send computed_cost as the final selling price for frontend reference
             $row['computed_cost'] = !is_null($sellingPrice) ? $sellingPrice : ($costSum > 0 ? round($costSum, 2) : ($dishProduct->cost_price ?? null));
             // Use computed available servings when >0, otherwise fall back to stored product stock
-            // Always show at least 10 stock for published dishes to allow multiple orders
             $fallbackStock = $dishProduct->stock ?? 0;
             if ($maxServings > 0) {
-                $displayStock = max($maxServings, 10);
+                $displayStock = $maxServings;
             } elseif ($fallbackStock > 0) {
-                $displayStock = max($fallbackStock, 10);
+                $displayStock = $fallbackStock;
             } else {
-                // For published dishes with no available servings, allow 10 for ordering
-                $displayStock = (!empty($dishProduct->is_published)) ? 10 : 0;
+                // No available servings - show 0 stock
+                $displayStock = 0;
             }
             $row['stock'] = $displayStock;
             $row['is_kitchen_dish'] = true;

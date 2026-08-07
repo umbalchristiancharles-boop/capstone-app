@@ -22,6 +22,7 @@ class SupplierOrder extends Model
         'is_broadcast',
         'expires_at',
         'date_made',
+        'estimated_delivery_datetime',
     ];
 
     protected $casts = [
@@ -29,6 +30,7 @@ class SupplierOrder extends Model
         'is_broadcast' => 'boolean',
         'expires_at' => 'datetime',
         'date_made' => 'date',
+        'estimated_delivery_datetime' => 'datetime',
     ];
 
     public function procurementRequest(): BelongsTo
