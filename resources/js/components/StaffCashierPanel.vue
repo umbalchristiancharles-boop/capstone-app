@@ -127,7 +127,7 @@
         <div class="face-capture-content">
           <h3>Take a Photo for Clock In</h3>
           <p class="face-capture-instruction">Please position your face in the frame and click capture</p>
-          
+
           <div class="camera-container">
             <video ref="video" autoplay playsinline></video>
             <canvas ref="canvas" style="display: none;"></canvas>
@@ -152,17 +152,21 @@
       </div>
 
       <!-- Branch Budget Card -->
-      <div v-if="branchId" style="margin-bottom:12px;">
-        <h3 style="margin:0 0 8px;color:#7a2b00;font-size:0.95rem">Branch Budget</h3>
-        <div style="background:#ffffff;padding:12px;border-radius:8px;box-shadow:0 4px 12px rgba(2,6,23,0.04);">
-          <div style="font-weight:700;color:#065f46;font-size:1.05rem">₱{{ fmt(branchBudget) }}</div>
-          <div style="color:#6b7280;margin-top:6px">{{ branchName }}</div>
+      <div v-if="branchId" class="branch-budget-card" style="margin-bottom:12px;">
+        <div class="side-card-header">
+          <span class="side-card-kicker">Branch Budget</span>
+          <span class="icon-chip">₱</span>
         </div>
+        <div class="branch-budget-value">₱{{ fmt(branchBudget) }}</div>
+        <div class="branch-budget-branch">{{ branchName }}</div>
       </div>
 
       <!-- Announcements (moved below Branch Budget) -->
       <div class="announcements-card" style="margin-bottom:12px;" v-if="branchId">
-        <h3 class="announcements-title">Announcements</h3>
+        <div class="side-card-header">
+          <span class="side-card-kicker">Announcements</span>
+          <span class="icon-chip">●</span>
+        </div>
         <div class="announcements-list">
           <div v-if="loadingAnnouncements" class="loading-text">Loading announcements...</div>
           <div v-else>
@@ -179,7 +183,10 @@
       </div>
 
       <section class="cart-section">
-        <h2>Current Order</h2>
+        <div class="cart-header">
+          <h2>Current Order</h2>
+          <span class="cart-status-dot">Live</span>
+        </div>
 
         <div v-if="cart.length === 0" class="empty-text">No items in cart. Click a product to add.</div>
 
@@ -693,7 +700,7 @@ async function initiateClockIn() {
   showFaceCapture.value = true
   capturedImage.value = null
   cameraError.value = ''
-  
+
   // Initialize camera
   await startCamera()
 }
@@ -702,7 +709,7 @@ async function startCamera() {
   try {
     // Wait for the modal to be rendered in the DOM
     await nextTick()
-    
+
     // Request camera access
     const stream = await navigator.mediaDevices.getUserMedia({
       video: {
@@ -711,13 +718,13 @@ async function startCamera() {
         facingMode: 'user' // Front camera
       }
     })
-    
+
     cameraStream.value = stream
     cameraError.value = ''
-    
+
     // Wait for video element to be available
     await nextTick()
-    
+
     // Set video source
     const video = document.querySelector('.camera-container video')
     if (video) {
@@ -740,36 +747,36 @@ function stopCamera() {
 function capturePhoto() {
   const video = document.querySelector('.camera-container video')
   const canvas = document.querySelector('.camera-container canvas')
-  
+
   if (!video || !canvas) {
     attendanceMessage.value = 'Camera not ready. Please try again.'
     attendanceMessageType.value = 'error'
     return
   }
-  
+
   isCapturing.value = true
-  
+
   try {
     // Set canvas dimensions to match video
     canvas.width = video.videoWidth
     canvas.height = video.videoHeight
-    
+
     // Draw video frame to canvas
     const context = canvas.getContext('2d')
     context.drawImage(video, 0, 0, canvas.width, canvas.height)
-    
+
     // Convert to base64 image
     capturedImage.value = canvas.toDataURL('image/jpeg', 0.8)
-    
+
     // Stop camera after capture
     stopCamera()
-    
+
     // Proceed with clock in after a short delay
     setTimeout(() => {
       showFaceCapture.value = false
       proceedWithClockIn()
     }, 1500)
-    
+
   } catch (error) {
     console.error('Capture error:', error)
     attendanceMessage.value = 'Failed to capture photo. Please try again.'
@@ -788,19 +795,19 @@ function cancelFaceCapture() {
 
 async function proceedWithClockIn() {
   if (isAttendanceProcessing.value) return
-  
+
   // Check if user location is available
   if (!userLocation.value) {
     attendanceMessage.value = 'Please enable location services to clock in'
     attendanceMessageType.value = 'error'
     await getUserLocation()
-    
+
     // Check again after attempting to get location
     if (!userLocation.value) {
       return
     }
   }
-  
+
   // Check if face was captured
   if (!capturedImage.value) {
     attendanceMessage.value = 'Face photo is required to clock in'
@@ -837,7 +844,7 @@ async function proceedWithClockIn() {
 
 async function getUserLocation() {
   locationLoading.value = true
-  
+
   try {
     const position = await new Promise((resolve, reject) => {
       navigator.geolocation.getCurrentPosition(resolve, reject, {
@@ -851,7 +858,7 @@ async function getUserLocation() {
       latitude: position.coords.latitude,
       longitude: position.coords.longitude
     }
-    
+
     console.log('User location obtained:', userLocation.value)
   } catch (error) {
     console.error('Error getting location:', error)
@@ -1100,32 +1107,32 @@ async function performLogout() {
 
 .logout-btn:hover { background: #fff3e6; }
 
-/* Body: 2-column layout */
+/* Main cashier body lives inside the OwnerPanelLayout main slot */
 .cashier-body {
-  display: grid;
-  /* Use the same wide main + side column as OwnerPanelLayout when profile column hidden */
-  /* reduce right-side whitespace so main column is wider */
-  grid-template-columns: 1fr 320px;
-  gap: 20px;
+  display: block;
+  width: 100%;
+  min-width: 0;
   margin-bottom: 24px;
-  align-items: start;
 }
 
 /* Product catalogue */
 .product-catalogue,
 .cart-section {
-  background: rgba(255,255,255,0.95);
-  border-radius: 12px;
+  background: linear-gradient(180deg, #ffffff 0%, #fffdfb 100%);
+  border-radius: 16px;
   padding: 20px;
 }
 
 .product-catalogue {
-  /* Make the whole left column scrollable so categories share one scrollbar */
+  width: 100%;
   max-height: calc(100vh - 180px);
   overflow-y: auto;
+  overflow-x: hidden;
   padding-right: 8px;
-  /* Span the full grid width so Products match the width of Recent Transactions */
-  grid-column: 1 / -1;
+  border: 1px solid rgba(255, 154, 74, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.7);
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .product-catalogue h2,
@@ -1135,15 +1142,29 @@ async function performLogout() {
   font-size: 1.15rem;
 }
 
+.product-catalogue .search-bar {
+  position: relative;
+}
+
+.product-catalogue .search-bar::before {
+  content: '⌕';
+  position: absolute;
+  left: 12px;
+  top: 9px;
+  font-size: 1.14rem;
+  color: #b8682c;
+}
+
 .search-bar input {
   width: 100%;
-  padding: 10px 14px;
+  padding: 10px 14px 10px 38px;
   border: 1px solid rgba(255,211,107,0.4);
-  border-radius: 6px;
+  border-radius: 12px;
   font-size: 14px;
   margin-bottom: 12px;
+  background: #fbfbfb;
 }
-.search-bar input:focus { outline: none; border-color: #ff7a18; }
+.search-bar input:focus { outline: none; border-color: #ff7a18; box-shadow: 0 0 0 3px rgba(255,154,74,0.14); }
 
 .category-section {
   margin-bottom: 20px;
@@ -1160,10 +1181,8 @@ async function performLogout() {
 
 .product-grid {
   display: grid;
-  /* slightly larger product tiles for readability */
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   gap: 18px;
-  /* let the parent column handle scrolling */
   max-height: none;
   overflow: visible;
   padding-right: 6px;
@@ -1172,7 +1191,7 @@ async function performLogout() {
 .product-card {
   background: #fff8f0;
   border: 1px solid rgba(255,211,107,0.3);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 14px;
   cursor: pointer;
   transition: transform 0.15s, box-shadow 0.15s;
@@ -1183,7 +1202,7 @@ async function performLogout() {
 }
 .product-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 14px rgba(122,43,0,0.12);
   border-color: #ff7a18;
 }
 .product-card.out-of-stock {
@@ -1196,7 +1215,7 @@ async function performLogout() {
   border-color: rgba(255,211,107,0.3);
 }
 .stock-zero { color: #dc3545; font-weight: 600; }
-.product-name { font-weight: 600; color: #7a2b00; margin-bottom: 4px; }
+.product-name { font-weight: 700; color: #5b2b0a; margin-bottom: 4px; }
 .product-type { display: inline-block; font-size: 0.7rem; font-weight: 600; padding: 2px 6px; border-radius: 5px; margin-bottom: 4px; }
 .product-type.type-individual { background: #dbeafe; color: #1e40af; }
 .product-type.type-per_pack { background: #d1fae5; color: #065f46; }
@@ -1216,6 +1235,44 @@ async function performLogout() {
   position: sticky;
   top: 96px;
   align-self: start;
+  border: 1px solid rgba(255,154,74,0.22);
+  background: linear-gradient(180deg, #fffdfb 0%, #fff6ee 100%);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.cart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.cart-header h2 {
+  margin: 0;
+}
+
+.cart-status-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: #dcfce7;
+  color: #166534;
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.cart-status-dot::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #16a34a;
 }
 
 .cart-item {
@@ -1316,15 +1373,21 @@ async function performLogout() {
   color: #7a2b00;
   font-size: 0.9rem;
 }
-.form-group input {
+.form-group input,
+.form-group select {
   width: 100%;
   padding: 10px;
   border: 1px solid rgba(255,211,107,0.4);
   border-radius: 6px;
   font-size: 14px;
   box-sizing: border-box;
+  max-width: 100%;
+}
+.form-group select {
+  background: #fff;
 }
 .form-group input:focus { outline: none; border-color: #ff7a18; }
+.form-group select:focus { outline: none; border-color: #ff7a18; }
 
 .change-display {
   background: #d4edda;
@@ -1363,6 +1426,7 @@ async function performLogout() {
   display: flex;
   gap: 10px;
   justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
 .btn-cancel {
@@ -1385,6 +1449,7 @@ async function performLogout() {
   cursor: pointer;
   font-weight: 600;
   font-size: 1rem;
+  max-width: 100%;
 }
 .btn-confirm:disabled {
   opacity: 0.5;
@@ -1396,10 +1461,12 @@ async function performLogout() {
 
 /* Transactions Section */
 .transactions-section {
-  background: rgba(255,255,255,0.95);
-  border-radius: 12px;
-  padding: 20px;
+  background: linear-gradient(180deg, #ffffff 0%, #fffdfb 100%);
+  border-radius: 14px;
+  padding: 20px 20px 18px;
   margin-top: 24px;
+  border: 1px solid rgba(255,154,74,0.26);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.75), 0 2px 12px rgba(122,43,0,0.04);
 }
 .transactions-section h2 {
   margin: 0 0 12px;
@@ -1413,6 +1480,9 @@ async function performLogout() {
   max-height: 44vh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #eee2d4;
 }
 
 .tx-table {
@@ -1510,6 +1580,95 @@ async function performLogout() {
   background: #fafafa;
   color: #374151;
   border-bottom-color: #ececec;
+}
+
+/* Side information cards */
+.side-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.side-card-kicker {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #7a2b00;
+}
+
+.icon-chip {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff2e8;
+  color: #a05719;
+  border: 1px solid #ffd2a0;
+  font-size: 0.9rem;
+}
+
+.branch-budget-card {
+  background: linear-gradient(180deg, #ffffff 0%, #fffaf5 100%);
+  border-radius: 12px;
+  padding: 14px;
+  border: 1px solid rgba(255,154,74,0.25);
+  box-shadow: 0 8px 24px rgba(122,43,0,0.05);
+}
+
+.branch-budget-value {
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: #065f46;
+}
+
+.branch-budget-branch {
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 0.78rem;
+}
+
+.announcements-card {
+  background: linear-gradient(180deg, #fff 0%, #fffaf5 100%);
+  border-radius: 12px;
+  padding: 14px;
+  border: 1px solid rgba(255, 154, 74, 0.25);
+}
+
+.announcements-title {
+  margin: 0 0 8px;
+  color: #7a2b00;
+  font-size: 0.95rem;
+}
+
+.announcements-list .announcement-item {
+  padding: 10px 0;
+  border-top: 1px dashed rgba(122,43,0,0.2);
+}
+
+.announcements-list .announcement-item:first-child {
+  border-top: none;
+}
+
+.announcement-title {
+  font-weight: 700;
+  color: #5b2b0a;
+}
+
+.announcement-message {
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 0.74rem;
+}
+
+.announcement-meta {
+  margin-top: 6px;
+  font-size: 0.69rem;
+  color: #a36b34;
 }
 
 /* Attendance card */
@@ -1663,9 +1822,44 @@ async function performLogout() {
 }
 
 /* Responsive */
-@media (max-width: 860px) {
+@media (max-width: 1100px) {
   .cashier-body {
+    display: block;
+  }
+
+  .cart-section {
+    position: relative;
+    top: auto;
+  }
+
+  .product-catalogue {
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  .product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .cashier-body {
+    margin-bottom: 16px;
+  }
+
+  .product-catalogue,
+  .cart-section,
+  .transactions-section {
+    padding: 14px;
+    border-radius: 12px;
+  }
+
+  .product-grid {
     grid-template-columns: 1fr;
+  }
+
+  .tx-table-wrap {
+    overflow-x: auto;
   }
 }
 
