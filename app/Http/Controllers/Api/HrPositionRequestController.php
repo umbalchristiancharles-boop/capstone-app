@@ -127,6 +127,7 @@ class HrPositionRequestController extends Controller
     {
         $query = PositionOpenRequest::query()
             ->where('status', 'Approved')
+            ->where('quantity', '>', 0)  // ✅ Hide positions with no remaining slots
             ->with(['position', 'branch'])
             ->orderByDesc('approved_at');
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePositionApplicationRequest;
 use App\Models\PositionApplication;
+use App\Models\PositionOpenRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -226,7 +227,26 @@ class PositionApplicationController extends Controller
         $application = PositionApplication::findOrFail($id);
 
         try {
+            // Guard: only decrement the open position quantity if this application
+            // was NOT already marked as passed (prevents double-decrementing).
+            $wasAlreadyPassed = $application->status === 'Passed - Ready for Hiring';
+
             $application->update(['status' => 'Passed - Ready for Hiring']);
+
+            // ✅ Decrement the open position quantity when an applicant is hired/passed.
+            // This ensures the landing page reflects the actual number of available slots.
+            // Note: We do NOT change the status to 'Filled' because the DB column is an
+            // ENUM limited to ['Pending', 'Approved', 'Rejected']. Instead, the landing
+            // page endpoint filters out positions where quantity <= 0.
+            if (!$wasAlreadyPassed && $application->position_open_request_id) {
+                $openRequest = PositionOpenRequest::find($application->position_open_request_id);
+                if ($openRequest) {
+                    $newQuantity = max(0, (int) $openRequest->quantity - 1);
+                    $openRequest->update([
+                        'quantity' => $newQuantity,
+                    ]);
+                }
+            }
 
             // Create staff account from applicant information
             // Generate random password
@@ -382,6 +402,17 @@ class PositionApplicationController extends Controller
     {
 
         $data = $request->validated();
+
+        // ✅ Prevent applications on positions that are already filled
+        if (isset($data['position_open_request_id'])) {
+            $openRequest = PositionOpenRequest::find((int) $data['position_open_request_id']);
+            if (!$openRequest || $openRequest->status !== 'Approved' || (int) $openRequest->quantity <= 0) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'This position is no longer accepting applications.',
+                ], 400);
+            }
+        }
 
         $uuid = (string) Str::uuid();
         $baseDir = 'position-applications/' . $data['position_open_request_id'] . '/' . $uuid;
