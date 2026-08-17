@@ -309,6 +309,7 @@ Route::middleware('auth:sanctum,web')->group(function () {
     Route::post('procurement-requests/{id}/status', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'updateStatus']);
     Route::post('procurement-requests/{id}/complete', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'completeOrder']);
     Route::post('procurement-requests/{id}/confirm-receipt', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'confirmReceipt']);
+    Route::post('procurement-requests/{id}/change-supplier', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'changeSupplier']);
     Route::post('procurement-requests/{id}/broadcast', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'broadcastToSuppliers']);
 
     // Product Request Workflow (Logistics requests new products for approval by Owner)

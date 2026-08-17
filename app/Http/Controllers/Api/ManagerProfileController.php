@@ -1484,29 +1484,49 @@ public function logisticsProducts(Request $request)
 
         Log::info('procurementProducts: products count', ['count' => $products->count()]);
 
-        // For each product, determine if procurement can acknowledge any pending request
-        $products = $products->map(function ($p) use ($branchId) {
+        $normalizeProductKey = function ($product) {
+            return 'name:' . trim(strtoupper((string) ($product->name ?? '')));
+        };
+
+        $products = $products->groupBy($normalizeProductKey)->map(function ($group) use ($branchId) {
+            $group = $group->sortByDesc(function ($product) {
+                return ((int) ($product->real_stock ?? 0) * 1000) + (int) ($product->stock ?? 0);
+            })->values();
+
+            $primary = $group->first();
+
             // default: needs supplier input until supplier+price present
-            $p->needs_supplier = true;
-            if (!empty($p->supplier_id) && (float)($p->price ?? 0) > 0) {
-                $p->needs_supplier = false;
+            $primary->needs_supplier = true;
+            if (!empty($primary->supplier_id) && (float)($primary->price ?? 0) > 0) {
+                $primary->needs_supplier = false;
             }
 
-            // find a pending procurement request for this product in this branch
-            $proc = ProcurementRequest::where('product_id', $p->id)
+            $groupIds = $group->pluck('id')->all();
+            $proc = ProcurementRequest::whereIn('product_id', $groupIds)
                 ->where('branch_id', $branchId)
                 ->where('status', 'pending')
-                ->first(['id', 'status', 'budget_approved']);
+                ->orderByDesc('created_at')
+                ->first(['id', 'status', 'budget_approved', 'product_id']);
 
-            $p->procurement_request_id = $proc?->id ?? null;
-            $p->procurement_status = $proc?->status ?? null;
-            $p->procurement_budget_approved = $proc?->budget_approved ? true : false;
+            $supplierCount = $group->filter(function ($product) {
+                return !empty($product->supplier_id) && (float) ($product->price ?? 0) > 0;
+            })->count();
+
+            $primary->procurement_request_id = $proc?->id ?? null;
+            $primary->procurement_status = $proc?->status ?? null;
+            $primary->procurement_budget_approved = $proc?->budget_approved ? true : false;
+            $primary->supplier_count = $supplierCount;
+            $primary->has_alternative_supplier = $supplierCount > 1;
+
+            // Keep the representative card aligned with the logical group.
+            $primary->real_stock = (int) $group->sum('stock');
+            $primary->supplier_name = $primary->supplier_name ?: ($primary->supplier?->full_name ?? $primary->supplier?->username ?? null);
 
             // Acknowledge should be allowed only when a pending request exists AND supplier/price present
-            $p->acknowledge_allowed = $p->procurement_request_id && !$p->needs_supplier;
+            $primary->acknowledge_allowed = $primary->procurement_request_id && !$primary->needs_supplier;
 
-            return $p;
-        });
+            return $primary;
+        })->values();
 
         return response()->json([
             'ok' => true,
@@ -1694,20 +1714,6 @@ public function logisticsProducts(Request $request)
                 }
             }
 
-            // If this is a manual procurement that was approved, don't create supplier order
-            // Manual procurements go straight to inventory for stock confirmation
-            if ($procReq->is_manual && $procReq->budget_approved) {
-                Log::info('placeOrderProduct: manual procurement after budget approval', [
-                    'proc_id' => $procReq->id,
-                    'message' => 'Skipping order creation - manual procurements go to inventory'
-                ]);
-                return response()->json([
-                    'ok' => false,
-                    'message' => 'This is a manual procurement. After budget approval, it goes directly to the inventory panel for stock confirmation. No supplier order is needed.',
-                    'procurement_request' => $procReq->fresh()->load('product')
-                ], 400);
-            }
-
             // Use the quantity requested by logistics (cannot be changed by procurement manager)
             $quantity = $procReq->quantity;
 
@@ -1809,14 +1815,6 @@ public function logisticsProducts(Request $request)
                 Log::info('placeOrderProduct BROADCAST: found procurement request', [
                     'proc_id' => $procReq->id,
                 ]);
-
-                // Manual procurements cannot have orders placed - they go straight to inventory
-                if ($procReq->is_manual) {
-                    Log::info('placeOrderProduct BROADCAST: manual procurement detected, skipping order', [
-                        'proc_id' => $procReq->id,
-                    ]);
-                    throw new \Exception('This is a manual procurement. After budget approval, it goes directly to inventory for stock confirmation. No supplier order is needed.');
-                }
 
                 // Check if a broadcast supplier order already exists for this procurement request
                 // Prevent duplicate broadcast orders (fix for: 1 product, 2 suppliers showing duplicate entries)

@@ -132,6 +132,55 @@ class Product extends Model
         $sum = (int) self::whereIn('id', $ids)->sum('stock');
         self::whereIn('id', $ids)->update(['real_stock' => $sum]);
     }
+
+    public static function transferInventoryForSupplierChange(Product $sourceProduct, User $newSupplier, ?Product $targetProduct = null): Product
+    {
+        return DB::transaction(function () use ($sourceProduct, $newSupplier, $targetProduct) {
+            $source = self::where('id', $sourceProduct->id)->lockForUpdate()->firstOrFail();
+
+            $supplierName = trim((string) ($newSupplier->full_name ?? $newSupplier->username ?? $newSupplier->email ?? ''));
+            $supplierName = $supplierName !== '' ? $supplierName : null;
+
+            $destination = $targetProduct
+                ? self::where('id', $targetProduct->id)->lockForUpdate()->first()
+                : self::where('branch_id', $source->branch_id)
+                    ->where('id', '<>', $source->id)
+                    ->where('supplier_id', $newSupplier->id)
+                    ->where(function ($query) use ($source) {
+                        if (!empty($source->sku)) {
+                            $query->where('sku', $source->sku);
+                        } else {
+                            $query->whereRaw('TRIM(UPPER(name)) = ?', [trim(strtoupper((string) $source->name))]);
+                        }
+                    })
+                    ->lockForUpdate()
+                    ->first();
+
+            if ($destination && $destination->id !== $source->id) {
+                $destination->stock = (int) $destination->stock + (int) $source->stock;
+                $destination->supplier_id = $newSupplier->id;
+                $destination->supplier_name = $supplierName;
+                $destination->save();
+
+                $source->stock = 0;
+                $source->save();
+
+                self::recomputeRealStockForGroup((int) $source->branch_id, $source->sku, $source->name);
+                self::recomputeRealStockForGroup((int) $destination->branch_id, $destination->sku, $destination->name);
+
+                return $destination->fresh();
+            }
+
+            $source->supplier_id = $newSupplier->id;
+            $source->supplier_name = $supplierName;
+            $source->save();
+
+            self::recomputeRealStockForGroup((int) $source->branch_id, $source->sku, $source->name);
+
+            return $source->fresh();
+        });
+    }
+
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(User::class, 'supplier_id');

@@ -117,6 +117,11 @@
                   <div class="product-meta">
                     <div class="product-price">{{ formatPrice(p.price) }}</div>
                     <div class="supplier-badge">{{ p.supplier_name || 'Unknown Supplier' }}</div>
+                    <div v-if="canChangeSupplier(p)" class="mt-1">
+                      <button class="btn-small btn-warning" @click="changeSupplier(p)" :disabled="changingSupplierIds[(p.procurement_request_id || p.id)]">
+                        {{ changingSupplierIds[(p.procurement_request_id || p.id)] ? 'Opening...' : 'Change Supplier' }}
+                      </button>
+                    </div>
                     <div v-if="p.expires_at" class="expiry-info">Expires: {{ formatDate(p.expires_at) }}</div>
                   </div>
                 </div>
@@ -243,8 +248,8 @@
                   <template v-else-if="p.procurement_status === 'budget_pending' || p.status === 'budget_pending'">
                     <button class="btn-small btn-outline" disabled>Budget to be received</button>
                   </template>
-                   <template v-else-if="p.procurement_status === 'pending_order_to_supplier' || p.status === 'pending_order_to_supplier' || p.procurement_status === 'ongoing_delivery' || p.status === 'ongoing_delivery' || p.procurement_status === 'receipt_confirmed' || p.receipt_confirmed || isReceiptChecking(p) || (p.procurement_budget_approved && (p.procurement_status === 'cash_in_transit' || p.status === 'cash_in_transit'))">
-                     <div v-if="isReceiptChecking(p)">
+                  <template v-else-if="p.procurement_status === 'pending_order_to_supplier' || p.status === 'pending_order_to_supplier' || p.procurement_status === 'cash_in_transit' || p.status === 'cash_in_transit' || p.procurement_status === 'delivery_pending' || p.status === 'delivery_pending' || p.procurement_status === 'ongoing_delivery' || p.status === 'ongoing_delivery' || p.procurement_status === 'receipt_confirmed' || p.receipt_confirmed || isReceiptChecking(p)">
+                     <div v-if="isReceiptChecking(p)" class="inline-row gap-sm align-center">
                        <button class="btn-small btn-outline" disabled>Waiting receipt confirmation</button>
                      </div>
                      <div v-else-if="p.existingOrder" class="inline-row gap-sm align-center">
@@ -252,30 +257,30 @@
                          Transaction Pending (ID: {{ p.existingOrder.id }})
                        </div>
                        <div v-if="(p.existingOrder && (p.existingOrder.status === 'on_delivery' || p.existingOrder.status === 'ongoing_delivery' || p.existingOrder.status === 'fulfilled')) || p.procurement_status === 'delivery_pending' || p.procurement_status === 'ongoing_delivery'">
-                           <template v-if="p.receipt_confirmed || p.procurement_status === 'ongoing_delivery' || p.procurement_status === 'receipt_confirmed' || (p.existingOrder && p.existingOrder.receipt_confirmed)">
-                             <button class="btn-small btn-primary" @click="markDeliveryComplete(p)" :disabled="completingDeliveryIds[(p.procurement_request_id || p.id)]">
-                               {{ completingDeliveryIds[(p.procurement_request_id || p.id)] ? 'Submitting...' : 'Complete Order' }}
-                             </button>
-                           </template>
-                           <template v-else>
-                             <button class="btn-small btn-primary" @click="openReceiptModal(p)" :disabled="completingDeliveryIds[(p.procurement_request_id || p.id)]">
-                               {{ completingDeliveryIds[(p.procurement_request_id || p.id)] ? 'Submitting...' : 'Upload Receipt' }}
-                             </button>
-                           </template>
-                         </div>
-                       <div v-else-if="p.receipt_confirmed || p.procurement_status === 'receipt_confirmed' || (p.existingOrder && p.existingOrder.receipt_confirmed)">
-                         <button class="btn-small btn-primary" @click="markDeliveryComplete(p)" :disabled="completingDeliveryIds[(p.procurement_request_id || p.id)]">
-                           {{ completingDeliveryIds[(p.procurement_request_id || p.id)] ? 'Submitting...' : 'Complete Order' }}
-                         </button>
+                         <template v-if="p.receipt_confirmed || p.procurement_status === 'ongoing_delivery' || p.procurement_status === 'receipt_confirmed' || (p.existingOrder && p.existingOrder.receipt_confirmed)">
+                           <button class="btn-small btn-primary" @click="markDeliveryComplete(p)" :disabled="completingDeliveryIds[(p.procurement_request_id || p.id)]">
+                             {{ completingDeliveryIds[(p.procurement_request_id || p.id)] ? 'Submitting...' : 'Complete Order' }}
+                           </button>
+                         </template>
+                         <template v-else>
+                           <button class="btn-small btn-primary" @click="openReceiptModal(p)" :disabled="completingDeliveryIds[(p.procurement_request_id || p.id)]">
+                             {{ completingDeliveryIds[(p.procurement_request_id || p.id)] ? 'Submitting...' : 'Upload Receipt' }}
+                           </button>
+                         </template>
                        </div>
                        <div v-else>
-                         <button class="btn-small btn-primary" @click="openReceiptModal(p)" :disabled="completingDeliveryIds[(p.procurement_request_id || p.id)]">
-                           {{ completingDeliveryIds[(p.procurement_request_id || p.id)] ? 'Submitting...' : 'Upload Receipt' }}
+                         <button class="btn-small btn-primary"
+                           @click="placeOrder(p)"
+                           :disabled="placingOrderIds[p.id] || orderPlacedIds[p.id] || p.waiting_for_supplier">
+                           {{ orderPlacedIds[p.id] ? 'Order placed' : (placingOrderIds[p.id] ? 'Placing...' : 'Place Order') }}
                          </button>
+                         <div v-if="p.waiting_for_supplier" class="note-warning">Waiting for supplier confirmation</div>
                        </div>
-                       <div v-if="p.existingOrder?.estimated_delivery_datetime" class="estimated-delivery-info">
+                       <div class="estimated-delivery-info">
                          <span class="estimated-delivery-label">Est. Delivery:</span>
-                         <span class="estimated-delivery-value">{{ formatDateTime(p.existingOrder.estimated_delivery_datetime) }}</span>
+                         <span class="estimated-delivery-value">
+                           {{ p.existingOrder?.estimated_delivery_datetime ? formatDateTime(p.existingOrder.estimated_delivery_datetime) : 'Not set yet' }}
+                         </span>
                        </div>
                      </div>
                        <div v-else-if="p.procurement_status === 'ongoing_delivery' || p.status === 'ongoing_delivery' || p.procurement_status === 'receipt_confirmed' || p.receipt_confirmed">
@@ -454,7 +459,9 @@
       <div class="modal">
         <div class="modal-card">
           <div class="modal-header">
-            <h3>{{ showingConfirmedSuppliersOnly ? 'Select Confirmed Supplier' : 'Select Supplier' }}</h3>
+            <h3>
+              {{ supplierSelectionMode === 'change-supplier' ? 'Change Supplier' : (showingConfirmedSuppliersOnly ? 'Select Confirmed Supplier' : 'Select Supplier') }}
+            </h3>
           </div>
           <div class="modal-body">
             <div class="form-group full-span">
@@ -463,9 +470,12 @@
             <div v-if="showingConfirmedSuppliersOnly" class="form-note mb-1">
               <strong style="color: #28a745;">✓ These suppliers have confirmed they have this product available.</strong>
             </div>
+            <div v-if="supplierSelectionMode === 'change-supplier'" class="form-note mb-1">
+              <strong style="color: #b45309;">Changing suppliers resets receipt confirmation and transfers stock to the new supplier product.</strong>
+            </div>
             <div class="form-group full-span">
               <div v-if="supplierLoading">Loading suppliers...</div>
-              <div v-else-if="!supplierList.length">No suppliers available.</div>
+              <div v-else-if="!supplierList.length">{{ supplierSelectionMode === 'change-supplier' ? 'No confirmed alternative suppliers available.' : 'No suppliers available.' }}</div>
               <div v-else class="supplier-list-scroll">
                 <div v-for="s in supplierList" :key="s.id" class="supplier-row">
                   <input type="radio" :id="'sup-'+s.id" :value="s.id" v-model="selectedSupplierId" />
@@ -489,7 +499,7 @@
           </div>
           <div class="modal-footer">
             <button class="btn-outline" @click="closeSupplierModal">Cancel</button>
-            <button class="btn-primary" @click="confirmSupplierSelection">{{ pendingAcknowledgeProduct ? 'Select & Acknowledge' : 'Confirm' }}</button>
+            <button class="btn-primary" @click="confirmSupplierSelection">{{ supplierSelectionMode === 'change-supplier' ? 'Change Supplier' : (pendingAcknowledgeProduct ? 'Select & Acknowledge' : 'Confirm') }}</button>
           </div>
         </div>
       </div>
@@ -666,6 +676,7 @@ const orderPlacedIds = ref({})
 const completingDeliveryIds = ref({})
 const receiptPendingIds = ref({})
 const requestingSupplierIds = ref({})
+const changingSupplierIds = ref({})
 
 function setPlacingFlag(id, val) {
   placingOrderIds.value = { ...(placingOrderIds.value || {}), [id]: val }
@@ -673,6 +684,10 @@ function setPlacingFlag(id, val) {
 
 function setRequestingFlag(id, val) {
   requestingSupplierIds.value = { ...(requestingSupplierIds.value || {}), [id]: val }
+}
+
+function setChangingSupplierFlag(id, val) {
+  changingSupplierIds.value = { ...(changingSupplierIds.value || {}), [id]: val }
 }
 
 function setOrderPlacedFlag(id, val) {
@@ -685,6 +700,24 @@ function setCompletingFlag(id, val) {
 
 function setReceiptPendingFlag(id, val) {
   receiptPendingIds.value = { ...(receiptPendingIds.value || {}), [id]: val }
+}
+
+function canChangeSupplier(item) {
+  return Boolean(item?.has_alternative_supplier || Number(item?.supplier_count || 0) > 1)
+}
+
+function resolveProcurementRequestId(item) {
+  if (!item) return null
+  if (item.procurement_request_id) return item.procurement_request_id
+
+  const requestList = Array.isArray(item.procurementRequests) ? item.procurementRequests : []
+  const preferredStatuses = ['receipt_submitted', 'pending_receipt', 'pending_receipt_check']
+
+  const preferredRequest = requestList.find(req => preferredStatuses.includes(String(req?.status || '').toLowerCase()))
+  if (preferredRequest?.id) return preferredRequest.id
+
+  const anyRequest = requestList.find(req => req?.id)
+  return anyRequest?.id || null
 }
 
 function isReceiptChecking(item) {
@@ -1104,12 +1137,14 @@ const pendingOrderQty = ref(null)
 const confirmedSuppliers = ref([])
 const showingConfirmedSuppliersOnly = ref(false)
 const pendingAcknowledgeProduct = ref(null)  // Track product waiting for acknowledgement after supplier selection
+const supplierSelectionMode = ref('place-order')
 
-async function openSupplierModal(product, isForAcknowledge = false) {
+async function openSupplierModal(product, mode = 'place-order') {
   pendingOrderProduct.value = product
   pendingOrderQty.value = null
   selectedSupplierId.value = null
-  pendingAcknowledgeProduct.value = isForAcknowledge ? product : null
+  supplierSelectionMode.value = mode
+  pendingAcknowledgeProduct.value = mode === 'acknowledge' ? product : null
   supplierModalVisible.value = true
   supplierLoading.value = true
 
@@ -1137,10 +1172,42 @@ async function openSupplierModal(product, isForAcknowledge = false) {
             showingConfirmedSuppliersOnly.value = true
             return
           }
+
+          if (mode === 'change-supplier') {
+            confirmedSuppliers.value = []
+            supplierList.value = []
+            showingConfirmedSuppliersOnly.value = true
+            return
+          }
         }
       } catch (e) {
         console.warn('Failed to fetch confirmed suppliers, falling back to all suppliers', e)
       }
+    }
+
+    if (mode === 'change-supplier') {
+      try {
+        const supplierRes = await axios.get(`/api/manager/procurement/products/${product.id}/supplier-options`, { withCredentials: true })
+        const supplierOptions = (supplierRes.data && supplierRes.data.suppliers) || []
+        if (supplierOptions.length > 0) {
+          confirmedSuppliers.value = supplierOptions
+          supplierList.value = supplierOptions.map(s => ({
+            id: s.supplier_id,
+            full_name: s.supplier_name,
+            username: s.supplier_username,
+            email: s.supplier_email
+          }))
+          showingConfirmedSuppliersOnly.value = true
+          return
+        }
+      } catch (e) {
+        console.warn('Failed to fetch product supplier options', e)
+      }
+
+      confirmedSuppliers.value = []
+      supplierList.value = []
+      showingConfirmedSuppliersOnly.value = true
+      return
     }
 
     // If no confirmed suppliers or failed to fetch, get all available suppliers
@@ -1160,6 +1227,32 @@ function closeSupplierModal() {
   pendingOrderQty.value = null
   selectedSupplierId.value = null
   pendingAcknowledgeProduct.value = null
+  supplierSelectionMode.value = 'place-order'
+}
+
+async function changeSupplier(product) {
+  if (!product) return
+
+  const requestId = resolveProcurementRequestId(product)
+  const changeKey = requestId || product.id
+
+  if (requestId) {
+    product.procurement_request_id = requestId
+  }
+
+  if (changingSupplierIds.value?.[changeKey]) return
+
+  if (!canChangeSupplier(product)) {
+    alert('Change Supplier is only available when at least two suppliers have confirmed this product.')
+    return
+  }
+
+  setChangingSupplierFlag(changeKey, true)
+  try {
+    await openSupplierModal(product, 'change-supplier')
+  } finally {
+    setChangingSupplierFlag(changeKey, false)
+  }
 }
 
 async function confirmSupplierSelection() {
@@ -1174,6 +1267,7 @@ async function confirmSupplierSelection() {
   // Save product data before we close the modal (which clears pendingOrderProduct)
   const product = pendingOrderProduct.value
   const isAcknowledge = pendingAcknowledgeProduct.value !== null
+  const isChangeSupplier = supplierSelectionMode.value === 'change-supplier'
 
   // Get the selected supplier ID (should be a number from radio button)
   const supplierId = parseInt(selectedSupplierId.value) || selectedSupplierId.value
@@ -1228,6 +1322,29 @@ async function confirmSupplierSelection() {
       product.status = 'budget_pending'
 
       // Refresh to get updated state from server
+      await loadRequestedProducts()
+      await loadProducts()
+      await refreshAllData()
+
+    } else if (isChangeSupplier) {
+      // ===== CHANGE SUPPLIER FLOW =====
+      const confirmed = await window.swalConfirm(`Change supplier for ${product.name}?\n\nThis transfers inventory to the selected supplier product and resets the receipt workflow.`)
+      if (!confirmed) {
+        setPlacingFlag(product.id, false)
+        return
+      }
+
+      const requestId = resolveProcurementRequestId(product)
+      const endpoint = requestId
+        ? `/api/procurement-requests/${requestId}/change-supplier`
+        : `/api/manager/procurement/products/${product.id}/change-supplier`
+      const res = await axios.post(endpoint, {
+        supplier_id: supplierId
+      }, { withCredentials: true })
+
+      alert(res.data?.message || 'Supplier changed successfully.')
+      closeSupplierModal()
+
       await loadRequestedProducts()
       await loadProducts()
       await refreshAllData()

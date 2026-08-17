@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\ProcurementRequest;
 use App\Models\SupplierOrder;
 use App\Models\Branch;
+use App\Models\User;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 
@@ -206,6 +207,14 @@ public function placeOrder(Request $request, $productId)
 
         // Determine the supplier for this product early so we can check duplicates.
         $supplierId = $product->supplier_id;
+        if (!empty($validated['supplier_id'])) {
+            $supplierId = $validated['supplier_id'];
+        }
+
+        $supplierUser = User::where('id', $supplierId)->first();
+        if (!$supplierUser || strtoupper(($supplierUser->role ?? '')) !== 'SUPPLIER') {
+            return response()->json(['error' => 'Selected supplier not found'], 400);
+        }
 
         // Check if SupplierOrder already exists for this request for the intended supplier (prevent duplicates).
         // Broadcast-created orders for other suppliers should not block placing an order for the selected supplier.
@@ -223,12 +232,6 @@ public function placeOrder(Request $request, $productId)
         // Check prerequisites
         if (!$procRequest->budget_approved) {
             return response()->json(['error' => 'Budget must be approved before ordering'], 400);
-        }
-
-        // Validate supplier exists
-        $supplierId = $product->supplier_id;
-        if (!$supplierId) {
-            return response()->json(['error' => 'Product has no assigned supplier'], 400);
         }
 
         // Always use the quantity requested by logistics (cannot be changed by procurement)
@@ -251,17 +254,17 @@ public function placeOrder(Request $request, $productId)
         // Use the logistics-requested quantity (cannot be modified by procurement)
         $quantity = $procRequest->quantity;
 
-        // If explicit supplier_id is provided in request, use it; otherwise use product's supplier
-        if (!empty($validated['supplier_id'])) {
-            $supplierId = $validated['supplier_id'];
-        }
-
         // Create supplier order atomically (single code path, no duplication)
         try {
-            $supplierOrder = DB::transaction(function () use ($procRequest, $supplierId, $quantity, $user) {
+            $orderedProduct = $product;
+            $supplierOrder = DB::transaction(function () use ($procRequest, $supplierId, $quantity, $user, $product, $supplierUser, &$orderedProduct) {
+                if ((int) $product->supplier_id !== (int) $supplierId) {
+                    $orderedProduct = Product::transferInventoryForSupplierChange($product, $supplierUser);
+                }
+
                 $order = SupplierOrder::create([
                     'procurement_request_id' => $procRequest->id,
-                    'product_id' => $procRequest->product_id,
+                    'product_id' => $orderedProduct->id,
                     'supplier_id' => $supplierId,
                     'quantity' => $quantity,
                     'status' => 'pending',
@@ -277,6 +280,7 @@ public function placeOrder(Request $request, $productId)
                         'procurement_user_id' => $user->id,
                         'status' => 'pending_order_to_supplier',  // Prevents re-showing in procurement lists
                         'supplier_confirmed' => false,
+                        'product_id' => $orderedProduct->id,
                     ]);
                 } catch (\Exception $e) {
                     Log::warning('Failed to set pending_order_to_supplier, falling back to delivery_pending', ['error' => $e->getMessage(), 'procurement_request_id' => $procRequest->id]);

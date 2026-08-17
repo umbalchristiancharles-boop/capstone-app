@@ -293,17 +293,9 @@ class BudgetRequestController extends Controller
                     if ($procId > 0) {
                         $proc = ProcurementRequest::find($procId);
                         if ($proc) {
-                            // For manual procurements, move directly to awaiting_inventory_confirmation
-                            if (!empty($proc->is_manual)) {
-                                if ($proc->status !== 'awaiting_inventory_confirmation') {
-                                    $proc->update(['status' => 'awaiting_inventory_confirmation']);
-                                    Log::info('BudgetRequest approved -> manual ProcurementRequest set to awaiting_inventory_confirmation', ['budget_request_id' => $budgetRequest->id, 'procurement_request_id' => $procId]);
-                                }
-                            } else {
-                                if ($proc->status !== 'budget_pending') {
-                                    $proc->update(['status' => 'budget_pending']);
-                                    Log::info('BudgetRequest approved -> set ProcurementRequest to budget_pending', ['budget_request_id' => $budgetRequest->id, 'procurement_request_id' => $procId]);
-                                }
+                            if ($proc->status !== 'pending_order_to_supplier') {
+                                $proc->update(['status' => 'pending_order_to_supplier']);
+                                Log::info('BudgetRequest approved -> set ProcurementRequest to pending_order_to_supplier', ['budget_request_id' => $budgetRequest->id, 'procurement_request_id' => $procId]);
                             }
                         }
                     }
@@ -447,9 +439,8 @@ class BudgetRequestController extends Controller
 
                     // Mark as budget given: set finance user, mark budget approved and move status
                     try {
-                        // For manual procurements, we skip supplier ordering and go straight to
-                        // awaiting inventory confirmation so Logistics can confirm received stock.
-                        $newStatus = $proc->is_manual ? 'awaiting_inventory_confirmation' : 'pending_order_to_supplier';
+                        // Approved procurements should move to supplier ordering first.
+                        $newStatus = 'pending_order_to_supplier';
                         $proc->update([
                             'finance_user_id' => $user->id,
                             'budget_amount' => $budgetRequest->requested_amount,
@@ -460,7 +451,7 @@ class BudgetRequestController extends Controller
                         // Fallback for DBs that haven't run the enum migration yet
                         Log::warning('Failed to set pending_order_to_supplier, falling back to delivery_pending', ['error' => $e->getMessage(), 'procurement_request_id' => $proc->id]);
                         try {
-                            $fallbackStatus = $proc->is_manual ? 'awaiting_inventory_confirmation' : 'delivery_pending';
+                            $fallbackStatus = 'delivery_pending';
                             $proc->update([
                                 'finance_user_id' => $user->id,
                                 'budget_amount' => $budgetRequest->requested_amount,

@@ -574,11 +574,18 @@ public function requestedProducts(Request $request)
                 ->toArray();
 
             // Prefetch existing supplier orders for these procurement requests to get estimated_delivery_datetime
+            // Prefer the order that already has a delivery schedule, so the UI shows the supplier-confirmed timestamp.
             $existingOrders = \App\Models\SupplierOrder::whereIn('procurement_request_id', $requests->pluck('id')->toArray())
                 ->whereNotNull('product_id')
                 ->with(['product', 'procurementRequest'])
+                ->orderByRaw('CASE WHEN estimated_delivery_datetime IS NULL THEN 1 ELSE 0 END')
+                ->orderByDesc('estimated_delivery_datetime')
+                ->orderByDesc('updated_at')
                 ->get()
-                ->keyBy('procurement_request_id');
+                ->groupBy('procurement_request_id')
+                ->map(function ($orders) {
+                    return $orders->first();
+                });
 
             $products = $products->map(function ($p) use ($requestsByProduct, $broadcastedProcReqIds, $confirmedSupplierProcReqIds, $existingOrders) {
                 $req = $requestsByProduct->get($p->id);
@@ -723,6 +730,14 @@ public function requestedProducts(Request $request)
 
             // Accept optional supplier_id from request for multi-supplier selection
             $selectedSupplierId = $request->input('supplier_id');
+            $selectedSupplierUser = null;
+
+            if ($selectedSupplierId) {
+                $selectedSupplierUser = User::where('id', $selectedSupplierId)->first();
+                if (!$selectedSupplierUser || strtoupper(($selectedSupplierUser->role ?? '')) !== 'SUPPLIER') {
+                    return response()->json(['error' => 'Selected supplier not found'], 400);
+                }
+            }
 
             Log::info('updateStatus multi-supplier check', [
                 'proc_id' => $procRequest->id,
@@ -747,14 +762,6 @@ public function requestedProducts(Request $request)
             // (e.g. procurement request created from Inventory without SupplierOrder rows),
             // allow the manager's selection as long as the supplier exists and the product has a valid price.
             if ($confirmedSuppliers->count() === 0 && $selectedSupplierId) {
-                try {
-                    $supplierUser = \App\Models\User::where('id', $selectedSupplierId)->first();
-                } catch (\Exception $e) {
-                    $supplierUser = null;
-                }
-                if (!$supplierUser || strtoupper(($supplierUser->role ?? '')) !== 'SUPPLIER') {
-                    return response()->json(['error' => 'Selected supplier not found'], 400);
-                }
                 // Use the procurement request's product as the selected product (price must be present)
                 $selectedProduct = $procRequest->product;
                 if (!$selectedProduct || empty($selectedProduct->price) || (float)$selectedProduct->price <= 0) {
@@ -810,7 +817,18 @@ public function requestedProducts(Request $request)
             try {
                 // Procurement acknowledges and auto-creates BudgetRequest for Finance panel
                 $budgetCreated = false;
-                DB::transaction(function () use ($procRequest, $user, $selectedProduct, $selectedSupplierId, &$budgetCreated) {
+                DB::transaction(function () use ($procRequest, $user, $selectedProduct, $selectedSupplierId, $selectedSupplierUser, &$budgetCreated) {
+                    $sourceProduct = $procRequest->product;
+                    $finalProduct = $selectedProduct;
+
+                    if ($selectedSupplierUser && $sourceProduct) {
+                        $finalProduct = Product::transferInventoryForSupplierChange(
+                            $sourceProduct,
+                            $selectedSupplierUser,
+                            ($selectedProduct && $selectedProduct->id !== $sourceProduct->id) ? $selectedProduct : null
+                        );
+                    }
+
                     $updateData = [
                             'procurement_user_id' => $user->id,
                             'status' => 'budget_pending',
@@ -824,8 +842,8 @@ public function requestedProducts(Request $request)
 
                         // Persist the selected product (could be supplier-specific product)
                         // so downstream inventory confirmation updates the correct product row.
-                        if (!empty($selectedProduct->id)) {
-                            $updateData['product_id'] = $selectedProduct->id;
+                        if (!empty($finalProduct?->id)) {
+                            $updateData['product_id'] = $finalProduct->id;
                         }
 
                     $procRequest->update($updateData);
@@ -1139,6 +1157,153 @@ public function requestedProducts(Request $request)
         $fresh = $procRequest->fresh();
         $status = $fresh->status ?? 'unknown';
         return response()->json(['ok' => true, 'message' => "Receipt confirmed. Status set to {$status}.", 'request' => $fresh]);
+    }
+
+    /**
+     * Change the assigned supplier while receipt confirmation is still pending.
+     * This transfers stock from the current product row to the selected supplier's
+     * matching product row and resets the receipt workflow back to order placement.
+     */
+    public function changeSupplier(Request $request, $id)
+    {
+        $user = $request->user();
+        if (!$user) return response()->json(['error' => 'Unauthenticated'], 401);
+
+        $role = strtoupper($user->role ?? '');
+        $dept = strtoupper($user->department ?? '');
+        if (!($this->canAccessProcurement($user) || $role === 'PROCUREMENT_MANAGER' || ($role === 'MANAGER' && $dept === 'PROCUREMENT'))) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $validated = $request->validate([
+            'supplier_id' => 'required|integer|exists:users,id',
+        ]);
+
+        $procRequest = ProcurementRequest::with(['product'])->findOrFail($id);
+
+        if ($user->branch_id && $procRequest->branch_id != $user->branch_id) {
+            return response()->json(['error' => 'Not your branch'], 403);
+        }
+
+        $allowedStatuses = ['receipt_submitted', 'pending_receipt', 'pending_receipt_check'];
+        if (!in_array($procRequest->status, $allowedStatuses, true)) {
+            return response()->json(['error' => 'Supplier can only be changed while receipt confirmation is pending'], 400);
+        }
+
+        $selectedSupplier = User::where('id', $validated['supplier_id'])
+            ->where('role', 'SUPPLIER')
+            ->first();
+
+        if (!$selectedSupplier) {
+            return response()->json(['error' => 'Selected supplier not found'], 400);
+        }
+
+        $sourceProduct = $procRequest->product;
+        if (!$sourceProduct) {
+            return response()->json(['error' => 'No source product found for this procurement request'], 400);
+        }
+
+        if ((int) ($procRequest->supplier_id ?? 0) === (int) $selectedSupplier->id) {
+            return response()->json(['ok' => true, 'message' => 'Selected supplier is already assigned to this request.']);
+        }
+
+        $targetOrder = SupplierOrder::where('procurement_request_id', $procRequest->id)
+            ->where('supplier_id', $selectedSupplier->id)
+            ->whereNotNull('product_id')
+            ->with('product')
+            ->first();
+
+        if (!$targetOrder || !$targetOrder->product) {
+            return response()->json(['error' => 'Selected supplier does not have a confirmed product for this request'], 400);
+        }
+
+        $targetProduct = $targetOrder->product;
+        $sameSku = !empty($sourceProduct->sku) && !empty($targetProduct->sku)
+            ? trim((string) $sourceProduct->sku) === trim((string) $targetProduct->sku)
+            : false;
+        $sameName = trim(strtoupper((string) $sourceProduct->name)) === trim(strtoupper((string) $targetProduct->name));
+
+        if (!$sameSku && !$sameName) {
+            return response()->json(['error' => 'Selected supplier product does not match the current product'], 400);
+        }
+
+        try {
+            $updatedRequest = DB::transaction(function () use ($procRequest, $selectedSupplier, $sourceProduct, $targetProduct, $targetOrder, $user) {
+                $lockedRequest = ProcurementRequest::where('id', $procRequest->id)->lockForUpdate()->firstOrFail();
+
+                if (!in_array($lockedRequest->status, ['receipt_submitted', 'pending_receipt', 'pending_receipt_check'], true)) {
+                    throw new \RuntimeException('Supplier can only be changed while receipt confirmation is pending');
+                }
+
+                $source = Product::where('id', $sourceProduct->id)->lockForUpdate()->firstOrFail();
+                $destination = Product::where('id', $targetProduct->id)->lockForUpdate()->firstOrFail();
+
+                $movedProduct = Product::transferInventoryForSupplierChange($source, $selectedSupplier, $destination);
+
+                $orders = SupplierOrder::where('procurement_request_id', $lockedRequest->id)
+                    ->lockForUpdate()
+                    ->get();
+
+                foreach ($orders as $order) {
+                    if ((int) $order->id === (int) $targetOrder->id) {
+                        continue;
+                    }
+
+                    $order->update(['status' => 'cancelled']);
+                }
+
+                $targetOrder->update([
+                    'status' => 'pending',
+                    'is_broadcast' => false,
+                    'product_id' => $movedProduct->id,
+                    'supplier_id' => $selectedSupplier->id,
+                ]);
+
+                $lockedRequest->update([
+                    'supplier_id' => $selectedSupplier->id,
+                    'product_id' => $movedProduct->id,
+                    'status' => 'pending_order_to_supplier',
+                    'supplier_confirmed' => false,
+                    'receipt_path' => null,
+                    'receipt_uploaded_by' => null,
+                    'receipt_uploaded_at' => null,
+                    'receipt_confirmed' => false,
+                    'receipt_confirmed_by' => null,
+                    'receipt_confirmed_at' => null,
+                    'confirmed_quantity' => null,
+                    'variance_quantity' => null,
+                    'variance_reason' => null,
+                    'variance_reported_at' => null,
+                    'delivery_proof_path' => null,
+                    'procurement_user_id' => $user->id,
+                ]);
+
+                try {
+                    event(new \App\Events\ProcurementRequestUpdated($lockedRequest->fresh(['product'])));
+                } catch (\Throwable $e) {
+                    Log::debug('Failed to dispatch ProcurementRequestUpdated after supplier change', ['error' => $e->getMessage(), 'proc_req_id' => $lockedRequest->id]);
+                }
+
+                return $lockedRequest->fresh(['product']);
+            });
+
+            return response()->json([
+                'ok' => true,
+                'message' => 'Supplier changed successfully. Inventory was transferred to the new supplier product and the receipt flow was reset.',
+                'request' => $updatedRequest,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Failed to change procurement supplier', [
+                'proc_req_id' => $procRequest->id,
+                'supplier_id' => $validated['supplier_id'],
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to change supplier',
+                'message' => config('app.debug') ? $e->getMessage() : 'Unable to transfer inventory to the selected supplier',
+            ], 500);
+        }
     }
 
     /**
