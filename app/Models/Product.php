@@ -157,12 +157,19 @@ class Product extends Model
                     ->first();
 
             if ($destination && $destination->id !== $source->id) {
-                $destination->stock = (int) $destination->stock + (int) $source->stock;
+                $sourceStock = (int) $source->stock;
+                $sourceRealStock = (int) $source->real_stock;
+
+                $destination->stock = (int) $destination->stock + $sourceStock;
+                $destination->real_stock = (int) $destination->real_stock + $sourceRealStock;
                 $destination->supplier_id = $newSupplier->id;
                 $destination->supplier_name = $supplierName;
                 $destination->save();
 
                 $source->stock = 0;
+                $source->real_stock = 0;
+                $source->supplier_id = $newSupplier->id;
+                $source->supplier_name = $supplierName;
                 $source->save();
 
                 self::recomputeRealStockForGroup((int) $source->branch_id, $source->sku, $source->name);
@@ -173,6 +180,8 @@ class Product extends Model
 
             $source->supplier_id = $newSupplier->id;
             $source->supplier_name = $supplierName;
+            $source->stock = (int) $source->stock;
+            $source->real_stock = (int) $source->real_stock;
             $source->save();
 
             self::recomputeRealStockForGroup((int) $source->branch_id, $source->sku, $source->name);

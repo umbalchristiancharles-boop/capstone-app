@@ -412,7 +412,9 @@ Route::prefix('manager')->middleware('auth:sanctum,web')->group(function () {
         Route::put('/procurement/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'updateProcurementProfile']);
         Route::get('/procurement/dashboard', [\App\Http\Controllers\Api\ManagerProfileController::class, 'procurementDashboard']);
         Route::get('/procurement/products', [\App\Http\Controllers\Api\ManagerProfileController::class, 'procurementProducts']);
+        Route::get('/procurement/products/{id}/supplier-options', [\App\Http\Controllers\Api\ManagerProfileController::class, 'productSupplierOptions']);
         Route::post('/procurement/products/{id}/place-order', [\App\Http\Controllers\Api\ManagerProfileController::class, 'placeOrderProduct']);
+        Route::post('/procurement/products/{id}/change-supplier', [\App\Http\Controllers\Api\ManagerProfileController::class, 'changeSupplierProduct']);
         // Procurement supplier management
         Route::post('/procurement/suppliers', [\App\Http\Controllers\Api\ManagerProfileController::class, 'createProcurementSupplier']);
 

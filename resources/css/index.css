@@ -333,7 +333,7 @@
   align-items: center;
   justify-content: center;
   padding: 18px;
-  z-index: 1000;
+  z-index: 500;
   backdrop-filter: blur(10px);
 }
 

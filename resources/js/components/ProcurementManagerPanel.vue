@@ -706,6 +706,16 @@ function canChangeSupplier(item) {
   return Boolean(item?.has_alternative_supplier || Number(item?.supplier_count || 0) > 1)
 }
 
+function dedupeSuppliersById(suppliers) {
+  const seen = new Set()
+  return (suppliers || []).filter((supplier) => {
+    const supplierId = Number(supplier?.supplier_id ?? supplier?.id)
+    if (!supplierId || seen.has(supplierId)) return false
+    seen.add(supplierId)
+    return true
+  })
+}
+
 function resolveProcurementRequestId(item) {
   if (!item) return null
   if (item.procurement_request_id) return item.procurement_request_id
@@ -1149,21 +1159,26 @@ async function openSupplierModal(product, mode = 'place-order') {
   supplierLoading.value = true
 
   try {
-    // First, try to fetch suppliers who have already confirmed they have the product
     confirmedSuppliers.value = []
     showingConfirmedSuppliersOnly.value = false
 
-    if (product.procurement_request_id) {
+    const currentSupplierId = Number(product?.supplier_id || 0)
+    const requestId = product?.procurement_request_id || resolveProcurementRequestId(product)
+
+    if (requestId) {
       try {
-        const confirmedRes = await axios.get(`/api/procurement-requests/${product.procurement_request_id}/confirmed-suppliers`, { withCredentials: true })
-        if (confirmedRes.data && confirmedRes.data.ok && confirmedRes.data.suppliers) {
+        const confirmedRes = await axios.get(`/api/procurement-requests/${requestId}/confirmed-suppliers`, { withCredentials: true })
+        if (confirmedRes.data && confirmedRes.data.ok && Array.isArray(confirmedRes.data.suppliers)) {
           const confirmedList = confirmedRes.data.suppliers
-          // Treat entries with zero stock/price as not confirmed yet
           const filteredConfirmed = confirmedList.filter(s => Number(s.product_stock || 0) > 0 || Number(s.product_price || 0) > 0)
-          if (filteredConfirmed.length > 0) {
-            confirmedSuppliers.value = filteredConfirmed
-            // Convert the confirmed suppliers to the same format as regular suppliers
-            supplierList.value = filteredConfirmed.map(s => ({
+          const dedupedConfirmed = dedupeSuppliersById(filteredConfirmed).filter(s => {
+            const supplierId = Number(s.supplier_id ?? s.id)
+            return !currentSupplierId || supplierId !== currentSupplierId
+          })
+
+          if (dedupedConfirmed.length > 0) {
+            confirmedSuppliers.value = dedupedConfirmed
+            supplierList.value = dedupedConfirmed.map(s => ({
               id: s.supplier_id,
               full_name: s.supplier_name,
               username: s.supplier_username,
@@ -1173,15 +1188,20 @@ async function openSupplierModal(product, mode = 'place-order') {
             return
           }
 
-          if (mode === 'change-supplier') {
-            confirmedSuppliers.value = []
-            supplierList.value = []
+          if (!dedupedConfirmed.length && filteredConfirmed.length > 0 && mode !== 'change-supplier') {
+            confirmedSuppliers.value = filteredConfirmed
+            supplierList.value = filteredConfirmed.map(s => ({
+              id: s.supplier_id,
+              full_name: s.supplier_name,
+              username: s.supplier_username,
+              email: s.supplier_email
+            }))
             showingConfirmedSuppliersOnly.value = true
             return
           }
         }
       } catch (e) {
-        console.warn('Failed to fetch confirmed suppliers, falling back to all suppliers', e)
+        console.warn('Failed to fetch confirmed suppliers; falling back to available suppliers', e)
       }
     }
 
@@ -1189,9 +1209,14 @@ async function openSupplierModal(product, mode = 'place-order') {
       try {
         const supplierRes = await axios.get(`/api/manager/procurement/products/${product.id}/supplier-options`, { withCredentials: true })
         const supplierOptions = (supplierRes.data && supplierRes.data.suppliers) || []
-        if (supplierOptions.length > 0) {
-          confirmedSuppliers.value = supplierOptions
-          supplierList.value = supplierOptions.map(s => ({
+        const dedupedSuppliers = dedupeSuppliersById(supplierOptions).filter(s => {
+          const supplierId = Number(s.supplier_id ?? s.id)
+          return !currentSupplierId || supplierId !== currentSupplierId
+        })
+
+        if (dedupedSuppliers.length > 0) {
+          confirmedSuppliers.value = dedupedSuppliers
+          supplierList.value = dedupedSuppliers.map(s => ({
             id: s.supplier_id,
             full_name: s.supplier_name,
             username: s.supplier_username,
@@ -1201,12 +1226,27 @@ async function openSupplierModal(product, mode = 'place-order') {
           return
         }
       } catch (e) {
-        console.warn('Failed to fetch product supplier options', e)
+        console.warn('Failed to fetch product supplier options, falling back to supplier list', e)
+      }
+
+      try {
+        const res = await axios.get('/api/manager/logistics/suppliers', { withCredentials: true })
+        const allSuppliers = (res.data && res.data.suppliers) || []
+        const dedupedSuppliers = dedupeSuppliersById(allSuppliers).filter(s => {
+          const supplierId = Number(s.id ?? s.supplier_id)
+          return !currentSupplierId || supplierId !== currentSupplierId
+        })
+
+        supplierList.value = dedupedSuppliers.length ? dedupedSuppliers : allSuppliers
+        showingConfirmedSuppliersOnly.value = false
+        return
+      } catch (fallbackErr) {
+        console.warn('Failed to fetch available suppliers for supplier change', fallbackErr)
       }
 
       confirmedSuppliers.value = []
       supplierList.value = []
-      showingConfirmedSuppliersOnly.value = true
+      showingConfirmedSuppliersOnly.value = false
       return
     }
 

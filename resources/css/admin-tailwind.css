@@ -40,19 +40,19 @@
 
   /* LAYOUT GRID */
   .admin-layout {
-    @apply tw-admin-layout;
+    @apply grid grid-cols-1 lg:grid-cols-4 gap-4 p-4;
   }
 
   .admin-left {
-    @apply tw-admin-left;
+    @apply lg:col-span-1;
   }
 
   .admin-main {
-    @apply tw-admin-main;
+    @apply lg:col-span-2;
   }
 
   .admin-side {
-    @apply tw-admin-side;
+    @apply lg:col-span-1;
   }
 
   /* TOP BAR / HEADER */
@@ -119,27 +119,27 @@
 
   /* PANELS */
   .panel-block {
-    @apply tw-panel-block;
+    @apply bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm;
   }
 
   .panel-header {
-    @apply tw-panel-header;
+    @apply flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-200 dark:border-slate-700;
   }
 
   .panel-header h2 {
-    @apply tw-panel-header h2;
+    @apply text-lg font-semibold text-slate-900 dark:text-white;
   }
 
   .panel-body {
-    @apply tw-panel-body;
+    @apply p-4;
   }
 
   .panel-body--list {
-    @apply tw-panel-body--list;
+    @apply divide-y divide-slate-200 dark:divide-slate-700;
   }
 
   .panel-body--table {
-    @apply tw-panel-body--table;
+    @apply overflow-x-auto;
   }
 
   .panel-action {
@@ -148,7 +148,7 @@
 
   /* ANNOUNCEMENTS */
   .announcements-panel {
-    @apply tw-panel-block;
+    @apply bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm;
   }
 
   .announcement-list {
@@ -173,71 +173,71 @@
 
   /* RANGE TABS */
   .range-tabs {
-    @apply tw-range-tabs;
+    @apply flex flex-wrap gap-2 mb-4;
   }
 
   .range-tab {
-    @apply tw-range-tab;
+    @apply px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition;
   }
 
   .range-tab--active {
-    @apply tw-range-tab--active;
+    @apply bg-gradient-to-r from-orange-500 to-orange-600 text-white border-orange-600;
   }
 
   /* OVERVIEW CARDS */
   .overview-grid {
-    @apply tw-overview-grid;
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4;
   }
 
   .overview-card {
-    @apply tw-overview-card;
+    @apply bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 text-center;
   }
 
   .overview-label {
-    @apply tw-overview-label;
+    @apply block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1;
   }
 
   .overview-value {
-    @apply tw-overview-value;
+    @apply text-2xl font-bold text-slate-900 dark:text-white;
   }
 
   /* TABLE STYLES */
   .table-header {
-    @apply tw-table-header;
+    @apply grid grid-cols-4 gap-4 px-4 py-3 bg-slate-100 dark:bg-slate-700 font-semibold text-sm text-slate-900 dark:text-slate-100 border-b border-slate-200 dark:border-slate-600;
   }
 
   .table-row {
-    @apply tw-table-row;
+    @apply grid grid-cols-4 gap-4 px-4 py-3 items-center border-b border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50;
   }
 
   /* BADGES */
   .badge {
-    @apply tw-badge;
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold;
   }
 
   .badge--success {
-    @apply tw-badge--success;
+    @apply bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300;
   }
 
   .badge--warning {
-    @apply tw-badge--warning;
+    @apply bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300;
   }
 
   .badge--info {
-    @apply tw-badge--info;
+    @apply bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300;
   }
 
   /* SIDE ITEMS & QUEUE */
   .side-item {
-    @apply tw-side-item;
+    @apply flex items-center justify-between py-3 px-1 text-slate-700 dark:text-slate-300;
   }
 
   .side-value {
-    @apply tw-side-value;
+    @apply font-semibold text-slate-900 dark:text-white;
   }
 
   .side-item--alert {
-    @apply tw-side-item;
+    @apply flex items-center justify-between py-3 px-1 text-slate-700 dark:text-slate-300;
   }
 
   .queue-item {
@@ -254,19 +254,19 @@
 
   /* MODALS */
   .info-backdrop {
-    @apply tw-backdrop;
+    @apply fixed inset-0 bg-black/50 flex items-center justify-center z-50;
   }
 
   .info-modal {
-    @apply tw-modal;
+    @apply bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full mx-4;
   }
 
   .announcement-modal {
-    @apply tw-modal;
+    @apply bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full mx-4;
   }
 
   .modal-header-custom {
-    @apply tw-modal-header;
+    @apply flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700;
   }
 
   .modal-close-btn {
@@ -274,24 +274,24 @@
   }
 
   .modal-body-custom {
-    @apply tw-modal-body;
+    @apply p-4 space-y-4;
   }
 
   .modal-footer-custom {
-    @apply tw-modal-footer;
+    @apply flex gap-2 justify-end p-4 border-t border-slate-200 dark:border-slate-700;
   }
 
   /* FORM ELEMENTS */
   .form-group-custom {
-    @apply tw-form-group;
+    @apply space-y-2;
   }
 
   .info-label {
-    @apply tw-form-label;
+    @apply block text-sm font-medium text-slate-700 dark:text-slate-300;
   }
 
   .info-input {
-    @apply tw-form-input;
+    @apply w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500;
   }
 
   /* INFO MODAL GRID */
@@ -313,16 +313,16 @@
 
   /* BUTTONS */
   .btn-primary {
-    @apply tw-btn-primary;
+    @apply px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-lg hover:from-orange-600 hover:to-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-outline {
-    @apply tw-btn-outline;
+    @apply px-4 py-2 border-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-semibold rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition;
   }
 
   .btn-cancel,
   .btn-secondary {
-    @apply tw-btn-outline;
+    @apply px-4 py-2 border-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-semibold rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition;
   }
 
   .btn-confirm {
@@ -331,11 +331,11 @@
 
   /* LOGOUT CONFIRM */
   .logout-confirm-backdrop {
-    @apply tw-backdrop;
+    @apply fixed inset-0 bg-black/50 flex items-center justify-center z-50;
   }
 
   .logout-confirm-box {
-    @apply tw-modal space-y-3;
+    @apply bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full mx-4 space-y-3;
   }
 
   .logout-actions {
@@ -403,7 +403,7 @@
 
   /* ATTENDANCE CARD */
   .attendance-card {
-    @apply tw-panel-block;
+    @apply bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm;
   }
 
   .attendance-header {

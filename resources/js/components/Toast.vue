@@ -1,9 +1,11 @@
 <template>
-  <div class="toast-viewport" v-if="state.toasts.length">
-    <div v-for="t in state.toasts" :key="t.id" class="toast" :class="t.type">
-      <div class="toast-message">{{ t.message }}</div>
+  <Teleport to="body">
+    <div class="toast-viewport" v-if="state.toasts.length">
+      <div v-for="t in state.toasts" :key="t.id" class="toast" :class="t.type">
+        <div class="toast-message">{{ t.message }}</div>
+      </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <script setup>
@@ -12,13 +14,13 @@ import { toastState as state } from './toastStore'
 
 <style scoped>
 .toast-viewport {
-  position: fixed;
-  right: 16px;
-  top: 16px;
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  position: fixed !important;
+  right: 16px !important;
+  top: 16px !important;
+  z-index: 999999 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
 }
 .toast {
   min-width: 220px;

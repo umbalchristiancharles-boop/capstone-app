@@ -176,12 +176,16 @@ class ProcurementRequestController extends Controller
 
         // Determine target suppliers
         if (!empty($validated['supplier_ids'])) {
-            $suppliers = User::whereIn('id', $validated['supplier_ids'])->where('role', 'SUPPLIER')->get();
+            $suppliers = User::whereIn('id', $validated['supplier_ids'])
+                ->whereRaw('UPPER(COALESCE(role, "")) IN (?, ?)', ['SUPPLIER', 'SUPPLIER_MANAGER'])
+                ->get();
         } else {
-            // Default: all active suppliers (optionally filter by branch if desired)
-            $suppliers = User::where('role', 'SUPPLIER')->where(function($q) use ($procRequest) {
-                $q->whereNull('branch_id')->orWhere('branch_id', $procRequest->branch_id);
-            })->get();
+            // Default: all active suppliers for this branch or global supplier records.
+            $suppliers = User::whereRaw('UPPER(COALESCE(role, "")) IN (?, ?)', ['SUPPLIER', 'SUPPLIER_MANAGER'])
+                ->where(function($q) use ($procRequest) {
+                    $q->whereNull('branch_id')->orWhere('branch_id', $procRequest->branch_id);
+                })
+                ->get();
         }
 
         if ($suppliers->isEmpty()) {

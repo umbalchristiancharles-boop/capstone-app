@@ -165,7 +165,8 @@ class ManagerProfileController extends Controller
         $role = strtoupper($user->role ?? '');
         if (in_array($role, ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN'])) return true;
 
-        if (in_array($role, ['MANAGER', 'MANAGER_HR', 'BRANCH_MANAGER'])) {
+        $combinedManagerRoles = ['MANAGER', 'MANAGER_HR', 'BRANCH_MANAGER', 'MANAGER_LOGISTICS', 'MANAGER_FINANCE', 'MANAGER_INVENTORY', 'MANAGER_PROCUREMENT', 'MANAGER_CASHIER', 'MANAGER_KITCHEN'];
+        if (in_array($role, $combinedManagerRoles)) {
             return $this->hasDepartmentAccess($user, $department);
         }
 
@@ -185,12 +186,17 @@ class ManagerProfileController extends Controller
             return false;
         }
 
+        $role = strtoupper($user->role ?? '');
         $userDept = strtoupper($user->department ?? '');
         $targetDept = strtoupper($department);
 
-        // MANAGER_HR has access to HR
-        if (strtoupper($user->role ?? '') === 'MANAGER_HR' && $targetDept === 'HR') {
+        if ($role === 'MANAGER_HR' && $targetDept === 'HR') {
             return true;
+        }
+
+        if (str_starts_with($role, 'MANAGER_')) {
+            $roleDept = substr($role, 8); // MANAGER_LOGISTICS -> LOGISTICS
+            return $roleDept === $targetDept || $userDept === $targetDept || $userDept === strtoupper($targetDept);
         }
 
         return $userDept === $targetDept || $userDept === strtoupper($targetDept);
@@ -1249,7 +1255,7 @@ public function logisticsBranches(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);
 
-        if (!$this->allowManagerDept($user, 'logistics')) {
+        if (!$this->allowManagerDept($user, 'logistics') && !$this->allowManagerDept($user, 'procurement')) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
@@ -1258,12 +1264,17 @@ public function logisticsBranches(Request $request)
         if ($this->isMainBranchLogisticsManager($user) && $request->filled('branch_id')) {
             $branchId = (int) $request->input('branch_id');
         }
-        // Match supplier role case-insensitively and ensure active users
-        $suppliers = User::whereRaw('UPPER(COALESCE(role, "")) = ?', ['SUPPLIER'])
-            ->when($branchId, function ($q) use ($branchId) { return $q->where('branch_id', $branchId); })
+        // Match supplier roles case-insensitively and include suppliers assigned to this branch
+        // or those with no branch assigned (global supplier records).
+        $suppliers = User::whereRaw('UPPER(COALESCE(role, "")) IN (?, ?)', ['SUPPLIER', 'SUPPLIER_MANAGER'])
+            ->when($branchId, function ($q) use ($branchId) {
+                return $q->where(function ($inner) use ($branchId) {
+                    $inner->whereNull('branch_id')->orWhere('branch_id', $branchId);
+                });
+            })
             ->whereNull('deleted_at')
             ->where('is_active', 1)
-            ->select('id', 'username', 'full_name', 'email', 'phone_number')
+            ->select('id', 'username', 'full_name', 'email', 'phone_number', 'branch_id')
             ->orderBy('full_name')
             ->get();
 
@@ -1531,6 +1542,72 @@ public function logisticsProducts(Request $request)
         return response()->json([
             'ok' => true,
             'data' => $products,
+        ]);
+    }
+
+    /**
+     * Return alternative supplier product rows for a given product in the same branch.
+     * Used by the Change Supplier modal when matching products are available from multiple suppliers.
+     */
+    public function productSupplierOptions(Request $request, $id)
+    {
+        $user = $this->getAuthenticatedManager($request);
+
+        if (!$this->allowManagerDept($user, 'procurement')) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $product = Product::findOrFail($id);
+
+        $matchingProducts = Product::where('branch_id', $product->branch_id)
+            ->where('is_active', 1)
+            ->whereNotNull('supplier_id')
+            ->where(function ($query) use ($product) {
+                if (!empty($product->sku)) {
+                    $query->where('sku', $product->sku);
+                }
+
+                $normalizedName = trim(strtoupper((string) ($product->name ?? '')));
+                if ($normalizedName !== '') {
+                    $query->orWhereRaw('TRIM(UPPER(name)) = ?', [$normalizedName]);
+                }
+            })
+            ->where('id', '!=', $product->id)
+            ->with('supplier')
+            ->orderBy('price', 'asc')
+            ->get();
+
+        if ($matchingProducts->isEmpty()) {
+            $matchingProducts = Product::where('branch_id', $product->branch_id)
+                ->where('is_active', 1)
+                ->whereNotNull('supplier_id')
+                ->where('id', '!=', $product->id)
+                ->where('price', '>', 0)
+                ->with('supplier')
+                ->orderBy('price', 'asc')
+                ->get();
+        }
+
+        $suppliers = $matchingProducts->map(function ($alt) {
+            $supplier = $alt->supplier;
+            return [
+                'supplier_id' => $alt->supplier_id,
+                'supplier_name' => $supplier?->full_name ?? $supplier?->username ?? $alt->supplier_name,
+                'supplier_username' => $supplier?->username ?? null,
+                'supplier_email' => $supplier?->email ?? null,
+                'supplier_phone' => $supplier?->phone_number ?? null,
+                'product_name' => $alt->name,
+                'product_price' => (float) ($alt->price ?? 0),
+                'product_stock' => (int) ($alt->stock ?? 0),
+                'product_expiry' => $alt->expires_at ?? null,
+                'product_category' => $alt->category ?? 'Uncategorized',
+                'per_pack_or_individual' => $alt->per_pack_or_individual,
+            ];
+        })->filter(fn ($supplier) => !empty($supplier['supplier_id']))->values();
+
+        return response()->json([
+            'ok' => true,
+            'suppliers' => $suppliers,
         ]);
     }
 
@@ -1888,6 +1965,98 @@ public function logisticsProducts(Request $request)
      * Create a supplier account (Procurement Manager)
      * POST /api/manager/procurement/suppliers
      */
+    /**
+     * Change the supplier for a product directly without requiring an active procurement request.
+     * This is used by the supplier selection modal when a manager wants to assign a different supplier
+     * to the selected product row.
+     */
+    public function changeSupplierProduct(Request $request, $id)
+    {
+        $user = $this->getAuthenticatedManager($request);
+
+        if (!$this->allowManagerDept($user, 'procurement')) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $product = Product::where('id', $id)
+            ->where('branch_id', $user->branch_id)
+            ->first();
+
+        if (!$product) {
+            return response()->json(['ok' => false, 'message' => 'Product not found'], 404);
+        }
+
+        $validated = $request->validate([
+            'supplier_id' => 'required|integer|exists:users,id',
+        ]);
+
+        $selectedSupplier = User::where('id', $validated['supplier_id'])
+            ->where('role', 'SUPPLIER')
+            ->first();
+
+        if (!$selectedSupplier) {
+            return response()->json(['ok' => false, 'message' => 'Selected supplier not found'], 400);
+        }
+
+        if ((int) ($product->supplier_id ?? 0) === (int) $selectedSupplier->id) {
+            return response()->json([
+                'ok' => true,
+                'message' => 'Selected supplier is already assigned to this product.',
+                'product' => $product->fresh(),
+            ]);
+        }
+
+        $targetProduct = Product::where('branch_id', $product->branch_id)
+            ->where('supplier_id', $selectedSupplier->id)
+            ->where('id', '!=', $product->id)
+            ->where(function ($query) use ($product) {
+                if (!empty($product->sku)) {
+                    $query->where('sku', $product->sku);
+                }
+
+                $normalizedName = trim(strtoupper((string) ($product->name ?? '')));
+                if ($normalizedName !== '') {
+                    $query->orWhereRaw('TRIM(UPPER(name)) = ?', [$normalizedName]);
+                }
+            })
+            ->orderBy('price', 'asc')
+            ->first();
+
+        try {
+            $updatedProduct = Product::transferInventoryForSupplierChange($product, $selectedSupplier, $targetProduct);
+
+            $procurementRequest = ProcurementRequest::where('product_id', $product->id)
+                ->where('branch_id', $user->branch_id)
+                ->orderByDesc('created_at')
+                ->first();
+
+            if ($procurementRequest) {
+                $procurementRequest->update([
+                    'supplier_id' => $selectedSupplier->id,
+                    'product_id' => $updatedProduct->id,
+                ]);
+            }
+
+            return response()->json([
+                'ok' => true,
+                'message' => 'Supplier changed successfully.',
+                'product' => $updatedProduct->fresh(),
+                'procurement_request' => $procurementRequest?->fresh(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Failed to change supplier directly on product', [
+                'product_id' => $product->id,
+                'supplier_id' => $selectedSupplier->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'ok' => false,
+                'message' => config('app.debug') ? $e->getMessage() : 'Unable to change supplier.',
+            ], 500);
+        }
+    }
+
     public function createProcurementSupplier(Request $request)
     {
         $user = $this->getAuthenticatedManager($request);

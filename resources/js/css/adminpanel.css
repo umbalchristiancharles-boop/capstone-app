@@ -2619,7 +2619,7 @@ h1, h2, h3, h4, h5, h6, .section-subtitle, .admin-name, .admin-role {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1200;
+  z-index: 500;
 }
 
 .modal {
@@ -4051,7 +4051,7 @@ h1, h2, h3, h4, h5, h6, .section-subtitle, .admin-name, .admin-role {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 1000;
+  z-index: 500;
 }
 
 .dark-mode .modal-card {
