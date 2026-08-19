@@ -168,25 +168,12 @@ class Product extends Model
 
                 $source->stock = 0;
                 $source->real_stock = 0;
-                $source->supplier_id = $newSupplier->id;
-                $source->supplier_name = $supplierName;
                 $source->save();
-
-                self::recomputeRealStockForGroup((int) $source->branch_id, $source->sku, $source->name);
-                self::recomputeRealStockForGroup((int) $destination->branch_id, $destination->sku, $destination->name);
 
                 return $destination->fresh();
             }
 
-            $source->supplier_id = $newSupplier->id;
-            $source->supplier_name = $supplierName;
-            $source->stock = (int) $source->stock;
-            $source->real_stock = (int) $source->real_stock;
-            $source->save();
-
-            self::recomputeRealStockForGroup((int) $source->branch_id, $source->sku, $source->name);
-
-            return $source->fresh();
+            throw new \RuntimeException('No product row exists for the selected supplier');
         });
     }
 

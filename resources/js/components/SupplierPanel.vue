@@ -133,6 +133,7 @@
                 </div>
             <div class="product-meta">
               <div class="product-price">{{ formatPrice(p.price) }}</div>
+              <div class="product-stock">Real stock: {{ p.real_stock ?? p.stock ?? 0 }}</div>
               <!-- Expiry is now tracked at order level, not product level -->
             </div>
               </div>
@@ -1320,7 +1321,9 @@ function canCompleteTransaction(order) {
     // Only show "Transaction complete" for actual placed orders (is_broadcast = false)
     // NOT for initial submission broadcasts (is_broadcast = true)
     // This ensures only the selected supplier sees the complete button
-    if (order.is_broadcast !== false) return false
+    // MySQL returns boolean columns as 0/1 integers, while some API responses
+    // may serialize them as true/false. Treat both false representations alike.
+    if (!(order.is_broadcast === false || Number(order.is_broadcast) === 0)) return false
 
     // Supplier can complete transaction only after procurement/finance flow has
     // reached order-ready or delivery states for the linked request.

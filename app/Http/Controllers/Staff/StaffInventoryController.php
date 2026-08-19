@@ -147,7 +147,7 @@ class StaffInventoryController extends Controller
         // been accepted/placed into inventory by procurement.
         // (Procurement will still mark products as published when placed.)
 
-        $products = $query->select('id', 'name', 'slug', 'price', 'stock', 'sku', 'branch_id', 'is_published', 'created_at', 'updated_at', 'status', 'expires_at')
+        $products = $query->select('id', 'name', 'slug', 'price', 'stock', 'real_stock', 'sku', 'branch_id', 'supplier_id', 'supplier_name', 'is_published', 'created_at', 'updated_at', 'status', 'expires_at')
             ->orderBy('name')
             ->get();
 
@@ -185,6 +185,12 @@ class StaffInventoryController extends Controller
                     continue;
                 }
                 $existing = $map[$key];
+                $existingStock = (int) ($existing->real_stock ?? $existing->stock ?? 0);
+                $currentStock = (int) ($p->real_stock ?? $p->stock ?? 0);
+                if ($currentStock > $existingStock) {
+                    $map[$key] = $p;
+                    continue;
+                }
                 $existingPublished = !empty($existing->is_published);
                 $curPublished = !empty($p->is_published);
                 if ($curPublished && !$existingPublished) {

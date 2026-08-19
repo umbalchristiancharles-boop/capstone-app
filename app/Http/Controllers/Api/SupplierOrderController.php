@@ -95,7 +95,8 @@ class SupplierOrderController extends Controller
                 ->where('branch_id', $order->branch_id)
                 ->exists();
             // Ensure SKU is not null — some databases enforce NOT NULL on sku.
-            $generatedSku = $validated['sku'] ?? ('sku-' . time() . '-' . rand(1000, 9999));
+            $submittedSku = $validated['sku'] ?? null;
+            $generatedSku = $submittedSku ?: ('sku-' . time() . '-' . rand(1000, 9999));
             $ProductModel = \App\Models\Product::class;
 
             // Generate unique slug - handle duplicates
@@ -112,8 +113,8 @@ class SupplierOrderController extends Controller
             $existingProduct = null;
 
             // Try to find by SKU if provided (supplier-specific)
-            if (!empty($validated['sku'])) {
-                $existingProduct = $ProductModel::where('sku', $validated['sku'])
+            if (!empty($submittedSku)) {
+                $existingProduct = $ProductModel::where('sku', $submittedSku)
                     ->where('supplier_id', $user->id)
                     ->where('branch_id', $order->branch_id)
                     ->first();
@@ -140,7 +141,7 @@ class SupplierOrderController extends Controller
                     'price' => $validated['price'],
                     'cost_price' => $validated['price'],
                     'stock' => $validated['stock'] ?? $existingProduct->stock ?? 0,
-                    'sku' => $validated['sku'] ?: $existingProduct->sku ?: $generatedSku,
+                    'sku' => $submittedSku ?: $existingProduct->sku ?: $generatedSku,
                     'branch_id' => $order->branch_id,
                     'supplier_id' => $user->id,
                     'supplier_name' => $user->full_name ?? $user->username,

@@ -117,6 +117,7 @@
                   <div class="product-meta">
                     <div class="product-price">{{ formatPrice(p.price) }}</div>
                     <div class="supplier-badge">{{ p.supplier_name || 'Unknown Supplier' }}</div>
+                    <div class="product-stock">Real stock: {{ p.real_stock ?? p.stock ?? 0 }}</div>
                     <div v-if="canChangeSupplier(p)" class="mt-1">
                       <button class="btn-small btn-warning" @click="changeSupplier(p)" :disabled="changingSupplierIds[(p.procurement_request_id || p.id)]">
                         {{ changingSupplierIds[(p.procurement_request_id || p.id)] ? 'Opening...' : 'Change Supplier' }}
@@ -256,7 +257,7 @@
                        <div class="status-badge status-warning">
                          Transaction Pending (ID: {{ p.existingOrder.id }})
                        </div>
-                       <div v-if="(p.existingOrder && (p.existingOrder.status === 'on_delivery' || p.existingOrder.status === 'ongoing_delivery' || p.existingOrder.status === 'fulfilled')) || p.procurement_status === 'delivery_pending' || p.procurement_status === 'ongoing_delivery'">
+                       <div v-if="(p.existingOrder && (p.existingOrder.status === 'on_delivery' || p.existingOrder.status === 'ongoing_delivery' || p.existingOrder.status === 'fulfilled')) || p.procurement_status === 'delivery_pending' || p.procurement_status === 'ongoing_delivery' || p.procurement_status === 'receipt_confirmed' || p.receipt_confirmed">
                          <template v-if="p.receipt_confirmed || p.procurement_status === 'ongoing_delivery' || p.procurement_status === 'receipt_confirmed' || (p.existingOrder && p.existingOrder.receipt_confirmed)">
                            <button class="btn-small btn-primary" @click="markDeliveryComplete(p)" :disabled="completingDeliveryIds[(p.procurement_request_id || p.id)]">
                              {{ completingDeliveryIds[(p.procurement_request_id || p.id)] ? 'Submitting...' : 'Complete Order' }}
@@ -271,10 +272,10 @@
                        <div v-else>
                          <button class="btn-small btn-primary"
                            @click="placeOrder(p)"
-                           :disabled="placingOrderIds[p.id] || orderPlacedIds[p.id] || p.waiting_for_supplier">
-                           {{ orderPlacedIds[p.id] ? 'Order placed' : (placingOrderIds[p.id] ? 'Placing...' : 'Place Order') }}
+                           :disabled="placingOrderIds[p.id] || orderPlacedIds[p.id] || p.waiting_for_supplier || isSupplierOrderPlaced(p)">
+                           {{ isSupplierOrderPlaced(p) || orderPlacedIds[p.id] ? 'Order placed' : (placingOrderIds[p.id] ? 'Placing...' : 'Place Order') }}
                          </button>
-                         <div v-if="p.waiting_for_supplier" class="note-warning">Waiting for supplier confirmation</div>
+                         <div v-if="p.waiting_for_supplier && !isSupplierOrderPlaced(p)" class="note-warning">Waiting for supplier confirmation</div>
                        </div>
                        <div class="estimated-delivery-info">
                          <span class="estimated-delivery-label">Est. Delivery:</span>
@@ -297,10 +298,10 @@
                        <div v-else>
                        <button class="btn-small btn-primary"
                          @click="placeOrder(p)"
-                         :disabled="placingOrderIds[p.id] || orderPlacedIds[p.id] || p.waiting_for_supplier">
-                         {{ orderPlacedIds[p.id] ? 'Order placed' : (placingOrderIds[p.id] ? 'Placing...' : 'Place Order') }}
+                         :disabled="placingOrderIds[p.id] || orderPlacedIds[p.id] || p.waiting_for_supplier || isSupplierOrderPlaced(p)">
+                         {{ isSupplierOrderPlaced(p) || orderPlacedIds[p.id] ? 'Order placed' : (placingOrderIds[p.id] ? 'Placing...' : 'Place Order') }}
                        </button>
-                       <div v-if="p.waiting_for_supplier" class="note-warning">Waiting for supplier confirmation</div>
+                       <div v-if="p.waiting_for_supplier && !isSupplierOrderPlaced(p)" class="note-warning">Waiting for supplier confirmation</div>
                      </div>
                    </template>
                   <template v-else>
@@ -737,6 +738,12 @@ function isReceiptChecking(item) {
   return status === 'receipt_submitted' || status === 'pending_receipt_check' || status === 'pending_receipt' || orderStatus === 'receipt_submitted' || orderStatus === 'pending_receipt_check' || orderStatus === 'pending_receipt'
 }
 
+function isSupplierOrderPlaced(item) {
+  const order = item?.existingOrder
+  if (!order) return false
+  return order.is_broadcast === false || Number(order.is_broadcast) === 0
+}
+
 // Header profile dropdown (procurement-specific)
 const profileDropdownVisible = ref(false)
 const ownerLayout = ref(null)
@@ -1000,7 +1007,7 @@ async function acknowledgeRequest(product) {
         // If there are multiple confirmed suppliers, open modal for selection
         if (filteredConfirmed.length > 1) {
           pendingAcknowledgeProduct.value = product  // Store for later when user selects supplier
-          openSupplierModal(product, true)  // true = isForAcknowledge
+          openSupplierModal(product, 'acknowledge')
           return
         }
         // If exactly one supplier confirmed, auto-assign it and skip modal
@@ -1049,7 +1056,7 @@ async function acknowledgeRequest(product) {
       // open the supplier modal so the user can pick a valid confirmed supplier.
       if (typeof errorMsg === 'string' && errorMsg.includes('Selected supplier not found')) {
         try {
-          openSupplierModal(product, true)
+          openSupplierModal(product, 'acknowledge')
           return
         } catch (openErr) {
           console.warn('Failed to open supplier modal automatically', openErr)
@@ -1596,13 +1603,20 @@ function formatDateTime(dt) {
 async function placeOrder(product) {
   if (!product || !product.id || placingOrderIds.value[product.id]) return
 
+  if (!product.supplier_id) {
+    await openSupplierModal(product, 'place-order')
+    return
+  }
+
   // set placing flag for this product
   setPlacingFlag(product.id, true)
 
   try {
     // Note: Quantity is locked to what logistics requested and cannot be changed by procurement
     // Product should always have supplier_id by this point (set during acknowledge with supplier selection)
-    const payload = {}
+    const payload = {
+      procurement_request_id: resolveProcurementRequestId(product)
+    }
     if (product.supplier_id) payload.supplier_id = product.supplier_id
 
     // Use manager procurement endpoint which creates the SupplierOrder record

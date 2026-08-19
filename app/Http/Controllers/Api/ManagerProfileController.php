@@ -1496,7 +1496,8 @@ public function logisticsProducts(Request $request)
         Log::info('procurementProducts: products count', ['count' => $products->count()]);
 
         $normalizeProductKey = function ($product) {
-            return 'name:' . trim(strtoupper((string) ($product->name ?? '')));
+            $name = trim(strtoupper((string) ($product->name ?? '')));
+            return 'name:' . $name;
         };
 
         $products = $products->groupBy($normalizeProductKey)->map(function ($group) use ($branchId) {
@@ -1521,7 +1522,7 @@ public function logisticsProducts(Request $request)
 
             $supplierCount = $group->filter(function ($product) {
                 return !empty($product->supplier_id) && (float) ($product->price ?? 0) > 0;
-            })->count();
+            })->pluck('supplier_id')->unique()->count();
 
             $primary->procurement_request_id = $proc?->id ?? null;
             $primary->procurement_status = $proc?->status ?? null;
@@ -1690,7 +1691,7 @@ public function logisticsProducts(Request $request)
                 // Fallback: try to find by product_id for backward compatibility
                 $procReq = ProcurementRequest::where('product_id', $product->id)
                     ->where('branch_id', $branchId)
-                    ->whereIn('status', ['pending', 'pending_order_to_supplier', 'awaiting_inventory_confirmation'])
+                    ->whereIn('status', ['pending', 'budget_pending', 'pending_order_to_supplier', 'awaiting_inventory_confirmation'])
                     ->first();
             }
 
@@ -1738,10 +1739,12 @@ public function logisticsProducts(Request $request)
                 // If status is 'pending', auto-acknowledge first (which creates BudgetRequest for Finance)
                 if ($procReq->status === 'pending') {
                     try {
-                        DB::transaction(function () use ($procReq, $user) {
+                        DB::transaction(function () use ($procReq, $user, $supplierId) {
                             $procReq->update([
                                 'procurement_user_id' => $user->id,
-                                'status' => 'budget_pending'
+                                'status' => 'budget_pending',
+                                'supplier_id' => $supplierId,
+                                'supplier_confirmed' => true,
                             ]);
 
                             // Check if BudgetRequest already exists
@@ -2021,6 +2024,13 @@ public function logisticsProducts(Request $request)
             })
             ->orderBy('price', 'asc')
             ->first();
+
+        if (!$targetProduct) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'No product row exists for the selected supplier.',
+            ], 400);
+        }
 
         try {
             $updatedProduct = Product::transferInventoryForSupplierChange($product, $selectedSupplier, $targetProduct);

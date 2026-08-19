@@ -72,6 +72,8 @@ class ProductSupplierTransferTest extends BaseTestCase
         $this->assertSame(0, $source->fresh()->stock);
         $this->assertSame(0, $source->fresh()->real_stock);
         $this->assertSame($supplier->id, $result->supplier_id);
+        $this->assertSame(99, $source->fresh()->supplier_id);
+        $this->assertSame('Old Supplier', $source->fresh()->supplier_name);
         $this->assertSame($supplier->id, $destination->fresh()->supplier_id);
     }
 

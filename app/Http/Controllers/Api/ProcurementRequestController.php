@@ -582,6 +582,7 @@ public function requestedProducts(Request $request)
             $existingOrders = \App\Models\SupplierOrder::whereIn('procurement_request_id', $requests->pluck('id')->toArray())
                 ->whereNotNull('product_id')
                 ->with(['product', 'procurementRequest'])
+                ->orderByRaw('CASE WHEN is_broadcast = 0 THEN 0 ELSE 1 END')
                 ->orderByRaw('CASE WHEN estimated_delivery_datetime IS NULL THEN 1 ELSE 0 END')
                 ->orderByDesc('estimated_delivery_datetime')
                 ->orderByDesc('updated_at')
@@ -958,9 +959,8 @@ public function requestedProducts(Request $request)
         $user = $request->user();
         $role = strtoupper($user->role ?? '');
         $dept = strtoupper($user->department ?? '');
-        // Allow procurement manager or supplier to upload receipt. Actual
-        // completion requires finance confirmation and should be handled
-        // separately via confirmReceipt.
+        // Procurement can upload the receipt, then complete the order after
+        // Finance confirms it through confirmReceipt.
         $canAccessProcurement = $this->canAccessProcurement($user);
         if (!in_array($role, ['SUPPLIER']) && !($role === 'MANAGER' && $dept === 'PROCUREMENT') && !$canAccessProcurement) {
             Log::warning('UNAUTHORIZED ROLE', ['role' => $role, 'dept' => $dept]);
@@ -1032,22 +1032,14 @@ public function requestedProducts(Request $request)
             return response()->json(['error' => 'Receipt not uploaded or not yet confirmed by finance'], 400);
         }
 
-        // Instead of immediately incrementing product stock here, mark the
-        // procurement request as awaiting inventory confirmation so inventory
-        // staff can verify actual delivered quantities and confirm the stock
-        // count. We store this in the `awaiting_inventory_confirmation` status
-        // (added via migration) so the staff UI can surface the confirmation tile.
+        // Procurement completion hands the request to Logistics for physical
+        // stock verification. Logistics performs the actual stock update.
         try {
             DB::transaction(function () use ($procRequest, $user) {
                 $procRequest->update([
                     'status' => 'awaiting_inventory_confirmation',
                     'procurement_user_id' => $user->id
                 ]);
-
-                // Do NOT increment product stock here; inventory staff will
-                // confirm and perform the stock update. Also do not mark
-                // supplier order fulfilled yet — that will be updated once
-                // staff confirms delivered quantities.
 
                 try {
                     $budgetReq = BudgetRequest::where('branch_id', $procRequest->branch_id)
@@ -1071,7 +1063,7 @@ public function requestedProducts(Request $request)
             return response()->json(['error' => 'Failed to update procurement status'], 500);
         }
 
-        return response()->json(['ok' => true, 'message' => 'Procurement request marked awaiting stock confirmation', 'request' => $procRequest->fresh()->load('product')]);
+        return response()->json(['ok' => true, 'message' => 'Procurement request sent to Logistics for stock confirmation', 'request' => $procRequest->fresh()->load('product')]);
     }
 
     /**
@@ -1164,7 +1156,7 @@ public function requestedProducts(Request $request)
     }
 
     /**
-     * Change the assigned supplier while receipt confirmation is still pending.
+    * Change the assigned supplier before ordering or while receipt confirmation is pending.
      * This transfers stock from the current product row to the selected supplier's
      * matching product row and resets the receipt workflow back to order placement.
      */
@@ -1189,9 +1181,14 @@ public function requestedProducts(Request $request)
             return response()->json(['error' => 'Not your branch'], 403);
         }
 
-        $allowedStatuses = ['receipt_submitted', 'pending_receipt', 'pending_receipt_check'];
+        $allowedStatuses = [
+            'pending_order_to_supplier',
+            'receipt_submitted',
+            'pending_receipt',
+            'pending_receipt_check',
+        ];
         if (!in_array($procRequest->status, $allowedStatuses, true)) {
-            return response()->json(['error' => 'Supplier can only be changed while receipt confirmation is pending'], 400);
+            return response()->json(['error' => 'Supplier can only be changed before ordering or while receipt confirmation is pending'], 400);
         }
 
         $selectedSupplier = User::where('id', $validated['supplier_id'])
@@ -1235,8 +1232,13 @@ public function requestedProducts(Request $request)
             $updatedRequest = DB::transaction(function () use ($procRequest, $selectedSupplier, $sourceProduct, $targetProduct, $targetOrder, $user) {
                 $lockedRequest = ProcurementRequest::where('id', $procRequest->id)->lockForUpdate()->firstOrFail();
 
-                if (!in_array($lockedRequest->status, ['receipt_submitted', 'pending_receipt', 'pending_receipt_check'], true)) {
-                    throw new \RuntimeException('Supplier can only be changed while receipt confirmation is pending');
+                if (!in_array($lockedRequest->status, [
+                    'pending_order_to_supplier',
+                    'receipt_submitted',
+                    'pending_receipt',
+                    'pending_receipt_check',
+                ], true)) {
+                    throw new \RuntimeException('Supplier can only be changed before ordering or while receipt confirmation is pending');
                 }
 
                 $source = Product::where('id', $sourceProduct->id)->lockForUpdate()->firstOrFail();

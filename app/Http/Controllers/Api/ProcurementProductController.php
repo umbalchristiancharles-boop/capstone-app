@@ -259,7 +259,24 @@ public function placeOrder(Request $request, $productId)
             $orderedProduct = $product;
             $supplierOrder = DB::transaction(function () use ($procRequest, $supplierId, $quantity, $user, $product, $supplierUser, &$orderedProduct) {
                 if ((int) $product->supplier_id !== (int) $supplierId) {
-                    $orderedProduct = Product::transferInventoryForSupplierChange($product, $supplierUser);
+                    $targetProduct = Product::where('branch_id', $product->branch_id)
+                        ->where('supplier_id', $supplierId)
+                        ->where('id', '!=', $product->id)
+                        ->where(function ($query) use ($product) {
+                            if (!empty($product->sku)) {
+                                $query->where('sku', $product->sku);
+                            }
+
+                            $query->orWhereRaw('TRIM(UPPER(name)) = ?', [trim(strtoupper($product->name))]);
+                        })
+                        ->orderBy('price', 'asc')
+                        ->first();
+
+                    if (!$targetProduct) {
+                        throw new \RuntimeException('No product row exists for the selected supplier');
+                    }
+
+                    $orderedProduct = Product::transferInventoryForSupplierChange($product, $supplierUser, $targetProduct);
                 }
 
                 $order = SupplierOrder::create([
