@@ -5,6 +5,7 @@
     panelDescription="Overview and controls for store owners"
     :showHeader="false"
     :ownerTwoColumnLayout="true"
+    :fitContent="true"
     :enableProfileUpdate="true"
     :canEditProfile="true"
     :canChangePassword="true"

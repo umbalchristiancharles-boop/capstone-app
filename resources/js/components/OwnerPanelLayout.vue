@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen bg-gradient-to-b from-[#FF9A4A] to-[#FF6A3D]">
     <div class="admin-page" :class="{ 'admin-page--wider': fullWidth }">
-      <section class="admin-layout" :class="{ 'admin-layout--wider': fullWidth, 'admin-layout--owner-two-column': ownerTwoColumnLayout, 'admin-layout--single-column': singleColumnLayout, 'no-profile-column': !showProfileColumn }">
+      <section class="admin-layout" :class="{ 'admin-layout--wider': fullWidth, 'admin-layout--owner-two-column': ownerTwoColumnLayout, 'admin-layout--single-column': singleColumnLayout, 'admin-layout--fit-content': fitContent, 'no-profile-column': !showProfileColumn }">
         <!-- MIDDLE: MAIN DASHBOARD -->
         <main class="admin-main">
           <header v-if="showHeader" class="admin-main-header">
@@ -322,6 +322,7 @@ const props = defineProps({
   fullWidth: { type: Boolean, default: false },
   ownerTwoColumnLayout: { type: Boolean, default: false },
   singleColumnLayout: { type: Boolean, default: false },
+  fitContent: { type: Boolean, default: false },
   showHeader: { type: Boolean, default: true },
   enableProfileUpdate: { type: Boolean, default: false },
   canEditProfile: { type: Boolean, default: false },
@@ -610,7 +611,7 @@ const persistThemeMode = () => {
 
 const loadThemeMode = () => {
   try {
-    if (isManagerLogisticsRoute() || isManagerProcurementRoute() || isMainBranchAdminRoute()) {
+    if (isManagerLogisticsRoute() || isManagerProcurementRoute() || isMainBranchAdminRoute() || isMainBranchHrRoute()) {
       theme.value = 'light'
       applyThemeMode()
       return
@@ -631,7 +632,7 @@ const loadThemeMode = () => {
 }
 
 const toggleTheme = () => {
-  if (isManagerLogisticsRoute() || isManagerProcurementRoute() || isMainBranchAdminRoute()) {
+  if (isManagerLogisticsRoute() || isManagerProcurementRoute() || isMainBranchAdminRoute() || isMainBranchHrRoute()) {
     theme.value = 'light'
     persistThemeMode()
     applyThemeMode()
@@ -1166,6 +1167,12 @@ async function onAvatarChange(event) {
   justify-content: flex-end;
   width: 100%;
   margin-bottom: 1rem;
+}
+
+:deep(.admin-layout--fit-content .admin-side) {
+  position: static;
+  max-height: none;
+  overflow: visible;
 }
 
 @media (min-width: 1000px) {

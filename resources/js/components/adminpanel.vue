@@ -1580,6 +1580,26 @@ h1, h2 {
   background: #f8f1e4;
 }
 
+.admin-topbar {
+  background: linear-gradient(135deg, #fffaf5 0%, #ffffff 72%) !important;
+  border: 1px solid #f1e5d8 !important;
+  border-radius: 14px !important;
+  box-shadow: 0 4px 14px rgba(66, 33, 11, 0.05) !important;
+  padding: 18px 20px !important;
+  margin-bottom: 14px !important;
+}
+
+.admin-topbar-heading {
+  color: #1f2937 !important;
+  font-size: clamp(1.35rem, 2vw, 1.8rem) !important;
+  line-height: 1.15 !important;
+}
+
+.admin-topbar-sub {
+  color: #64748b !important;
+  margin-top: 6px !important;
+}
+
 
 
 .avatar-change-text {
@@ -2087,21 +2107,21 @@ h1, h2 {
   .expired-product-admin-header {
     flex-direction: column;
   }
-  
+
   .expired-product-meta {
     flex-direction: column;
     gap: 0.5rem;
   }
-  
+
   .expired-product-meta span::after {
     content: "";
     margin-left: 0;
   }
-  
+
   .expired-product-admin-buttons {
     flex-direction: column;
   }
-  
+
   .btn-review,
   .btn-resolve {
     width: 100%;

@@ -1954,7 +1954,7 @@ body.dark-mode .swal2-styled:disabled {
   color: var(--text-primary);
   width: 100%;
   box-sizing: border-box;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 @media (min-width: 480px) {
@@ -1995,6 +1995,40 @@ h1, h2, h3, h4, h5, h6, .section-subtitle, .admin-name, .admin-role {
   align-items: start;
   box-sizing: border-box;
   auto-flow: row;
+  overflow: visible;
+}
+
+/* Keep grid children and panel contents inside the rounded shell. */
+.admin-layout > *,
+.admin-main,
+.admin-left,
+.admin-side,
+.admin-profile-column {
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.admin-layout.admin-layout--fit-content {
+  min-height: 0;
+  height: auto;
+  align-items: stretch;
+}
+
+.admin-layout.admin-layout--fit-content > .admin-main,
+.admin-layout.admin-layout--fit-content > .admin-side,
+.admin-layout.admin-layout--fit-content > .admin-left,
+.admin-layout.admin-layout--fit-content > .admin-profile-column {
+  align-self: stretch;
+  height: auto;
+}
+
+.panel-block,
+.panel-header,
+.panel-body,
+.overview-card,
+.admin-topbar {
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 @media (min-width: 480px) {
