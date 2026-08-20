@@ -5,12 +5,27 @@
     :panelDescription="'Manage kitchen orders and preparation.'"
     :enableProfileUpdate="true"
     :canEditProfile="false"
+    pageClass="kitchen-staff-page"
+    :showHeader="false"
     :showProfileColumn="false"
+    :showAnnouncements="true"
+    :announcementsAfterAttendance="true"
     :ownerTwoColumnLayout="true"
     @profile-updated="onProfileUpdated"
     @logout="confirmLogout"
   >
     <template #main>
+      <header class="kitchen-staff-hero">
+        <div>
+          <span class="kitchen-staff-eyebrow">Kitchen dashboard</span>
+          <h2 class="kitchen-staff-title">Kitchen overview</h2>
+          <p class="kitchen-staff-subtitle">Manage kitchen orders and preparation for this branch.</p>
+        </div>
+        <button class="kitchen-staff-hero__action" type="button" @click="loadOrderQueue" :disabled="queueLoading">
+          {{ queueLoading ? 'Loading...' : 'Refresh Orders' }}
+        </button>
+      </header>
+
       <section class="panel-block">
         <div class="panel-header"><h2>Kitchen Tasks</h2></div>
         <div class="panel-body">
@@ -414,6 +429,93 @@ async function performLogout() {
 </script>
 
 <style scoped>
+:deep(.admin-page.kitchen-staff-page) {
+  background: #f5f5f3;
+  padding: 8px;
+}
+
+:deep(.admin-page.kitchen-staff-page .admin-layout) {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 20px 24px;
+  gap: 16px;
+  box-shadow: none;
+}
+
+:deep(.admin-page.kitchen-staff-page .admin-layout.no-profile-column) {
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+}
+
+:deep(.admin-page.kitchen-staff-page .kitchen-staff-header) {
+  margin: 0 0 20px;
+  padding: 24px 28px;
+  background: #fffdfb;
+  border: 1px solid #eadfce;
+  border-radius: 14px;
+  box-shadow: 0 3px 12px rgba(78, 61, 45, 0.04);
+}
+
+.kitchen-staff-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 16px;
+  margin-bottom: 14px;
+  background: linear-gradient(135deg, #fffaf5 0%, #ffffff 72%);
+  border: 1px solid #f1e5d8;
+  border-radius: 14px;
+  box-shadow: 0 4px 14px rgba(66, 33, 11, 0.05);
+}
+
+.kitchen-staff-eyebrow {
+  display: inline-block;
+  margin-bottom: 6px;
+  color: #c25a12;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.kitchen-staff-title {
+  margin: 0;
+  color: #1f2937;
+  font-size: 26px;
+  line-height: 1.1;
+}
+
+.kitchen-staff-subtitle {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  max-width: 560px;
+}
+
+.kitchen-staff-hero__action {
+  flex-shrink: 0;
+  margin-top: 2px;
+  background: #4b5563;
+  color: #ffffff;
+  border: 0;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(75, 85, 99, 0.1);
+}
+
+.kitchen-staff-hero__action:hover:not(:disabled) {
+  background: #374151;
+}
+
+.kitchen-staff-hero__action:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .panel-block { padding: 1rem; border-radius: 12px; background: #FFF8F0; border-left: 4px solid #17a2b8; box-shadow: 0 4px 12px rgba(23,162,184,0.08); }
 .panel-header h2 { margin: 0 0 8px 0; color: #5b4637 }
 .panel-body { color: #374151 }
@@ -477,6 +579,84 @@ async function performLogout() {
   margin-top: 120px !important;
 }
 
+:deep(.admin-page.kitchen-staff-page) .announcements-panel {
+  background: #ffffff;
+  color: #111827;
+  border: 1px solid #eadfce;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 3px 12px rgba(78, 61, 45, 0.04);
+}
+
+:deep(.admin-page.kitchen-staff-page) .announcements-panel .announcements-header {
+  padding: 2px 0 10px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+:deep(.admin-page.kitchen-staff-page) .announcements-panel .announcements-header h2 {
+  margin: 0;
+  color: #111827;
+  font-size: 16px;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+:deep(.admin-page.kitchen-staff-page) .announcements-panel .panel-body {
+  padding: 0;
+}
+
+:deep(.admin-page.kitchen-staff-page) .announcements-panel .announcement-list {
+  margin: 0;
+  padding: 0;
+}
+
+:deep(.admin-page.kitchen-staff-page) .announcements-panel .announcement-item {
+  padding: 14px 12px;
+  border-bottom: 1px solid #f1f1f1;
+  border-radius: 0;
+}
+
+:deep(.admin-page.kitchen-staff-page) .announcements-panel .announcement-item:last-child {
+  padding-bottom: 8px;
+  border-bottom: 0;
+}
+
+:deep(.admin-page.kitchen-staff-page) .announcements-panel .announcement-title {
+  margin-bottom: 4px;
+  color: #111827;
+  font-size: 16px;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+:deep(.admin-page.kitchen-staff-page) .announcements-panel .announcement-meta {
+  margin-bottom: 6px;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+:deep(.admin-page.kitchen-staff-page) .announcements-panel .announcement-message {
+  color: #334155;
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+:deep(.admin-page.kitchen-staff-page) .attendance-card {
+  margin-top: 125px;
+}
+
+:deep(.admin-page.kitchen-staff-page) .attendance-card .attendance-header {
+  margin-top: 0 !important;
+}
+
+:deep(.admin-page.kitchen-staff-page) .admin-side .announcements-panel {
+  margin-top: 20px !important;
+}
+
 .kitchen-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; align-items: start; }
 .kitchen-column { background: #ffffff; border: 1px solid #eef2f5; border-radius: 8px; padding: 0.85rem; }
 .kitchen-column h3 { margin-top: 0; margin-bottom: 0.5rem; font-size: 1.05rem }
@@ -497,7 +677,104 @@ async function performLogout() {
 .update-stock-btn:hover:not(:disabled) { background:#f1f5f9; border-color:#94a3b8; }
 .update-stock-form { display:flex; gap:0.5rem; align-items:center }
 
+/* Match the HR panel's compact section and card treatment. */
+:deep(.admin-page.kitchen-staff-page) .panel-block {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+:deep(.admin-page.kitchen-staff-page) .panel-block.announcements-panel {
+  padding: 50px;
+  background: #ffffff;
+  border: 1px solid #eadfce;
+  border-radius: 12px;
+  box-shadow: 0 3px 12px rgba(78, 61, 45, 0.04);
+}
+
+:deep(.admin-page.kitchen-staff-page) .panel-header,
+:deep(.admin-page.kitchen-staff-page) .queue-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+:deep(.admin-page.kitchen-staff-page) .panel-header {
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+:deep(.admin-page.kitchen-staff-page) .panel-header h2,
+:deep(.admin-page.kitchen-staff-page) .kitchen-column h3,
+:deep(.admin-page.kitchen-staff-page) .queue-header h3 {
+  color: #111827;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+:deep(.admin-page.kitchen-staff-page) .panel-body {
+  color: #111827;
+}
+
+:deep(.admin-page.kitchen-staff-page) .kitchen-column {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+:deep(.admin-page.kitchen-staff-page) .dish-card,
+:deep(.admin-page.kitchen-staff-page) .queue-item {
+  background: #fafafa;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+:deep(.admin-page.kitchen-staff-page) .ingredient-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+}
+
+:deep(.admin-page.kitchen-staff-page) .refresh-btn,
+:deep(.admin-page.kitchen-staff-page) .update-stock-btn,
+:deep(.admin-page.kitchen-staff-page) .btn-done {
+  background: #4b5563;
+  color: #ffffff;
+  border: 0;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+:deep(.admin-page.kitchen-staff-page) .refresh-btn:hover:not(:disabled),
+:deep(.admin-page.kitchen-staff-page) .update-stock-btn:hover:not(:disabled),
+:deep(.admin-page.kitchen-staff-page) .btn-done:hover:not(:disabled) {
+  background: #374151;
+}
+
 @media (max-width: 900px) {
+  :deep(.admin-page.kitchen-staff-page .admin-layout) {
+    padding: 12px 14px;
+  }
+
+  :deep(.admin-page.kitchen-staff-page .admin-layout.no-profile-column) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  :deep(.admin-page.kitchen-staff-page .kitchen-staff-header) {
+    padding: 18px;
+  }
+
+  .kitchen-staff-hero {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .kitchen-staff-hero__action {
+    width: 100%;
+  }
+
   .kitchen-grid { grid-template-columns: 1fr; }
 }
 </style>

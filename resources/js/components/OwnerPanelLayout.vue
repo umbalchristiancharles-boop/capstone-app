@@ -1,10 +1,10 @@
 <template>
   <div class="min-h-screen bg-gradient-to-b from-[#FF9A4A] to-[#FF6A3D]">
-    <div class="admin-page" :class="{ 'admin-page--wider': fullWidth }">
-      <section class="admin-layout" :class="{ 'admin-layout--wider': fullWidth, 'admin-layout--owner-two-column': ownerTwoColumnLayout, 'admin-layout--single-column': singleColumnLayout, 'admin-layout--fit-content': fitContent, 'no-profile-column': !showProfileColumn }">
+    <div class="admin-page" :class="[pageClass, { 'admin-page--wider': fullWidth }]">
+      <section class="admin-layout" :class="{ 'admin-layout--wider': fullWidth, 'admin-layout--owner-two-column': ownerTwoColumnLayout, 'admin-layout--single-column': singleColumnLayout, 'admin-layout--fit-content': fitContent, 'no-profile-column': !showProfileColumn, 'kitchen-staff-container': pageClass === 'kitchen-staff-page' }">
         <!-- MIDDLE: MAIN DASHBOARD -->
         <main class="admin-main">
-          <header v-if="showHeader" class="admin-main-header">
+          <header v-if="showHeader" class="admin-main-header" :class="{ 'kitchen-staff-header': pageClass === 'kitchen-staff-page' }">
             <div class="admin-main-header-top">
               <div class="header-left-slot">
                   <button v-if="showDefaultBack" class="back-to-dashboard-btn" @click="handleBack">← Back</button>
@@ -122,7 +122,7 @@
             </div>
           </template>
           <slot name="sideTop"></slot>
-          <section v-if="showAnnouncements" class="panel-block announcements-panel">
+          <section v-if="showAnnouncements && !announcementsAfterAttendance" class="panel-block announcements-panel">
             <div class="panel-header announcements-header">
               <h2>Announcements</h2>
               <!-- announcements header - avatar removed (profile button available in page header) -->
@@ -164,6 +164,22 @@
               <div v-if="attendanceMessage" :class="['attendance-message', attendanceMessageType]">{{ attendanceMessage }}</div>
             </div>
           </template>
+          <section v-if="showAnnouncements && announcementsAfterAttendance" class="panel-block announcements-panel">
+            <div class="panel-header announcements-header">
+              <h2>Announcements</h2>
+            </div>
+            <div class="panel-body">
+              <div v-if="loadingAnnouncements">Loading...</div>
+              <div v-else-if="announcements.length === 0">No announcements</div>
+              <ul v-else class="announcement-list">
+                <li v-for="a in announcements" :key="a.id" class="announcement-item">
+                  <div class="announcement-title">{{ a.title }}</div>
+                  <div class="announcement-meta">{{ new Date(a.created_at).toLocaleString() }} • {{ a.target }}</div>
+                  <div class="announcement-message">{{ a.message }}</div>
+                </li>
+              </ul>
+            </div>
+          </section>
         </aside>
       </section>
     </div>
@@ -331,11 +347,15 @@ const props = defineProps({
   updateEndpoint: { type: String, default: '' },
   avatarEndpoint: { type: String, default: '' }
   ,
+  pageClass: { type: String, default: '' }
+  ,
   showProfileColumn: { type: Boolean, default: true }
   ,
   showBackButton: { type: Boolean, default: false }
   ,
   showAnnouncements: { type: Boolean, default: true }
+  ,
+  announcementsAfterAttendance: { type: Boolean, default: false }
   ,
   showAttendanceCard: { type: Boolean, default: true }
 })
