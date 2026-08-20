@@ -8,6 +8,7 @@
       :enableProfileUpdate="true"
       :canEditProfile="false"
       :canChangePassword="true"
+      :showHeader="false"
       :showProfileColumn="false"
       :showAnnouncements="false"
       :ownerTwoColumnLayout="true"
@@ -15,6 +16,17 @@
       @profile-updated="onProfileUpdated"
     >
       <template #main>
+        <header class="main-branch-admin-hero">
+          <div class="main-branch-admin-hero__copy">
+            <span class="main-branch-admin-hero__eyebrow">Administration dashboard</span>
+            <h2 class="main-branch-admin-hero__title">Main Branch Administration</h2>
+            <p class="main-branch-admin-hero__subtitle">Manage branches, CRM access, and financial performance from one place.</p>
+          </div>
+          <button class="refresh-finance main-branch-admin-hero__action" @click.prevent="refreshFinance" :disabled="financeLoading">
+            {{ financeLoading ? 'Refreshing...' : 'Refresh Dashboard' }}
+          </button>
+        </header>
+
         <section class="finance-panel">
           <div class="finance-header">
             <div>
@@ -276,6 +288,24 @@ window.addEventListener('click', () => {
   width: 100%;
 }
 
+.main-branch-admin-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 16px;
+  margin-bottom: 14px;
+  background: linear-gradient(135deg, #fffaf5 0%, #fff 72%);
+  border: 1px solid #f1e5d8;
+  border-radius: 14px;
+  box-shadow: 0 4px 14px rgba(66,33,11,0.05);
+}
+.main-branch-admin-hero__copy { min-width: 0; }
+.main-branch-admin-hero__eyebrow { display: inline-block; margin-bottom: 6px; color: #c25a12; font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
+.main-branch-admin-hero__title { margin: 0; color: #1f2937; font-size: 26px; line-height: 1.1; }
+.main-branch-admin-hero__subtitle { margin: 6px 0 0; color: #64748b; font-size: 13px; max-width: 560px; }
+.main-branch-admin-hero__action { flex-shrink: 0; margin-top: 2px; }
+
 .finance-panel {
   background: #fff;
   padding: 18px;
@@ -420,6 +450,8 @@ window.addEventListener('click', () => {
 }
 
 @media (max-width: 800px) {
+  .main-branch-admin-hero { flex-direction: column; gap: 12px; }
+  .main-branch-admin-hero__action { width: 100%; }
   .finance-header { flex-direction: column; align-items: stretch }
   .branch-select { width: 100%; min-width: 0 }
   .refresh-finance { width: 100% }
