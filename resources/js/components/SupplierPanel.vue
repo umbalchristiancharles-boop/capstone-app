@@ -5,6 +5,7 @@
     :panelDescription="'Manage suppliers, view deliveries, and monitor supplier performance.'"
     :showProfileColumn="false"
     :showAttendanceCard="false"
+    :showHeader="false"
     :enableProfileUpdate="true"
     :canEditProfile="userProfile.role === 'OWNER'"
     :canChangePassword="true"
@@ -13,6 +14,33 @@
     @profile-updated="onProfileUpdated"
   >
     <template #main>
+      <div class="supplier-page">
+        <header class="supplier-hero">
+          <div>
+            <span class="supplier-hero__eyebrow">Supplier dashboard</span>
+            <h2 class="supplier-hero__title">Supplier overview</h2>
+            <p class="supplier-hero__subtitle">Manage suppliers, view deliveries, and monitor supplier performance.</p>
+          </div>
+          <div class="supplier-hero__actions">
+            <button class="supplier-hero__action" type="button" @click="loadOrders" :disabled="ordersLoading">
+              {{ ordersLoading ? 'Loading...' : 'Refresh Orders' }}
+            </button>
+            <div ref="profileWrapper" class="header-profile-wrapper supplier-hero__profile" @click.stop>
+              <button class="header-profile-btn" type="button" @click="toggleProfileDropdown">
+                <div class="header-avatar">
+                  <div v-if="userProfile.avatarUrl" class="header-avatar-img" :style="{ backgroundImage: 'url('+userProfile.avatarUrl+')' }"></div>
+                  <div v-else class="header-avatar-initials">{{ (userProfile.fullName || userProfile.full_name || 'S').charAt(0) }}</div>
+                </div>
+                <div class="header-name">{{ ((userProfile.role || 'SUPPLIER').toString().toUpperCase()) }} {{ (userProfile.branch_name || userProfile.branch || userProfile.branch_id || '').toString().toUpperCase() }}</div>
+              </button>
+              <div v-if="profileDropdownVisible" class="header-profile-dropdown" @click.stop>
+                <button class="dropdown-item" @click="openInfoFromHeader">Info</button>
+                <button class="dropdown-item" @click="triggerLogoutFromHeader">Logout</button>
+              </div>
+            </div>
+          </div>
+        </header>
+
       <div class="panel-content">
         <div class="hr-stats-grid">
           <div class="hr-stat-card hr-stat-card--total">
@@ -139,6 +167,7 @@
               </div>
             </div>
               </section>
+            </div>
             </div>
             </template>
 
@@ -309,8 +338,8 @@
                 />
                 <span class="form-hint">Please provide your estimated delivery schedule</span>
               </div>
-              <button 
-                class="btn-confirm-delivery" 
+              <button
+                class="btn-confirm-delivery"
                 @click="confirmEstimatedDelivery"
                 :disabled="!estimatedDeliveryDateTime || savingEstimatedDelivery"
               >
@@ -1428,7 +1457,7 @@ function onProductAdded(newProduct) {
 
 async function confirmEstimatedDelivery() {
   if (!estimatedDeliveryDateTime.value || !receiptData.value?.id) return
-  
+
   savingEstimatedDelivery.value = true
   try {
     const res = await axios.put(
@@ -1436,7 +1465,7 @@ async function confirmEstimatedDelivery() {
       { estimated_delivery_datetime: estimatedDeliveryDateTime.value },
       { withCredentials: true }
     )
-    
+
     if (res && res.data) {
       showToast('Delivery schedule confirmed successfully', 'success')
       // Update receipt data with the new estimated delivery
@@ -1835,8 +1864,138 @@ function onProfileUpdated(newData) {
 .receipt-actions .btn-primary { background:#0b6e3a; color:#fff; padding:6px 10px; border-radius:6px; border:none }
 
 /* Layout refinements for SupplierPanel */
-.panel-content { display:flex; flex-direction:column; gap:0.9rem }
-.panel-section { margin-bottom:0.75rem }
+.supplier-page {
+  width: 100%;
+  min-width: 0;
+}
+
+.supplier-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 16px;
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, #fffaf5 0%, #ffffff 72%);
+  border: 1px solid #f1e5d8;
+  border-radius: 14px;
+  box-shadow: 0 4px 14px rgba(66, 33, 11, 0.05);
+}
+
+.supplier-hero__eyebrow {
+  display: inline-block;
+  margin-bottom: 6px;
+  color: #c25a12;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.supplier-hero__title {
+  margin: 0;
+  color: #1f2937;
+  font-size: 26px;
+  line-height: 1.1;
+}
+
+.supplier-hero__subtitle {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  max-width: 560px;
+}
+
+.supplier-hero__action {
+  flex-shrink: 0;
+  margin-top: 2px;
+  padding: 8px 14px;
+  background: #4b5563;
+  color: #ffffff;
+  border: 0;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(75, 85, 99, 0.1);
+}
+
+.supplier-hero__action:hover:not(:disabled) { background: #374151; }
+.supplier-hero__action:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.supplier-hero__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.supplier-hero__profile {
+  position: relative;
+  max-width: 260px;
+}
+
+.supplier-hero__profile .header-profile-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 4px 6px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.supplier-hero__profile .header-avatar {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+}
+
+.supplier-hero__profile .header-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #111827;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.panel-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+.panel-content > * {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.panel-section {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+:deep(.admin-layout.no-profile-column) .admin-main {
+  overflow: visible;
+}
+
+:deep(.admin-layout.no-profile-column) .admin-main > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
 .table-container { overflow-x:auto; background:transparent; border-radius:8px }
 .data-table { width:100%; border-collapse:separate; border-spacing:0; min-width:720px }
 .data-table th, .data-table td { padding:10px 12px; border-bottom:1px solid #eef2f6; vertical-align:middle }
@@ -1853,6 +2012,10 @@ function onProfileUpdated(newData) {
 .stat-alert { border:1px solid #fecaca; box-shadow:0 0 0 2px rgba(239,68,68,0.12) }
 
 @media (max-width: 900px) {
+  .supplier-hero { flex-direction: column; gap: 12px; }
+  .supplier-hero__actions { width: 100%; flex-direction: column; align-items: stretch; }
+  .supplier-hero__action { width: 100%; }
+  .supplier-hero__profile { align-self: flex-end; max-width: 100%; }
   .overview-grid { flex-direction:column }
   .data-table { min-width:600px }
   .product-grid { grid-template-columns: repeat(auto-fill,minmax(160px,1fr)) }
@@ -1871,14 +2034,122 @@ function onProfileUpdated(newData) {
 /* When profile column is hidden, lay out main + side like other manager panels */
 :deep(.admin-layout.no-profile-column) {
   display: grid;
-  grid-template-columns: 1fr 360px;
-  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+  column-gap: 24px;
+  row-gap: 0;
+  align-items: start;
 }
 
-:deep(.admin-layout.no-profile-column) .admin-main { width: 100%; }
-:deep(.admin-layout.no-profile-column) .admin-side { width: 360px; }
+:deep(.admin-layout.no-profile-column) .admin-main {
+  width: 100%;
+  min-width: 0;
+}
 
-/* Ensure announcements panel fits inside the side column and doesn't overlap */
-.announcements-panel { max-width: 100%; box-sizing: border-box }
+:deep(.admin-layout.no-profile-column) .admin-side {
+  width: 100%;
+  min-width: 0;
+  padding-top: 72px;
+  box-sizing: border-box;
+}
+
+/* Compact Supplier profile pill matching the reference layout. */
+:deep(.admin-card.admin-card--stacked) {
+  align-self: flex-end;
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+}
+
+:deep(.admin-card.admin-card--stacked .admin-card__header--stacked) {
+  margin: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+:deep(.admin-card.admin-card--stacked .admin-avatar) {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+}
+
+:deep(.admin-card.admin-card--stacked .admin-header-text) {
+  min-width: 0;
+  text-align: left;
+  white-space: nowrap;
+}
+
+:deep(.admin-card.admin-card--stacked .admin-label),
+:deep(.admin-card.admin-card--stacked .admin-role) {
+  display: none;
+}
+
+:deep(.admin-card.admin-card--stacked .admin-name) {
+  display: block;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+:deep(.admin-card.admin-card--stacked .admin-card__body--stacked),
+:deep(.admin-card.admin-card--stacked .admin-card__footer--stacked) {
+  display: none;
+}
+
+/* Keep the Supplier announcements card lower in the side column. */
+.announcements-panel {
+  max-width: 100%;
+  box-sizing: border-box;
+  margin-top: 0 !important;
+}
+
+/* Keep the Supplier profile control in the main column's top-right corner. */
+:deep(.admin-page .admin-main-header) {
+  position: relative;
+}
+
+:deep(.admin-page .admin-main-header-top > .header-actions-top) {
+  position: absolute;
+  top: 0;
+  right: 8px;
+  margin: 0;
+  z-index: 2;
+}
+
+:deep(.admin-page .admin-main-header-top > .header-actions-top > .header-actions-top) {
+  position: static;
+  max-width: 100%;
+  margin: 0;
+}
+
+:deep(.admin-page .admin-main-header-top > .header-actions-top .header-profile-wrapper) {
+  max-width: 260px;
+  overflow: hidden;
+}
+
+:deep(.admin-page .admin-main-header-top > .header-actions-top .header-profile-btn) {
+  max-width: 100%;
+  min-width: 0;
+}
+
+:deep(.admin-page .admin-main-header-top > .header-actions-top .header-name) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 </style>

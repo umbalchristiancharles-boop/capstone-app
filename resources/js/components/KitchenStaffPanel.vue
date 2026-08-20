@@ -447,6 +447,17 @@ async function performLogout() {
   grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
 }
 
+:deep(.admin-page.kitchen-staff-page .admin-side) {
+  position: static !important;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100% !important;
+  max-height: none;
+  overflow: visible;
+}
+
 :deep(.admin-page.kitchen-staff-page .kitchen-staff-header) {
   margin: 0 0 20px;
   padding: 24px 28px;
@@ -654,7 +665,8 @@ async function performLogout() {
 }
 
 :deep(.admin-page.kitchen-staff-page) .admin-side .announcements-panel {
-  margin-top: 20px !important;
+  position: static !important;
+  margin-top: 0 !important;
 }
 
 .kitchen-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; align-items: start; }
@@ -686,7 +698,7 @@ async function performLogout() {
 }
 
 :deep(.admin-page.kitchen-staff-page) .panel-block.announcements-panel {
-  padding: 50px;
+  padding: 12px;
   background: #ffffff;
   border: 1px solid #eadfce;
   border-radius: 12px;

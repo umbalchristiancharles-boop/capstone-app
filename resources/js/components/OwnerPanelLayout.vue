@@ -516,7 +516,7 @@ const themeKey = 'owner_module_theme'
 const theme = ref('light')
 const isDarkMode = computed(() => theme.value === 'dark')
 const themeButtonLabel = computed(() => (isDarkMode.value ? 'Light Mode' : 'Dark Mode'))
-const showThemeToggle = computed(() => !isInventoryRoute() && !isRightColumnHeaderRoute() && !isKitchenStaffRoute() && !isManagerLogisticsRoute() && !isManagerProcurementRoute() && !isMainBranchHrRoute())
+const showThemeToggle = computed(() => !isInventoryRoute() && !isRightColumnHeaderRoute() && !isKitchenStaffRoute() && !isSupplierRoute() && !isManagerLogisticsRoute() && !isManagerProcurementRoute() && !isMainBranchHrRoute())
 
 const isInventoryRoute = () => {
   try {
@@ -531,6 +531,15 @@ const isKitchenStaffRoute = () => {
   try {
     const route = (window.location.pathname || '').toLowerCase()
     return route.includes('/staff/kitchen')
+  } catch (e) {
+    return false
+  }
+}
+
+const isSupplierRoute = () => {
+  try {
+    const route = (window.location.pathname || '').toLowerCase()
+    return route.includes('/supplier')
   } catch (e) {
     return false
   }
