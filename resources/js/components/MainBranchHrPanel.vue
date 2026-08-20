@@ -7,19 +7,47 @@
       :enableProfileUpdate="true"
       :canEditProfile="false"
       :canChangePassword="true"
+      :showHeader="false"
       :showProfileColumn="false"
       :ownerTwoColumnLayout="true"
       @logout="askLogout"
       @profile-updated="onProfileUpdated"
     >
       <template #main>
-        <div class="panel-section hero">
-          <h2 class="section-title">Main Branch HR Panel</h2>
-          <p class="section-description">Human Resources and staff management for Main Branch</p>
+        <div class="main-branch-hr-page">
+          <header class="main-branch-hr-hero">
+            <div>
+              <span class="main-branch-hr-eyebrow">HR dashboard</span>
+              <h2 class="main-branch-hr-title">HR overview</h2>
+              <p class="main-branch-hr-subtitle">Review position requests and manage workforce accounts across all branches.</p>
+            </div>
+            <button class="pill-btn main-branch-hr-hero__action" @click="loadPositionRequests" :disabled="loadingPositionRequests">
+              {{ loadingPositionRequests ? 'Loading...' : 'Refresh Requests' }}
+            </button>
+          </header>
 
           <div class="info-box">
             <p>This panel provides HR functions for Main Branch headquarters personnel.</p>
             <p>Manage staff schedules, attendance, benefits, and performance from this location.</p>
+          </div>
+
+          <div class="hr-summary-grid" aria-label="HR summary">
+            <div class="hr-summary-card hr-summary-card--pending">
+              <span class="hr-summary-label">Pending Requests</span>
+              <strong>{{ positionRequestsPendingCount }}</strong>
+            </div>
+            <div class="hr-summary-card">
+              <span class="hr-summary-label">Branches</span>
+              <strong>{{ branchSections.length }}</strong>
+            </div>
+            <div class="hr-summary-card">
+              <span class="hr-summary-label">Total Accounts</span>
+              <strong>{{ totalStaffCount }}</strong>
+            </div>
+            <div class="hr-summary-card hr-summary-card--active">
+              <span class="hr-summary-label">Active Accounts</span>
+              <strong>{{ activeStaffCount }}</strong>
+            </div>
           </div>
 
           <div class="position-requests-section">
@@ -94,12 +122,29 @@
               </button>
             </div>
 
+            <div class="account-filters">
+              <label class="sr-only" for="account-search">Search accounts</label>
+              <input
+                id="account-search"
+                v-model="accountSearch"
+                type="search"
+                placeholder="Search name, username, role, or department"
+                class="account-search"
+              />
+              <label class="sr-only" for="account-status">Filter account status</label>
+              <select id="account-status" v-model="accountStatusFilter" class="account-status-filter">
+                <option value="all">All statuses</option>
+                <option value="active">Active only</option>
+                <option value="inactive">Inactive only</option>
+              </select>
+            </div>
+
             <div v-if="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
             <div v-else-if="loading" class="loading-box">Loading accounts...</div>
-            <div v-else-if="branchSections.length === 0" class="empty-box">No accounts found.</div>
+            <div v-else-if="filteredBranchSections.length === 0" class="empty-box">No accounts match the current filters.</div>
 
             <div v-else class="branch-grid">
-              <div v-for="branch in branchSections" :key="branch.branch_id" class="branch-card">
+              <div v-for="branch in filteredBranchSections" :key="branch.branch_id" class="branch-card">
                 <div class="branch-card__header">
                   <div class="header-content">
                     <div class="header-top">
@@ -154,8 +199,8 @@
         </div>
       </template>
 
-      <template #headerActions>
-        <div class="header-profile-wrapper" @click.stop>
+      <template #sideTop>
+        <div class="header-profile-wrapper main-branch-hr-profile" @click.stop>
           <button class="header-profile-btn" @click="toggleProfileDropdown">
             <div class="header-avatar">
               <div v-if="userProfile.avatarUrl" class="header-avatar-img" :style="{ backgroundImage: 'url('+userProfile.avatarUrl+')' }"></div>
@@ -350,6 +395,8 @@ const processingRequestId = ref(null)
 const showRejectModal = ref(false)
 const rejectingRequest = ref(null)
 const rejectReason = ref('')
+const accountSearch = ref('')
+const accountStatusFilter = ref('all')
 
 // Job Applications modal state
 const showApplicationsModal = ref(false)
@@ -361,6 +408,30 @@ const applicationsCount = computed(() => {
 
 const positionRequestsPendingCount = computed(() => {
   return positionRequests.value.filter(r => r.status === 'Pending').length
+})
+
+const totalStaffCount = computed(() => branchSections.value.reduce((total, branch) => total + Number(branch.total_staff || 0), 0))
+const activeStaffCount = computed(() => branchSections.value.reduce((total, branch) => total + Number(branch.active_staff || 0), 0))
+const filteredBranchSections = computed(() => {
+  const query = accountSearch.value.trim().toLowerCase()
+  const status = accountStatusFilter.value
+
+  return branchSections.value
+    .map(branch => ({
+      ...branch,
+      staff: (branch.staff || []).filter(member => {
+        const matchesQuery = !query || [
+          member.full_name,
+          member.username,
+          member.role,
+          member.department,
+          branch.branch_name
+        ].some(value => String(value || '').toLowerCase().includes(query))
+        const matchesStatus = status === 'all' || (status === 'active' ? member.is_active : !member.is_active)
+        return matchesQuery && matchesStatus
+      })
+    }))
+    .filter(branch => branch.staff.length > 0)
 })
 
 
@@ -754,6 +825,26 @@ window.addEventListener('click', () => {
 
 .main-branch-hr-panel { width: 100%; padding: 0; background: transparent; height: auto; min-height: 0; display: block; }
 
+.main-branch-hr-page { width: 100%; }
+.main-branch-hr-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 16px;
+  margin-bottom: 14px;
+  background: linear-gradient(135deg, #fffaf5 0%, #fff 72%);
+  border: 1px solid #f1e5d8;
+  border-radius: 14px;
+  box-shadow: 0 4px 14px rgba(66,33,11,0.05);
+}
+.main-branch-hr-eyebrow { display: inline-block; margin-bottom: 6px; color: #c25a12; font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
+.main-branch-hr-title { margin: 0; color: #1f2937; font-size: 26px; line-height: 1.1; }
+.main-branch-hr-subtitle { margin: 6px 0 0; color: #64748b; font-size: 13px; max-width: 560px; }
+.main-branch-hr-hero__action { flex-shrink: 0; margin-top: 2px; }
+.main-branch-hr-profile { margin-bottom: 14px; }
+
+
 /* Position Requests Section */
 .position-requests-section {
   background: #fff;
@@ -819,7 +910,8 @@ window.addEventListener('click', () => {
 .status-pending { background: #fef3c7; color: #92400e; }
 
 .request-card__info {
-  display: flex;
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
   gap: 6px;
   margin-bottom: 4px;
   font-size: 12px;
@@ -960,12 +1052,24 @@ window.addEventListener('click', () => {
 .info-box p:first-child { margin-top: 0; }
 .info-box p:last-child { margin-bottom: 0; }
 
+.hr-summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 0 0 14px; }
+.hr-summary-card { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 8px; }
+.hr-summary-card strong { color: #111827; font-size: 22px; line-height: 1; }
+.hr-summary-label { color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.hr-summary-card--pending { border-left: 3px solid #f59e0b; }
+.hr-summary-card--active { border-left: 3px solid #22c55e; }
+
 .branch-stats { background: transparent; padding: 0; border-radius: 8px; border: none; box-shadow: none; height: auto; min-height: 0; }
 .section-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin: 0 0 6px 0; flex-wrap: wrap; }
 .muted { color: #6b7280; margin: 2px 0 0 0; font-size: 12px; }
 .pill-btn { background: #4b5563; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; cursor: pointer; box-shadow: 0 1px 3px rgba(75, 85, 99, 0.1); transition: all 0.2s ease; font-size: 12px; }
 .pill-btn:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(75, 85, 99, 0.12); }
 .pill-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+.account-filters { display: flex; gap: 8px; margin: 0 0 10px; }
+.account-search, .account-status-filter { min-height: 34px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; color: #1f2937; font-size: 12px; padding: 7px 10px; }
+.account-search { flex: 1; min-width: 180px; }
+.account-search:focus, .account-status-filter:focus { outline: 2px solid rgba(59,130,246,0.2); border-color: #64748b; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 
 .branch-grid { display: flex; flex-direction: column; gap: 0; width: 100%; align-items: flex-start; }
 .branch-card { background: transparent; border: none; border-radius: 0; box-shadow: none; padding: 0; display: contents; flex-direction: column; gap: 0; transition: none; width: 100%; min-width: 0; align-self: flex-start; margin: 0; }
@@ -1026,9 +1130,14 @@ window.addEventListener('click', () => {
 
 @media (max-width: 768px) {
   .main-branch-hr-panel { padding: 0; }
+  .main-branch-hr-hero { flex-direction: column; gap: 12px; }
+  .main-branch-hr-hero__action { width: 100%; }
   .branch-stats { padding: 6px; }
   .section-header { flex-direction: column; align-items: stretch; gap: 8px; }
   .pill-btn { width: 100%; padding: 8px 12px; }
+  .hr-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .account-filters { flex-direction: column; }
+  .account-search, .account-status-filter { width: 100%; box-sizing: border-box; }
   .col-dept { display: none; }
   .branch-card { padding: 6px; }
   .staff-table th, .staff-table td { padding: 2px 3px; font-size: 9px; }

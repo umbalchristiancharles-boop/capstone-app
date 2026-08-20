@@ -495,7 +495,7 @@ const themeKey = 'owner_module_theme'
 const theme = ref('light')
 const isDarkMode = computed(() => theme.value === 'dark')
 const themeButtonLabel = computed(() => (isDarkMode.value ? 'Light Mode' : 'Dark Mode'))
-const showThemeToggle = computed(() => !isInventoryRoute() && !isRightColumnHeaderRoute() && !isKitchenStaffRoute() && !isManagerLogisticsRoute() && !isManagerProcurementRoute())
+const showThemeToggle = computed(() => !isInventoryRoute() && !isRightColumnHeaderRoute() && !isKitchenStaffRoute() && !isManagerLogisticsRoute() && !isManagerProcurementRoute() && !isMainBranchHrRoute())
 
 const isInventoryRoute = () => {
   try {
@@ -524,10 +524,22 @@ const isMainBranchAdminRoute = () => {
   }
 }
 
+const isMainBranchHrRoute = () => {
+  try {
+    const route = (window.location.pathname || '').toLowerCase()
+    return route.includes('/main-branch/hr')
+  } catch (e) {
+    return false
+  }
+}
+
 const isRightColumnHeaderRoute = () => {
   try {
     const route = (window.location.pathname || '').toLowerCase()
-    return route.includes('/main-branch/admin') || route.includes('/manager/finance') || route.includes('/main-branch/finance')
+    return route.includes('/main-branch/admin') ||
+      route.includes('/manager/finance') ||
+      route.includes('/main-branch/finance') ||
+      route.includes('/main-branch/hr')
   } catch (e) {
     return false
   }

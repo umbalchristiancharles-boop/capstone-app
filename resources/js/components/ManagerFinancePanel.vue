@@ -7,6 +7,7 @@
     :enableProfileUpdate="true"
     :canEditProfile="userProfile.role === 'OWNER'"
     :canChangePassword="true"
+    :showHeader="false"
     :showProfileColumn="false"
     :showAnnouncements="false"
     :showAttendanceCard="false"
@@ -18,6 +19,17 @@
     <template #main>
 
     <div class="manager-finance">
+
+    <header class="manager-finance-hero">
+      <div class="manager-finance-hero__copy">
+        <span class="manager-finance-hero__eyebrow">Finance dashboard</span>
+        <h2 class="manager-finance-hero__title">Finance overview</h2>
+        <p class="manager-finance-hero__subtitle">Monitor sales, expenses, approvals, and financial performance from one place.</p>
+      </div>
+      <button class="btn-refresh manager-finance-hero__action" @click="refreshDashboard" :disabled="budgetLoading">
+        {{ budgetLoading ? 'Loading...' : 'Refresh Dashboard' }}
+      </button>
+    </header>
 
     <div class="filter-bar">
       <div class="filter-group">
@@ -348,13 +360,13 @@
       </div>
     </transition>
     </div> <!-- /.manager-finance -->
-    
+
     <!-- Face Capture Modal -->
     <div v-if="showFaceCapture" class="face-capture-modal">
       <div class="face-capture-content">
         <h3>Take a Photo for Clock In</h3>
         <p class="face-capture-instruction">Please position your face in the frame and click capture</p>
-        
+
         <div class="camera-container">
           <video ref="video" autoplay playsinline></video>
           <canvas ref="canvas" style="display: none;"></canvas>
@@ -1010,7 +1022,7 @@ async function performClockIn() {
   showFaceCapture.value = true
   capturedImage.value = null
   cameraError.value = ''
-  
+
   // Initialize camera
   await startCamera()
 }
@@ -1026,10 +1038,10 @@ async function startCamera() {
         facingMode: 'user' // Front camera
       }
     })
-    
+
     cameraStream.value = stream
     cameraError.value = ''
-    
+
     // Set video source
     const video = document.querySelector('.face-capture-modal video')
     if (video) {
@@ -1052,36 +1064,36 @@ function stopCamera() {
 function capturePhoto() {
   const video = document.querySelector('.face-capture-modal video')
   const canvas = document.querySelector('.face-capture-modal canvas')
-  
+
   if (!video || !canvas) {
     attendanceMessage.value = 'Camera not ready. Please try again.'
     attendanceMessageType.value = 'error'
     return
   }
-  
+
   isCapturing.value = true
-  
+
   try {
     // Set canvas dimensions to match video
     canvas.width = video.videoWidth
     canvas.height = video.videoHeight
-    
+
     // Draw video frame to canvas
     const context = canvas.getContext('2d')
     context.drawImage(video, 0, 0, canvas.width, canvas.height)
-    
+
     // Convert to base64 image
     capturedImage.value = canvas.toDataURL('image/jpeg', 0.8)
-    
+
     // Stop camera after capture
     stopCamera()
-    
+
     // Proceed with clock in after a short delay
     setTimeout(() => {
       showFaceCapture.value = false
       proceedWithClockIn()
     }, 1500)
-    
+
   } catch (error) {
     console.error('Capture error:', error)
     attendanceMessage.value = 'Failed to capture photo. Please try again.'
@@ -1100,7 +1112,7 @@ function cancelFaceCapture() {
 
 async function proceedWithClockIn() {
   if (isAttendanceProcessing.value) return
-  
+
   // Check if face was captured
   if (!capturedImage.value) {
     attendanceMessage.value = 'Face photo is required to clock in'
@@ -1111,7 +1123,7 @@ async function proceedWithClockIn() {
 
   isAttendanceProcessing.value = true
   attendanceMessage.value = ''
-  
+
   try {
     const res = await axios.post('/api/manager/clock-in', {
       latitude: userLocation.value.latitude,
