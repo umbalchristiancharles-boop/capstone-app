@@ -9,13 +9,15 @@
     :userProfile="null"
     :panelTitle="'Super Admin Procurement Panel'"
     :panelDescription="'Monitor and manage procurement across all branches. Select branch to view scoped data.'"
+    :fullWidth="true"
     :enableProfileUpdate="false"
     :canEditProfile="false"
     :canChangePassword="true"
     :showProfileColumn="false"
-    :showAnnouncements="!!selectedBranch"
+    :showAnnouncements="false"
+    :showAttendanceCard="false"
     :showBackButton="false"
-    :ownerTwoColumnLayout="true"
+    :singleColumnLayout="true"
     @back="() => router.back()"
     @logout="askLogout"
     @profile-updated="onProfileUpdated"
@@ -1046,19 +1048,35 @@ watch(selectedBranch, onBranchChange)
 /* When profile column is hidden (superadmin view), match manager layout columns */
 :deep(.admin-layout.no-profile-column) {
   display: grid;
-  grid-template-columns: 1fr 360px;
-  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) !important;
+  width: 100%;
+  gap: 20px;
 }
-:deep(.admin-layout.no-profile-column) .admin-main { width: 100%; }
-:deep(.admin-layout.no-profile-column) .admin-side { width: 360px; }
+:deep(.admin-layout.no-profile-column) .admin-main {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+}
 </style>
 
 <style scoped>
- .superadmin-procurement-wrapper {
+.superadmin-procurement-wrapper {
   min-height: 100vh;
   padding-top: 64px;
   box-sizing: border-box;
   position: relative;
+}
+
+.branch-selector-section {
+  width: min(100%, 560px);
+  box-sizing: border-box;
+}
+
+.superadmin-procurement-wrapper :deep(.panel-section),
+.superadmin-procurement-wrapper :deep(.hr-stats-grid),
+.superadmin-procurement-wrapper :deep(.requests-list) {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Back button (match other admin pages) */
