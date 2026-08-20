@@ -1,6 +1,12 @@
 <template>
   <div class="superadmin-logistics-wrapper">
-    <!-- Use header slot for back button (matches procurement UI) -->
+    <button class="btn-secondary back-to-superadmin-btn" @click="goBackToSuperAdmin">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="back-icon">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+      Back to Super Admin
+    </button>
 
     <!-- OwnerPanelLayout (adapted for superadmin) -->
     <OwnerPanelLayout
@@ -9,16 +15,6 @@
       :showProfileColumn="false"
       :ownerTwoColumnLayout="true"
     >
-      <template #headerLeft>
-        <button class="btn-secondary back-to-superadmin-btn" @click="goBackToSuperAdmin">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="back-icon">
-            <line x1="19" y1="12" x2="5" y2="12"></line>
-            <polyline points="12 19 5 12 12 5"></polyline>
-          </svg>
-          Back to Super Admin
-        </button>
-      </template>
-
       <template #main>
         <!-- Branch Selector (matches procurement UI placement) -->
         <div class="branch-selector-section">
@@ -658,12 +654,17 @@ defineExpose({ fetchInventory })
 <style scoped>
 .superadmin-logistics-wrapper {
   min-height: 100vh;
+  padding-top: 64px;
+  box-sizing: border-box;
+  position: relative;
 }
 
-/* Back Button: keep it inline with the header so it aligns responsively */
+/* Keep the navigation control outside the panel container. */
 .back-to-superadmin-btn {
-  position: relative;
-  margin: 0;
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 140;
   padding: 10px 16px;
   background: rgba(255,255,255,0.95);
   border: none;
@@ -1232,8 +1233,14 @@ defineExpose({ fetchInventory })
   }
 
   .back-to-superadmin-btn {
+    top: 12px !important;
+    left: 12px !important;
     padding: 8px 12px !important;
     display: inline-flex !important;
+  }
+
+  .superadmin-logistics-wrapper {
+    padding-top: 56px;
   }
 }
 

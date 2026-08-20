@@ -538,6 +538,7 @@ const isManagerLogisticsRoute = () => {
     const route = (window.location.pathname || '').toLowerCase()
     return route.includes('/manager/logistics') ||
       route.includes('/main-branch/logistics') ||
+      route.includes('/super-admin/logistics') ||
       route.includes('/manager/finance') ||
       route.includes('/main-branch/finance') ||
       route.includes('/manager/hr') ||
