@@ -1,4 +1,10 @@
 <template>
+  <div class="superadmin-procurement-wrapper">
+    <button @click="router.push('/super-admin-panel')" class="btn-secondary back-to-dashboard-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="back-icon"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+      Back to Super Admin
+    </button>
+
   <OwnerPanelLayout
     :userProfile="null"
     :panelTitle="'Super Admin Procurement Panel'"
@@ -8,21 +14,12 @@
     :canChangePassword="true"
     :showProfileColumn="false"
     :showAnnouncements="!!selectedBranch"
-    :showBackButton="true"
+    :showBackButton="false"
     :ownerTwoColumnLayout="true"
     @back="() => router.back()"
     @logout="askLogout"
     @profile-updated="onProfileUpdated"
   >
-    <template #headerLeft>
-      <button @click="router.push('/super-admin-panel')" class="btn-secondary back-to-dashboard-btn">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="back-icon"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-        Back to Super Admin
-      </button>
-    </template>
-
-
-
     <template #main>
 
       <div class="branch-selector-section">
@@ -226,6 +223,7 @@
     </template>
 
   </OwnerPanelLayout>
+  </div>
 
   <transition name="fade">
     <div v-if="showLogoutConfirm" class="logout-confirm-backdrop">
@@ -1056,8 +1054,15 @@ watch(selectedBranch, onBranchChange)
 </style>
 
 <style scoped>
+ .superadmin-procurement-wrapper {
+  min-height: 100vh;
+  padding-top: 64px;
+  box-sizing: border-box;
+  position: relative;
+}
+
 /* Back button (match other admin pages) */
-.back-to-dashboard-btn { display:inline-flex; align-items:center; gap:0.5rem; margin-bottom:1rem; padding:0.5rem 1rem; font-size:0.9rem; background:#6c757d; color:#fff; border:none; border-radius:4px; cursor:pointer; }
+.back-to-dashboard-btn { position:absolute; top:16px; left:16px; z-index:140; display:inline-flex; align-items:center; gap:0.5rem; padding:0.5rem 1rem; font-size:0.9rem; background:#6c757d; color:#fff; border:none; border-radius:4px; cursor:pointer; }
 .back-to-dashboard-btn:hover { background:#5a6268; }
 .back-icon { flex-shrink:0; }
 </style>
@@ -1068,8 +1073,11 @@ watch(selectedBranch, onBranchChange)
 </style>
 
 <style scoped>
-/* Keep back button on its own top row */
-:deep(.header-left-slot) { flex-basis: 100%; display: block; margin-bottom: 0.5rem; }
 .branch-selector-section { margin: 0.5rem 0 1rem 0; display:flex; align-items:center; gap:0.6rem; }
+
+@media (max-width: 768px) {
+  .superadmin-procurement-wrapper { padding-top: 56px; }
+  .back-to-dashboard-btn { top:12px; left:12px; }
+}
 </style>
 

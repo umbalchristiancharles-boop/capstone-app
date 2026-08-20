@@ -555,7 +555,9 @@ const isManagerLogisticsRoute = () => {
 const isManagerProcurementRoute = () => {
   try {
     const route = (window.location.pathname || '').toLowerCase()
-    return route.includes('/manager/procurement') || route.includes('/main-branch/procurement')
+    return route.includes('/manager/procurement') ||
+      route.includes('/main-branch/procurement') ||
+      route.includes('/super-admin/procurement')
   } catch (e) {
     return false
   }
