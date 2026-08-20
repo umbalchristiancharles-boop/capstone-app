@@ -12,8 +12,11 @@
     <OwnerPanelLayout
       panelTitle="Super Admin Logistics Panel"
       panelDescription="Monitor inventory, procurement requests, and manage across all branches."
+      :fullWidth="true"
       :showProfileColumn="false"
-      :ownerTwoColumnLayout="true"
+      :singleColumnLayout="true"
+      :showAnnouncements="false"
+      :showAttendanceCard="false"
     >
       <template #main>
         <!-- Branch Selector (matches procurement UI placement) -->
@@ -659,6 +662,18 @@ defineExpose({ fetchInventory })
   position: relative;
 }
 
+:deep(.admin-layout.no-profile-column.admin-layout--single-column),
+:deep(.admin-layout.admin-layout--wider.no-profile-column.admin-layout--single-column) {
+  grid-template-columns: minmax(0, 1fr) !important;
+  width: 100%;
+  gap: 20px;
+}
+
+:deep(.admin-layout.no-profile-column.admin-layout--single-column) .admin-main {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
 /* Keep the navigation control outside the panel container. */
 .back-to-superadmin-btn {
   position: absolute;
@@ -697,7 +712,8 @@ defineExpose({ fetchInventory })
   display: flex;
   align-items: center;
   gap: 12px;
-  max-width: 520px;
+  width: min(100%, 560px);
+  max-width: none;
   align-self: start;
   transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
@@ -769,6 +785,8 @@ defineExpose({ fetchInventory })
   padding: 24px;
   margin-bottom: 24px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  box-sizing: border-box;
   transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
