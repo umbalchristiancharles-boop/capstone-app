@@ -21,24 +21,9 @@
             <h2 class="supplier-hero__title">Supplier overview</h2>
             <p class="supplier-hero__subtitle">Manage suppliers, view deliveries, and monitor supplier performance.</p>
           </div>
-          <div class="supplier-hero__actions">
-            <button class="supplier-hero__action" type="button" @click="loadOrders" :disabled="ordersLoading">
-              {{ ordersLoading ? 'Loading...' : 'Refresh Orders' }}
-            </button>
-            <div ref="profileWrapper" class="header-profile-wrapper supplier-hero__profile" @click.stop>
-              <button class="header-profile-btn" type="button" @click="toggleProfileDropdown">
-                <div class="header-avatar">
-                  <div v-if="userProfile.avatarUrl" class="header-avatar-img" :style="{ backgroundImage: 'url('+userProfile.avatarUrl+')' }"></div>
-                  <div v-else class="header-avatar-initials">{{ (userProfile.fullName || userProfile.full_name || 'S').charAt(0) }}</div>
-                </div>
-                <div class="header-name">{{ ((userProfile.role || 'SUPPLIER').toString().toUpperCase()) }} {{ (userProfile.branch_name || userProfile.branch || userProfile.branch_id || '').toString().toUpperCase() }}</div>
-              </button>
-              <div v-if="profileDropdownVisible" class="header-profile-dropdown" @click.stop>
-                <button class="dropdown-item" @click="openInfoFromHeader">Info</button>
-                <button class="dropdown-item" @click="triggerLogoutFromHeader">Logout</button>
-              </div>
-            </div>
-          </div>
+          <button class="supplier-hero__action" type="button" @click="loadOrders" :disabled="ordersLoading">
+            {{ ordersLoading ? 'Loading...' : 'Refresh Orders' }}
+          </button>
         </header>
 
       <div class="panel-content">
@@ -171,7 +156,7 @@
             </div>
             </template>
 
-            <template #headerActions>
+            <template #sideTop>
               <div class="header-actions-top">
                 <div class="header-profile-wrapper" @click.stop>
                   <button class="header-profile-btn" @click="toggleProfileDropdown">
@@ -1525,7 +1510,17 @@ function onProfileUpdated(newData) {
 .overview-value { font-weight:700; color:#111827; margin-left:6px }
 .hr-stat-card { position: relative; }
 
-.supplier-products { margin-top:1rem }
+.supplier-products {
+  width: 100%;
+  min-width: 0;
+  margin-top: 1rem;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(16, 24, 40, 0.06);
+  box-sizing: border-box;
+}
 .product-grid { display:grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap:0.75rem; margin-top:0.5rem }
 .product-card { background:#fff; border-radius:10px; padding:0.75rem; box-shadow:0 8px 24px rgba(15,23,42,0.06); border:1px solid #eef2f6 }
 .product-name { font-weight:700; color:#0f172a; font-size:0.95rem }
@@ -1923,46 +1918,6 @@ function onProfileUpdated(newData) {
 .supplier-hero__action:hover:not(:disabled) { background: #374151; }
 .supplier-hero__action:disabled { opacity: 0.6; cursor: not-allowed; }
 
-.supplier-hero__actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-  flex-shrink: 0;
-}
-
-.supplier-hero__profile {
-  position: relative;
-  max-width: 260px;
-}
-
-.supplier-hero__profile .header-profile-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  max-width: 100%;
-  padding: 4px 6px;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-}
-
-.supplier-hero__profile .header-avatar {
-  width: 36px;
-  height: 36px;
-  flex: 0 0 36px;
-}
-
-.supplier-hero__profile .header-name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: #111827;
-  font-size: 0.78rem;
-  font-weight: 700;
-}
-
 .panel-content {
   display: flex;
   flex-direction: column;
@@ -1984,6 +1939,22 @@ function onProfileUpdated(newData) {
   width: 100%;
   min-width: 0;
   margin: 0;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(16, 24, 40, 0.06);
+  box-sizing: border-box;
+}
+
+:deep(.logistics-panel) {
+  width: 100%;
+  min-width: 0;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(16, 24, 40, 0.06);
   box-sizing: border-box;
 }
 
@@ -2013,9 +1984,7 @@ function onProfileUpdated(newData) {
 
 @media (max-width: 900px) {
   .supplier-hero { flex-direction: column; gap: 12px; }
-  .supplier-hero__actions { width: 100%; flex-direction: column; align-items: stretch; }
   .supplier-hero__action { width: 100%; }
-  .supplier-hero__profile { align-self: flex-end; max-width: 100%; }
   .overview-grid { flex-direction:column }
   .data-table { min-width:600px }
   .product-grid { grid-template-columns: repeat(auto-fill,minmax(160px,1fr)) }
@@ -2048,8 +2017,12 @@ function onProfileUpdated(newData) {
 :deep(.admin-layout.no-profile-column) .admin-side {
   width: 100%;
   min-width: 0;
-  padding-top: 72px;
+  padding-top: 0;
   box-sizing: border-box;
+}
+
+:deep(.admin-layout.no-profile-column > .admin-side > .header-actions-top) {
+  transform: translateY(-8px);
 }
 
 /* Compact Supplier profile pill matching the reference layout. */
