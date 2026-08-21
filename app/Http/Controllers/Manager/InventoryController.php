@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Product;
 use App\Models\InventoryLot;
+use App\Models\DishIngredient;
 use Illuminate\Support\Facades\DB;
 
 class InventoryController extends Controller
@@ -101,6 +102,17 @@ class InventoryController extends Controller
 
         if (!$product) {
             return response()->json(['success' => false, 'message' => 'Product not found'], 404);
+        }
+
+        if ($isKitchen && ! $isManager) {
+            $isGramIngredient = DishIngredient::where('product_id', $product->id)
+                ->whereRaw('LOWER(TRIM(unit)) IN (?, ?, ?)', ['g', 'gram', 'grams'])
+                ->exists();
+            $isCondiment = strtolower(trim((string) $product->category)) === 'condiment';
+
+            if (! $isGramIngredient && ! $isCondiment) {
+                return response()->json(['success' => false, 'message' => 'Kitchen staff may only reduce gram-based ingredients or condiments'], 403);
+            }
         }
 
         // Validation differs for kitchen staff (they send `reduce`) vs managers (they send absolute `stock`).

@@ -70,7 +70,7 @@ class SupplierOrderController extends Controller
             'pack_quantity' => 'sometimes|required_if:per_pack_or_individual,per_pack|nullable|numeric|min:0',
             'pack_unit' => 'sometimes|required_if:per_pack_or_individual,per_pack|nullable|string|max:50',
             'expires_at' => 'nullable|date_format:Y-m-d\TH:i',
-            'date_made' => 'nullable|date_format:Y-m-d',
+            'date_made' => 'nullable|date_format:Y-m-d|before_or_equal:today',
             'stock' => 'nullable|integer|min:0',
             'sku' => 'nullable|string|max:255'
         ]);

@@ -56,7 +56,7 @@
                           </div>
                         </div>
                         <div class="ingredient-actions">
-                          <button class="update-stock-btn" :disabled="(!ing.product_id)" @click.prevent="showUpdateStock(ing)">Reduce Stock</button>
+                          <button v-if="canReduceStock(ing)" class="update-stock-btn" :disabled="(!ing.product_id)" @click.prevent="showUpdateStock(ing)">Reduce Stock</button>
                           <div v-if="updateStockVisible[ingKey(ing)]" class="update-stock-form">
                             <input type="number" v-model.number="updateStockForm[ingKey(ing)].reduce" min="1" max="9999" />
                             <button @click.prevent="submitUpdateStock(ing)" :disabled="updateStockSubmitting[ingKey(ing)]">
@@ -257,6 +257,12 @@ const updateStockSubmitting = reactive({})
 
 function ingKey(ing) {
   return String((ing.product && ing.product.id) || ing.product_id || ing.id || Math.random().toString(36).slice(2,9))
+}
+
+function canReduceStock(ing) {
+  const unit = String(ing.unit || '').trim().toLowerCase()
+  const category = String(ing.product?.category || '').trim().toLowerCase()
+  return ['g', 'gram', 'grams'].includes(unit) || category === 'condiment'
 }
 
 async function showUpdateStock(ing) {

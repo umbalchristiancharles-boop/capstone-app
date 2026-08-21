@@ -422,7 +422,7 @@
             </div>
             <div class="form-group">
               <label>Date Product Made</label>
-              <input v-model="submitForm.date_made" type="date" />
+              <input v-model="submitForm.date_made" type="date" :max="todayDate" />
             </div>
             <div v-if="submitForm.per_pack_or_individual === 'per_pack'" class="form-group">
               <label>Pack details</label>
@@ -590,11 +590,13 @@ const overlayText = ref('Logging out...')
 const showReceiptModal = ref(false)
 const receiptData = ref({})
 const estimatedDeliveryDateTime = ref('')
+const deliveryScheduleConfirmed = ref(false)
 const savingEstimatedDelivery = ref(false)
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
 // Supplier submit modal state
 const supplierSubmitModalVisible = ref(false)
 const submitForm = ref({ name: '', price: null, category: '', per_pack_or_individual: '', date_made: '', pack_quantity: null, pack_unit: '' })
+const todayDate = new Date().toLocaleDateString('en-CA')
 const submitSubmitting = ref(false)
 const submitError = ref('')
 const currentSubmitOrderId = ref(null)
@@ -890,6 +892,8 @@ async function completeTransaction(id) {
 
     if (res && res.data) {
       receiptData.value = normalizeSupplierOrder(res.data)
+      estimatedDeliveryDateTime.value = receiptData.value.estimated_delivery_datetime || ''
+      deliveryScheduleConfirmed.value = Boolean(estimatedDeliveryDateTime.value)
       showReceiptModal.value = true
     }
 
@@ -1040,9 +1044,14 @@ async function submitProductForm() {
 }
 
 function closeReceipt() {
+  if (!deliveryScheduleConfirmed.value) {
+    showToast('Please confirm the estimated delivery schedule before closing', 'error')
+    return
+  }
   showReceiptModal.value = false
   receiptData.value = {}
   estimatedDeliveryDateTime.value = ''
+  deliveryScheduleConfirmed.value = false
 }
 
 function printReceipt() {
@@ -1455,6 +1464,7 @@ async function confirmEstimatedDelivery() {
       showToast('Delivery schedule confirmed successfully', 'success')
       // Update receipt data with the new estimated delivery
       receiptData.value = { ...receiptData.value, estimated_delivery_datetime: estimatedDeliveryDateTime.value }
+      deliveryScheduleConfirmed.value = true
     }
   } catch (e) {
     console.error('confirmEstimatedDelivery failed', e)
