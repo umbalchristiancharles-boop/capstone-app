@@ -367,6 +367,45 @@
     <CustomerContactForm />
   </main>
 
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="site-footer-brand">
+        <img :src="chikintayoImg" alt="Chikin Tayo" class="site-footer-logo" />
+        <div>
+          <strong>CHIKIN TAYO</strong>
+          <p>Korean-inspired comfort food, snacks, and happy moments.</p>
+        </div>
+      </div>
+
+      <nav class="site-footer-links" aria-label="Footer navigation">
+        <h2>Explore</h2>
+        <a href="#hero" @click="scrollToSection('hero')">Home</a>
+        <a href="#branches" @click="scrollToSection('branches')">Branches</a>
+        <a href="#menu" @click="scrollToSection('menu')">Menu</a>
+        <a href="#careers" @click="scrollToSection('careers')">Careers</a>
+        <a href="#about" @click="scrollToSection('about')">About</a>
+        <a href="#contact" @click="scrollToSection('contact')">Contact Admin</a>
+      </nav>
+
+      <div class="site-footer-contact">
+        <h2>Visit Us</h2>
+        <p>4606 Mangubat Ave, Zone 4<br />Dasmariñas, Cavite</p>
+        <a href="#branches" @click="scrollToSection('branches')">View all branches <span aria-hidden="true">→</span></a>
+      </div>
+
+      <div class="site-footer-hours">
+        <h2>Hours</h2>
+        <p>Monday - Sunday</p>
+        <strong>10:00 AM - 10:00 PM</strong>
+        <a href="#contact" @click="scrollToSection('contact')">Send us a message <span aria-hidden="true">→</span></a>
+      </div>
+    </div>
+    <div class="site-footer-bottom">
+      <span>© {{ new Date().getFullYear() }} Chikin Tayo. All rights reserved.</span>
+      <span>Good food. Warm vibes. Happy tummies.</span>
+    </div>
+  </footer>
+
   <transition name="scroll-top">
       <button
         v-show="showScrollTop"

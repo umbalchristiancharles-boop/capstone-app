@@ -7,6 +7,7 @@ use App\Models\Message;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class HRMessageController extends Controller
 {
@@ -47,10 +48,15 @@ class HRMessageController extends Controller
             return [
                 'id' => $m->id,
                 'body' => $m->body,
+                'attachment_url' => $m->attachment_path ? Storage::disk('public')->url($m->attachment_path) : null,
+                'attachment_name' => $m->attachment_name,
+                'attachment_mime' => $m->attachment_mime,
                 'from_user_id' => $m->from_user_id,
                 'from_user' => $m->fromUser ? ['id' => $m->fromUser->id, 'name' => $m->fromUser->full_name ?? $m->fromUser->username, 'role' => $m->fromUser->role ?? null] : null,
                 'to_user_id' => $m->to_user_id,
                 'to_user' => $m->toUser ? ['id' => $m->toUser->id, 'name' => $m->toUser->full_name ?? $m->toUser->username, 'role' => $m->toUser->role ?? null] : null,
+                'delivered_at' => $m->delivered_at,
+                'read_at' => $m->read_at,
                 'created_at' => $m->created_at,
             ];
         });
@@ -70,16 +76,36 @@ class HRMessageController extends Controller
         }
 
         $users = $this->resolveChatUsersFor($user);
+        $unreadByUser = Message::where('to_user_id', $user->id)
+            ->whereNull('read_at')
+            ->selectRaw('from_user_id, COUNT(*) as unread_count')
+            ->groupBy('from_user_id')
+            ->pluck('unread_count', 'from_user_id');
+        $users = $users->map(function ($chatUser) use ($unreadByUser) {
+            $chatUser->unread_count = (int) ($unreadByUser[$chatUser->id] ?? 0);
+            return $chatUser;
+        });
+        $unreadCount = Message::where('to_user_id', $user->id)
+            ->whereNull('read_at')
+            ->count();
 
-        return response()->json(['users' => $users]);
+        return response()->json([
+            'users' => $users,
+            'unread_count' => $unreadCount,
+        ]);
     }
 
     public function send(Request $request)
     {
         $request->validate([
             'to_user_id' => 'required|integer|exists:users,id',
-            'body' => 'required|string|min:1|max:5000',
+            'body' => 'nullable|string|max:5000',
+            'attachment' => 'nullable|file|max:20480|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx,ppt,pptx,txt',
         ]);
+
+        if (! $request->filled('body') && ! $request->hasFile('attachment')) {
+            return response()->json(['error' => 'Message or attachment is required'], 422);
+        }
 
         $me = $this->currentUser();
         if (! $me) {
@@ -98,11 +124,51 @@ class HRMessageController extends Controller
             return response()->json(['error' => 'Not authorized to message this user'], 403);
         }
 
+        $attachment = $request->file('attachment');
         $msg = Message::create([
             'branch_id' => $me->branch_id ?? null,
             'from_user_id' => $me->id,
             'to_user_id' => $to->id,
-            'body' => trim($request->body),
+            'body' => trim((string) $request->body),
+            'attachment_path' => $attachment ? $attachment->store('message-attachments', 'public') : null,
+            'attachment_name' => $attachment?->getClientOriginalName(),
+            'attachment_mime' => $attachment?->getMimeType(),
+            'delivered_at' => now(),
+        ]);
+
+        return response()->json(['message' => $msg]);
+    }
+
+    public function sendEmployeeReport(Request $request)
+    {
+        $request->validate([
+            'to_user_id' => 'required|integer|exists:users,id',
+            'report_body' => 'required|string|min:1|max:4500',
+        ]);
+
+        $me = $this->currentUser();
+        if (! $me) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        $to = User::findOrFail($request->to_user_id);
+
+        if (! $this->canSubmitEmployeeReport($me) || (int) $to->id === (int) $me->id || ! $this->isHrManager($to)) {
+            return response()->json(['error' => 'Employee reports can only be sent to an HR manager'], 403);
+        }
+
+        if (! $this->canChatWith($me, $to)) {
+            return response()->json(['error' => 'Not authorized to message this user'], 403);
+        }
+
+        $employeeName = $me->full_name ?: $me->username ?: 'User #' . $me->id;
+        $body = "EMPLOYEE REPORT\nEmployee: " . $employeeName . "\n\n" . trim($request->report_body);
+
+        $msg = Message::create([
+            'branch_id' => $me->branch_id ?? null,
+            'from_user_id' => $me->id,
+            'to_user_id' => $to->id,
+            'body' => $body,
         ]);
 
         return response()->json(['message' => $msg]);
@@ -124,7 +190,7 @@ class HRMessageController extends Controller
         // Owner, Admin, Super Admin, or main branch users: show all users except self
         if (in_array($meRole, $adminRoles) || $isMainBranchUser) {
             $users = User::where('id', '!=', $user->id)
-                ->selectRaw("id, COALESCE(full_name, username, CONCAT('User #', id)) as name, role, branch_id")
+                ->selectRaw("id, COALESCE(full_name, username, CONCAT('User #', id)) as name, role, department, branch_id")
                 ->orderBy('name')
                 ->get();
             return $users;
@@ -134,7 +200,7 @@ class HRMessageController extends Controller
         if ($meBranch) {
             $users = User::where('id', '!=', $user->id)
                 ->where('branch_id', $meBranch)
-                ->selectRaw("id, COALESCE(full_name, username, CONCAT('User #', id)) as name, role, branch_id")
+                ->selectRaw("id, COALESCE(full_name, username, CONCAT('User #', id)) as name, role, department, branch_id")
                 ->orderBy('name')
                 ->get();
             return $users;
@@ -175,6 +241,20 @@ class HRMessageController extends Controller
 
         // Both must be in the same branch (handles CUSTOM, STAFF, MANAGER, etc. uniformly)
         return (int)$meBranch === (int)$otherBranch && $meBranch !== null;
+    }
+
+    private function isHrManager(User $user): bool
+    {
+        return strtoupper(trim($user->role ?? '')) === 'MANAGER'
+            && strtoupper(trim($user->department ?? '')) === 'HR';
+    }
+
+    private function canSubmitEmployeeReport(User $user): bool
+    {
+        $role = strtoupper(trim($user->role ?? ''));
+
+        return ! in_array($role, ['OWNER', 'ADMIN', 'SUPER_ADMIN', 'SUPERADMIN'], true)
+            && ! $this->isHrManager($user);
     }
 
     private function currentUser(): User

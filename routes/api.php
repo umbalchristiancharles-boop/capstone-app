@@ -241,6 +241,7 @@ Route::middleware('web')->group(function () {
         Route::get('/messages/users', [\App\Http\Controllers\HRMessageController::class, 'users']);
         Route::get('/messages/conversation/{userId}', [\App\Http\Controllers\HRMessageController::class, 'conversation']);
         Route::post('/messages/send', [\App\Http\Controllers\HRMessageController::class, 'send']);
+        Route::post('/messages/send-employee-report', [\App\Http\Controllers\HRMessageController::class, 'sendEmployeeReport']);
 
     // HR Positions (Open positions request)
         Route::get('/positions', [\App\Http\Controllers\Api\HrPositionRequestController::class, 'positions']);

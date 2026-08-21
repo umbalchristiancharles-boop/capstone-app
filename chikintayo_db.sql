@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 21, 2026 at 08:18 AM
+-- Generation Time: Aug 21, 2026 at 09:08 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -602,9 +602,11 @@ CREATE TABLE `messages` (
   `from_user_id` bigint(20) UNSIGNED NOT NULL,
   `to_user_id` bigint(20) UNSIGNED NOT NULL,
   `body` text NOT NULL,
+  `delivered_at` timestamp NULL DEFAULT NULL,
   `attachment_path` varchar(255) DEFAULT NULL,
   `attachment_type` varchar(255) DEFAULT NULL,
   `attachment_name` varchar(255) DEFAULT NULL,
+  `attachment_mime` varchar(255) DEFAULT NULL,
   `read_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
@@ -614,24 +616,12 @@ CREATE TABLE `messages` (
 -- Dumping data for table `messages`
 --
 
-INSERT INTO `messages` (`id`, `branch_id`, `from_user_id`, `to_user_id`, `body`, `attachment_path`, `attachment_type`, `attachment_name`, `read_at`, `created_at`, `updated_at`) VALUES
-(12, 31, 149, 148, 'Workplace is too hot', NULL, NULL, NULL, '2026-03-22 11:46:35', '2026-03-22 11:46:11', '2026-03-22 11:46:35'),
-(13, 31, 148, 149, 'Inom ka tubig pre', NULL, NULL, NULL, '2026-03-22 11:47:01', '2026-03-22 11:46:44', '2026-03-22 11:47:01'),
-(14, 31, 149, 148, 'nang yan amp, barat', NULL, NULL, NULL, '2026-03-24 09:19:54', '2026-03-22 11:47:15', '2026-03-24 09:19:54'),
-(15, 31, 150, 148, 'hiii hehe', NULL, NULL, NULL, '2026-03-24 09:20:06', '2026-03-24 04:52:00', '2026-03-24 09:20:06'),
-(16, 31, 153, 148, 'Test', NULL, NULL, NULL, '2026-03-24 09:19:54', '2026-03-24 09:19:34', '2026-03-24 09:19:54'),
-(17, 31, 148, 153, 'test', NULL, NULL, NULL, '2026-03-25 06:34:12', '2026-03-24 09:20:05', '2026-03-25 06:34:12'),
-(18, 31, 154, 148, 'May chismiss ako', NULL, NULL, NULL, NULL, '2026-03-25 06:34:59', '2026-03-25 06:34:59'),
-(19, 31, 150, 147, 'helloo', NULL, NULL, NULL, '2026-03-30 03:34:12', '2026-03-30 03:28:50', '2026-03-30 03:34:12'),
-(20, 31, 151, 150, 'hoy request ko', NULL, NULL, NULL, '2026-03-30 03:30:49', '2026-03-30 03:30:20', '2026-03-30 03:30:49'),
-(21, 31, 150, 151, 'bahaala ka dyan', NULL, NULL, NULL, '2026-03-30 08:50:27', '2026-03-30 03:30:58', '2026-03-30 08:50:27'),
-(22, 31, 147, 150, 'sinu kaa', NULL, NULL, NULL, '2026-03-30 05:42:42', '2026-03-30 03:34:20', '2026-03-30 05:42:42'),
-(23, 31, 149, 151, 'Hello', NULL, NULL, NULL, '2026-03-30 08:50:05', '2026-03-30 08:49:44', '2026-03-30 08:50:05'),
-(24, 31, 151, 149, 'hi', NULL, NULL, NULL, NULL, '2026-03-30 08:50:19', '2026-03-30 08:50:19'),
-(25, NULL, 28, 147, 'hi Gab', NULL, NULL, NULL, NULL, '2026-04-05 01:53:08', '2026-04-05 01:53:08'),
-(26, 31, 148, 147, 'angas', 'message-attachments/images/DxtkLYKZx86Ogg7bt6HWP2cmoF4y3geDkKY9ShFz.png', 'image', 'Screenshot 2026-07-16 142201.png', NULL, '2026-08-05 06:43:08', '2026-08-05 06:43:08'),
-(30, 31, 153, 157, 'hoy', 'message-attachments/images/E9OyXn1x7MBsOuDj8ZNrcQN2jgZJmeNaoxRncSfq.jpg', 'image', 'gorilla.jpg', '2026-08-05 07:33:59', '2026-08-05 07:01:22', '2026-08-05 07:33:59'),
-(31, 31, 157, 153, 'ASD', 'message-attachments/images/qL8fwT97m2Klnm7zxp7JsXcvZ8UVUb1AuKUkkCIN.png', 'image', 'Screenshot 2026-08-05 144816.png', NULL, '2026-08-05 07:34:20', '2026-08-05 07:34:20');
+INSERT INTO `messages` (`id`, `branch_id`, `from_user_id`, `to_user_id`, `body`, `delivered_at`, `attachment_path`, `attachment_type`, `attachment_name`, `attachment_mime`, `read_at`, `created_at`, `updated_at`) VALUES
+(38, 31, 154, 147, '', '2026-08-21 06:49:38', 'message-attachments/PNc6k1vosOmLVfs5MI0r557OB2JJr8vMvOgtWCkC.jpg', NULL, '01ac5b864a6c29efb24c1145aeb9c7be.jpg', 'image/jpeg', NULL, '2026-08-21 06:49:38', '2026-08-21 06:49:38'),
+(39, 31, 154, 147, '', '2026-08-21 06:51:19', 'message-attachments/knMW6stUZKowQkMowRk7Hq7tnoZkuJOsdGsz8gqg.txt', NULL, 'Copy of licensed.txt', 'text/plain', NULL, '2026-08-21 06:51:19', '2026-08-21 06:51:19'),
+(40, 31, 154, 148, 'EMPLOYEE REPORT\nEmployee: Vince Hannibal Bido\n\nPenge pang Mcdo', NULL, NULL, NULL, NULL, NULL, '2026-08-21 06:52:24', '2026-08-21 06:51:55', '2026-08-21 06:52:24'),
+(41, 31, 148, 154, '', '2026-08-21 06:52:34', 'message-attachments/ZOiYqXot59C5zTIF8DXgdluRHwVc3Y0VDBbOLCzS.jpg', NULL, 'images.jpg', 'image/jpeg', '2026-08-21 06:52:52', '2026-08-21 06:52:34', '2026-08-21 06:52:52'),
+(42, 31, 154, 148, 'lah', '2026-08-21 06:53:00', NULL, NULL, NULL, NULL, NULL, '2026-08-21 06:53:00', '2026-08-21 06:53:00');
 
 -- --------------------------------------------------------
 
@@ -791,7 +781,9 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (156, '2026_08_03_000001_change_face_image_to_text_in_attendance_table', 81),
 (157, '2026_08_03_000002_add_confirmation_fields_to_attendance_table', 82),
 (158, '2026_08_05_000001_add_attachment_fields_to_messages_table', 83),
-(159, '2026_08_07_000001_add_estimated_delivery_to_supplier_orders', 84);
+(159, '2026_08_07_000001_add_estimated_delivery_to_supplier_orders', 84),
+(160, '2026_08_21_000001_add_delivered_at_to_messages_table', 85),
+(161, '2026_08_21_000002_add_attachments_to_messages_table', 86);
 
 -- --------------------------------------------------------
 
@@ -2169,7 +2161,8 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (2844, 'App\\Models\\User', 147, 'auth-token', 'ac26709ac0d5f37746078a7f80e9571f2bcb3986d9f8a281fe1f39de18b06887', '[\"*\"]', NULL, NULL, '2026-08-19 07:55:11', '2026-08-19 07:55:11'),
 (2846, 'App\\Models\\User', 31, 'auth-token', '55ca755593793ca6c12572153b95f4818f4b23c493a3c08b8482f16cede7055f', '[\"*\"]', NULL, NULL, '2026-08-19 07:57:00', '2026-08-19 07:57:00'),
 (2863, 'App\\Models\\User', 31, 'auth-token', '50abad59b7137bcc3d30bfaa20897cf78f70c03e844ed21d3e540fbb1d032911', '[\"*\"]', NULL, NULL, '2026-08-21 05:47:23', '2026-08-21 05:47:23'),
-(2880, 'App\\Models\\User', 31, 'auth-token', '40ee87dfc4a6ec6023b431a44bc543320a6d9075e6d9d5e62e8d63556efc0afc', '[\"*\"]', NULL, NULL, '2026-08-21 06:14:45', '2026-08-21 06:14:45');
+(2880, 'App\\Models\\User', 31, 'auth-token', '40ee87dfc4a6ec6023b431a44bc543320a6d9075e6d9d5e62e8d63556efc0afc', '[\"*\"]', NULL, NULL, '2026-08-21 06:14:45', '2026-08-21 06:14:45'),
+(2893, 'App\\Models\\User', 28, 'auth-token', 'b6ee173d2786491cc7c88fdb6385d368f1ecf2f8ee1ad56a03400d6dccb35ab0', '[\"*\"]', NULL, NULL, '2026-08-21 07:00:44', '2026-08-21 07:00:44');
 
 -- --------------------------------------------------------
 
@@ -2597,7 +2590,9 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('D1PgnAFIXLher9ukrL9Nl8lauzk3sFMfnSvYBLks', 31, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoic3JQdTBuTzJWNEozdzlRdlF4eFMxdmJBdXJPNzgxWUVhNU5rd2czZyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9sb2dpbiI7czo1OiJyb3V0ZSI7czo1OiJsb2dpbiI7fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjMxO3M6NzoidXNlcl9pZCI7aTozMTtzOjk6InVzZXJfcm9sZSI7czo1OiJPV05FUiI7czo5OiJ1c2VyX25hbWUiO3M6ODoiTXIucGFya3MiO3M6MTM6InJlZGlyZWN0X3BhdGgiO3M6MTI6Ii9vd25lci1wYW5lbCI7fQ==', 1787293011);
+('7eimiBOT5m6c5prkK38hv31rTRsAC4Yipjnhu3fF', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoiU3Z3ZU45T1FTR3NIRjJ5UTZvbVluRmdweHJzbEcyeHdFVnMwck5hWCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1787295127),
+('kBcwgvgVvMAzQ20vxxgxqWoFdPKGQYMdrxlJlokz', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoicjEyQWREOTJuTDhzQkhtaGVJQ1plcGNZOEdUTUZYVFVCcEV6TjZ6MyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1787294376),
+('Skb46BWRGLfGO3lGgXeYNWIinG6PGUjM5FDJiOoj', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoibDFzc1VuelU2bTRHTFBRUDhsZ3RHT3dSSnNHUUdOQ29sZjYxanFvQSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO319', 1787296056);
 
 -- --------------------------------------------------------
 
@@ -2969,7 +2964,8 @@ ALTER TABLE `messages`
   ADD KEY `messages_branch_id_index` (`branch_id`),
   ADD KEY `messages_from_user_id_index` (`from_user_id`),
   ADD KEY `messages_to_user_id_index` (`to_user_id`),
-  ADD KEY `messages_read_at_index` (`read_at`);
+  ADD KEY `messages_read_at_index` (`read_at`),
+  ADD KEY `messages_delivered_at_index` (`delivered_at`);
 
 --
 -- Indexes for table `migrations`
@@ -3301,13 +3297,13 @@ ALTER TABLE `logistics_transactions`
 -- AUTO_INCREMENT for table `messages`
 --
 ALTER TABLE `messages`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=43;
 
 --
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=160;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=162;
 
 --
 -- AUTO_INCREMENT for table `orders`
@@ -3331,7 +3327,7 @@ ALTER TABLE `payrolls`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2881;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2894;
 
 --
 -- AUTO_INCREMENT for table `positions`

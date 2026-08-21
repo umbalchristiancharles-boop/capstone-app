@@ -14,10 +14,14 @@ class Message extends Model
         'from_user_id',
         'to_user_id',
         'body',
+        'attachment_path',
+        'attachment_name',
+        'attachment_mime',
+        'delivered_at',
         'read_at',
     ];
 
-    protected $dates = ['read_at', 'created_at', 'updated_at'];
+    protected $dates = ['delivered_at', 'read_at', 'created_at', 'updated_at'];
 
     public function fromUser()
     {
