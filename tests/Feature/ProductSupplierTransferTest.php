@@ -77,6 +77,32 @@ class ProductSupplierTransferTest extends BaseTestCase
         $this->assertSame($supplier->id, $destination->fresh()->supplier_id);
     }
 
+    public function test_supplier_change_keeps_source_when_supplier_is_already_assigned(): void
+    {
+        $supplier = User::create([
+            'role' => 'SUPPLIER',
+            'full_name' => 'Umberto Batumbakal',
+            'branch_id' => 31,
+        ]);
+
+        $source = Product::create([
+            'name' => 'Frozen Hotdog',
+            'sku' => 'SKU-1',
+            'branch_id' => 31,
+            'supplier_id' => $supplier->id,
+            'supplier_name' => 'Old Supplier Name',
+            'stock' => 10,
+            'real_stock' => 10,
+        ]);
+
+        $result = Product::transferInventoryForSupplierChange($source, $supplier);
+
+        $this->assertSame($source->id, $result->id);
+        $this->assertSame(10, $result->stock);
+        $this->assertSame(10, $result->real_stock);
+        $this->assertSame('Umberto Batumbakal', $result->supplier_name);
+    }
+
     public function test_manager_change_supplier_route_accepts_post_requests(): void
     {
         $route = Route::getRoutes()->match(Request::create('/api/manager/procurement/products/1/change-supplier', 'POST'));

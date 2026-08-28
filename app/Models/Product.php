@@ -141,6 +141,15 @@ class Product extends Model
             $supplierName = trim((string) ($newSupplier->full_name ?? $newSupplier->username ?? $newSupplier->email ?? ''));
             $supplierName = $supplierName !== '' ? $supplierName : null;
 
+            if ((int) $source->supplier_id === (int) $newSupplier->id) {
+                if ($source->supplier_name !== $supplierName) {
+                    $source->supplier_name = $supplierName;
+                    $source->save();
+                }
+
+                return $source->fresh();
+            }
+
             $destination = $targetProduct
                 ? self::where('id', $targetProduct->id)->lockForUpdate()->first()
                 : self::where('branch_id', $source->branch_id)
