@@ -1,11 +1,9 @@
 <template>
   <OwnerPanelLayout ref="ownerLayout"
     :userProfile="userProfile"
-    :panelTitle="'Supplier Panel'"
-    :panelDescription="'Manage suppliers, view deliveries, and monitor supplier performance.'"
     :showProfileColumn="false"
     :showAttendanceCard="false"
-    :showHeader="true"
+    :showHeader="false"
     :enableProfileUpdate="true"
     :canEditProfile="userProfile.role === 'OWNER'"
     :canChangePassword="true"
@@ -426,7 +424,7 @@
             </div>
             <div v-if="submitForm.per_pack_or_individual === 'per_pack'" class="form-group">
               <label>Pack details</label>
-              <div class="pack-details-row">
+              <div style="display:flex;gap:8px">
                 <input v-model.number="submitForm.pack_quantity" type="number" min="0" step="0.01" placeholder="Quantity (e.g. 6 or 250)" />
                 <select v-model="submitForm.pack_unit">
                   <option value="">Unit</option>
@@ -435,7 +433,7 @@
                   <option value="kg">kg</option>
                 </select>
               </div>
-              <div class="muted">If selling per pack, enter how many pieces or how many grams are in a pack.</div>
+              <div class="muted" style="margin-top:6px">If selling per pack, enter how many pieces or how many grams are in a pack.</div>
             </div>
             <div v-if="submitError" class="error-msg">{{ submitError }}</div>
           </div>
@@ -1549,38 +1547,28 @@ function onProfileUpdated(newData) {
 .btn-edit:hover { opacity:.7 }
 
 /* Pricing type options */
-.pricing-type-options { display:flex; flex-direction:column; gap:8px; margin-top:8px; padding:0; background:transparent; border-radius:8px; border:none }
-.option-group { display:flex; align-items:flex-start; gap:10px; cursor:pointer; padding:0; border-radius:0; transition:background 0.2s }
-.option-group:hover { background:transparent }
-.option-group input[type="radio"] { margin-top:0; cursor:pointer; accent-color:#7c3aed; flex-shrink:0; width:18px; height:18px }
-.option-label { display:flex; flex-direction:column; gap:3px; cursor:pointer; flex:1 }
-.option-badge { display:inline-block; padding:6px 12px; border-radius:6px; font-size:0.85rem; font-weight:600; width:fit-content }
-.option-badge.type-individual { background:#dbeafe; color:#1e40af }
-.option-badge.type-per_pack { background:#d1fae5; color:#065f46 }
-.option-badge.type-both { background:#fef3c7; color:#92400e }
+.pricing-type-options { display:flex; flex-direction:column; gap:10px; margin-top:6px; padding:8px; background:#f9fafb; border-radius:8px; border:1px solid #e5e7eb }
+.option-group { display:flex; align-items:flex-start; gap:12px; cursor:pointer; padding:8px; border-radius:6px; transition:background 0.2s }
+.option-group:hover { background:#f3f4f6 }
+.option-group input[type="radio"] { margin-top:5px; cursor:pointer; accent-color:#7c3aed }
+.option-label { display:flex; flex-direction:column; gap:4px; cursor:pointer; flex:1 }
+.option-badge { display:inline-block; padding:4px 10px; border-radius:6px; font-size:0.85rem; font-weight:600; width:fit-content }
 .option-desc { font-size:0.8rem; color:#6b7280 }
 
 /* Receipt modal styles */
-.modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; z-index:1200; padding:1rem }
-.modal { position:relative; max-height:90vh; overflow-y:auto; width:100% }
-.modal-card { background:#fff; border-radius:12px; box-shadow:0 18px 54px rgba(15,23,42,0.12); min-width:500px; max-width:600px; overflow:hidden; box-sizing:border-box }
-@media (max-width:640px) {
-  .modal-card { min-width:auto; width:100%; max-width:100% }
-}
+.modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; z-index:1200 }
+.modal { position:relative; max-height:90vh; overflow-y:auto }
+.modal-card { background:#fff; border-radius:12px; box-shadow:0 18px 54px rgba(15,23,42,0.12); min-width:500px; max-width:600px; overflow:hidden }
 .modal-header { background:#f9fafb; padding:1.25rem 1.5rem; border-bottom:1px solid #e5e7eb; display:flex; justify-content:space-between; align-items:center }
 .modal-header h3 { margin:0; font-size:1.1rem; font-weight:700; color:#111827 }
-.modal-body { padding:1.5rem; max-height:calc(90vh - 180px); overflow-y:auto; display:flex; flex-direction:column; gap:0.75rem }
+.modal-body { padding:1.5rem; max-height:calc(90vh - 180px); overflow-y:auto; display:flex; flex-direction:column; gap:1rem }
 .modal-footer { padding:1rem 1.5rem; border-top:1px solid #e5e7eb; display:flex; gap:0.75rem; justify-content:flex-end; background:#f9fafb }
-.form-group { display:flex; flex-direction:column; gap:4px }
+.form-group { display:flex; flex-direction:column; gap:6px }
 .form-group.full-span { grid-column:1/-1 }
 .form-group label { font-weight:600; color:#374151; font-size:0.9rem }
-.form-group input, .form-group select { padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:0.95rem; width:100%; box-sizing:border-box; overflow:hidden; text-overflow:ellipsis }
+.form-group input, .form-group select { padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:0.95rem }
 .form-group input:focus, .form-group select:focus { outline:none; border-color:#7c3aed; box-shadow:0 0 0 3px rgba(124,58,237,0.1) }
-.form-group input[readonly] { background-color:#f3f4f6; cursor:default }
 .error-msg { background:#fee2e2; color:#dc2626; padding:10px 12px; border-radius:8px; font-size:0.9rem; margin-top:8px }
-.pack-details-row { display:flex; gap:8px; width:100% }
-.pack-details-row input, .pack-details-row select { flex:1; min-width:0 }
-.muted { color:#6b7280; font-size:0.85rem; margin-top:6px }
 
 /* Enhanced Receipt Styles */
 .receipt-box-enhanced {
@@ -2107,6 +2095,184 @@ function onProfileUpdated(newData) {
   max-width: 100%;
   box-sizing: border-box;
   margin-top: 0 !important;
+}
+
+/* FORCE LIGHT MODE - Comprehensive dark mode removal for Supplier Panel */
+/* When dark mode is active, override ALL background colors for supplier panel container */
+
+/* Override parent layout containers */
+:root.dark-mode :deep(.admin-layout.no-profile-column),
+body.dark-mode :deep(.admin-layout.no-profile-column),
+html.dark-mode :deep(.admin-layout.no-profile-column),
+:root.dark-mode :deep(.admin-page),
+body.dark-mode :deep(.admin-page),
+html.dark-mode :deep(.admin-page),
+:root.dark-mode :deep(.admin-main),
+body.dark-mode :deep(.admin-main),
+html.dark-mode :deep(.admin-main) {
+  background-color: #FFFFFF !important;
+  background-image: none !important;
+  color: #111827 !important;
+}
+
+/* Override the main wrapper container when dark mode is active */
+:root.dark-mode .supplier-page,
+body.dark-mode .supplier-page,
+html.dark-mode .supplier-page,
+[data-theme="dark"] .supplier-page {
+  background-color: #FFFFFF !important;
+  background-image: none !important;
+  color: #111827 !important;
+}
+
+/* Override the OwnerPanelLayout min-h-screen wrapper */
+:root.dark-mode :deep(.min-h-screen),
+body.dark-mode :deep(.min-h-screen),
+html.dark-mode :deep(.min-h-screen),
+[data-theme="dark"] :deep(.min-h-screen) {
+  background-image: none !important;
+  background-color: #f5f5f5 !important;
+  background: #f5f5f5 !important;
+}
+
+/* Override all direct child containers */
+:root.dark-mode .supplier-page *,
+body.dark-mode .supplier-page *,
+html.dark-mode .supplier-page * {
+  background-color: inherit !important;
+  color: #111827 !important;
+}
+
+/* Specific overrides for all panel sections */
+:root.dark-mode .panel-section,
+:root.dark-mode .panel-content,
+:root.dark-mode .supplier-products,
+:root.dark-mode .hr-stat-card,
+:root.dark-mode :deep(.admin-card),
+body.dark-mode .panel-section,
+body.dark-mode .panel-content,
+body.dark-mode .supplier-products,
+body.dark-mode .hr-stat-card,
+body.dark-mode :deep(.admin-card),
+html.dark-mode .panel-section,
+html.dark-mode .panel-content,
+html.dark-mode .supplier-products,
+html.dark-mode .hr-stat-card,
+html.dark-mode :deep(.admin-card) {
+  background-color: #FFFFFF !important;
+  color: #111827 !important;
+  border-color: #e5e7eb !important;
+}
+
+/* Force white tables */
+:root.dark-mode .data-table,
+body.dark-mode .data-table,
+html.dark-mode .data-table,
+:root.dark-mode .table-container,
+body.dark-mode .table-container,
+html.dark-mode .table-container {
+  background-color: #FFFFFF !important;
+  color: #111827 !important;
+}
+
+:root.dark-mode .data-table th,
+:root.dark-mode .data-table td,
+body.dark-mode .data-table th,
+body.dark-mode .data-table td,
+html.dark-mode .data-table th,
+html.dark-mode .data-table td {
+  background-color: #FFFFFF !important;
+  color: #111827 !important;
+  border-color: #eef2f6 !important;
+}
+
+:root.dark-mode .data-table thead,
+body.dark-mode .data-table thead,
+html.dark-mode .data-table thead {
+  background-color: transparent !important;
+}
+
+:root.dark-mode .data-table thead th,
+body.dark-mode .data-table thead th,
+html.dark-mode .data-table thead th {
+  background-color: transparent !important;
+  color: #374151 !important;
+  font-weight: 700 !important;
+}
+
+/* Force light supplier hero */
+:root.dark-mode .supplier-hero,
+body.dark-mode .supplier-hero,
+html.dark-mode .supplier-hero {
+  background: linear-gradient(135deg, #fffaf5 0%, #ffffff 72%) !important;
+  border-color: #f1e5d8 !important;
+}
+
+:root.dark-mode .supplier-hero__title,
+body.dark-mode .supplier-hero__title,
+html.dark-mode .supplier-hero__title {
+  color: #1f2937 !important;
+}
+
+:root.dark-mode .supplier-hero__subtitle,
+body.dark-mode .supplier-hero__subtitle,
+html.dark-mode .supplier-hero__subtitle {
+  color: #64748b !important;
+}
+
+/* Force light inputs and forms */
+:root.dark-mode input[type="text"],
+:root.dark-mode input[type="email"],
+:root.dark-mode input[type="password"],
+:root.dark-mode input[type="number"],
+:root.dark-mode textarea,
+:root.dark-mode select,
+body.dark-mode input[type="text"],
+body.dark-mode input[type="email"],
+body.dark-mode input[type="password"],
+body.dark-mode input[type="number"],
+body.dark-mode textarea,
+body.dark-mode select,
+html.dark-mode input[type="text"],
+html.dark-mode input[type="email"],
+html.dark-mode input[type="password"],
+html.dark-mode input[type="number"],
+html.dark-mode textarea,
+html.dark-mode select {
+  background-color: #FFFFFF !important;
+  color: #111827 !important;
+  border-color: #d1d5db !important;
+}
+
+/* Force light modals and overlays */
+:root.dark-mode .modal-card,
+:root.dark-mode .receipt-box,
+:root.dark-mode .receipt-box-enhanced,
+body.dark-mode .modal-card,
+body.dark-mode .receipt-box,
+body.dark-mode .receipt-box-enhanced,
+html.dark-mode .modal-card,
+html.dark-mode .receipt-box,
+html.dark-mode .receipt-box-enhanced {
+  background-color: #FFFFFF !important;
+  color: #111827 !important;
+  border-color: #e5e7eb !important;
+}
+
+/* Force light stats grid cards */
+:root.dark-mode .hr-stat-card,
+body.dark-mode .hr-stat-card,
+html.dark-mode .hr-stat-card {
+  background-color: transparent !important;
+  border-color: #6b7280 !important;
+}
+
+:root.dark-mode .overview-card,
+body.dark-mode .overview-card,
+html.dark-mode .overview-card {
+  background-color: #FFFFFF !important;
+  color: #111827 !important;
+  border-color: #eef2f6 !important;
 }
 
 /* Keep the Supplier profile control in the main column's top-right corner. */
