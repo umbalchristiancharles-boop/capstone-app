@@ -586,7 +586,7 @@ async function updateTransactionStatus(newStatus) {
 }
 
 async function requestProcurement(product) {
-  if (!confirm(`Create procurement request for ${product.name}?`)) return
+  if (!(await (window.swalConfirm ? window.swalConfirm(`Create procurement request for ${product.name}?`) : Promise.resolve(confirm(`Create procurement request for ${product.name}?`))))) return
 
   requesting.value[product.id] = true
   const minStock = Number(product.min_stock ?? 10)
@@ -600,11 +600,34 @@ async function requestProcurement(product) {
       branch_id: product.branch_id
     }
     await axios.post('/api/procurement-requests', payload, { withCredentials: true })
-    alert('Procurement request created')
+    
+    if (window.swal) {
+      window.swal('Success!', '✅ Procurement request created', 'success')
+    } else {
+      alert('✅ Procurement request created')
+    }
+    
     await fetchProcRequests()
     await fetchInventory()
   } catch (e) {
-    alert('Failed to create procurement request')
+    // Handle duplicate active procurement request (409 Conflict)
+    if (e.response?.status === 409) {
+      const data = e.response.data
+      const message = `${data.error}\n\n${data.details}\n\nExisting Request ID: ${data.existing_request_id}\nStatus: ${data.existing_status}`
+      
+      if (window.swal) {
+        window.swal('⚠️ Cannot Create Duplicate Request', message, 'warning')
+      } else {
+        alert(message)
+      }
+    } else {
+      const errorMsg = e.response?.data?.error || e.message
+      if (window.swal) {
+        window.swal('Error', `❌ Failed to create procurement request\n\n${errorMsg}`, 'error')
+      } else {
+        alert(`❌ Failed to create procurement request\n\n${errorMsg}`)
+      }
+    }
   } finally {
     requesting.value[product.id] = false
   }

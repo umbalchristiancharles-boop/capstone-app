@@ -308,6 +308,57 @@ class ProcurementRequestController extends Controller
         }
         Log::info('Using branch_id', ['branch_id' => $branchId]);
 
+        // Check if there's already an active procurement request for this product
+        // A request is considered "active" if status is neither 'completed' nor 'cancelled'
+        // Check by BOTH product_id AND product name to catch duplicates (in case same product has multiple IDs)
+        Log::info('Checking for active procurement requests', [
+            'product_id' => $validated['product_id'],
+            'product_name' => $product->name,
+            'branch_id' => $branchId
+        ]);
+        
+        // First, check by exact product_id
+        $existingActiveProcurement = ProcurementRequest::where('product_id', $validated['product_id'])
+            ->where('branch_id', $branchId)
+            ->whereNotIn('status', ['completed', 'cancelled'])
+            ->first();
+
+        // If not found by exact ID, check by product name (catches duplicate products with different IDs)
+        if (!$existingActiveProcurement) {
+            $existingActiveProcurement = ProcurementRequest::whereHas('product', function($q) use ($product) {
+                $q->where('name', $product->name);
+            })
+                ->where('branch_id', $branchId)
+                ->whereNotIn('status', ['completed', 'cancelled'])
+                ->first();
+        }
+
+        Log::info('Active procurement check result', [
+            'found' => $existingActiveProcurement ? true : false,
+            'id' => $existingActiveProcurement?->id,
+            'status' => $existingActiveProcurement?->status,
+            'product_id' => $existingActiveProcurement?->product_id
+        ]);
+
+        if ($existingActiveProcurement) {
+            Log::warning('ACTIVE PROCUREMENT EXISTS - REQUEST BLOCKED', [
+                'requested_product_id' => $validated['product_id'],
+                'requested_product_name' => $product->name,
+                'existing_product_id' => $existingActiveProcurement->product_id,
+                'branch_id' => $branchId,
+                'existing_request_id' => $existingActiveProcurement->id,
+                'existing_status' => $existingActiveProcurement->status,
+                'user_id' => $user->id
+            ]);
+            return response()->json([
+                'error' => 'An active procurement request already exists for "' . $product->name . '".',
+                'details' => 'Please wait for the current request (Status: ' . $existingActiveProcurement->status . ') to be completed or cancelled before requesting this product again.',
+                'existing_request_id' => $existingActiveProcurement->id,
+                'existing_status' => $existingActiveProcurement->status,
+                'existing_product_id' => $existingActiveProcurement->product_id
+            ], 409);
+        }
+
         $data = [
             'product_id' => $validated['product_id'],
             'logistics_user_id' => $user->id,
@@ -413,6 +464,57 @@ class ProcurementRequestController extends Controller
             $branchId = $request->input('branch_id') ?? $product->branch_id ?? 1;
         } else {
             $branchId = $user->branch_id ?: 1;
+        }
+
+        // Check if there's already an active procurement request for this product
+        // A request is considered "active" if status is neither 'completed' nor 'cancelled'
+        // Check by BOTH product_id AND product name to catch duplicates (in case same product has multiple IDs)
+        Log::info('storeManual: Checking for active procurement requests', [
+            'product_id' => $validated['product_id'],
+            'product_name' => $product->name,
+            'branch_id' => $branchId
+        ]);
+        
+        // First, check by exact product_id
+        $existingActiveProcurement = ProcurementRequest::where('product_id', $validated['product_id'])
+            ->where('branch_id', $branchId)
+            ->whereNotIn('status', ['completed', 'cancelled'])
+            ->first();
+
+        // If not found by exact ID, check by product name (catches duplicate products with different IDs)
+        if (!$existingActiveProcurement) {
+            $existingActiveProcurement = ProcurementRequest::whereHas('product', function($q) use ($product) {
+                $q->where('name', $product->name);
+            })
+                ->where('branch_id', $branchId)
+                ->whereNotIn('status', ['completed', 'cancelled'])
+                ->first();
+        }
+
+        Log::info('storeManual: Active procurement check result', [
+            'found' => $existingActiveProcurement ? true : false,
+            'id' => $existingActiveProcurement?->id,
+            'status' => $existingActiveProcurement?->status,
+            'product_id' => $existingActiveProcurement?->product_id
+        ]);
+
+        if ($existingActiveProcurement) {
+            Log::warning('storeManual: ACTIVE PROCUREMENT EXISTS - REQUEST BLOCKED', [
+                'requested_product_id' => $validated['product_id'],
+                'requested_product_name' => $product->name,
+                'existing_product_id' => $existingActiveProcurement->product_id,
+                'branch_id' => $branchId,
+                'existing_request_id' => $existingActiveProcurement->id,
+                'existing_status' => $existingActiveProcurement->status,
+                'user_id' => $user->id
+            ]);
+            return response()->json([
+                'error' => 'An active procurement request already exists for "' . $product->name . '".',
+                'details' => 'Please wait for the current request (Status: ' . $existingActiveProcurement->status . ') to be completed or cancelled before requesting this product again.',
+                'existing_request_id' => $existingActiveProcurement->id,
+                'existing_status' => $existingActiveProcurement->status,
+                'existing_product_id' => $existingActiveProcurement->product_id
+            ], 409);
         }
 
         // Use provided price if present (manager can set), otherwise product price

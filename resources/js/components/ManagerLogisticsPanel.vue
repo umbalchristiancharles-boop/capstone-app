@@ -902,7 +902,11 @@ async function cancelProcRequest() {
 
 async function requestProcurement(product) {
   if (!canRequestProcurement.value) {
-    showToast('Main Branch logistics cannot create procurement requests.', 'warning')
+    if (window.swal) {
+      window.swal('Warning', 'Main Branch logistics cannot create procurement requests.', 'warning')
+    } else {
+      showToast('Main Branch logistics cannot create procurement requests.', 'warning')
+    }
     return
   }
 
@@ -919,7 +923,13 @@ async function requestProcurement(product) {
     const qty = Math.max(diff, 1)
 
     await requestWithFallbackPost('/api/procurement-requests', { product_id: product.id, quantity: qty }, { withCredentials: true })
-    showToast('Procurement request created', 'success')
+    
+    if (window.swal) {
+      window.swal('Success!', '✅ Procurement request created', 'success')
+    } else {
+      showToast('✅ Procurement request created', 'success')
+    }
+    
     try {
       await fetchProcRequests()
       await fetchInventory()
@@ -928,7 +938,24 @@ async function requestProcurement(product) {
     }
   } catch (e) {
     console.error('requestProcurement error', e)
-    showToast(e.response?.data?.message || 'Failed to create procurement request', 'error')
+    // Handle duplicate active procurement request (409 Conflict)
+    if (e.response?.status === 409) {
+      const data = e.response.data
+      const message = `${data.error}\n\n${data.details}\n\nExisting Request ID: ${data.existing_request_id}\nStatus: ${data.existing_status}`
+      
+      if (window.swal) {
+        window.swal('⚠️ Cannot Create Duplicate Request', message, 'warning')
+      } else {
+        showToast(`⚠️ ${data.error} (Status: ${data.existing_status})`, 'warning')
+      }
+    } else {
+      const errorMsg = e.response?.data?.error || 'Failed to create procurement request'
+      if (window.swal) {
+        window.swal('Error', `❌ ${errorMsg}`, 'error')
+      } else {
+        showToast(errorMsg, 'error')
+      }
+    }
   } finally {
     requesting.value = { ...requesting.value, [product.id]: false }
   }

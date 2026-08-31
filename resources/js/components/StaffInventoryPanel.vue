@@ -232,9 +232,62 @@ function statusBadgeClass(status) {
   return ''
 }
 
-function requestProcurement(prod) {
-  // minimal placeholder: open new request modal or navigate
-  alert('Request procurement for: ' + (prod.name || prod.id))
+async function requestProcurement(prod) {
+  if (!(await (window.swalConfirm ? window.swalConfirm(`Create procurement request for ${prod.name}?`) : Promise.resolve(confirm(`Create procurement request for ${prod.name}?`))))) return
+
+  try {
+    const minStock = Number(prod.min_stock ?? prod.minimum_stock ?? 10)
+    const currentStock = Number(prod.stock ?? 0)
+    const qty = Math.max(minStock - currentStock, minStock)
+
+    const payload = {
+      product_id: prod.id,
+      quantity: qty
+    }
+
+    console.log('Creating procurement request:', payload)
+    const response = await axios.post('/api/procurement-requests', payload, { withCredentials: true })
+    console.log('Success response:', response.data)
+    
+    if (window.swal) {
+      window.swal('Success!', `✅ Procurement request created for ${qty} units`, 'success')
+    } else {
+      alert(`✅ Procurement request created for ${qty} units`)
+    }
+    
+    await fetchProcurements()
+    await fetchProducts()
+  } catch (e) {
+    console.error('requestProcurement error:', e)
+    console.error('Error response:', e.response?.data)
+    console.error('Error status:', e.response?.status)
+    
+    // Handle duplicate active procurement request (409 Conflict)
+    if (e.response?.status === 409) {
+      const data = e.response.data
+      const message = `${data.error}\n\n${data.details}\n\nExisting Request ID: ${data.existing_request_id}\nStatus: ${data.existing_status}`
+      
+      if (window.swal) {
+        window.swal('⚠️ Cannot Create Duplicate Request', message, 'warning')
+      } else {
+        alert(message)
+      }
+    } else if (e.response?.data?.error) {
+      const errorMsg = e.response.data.error
+      if (window.swal) {
+        window.swal('Error', `❌ ${errorMsg}`, 'error')
+      } else {
+        alert(`❌ Error: ${errorMsg}`)
+      }
+    } else {
+      const errorMsg = `Failed to create procurement request: ${e.message}`
+      if (window.swal) {
+        window.swal('Error', `❌ ${errorMsg}`, 'error')
+      } else {
+        alert(`❌ ${errorMsg}`)
+      }
+    }
+  }
 }
 
 function newRequest() {

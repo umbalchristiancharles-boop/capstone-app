@@ -5,7 +5,7 @@
     :panelDescription="'Manage suppliers, view deliveries, and monitor supplier performance.'"
     :showProfileColumn="false"
     :showAttendanceCard="false"
-    :showHeader="false"
+    :showHeader="true"
     :enableProfileUpdate="true"
     :canEditProfile="userProfile.role === 'OWNER'"
     :canChangePassword="true"
@@ -426,7 +426,7 @@
             </div>
             <div v-if="submitForm.per_pack_or_individual === 'per_pack'" class="form-group">
               <label>Pack details</label>
-              <div style="display:flex;gap:8px">
+              <div class="pack-details-row">
                 <input v-model.number="submitForm.pack_quantity" type="number" min="0" step="0.01" placeholder="Quantity (e.g. 6 or 250)" />
                 <select v-model="submitForm.pack_unit">
                   <option value="">Unit</option>
@@ -435,7 +435,7 @@
                   <option value="kg">kg</option>
                 </select>
               </div>
-              <div class="muted" style="margin-top:6px">If selling per pack, enter how many pieces or how many grams are in a pack.</div>
+              <div class="muted">If selling per pack, enter how many pieces or how many grams are in a pack.</div>
             </div>
             <div v-if="submitError" class="error-msg">{{ submitError }}</div>
           </div>
@@ -1549,28 +1549,38 @@ function onProfileUpdated(newData) {
 .btn-edit:hover { opacity:.7 }
 
 /* Pricing type options */
-.pricing-type-options { display:flex; flex-direction:column; gap:10px; margin-top:6px; padding:8px; background:#f9fafb; border-radius:8px; border:1px solid #e5e7eb }
-.option-group { display:flex; align-items:flex-start; gap:12px; cursor:pointer; padding:8px; border-radius:6px; transition:background 0.2s }
-.option-group:hover { background:#f3f4f6 }
-.option-group input[type="radio"] { margin-top:5px; cursor:pointer; accent-color:#7c3aed }
-.option-label { display:flex; flex-direction:column; gap:4px; cursor:pointer; flex:1 }
-.option-badge { display:inline-block; padding:4px 10px; border-radius:6px; font-size:0.85rem; font-weight:600; width:fit-content }
+.pricing-type-options { display:flex; flex-direction:column; gap:8px; margin-top:8px; padding:0; background:transparent; border-radius:8px; border:none }
+.option-group { display:flex; align-items:flex-start; gap:10px; cursor:pointer; padding:0; border-radius:0; transition:background 0.2s }
+.option-group:hover { background:transparent }
+.option-group input[type="radio"] { margin-top:0; cursor:pointer; accent-color:#7c3aed; flex-shrink:0; width:18px; height:18px }
+.option-label { display:flex; flex-direction:column; gap:3px; cursor:pointer; flex:1 }
+.option-badge { display:inline-block; padding:6px 12px; border-radius:6px; font-size:0.85rem; font-weight:600; width:fit-content }
+.option-badge.type-individual { background:#dbeafe; color:#1e40af }
+.option-badge.type-per_pack { background:#d1fae5; color:#065f46 }
+.option-badge.type-both { background:#fef3c7; color:#92400e }
 .option-desc { font-size:0.8rem; color:#6b7280 }
 
 /* Receipt modal styles */
-.modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; z-index:1200 }
-.modal { position:relative; max-height:90vh; overflow-y:auto }
-.modal-card { background:#fff; border-radius:12px; box-shadow:0 18px 54px rgba(15,23,42,0.12); min-width:500px; max-width:600px; overflow:hidden }
+.modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; z-index:1200; padding:1rem }
+.modal { position:relative; max-height:90vh; overflow-y:auto; width:100% }
+.modal-card { background:#fff; border-radius:12px; box-shadow:0 18px 54px rgba(15,23,42,0.12); min-width:500px; max-width:600px; overflow:hidden; box-sizing:border-box }
+@media (max-width:640px) {
+  .modal-card { min-width:auto; width:100%; max-width:100% }
+}
 .modal-header { background:#f9fafb; padding:1.25rem 1.5rem; border-bottom:1px solid #e5e7eb; display:flex; justify-content:space-between; align-items:center }
 .modal-header h3 { margin:0; font-size:1.1rem; font-weight:700; color:#111827 }
-.modal-body { padding:1.5rem; max-height:calc(90vh - 180px); overflow-y:auto; display:flex; flex-direction:column; gap:1rem }
+.modal-body { padding:1.5rem; max-height:calc(90vh - 180px); overflow-y:auto; display:flex; flex-direction:column; gap:0.75rem }
 .modal-footer { padding:1rem 1.5rem; border-top:1px solid #e5e7eb; display:flex; gap:0.75rem; justify-content:flex-end; background:#f9fafb }
-.form-group { display:flex; flex-direction:column; gap:6px }
+.form-group { display:flex; flex-direction:column; gap:4px }
 .form-group.full-span { grid-column:1/-1 }
 .form-group label { font-weight:600; color:#374151; font-size:0.9rem }
-.form-group input, .form-group select { padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:0.95rem }
+.form-group input, .form-group select { padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:0.95rem; width:100%; box-sizing:border-box; overflow:hidden; text-overflow:ellipsis }
 .form-group input:focus, .form-group select:focus { outline:none; border-color:#7c3aed; box-shadow:0 0 0 3px rgba(124,58,237,0.1) }
+.form-group input[readonly] { background-color:#f3f4f6; cursor:default }
 .error-msg { background:#fee2e2; color:#dc2626; padding:10px 12px; border-radius:8px; font-size:0.9rem; margin-top:8px }
+.pack-details-row { display:flex; gap:8px; width:100% }
+.pack-details-row input, .pack-details-row select { flex:1; min-width:0 }
+.muted { color:#6b7280; font-size:0.85rem; margin-top:6px }
 
 /* Enhanced Receipt Styles */
 .receipt-box-enhanced {

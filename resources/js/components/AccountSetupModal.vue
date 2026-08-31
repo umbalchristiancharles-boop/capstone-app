@@ -139,7 +139,7 @@
           </div>
         </div>
 
-        <!-- Step 5: Documents (SSS, PhilHealth, Drug Test) -->
+        <!-- Step 5: Documents -->
         <div v-if="currentStep === 'documents' && hasDocuments" class="setup-step active">
           <div class="step-header">
             <h3>📄 Required Documents</h3>
@@ -172,6 +172,58 @@
                 </div>
                 <label v-else class="document-upload">
                   <input type="file" @change="onPhilhealthIdChange" accept="image/*,.pdf" />
+                  <span>Choose File</span>
+                </label>
+              </div>
+
+              <!-- Valid ID -->
+              <div v-if="missingFields.includes('government_id')" class="document-item">
+                <div class="document-label">Valid ID</div>
+                <div v-if="form.governmentId" class="document-preview">
+                  <span class="document-name">{{ form.governmentId.name }}</span>
+                  <button @click="removeGovernmentId" class="remove-btn" type="button">✕</button>
+                </div>
+                <label v-else class="document-upload">
+                  <input type="file" @change="onGovernmentIdChange" accept="image/*,.pdf" />
+                  <span>Choose File</span>
+                </label>
+              </div>
+
+              <!-- Tin ID -->
+              <div v-if="missingFields.includes('tin_id')" class="document-item">
+                <div class="document-label">TIN ID</div>
+                <div v-if="form.tinId" class="document-preview">
+                  <span class="document-name">{{ form.tinId.name }}</span>
+                  <button @click="removeTinId" class="remove-btn" type="button">✕</button>
+                </div>
+                <label v-else class="document-upload">
+                  <input type="file" @change="onTinIdChange" accept="image/*,.pdf" />
+                  <span>Choose File</span>
+                </label>
+              </div>
+
+              <!-- NBI Clearance -->
+              <div v-if="missingFields.includes('nbi_clearance')" class="document-item">
+                <div class="document-label">NBI Clearance</div>
+                <div v-if="form.nbiClearance" class="document-preview">
+                  <span class="document-name">{{ form.nbiClearance.name }}</span>
+                  <button @click="removeNbiClearance" class="remove-btn" type="button">✕</button>
+                </div>
+                <label v-else class="document-upload">
+                  <input type="file" @change="onNbiClearanceChange" accept="image/*,.pdf" />
+                  <span>Choose File</span>
+                </label>
+              </div>
+
+              <!-- Medical Certificate -->
+              <div v-if="missingFields.includes('medical_certificate')" class="document-item">
+                <div class="document-label">Medical Certificate</div>
+                <div v-if="form.medicalCertificate" class="document-preview">
+                  <span class="document-name">{{ form.medicalCertificate.name }}</span>
+                  <button @click="removeMedicalCertificate" class="remove-btn" type="button">✕</button>
+                </div>
+                <label v-else class="document-upload">
+                  <input type="file" @change="onMedicalCertificateChange" accept="image/*,.pdf" />
                   <span>Choose File</span>
                 </label>
               </div>
@@ -254,6 +306,10 @@ const form = ref({
   },
   sssId: null,
   philhealthId: null,
+  governmentId: null,
+  tinId: null,
+  nbiClearance: null,
+  medicalCertificate: null,
   drugTestResult: null
 })
 
@@ -276,8 +332,16 @@ const steps = computed(() => {
     if (props.missingFields.includes('address')) s.push('address')
   }
   
-  // Always include documents step if any documents are missing
-  if (props.missingFields.includes('sss_id') || props.missingFields.includes('philhealth_id') || props.missingFields.includes('drug_test_result')) {
+  // Always include documents step if any required documents are missing
+  if (
+    props.missingFields.includes('sss_id') ||
+    props.missingFields.includes('philhealth_id') ||
+    props.missingFields.includes('government_id') ||
+    props.missingFields.includes('tin_id') ||
+    props.missingFields.includes('nbi_clearance') ||
+    props.missingFields.includes('medical_certificate') ||
+    props.missingFields.includes('drug_test_result')
+  ) {
     s.push('documents')
   }
   
@@ -287,13 +351,23 @@ const steps = computed(() => {
 
 const totalSteps = computed(() => steps.value.length - 1) // -1 because 'complete' is not a real step
 const hasDocuments = computed(() => {
-  return props.missingFields.includes('sss_id') || props.missingFields.includes('philhealth_id') || props.missingFields.includes('drug_test_result')
+  return props.missingFields.includes('sss_id') ||
+    props.missingFields.includes('philhealth_id') ||
+    props.missingFields.includes('government_id') ||
+    props.missingFields.includes('tin_id') ||
+    props.missingFields.includes('nbi_clearance') ||
+    props.missingFields.includes('medical_certificate') ||
+    props.missingFields.includes('drug_test_result')
 })
 
 const allDocumentsReady = computed(() => {
   const docsNeeded = {
     sss_id: props.missingFields.includes('sss_id') ? !!form.value.sssId : true,
     philhealth_id: props.missingFields.includes('philhealth_id') ? !!form.value.philhealthId : true,
+    government_id: props.missingFields.includes('government_id') ? !!form.value.governmentId : true,
+    tin_id: props.missingFields.includes('tin_id') ? !!form.value.tinId : true,
+    nbi_clearance: props.missingFields.includes('nbi_clearance') ? !!form.value.nbiClearance : true,
+    medical_certificate: props.missingFields.includes('medical_certificate') ? !!form.value.medicalCertificate : true,
     drug_test_result: props.missingFields.includes('drug_test_result') ? !!form.value.drugTestResult : true,
   }
   return Object.values(docsNeeded).every(v => v)
@@ -400,6 +474,50 @@ const removePhilhealthId = () => {
   form.value.philhealthId = null
 }
 
+const onGovernmentIdChange = (e) => {
+  const file = e.target.files?.[0]
+  if (file) {
+    form.value.governmentId = file
+  }
+}
+
+const removeGovernmentId = () => {
+  form.value.governmentId = null
+}
+
+const onTinIdChange = (e) => {
+  const file = e.target.files?.[0]
+  if (file) {
+    form.value.tinId = file
+  }
+}
+
+const removeTinId = () => {
+  form.value.tinId = null
+}
+
+const onNbiClearanceChange = (e) => {
+  const file = e.target.files?.[0]
+  if (file) {
+    form.value.nbiClearance = file
+  }
+}
+
+const removeNbiClearance = () => {
+  form.value.nbiClearance = null
+}
+
+const onMedicalCertificateChange = (e) => {
+  const file = e.target.files?.[0]
+  if (file) {
+    form.value.medicalCertificate = file
+  }
+}
+
+const removeMedicalCertificate = () => {
+  form.value.medicalCertificate = null
+}
+
 const onDrugTestResultChange = (e) => {
   const file = e.target.files?.[0]
   if (file) {
@@ -426,6 +544,10 @@ const submitDocuments = async () => {
     const documentsToUpload = [
       { file: form.value.sssId, type: 'sss_id', required: props.missingFields.includes('sss_id') },
       { file: form.value.philhealthId, type: 'philhealth_id', required: props.missingFields.includes('philhealth_id') },
+      { file: form.value.governmentId, type: 'government_id', required: props.missingFields.includes('government_id') },
+      { file: form.value.tinId, type: 'tin_id', required: props.missingFields.includes('tin_id') },
+      { file: form.value.nbiClearance, type: 'nbi_clearance', required: props.missingFields.includes('nbi_clearance') },
+      { file: form.value.medicalCertificate, type: 'medical_certificate', required: props.missingFields.includes('medical_certificate') },
       { file: form.value.drugTestResult, type: 'drug_test_result', required: props.missingFields.includes('drug_test_result') },
     ]
 

@@ -606,8 +606,24 @@ async function submitProcRequest() {
       console.warn('refreshList timeout/error (non-blocking):', e.message)
     }
   } catch (e) {
-    console.error('submitProcRequest error', e)
-    showToast(e.response?.data?.message || 'Failed to create procurement request', 'error')
+    // Handle duplicate active procurement request (409 Conflict)
+    if (e.response?.status === 409) {
+      const data = e.response.data
+      const message = `${data.error}\n\n${data.details}\n\nExisting Request ID: ${data.existing_request_id}\nStatus: ${data.existing_status}`
+      
+      if (window.swal) {
+        window.swal('⚠️ Cannot Create Duplicate Request', message, 'warning')
+      } else {
+        showToast(message, 'error')
+      }
+    } else {
+      const errorMsg = e.response?.data?.message || 'Failed to create procurement request'
+      if (window.swal) {
+        window.swal('Error', `❌ ${errorMsg}`, 'error')
+      } else {
+        showToast(errorMsg, 'error')
+      }
+    }
   } finally {
     procRequestSubmitting.value = false
     try { if (window.hideRouteOverlay) window.hideRouteOverlay() } catch (e) {}
@@ -638,7 +654,13 @@ async function requestProcurement(product) {
     if (created && created.id) {
       procurementRequests.value = [created, ...procurementRequests.value.filter(r => r.id !== created.id)]
     }
-    showToast(`✓ Procurement request created for ${quantity} units`, 'success')
+    
+    if (window.swal) {
+      window.swal('Success!', `✅ Procurement request created for ${quantity} units`, 'success')
+    } else {
+      showToast(`✓ Procurement request created for ${quantity} units`, 'success')
+    }
+    
     // Add timeout to prevent hanging indefinitely
     try {
       await Promise.race([
@@ -650,8 +672,24 @@ async function requestProcurement(product) {
       console.warn('refreshList timeout/error (non-blocking):', e.message)
     }
   } catch (e) {
-    console.error('requestProcurement error', e)
-    showToast(e.response?.data?.message || 'Failed to create procurement request', 'error')
+    // Handle duplicate active procurement request (409 Conflict)
+    if (e.response?.status === 409) {
+      const data = e.response.data
+      const message = `${data.error}\n\n${data.details}\n\nExisting Request ID: ${data.existing_request_id}\nStatus: ${data.existing_status}`
+      
+      if (window.swal) {
+        window.swal('⚠️ Cannot Create Duplicate Request', message, 'warning')
+      } else {
+        showToast(message, 'error')
+      }
+    } else {
+      const errorMsg = e.response?.data?.message || 'Failed to create procurement request'
+      if (window.swal) {
+        window.swal('Error', `❌ ${errorMsg}`, 'error')
+      } else {
+        showToast(errorMsg, 'error')
+      }
+    }
   } finally {
     requesting.value = { ...requesting.value, [product.id]: false }
     try { if (window.hideRouteOverlay) window.hideRouteOverlay() } catch (e) {}

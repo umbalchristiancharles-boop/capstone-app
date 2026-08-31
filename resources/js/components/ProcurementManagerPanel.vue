@@ -1973,31 +1973,70 @@ onUnmounted(() => {
   margin: 0;
   font-size: 1.1rem;
   color: #1b1b1f;
+  font-weight: 700;
 }
 
 .modal-body {
   padding: 1rem 1.25rem;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 0.75rem;
 }
 .modal-body .form-group { display: flex; flex-direction: column; gap: 6px; }
-.modal-body .form-group.full-span { grid-column: 1 / -1; }
+.modal-body .form-group.full-span { grid-column: unset; }
 .modal-body label { color: #333; font-size: 0.85rem; }
 .modal-body input { padding: 8px 10px; border-radius: 8px; border: 1px solid #ddd; background: #fff; color: #111; }
 
 .error-msg { color: #a33; grid-column: 1 / -1; padding-top: 6px; }
 .success-msg { color: #167a3e; grid-column: 1 / -1; padding-top: 6px; }
 
-.modal-footer { padding: 10px 14px; display:flex; justify-content:flex-end; gap:0.5rem; background: #fafafa; }
-.modal-footer .btn-outline { background: transparent; border: 1px solid #ccc; color: #333; }
+.modal-footer { 
+  padding: 12px 14px; 
+  display: flex; 
+  justify-content: flex-end; 
+  gap: 0.75rem; 
+  background: #fafafa;
+  border-top: 1px solid #e5e7eb;
+}
+.modal-footer .btn-outline { 
+  background: #ffffff; 
+  border: 1px solid #d1d5db; 
+  color: #374151;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.modal-footer .btn-outline:hover { 
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+.modal-footer .btn-primary { 
+  background: #4b1ddf; 
+  color: #fff;
+  padding: 8px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  border: none;
+  box-shadow: 0 4px 12px rgba(75, 29, 223, 0.2);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.modal-footer .btn-primary:hover:not(:disabled) {
+  background: #3d158f;
+  box-shadow: 0 6px 16px rgba(75, 29, 223, 0.3);
+}
+.modal-footer .btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 
 /* Requests history table tweaks */
 .requests-history .data-table th,
 .requests-history .data-table td { padding: 10px 12px; }
 .requests-history .data-table td.amount { text-align: right; white-space: nowrap; font-weight:600 }
 .requests-history .product-name { white-space: normal; word-break: break-word; max-width: 420px }
-.modal-footer .btn-primary { background: #4b1ddf; color: #fff; }
 
 /* Requests History: outer card allows overflow; inner element handles scrolling */
 .requests-container {
@@ -2246,8 +2285,8 @@ button:focus, a:focus, input:focus, select:focus { outline: 3px solid rgba(3,37,
 .muted { color: #6b7280; }
 .small-text { font-size: 0.9rem; }
 .receipt-preview { max-width: 100%; border-radius: 8px; border: 1px solid #e5e7eb; }
-.form-note { font-size: 0.9rem; color: #374151; grid-column: 1 / -1; margin-top: 6px; }
-.supplier-list-scroll { max-height: 260px; overflow: auto; }
+.form-note { font-size: 0.9rem; color: #374151; grid-column: unset; margin-top: 6px; margin-bottom: 6px; padding: 8px 10px; border-radius: 6px; background: #f0f9ff; border-left: 3px solid #0ea5e9; }
+.supplier-list-scroll { max-height: 320px; overflow: auto; }
 .supplier-row { display:flex; align-items:center; gap:0.5rem; padding:6px 0; }
 .note-warning { margin-top:6px; color:#92400e; font-weight:600; font-size:0.9rem }
 
@@ -2286,11 +2325,81 @@ button:focus, a:focus, input:focus, select:focus { outline: 3px solid rgba(3,37,
 .dropdown-item:hover { background:#f7f7f8 }
 
 /* Supplier selection modal styles */
-.supplier-label { display:flex; flex-direction:column; gap:0.25rem; align-items:flex-start; cursor:pointer; flex:1 }
+.supplier-label { 
+  display:flex; 
+  flex-direction:column; 
+  gap:0.25rem; 
+  align-items:flex-start; 
+  cursor:pointer; 
+  flex:1;
+  width: 100%;
+}
 .supplier-name { font-weight:700; color:#111827; font-size:0.95rem }
 .supplier-contact { font-size:0.85rem; color:#6b7280 }
-.supplier-details { display:flex; flex-direction:column; gap:0.25rem; margin-top:0.5rem; padding-top:0.5rem; border-top:1px solid #e5e7eb; width:100% }
-.detail-line { font-size:0.8rem; color:#374151; margin:0; padding:0 }
+.supplier-details { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 6px; 
+  margin-top: 8px; 
+  padding-top: 8px; 
+  border-top: 1px solid #e5e7eb; 
+  width: 100%;
+  background: #f9fafb;
+  padding: 8px;
+  border-radius: 6px;
+  margin-left: -8px;
+  margin-right: -8px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+.detail-line { 
+  font-size: 0.8rem; 
+  color: #374151; 
+  margin: 0; 
+  padding: 0;
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.detail-line strong {
+  color: #111827;
+  font-weight: 600;
+}
+
+/* Improved supplier row styling - looks like a selectable card */
+.supplier-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 12px;
+  margin: 8px 0;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.supplier-row:hover {
+  border-color: #d1d5db;
+  background: #f9fafb;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+}
+.supplier-row input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  flex-shrink: 0;
+  cursor: pointer;
+  accent-color: #4b1ddf;
+}
+.supplier-row input[type="radio"]:checked {
+  accent-color: #4b1ddf;
+}
+.supplier-row:has(input[type="radio"]:checked) {
+  border-color: #4b1ddf;
+  background: #f3f0ff;
+  box-shadow: 0 4px 12px rgba(75,29,223,0.12);
+}
 
 /* Hide the small account ID in the left profile column for Procurement panel
    — the account ID will be visible inside the Info modal only. */

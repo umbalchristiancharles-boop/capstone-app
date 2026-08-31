@@ -100,6 +100,18 @@ window.swalPrompt = swalPrompt
 window.swalSelectPrompt = swalSelectPrompt
 window.swalConfirmLogout = swalConfirmLogout
 
+// Wrapper function for window.swal(title, message, type) to match SweetAlert2 Fire API
+window.swal = function(title, message, type = 'info') {
+  const icon = type === 'success' ? 'success' : type === 'error' ? 'error' : type === 'warning' ? 'warning' : 'info'
+  return Swal.fire({
+    title,
+    html: message,
+    icon,
+    confirmButtonColor: THEME.confirmButtonColor,
+    background: '#ffffff'
+  })
+}
+
 // Replace default alert with SweetAlert visually (non-blocking)
 window.alert = function (msg) {
   try { swalAlert(String(msg || '')) } catch (e) { console.error('swal alert failed', e); }

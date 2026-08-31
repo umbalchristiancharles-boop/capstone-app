@@ -579,12 +579,6 @@ async function confirmReject() {
   }
 }
 
-function formatDate(dateStr) {
-  if (!dateStr) return '-'
-  const d = new Date(dateStr)
-  return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-}
-
 function refreshStaff() {
   loadStaff()
 }

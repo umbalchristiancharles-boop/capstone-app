@@ -172,6 +172,10 @@ class AuthController extends Controller
             if (!$existingDoc) {
                 StaffDocument::create([
                     'user_id' => $user->id,
+                    'government_id_path' => null,
+                    'nbi_clearance_path' => null,
+                    'medical_certificate_path' => null,
+                    'tin_id_path' => null,
                     'sss_id_path' => null,
                     'philhealth_id_path' => null,
                     'drug_test_result_path' => null
@@ -378,22 +382,36 @@ class AuthController extends Controller
             }
         }
 
-        // For both full and documents-only, check required documents (SSS, PhilHealth, Drug Test)
+        // For both full and documents-only, check required documents
         if ($user->id) {
             $documents = \App\Models\StaffDocument::where('user_id', $user->id)->first();
-            
+
             if (!$documents) {
-                // No documents record at all - all docs are missing
                 $missing[] = 'sss_id';
                 $missing[] = 'philhealth_id';
+                $missing[] = 'government_id';
+                $missing[] = 'tin_id';
+                $missing[] = 'nbi_clearance';
+                $missing[] = 'medical_certificate';
                 $missing[] = 'drug_test_result';
             } else {
-                // Check individual required documents - use both empty() and null check
                 if (empty($documents->sss_id_path)) {
                     $missing[] = 'sss_id';
                 }
                 if (empty($documents->philhealth_id_path)) {
                     $missing[] = 'philhealth_id';
+                }
+                if (empty($documents->government_id_path)) {
+                    $missing[] = 'government_id';
+                }
+                if (empty($documents->tin_id_path)) {
+                    $missing[] = 'tin_id';
+                }
+                if (empty($documents->nbi_clearance_path)) {
+                    $missing[] = 'nbi_clearance';
+                }
+                if (empty($documents->medical_certificate_path)) {
+                    $missing[] = 'medical_certificate';
                 }
                 if (empty($documents->drug_test_result_path)) {
                     $missing[] = 'drug_test_result';
@@ -983,7 +1001,7 @@ class AuthController extends Controller
             'file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120'
         ]);
 
-        $validDocuments = ['sss_id', 'philhealth_id', 'drug_test_result'];
+        $validDocuments = ['sss_id', 'philhealth_id', 'government_id', 'valid_id', 'tin_id', 'nbi_clearance', 'medical_certificate', 'drug_test_result'];
         if (!in_array($documentType, $validDocuments)) {
             return response()->json([
                 'ok' => false,
@@ -1004,6 +1022,11 @@ class AuthController extends Controller
             $fieldMap = [
                 'sss_id' => 'sss_id_path',
                 'philhealth_id' => 'philhealth_id_path',
+                'government_id' => 'government_id_path',
+                'valid_id' => 'government_id_path',
+                'tin_id' => 'tin_id_path',
+                'nbi_clearance' => 'nbi_clearance_path',
+                'medical_certificate' => 'medical_certificate_path',
                 'drug_test_result' => 'drug_test_result_path',
             ];
 
@@ -1049,6 +1072,10 @@ class AuthController extends Controller
             if (!$existingDoc) {
                 StaffDocument::create([
                     'user_id' => $user->id,
+                    'government_id_path' => null,
+                    'nbi_clearance_path' => null,
+                    'medical_certificate_path' => null,
+                    'tin_id_path' => null,
                     'sss_id_path' => null,
                     'philhealth_id_path' => null,
                     'drug_test_result_path' => null
