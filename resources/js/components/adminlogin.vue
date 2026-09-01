@@ -60,15 +60,6 @@
                     </span>
                 </button>
             </form>
-            <!-- ngayon lang, sa baba ng </form> at sa itaas ng <p class="login-hint"> -->
-            <div class="forgot-password-link">
-                <a href="/admin/password/forgot" class="forgot-link">
-                    Forgot Password?
-                </a>
-            </div>
-
-
-
             <p class="login-hint">
 
             </p>
@@ -133,6 +124,29 @@ const defaultPassword = ref("");
 
 const logoImg = new URL("../assets/chikinlogo.png", import.meta.url).href;
 
+async function getCurrentLocation() {
+    if (!navigator.geolocation) {
+        return null;
+    }
+
+    return new Promise((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                resolve({
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                });
+            },
+            () => resolve(null),
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0,
+            }
+        );
+    });
+}
+
 async function handleLogin() {
     if (isLoading.value) return;
     errorMsg.value = "";
@@ -156,11 +170,15 @@ async function handleLogin() {
             // Ignore; some environments may not use Sanctum but we'll still attempt login
         }
 
+        const location = await getCurrentLocation();
+
         const res = await axios.post(
             "/api/login",
             {
                 username: username.value,
                 password: password.value,
+                latitude: location?.latitude ?? null,
+                longitude: location?.longitude ?? null,
             },
             {
                 withCredentials: true,
@@ -235,22 +253,12 @@ async function handleLogin() {
                 redirectPath = resolveRedirectPath(res.data.user?.role, res.data.user?.department, res.data.user?.permissions);
             }
 
-            // If user belongs to Main Branch, route to the HQ-specific panels
-            try {
-                const bId = Number(res.data.user?.branch_id || 0)
-                const branchName = (res.data.user?.branch_name || res.data.user?.branch || '').toString().toUpperCase()
-                const username = (res.data.user?.username || '').toString().toUpperCase()
-                const r = (res.data.user?.role || '').toString().toUpperCase()
-                const d = (res.data.user?.department || '').toString().toUpperCase()
-                const isMainBranch = bId === 1 || branchName.includes('MAIN') || username.includes('MAIN_BRANCH') || username.includes('MAINBRANCH')
-                if (isMainBranch && r === 'ADMIN') {
-                    redirectPath = '/main-branch/admin'
-                } else if (isMainBranch && d.includes('LOGISTICS')) {
-                    redirectPath = '/main-branch/logistics'
-                }
-            } catch (e) {
-                // ignore
-            }
+            console.debug('[LOGIN] Initial redirectPath:', redirectPath);
+
+            // Extra validation: if redirect_path came from server, trust it completely
+            // The backend's getRedirectPath() is the authoritative source
+            console.debug('[LOGIN] Branch ID from response:', res.data.user?.branch_id);
+            console.debug('[LOGIN] Using redirect_path:', redirectPath);
 
             // Validate redirect path exists to prevent invalid routing
             if (!redirectPath || redirectPath.includes('error=')) {
@@ -384,6 +392,12 @@ function resolveRedirectPath(role, department, permissions = {}) {
     if (d.includes('FINANCE')) return '/manager/finance'
     if (d.includes('LOGISTICS')) return '/manager/logistics'
     if (d.includes('HR')) return '/manager/hr'
+
+    // Main-branch HR users are routed to the HQ dashboard, not the branch HR manager view.
+    // This check is intentionally kept separate because the branch and HQ HR roles share the same HR label.
+    if (r === 'HR' && (department || '').toString().trim().toLowerCase() === 'hr') {
+        return '/manager/hr'
+    }
 
     // Branch-level manager explicit values (fallback)
     if (r === 'BRANCH_MANAGER' || r === 'BRANCH MANAGER' || r === 'BRANCH-MANAGER') return '/manager-panel';

@@ -21,9 +21,15 @@
               <h2 class="main-branch-hr-title">HR overview</h2>
               <p class="main-branch-hr-subtitle">Review position requests and manage workforce accounts across all branches.</p>
             </div>
-            <button class="pill-btn main-branch-hr-hero__action" @click="loadPositionRequests" :disabled="loadingPositionRequests">
-              {{ loadingPositionRequests ? 'Loading...' : 'Refresh Requests' }}
-            </button>
+            <div class="main-branch-hr-hero__actions">
+              <button class="pill-btn main-branch-hr-hero__action" @click="openApplicationsModal" :disabled="loadingApplications">
+                {{ loadingApplications ? 'Loading...' : 'View Applications' }}
+              </button>
+              <span v-if="applicationsCount > 0" class="pending-badge">{{ applicationsCount }} total</span>
+              <button class="pill-btn main-branch-hr-hero__action" @click="loadPositionRequests" :disabled="loadingPositionRequests">
+                {{ loadingPositionRequests ? 'Loading...' : 'Refresh Requests' }}
+              </button>
+            </div>
           </header>
 
           <div class="info-box">
@@ -217,68 +223,6 @@
     </OwnerPanelLayout>
   </div>
 
-  <!-- POSITIONS REQUEST MODAL -->
-  <transition name="fade">
-    <div v-if="showPositionsModal" class="positions-modal-backdrop" @click.self="closePositionsModal">
-
-      <div class="positions-modal">
-        <div class="positions-modal__header">
-          <div>
-            <h3>Request Open Positions</h3>
-            <p class="muted">Select a position, then set quantity and notes.</p>
-          </div>
-          <button class="modal-close" @click="closePositionsModal" aria-label="Close">✕</button>
-        </div>
-
-        <div class="positions-modal__body">
-          <div v-if="positionsLoading" class="loading-box">Loading positions...</div>
-          <div v-else-if="positions.length === 0" class="empty-box">No active positions found.</div>
-
-          <div v-else class="positions-list">
-            <div v-for="p in positions" :key="p.id" class="position-row">
-              <div class="position-row__meta">
-                <div class="position-row__name">{{ p.name }}</div>
-                <div class="position-row__dept">{{ p.department || '—' }}</div>
-              </div>
-
-              <div class="position-row__inputs">
-                <label class="field">
-                  <span class="field-label">Quantity</span>
-                  <input
-                    type="number"
-                    min="1"
-                    class="field-input"
-                    v-model.number="requestQuantities[p.id]"
-                    :placeholder="'1'"
-                  />
-                </label>
-
-                <label class="field">
-                  <span class="field-label">Notes</span>
-                  <textarea
-                    class="field-textarea"
-                    rows="2"
-                    v-model.trim="requestNotes[p.id]"
-                    placeholder="Optional"
-                  ></textarea>
-                </label>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="positions-modal__footer">
-          <button class="btn-secondary" @click="closePositionsModal" :disabled="submittingPositions">
-            Cancel
-          </button>
-          <button class="btn-primary" @click="submitPositionsRequests" :disabled="submittingPositions || positionsLoading">
-            {{ submittingPositions ? 'Submitting...' : 'Submit Request(s)' }}
-          </button>
-        </div>
-      </div>
-    </div>
-  </transition>
-
   <!-- Applications Modal -->
   <transition name="fade">
     <div v-if="showApplicationsModal" class="positions-modal-backdrop" @click.self="closeApplicationsModal">
@@ -321,11 +265,35 @@
                 <span class="value">{{ a.applicant_email }} • {{ a.applicant_phone }}</span>
               </div>
 
-              <div class="request-card__actions" style="margin-top: 12px;">
-                <a v-if="a.resume_path" :href="getStorageUrl(a.resume_path)" target="_blank" class="btn-success btn-sm">
-                  View Resume
-                </a>
-                <button v-else class="btn-secondary btn-sm" disabled>Resume Unavailable</button>
+              <div class="request-card__actions" style="margin-top: 12px; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button class="btn-success btn-sm" @click="openApplicationDetails(a)">
+                  View Application Details
+                </button>
+                <button
+                  v-if="!isReadyForInterview(a.status)"
+                  class="btn-primary btn-sm"
+                  @click="openInterviewScheduleModal(a)"
+                  :disabled="sendingInterviewEmail[a.id]"
+                >
+                  {{ sendingInterviewEmail[a.id] ? 'Sending...' : 'Ready for Interview' }}
+                </button>
+                <button
+                  v-if="isReadyForInterview(a.status) && !isPassedForHiring(a.status)"
+                  class="btn-success btn-sm"
+                  @click="markAsPassed(a)"
+                  :disabled="markingAsPassed[a.id]"
+                >
+                  {{ markingAsPassed[a.id] ? 'Processing...' : '✓ Mark as Passed' }}
+                </button>
+                <button
+                  v-if="isReadyForInterview(a.status) && !isPassedForHiring(a.status)"
+                  class="btn-danger btn-sm"
+                  @click="markAsNotPassed(a)"
+                  :disabled="markingAsNotPassed[a.id]"
+                >
+                  {{ markingAsNotPassed[a.id] ? 'Processing...' : '✗ Mark as Not Passed' }}
+                </button>
+                <span v-else-if="isPassedForHiring(a.status)" class="status-approved">✓ Passed - Ready for Hiring</span>
               </div>
             </div>
           </div>
@@ -337,6 +305,55 @@
       </div>
     </div>
   </transition>
+
+  <!-- Interview Schedule Modal -->
+  <div v-if="showInterviewScheduleModal" class="positions-modal-backdrop" @click.self="closeInterviewScheduleModal">
+    <div class="positions-modal">
+      <div class="positions-modal__header">
+        <div>
+          <h3>Schedule Interview</h3>
+          <p class="muted">Select date and time for {{ selectedApplication?.applicant_full_name }}</p>
+        </div>
+        <button class="modal-close" @click="closeInterviewScheduleModal" aria-label="Close">✕</button>
+      </div>
+      <div class="positions-modal__body">
+        <label class="field"><span class="field-label">Interview Date *</span><input v-model="interviewSchedule.date" class="field-input" type="date" :min="getMinDate()"></label>
+        <label class="field"><span class="field-label">Interview Time *</span><input v-model="interviewSchedule.time" class="field-input" type="time"></label>
+        <label class="field"><span class="field-label">Additional Notes</span><textarea v-model="interviewSchedule.notes" class="field-textarea" rows="3"></textarea></label>
+      </div>
+      <div class="positions-modal__footer">
+        <button class="btn-secondary" @click="closeInterviewScheduleModal">Cancel</button>
+        <button class="btn-primary" @click="confirmInterviewSchedule" :disabled="!isInterviewScheduleValid() || sendingInterviewEmail[selectedApplication?.id]">
+          {{ sendingInterviewEmail[selectedApplication?.id] ? 'Sending...' : 'Send Interview Email' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Details Modal -->
+  <div v-if="showApplicationDetailsModal && selectedApplicationDetails" class="positions-modal-backdrop" @click.self="closeApplicationDetailsModal">
+    <div class="positions-modal application-details-modal">
+      <div class="positions-modal__header">
+        <div><h3>Application Details</h3><p class="muted">Complete application information</p></div>
+        <button class="modal-close" @click="closeApplicationDetailsModal" aria-label="Close">✕</button>
+      </div>
+      <div class="positions-modal__body">
+        <div class="request-card__info"><span class="label">Full Name:</span><span class="value">{{ selectedApplicationDetails.applicant_full_name || '-' }}</span></div>
+        <div class="request-card__info"><span class="label">Email:</span><span class="value">{{ selectedApplicationDetails.applicant_email || '-' }}</span></div>
+        <div class="request-card__info"><span class="label">Phone:</span><span class="value">{{ selectedApplicationDetails.applicant_phone || '-' }}</span></div>
+        <div class="request-card__info"><span class="label">Address:</span><span class="value">{{ selectedApplicationDetails.applicant_address || '-' }}</span></div>
+        <div class="request-card__info"><span class="label">Position:</span><span class="value">{{ selectedApplicationDetails.job_title || '-' }}</span></div>
+        <div class="request-card__info"><span class="label">Department:</span><span class="value">{{ selectedApplicationDetails.department || '-' }}</span></div>
+        <div class="request-card__info"><span class="label">Experience:</span><span class="value">{{ selectedApplicationDetails.years_of_experience || '-' }}</span></div>
+        <div class="request-card__info"><span class="label">Education:</span><span class="value">{{ selectedApplicationDetails.education || '-' }}</span></div>
+        <div v-if="selectedApplicationDetails.cover_letter" class="request-card__notes"><span class="label">Cover Letter</span><p>{{ selectedApplicationDetails.cover_letter }}</p></div>
+        <div class="request-card__actions">
+          <a v-if="selectedApplicationDetails.resume_path" :href="getStorageUrl(selectedApplicationDetails.resume_path)" target="_blank" rel="noopener noreferrer" class="btn-primary">Open Resume</a>
+        </div>
+      </div>
+      <div class="positions-modal__footer"><button class="btn-secondary" @click="closeApplicationDetailsModal">Close</button></div>
+    </div>
+  </div>
 
   <!-- Reject Reason Modal -->
   <div v-if="showRejectModal" class="reject-modal-backdrop" @click.self="closeRejectModal">
@@ -372,21 +389,13 @@
 import { ref, computed } from 'vue'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import axios from 'axios'
+import { swalAlert, swalConfirm } from '../sweet-alerts'
 
 const userProfile = ref({})
 const profileDropdownVisible = ref(false)
 const branchSections = ref([])
 const loading = ref(false)
 const errorMessage = ref('')
-
-const showPositionsModal = ref(false)
-const positions = ref([])
-const positionsLoading = ref(false)
-const submittingPositions = ref(false)
-
-// Per-position form state: quantity + notes
-const requestQuantities = ref({})
-const requestNotes = ref({})
 
 // Position Requests for approval
 const positionRequests = ref([])
@@ -405,6 +414,14 @@ const applications = ref([])
 const applicationsCount = computed(() => {
   return Array.isArray(applications.value) ? applications.value.length : 0
 })
+const sendingInterviewEmail = ref({})
+const markingAsPassed = ref({})
+const markingAsNotPassed = ref({})
+const showInterviewScheduleModal = ref(false)
+const selectedApplication = ref(null)
+const interviewSchedule = ref({ date: '', time: '', notes: '' })
+const showApplicationDetailsModal = ref(false)
+const selectedApplicationDetails = ref(null)
 
 const positionRequestsPendingCount = computed(() => {
   return positionRequests.value.filter(r => r.status === 'Pending').length
@@ -489,12 +506,110 @@ function displayRole(r) {
   return role.replace(/_/g, ' ')
 }
 
-function closePositionsModal() {
-  showPositionsModal.value = false
-}
-
 function closeApplicationsModal() {
   showApplicationsModal.value = false
+}
+
+function openApplicationDetails(application) {
+  selectedApplicationDetails.value = application
+  showApplicationDetailsModal.value = true
+}
+
+function closeApplicationDetailsModal() {
+  showApplicationDetailsModal.value = false
+  selectedApplicationDetails.value = null
+}
+
+function isReadyForInterview(status) {
+  const value = String(status || '').toLowerCase().trim()
+  return ['ready for interview', 'ready_for_interview', 'interview scheduled'].includes(value)
+}
+
+function isPassedForHiring(status) {
+  const value = String(status || '').toLowerCase().trim()
+  return ['passed - ready for hiring', 'passed_ready_for_hiring', 'passed'].includes(value)
+}
+
+function openInterviewScheduleModal(application) {
+  if (!application?.id || !application?.applicant_email) {
+    alert('Invalid application data')
+    return
+  }
+  selectedApplication.value = application
+  interviewSchedule.value = { date: '', time: '', notes: '' }
+  showInterviewScheduleModal.value = true
+}
+
+function closeInterviewScheduleModal() {
+  showInterviewScheduleModal.value = false
+  selectedApplication.value = null
+  interviewSchedule.value = { date: '', time: '', notes: '' }
+}
+
+function getMinDate() {
+  const date = new Date()
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
+function isInterviewScheduleValid() {
+  return Boolean(interviewSchedule.value.date && interviewSchedule.value.time)
+}
+
+async function confirmInterviewSchedule() {
+  const applicationId = selectedApplication.value?.id
+  if (!applicationId || !isInterviewScheduleValid()) return
+  sendingInterviewEmail.value[applicationId] = true
+  try {
+    const res = await axios.post(`/api/hr/positions/applications/${applicationId}/send-interview-email`, {
+      interview_date: interviewSchedule.value.date,
+      interview_time: interviewSchedule.value.time,
+      notes: interviewSchedule.value.notes
+    }, { withCredentials: true })
+    if (res.data?.ok) {
+      const application = applications.value.find(item => item.id === applicationId)
+      if (application) application.status = 'Ready for Interview'
+      alert(res.data.message || 'Interview email sent successfully!')
+      closeInterviewScheduleModal()
+    } else {
+      alert(res.data?.message || 'Failed to send interview email')
+    }
+  } catch (err) {
+    alert(err.response?.data?.message || 'Failed to send interview email. Please try again.')
+  } finally {
+    sendingInterviewEmail.value[applicationId] = false
+  }
+}
+
+async function markAsPassed(application) {
+  if (!application?.id) return
+  const confirmed = await swalConfirm(`Are you sure you want to mark ${application.applicant_full_name} as passed?`, 'Mark as Passed')
+  if (!confirmed) return
+  markingAsPassed.value[application.id] = true
+  try {
+    const res = await axios.post(`/api/hr/positions/applications/${application.id}/mark-as-passed`, {}, { withCredentials: true })
+    if (res.data?.ok) application.status = 'Passed - Ready for Hiring'
+    await swalAlert(res.data?.message || 'Applicant status updated.', 'success')
+  } catch (err) {
+    await swalAlert(err.response?.data?.message || 'Failed to mark applicant as passed.', 'error')
+  } finally {
+    markingAsPassed.value[application.id] = false
+  }
+}
+
+async function markAsNotPassed(application) {
+  if (!application?.id) return
+  const confirmed = await swalConfirm(`Are you sure you want to mark ${application.applicant_full_name} as not passed?`, 'Mark as Not Passed')
+  if (!confirmed) return
+  markingAsNotPassed.value[application.id] = true
+  try {
+    const res = await axios.post(`/api/hr/positions/applications/${application.id}/mark-as-not-passed`, {}, { withCredentials: true })
+    if (res.data?.ok) application.status = 'Not Passed'
+    await swalAlert(res.data?.message || 'Applicant status updated.', 'success')
+  } catch (err) {
+    await swalAlert(err.response?.data?.message || 'Failed to mark applicant as not passed.', 'error')
+  } finally {
+    markingAsNotPassed.value[application.id] = false
+  }
 }
 
 function getStorageUrl(path) {
@@ -523,65 +638,6 @@ async function openApplicationsModal() {
   }
 }
 
-
-async function openPositionsModal() {
-  showPositionsModal.value = true
-  positionsLoading.value = true
-  try {
-    const res = await axios.get('/api/hr/positions', { withCredentials: true })
-    positions.value = res.data?.positions || []
-
-    // Initialize form state for each position
-    const quantities = {}
-    const notes = {}
-    ;(positions.value || []).forEach(p => {
-      quantities[p.id] = requestQuantities.value[p.id] || 0
-
-      notes[p.id] = requestNotes.value[p.id] || ''
-    })
-    requestQuantities.value = quantities
-    requestNotes.value = notes
-  } catch (err) {
-    alert(err.response?.data?.message || 'Failed to load positions')
-    positions.value = []
-  } finally {
-    positionsLoading.value = false
-  }
-}
-
-async function submitPositionsRequests() {
-  if (!Array.isArray(positions.value) || positions.value.length === 0) return
-
-  // Collect only positions with valid quantity
-  const payloads = positions.value
-    .map(p => {
-      const q = Number(requestQuantities.value?.[p.id] || 0)
-      const notes = requestNotes.value?.[p.id] || null
-      return { position_id: p.id, quantity: q, notes }
-    })
-    .filter(x => x.quantity && x.quantity >= 1)
-
-  if (payloads.length === 0) {
-    alert('Please enter quantity (min 1) for at least one position.')
-    return
-  }
-
-  submittingPositions.value = true
-  try {
-    // Submit sequentially to keep backend simple
-    for (const item of payloads) {
-      const res = await axios.post('/api/hr/positions/requests', item, { withCredentials: true })
-      if (!res.data?.ok) throw new Error(res.data?.message || 'Request failed')
-    }
-
-    alert('Open position request(s) submitted successfully.')
-    closePositionsModal()
-  } catch (err) {
-    alert(err.response?.data?.message || 'Failed to submit position request(s).')
-  } finally {
-    submittingPositions.value = false
-  }
-}
 
 async function loadBranchStaff() {
   loading.value = true

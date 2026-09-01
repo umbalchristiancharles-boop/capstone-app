@@ -48,5 +48,13 @@ class PositionApplication extends Model
         'supporting_documents_paths' => 'array',
         'years_of_experience' => 'integer',
     ];
+
+    /**
+     * Relationship to PositionOpenRequest
+     */
+    public function positionOpenRequest()
+    {
+        return $this->belongsTo(PositionOpenRequest::class, 'position_open_request_id');
+    }
 }
 

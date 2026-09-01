@@ -137,8 +137,8 @@
             </div>
 
             <div class="default-accounts-info">
-              <h3>Default Accounts</h3>
-              <p class="info-sub">Select which accounts to create automatically for this branch.</p>
+              <h3>Branch Open Positions</h3>
+              <p class="info-sub">Select which roles to broadcast as open jobs for this branch. Applicants will create the account after the hiring process is completed.</p>
               <div class="default-account-list">
                 <div
                   v-for="account in accountOptions"
@@ -961,7 +961,7 @@ async function submitBranch() {
      }, { withCredentials: true })
 
     if (res.data && res.data.ok) {
-      formSuccess.value = res.data.message || 'Branch created successfully with default accounts!'
+      formSuccess.value = res.data.message || 'Branch created successfully and the selected roles were broadcast as open positions.'
       await loadBranches()
       setTimeout(() => {
         closeAddBranch()

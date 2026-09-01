@@ -516,7 +516,7 @@ router.beforeEach(async (to, from, next) => {
       const branchId = Number(u?.branch_id || u?.branchId || u?.branch || 0)
       const branchName = (u?.branch_name || u?.branch || '').toString().toUpperCase()
       const username = (u?.username || '').toString().toUpperCase()
-      const isMainBranch = branchId === 1 || branchName.includes('MAIN') || username.includes('MAIN_BRANCH') || username.includes('MAINBRANCH')
+      const isMainBranch = branchId === 32 || branchId === 1 || branchName.includes('MAIN') || username.includes('MAIN_BRANCH') || username.includes('MAINBRANCH')
       const role = (u?.role || '').toString().toLowerCase()
       const dept = (u?.department || '').toString().toLowerCase()
       if (u && to.path !== '/unauthorized') {
@@ -524,6 +524,11 @@ router.beforeEach(async (to, from, next) => {
         if (role === 'owner') return next('/owner-panel')
         if (role === 'admin') return next(isMainBranch ? '/main-branch/admin' : '/admin-panel')
         if (role === 'manager') {
+          // Main branch managers go to their dedicated panels
+          if (isMainBranch && dept === 'hr') return next('/main-branch/hr')
+          if (isMainBranch && dept === 'finance') return next('/main-branch/finance')
+          if (isMainBranch && dept === 'logistics') return next('/main-branch/logistics')
+          // Regular branch managers
           if (dept === 'hr') return next('/manager/hr')
           if (dept === 'finance') return next('/manager/finance')
           if (dept === 'inventory') return next('/manager/inventory')
@@ -531,6 +536,8 @@ router.beforeEach(async (to, from, next) => {
           if (dept === 'procurement') return next('/manager/procurement')
           return next('/manager-panel')
         }
+        if (role === 'hr' && isMainBranch) return next('/main-branch/hr')
+        if (role === 'hr') return next('/manager/hr')
         if (role === 'supplier') return next('/supplier-panel')
         if (role === 'staff') {
           if (dept === 'cashier') return next('/staff/cashier')
@@ -576,16 +583,46 @@ router.beforeEach(async (to, from, next) => {
       } catch (e) { return false }
     }
     if (to.path.startsWith('/manager/finance')) {
+      // Main-branch finance should go to /main-branch/finance instead
+      const branchId = Number(user.branch_id || user.branchId || user.branch || 0)
+      const branchName = (user.branch_name || user.branch || '').toString().toUpperCase()
+      const username = (user.username || '').toString().toUpperCase()
+      const isMainBranch = branchId === 32 || branchId === 1 || branchName.includes('MAIN') || username.includes('MAIN_BRANCH') || username.includes('MAINBRANCH')
+      
+      if (user.role === 'manager' && user.department === 'finance' && isMainBranch) {
+        return next('/main-branch/finance')
+      }
+      
       if (user.role === 'manager' && user.department === 'finance') { }
       else if (user.role === 'custom' && hasModule('finance')) { }
       else return next('/unauthorized');
     }
     if (to.path.startsWith('/manager/logistics')) {
+      // Main-branch logistics should go to /main-branch/logistics instead
+      const branchId = Number(user.branch_id || user.branchId || user.branch || 0)
+      const branchName = (user.branch_name || user.branch || '').toString().toUpperCase()
+      const username = (user.username || '').toString().toUpperCase()
+      const isMainBranch = branchId === 32 || branchId === 1 || branchName.includes('MAIN') || username.includes('MAIN_BRANCH') || username.includes('MAINBRANCH')
+      
+      if (user.role === 'manager' && user.department === 'logistics' && isMainBranch) {
+        return next('/main-branch/logistics')
+      }
+      
       if (user.role === 'manager' && user.department === 'logistics') { }
       else if (user.role === 'custom' && hasModule('logistics')) { }
       else return next('/unauthorized');
     }
     if (to.path.startsWith('/manager/hr')) {
+      // Main-branch HR should go to /main-branch/hr instead
+      const branchId = Number(user.branch_id || user.branchId || user.branch || 0)
+      const branchName = (user.branch_name || user.branch || '').toString().toUpperCase()
+      const username = (user.username || '').toString().toUpperCase()
+      const isMainBranch = branchId === 32 || branchId === 1 || branchName.includes('MAIN') || username.includes('MAIN_BRANCH') || username.includes('MAINBRANCH')
+      
+      if (user.role === 'manager' && user.department === 'hr' && isMainBranch) {
+        return next('/main-branch/hr')
+      }
+      
       if (user.role === 'manager' && user.department === 'hr') { }
       else if (user.role === 'custom' && hasModule('hr')) { }
       else return next('/unauthorized');
@@ -641,7 +678,7 @@ router.beforeEach(async (to, from, next) => {
       const branchId = Number(user.branch_id || user.branchId || user.branch || 0)
       const branchName = (user.branch_name || user.branch || '').toString().toUpperCase()
       const username = (user.username || '').toString().toUpperCase()
-      const isMainBranch = branchId === 1 || branchName.includes('MAIN') || username.includes('MAIN_BRANCH') || username.includes('MAINBRANCH')
+      const isMainBranch = branchId === 32 || branchId === 1 || branchName.includes('MAIN') || username.includes('MAIN_BRANCH') || username.includes('MAINBRANCH')
       if (user.role === 'admin' && isMainBranch) {
         return next('/main-branch/admin')
       }
@@ -654,7 +691,12 @@ router.beforeEach(async (to, from, next) => {
 
     // Main Branch role pages
     if (to.path.startsWith('/main-branch/admin')) {
-      if (user.role !== 'admin') {
+      const isMainBranchUser = (Number(user.branch_id || user.branchId || user.branch || 0) === 32 || Number(user.branch_id || user.branchId || user.branch || 0) === 1)
+      const branchName = (user.branch_name || user.branch || '').toString().toUpperCase()
+      const username = (user.username || '').toString().toUpperCase()
+      const isMainBranchByName = branchName.includes('MAIN') || username.includes('MAIN_BRANCH') || username.includes('MAINBRANCH')
+      const isMainBranchAdmin = isMainBranchUser || isMainBranchByName
+      if (user.role !== 'admin' || !isMainBranchAdmin) {
         return next('/unauthorized');
       }
     }
@@ -664,17 +706,33 @@ router.beforeEach(async (to, from, next) => {
       }
     }
     if (to.path.startsWith('/main-branch/hr')) {
-      if (user.role !== 'manager' || user.department !== 'hr') {
+      const isMainBranchUser = (Number(user.branch_id || user.branchId || user.branch || 0) === 32 || Number(user.branch_id || user.branchId || user.branch || 0) === 1)
+      const branchName = (user.branch_name || user.branch || '').toString().toUpperCase()
+      const username = (user.username || '').toString().toUpperCase()
+      const isMainBranchByName = branchName.includes('MAIN') || username.includes('MAIN_BRANCH') || username.includes('MAINBRANCH')
+      const isMainBranchHr = isMainBranchUser || isMainBranchByName
+      const isHrRole = (user.role === 'hr' || user.role === 'manager') && (user.department === 'hr' || user.role === 'hr')
+      if (!isMainBranchHr || !isHrRole) {
         return next('/unauthorized');
       }
     }
     if (to.path.startsWith('/main-branch/finance')) {
-      if (user.role !== 'manager' || user.department !== 'finance') {
+      const isMainBranchUser = (Number(user.branch_id || user.branchId || user.branch || 0) === 32 || Number(user.branch_id || user.branchId || user.branch || 0) === 1)
+      const branchName = (user.branch_name || user.branch || '').toString().toUpperCase()
+      const username = (user.username || '').toString().toUpperCase()
+      const isMainBranchByName = branchName.includes('MAIN') || username.includes('MAIN_BRANCH') || username.includes('MAINBRANCH')
+      const isMainBranchFinance = isMainBranchUser || isMainBranchByName
+      if (user.role !== 'manager' || user.department !== 'finance' || !isMainBranchFinance) {
         return next('/unauthorized');
       }
     }
     if (to.path.startsWith('/main-branch/logistics')) {
-      if (user.role !== 'manager' || user.department !== 'logistics') {
+      const isMainBranchUser = (Number(user.branch_id || user.branchId || user.branch || 0) === 32 || Number(user.branch_id || user.branchId || user.branch || 0) === 1)
+      const branchName = (user.branch_name || user.branch || '').toString().toUpperCase()
+      const username = (user.username || '').toString().toUpperCase()
+      const isMainBranchByName = branchName.includes('MAIN') || username.includes('MAIN_BRANCH') || username.includes('MAINBRANCH')
+      const isMainBranchLogistics = isMainBranchUser || isMainBranchByName
+      if (user.role !== 'manager' || user.department !== 'logistics' || !isMainBranchLogistics) {
         return next('/unauthorized');
       }
     }

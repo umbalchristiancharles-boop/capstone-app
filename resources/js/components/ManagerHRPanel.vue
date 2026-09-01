@@ -844,6 +844,7 @@ import { useRouter } from 'vue-router'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import axios from 'axios'
 import { showToast } from './toastStore'
+import { swalAlert, swalConfirm } from '../sweet-alerts'
 
 // HR Positions Modal state
 const showPositionsModal = ref(false)
@@ -1525,12 +1526,13 @@ async function confirmInterviewSchedule() {
 
 async function markAsPassed(application) {
   if (!application?.id) {
-    alert('Invalid application data')
+    await swalAlert('Invalid application data', 'error')
     return
   }
 
   const confirmMessage = `Are you sure you want to mark ${application.applicant_full_name} as passed? This will send them a congratulations email and update their status to "Ready for Hiring".`
-  if (!confirm(confirmMessage)) return
+  const confirmed = await swalConfirm(confirmMessage, 'Mark as Passed')
+  if (!confirmed) return
 
   markingAsPassed.value[application.id] = true
   try {
@@ -1541,16 +1543,16 @@ async function markAsPassed(application) {
     )
 
     if (res.data && res.data.ok) {
-      alert(res.data.message || 'Applicant marked as passed successfully!')
+      await swalAlert(res.data.message || 'Applicant marked as passed successfully!', 'success')
       // Update local status
       const app = applications.value.find(a => a.id === application.id)
       if (app) app.status = 'Passed - Ready for Hiring'
     } else {
-      alert(res.data.message || 'Failed to mark applicant as passed')
+      await swalAlert(res.data.message || 'Failed to mark applicant as passed', 'error')
     }
   } catch (err) {
     console.error('Failed to mark applicant as passed:', err)
-    alert(err.response?.data?.message || 'Failed to mark applicant as passed. Please try again.')
+    await swalAlert(err.response?.data?.message || 'Failed to mark applicant as passed. Please try again.', 'error')
   } finally {
     markingAsPassed.value[application.id] = false
   }
@@ -1558,12 +1560,13 @@ async function markAsPassed(application) {
 
 async function markAsNotPassed(application) {
   if (!application?.id) {
-    alert('Invalid application data')
+    await swalAlert('Invalid application data', 'error')
     return
   }
 
   const confirmMessage = `Are you sure you want to mark ${application.applicant_full_name} as not passed? This will send them a notification email and update their status to "Not Passed".`
-  if (!confirm(confirmMessage)) return
+  const confirmed = await swalConfirm(confirmMessage, 'Mark as Not Passed')
+  if (!confirmed) return
 
   markingAsNotPassed.value[application.id] = true
   try {
@@ -1574,16 +1577,16 @@ async function markAsNotPassed(application) {
     )
 
     if (res.data && res.data.ok) {
-      alert(res.data.message || 'Applicant marked as not passed successfully!')
+      await swalAlert(res.data.message || 'Applicant marked as not passed successfully!', 'success')
       // Update local status
       const app = applications.value.find(a => a.id === application.id)
       if (app) app.status = 'Not Passed'
     } else {
-      alert(res.data.message || 'Failed to mark applicant as not passed')
+      await swalAlert(res.data.message || 'Failed to mark applicant as not passed', 'error')
     }
   } catch (err) {
     console.error('Failed to mark applicant as not passed:', err)
-    alert(err.response?.data?.message || 'Failed to mark applicant as not passed. Please try again.')
+    await swalAlert(err.response?.data?.message || 'Failed to mark applicant as not passed. Please try again.', 'error')
   } finally {
     markingAsNotPassed.value[application.id] = false
   }

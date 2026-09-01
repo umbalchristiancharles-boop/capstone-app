@@ -105,7 +105,7 @@ Route::middleware('web')->group(function () {
             : response()->json(['error' => 'Token invalid or expired'], 400);
     });
 
-    Route::get('/me',               [AuthController::class, 'me'])->middleware('auth');
+    Route::get('/me',               [AuthController::class, 'me'])->middleware('auth:sanctum,web');
     Route::get('/panel-descriptions', [ConfigController::class, 'panelDescriptions'])->middleware('auth');
     Route::get('/panel-notifications', [PanelNotificationController::class, 'index'])->middleware('auth');
     Route::get('/owner-profile',    [AuthController::class, 'ownerProfile'])->middleware('auth');
@@ -237,7 +237,7 @@ Route::middleware('web')->group(function () {
     Route::get('/owner-dashboard', [OwnerDashboardController::class, 'index']);
 
     // HR Messaging routes
-    Route::prefix('hr')->middleware('auth')->group(function () {
+    Route::prefix('hr')->middleware('auth:sanctum,web')->group(function () {
         Route::get('/messages/users', [\App\Http\Controllers\HRMessageController::class, 'users']);
         Route::get('/messages/conversation/{userId}', [\App\Http\Controllers\HRMessageController::class, 'conversation']);
         Route::post('/messages/send', [\App\Http\Controllers\HRMessageController::class, 'send']);

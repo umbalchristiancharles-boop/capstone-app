@@ -19,14 +19,59 @@ class PositionApplicationController extends Controller
     private function determineRoleFromPosition(?string $jobTitle, ?string $department): string
     {
         $jobTitle = strtolower($jobTitle ?? '');
-        
+        $department = strtolower($department ?? '');
+
+        if (str_contains($jobTitle, 'admin') || $department === 'admin') {
+            return 'ADMIN';
+        }
+
         // Check for manager positions
-        if (str_contains($jobTitle, 'manager') || str_contains($jobTitle, 'head')) {
+        if (str_contains($jobTitle, 'manager') || str_contains($jobTitle, 'head') || in_array($department, ['hr', 'finance', 'logistics', 'procurement', 'inventory'], true)) {
             return 'MANAGER';
         }
-        
+
         // Default to STAFF for non-manager positions
         return 'STAFF';
+    }
+
+    /**
+     * Map department string to valid User enum values
+     * Valid enum values: HR, FINANCE, INVENTORY, LOGISTICS, CASHIER
+     */
+    private function mapDepartmentToEnum(?string $department): ?string
+    {
+        if (!$department) {
+            return null;
+        }
+
+        $department = strtoupper(trim($department));
+
+        // Direct match for valid enum values
+        $validDepartments = ['HR', 'FINANCE', 'INVENTORY', 'LOGISTICS', 'CASHIER'];
+        if (in_array($department, $validDepartments, true)) {
+            return $department;
+        }
+
+        // Fuzzy matching for common variations
+        $mapping = [
+            'HUMAN RESOURCES' => 'HR',
+            'HUMAN RESOURCE' => 'HR',
+            'H.R' => 'HR',
+            'FINANCE' => 'FINANCE',
+            'FINANCIAL' => 'FINANCE',
+            'ACCOUNTING' => 'FINANCE',
+            'INVENTORY' => 'INVENTORY',
+            'STOCK' => 'INVENTORY',
+            'WAREHOUSE' => 'INVENTORY',
+            'LOGISTICS' => 'LOGISTICS',
+            'DELIVERY' => 'LOGISTICS',
+            'TRANSPORTATION' => 'LOGISTICS',
+            'CASHIER' => 'CASHIER',
+            'CASHIERING' => 'CASHIER',
+            'CASH' => 'CASHIER',
+        ];
+
+        return $mapping[$department] ?? 'STAFF'; // Default to null if no match
     }
 
     /**
@@ -69,10 +114,23 @@ class PositionApplicationController extends Controller
             $branchId = (int) $request->query('branch_id');
         }
 
-        $query = PositionApplication::query()
-            ->with([]);
-
+        $isMainBranchHr = false;
         if ($branchId) {
+            $branch = \App\Models\Branch::find($branchId);
+            $isMainBranchHr = (bool) ($branch && !empty($branch->is_main_branch));
+        }
+
+        $query = PositionApplication::query()->with([]);
+
+        if ($isMainBranchHr) {
+            // Branch creation broadcasts approved openings for the new branch.
+            // Exclude older manually approved openings created before broadcasting was added.
+            $query->whereHas('positionOpenRequest', function ($q) {
+                $q->where('status', 'Approved')
+                  ->where('notes', 'like', 'Automatically broadcast during branch creation%');
+            });
+        } elseif ($branchId) {
+            // Local branch HR only sees applications for their own branch.
             $query->where('branch_id', $branchId);
         } else {
             // If no branch is associated, return empty for safety
@@ -267,6 +325,9 @@ class PositionApplicationController extends Controller
             // Determine role based on job title/position
             $role = $this->determineRoleFromPosition($application->job_title, $application->department);
             
+            // Map department string to valid enum value
+            $departmentEnum = $this->mapDepartmentToEnum($application->department);
+            
             // Create the staff user
             $staff = \App\Models\User::create([
                 'username' => $username,
@@ -274,7 +335,7 @@ class PositionApplicationController extends Controller
                 'full_name' => $application->applicant_full_name,
                 'phone_number' => $application->applicant_phone,
                 'address' => $application->applicant_address,
-                'department' => $application->department,
+                'department' => $departmentEnum,
                 'password' => $randomPassword,
                 'role' => $role,
                 'branch_id' => $application->branch_id,

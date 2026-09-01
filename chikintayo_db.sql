@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 31, 2026 at 08:25 AM
+-- Generation Time: Sep 01, 2026 at 10:09 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -103,8 +103,7 @@ CREATE TABLE `attendance_settings` (
 
 INSERT INTO `attendance_settings` (`id`, `branch_id`, `early_clockout_override`, `created_at`, `updated_at`) VALUES
 (146, 31, 0, '2026-04-05 18:23:33', '2026-04-05 18:23:33'),
-(147, 32, 0, '2026-04-05 19:26:07', '2026-04-05 19:26:07'),
-(149, 48, 0, '2026-04-15 04:50:19', '2026-04-15 04:50:19');
+(147, 32, 0, '2026-04-05 19:26:07', '2026-04-05 19:26:07');
 
 -- --------------------------------------------------------
 
@@ -146,11 +145,9 @@ CREATE TABLE `branches` (
 --
 
 INSERT INTO `branches` (`id`, `code`, `name`, `address`, `latitude`, `longitude`, `is_active`, `is_main_branch`, `approval_status`, `requested_by`, `finance_confirmed_by`, `finance_confirmed_at`, `approved_by`, `approved_at`, `rejected_at`, `budget`, `square_meters`, `geofencing_radius`, `permit_bills`, `construction_costs`, `equipment_costs`, `total_investment`, `default_password`, `default_password_updated_at`, `created_at`, `updated_at`) VALUES
-(31, 'BR743957', 'Dasma Branch', 'Dasma', NULL, NULL, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 93092, NULL, NULL, NULL, NULL, NULL, NULL, 'BDP20260828C33D7C', '2026-08-28 10:11:49', '2026-03-22 10:19:21', '2026-08-31 06:18:30'),
-(32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 604000, NULL, NULL, NULL, NULL, NULL, NULL, 'BDP20260828C0498C', '2026-08-28 10:09:16', '2026-03-25 06:56:11', '2026-08-28 10:14:44'),
-(48, 'BR426492', 'Manila Branch', NULL, NULL, NULL, 0, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 100000, NULL, NULL, NULL, NULL, NULL, NULL, 'BDP20260828005D27', '2026-08-28 10:11:49', '2026-04-15 04:14:07', '2026-08-28 10:12:06'),
-(49, 'BR976499', 'Dasmariñas Branch', NULL, 14.33000000, 120.94000000, 0, 0, 'pending_finance', 159, NULL, NULL, NULL, NULL, NULL, 100000, 25.00, 2.82, '[{\"type\":\"asd\",\"amount\":1}]', '[{\"category\":\"asd\",\"amount\":1}]', '[{\"name\":\"asd\",\"type\":null,\"quantity\":1,\"unit_cost\":1}]', 3.00, 'BDP20260828D1CA6D', '2026-08-28 10:11:49', '2026-08-25 11:25:20', '2026-08-28 10:11:49'),
-(50, 'BR930147', 'Dasmariñas Branch', NULL, 14.33000000, 120.94000000, 0, 0, 'approved', 159, 161, '2026-08-28 10:14:15', 31, '2026-08-28 10:14:44', NULL, 196000, 299.92, 9.77, '[{\"type\":\"asd\",\"amount\":10000}]', '[{\"category\":\"asd\",\"amount\":10000}]', '[{\"name\":\"asd\",\"type\":\"10000\",\"quantity\":10000,\"unit_cost\":10000}]', 100020000.00, 'BDP20260828F46CE5', '2026-08-28 10:13:26', '2026-08-28 10:13:25', '2026-08-28 10:15:13');
+(31, 'BR743957', 'Dasma Branch', 'Dasma', NULL, NULL, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 93092, NULL, NULL, NULL, NULL, NULL, NULL, 'BDP20260901DBCAD9', '2026-09-01 05:36:59', '2026-03-22 10:19:21', '2026-09-01 05:36:59'),
+(32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 504000, NULL, NULL, NULL, NULL, NULL, NULL, 'BDP20260901428EF8', '2026-09-01 05:36:59', '2026-03-25 06:56:11', '2026-09-01 08:00:30'),
+(52, 'BR184044', 'Luna Branch', NULL, 18.39166919, 121.31652832, 1, 0, 'approved', 159, 161, '2026-09-01 07:57:41', 31, '2026-09-01 08:00:30', NULL, 100000, 89.00, 5.32, '[{\"type\":\"asd\",\"amount\":10000}]', '[{\"category\":\"asd\",\"amount\":10000}]', '[{\"name\":\"asd\",\"type\":\"asd\",\"quantity\":1,\"unit_cost\":9996}]', 29996.00, 'BDP20260901812D07', '2026-09-01 07:20:26', '2026-09-01 07:20:26', '2026-09-01 08:00:30');
 
 -- --------------------------------------------------------
 
@@ -2221,7 +2218,9 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (2880, 'App\\Models\\User', 31, 'auth-token', '40ee87dfc4a6ec6023b431a44bc543320a6d9075e6d9d5e62e8d63556efc0afc', '[\"*\"]', NULL, NULL, '2026-08-21 06:14:45', '2026-08-21 06:14:45'),
 (2893, 'App\\Models\\User', 28, 'auth-token', 'b6ee173d2786491cc7c88fdb6385d368f1ecf2f8ee1ad56a03400d6dccb35ab0', '[\"*\"]', NULL, NULL, '2026-08-21 07:00:44', '2026-08-21 07:00:44'),
 (2909, 'App\\Models\\User', 31, 'auth-token', '6953516c414ce324dade5e72a2ff3fa9c17016b1cc7ceed335692d5e1427607f', '[\"*\"]', NULL, NULL, '2026-08-28 10:14:27', '2026-08-28 10:14:27'),
-(2927, 'App\\Models\\User', 31, 'auth-token', '913787052bd6a39922354048885d6189d6e80799dd008ab2b34f2c58c00e8e4e', '[\"*\"]', NULL, NULL, '2026-08-28 10:33:49', '2026-08-28 10:33:49');
+(2927, 'App\\Models\\User', 31, 'auth-token', '913787052bd6a39922354048885d6189d6e80799dd008ab2b34f2c58c00e8e4e', '[\"*\"]', NULL, NULL, '2026-08-28 10:33:49', '2026-08-28 10:33:49'),
+(3006, 'App\\Models\\User', 31, 'auth-token', 'e60011bad3546c8173f2bd8e50fc23fd8872bee3a2032e15944d2f783dc278d1', '[\"*\"]', NULL, NULL, '2026-09-01 08:00:01', '2026-09-01 08:00:01'),
+(3007, 'App\\Models\\User', 160, 'auth-token', '8c0f0509bb1cefbeb2c620f690381a304e02f6b8614c332251d03884b3bbb316', '[\"*\"]', NULL, NULL, '2026-09-01 08:01:27', '2026-09-01 08:01:27');
 
 -- --------------------------------------------------------
 
@@ -2253,7 +2252,9 @@ INSERT INTO `positions` (`id`, `name`, `description`, `department`, `is_active`,
 (7, 'Inventory Manager', 'Manages inventory and stock levels', 'INVENTORY', 1, '2026-06-23 06:34:03', '2026-06-23 06:34:03'),
 (8, 'Logistics Manager', 'Manages deliveries and logistics operations', 'LOGISTICS', 1, '2026-06-23 06:34:03', '2026-06-23 06:34:03'),
 (9, 'Procurement Officer', 'Handles purchasing and supplier relations', 'PROCUREMENT', 1, '2026-06-23 06:34:03', '2026-06-23 06:34:03'),
-(10, 'Server/Staff', 'Provides customer service and support', NULL, 1, '2026-06-23 06:34:03', '2026-06-23 06:34:03');
+(10, 'Server/Staff', 'Provides customer service and support', NULL, 1, '2026-06-23 06:34:03', '2026-06-23 06:34:03'),
+(11, 'Admin', 'Branch administrator role', 'ADMIN', 1, '2026-09-01 06:07:27', '2026-09-01 06:07:27'),
+(12, 'Procurement Manager', 'Handles purchasing and supplier relations', 'PROCUREMENT', 1, '2026-09-01 06:07:27', '2026-09-01 06:07:27');
 
 -- --------------------------------------------------------
 
@@ -2330,7 +2331,8 @@ INSERT INTO `position_open_requests` (`id`, `position_id`, `requested_by_user_id
 (20, 2, 148, 31, 0, NULL, 'Approved', 160, '2026-08-28 10:43:20', NULL, '2026-08-28 10:42:55', '2026-08-28 10:48:03'),
 (21, 4, 148, 31, 0, NULL, 'Approved', 160, '2026-08-28 11:04:49', NULL, '2026-08-28 11:04:24', '2026-08-28 11:07:28'),
 (22, 4, 148, 31, 1, NULL, 'Pending', NULL, NULL, NULL, '2026-08-28 11:13:04', '2026-08-28 11:13:04'),
-(23, 4, 148, 31, 0, NULL, 'Approved', 160, '2026-08-28 11:14:41', NULL, '2026-08-28 11:14:25', '2026-08-28 11:17:13');
+(23, 4, 148, 31, 0, NULL, 'Approved', 160, '2026-08-28 11:14:41', NULL, '2026-08-28 11:14:25', '2026-08-28 11:17:13'),
+(29, 11, 159, 52, 0, 'Automatically broadcast during branch creation for Luna Branch.', 'Approved', 159, '2026-09-01 07:20:26', NULL, '2026-09-01 07:20:26', '2026-09-01 08:01:45');
 
 -- --------------------------------------------------------
 
@@ -2520,13 +2522,12 @@ INSERT INTO `products` (`id`, `dish_id`, `name`, `category`, `per_pack_or_indivi
 (216, NULL, 'water', 'Beverage', 'per_pack', 6.00, 'pcs', 'water-1', '2026-08-19 07:59:56', '2026-08-31 05:33:35', 157.30, 143.00, 9, 10, 4.0000, NULL, '2026-08-05', 10, 'sku-1787126396-4749', 31, NULL, NULL, 1, 1, 1, 0, 0, 'Umberto Batumbakal', 152, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
 (217, NULL, 'Frozen Hotdog (Dish Ingredient)', NULL, 'individual', NULL, NULL, 'frozen-hotdog-dish-ingredient-42-1787291280', '2026-08-21 05:48:00', '2026-08-21 05:48:17', 0.00, 0.00, 0, 0, 0.0000, NULL, NULL, 10, 'ING-42-NQFWSC', 31, NULL, NULL, 0, 1, 1, 0, 0, 'KITCHEN', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
 (218, NULL, 'Frozen Hotdog (Dish Ingredient)', NULL, 'individual', NULL, NULL, 'frozen-hotdog-dish-ingredient-42-32', '2026-08-21 05:48:00', '2026-08-21 05:48:00', 0.00, 0.00, 0, 0, 0.0000, NULL, NULL, 10, 'DISH-42-ING-0-B32', 32, NULL, NULL, 0, 0, 1, 0, 0, 'KITCHEN', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
-(219, NULL, 'Frozen Hotdog (Dish Ingredient)', NULL, 'individual', NULL, NULL, 'frozen-hotdog-dish-ingredient-42-48', '2026-08-21 05:48:00', '2026-08-21 05:48:00', 0.00, 0.00, 0, 0, 0.0000, NULL, NULL, 10, 'DISH-42-ING-0-B48', 48, NULL, NULL, 0, 0, 1, 0, 0, 'KITCHEN', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
 (220, 42, 'Hot Dog', NULL, 'individual', NULL, NULL, 'hot-dog', '2026-08-21 05:48:00', '2026-08-21 06:03:22', 34.88, 25.83, 1290, 0, 0.0000, NULL, NULL, 0, 'HOTDOG-VL87', 31, 31, '2026-08-21 05:48:00', 1, 0, 1, 1, 1, NULL, NULL, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
 (223, NULL, 'Frozen Hotdog (Dish Ingredient)', 'Meat', 'per_pack', 6.00, 'pcs', 'frozen-hotdog-dish-ingredient', '2026-08-21 05:49:35', '2026-08-21 05:49:35', 149.00, 149.00, 0, 0, 0.0000, NULL, '2026-08-19', 10, 'sku-1787291375-8072', 31, NULL, NULL, 1, 0, 1, 0, 0, 'John Stalone', 158, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
 (224, NULL, 'Frozen Hotdog (Dish Ingredient)', 'Meat', 'per_pack', 150.00, 'pcs', 'frozen-hotdog-dish-ingredient-1', '2026-08-21 05:52:04', '2026-08-28 10:17:00', 165.00, 150.00, 9, 10, 60.0000, NULL, '2026-08-13', 10, 'sku-1787291524-6745', 31, NULL, NULL, 1, 1, 1, 0, 0, 'Umberto Batumbakal', 152, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
 (225, NULL, 'Pandesal (Dish Ingredient)', NULL, 'individual', NULL, NULL, 'pandesal-dish-ingredient-43-1787913272', '2026-08-28 10:34:32', '2026-08-28 10:35:01', 0.00, 0.00, 0, 0, 0.0000, NULL, NULL, 10, 'ING-43-UCBO0P', 31, NULL, NULL, 0, 1, 1, 0, 0, 'KITCHEN', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
 (226, NULL, 'Pandesal (Dish Ingredient)', NULL, 'individual', NULL, NULL, 'pandesal-dish-ingredient-43-32', '2026-08-28 10:34:32', '2026-08-28 10:34:32', 0.00, 0.00, 0, 0, 0.0000, NULL, NULL, 10, 'DISH-43-ING-0-B32', 32, NULL, NULL, 0, 0, 1, 0, 0, 'KITCHEN', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
-(227, 43, 'Tinapay', NULL, 'individual', NULL, NULL, 'tinapay', '2026-08-28 10:34:32', '2026-08-28 10:38:02', 57.86, 42.86, 0, 0, 0.0000, NULL, NULL, 0, 'TINAPAY-CC0P', 31, 31, '2026-08-28 10:34:32', 1, 0, 1, 1, 1, NULL, NULL, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
+(227, 43, 'Tinapay', NULL, 'individual', NULL, NULL, 'tinapay', '2026-08-28 10:34:32', '2026-09-01 05:02:20', 51.59, 38.21, 70, 0, 0.0000, NULL, NULL, 0, 'TINAPAY-CC0P', 31, 31, '2026-08-28 10:34:32', 1, 0, 1, 1, 1, NULL, NULL, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
 (231, NULL, 'Pandesal (Dish Ingredient)', 'Grain', 'per_pack', 6.00, 'pcs', 'pandesal-dish-ingredient', '2026-08-31 06:07:31', '2026-08-31 06:07:31', 123.00, 123.00, 0, 0, 0.0000, NULL, '2026-08-25', 10, 'sku-1788156451-8649', 31, NULL, NULL, 1, 0, 1, 0, 0, 'John Stalone', 158, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL),
 (232, NULL, 'Pandesal (Dish Ingredient)', 'Grain', 'per_pack', 7.00, 'pcs', 'pandesal-dish-ingredient-1', '2026-08-31 06:08:47', '2026-08-31 06:22:09', 136.40, 124.00, 10, 10, 0.0000, NULL, '2026-08-19', 10, 'sku-1788156527-1252', 31, NULL, NULL, 1, 1, 1, 0, 0, 'Umberto Batumbakal', 152, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL);
 
@@ -2677,11 +2678,16 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('c3s9hIa4tRhwIw3s3TtSNc6q6G7tc2LonY8J03jM', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoiZHQ0bmhLcnJ1czNEbmJCT3JIVjN1bks2dnQ5TmRaalM5SG12WktoeiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1788154590),
-('KNWkTluqroQ8ETJfU5cxfb73ztANtaQoto81ATR2', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoiRUhJMjJUSEdjUjRLQWswckFHaG1VaU1RaXlwRUdBdjdLSkI1VHV3RiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1788155871),
-('sUgWb3mME6DhLBYQi5PZvO25zKnP8AFvx41BEhMZ', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoieEdxWGZwMWJ4VEZ2T0NrcmVoQkpUZmJzaE9QQWJNMFNBUVgwMXNXbiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1788155930),
-('yDPldfFsCm7FvvP3QZTwYCcS3DXOqFS5Y78KinNo', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoicEV1cno0U3RpR0VJSDJQc1R3bEczRDNIaWhmUzJaaml6blpwRlZ5SiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1788154143),
-('Zz8MyNdTyjYmottwIjNxXiNSAaVO3qTuCk7qQt3i', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiUzRvWGJ5NzYyUjhxdU1BcGpNaVdoNEtEY2ViOGpXbzlIZHV2RXBTOCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO319', 1788157396);
+('5cvEoOClPDZGo4sjBD3ySdXi5RpAQAkgXib67AVH', NULL, '::1', 'Mozilla/5.0 (Windows NT; Windows NT 10.0; en-PH) WindowsPowerShell/5.1.26100.9168', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoieGtzRm9qNUxyWWtJTzgxaVZTUDlXSFd5cEF3REU2SE1IS1FpVHZKMyI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czozNjoiaHR0cDovL2xvY2FsaG9zdDo4MDAwL21haW4tYnJhbmNoL2hyIjt9czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9sb2dpbiI7czo1OiJyb3V0ZSI7czo1OiJsb2dpbiI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1788246882),
+('igyJkj72eorXlPThn2wJqnOBCPlzK0scq1gbQ2b4', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoibVlZQmcxQmkyQnltTGxlMU1xN3I5aERjTWtWZldqeTlTWm56NFN1WCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1788246209),
+('ITgLPXG9YWBu3DDNcjdiqhLzzIsbkcZvFydixtdh', NULL, '::1', 'Mozilla/5.0 (Windows NT; Windows NT 10.0; en-PH) WindowsPowerShell/5.1.26100.9168', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiTVp6UHNUSkZYZlQ5YWlKMjlVNDZucWlabDkwV2pVb0dOWUdJbkM5UCI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czozNjoiaHR0cDovL2xvY2FsaG9zdDo4MDAwL21haW4tYnJhbmNoL2hyIjt9czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9sb2dpbiI7czo1OiJyb3V0ZSI7czo1OiJsb2dpbiI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1788246814),
+('J1Igi0QJmA9idfpUfLPUTMdUX7Hkd6DYxn37h1Ye', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoibHp5bkhNMlJrczlSUkxxSkR5Q3c3SzlONlN2YkZUWXBhNXBZdjhDRiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1788246209),
+('ngsX7qjq404CmT1LaMc9JY4K0ZIKqZHhuLkQuVkP', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiNlVNYklCYXRGd2ZmZTM3cU5POEF4ZFBaTHpoMTZzVUlHRWtGVmt0MSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fX0=', 1788245639),
+('QBLnzLZZXWkd6L0t20AwIdfclBlyb2rGo1KHtc2v', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiekJCY3hCZmp3WnVuVUx6Zm1xVWxoRm5iRXJqRTRFejc1VGM0R0lFcyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fX0=', 1788245405),
+('QbQE5Mx0KE2WoYSN2wNz1cumq42K98d0dZ1siaWW', 160, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiQVl5N3Vqa2xhQXBCSmNBdzQ2bmt5eVRNM0R2Ym1KTWRKMGlXUkkzZCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE2MDtzOjc6InVzZXJfaWQiO2k6MTYwO3M6OToidXNlcl9yb2xlIjtzOjc6Ik1BTkFHRVIiO3M6OToidXNlcl9uYW1lIjtzOjE0OiJIUiBNYWluIEJyYW5jaCI7czoxMzoicmVkaXJlY3RfcGF0aCI7czoxNToiL21haW4tYnJhbmNoL2hyIjt9', 1788246206),
+('QzrK0V4NRI5Hg4PuCptYUmvIsUCFvufPGvnKjR62', 160, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiVDAyUFprY3ZraUxBNE1kQUVLWFg1cEhENFk4blhpS3B4U3dKRFFGQyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE2MDtzOjc6InVzZXJfaWQiO2k6MTYwO3M6OToidXNlcl9yb2xlIjtzOjc6Ik1BTkFHRVIiO3M6OToidXNlcl9uYW1lIjtzOjE0OiJIUiBNYWluIEJyYW5jaCI7czoxMzoicmVkaXJlY3RfcGF0aCI7czoxNToiL21haW4tYnJhbmNoL2hyIjt9', 1788250156),
+('SIWIKGLTdYEcjxIOVNmBtdfa2vGEPb5IrQSAox2b', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoiWHM5OUM0OUtpY202eEdqMTFucHM3V3ZzZ0dyTEpxYlVna0V2Y1FycyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1788245714),
+('wUUEqM5KH0IAklfIhsPJRPazKvEva7it43eOWoOD', 161, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiS3FzNml5UHU4UlRqbWZrMnM1YXNBYW9obTM4NVV2clVBc1p0YXZOdiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE2MTtzOjc6InVzZXJfaWQiO2k6MTYxO3M6OToidXNlcl9yb2xlIjtzOjc6Ik1BTkFHRVIiO3M6OToidXNlcl9uYW1lIjtzOjE5OiJGaW5hbmNlIE1haW4gQnJhbmNoIjtzOjEzOiJyZWRpcmVjdF9wYXRoIjtzOjIwOiIvbWFpbi1icmFuY2gvZmluYW5jZSI7fQ==', 1788245391);
 
 -- --------------------------------------------------------
 
@@ -3313,7 +3319,7 @@ ALTER TABLE `announcements`
 -- AUTO_INCREMENT for table `attendance`
 --
 ALTER TABLE `attendance`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT for table `attendance_settings`
@@ -3325,7 +3331,7 @@ ALTER TABLE `attendance_settings`
 -- AUTO_INCREMENT for table `branches`
 --
 ALTER TABLE `branches`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=51;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=53;
 
 --
 -- AUTO_INCREMENT for table `budget_requests`
@@ -3439,25 +3445,25 @@ ALTER TABLE `payrolls`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2975;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3008;
 
 --
 -- AUTO_INCREMENT for table `positions`
 --
 ALTER TABLE `positions`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `position_applications`
 --
 ALTER TABLE `position_applications`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `position_open_requests`
 --
 ALTER TABLE `position_open_requests`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
 
 --
 -- AUTO_INCREMENT for table `price_audits`

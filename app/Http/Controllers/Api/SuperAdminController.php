@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Log;
 use App\Models\User;
 use App\Models\Branch;
 use App\Models\Order;
+use App\Models\Position;
+use App\Models\PositionOpenRequest;
 use App\Models\StaffDocument;
 use Illuminate\Support\Facades\Schema;
 use App\Support\Permission;
@@ -49,6 +51,48 @@ class SuperAdminController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * Create a default branch-role position record that can be applied to by candidates.
+     * This mirrors the HR flow where accounts are created only after a successful application.
+     */
+    private function createApprovedBranchPositionRequest(Branch $branch, string $roleKey, int $requestedByUserId): array
+    {
+        $positionMap = [
+            'admin' => ['name' => 'Admin', 'department' => 'ADMIN', 'description' => 'Branch administrator role'],
+            'hr' => ['name' => 'HR Manager', 'department' => 'HR', 'description' => 'Manages human resources and staff affairs'],
+            'finance' => ['name' => 'Finance Manager', 'department' => 'FINANCE', 'description' => 'Oversees financial operations and budgets'],
+            'procurement' => ['name' => 'Procurement Manager', 'department' => 'PROCUREMENT', 'description' => 'Handles purchasing and supplier relations'],
+            'logistics' => ['name' => 'Logistics Manager', 'department' => 'LOGISTICS', 'description' => 'Manages deliveries and logistics operations'],
+        ];
+
+        $config = $positionMap[$roleKey] ?? ['name' => ucfirst($roleKey), 'department' => strtoupper($roleKey), 'description' => 'Branch role'];
+
+        $position = Position::query()->firstOrCreate(
+            ['name' => $config['name']],
+            [
+                'description' => $config['description'],
+                'department' => $config['department'],
+                'is_active' => 1,
+            ]
+        );
+
+        $request = PositionOpenRequest::create([
+            'position_id' => $position->id,
+            'branch_id' => $branch->id,
+            'requested_by_user_id' => $requestedByUserId,
+            'quantity' => 1,
+            'notes' => 'Automatically broadcast during branch creation for ' . $branch->name . '.',
+            'status' => 'Approved',
+            'approved_by_user_id' => $requestedByUserId,
+            'approved_at' => now(),
+        ]);
+
+        return [
+            'position_name' => $position->name,
+            'request_id' => $request->id,
+        ];
     }
 
     /**
@@ -1065,185 +1109,13 @@ class SuperAdminController extends Controller
 
             $createdRoles = [];
 
-            // Create default ADMIN account for this branch (no email; user will add/verify later)
-            if ($selectedAccounts['admin']) {
-                $adminUsername = 'admin_' . $codeSlug;
-
-                // Check if username already exists
-                if (User::where('username', $adminUsername)->exists()) {
-                    $adminUsername = 'admin_' . $codeSlug . '_' . $branch->id;
+            // Instead of creating real user accounts immediately, broadcast approved job openings
+            // so the HR application flow creates accounts only after a successful application.
+            foreach (['admin', 'hr', 'finance', 'procurement', 'logistics'] as $roleKey) {
+                if (!empty($selectedAccounts[$roleKey])) {
+                    $broadcast = $this->createApprovedBranchPositionRequest($branch, $roleKey, (int) $user->id);
+                    $createdRoles[] = $broadcast['position_name'];
                 }
-
-                $adminUser = User::create([
-                    'username' => $adminUsername,
-                    'email' => null,
-                    'password' => $defaultPassword, // Mutator will hash this automatically
-                    'full_name' => 'Admin - ' . $name,
-                    'role' => 'ADMIN',
-                    'department' => null,
-                    'branch_id' => $branch->id,
-                    'is_active' => $accountIsActive,
-                    'must_change_password' => 1,
-                    'required_setup_type' => 'full',
-                ]);
-
-                // Create empty StaffDocument record for document uploads
-                try {
-                    StaffDocument::create([
-                        'user_id' => $adminUser->id,
-                        'sss_id_path' => null,
-                        'philhealth_id_path' => null,
-                        'drug_test_result_path' => null
-                    ]);
-                } catch (\Exception $e) {
-                    Log::warning('Failed to create StaffDocument for admin: ' . $e->getMessage());
-                }
-
-                $createdRoles[] = 'Admin';
-            }
-
-            // Create default HR Manager account for this branch
-            if ($selectedAccounts['hr']) {
-                $hrUsername = 'hr_' . $codeSlug;
-
-                if (User::where('username', $hrUsername)->exists()) {
-                    $hrUsername = 'hr_' . $codeSlug . '_' . $branch->id;
-                }
-
-                $hrUser = User::create([
-                    'username' => $hrUsername,
-                    'email' => null,
-                    'password' => $defaultPassword, // Mutator will hash this automatically
-                    'full_name' => 'HR Manager - ' . $name,
-                    'role' => 'MANAGER',
-                    'department' => 'HR',
-                    'branch_id' => $branch->id,
-                    'is_active' => $accountIsActive,
-                    'must_change_password' => 1,
-                    'required_setup_type' => 'full',
-                ]);
-
-                // Create empty StaffDocument record for document uploads
-                try {
-                    StaffDocument::create([
-                        'user_id' => $hrUser->id,
-                        'sss_id_path' => null,
-                        'philhealth_id_path' => null,
-                        'drug_test_result_path' => null
-                    ]);
-                } catch (\Exception $e) {
-                    Log::warning('Failed to create StaffDocument for HR: ' . $e->getMessage());
-                }
-
-                $createdRoles[] = 'HR Manager';
-            }
-
-            // Create default Finance Manager account for this branch
-            if ($selectedAccounts['finance']) {
-                $financeUsername = 'finance_' . $codeSlug;
-
-                if (User::where('username', $financeUsername)->exists()) {
-                    $financeUsername = 'finance_' . $codeSlug . '_' . $branch->id;
-                }
-
-                $financeUser = User::create([
-                    'username' => $financeUsername,
-                    'email' => null,
-                    'password' => $defaultPassword, // Mutator will hash this automatically
-                    'full_name' => 'Finance Manager - ' . $name,
-                    'role' => 'MANAGER',
-                    'department' => 'Finance',
-                    'branch_id' => $branch->id,
-                    'is_active' => $accountIsActive,
-                    'must_change_password' => 1,
-                    'required_setup_type' => 'full',
-                ]);
-
-                // Create empty StaffDocument record for document uploads
-                try {
-                    StaffDocument::create([
-                        'user_id' => $financeUser->id,
-                        'sss_id_path' => null,
-                        'philhealth_id_path' => null,
-                        'drug_test_result_path' => null
-                    ]);
-                } catch (\Exception $e) {
-                    Log::warning('Failed to create StaffDocument for Finance: ' . $e->getMessage());
-                }
-
-                $createdRoles[] = 'Finance Manager';
-            }
-
-            // Create default Procurement Manager account for this branch
-            if ($selectedAccounts['procurement']) {
-                $procurementUsername = 'procurement_' . $codeSlug;
-
-                if (User::where('username', $procurementUsername)->exists()) {
-                    $procurementUsername = 'procurement_' . $codeSlug . '_' . $branch->id;
-                }
-
-                $procurementUser = User::create([
-                    'username' => $procurementUsername,
-                    'email' => null,
-                    'password' => $defaultPassword, // Mutator will hash this automatically
-                    'full_name' => 'Procurement Manager - ' . $name,
-                    'role' => 'MANAGER',
-                    'department' => 'PROCUREMENT',
-                    'branch_id' => $branch->id,
-                    'is_active' => $accountIsActive,
-                    'must_change_password' => 1,
-                    'required_setup_type' => 'full',
-                ]);
-
-                // Create empty StaffDocument record for document uploads
-                try {
-                    StaffDocument::create([
-                        'user_id' => $procurementUser->id,
-                        'sss_id_path' => null,
-                        'philhealth_id_path' => null,
-                        'drug_test_result_path' => null
-                    ]);
-                } catch (\Exception $e) {
-                    Log::warning('Failed to create StaffDocument for Procurement: ' . $e->getMessage());
-                }
-
-                $createdRoles[] = 'Procurement Manager';
-            }
-
-            // Create default Logistics Manager account for this branch
-            if ($selectedAccounts['logistics']) {
-                $logisticsUsername = 'logistics_' . $codeSlug;
-
-                if (User::where('username', $logisticsUsername)->exists()) {
-                    $logisticsUsername = 'logistics_' . $codeSlug . '_' . $branch->id;
-                }
-
-                $logisticsUser = User::create([
-                    'username' => $logisticsUsername,
-                    'email' => null,
-                    'password' => $defaultPassword, // Mutator will hash this automatically
-                    'full_name' => 'Logistics Manager - ' . $name,
-                    'role' => 'MANAGER',
-                    'department' => 'Logistics',
-                    'branch_id' => $branch->id,
-                    'is_active' => $accountIsActive,
-                    'must_change_password' => 1,
-                    'required_setup_type' => 'full',
-                ]);
-
-                // Create empty StaffDocument record for document uploads
-                try {
-                    StaffDocument::create([
-                        'user_id' => $logisticsUser->id,
-                        'sss_id_path' => null,
-                        'philhealth_id_path' => null,
-                        'drug_test_result_path' => null
-                    ]);
-                } catch (\Exception $e) {
-                    Log::warning('Failed to create StaffDocument for Logistics: ' . $e->getMessage());
-                }
-
-                $createdRoles[] = 'Logistics Manager';
             }
 
             // Optionally create a custom account with granular module/function access

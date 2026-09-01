@@ -22,10 +22,14 @@ class AuthController extends Controller
 {
     public function login(Request $request)
     {
-        $credentials = $request->validate([
+        $request->validate([
             'username' => 'required|string',
             'password' => 'required|string',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
         ]);
+
+        $credentials = $request->only(['username', 'password']);
 
         // Debug: log credentials and password hash
         $user = User::where('username', '=', $credentials['username'])->first();
@@ -61,6 +65,34 @@ class AuthController extends Controller
                 'ok' => false,
                 'message' => 'User not found',
             ], 401);
+        }
+
+        // Validate geofencing before allowing login when coordinates are provided
+        $latitude = $request->input('latitude');
+        $longitude = $request->input('longitude');
+        if ($latitude !== null && $longitude !== null) {
+            $geofencingCheck = $this->validateGeofencing($user, $latitude, $longitude);
+            if (!$geofencingCheck['valid']) {
+                Log::warning('Login denied outside safe zone', [
+                    'user_id' => $user->id,
+                    'username' => $user->username,
+                    'branch_id' => $user->branch_id,
+                    'distance' => $geofencingCheck['distance'] ?? null,
+                    'allowed_radius' => $geofencingCheck['allowed_radius'] ?? null,
+                ]);
+
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'You are outside the safe zone for this branch.',
+                    'geofencing_error' => true,
+                    'distance' => $geofencingCheck['distance'] ?? null,
+                    'allowed_radius' => $geofencingCheck['allowed_radius'] ?? null,
+                ], 403);
+            }
         }
 
         // CRITICAL: Validate that user's account is active BEFORE allowing login
@@ -232,6 +264,58 @@ class AuthController extends Controller
      * Determine the correct redirect path based on user role and department.
      * This is the server-side authoritative source for routing.
      */
+    private function validateGeofencing($user, $userLatitude, $userLongitude)
+    {
+        $branch = Branch::find($user->branch_id ?? null);
+
+        if (!$branch) {
+            return ['valid' => true];
+        }
+
+        if (!$branch->latitude || !$branch->longitude) {
+            return ['valid' => true];
+        }
+
+        $radius = $branch->geofencing_radius;
+        if (!$radius || $radius <= 0) {
+            $radius = 100;
+        }
+
+        $distance = $this->calculateDistance(
+            (float) $userLatitude,
+            (float) $userLongitude,
+            (float) $branch->latitude,
+            (float) $branch->longitude
+        );
+
+        if ($distance > $radius) {
+            return [
+                'valid' => false,
+                'message' => "You are outside the safe zone for this branch.",
+                'distance' => round($distance, 2),
+                'allowed_radius' => $radius,
+            ];
+        }
+
+        return ['valid' => true];
+    }
+
+    private function calculateDistance($lat1, $lon1, $lat2, $lon2)
+    {
+        $earthRadius = 6371000;
+
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+
+        $a = sin($dLat / 2) * sin($dLat / 2) +
+             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+             sin($dLon / 2) * sin($dLon / 2);
+
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return $earthRadius * $c;
+    }
+
     private function getRedirectPath($user)
     {
         $role = strtoupper(trim($user->role ?? ''));
@@ -240,9 +324,10 @@ class AuthController extends Controller
 
         try {
             if (!empty($user->branch_id)) {
-                $isMainBranchUser = Branch::where('id', $user->branch_id)
-                    ->where('is_main_branch', 1)
-                    ->exists();
+                $branch = Branch::find($user->branch_id);
+                // Check both the is_main_branch flag and id === 32 (or 1 for fallback)
+                $isMainBranchUser = ($branch && 
+                    (($branch->is_main_branch == 1) || ($branch->is_main_branch === true) || ((int) $branch->id === 32) || ((int) $branch->id === 1)));
             }
         } catch (\Throwable $e) {
             $isMainBranchUser = false;
@@ -1167,6 +1252,8 @@ class AuthController extends Controller
         $request->validate([
             'username' => ['required', 'string'],
             'password' => ['required', 'string'],
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
         ]);
 
         $user = User::where('username', '=', $request->input('username'))
@@ -1177,6 +1264,20 @@ class AuthController extends Controller
             return response()->json([
                 'message' => 'Invalid credentials'
             ], 401);
+        }
+
+        $latitude = $request->input('latitude');
+        $longitude = $request->input('longitude');
+        if ($latitude !== null && $longitude !== null) {
+            $geofencingCheck = $this->validateGeofencing($user, $latitude, $longitude);
+            if (!$geofencingCheck['valid']) {
+                return response()->json([
+                    'message' => 'You are outside the safe zone for this branch.',
+                    'geofencing_error' => true,
+                    'distance' => $geofencingCheck['distance'] ?? null,
+                    'allowed_radius' => $geofencingCheck['allowed_radius'] ?? null,
+                ], 403);
+            }
         }
 
         // Create token

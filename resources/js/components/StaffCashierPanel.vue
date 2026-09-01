@@ -151,17 +151,7 @@
         </div>
       </div>
 
-      <!-- Branch Budget Card -->
-      <div v-if="branchId" class="branch-budget-card" style="margin-bottom:12px;">
-        <div class="side-card-header">
-          <span class="side-card-kicker">Branch Budget</span>
-          <span class="icon-chip">₱</span>
-        </div>
-        <div class="branch-budget-value">₱{{ fmt(branchBudget) }}</div>
-        <div class="branch-budget-branch">{{ branchName }}</div>
-      </div>
-
-      <!-- Announcements (moved below Branch Budget) -->
+      <!-- Announcements -->
       <div class="announcements-card" style="margin-bottom:12px;" v-if="branchId">
         <div class="side-card-header">
           <span class="side-card-kicker">Announcements</span>
@@ -322,7 +312,6 @@ const pendingOrderCode = ref(null)
 const checkoutError = ref('')
 const checkoutSuccess = ref('')
 const transactions = ref([])
-const branchBudget = ref(0)
 const hasNotified = ref(false)
 // track refunding state per transaction
 // we will set `tx.isRefunding = true` temporarily when refund is in progress
@@ -531,7 +520,6 @@ async function loadStaffProfile() {
       if (branchId.value) {
         await loadProducts()
         await loadTransactions()
-        await loadBranchBudget()
       }
     }
   } catch (e) {
@@ -571,20 +559,6 @@ async function loadTransactions() {
   }
 }
 
-// Load branch budget by querying branches endpoint and picking matching id
-async function loadBranchBudget() {
-  if (!branchId.value) return
-  try {
-    const res = await axios.get('/api/superadmin/cashier/branches')
-    const list = res.data || []
-    const b = list.find(x => String(x.id) === String(branchId.value))
-    branchBudget.value = b ? Number(b.budget || 0) : 0
-  } catch (e) {
-    console.error('Failed to load branch budget', e)
-    branchBudget.value = 0
-  }
-}
-
 async function refundOrder(tx) {
   if (!(await window.swalConfirm(`Refund order ${tx.order_code}? You will be asked for a reason.`))) return
   const reason = await window.swalPrompt('Enter refund reason (required):', '', 'text')
@@ -602,7 +576,6 @@ async function refundOrder(tx) {
     })
     alert(res.data?.message || 'Order refunded')
     await loadTransactions()
-    await loadBranchBudget()
   } catch (e) {
     const msg = e.response?.data?.error || e.response?.data?.message || e.message || 'Refund failed'
     alert(msg)
@@ -1011,7 +984,6 @@ async function processCheckout() {
     discountPercent.value = 0
 
     await loadTransactions()
-    await loadBranchBudget()
   } catch (e) {
     const msg = e.response?.data?.message || e.response?.data?.error || e.message || 'Checkout failed'
     checkoutError.value = msg
