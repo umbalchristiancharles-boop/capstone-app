@@ -71,7 +71,7 @@ class PositionApplicationController extends Controller
             'CASH' => 'CASHIER',
         ];
 
-        return $mapping[$department] ?? 'STAFF'; // Default to null if no match
+        return $mapping[$department] ?? null; // Default to null if no match
     }
 
     /**

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Sep 01, 2026 at 10:09 AM
+-- Generation Time: Sep 02, 2026 at 08:25 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -145,9 +145,8 @@ CREATE TABLE `branches` (
 --
 
 INSERT INTO `branches` (`id`, `code`, `name`, `address`, `latitude`, `longitude`, `is_active`, `is_main_branch`, `approval_status`, `requested_by`, `finance_confirmed_by`, `finance_confirmed_at`, `approved_by`, `approved_at`, `rejected_at`, `budget`, `square_meters`, `geofencing_radius`, `permit_bills`, `construction_costs`, `equipment_costs`, `total_investment`, `default_password`, `default_password_updated_at`, `created_at`, `updated_at`) VALUES
-(31, 'BR743957', 'Dasma Branch', 'Dasma', NULL, NULL, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 93092, NULL, NULL, NULL, NULL, NULL, NULL, 'BDP20260901DBCAD9', '2026-09-01 05:36:59', '2026-03-22 10:19:21', '2026-09-01 05:36:59'),
-(32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 504000, NULL, NULL, NULL, NULL, NULL, NULL, 'BDP20260901428EF8', '2026-09-01 05:36:59', '2026-03-25 06:56:11', '2026-09-01 08:00:30'),
-(52, 'BR184044', 'Luna Branch', NULL, 18.39166919, 121.31652832, 1, 0, 'approved', 159, 161, '2026-09-01 07:57:41', 31, '2026-09-01 08:00:30', NULL, 100000, 89.00, 5.32, '[{\"type\":\"asd\",\"amount\":10000}]', '[{\"category\":\"asd\",\"amount\":10000}]', '[{\"name\":\"asd\",\"type\":\"asd\",\"quantity\":1,\"unit_cost\":9996}]', 29996.00, 'BDP20260901812D07', '2026-09-01 07:20:26', '2026-09-01 07:20:26', '2026-09-01 08:00:30');
+(31, 'BR743957', 'Dasma Branch', 'Dasma', NULL, NULL, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 93092, NULL, NULL, NULL, NULL, NULL, NULL, 'BDP202609022506E8', '2026-09-02 06:10:38', '2026-03-22 10:19:21', '2026-09-02 06:10:38'),
+(32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 404000, NULL, NULL, NULL, NULL, NULL, NULL, 'BDP20260902943FB8', '2026-09-02 06:10:38', '2026-03-25 06:56:11', '2026-09-02 06:22:33');
 
 -- --------------------------------------------------------
 
@@ -2220,7 +2219,7 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (2909, 'App\\Models\\User', 31, 'auth-token', '6953516c414ce324dade5e72a2ff3fa9c17016b1cc7ceed335692d5e1427607f', '[\"*\"]', NULL, NULL, '2026-08-28 10:14:27', '2026-08-28 10:14:27'),
 (2927, 'App\\Models\\User', 31, 'auth-token', '913787052bd6a39922354048885d6189d6e80799dd008ab2b34f2c58c00e8e4e', '[\"*\"]', NULL, NULL, '2026-08-28 10:33:49', '2026-08-28 10:33:49'),
 (3006, 'App\\Models\\User', 31, 'auth-token', 'e60011bad3546c8173f2bd8e50fc23fd8872bee3a2032e15944d2f783dc278d1', '[\"*\"]', NULL, NULL, '2026-09-01 08:00:01', '2026-09-01 08:00:01'),
-(3007, 'App\\Models\\User', 160, 'auth-token', '8c0f0509bb1cefbeb2c620f690381a304e02f6b8614c332251d03884b3bbb316', '[\"*\"]', NULL, NULL, '2026-09-01 08:01:27', '2026-09-01 08:01:27');
+(3013, 'App\\Models\\User', 31, 'auth-token', 'fa2f550e235df1b72c379614c155195f1afedebbad8d4a653e5cfa4d079dca77', '[\"*\"]', NULL, NULL, '2026-09-02 06:22:00', '2026-09-02 06:22:00');
 
 -- --------------------------------------------------------
 
@@ -2298,7 +2297,8 @@ CREATE TABLE `position_applications` (
 INSERT INTO `position_applications` (`id`, `position_open_request_id`, `position_id`, `branch_id`, `department`, `job_title`, `applicant_full_name`, `applicant_email`, `applicant_phone`, `applicant_address`, `cover_letter`, `years_of_experience`, `education`, `available_start_date`, `linkedin_url`, `portfolio_url`, `privacy_consent`, `website`, `resume_path`, `supporting_documents_paths`, `status`, `interview_date`, `interview_time`, `interview_notes`, `created_at`, `updated_at`) VALUES
 (10, 20, 2, 31, 'KITCHEN', 'Chef', 'Christian Charles Umbal', 'umbal.christiancharles@ncst.edu.ph', '09156818852', 'Pinned location: 14.330000, 120.940000', 'asd', 13, 'BIST', '2026-09-04', 'http://localhost:8000/#careers', 'http://localhost:8000/#careers', 1, NULL, 'position-applications/20/99930bd3-cbdb-4f87-86e1-1eed1b13646a/resume_cv.docx', '[\"position-applications\\/20\\/99930bd3-cbdb-4f87-86e1-1eed1b13646a\\/supporting\\/supporting_1.docx\"]', 'Passed - Ready for Hiring', '2026-09-05', '18:00:00', NULL, '2026-08-28 10:46:50', '2026-08-28 10:58:02'),
 (11, 21, 4, 31, 'CASHIER', 'Cashier', 'Jamie Fernando', 'tepih77520@fanzher.com', '09156818851', 'Fetching...', 'asd', 3, 'BIST', '2026-09-05', 'http://localhost:8000/#careers', 'http://localhost:8000/#careers', 1, NULL, 'position-applications/21/69c6b30e-3a76-442d-b35a-fc1d19efd2fc/resume_cv.pdf', '[\"position-applications\\/21\\/69c6b30e-3a76-442d-b35a-fc1d19efd2fc\\/supporting\\/supporting_1.docx\"]', 'Passed - Ready for Hiring', '2026-08-29', '07:08:00', NULL, '2026-08-28 11:05:47', '2026-08-28 11:08:38'),
-(12, 23, 4, 31, 'CASHIER', 'Cashier', 'Jamie Cruz', 'kitijo2249@dd2car.com', '09156818851', 'Pinned location: 14.330000, 120.940000', 'Yes', 12, 'BIST', '2026-09-03', 'http://localhost:8000/#careers', 'http://localhost:8000/#careers', 1, NULL, 'position-applications/23/24988976-b2d8-4492-9de6-b54cbc05f799/resume_cv.docx', '[\"position-applications\\/23\\/24988976-b2d8-4492-9de6-b54cbc05f799\\/supporting\\/supporting_1.docx\"]', 'Passed - Ready for Hiring', '2026-09-04', '19:19:00', NULL, '2026-08-28 11:15:39', '2026-08-28 11:17:13');
+(12, 23, 4, 31, 'CASHIER', 'Cashier', 'Jamie Cruz', 'kitijo2249@dd2car.com', '09156818851', 'Pinned location: 14.330000, 120.940000', 'Yes', 12, 'BIST', '2026-09-03', 'http://localhost:8000/#careers', 'http://localhost:8000/#careers', 1, NULL, 'position-applications/23/24988976-b2d8-4492-9de6-b54cbc05f799/resume_cv.docx', '[\"position-applications\\/23\\/24988976-b2d8-4492-9de6-b54cbc05f799\\/supporting\\/supporting_1.docx\"]', 'Passed - Ready for Hiring', '2026-09-04', '19:19:00', NULL, '2026-08-28 11:15:39', '2026-08-28 11:17:13'),
+(15, 30, 11, NULL, 'ADMIN', 'Admin', 'Venen Melen', 'venen12210@fanzher.com', '09156818852', 'Pinned location: 14.330000, 120.940000', 'asd', 23, 'BIST', '2026-09-11', 'http://localhost:8000/#careers', 'http://localhost:8000/#careers', 1, NULL, 'position-applications/30/55af28ad-2f79-4f9f-b9ff-73c79f89f241/resume_cv.docx', '[\"position-applications\\/30\\/55af28ad-2f79-4f9f-b9ff-73c79f89f241\\/supporting\\/supporting_1.docx\"]', 'Passed - Ready for Hiring', '2026-09-03', '14:21:00', NULL, '2026-09-02 06:14:37', '2026-09-02 06:19:57');
 
 -- --------------------------------------------------------
 
@@ -2332,7 +2332,8 @@ INSERT INTO `position_open_requests` (`id`, `position_id`, `requested_by_user_id
 (21, 4, 148, 31, 0, NULL, 'Approved', 160, '2026-08-28 11:04:49', NULL, '2026-08-28 11:04:24', '2026-08-28 11:07:28'),
 (22, 4, 148, 31, 1, NULL, 'Pending', NULL, NULL, NULL, '2026-08-28 11:13:04', '2026-08-28 11:13:04'),
 (23, 4, 148, 31, 0, NULL, 'Approved', 160, '2026-08-28 11:14:41', NULL, '2026-08-28 11:14:25', '2026-08-28 11:17:13'),
-(29, 11, 159, 52, 0, 'Automatically broadcast during branch creation for Luna Branch.', 'Approved', 159, '2026-09-01 07:20:26', NULL, '2026-09-01 07:20:26', '2026-09-01 08:01:45');
+(29, 11, 159, NULL, 0, 'Automatically broadcast during branch creation for Luna Branch.', 'Approved', 159, '2026-09-01 07:20:26', NULL, '2026-09-01 07:20:26', '2026-09-01 08:01:45'),
+(30, 11, 159, NULL, 0, 'Automatically broadcast during branch creation for Sablayan Branch.', 'Approved', 159, '2026-09-02 06:11:15', NULL, '2026-09-02 06:11:15', '2026-09-02 06:15:58');
 
 -- --------------------------------------------------------
 
@@ -2678,16 +2679,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('5cvEoOClPDZGo4sjBD3ySdXi5RpAQAkgXib67AVH', NULL, '::1', 'Mozilla/5.0 (Windows NT; Windows NT 10.0; en-PH) WindowsPowerShell/5.1.26100.9168', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoieGtzRm9qNUxyWWtJTzgxaVZTUDlXSFd5cEF3REU2SE1IS1FpVHZKMyI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czozNjoiaHR0cDovL2xvY2FsaG9zdDo4MDAwL21haW4tYnJhbmNoL2hyIjt9czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9sb2dpbiI7czo1OiJyb3V0ZSI7czo1OiJsb2dpbiI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1788246882),
-('igyJkj72eorXlPThn2wJqnOBCPlzK0scq1gbQ2b4', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoibVlZQmcxQmkyQnltTGxlMU1xN3I5aERjTWtWZldqeTlTWm56NFN1WCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1788246209),
-('ITgLPXG9YWBu3DDNcjdiqhLzzIsbkcZvFydixtdh', NULL, '::1', 'Mozilla/5.0 (Windows NT; Windows NT 10.0; en-PH) WindowsPowerShell/5.1.26100.9168', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiTVp6UHNUSkZYZlQ5YWlKMjlVNDZucWlabDkwV2pVb0dOWUdJbkM5UCI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czozNjoiaHR0cDovL2xvY2FsaG9zdDo4MDAwL21haW4tYnJhbmNoL2hyIjt9czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9sb2dpbiI7czo1OiJyb3V0ZSI7czo1OiJsb2dpbiI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1788246814),
-('J1Igi0QJmA9idfpUfLPUTMdUX7Hkd6DYxn37h1Ye', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoibHp5bkhNMlJrczlSUkxxSkR5Q3c3SzlONlN2YkZUWXBhNXBZdjhDRiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1788246209),
-('ngsX7qjq404CmT1LaMc9JY4K0ZIKqZHhuLkQuVkP', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiNlVNYklCYXRGd2ZmZTM3cU5POEF4ZFBaTHpoMTZzVUlHRWtGVmt0MSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fX0=', 1788245639),
-('QBLnzLZZXWkd6L0t20AwIdfclBlyb2rGo1KHtc2v', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiekJCY3hCZmp3WnVuVUx6Zm1xVWxoRm5iRXJqRTRFejc1VGM0R0lFcyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fX0=', 1788245405),
-('QbQE5Mx0KE2WoYSN2wNz1cumq42K98d0dZ1siaWW', 160, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiQVl5N3Vqa2xhQXBCSmNBdzQ2bmt5eVRNM0R2Ym1KTWRKMGlXUkkzZCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE2MDtzOjc6InVzZXJfaWQiO2k6MTYwO3M6OToidXNlcl9yb2xlIjtzOjc6Ik1BTkFHRVIiO3M6OToidXNlcl9uYW1lIjtzOjE0OiJIUiBNYWluIEJyYW5jaCI7czoxMzoicmVkaXJlY3RfcGF0aCI7czoxNToiL21haW4tYnJhbmNoL2hyIjt9', 1788246206),
-('QzrK0V4NRI5Hg4PuCptYUmvIsUCFvufPGvnKjR62', 160, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiVDAyUFprY3ZraUxBNE1kQUVLWFg1cEhENFk4blhpS3B4U3dKRFFGQyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE2MDtzOjc6InVzZXJfaWQiO2k6MTYwO3M6OToidXNlcl9yb2xlIjtzOjc6Ik1BTkFHRVIiO3M6OToidXNlcl9uYW1lIjtzOjE0OiJIUiBNYWluIEJyYW5jaCI7czoxMzoicmVkaXJlY3RfcGF0aCI7czoxNToiL21haW4tYnJhbmNoL2hyIjt9', 1788250156),
-('SIWIKGLTdYEcjxIOVNmBtdfa2vGEPb5IrQSAox2b', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoiWHM5OUM0OUtpY202eEdqMTFucHM3V3ZzZ0dyTEpxYlVna0V2Y1FycyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1788245714),
-('wUUEqM5KH0IAklfIhsPJRPazKvEva7it43eOWoOD', 161, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiS3FzNml5UHU4UlRqbWZrMnM1YXNBYW9obTM4NVV2clVBc1p0YXZOdiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE2MTtzOjc6InVzZXJfaWQiO2k6MTYxO3M6OToidXNlcl9yb2xlIjtzOjc6Ik1BTkFHRVIiO3M6OToidXNlcl9uYW1lIjtzOjE5OiJGaW5hbmNlIE1haW4gQnJhbmNoIjtzOjEzOiJyZWRpcmVjdF9wYXRoIjtzOjIwOiIvbWFpbi1icmFuY2gvZmluYW5jZSI7fQ==', 1788245391);
+('ZBUWhNRUFOC3xL2FvcskKjV7moB0VZacyaobUjJD', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoiNnFxYmRBMEtvVHBnRHBlU1hqQlFGMlc3dU5mUW40bjczZXk0WnRkZSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1788330174);
 
 -- --------------------------------------------------------
 
@@ -3331,7 +3323,7 @@ ALTER TABLE `attendance_settings`
 -- AUTO_INCREMENT for table `branches`
 --
 ALTER TABLE `branches`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=53;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=54;
 
 --
 -- AUTO_INCREMENT for table `budget_requests`
@@ -3445,7 +3437,7 @@ ALTER TABLE `payrolls`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3008;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3014;
 
 --
 -- AUTO_INCREMENT for table `positions`
@@ -3457,13 +3449,13 @@ ALTER TABLE `positions`
 -- AUTO_INCREMENT for table `position_applications`
 --
 ALTER TABLE `position_applications`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `position_open_requests`
 --
 ALTER TABLE `position_open_requests`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 
 --
 -- AUTO_INCREMENT for table `price_audits`
@@ -3553,7 +3545,7 @@ ALTER TABLE `supplier_orders`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=261;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=262;
 
 --
 -- Constraints for dumped tables
