@@ -1,7 +1,7 @@
 <template>
   <div class="price-markup-manager-section">
     <!-- Financial Charts Section -->
-    <div class="financial-charts-section">
+    <div v-if="showOverviewCharts" class="financial-charts-section">
       <div class="charts-container">
         <!-- Income Chart -->
         <div class="financial-chart-card">
@@ -62,7 +62,7 @@
     </div>
 
     <!-- Current Percentage Display & Request Form / Approval Section -->
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+    <div v-if="showMarkupSection" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
       <!-- Current Markup Display -->
       <div class="price-markup-card current-markup">
         <div class="card-header">
@@ -218,6 +218,14 @@ const props = defineProps({
   isMainBranchFinance: {
     type: Boolean,
     default: false
+  },
+  showOverviewCharts: {
+    type: Boolean,
+    default: false
+  },
+  showMarkupSection: {
+    type: Boolean,
+    default: true
   }
 })
 

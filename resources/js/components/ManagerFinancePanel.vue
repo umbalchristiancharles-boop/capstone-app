@@ -1,321 +1,293 @@
 <template>
-  <OwnerPanelLayout
-    ref="ownerLayout"
-    :userProfile="userProfile"
-    :panelTitle="'Finance Manager Panel'"
-    :panelDescription="'Manage budget approvals and monitor your branch financial performance'"
-    :enableProfileUpdate="true"
-    :canEditProfile="userProfile.role === 'OWNER'"
-    :canChangePassword="true"
-    :showHeader="false"
-    :showProfileColumn="false"
-    :showAnnouncements="false"
-    :showAttendanceCard="false"
-    :fullWidth="true"
-    :ownerTwoColumnLayout="true"
-    @logout="askLogout"
-    @profile-updated="onProfileUpdated"
-  >
-    <template #main>
-
-    <div class="manager-finance">
-
-    <header class="manager-finance-hero">
-      <div class="manager-finance-hero__copy">
-        <span class="manager-finance-hero__eyebrow">Finance dashboard</span>
-        <h2 class="manager-finance-hero__title">Finance overview</h2>
-        <p class="manager-finance-hero__subtitle">Monitor sales, expenses, approvals, and financial performance from one place.</p>
-      </div>
-      <button class="btn-refresh manager-finance-hero__action" @click="refreshDashboard" :disabled="budgetLoading">
-        {{ budgetLoading ? 'Loading...' : 'Refresh Dashboard' }}
-      </button>
-    </header>
-
-    <div class="filter-bar">
-      <div class="filter-group">
-        <label>Branch:</label>
-        <select v-model="selectedBranchId" @change="onBranchChange">
-          <option value="">All Branches</option>
-          <option v-for="branch in availableBranches" :key="branch.id" :value="branch.id">
-            {{ branch.name }}
-          </option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label>Date Range:</label>
-        <select v-model="selectedRange" @change="onRangeChange" class="range-select">
-          <option value="today">Today</option>
-          <option value="yesterday">Yesterday</option>
-          <option value="thisWeek">This Week</option>
-          <option value="thisMonth">This Month</option>
-          <option value="lastMonth">Last Month</option>
-          <option value="custom">Custom Range</option>
-          <option value="all">All Time</option>
-        </select>
-        <div v-if="selectedRange === 'custom'" class="custom-date-range">
-          <input
-            type="date"
-            v-model="customStartDate"
-            @change="onCustomDateChange"
-            :max="customEndDate || today"
-            class="date-input"
-          />
-          <span class="date-separator">to</span>
-          <input
-            type="date"
-            v-model="customEndDate"
-            @change="onCustomDateChange"
-            :min="customStartDate"
-            :max="today"
-            class="date-input"
-          />
-        </div>
-      </div>
-      <button class="btn-refresh" @click="refreshDashboard">Refresh</button>
-    </div>
-
-    <div v-if="budgetLoading" class="loading-container">
-      <div class="loading-spinner"></div>
-      <p>Loading budget requests...</p>
-    </div>
-
-    <div v-else class="kpi-grid">
-      <div class="kpi-card">
-        <div class="kpi-icon revenue-icon">
-          <!-- Peso sign rendered as SVG text to ensure locale glyph is used -->
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" role="img" aria-label="Peso">
-            <text x="12" y="16" text-anchor="middle" font-size="14" fill="currentColor" font-family="Segoe UI Symbol, Noto Sans Symbols, Arial Unicode MS">₱</text>
-          </svg>
-        </div>
-        <div class="kpi-content">
-          <span class="kpi-label">Total Sales</span>
-          <span class="kpi-value">{{ dashboardTotals.totalSales || '₱0' }}</span>
+  <div class="manager-finance finance-manager-layout">
+    <aside class="finance-sidebar">
+      <div class="finance-brand">
+        <div class="finance-brand__logo">{{ userRoleInitial }}</div>
+        <div class="finance-brand__text">
+          <span class="finance-brand__name">{{ userRoleDepartmentLabel }}</span>
         </div>
       </div>
 
-      <div class="kpi-card">
-        <div class="kpi-icon orders-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-            <line x1="3" y1="6" x2="21" y2="6"></line>
-            <path d="M16 10a4 4 0 0 1-8 0"></path>
-          </svg>
-        </div>
-        <div class="kpi-content">
-          <span class="kpi-label">Total Orders</span>
-          <span class="kpi-value">{{ dashboardTotals.totalOrders ?? (transactions.length || 0) }}</span>
-        </div>
-      </div>
+      <nav class="finance-sidebar__nav">
+        <button class="finance-sidebar__item" :class="{ active: selectedSection === 'overview' }" @click="selectedSection = 'overview'">
+          <span class="finance-sidebar__label">Financial Overview</span>
+        </button>
+        <button class="finance-sidebar__item" :class="{ active: selectedSection === 'markup' }" @click="selectedSection = 'markup'">
+          <span class="finance-sidebar__label">Price Markup</span>
+        </button>
+        <button class="finance-sidebar__item" :class="{ active: selectedSection === 'approvals' }" @click="selectedSection = 'approvals'">
+          <span class="finance-sidebar__label">Approvals</span>
+        </button>
+        <button class="finance-sidebar__item" :class="{ active: selectedSection === 'transactions' }" @click="selectedSection = 'transactions'">
+          <span class="finance-sidebar__label">Transactions</span>
+        </button>
+      </nav>
 
-      <div class="kpi-card" :class="{ 'stat-alert': financePendingCount > 0 }">
-        <div class="kpi-icon expenses-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="8" x2="12" y2="12"></line>
-            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-          </svg>
-        </div>
-        <div class="kpi-content">
-          <span class="kpi-label">Pending Approvals</span>
-          <span class="kpi-value">{{ pendingBudgetCount }}</span>
-        </div>
-        <span v-if="financePendingCount > 0" class="panel-badge">{{ financePendingCount }}</span>
+      <div class="finance-sidebar__footer">
+        <button class="finance-sidebar__account-info" @click="showAccountInfoModal = true" aria-label="Account Info">
+          <span class="finance-sidebar__account-icon">👤</span>
+          <span class="finance-sidebar__account-text">Account Info</span>
+        </button>
+        <button class="finance-sidebar__logout" @click="askLogout" aria-label="Logout">
+          <span class="finance-sidebar__logout-icon">↪️</span>
+          <span class="finance-sidebar__logout-text">Logout</span>
+        </button>
       </div>
+    </aside>
 
-      <div class="kpi-card highlight">
-        <div class="kpi-icon profit-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="12" y1="20" x2="12" y2="10"></line>
-            <line x1="18" y1="20" x2="18" y2="4"></line>
-            <line x1="6" y1="20" x2="6" y2="16"></line>
-          </svg>
-        </div>
-        <div class="kpi-content">
-          <span class="kpi-label">Net Revenue</span>
-          <span class="kpi-value">{{ dashboardTotals.revenue || '₱0' }}</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Financial Reports Chart -->
-    <section class="panel-section" style="margin-top:16px;">
-      <div class="panel-header">
-        <h2>Financial Overview: Revenue vs Expenses</h2>
-        <button class="panel-action" @click="refreshDashboard">Refresh</button>
-      </div>
-      <div class="panel-body" style="padding:16px 20px; min-height:320px;">
-        <div v-if="!financeReports || financeReports.length === 0" style="display:flex;align-items:center;justify-content:center;height:260px;color:#9CA3AF;">
-          <div style="text-align: center;">
-            <p>No report data available.</p>
-            <p style="font-size: 12px; margin-top: 8px;">Try clicking Refresh or check your branch data.</p>
+    <div class="finance-main-panel">
+      <header class="finance-main-header">
+        <button class="finance-hamburger" aria-label="Open menu">☰</button>
+        <div class="finance-header__spacer"></div>
+        <div class="finance-header__actions">
+          <button class="finance-search-btn" aria-label="Search">⌕</button>
+          <div class="finance-user-pill" @click.stop>
+            <div class="finance-user-pill__avatar">{{ userInitial }}</div>
+            <span>{{ userProfile?.fullName || userProfile?.full_name || 'Manager' }}</span>
+            <button class="finance-user-menu-btn" @click="toggleProfileDropdown" style="background: none; border: none; cursor: pointer; padding: 0; color: inherit;">
+              ⋮
+            </button>
+            <div v-if="profileDropdownVisible" class="finance-profile-dropdown">
+              <button class="finance-dropdown-item" @click="openInfoFromHeader">Info</button>
+            </div>
           </div>
         </div>
-        <div v-else-if="!managerChartData || !managerChartData.labels || managerChartData.labels.length === 0" style="display:flex;align-items:center;justify-content:center;height:260px;color:#9CA3AF;">
-          <p>No chart data to display.</p>
+      </header>
+
+      <main class="finance-dashboard-body">
+        <section class="finance-feature-header">
+          <div>
+            <p class="finance-eyebrow">Finance dashboard</p>
+            <h2 class="finance-title">{{ getSectionTitle }}</h2>
+          </div>
+          <button class="finance-refresh-button" @click="refreshDashboard" :disabled="budgetLoading">
+            {{ budgetLoading ? 'Loading...' : 'Refresh' }}
+          </button>
+        </section>
+
+        <div v-if="!hideAttendanceCard" class="finance-main-attendance-card">
+          <section class="attendance-card">
+            <div class="attendance-header">
+              <span class="attendance-title">Attendance</span>
+              <span :class="['attendance-status-badge', attendanceStatus.is_clocked_in ? 'status-on-duty' : 'status-off-duty']">
+                {{ attendanceStatus.is_clocked_in ? 'On Duty' : 'Off Duty' }}
+              </span>
+            </div>
+
+            <div class="attendance-times" v-if="attendanceStatus.clock_in_time || attendanceStatus.clock_out_time">
+              <div class="time-row"><span class="time-label">Clock In:</span><span class="time-value">{{ attendanceStatus.clock_in_time || '-' }}</span></div>
+              <div class="time-row"><span class="time-label">Clock Out:</span><span class="time-value">{{ attendanceStatus.clock_out_time || '-' }}</span></div>
+              <div class="time-row" v-if="attendanceStatus.hours_worked > 0"><span class="time-label">Hours:</span><span class="time-value">{{ attendanceStatus.hours_worked }} hrs</span></div>
+            </div>
+
+            <div class="attendance-buttons">
+              <button @click="performClockIn" :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockInGeofencing || locationLoading" class="btn-clock-in">
+                {{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock In' }}
+              </button>
+              <button @click="performClockOut" :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockOut || !canClockInGeofencing || locationLoading" class="btn-clock-out" :class="{ 'btn-disabled': !canClockOut && attendanceStatus.is_clocked_in }">
+                {{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock Out' }}
+              </button>
+            </div>
+
+            <div v-if="locationError" class="geofencing-status geofencing-error">
+              <span class="status-icon">⚠️</span>
+              <span>{{ locationError }}</span>
+            </div>
+            <div v-else-if="userLocation && canClockInGeofencing" class="geofencing-status geofencing-success">
+              <span class="status-icon">✓</span>
+              <span>Location verified</span>
+            </div>
+            <div v-else-if="!canClockInGeofencing && geofencingMessage" class="geofencing-status geofencing-error">
+              <span class="status-icon">🔒</span>
+              <span>{{ geofencingMessage }}</span>
+            </div>
+
+            <div v-if="!canClockOut && attendanceStatus.is_clocked_in" class="clockout-restriction">
+              <span class="restriction-icon">LOCK</span>
+              <span>Cannot clock out before {{ scheduledTimeOut }}</span>
+            </div>
+
+            <div v-if="attendanceMessage" :class="['attendance-message', attendanceMessageType]">{{ attendanceMessage }}</div>
+          </section>
         </div>
-        <div v-else class="chart-wrap">
-          <Chart :type="'line'" :data="managerChartData" :options="managerChartOptions" />
-        </div>
-      </div>
-    </section>
 
-    <!-- Price Markup Panel (kept below reports) -->
-    <PriceMarkupManagerPanel
-      v-if="userProfile && userProfile.branch_id"
-      :branchId="userProfile.branch_id"
-      :isMainBranchFinance="props.isMainBranchFinance || isMainBranchFinanceManager"
-    />
+        <!-- FINANCIAL OVERVIEW SECTION -->
+        <template v-if="selectedSection === 'overview'">
+          <div class="filter-bar">
+            <div class="filter-group">
+              <label>Branch:</label>
+              <select v-model="selectedBranchId" @change="onBranchChange">
+                <option value="">All Branches</option>
+                <option v-for="branch in availableBranches" :key="branch.id" :value="branch.id">
+                  {{ branch.name }}
+                </option>
+              </select>
+            </div>
+            <div class="filter-group filter-group--range">
+              <label>Date Range:</label>
+              <select v-model="selectedRange" @change="onRangeChange" class="range-select">
+                <option value="today">Today</option>
+                <option value="yesterday">Yesterday</option>
+                <option value="thisWeek">This Week</option>
+                <option value="thisMonth">This Month</option>
+                <option value="lastMonth">Last Month</option>
+                <option value="custom">Custom Range</option>
+                <option value="all">All Time</option>
+              </select>
+              <div v-if="selectedRange === 'custom'" class="custom-date-range">
+                <input type="date" v-model="customStartDate" @change="onCustomDateChange" :max="customEndDate || today" class="date-input" />
+                <span class="date-separator">to</span>
+                <input type="date" v-model="customEndDate" @change="onCustomDateChange" :min="customStartDate" :max="today" class="date-input" />
+              </div>
+            </div>
+          </div>
 
-    <!-- Price Markup Percentage Management removed -->
+          <div v-if="budgetLoading" class="loading-container">
+            <div class="loading-spinner"></div>
+            <p>Loading data...</p>
+          </div>
 
-    <!-- Main branch: Branch Budget Confirmations -->
-    <MainBranchFinanceBranchConfirmations v-if="props.isMainBranchFinance || isMainBranchFinanceManager" />
-
-    <!-- Budget Requests Section (keeps existing functionality) -->
-    <div class="branch-stats panel-section">
-      <h2 class="section-title">Budget Request Approvals</h2>
-      <p class="section-description">Review and manage budget requests for your branch</p>
-
-      <div v-if="budgetLoading" class="loading-container">
-        <div class="loading-spinner"></div>
-        <p>Loading budget requests...</p>
-      </div>
-
-      <div v-else class="table-container">
-        <table class="branch-table data-table">
-          <thead>
-            <tr>
-              <th>Date Requested</th>
-              <th>Requester</th>
-              <th>Purpose</th>
-              <th>Amount</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="req in budgetRequests" :key="req.id">
-              <td>{{ formatDate(req.date_requested) }}</td>
-              <td>{{ req.requester_name }}</td>
-              <td>{{ req.purpose }}</td>
-              <td>₱{{ req.requested_amount }}</td>
-              <td>
-                <span :class="['status-badge', getStatusClass(req.status)]">{{ req.status }}</span>
-              </td>
-              <td>
-                <div v-if="req.status === 'Pending'" class="action-buttons">
-                  <button class="btn-approve" @click="approveRequest(req.id)" :disabled="processingId === req.id">{{ processingId === req.id ? 'Processing...' : 'Approve' }}</button>
-                  <button class="btn-reject" @click="rejectRequest(req.id)" :disabled="processingId === req.id">{{ processingId === req.id ? 'Processing...' : 'Reject' }}</button>
+          <div v-else class="finance-overview-content">
+            <div class="kpi-grid">
+              <div class="kpi-card">
+                <div class="kpi-icon revenue-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" role="img" aria-label="Peso">
+                    <text x="12" y="16" text-anchor="middle" font-size="14" fill="currentColor" font-family="Segoe UI Symbol, Noto Sans Symbols, Arial Unicode MS">₱</text>
+                  </svg>
                 </div>
-                <div v-else-if="req.status === 'Approved' && req.purpose && /Procurement Request #\d+/i.test(req.purpose)">
-                  <button class="btn-approve" @click="markBudgetGiven(req.id)" :disabled="processingId === req.id">{{ processingId === req.id ? 'Processing...' : 'Budget Given' }}</button>
+                <div class="kpi-content">
+                  <span class="kpi-label">Total Sales</span>
+                  <span class="kpi-value">{{ dashboardTotals.totalSales || '₱0' }}</span>
                 </div>
-                <span v-else class="processed-info">{{ req.status }} by {{ req.processed_by || 'Unknown' }}<br><small>{{ formatDate(req.date_processed) }}</small></span>
-              </td>
-            </tr>
-            <tr v-if="budgetRequests.length === 0">
-              <td colspan="6" class="empty-message">No budget requests found.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+              </div>
+
+              <div class="kpi-card">
+                <div class="kpi-icon orders-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <path d="M16 10a4 4 0 0 1-8 0"></path>
+                  </svg>
+                </div>
+                <div class="kpi-content">
+                  <span class="kpi-label">Total Orders</span>
+                  <span class="kpi-value">{{ dashboardTotals.totalOrders ?? (transactions.length || 0) }}</span>
+                </div>
+              </div>
+
+              <div class="kpi-card" :class="{ 'stat-alert': financePendingCount > 0 }">
+                <div class="kpi-icon expenses-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                </div>
+                <div class="kpi-content">
+                  <span class="kpi-label">Pending Approvals</span>
+                  <span class="kpi-value">{{ pendingBudgetCount }}</span>
+                </div>
+                <span v-if="financePendingCount > 0" class="panel-badge">{{ financePendingCount }}</span>
+              </div>
+
+              <div class="kpi-card highlight">
+                <div class="kpi-icon profit-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="20" x2="12" y2="10"></line>
+                    <line x1="18" y1="20" x2="18" y2="4"></line>
+                    <line x1="6" y1="20" x2="6" y2="16"></line>
+                  </svg>
+                </div>
+                <div class="kpi-content">
+                  <span class="kpi-label">Net Revenue</span>
+                  <span class="kpi-value">{{ dashboardTotals.revenue || '₱0' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <section class="finance-card finance-card--overview">
+              <PriceMarkupManagerPanel
+                v-if="userProfile && userProfile.branch_id"
+                :branchId="userProfile.branch_id"
+                :isMainBranchFinance="props.isMainBranchFinance || isMainBranchFinanceManager"
+                :showOverviewCharts="true"
+                :showMarkupSection="false"
+              />
+            </section>
+          </div>
+        </template>
+
+        <!-- PRICE MARKUP SECTION -->
+        <template v-if="selectedSection === 'markup'">
+          <section class="finance-card finance-card--section-full">
+            <PriceMarkupManagerPanel
+              v-if="userProfile && userProfile.branch_id"
+              :branchId="userProfile.branch_id"
+              :isMainBranchFinance="props.isMainBranchFinance || isMainBranchFinanceManager"
+            />
+          </section>
+        </template>
+
+        <!-- BUDGET APPROVALS SECTION -->
+        <template v-if="selectedSection === 'approvals'">
+          <section class="finance-card finance-card--section-full">
+            <div class="finance-table-header">
+              <h3>Budget Request Approvals</h3>
+            </div>
+            <div v-if="budgetLoading" class="loading-container">
+              <div class="loading-spinner"></div>
+              <p>Loading budget requests...</p>
+            </div>
+            <div v-else class="table-container">
+              <table class="branch-table data-table">
+                <thead>
+                  <tr>
+                    <th>Date Requested</th>
+                    <th>Requester</th>
+                    <th>Purpose</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="req in budgetRequests" :key="req.id">
+                    <td>{{ formatDate(req.date_requested) }}</td>
+                    <td>{{ req.requester_name }}</td>
+                    <td>{{ req.purpose }}</td>
+                    <td>₱{{ req.requested_amount }}</td>
+                    <td>
+                      <span :class="['status-badge', getStatusClass(req.status)]">{{ req.status }}</span>
+                    </td>
+                    <td>
+                      <div v-if="req.status === 'Pending'" class="action-buttons">
+                        <button class="btn-approve" @click="approveRequest(req.id)" :disabled="processingId === req.id">{{ processingId === req.id ? 'Processing...' : 'Approve' }}</button>
+                        <button class="btn-reject" @click="rejectRequest(req.id)" :disabled="processingId === req.id">{{ processingId === req.id ? 'Processing...' : 'Reject' }}</button>
+                      </div>
+                      <div v-else-if="req.status === 'Approved' && req.purpose && /Procurement Request #\d+/i.test(req.purpose)">
+                        <button class="btn-approve" @click="markBudgetGiven(req.id)" :disabled="processingId === req.id">{{ processingId === req.id ? 'Processing...' : 'Budget Given' }}</button>
+                      </div>
+                      <span v-else class="processed-info">{{ req.status }} by {{ req.processed_by || 'Unknown' }}<br><small>{{ formatDate(req.date_processed) }}</small></span>
+                    </td>
+                  </tr>
+                  <tr v-if="budgetRequests.length === 0">
+                    <td colspan="6" class="empty-message">No budget requests found.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </template>
+
+        <!-- RECENT TRANSACTIONS SECTION -->
+        <template v-if="selectedSection === 'transactions'">
+          <section class="finance-card finance-card--section-full">
+            <finance-panel-content :reports="financeReports" :transactions="transactions" />
+          </section>
+        </template>
+      </main>
     </div>
 
-    <!-- Branch Budgets (new) -->
-    <div class="branch-stats panel-section">
-      <h2 class="section-title">Receipt Submissions</h2>
-      <p class="section-description">Review uploaded physical receipts from suppliers and confirm them to proceed to delivery.</p>
-
-      <div v-if="receiptsLoading" class="loading-container">
-        <div class="loading-spinner"></div>
-        <p>Loading receipt submissions...</p>
-      </div>
-
-      <div v-else class="table-container">
-        <table class="branch-table data-table">
-          <thead>
-            <tr>
-              <th>Request ID</th>
-              <th>Product</th>
-              <th>Branch</th>
-              <th>Uploaded At</th>
-              <th>Receipt</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="r in receiptSubmissions" :key="r.id">
-              <td>{{ r.id }}</td>
-              <td>{{ r.product?.name || '(no product)' }}</td>
-              <td>{{ r.branch?.name || 'N/A' }}</td>
-              <td>{{ formatDate(r.receipt_uploaded_at) }}</td>
-              <td>
-                <a href="#" @click.prevent="openReceiptPreview(r)">View Receipt</a>
-              </td>
-              <td>
-                <button class="btn-approve" @click="confirmReceipt(r.id)" :disabled="confirmingId === r.id">{{ confirmingId === r.id ? 'Confirming...' : 'Confirm Receipt' }}</button>
-              </td>
-            </tr>
-            <tr v-if="receiptSubmissions.length === 0">
-              <td colspan="6" class="empty-message">No receipt submissions awaiting confirmation.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <div class="branch-stats panel-section">
-      <h2 class="section-title">Branch Budgets</h2>
-      <p class="section-description">View and edit branch budgets. Changes are applied immediately.</p>
-
-      <div v-if="branchesLoading" class="loading-container">
-        <div class="loading-spinner"></div>
-        <p>Loading branches...</p>
-      </div>
-
-      <div v-else class="table-container">
-        <table class="branch-table data-table">
-          <thead>
-            <tr>
-              <th>Branch</th>
-              <th>Code</th>
-              <th>Budget</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="b in branches" :key="b.id">
-              <td>{{ b.name }}</td>
-              <td>{{ b.code }}</td>
-              <td>
-                <div v-if="editingBudgetId === b.id">
-                  <input type="number" v-model="editBudgetValue" step="0.01" />
-                </div>
-                <div v-else>
-                  ₱{{ Number(b.budget || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }}
-                </div>
-              </td>
-              <td>
-                <div v-if="editingBudgetId === b.id" class="action-buttons">
-                  <button class="btn-approve" @click="saveBudget(b.id)">Save</button>
-                  <button class="btn-reject" @click="cancelEditBudget">Cancel</button>
-                </div>
-                <div v-else class="action-buttons">
-                  <button class="btn-secondary" @click="startEditBudget(b.id, b.budget)">Edit</button>
-                </div>
-              </td>
-            </tr>
-            <tr v-if="branches.length === 0">
-              <td colspan="4" class="empty-message">No branches found.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Finance Reports Section (kept as-is) -->
-    <finance-panel-content :reports="financeReports" :transactions="transactions" />
-
-    <!-- LOGOUT & OVERLAY (kept unchanged) -->
     <transition name="fade">
       <div v-if="showLogoutConfirm" class="logout-confirm-backdrop">
         <div class="logout-confirm-box">
@@ -337,7 +309,7 @@
         </div>
       </div>
     </transition>
-    <!-- Receipt preview modal -->
+
     <transition name="fade">
       <div v-if="receiptModalVisible" class="modal-backdrop" @click.self="closeReceiptPreview">
         <div class="receipt-preview-modal">
@@ -359,7 +331,65 @@
         </div>
       </div>
     </transition>
-    </div> <!-- /.manager-finance -->
+    
+    <!-- Account Info Modal -->
+    <transition name="fade">
+      <div v-if="showAccountInfoModal" class="account-info-backdrop" @click.self="showAccountInfoModal = false">
+        <div class="account-info-modal">
+          <div class="account-info-header">
+            <h3>Account Information</h3>
+            <button class="account-info-close" @click="showAccountInfoModal = false">✕</button>
+          </div>
+          <div class="account-info-body">
+            <div class="info-section">
+              <div class="info-row">
+                <span class="info-label">Name:</span>
+                <span class="info-value">{{ userProfile?.fullName || userProfile?.full_name || 'N/A' }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Email:</span>
+                <span class="info-value">{{ userProfile?.email || 'N/A' }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Role:</span>
+                <span class="info-value">{{ userProfile?.role || userProfile?.position || 'N/A' }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Department:</span>
+                <span class="info-value">{{ userProfile?.department || 'N/A' }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Branch:</span>
+                <span class="info-value">{{ userProfile?.branch_name || userProfile?.branch || 'N/A' }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Phone:</span>
+                <span class="info-value">{{ userProfile?.phone || userProfile?.contact || 'N/A' }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Position:</span>
+                <span class="info-value">{{ userProfile?.position || 'N/A' }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Start Date:</span>
+                <span class="info-value">{{ formatDate(userProfile?.hire_date || userProfile?.created_at) }}</span>
+              </div>
+              <div class="info-row" v-if="userProfile?.employment_status">
+                <span class="info-label">Employment Status:</span>
+                <span class="info-value">{{ userProfile?.employment_status }}</span>
+              </div>
+              <div class="info-row" v-if="userProfile?.address">
+                <span class="info-label">Address:</span>
+                <span class="info-value">{{ userProfile?.address }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="account-info-footer">
+            <button class="btn-close" @click="showAccountInfoModal = false">Close</button>
+          </div>
+        </div>
+      </div>
+    </transition>
 
     <!-- Face Capture Modal -->
     <div v-if="showFaceCapture" class="face-capture-modal">
@@ -389,68 +419,11 @@
         </div>
       </div>
     </div>
-    </template>
-
-    <template #side>
-      <div v-if="!hideAttendanceCard" class="manager-finance-side-card">
-        <section class="attendance-card">
-          <div class="attendance-header">
-            <span class="attendance-title">Attendance</span>
-            <span :class="['attendance-status-badge', attendanceStatus.is_clocked_in ? 'status-on-duty' : 'status-off-duty']">
-              {{ attendanceStatus.is_clocked_in ? 'On Duty' : 'Off Duty' }}
-            </span>
-          </div>
-          <div class="attendance-times" v-if="attendanceStatus.clock_in_time || attendanceStatus.clock_out_time">
-            <div class="time-row"><span class="time-label">Clock In:</span><span class="time-value">{{ attendanceStatus.clock_in_time || '-' }}</span></div>
-            <div class="time-row"><span class="time-label">Clock Out:</span><span class="time-value">{{ attendanceStatus.clock_out_time || '-' }}</span></div>
-            <div class="time-row" v-if="attendanceStatus.hours_worked > 0"><span class="time-label">Hours:</span><span class="time-value">{{ attendanceStatus.hours_worked }} hrs</span></div>
-          </div>
-          <div class="attendance-buttons">
-            <button @click="performClockIn" :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockInGeofencing || locationLoading" class="btn-clock-in">{{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock In' }}</button>
-            <button @click="performClockOut" :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockOut || !canClockInGeofencing || locationLoading" class="btn-clock-out" :class="{ 'btn-disabled': !canClockOut && attendanceStatus.is_clocked_in }">{{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock Out' }}</button>
-          </div>
-
-          <div v-if="locationError" class="geofencing-status geofencing-error">
-            <span class="status-icon">⚠️</span>
-            <span>{{ locationError }}</span>
-          </div>
-          <div v-else-if="userLocation && canClockInGeofencing" class="geofencing-status geofencing-success">
-            <span class="status-icon">✓</span>
-            <span>Location verified</span>
-          </div>
-          <div v-else-if="!canClockInGeofencing && geofencingMessage" class="geofencing-status geofencing-error">
-            <span class="status-icon">🔒</span>
-            <span>{{ geofencingMessage }}</span>
-          </div>
-
-          <div v-if="!canClockOut && attendanceStatus.is_clocked_in" class="clockout-restriction"><span class="restriction-icon">LOCK</span><span>Cannot clock out before {{ scheduledTimeOut }}</span></div>
-          <div v-if="attendanceMessage" :class="['attendance-message', attendanceMessageType]">{{ attendanceMessage }}</div>
-        </section>
-      </div>
-    </template>
-
-    <template #headerActions>
-      <div class="header-profile-wrapper" @click.stop>
-        <button class="header-profile-btn" @click="toggleProfileDropdown">
-          <div class="header-avatar">
-            <div v-if="userProfile.avatarUrl" class="header-avatar-img" :style="{ backgroundImage: 'url('+userProfile.avatarUrl+')' }"></div>
-            <div v-else class="header-avatar-initials">{{ (userProfile.fullName || userProfile.full_name || 'U').charAt(0) }}</div>
-          </div>
-          <div class="header-name">{{ ((userProfile.fullName || userProfile.full_name) || ((userProfile.role || 'Manager') + (userProfile.branch_name ? ' - ' + userProfile.branch_name : (userProfile.branch ? ' - ' + userProfile.branch : '')) )).toUpperCase() }}</div>
-        </button>
-        <div v-if="profileDropdownVisible" class="header-profile-dropdown" @click.stop>
-          <button class="dropdown-item" @click="openInfoFromHeader">Info</button>
-          <button class="dropdown-item" @click="triggerLogoutFromHeader">Logout</button>
-        </div>
-
-      </div>
-    </template>
-  </OwnerPanelLayout>
+  </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed, onUnmounted, watch } from 'vue'
-import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import FinancePanelContent from './finance/FinancePanelContent.vue'
 import PriceMarkupManagerPanel from './finance/PriceMarkupManagerPanel.vue'
 import MainBranchFinanceBranchConfirmations from './MainBranchFinanceBranchConfirmations.vue'
@@ -504,6 +477,7 @@ const overlayText = ref('Logging out...')
 // Header profile dropdown (match Logistics panel behavior)
 const profileDropdownVisible = ref(false)
 const ownerLayout = ref(null)
+const showAccountInfoModal = ref(false)
 
   const attendanceStatus = ref({
     is_clocked_in: false,
@@ -518,6 +492,9 @@ const ownerLayout = ref(null)
     early_clockout_override: false,
     scheduled_time_out: '17:00:00'
   })
+
+  // Dashboard section navigation
+  const selectedSection = ref('overview')
 
   // Face capture state
   const showFaceCapture = ref(false)
@@ -551,6 +528,29 @@ const hideAttendanceCard = computed(() => {
   } catch (e) {
     return isCustomAccount.value
   }
+})
+
+const userInitial = computed(() => {
+  const name = userProfile.value?.fullName || userProfile.value?.full_name || 'U'
+  return name.charAt(0).toUpperCase()
+})
+
+const userRoleInitial = computed(() => {
+  const role = (userProfile.value?.role || userProfile.value?.position || 'M').toString()
+  const department = (userProfile.value?.department || '').toString()
+  const source = role || department || 'M'
+  return source.charAt(0).toUpperCase()
+})
+
+const userRoleDepartmentLabel = computed(() => {
+  const role = (userProfile.value?.role || userProfile.value?.position || 'MANAGER').toString().toUpperCase()
+  const department = (userProfile.value?.department || '').toString()
+
+  if (!department) {
+    return role
+  }
+
+  return `${role} • ${department.toUpperCase()}`
 })
 
 const scheduledTimeOut = computed(() => {
@@ -714,6 +714,17 @@ const isMainBranchFinanceManager = computed(() => {
     userProfile: userProfile.value
   })
   return result
+})
+
+// Get title based on selected section
+const getSectionTitle = computed(() => {
+  const titles = {
+    overview: 'Financial Overview',
+    markup: 'Current Price Markup',
+    approvals: 'Budget Request Approvals',
+    transactions: 'Recent Transactions'
+  }
+  return titles[selectedSection.value] || 'Finance Overview'
 })
 
 // UI filter state (used by new layout controls)
