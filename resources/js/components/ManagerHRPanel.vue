@@ -55,7 +55,7 @@
             <button class="manager-hr-sidebar__item" :class="{ 'manager-hr-sidebar__item--active': selectedHrSection === 'payroll' }" :aria-current="selectedHrSection === 'payroll' ? 'page' : undefined" @click="scrollToHrSection('payroll', '.hr-payroll-panel')">Payroll</button>
           </nav>
           <div class="manager-hr-sidebar__footer">
-            <button class="manager-hr-sidebar__account" type="button" @click="showAccountInfoModal = true">Account Info</button>
+            <button class="manager-hr-sidebar__account" type="button" @click="openInfo">Account Info</button>
             <button class="manager-hr-sidebar__logout" type="button" @click="askLogout">Logout</button>
           </div>
         </aside>
