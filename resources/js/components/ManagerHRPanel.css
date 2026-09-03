@@ -453,3 +453,1032 @@
     font-size: 1.35rem;
   }
 }
+
+/* Manager HR visual system: aligned with the Finance panel */
+:global(body:has(.manager-hr-page)) {
+  background: #e7d9cf;
+}
+
+:global(.admin-page:has(.manager-hr-page)) {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  min-height: 100vh;
+  padding: 0;
+  background:
+    radial-gradient(circle at top left, #f4e6dc 0%, transparent 32%),
+    linear-gradient(180deg, #e7d9cf 0%, #eee3db 100%);
+  color: #3d2a1f;
+}
+
+:global(.admin-layout:has(.manager-hr-page)) {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 0;
+  min-height: 100vh;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+:global(.admin-layout:has(.manager-hr-page) > .admin-main) {
+  grid-column: 2;
+  grid-row: 1;
+  padding: 0;
+  min-width: 0;
+}
+
+:global(.admin-layout:has(.manager-hr-page) > .admin-side) {
+  grid-column: 1;
+  grid-row: 1;
+  min-height: 100vh;
+  padding: 1.25rem 0.85rem;
+  border-right: 1px solid #8a715f2e;
+  border-left: 0;
+  background: #fffaf533;
+}
+
+:global(.admin-layout:has(.manager-hr-page)) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+:global(.admin-layout:has(.manager-hr-page) > .admin-main) {
+  grid-column: 1;
+}
+
+:global(.admin-layout:has(.manager-hr-page) > .admin-side) {
+  display: none;
+}
+
+:global(.admin-layout:has(.manager-hr-page) .manager-hr-compact-profile) {
+  margin-bottom: 1rem;
+  padding: 0.7rem;
+  border: 1px solid #cbd5df;
+  border-radius: 999px;
+  background: #fffaf5cc;
+  box-shadow: 0 6px 16px #24344712;
+}
+
+:global(.admin-layout:has(.manager-hr-page) .header-profile-btn) {
+  width: 100%;
+  padding: 0;
+  color: #243447;
+}
+
+:global(.admin-layout:has(.manager-hr-page) .header-name) {
+  color: #243447;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+:global(.admin-layout:has(.manager-hr-page) .header-avatar) {
+  background: #f4c28f;
+  border-color: #e2cdbd;
+}
+
+:global(.admin-layout:has(.manager-hr-page) .announcements-panel),
+:global(.admin-layout:has(.manager-hr-page) .panel-block),
+:global(.admin-layout:has(.manager-hr-page) .admin-card) {
+  border-color: #dbbca066;
+  border-radius: 16px;
+  background: #fffaf5e8;
+  box-shadow: 0 10px 24px #2434470a;
+}
+
+:global(.admin-layout:has(.manager-hr-page) .panel-header),
+:global(.admin-layout:has(.manager-hr-page) .admin-card__header) {
+  border-color: #dbbca04d;
+}
+
+:global(.manager-hr-page) {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  gap: 1.15rem;
+  padding: 1.5rem 1.6rem 2rem;
+}
+
+:global(.manager-hr-page) > * {
+  animation: manager-hr-reveal 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+:global(.manager-hr-page) > :nth-child(1) { animation-delay: 40ms; }
+:global(.manager-hr-page) > :nth-child(2) { animation-delay: 100ms; }
+:global(.manager-hr-page) > :nth-child(3) { animation-delay: 160ms; }
+:global(.manager-hr-page) > :nth-child(4) { animation-delay: 220ms; }
+
+@keyframes manager-hr-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+:global(.manager-hr-page .manager-hr-hero) {
+  padding: 1.25rem 1.35rem;
+  border-color: #dbbca08c;
+  border-radius: 16px;
+  background: #fffaf5e8;
+  box-shadow: 0 12px 28px #2434470f;
+}
+
+:global(.manager-hr-page .manager-hr-hero__eyebrow) {
+  background: #f4e6dc;
+  color: #9a5b3a;
+}
+
+:global(.manager-hr-page .manager-hr-hero__title),
+:global(.manager-hr-page .hr-attendance-header h2) {
+  color: #243447;
+}
+
+:global(.manager-hr-page .manager-hr-hero__subtitle) {
+  color: #7c6758;
+}
+
+:global(.manager-hr-page .hr-stat-card) {
+  border-color: #dbbca066;
+  border-left-width: 3px;
+  border-radius: 14px;
+  background: #fffaf5e8;
+  box-shadow: 0 8px 22px #2434470d;
+}
+
+:global(.manager-hr-page .panel-block),
+:global(.manager-hr-page .hr-stat-card),
+:global(.manager-hr-page .manager-hr-hero) {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+:global(.manager-hr-page .panel-body--table) {
+  width: 100%;
+  overflow-x: auto;
+}
+
+:global(.manager-hr-page .table-header),
+:global(.manager-hr-page .table-row) {
+  min-width: 760px;
+}
+
+:global(.manager-hr-page .hr-payroll-panel .table-header),
+:global(.manager-hr-page .hr-payroll-panel .table-row) {
+  min-width: 1080px;
+}
+
+:global(.manager-hr-page .hr-stat-card:hover),
+:global(.manager-hr-page .panel-block:hover),
+:global(.manager-hr-page .admin-card:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px #24344714;
+}
+
+:global(.manager-hr-page .hr-stat-card--total) { border-left-color: #b66a3e; }
+:global(.manager-hr-page .hr-stat-card--active) { border-left-color: #3d8064; }
+:global(.manager-hr-page .hr-stat-card--leave) { border-left-color: #568b9b; }
+
+:global(.manager-hr-page .hr-stat-label) { color: #7c6758; }
+:global(.manager-hr-page .hr-stat-value) { color: #243447; }
+
+:global(.manager-hr-page .panel-action--primary),
+:global(.manager-hr-page .btn-primary),
+:global(.manager-hr-page .btn-success),
+:global(.manager-hr-page .btn-approve),
+:global(.manager-hr-page .btn-confirm) {
+  border: 1px solid #243447;
+  border-radius: 10px;
+  background: #243447;
+  color: #ffffff;
+  box-shadow: 0 8px 18px #24344726;
+  transition: transform 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+:global(.manager-hr-page .panel-action--primary:hover),
+:global(.manager-hr-page .btn-primary:hover:not(:disabled)),
+:global(.manager-hr-page .btn-success:hover:not(:disabled)),
+:global(.manager-hr-page .btn-approve:hover:not(:disabled)),
+:global(.manager-hr-page .btn-confirm:hover:not(:disabled)) {
+  background: #172536;
+  border-color: #172536;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px #24344733;
+}
+
+:global(.manager-hr-page .btn-secondary),
+:global(.manager-hr-page .modal-close),
+:global(.manager-hr-page .admin-info-btn) {
+  border: 1px solid #cbd5df;
+  border-radius: 10px;
+  background: #f7f9fa;
+  color: #344454;
+  box-shadow: 0 6px 14px #24344712;
+  transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+:global(.manager-hr-page .btn-secondary:hover:not(:disabled)),
+:global(.manager-hr-page .modal-close:hover),
+:global(.manager-hr-page .admin-info-btn:hover) {
+  background: #e9eef2;
+  border-color: #8796a5;
+  color: #243447;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px #2434471c;
+}
+
+:global(.manager-hr-page .btn-danger),
+:global(.manager-hr-page .btn-reject),
+:global(.manager-hr-page .logout-btn) {
+  border-color: #8f3028;
+  border-radius: 10px;
+  background: #8f3028;
+  color: #ffffff;
+  box-shadow: 0 8px 18px #8f302826;
+}
+
+:global(.manager-hr-page .btn-danger:hover:not(:disabled)),
+:global(.manager-hr-page .btn-reject:hover:not(:disabled)),
+:global(.manager-hr-page .logout-btn:hover) {
+  background: #76231e;
+  border-color: #76231e;
+  transform: translateY(-1px);
+}
+
+:global(.manager-hr-page .field-input),
+:global(.manager-hr-page .field-textarea),
+:global(.manager-hr-page .hr-attendance-select) {
+  border-color: #dbbca099;
+  border-radius: 10px;
+  background: #fffaf5;
+  color: #344454;
+  box-shadow: 0 5px 14px #2434470a;
+}
+
+:global(.manager-hr-page .field-input:focus),
+:global(.manager-hr-page .field-textarea:focus),
+:global(.manager-hr-page .hr-attendance-select:focus) {
+  border-color: #b66a3e;
+  box-shadow: 0 0 0 3px #b66a3e1f;
+}
+
+@media (max-width: 1023px) {
+  :global(.admin-layout:has(.manager-hr-page)) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  :global(.manager-hr-page) {
+    padding: 1.2rem;
+  }
+
+  :global(.manager-hr-page .hr-stats-grid) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  :global(.admin-layout:has(.manager-hr-page)) {
+    display: block;
+    min-height: 100vh;
+  }
+
+  :global(.admin-layout:has(.manager-hr-page) > .admin-side) {
+    min-height: 0;
+    border-top: 1px solid #8a715f2e;
+    border-right: 0;
+  }
+
+  :global(.manager-hr-page) {
+    padding: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :global(.manager-hr-page) > * {
+    animation: none;
+  }
+}
+
+/* The shared owner layout adds a third desktop track; HR uses one full-width column. */
+:global(.admin-layout.admin-layout--owner-two-column:has(.manager-hr-page)) {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+:global(.admin-layout.admin-layout--owner-two-column:has(.manager-hr-page) > .admin-main) {
+  grid-column: 1 !important;
+  width: 100%;
+  padding-top: 0;
+}
+
+:global(.admin-layout.admin-layout--owner-two-column:has(.manager-hr-page) > .admin-side) {
+  display: none !important;
+}
+
+:global(html:has(.manager-hr-page)),
+:global(body:has(.manager-hr-page)),
+:global(.admin-page:has(.manager-hr-page)),
+:global(.admin-layout:has(.manager-hr-page)),
+:global(.admin-main:has(.manager-hr-page)) {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+:global(.manager-hr-page) {
+  position: relative;
+  display: grid;
+  grid-template-columns: 156px minmax(0, 1fr);
+  align-items: start;
+  gap: 1.25rem;
+  min-height: 100vh;
+  padding: 1.25rem 1.5rem 2rem;
+}
+
+:global(.manager-hr-page > :not(.manager-hr-sidebar):not(.manager-hr-menu-toggle)) {
+  grid-column: 2;
+}
+
+:global(.manager-hr-sidebar) {
+  position: sticky;
+  top: 1.25rem;
+  z-index: 20;
+  grid-column: 1;
+  grid-row: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  width: 156px;
+  min-height: calc(100vh - 3.25rem);
+  padding: 1rem 0.75rem;
+  box-sizing: border-box;
+  border-right: 1px solid #8a715f2e;
+  background: #fffaf533;
+  transition: width 260ms cubic-bezier(0.22, 1, 0.36, 1), padding 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease;
+}
+
+:global(.manager-hr-sidebar__brand) {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #243447;
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+:global(.manager-hr-sidebar__logo) {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  border: 1px solid #e2cdbd;
+  border-radius: 50%;
+  background: #f4c28f;
+  color: #243447;
+}
+
+:global(.manager-hr-sidebar__nav) {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+:global(.manager-hr-sidebar__footer) {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid #8a715f2e;
+}
+
+:global(.manager-hr-sidebar__account),
+:global(.manager-hr-sidebar__logout) {
+  width: 100%;
+  min-height: 2.45rem;
+  padding: 0.62rem 0.7rem;
+  border-radius: 10px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+:global(.manager-hr-sidebar__account) {
+  border: 1px solid #cbd5df;
+  background: #f7f9fa;
+  color: #3d2a1f;
+  box-shadow: 0 6px 14px #24344712;
+}
+
+:global(.manager-hr-sidebar__account:hover) {
+  border-color: #8796a5;
+  background: #e9eef2;
+  color: #3d2a1f;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px #2434471c;
+}
+
+:global(.manager-hr-sidebar__logout) {
+  border: 1px solid #d8b8b4;
+  background: #fff8f7;
+  color: #3d2a1f;
+  box-shadow: 0 6px 14px #8f302812;
+}
+
+:global(.manager-hr-sidebar__logout:hover) {
+  border-color: #b96b63;
+  background: #f9e9e7;
+  color: #3d2a1f;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px #8f30281c;
+}
+
+:global(.manager-hr-sidebar__item) {
+  width: 100%;
+  padding: 0.7rem 0.65rem;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: transparent;
+  color: #526171;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+:global(.manager-hr-sidebar__item:hover) {
+  background: #f4ebe4;
+  color: #8f4f2f;
+  transform: translateX(2px);
+}
+
+:global(.manager-hr-sidebar__item--active) {
+  border-color: #e2cdbd;
+  background: #fffaf5;
+  color: #8f4f2f;
+  box-shadow: 0 6px 16px #8f4f2f18;
+}
+
+:global(.manager-hr-menu-toggle) {
+  position: fixed;
+  top: 1.25rem;
+  left: 180px;
+  z-index: 30;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #cbd5df;
+  border-radius: 10px;
+  background: #f7f9fa;
+  color: #243447;
+  box-shadow: 0 4px 12px #24344712;
+  cursor: pointer;
+  transition: left 260ms cubic-bezier(0.22, 1, 0.36, 1), transform 260ms cubic-bezier(0.22, 1, 0.36, 1), background-color 160ms ease;
+}
+
+:global(.manager-hr-menu-toggle:hover) {
+  background: #e9eef2;
+  transform: translateY(-1px);
+}
+
+:global(.manager-hr-sidebar-collapsed) {
+  grid-template-columns: 0 minmax(0, 1fr);
+  gap: 0;
+}
+
+:global(.manager-hr-sidebar-collapsed .manager-hr-sidebar) {
+  width: 0;
+  min-height: 0;
+  padding: 0;
+  border-right-color: transparent;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+:global(.manager-hr-sidebar-collapsed .manager-hr-menu-toggle) {
+  left: 1rem;
+  transform: rotate(180deg);
+}
+
+:global(.manager-hr-section-view) {
+  min-width: 0;
+  width: 100%;
+}
+
+:global(.manager-hr-section-enter-active),
+:global(.manager-hr-section-leave-active) {
+  transition: opacity 220ms ease, transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:global(.manager-hr-section-enter-from) {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+:global(.manager-hr-section-leave-to) {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+:global(.admin-main:has(.manager-hr-sidebar-collapsed) .manager-hr-menu-toggle) {
+  transform: rotate(180deg);
+}
+
+:global(.manager-hr-topbar) {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 156px;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  height: 66px;
+  padding: 0 1rem;
+  box-sizing: border-box;
+  border-bottom: 1px solid #8a715f2e;
+  background: #fffaf5d9;
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  transition: left 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:global(.manager-hr-topbar .manager-hr-menu-toggle) {
+  position: static;
+  flex: 0 0 34px;
+}
+
+:global(.manager-hr-topbar__spacer) {
+  flex: 1;
+}
+
+:global(.manager-hr-topbar__profile) {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  max-width: min(360px, 60vw);
+  padding: 0.45rem 0.75rem;
+  border: 1px solid #cbd5df;
+  border-radius: 999px;
+  background: #fffaf5;
+  color: #243447;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 6px 16px #24344712;
+}
+
+:global(.manager-hr-topbar__avatar) {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  place-items: center;
+  border: 1px solid #e2cdbd;
+  border-radius: 50%;
+  background: #f4c28f;
+  color: #243447;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+:global(.admin-main:has(.manager-hr-sidebar-collapsed) .manager-hr-topbar) {
+  left: 0;
+}
+
+@media (max-width: 767px) {
+  :global(.manager-hr-page) {
+    display: block;
+    padding: 1rem;
+  }
+
+  :global(.manager-hr-sidebar) {
+    position: static;
+    width: 100%;
+    min-height: 0;
+    margin-bottom: 1rem;
+    padding: 0.8rem;
+    border: 1px solid #dbbca066;
+    border-radius: 14px;
+  }
+
+  :global(.manager-hr-sidebar__nav) {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  :global(.manager-hr-sidebar__item) {
+    width: auto;
+    min-width: max-content;
+  }
+
+  :global(.manager-hr-menu-toggle) {
+    top: 1rem;
+    right: 1rem;
+    left: auto;
+  }
+
+  :global(.manager-hr-sidebar-collapsed .manager-hr-sidebar) {
+    display: none;
+  }
+}
+
+/* Stable Finance-style shell: keep the rail independent from dashboard flow. */
+:global(.manager-hr-page) {
+  display: block;
+  min-height: 100vh;
+  padding: 5.5rem 1.5rem 2rem 11.5rem;
+  box-sizing: border-box;
+  transition: padding-left 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:global(.manager-hr-page > :not(.manager-hr-sidebar):not(.manager-hr-menu-toggle)) {
+  width: 100%;
+  max-width: none;
+}
+
+:global(.manager-hr-sidebar) {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 20;
+  display: flex;
+  width: 156px;
+  min-height: 100vh;
+  padding: 1rem 0.75rem;
+  box-sizing: border-box;
+  border-right: 1px solid #8a715f2e;
+  background: #fffaf5e8;
+  box-shadow: 8px 0 24px #2434470d;
+  transition: width 260ms cubic-bezier(0.22, 1, 0.36, 1), padding 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease;
+}
+
+:global(.manager-hr-sidebar-collapsed) {
+  padding-left: 1.5rem;
+}
+
+:global(.manager-hr-sidebar-collapsed .manager-hr-sidebar) {
+  width: 0;
+  padding-right: 0;
+  padding-left: 0;
+  border-right-color: transparent;
+  opacity: 0;
+  overflow: hidden;
+}
+
+:global(.manager-hr-menu-toggle) {
+  position: fixed;
+  top: 1.25rem;
+  left: 10.5rem;
+  z-index: 30;
+  transition: left 260ms cubic-bezier(0.22, 1, 0.36, 1), transform 260ms cubic-bezier(0.22, 1, 0.36, 1), background-color 160ms ease;
+}
+
+:global(.manager-hr-sidebar-collapsed .manager-hr-menu-toggle) {
+  left: 1rem;
+  transform: rotate(180deg);
+}
+
+@media (max-width: 767px) {
+  :global(.manager-hr-page) {
+    padding: 1rem;
+  }
+
+  :global(.manager-hr-sidebar) {
+    position: static;
+    width: 100%;
+    min-height: 0;
+    margin-bottom: 1rem;
+    padding: 0.8rem;
+    border: 1px solid #dbbca066;
+    border-radius: 14px;
+    box-shadow: 0 8px 20px #2434470d;
+  }
+
+  :global(.manager-hr-sidebar-collapsed) {
+    padding-left: 1rem;
+  }
+
+  :global(.manager-hr-sidebar-collapsed .manager-hr-sidebar) {
+    display: none;
+  }
+
+  :global(.manager-hr-menu-toggle) {
+    top: auto;
+    right: auto;
+    left: auto;
+  }
+
+  :global(.manager-hr-topbar) {
+    left: 0;
+    height: 58px;
+    padding: 0 0.75rem;
+  }
+
+  :global(.manager-hr-page) {
+    padding-top: 4.5rem;
+  }
+
+  :global(.manager-hr-topbar__profile) {
+    max-width: 62vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/* Match Manager Finance typography. */
+:global(.admin-page:has(.manager-hr-page)),
+:global(.admin-page:has(.manager-hr-page) button),
+:global(.admin-page:has(.manager-hr-page) input),
+:global(.admin-page:has(.manager-hr-page) select),
+:global(.admin-page:has(.manager-hr-page) textarea) {
+  font-family: 'Inter', 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+:global(.admin-page:has(.manager-hr-page) h1),
+:global(.admin-page:has(.manager-hr-page) h2),
+:global(.admin-page:has(.manager-hr-page) h3),
+:global(.admin-page:has(.manager-hr-page) h4),
+:global(.admin-page:has(.manager-hr-page) .manager-hr-sidebar__brand) {
+  font-family: 'Poppins', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Finance-matched type scale, spacing, and control sizing. */
+:global(.manager-hr-sidebar__nav) {
+  gap: 0.75rem;
+}
+
+:global(.manager-hr-sidebar__item) {
+  padding: 0.7rem 0.75rem;
+  font-size: 0.78rem;
+  color: #3d2a1f;
+  font-weight: 600;
+}
+
+:global(.manager-hr-sidebar__item--active) {
+  color: #3d2a1f;
+}
+
+:global(.manager-hr-sidebar__footer) {
+  gap: 0.75rem;
+  padding-top: 1rem;
+}
+
+:global(.manager-hr-sidebar__account),
+:global(.manager-hr-sidebar__logout) {
+  min-height: 2.55rem;
+  padding: 0.62rem 0.75rem;
+  font-size: 0.78rem;
+}
+
+:global(.manager-hr-topbar) {
+  height: 66px;
+  padding: 0.75rem 1.25rem;
+}
+
+:global(.manager-hr-topbar__profile) {
+  padding: 0.45rem 0.75rem;
+  font-size: 0.82rem;
+  color: #3d2a1f;
+  font-weight: 600;
+}
+
+:global(.manager-hr-page) {
+  gap: 1.1rem;
+  padding-right: 1.3rem;
+  padding-bottom: 2rem;
+}
+
+:global(.manager-hr-page .manager-hr-hero) {
+  padding: 1.2rem 1.25rem;
+  border-radius: 16px;
+}
+
+:global(.manager-hr-page .manager-hr-hero__title) {
+  font-size: 2.2rem;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  font-weight: 800;
+}
+
+:global(.manager-hr-page .manager-hr-hero__subtitle) {
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+:global(.manager-hr-page .manager-hr-hero) {
+  padding: 0.2rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+:global(.manager-hr-section-heading) {
+  margin: 0 0 0.15rem;
+  padding: 0.2rem 0.2rem 0.6rem;
+}
+
+:global(.manager-hr-section-heading__eyebrow) {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: #b66a3e;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+:global(.manager-hr-section-heading h1) {
+  margin: 0;
+  color: #1f2937;
+  font-size: 2.2rem;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+:global(.manager-hr-page > .manager-hr-section-heading),
+:global(.manager-hr-page > .manager-hr-hero),
+:global(.manager-hr-page > .manager-hr-main-wrapper),
+:global(.manager-hr-page > .hr-confirmation-panel),
+:global(.manager-hr-page > .hr-attendance-panel),
+:global(.manager-hr-page > .hr-payroll-panel) {
+  animation: manager-hr-section-enter 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes manager-hr-section-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :global(.manager-hr-page > .manager-hr-section-heading),
+  :global(.manager-hr-page > .manager-hr-hero),
+  :global(.manager-hr-page > .manager-hr-main-wrapper),
+  :global(.manager-hr-page > .hr-confirmation-panel),
+  :global(.manager-hr-page > .hr-attendance-panel),
+  :global(.manager-hr-page > .hr-payroll-panel) {
+    animation: none;
+  }
+}
+
+:global(.manager-hr-page .hr-stats-grid) {
+  gap: 0.85rem;
+}
+
+:global(.manager-hr-page .hr-stat-card) {
+  min-height: 88px;
+  padding: 0.95rem;
+  border-radius: 14px;
+}
+
+:global(.manager-hr-page .hr-stat-label) {
+  font-size: 0.8rem;
+}
+
+:global(.manager-hr-page .hr-stat-value) {
+  font-size: 1.5rem;
+  letter-spacing: -0.03em;
+}
+
+:global(.manager-hr-page .panel-block) {
+  padding: 1rem 1.1rem 0.9rem;
+  border-radius: 16px;
+}
+
+:global(.manager-hr-page .panel-header h2) {
+  color: #1f2937;
+  font-size: 1rem;
+}
+
+:global(.manager-hr-page .panel-body--table) {
+  font-size: 0.8rem;
+}
+
+:global(.manager-hr-page .panel-action) {
+  min-height: 2.25rem;
+  padding: 0.56rem 0.82rem;
+  border: 1px solid #8796a5;
+  border-radius: 10px;
+  background: #6b7783;
+  color: #ffffff;
+  box-shadow: 0 6px 14px #24344718;
+  transition: transform 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+:global(.manager-hr-page .panel-action:hover:not(:disabled)) {
+  background: #526171;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px #24344726;
+}
+
+:global(.manager-hr-page .hr-attendance-select) {
+  min-width: 170px;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.88rem;
+}
+
+:global(.manager-hr-page .btn-sm) {
+  min-height: 2.25rem;
+  padding: 0.56rem 0.82rem;
+  border-radius: 10px;
+  font-size: 0.8rem;
+}
+
+/* Final button pass: keep every HR action consistent with Manager Finance. */
+:global(.manager-hr-page .panel-action),
+:global(.manager-hr-page .btn-primary),
+:global(.manager-hr-page .btn-success),
+:global(.manager-hr-page .btn-secondary),
+:global(.manager-hr-page .btn-sm) {
+  border: 1px solid #cbd5df;
+  border-radius: 10px;
+  background: #f7f9fa;
+  color: #243447;
+  box-shadow: 0 6px 14px #24344712;
+}
+
+:global(.manager-hr-page .panel-action--primary),
+:global(.manager-hr-page .btn-primary),
+:global(.manager-hr-page .btn-success) {
+  border-color: #243447;
+  background: #243447;
+  color: #ffffff;
+  box-shadow: 0 8px 18px #24344726;
+}
+
+:global(.manager-hr-page .panel-action:hover:not(:disabled)),
+:global(.manager-hr-page .btn-secondary:hover:not(:disabled)),
+:global(.manager-hr-page .btn-sm:hover:not(:disabled)) {
+  border-color: #8796a5;
+  background: #e9eef2;
+  color: #243447;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px #2434471c;
+}
+
+:global(.manager-hr-page .panel-action--primary:hover:not(:disabled)),
+:global(.manager-hr-page .btn-primary:hover:not(:disabled)),
+:global(.manager-hr-page .btn-success:hover:not(:disabled)) {
+  border-color: #172536;
+  background: #172536;
+  color: #ffffff;
+  box-shadow: 0 10px 22px #24344733;
+}
+
+:global(.manager-hr-page .btn-danger),
+:global(.manager-hr-page .btn-reject) {
+  border: 1px solid #8f3028;
+  border-radius: 10px;
+  background: #8f3028;
+  color: #ffffff;
+  box-shadow: 0 8px 18px #8f302826;
+}
+
+:global(.manager-hr-page .btn-danger:hover:not(:disabled)),
+:global(.manager-hr-page .btn-reject:hover:not(:disabled)) {
+  border-color: #76231e;
+  background: #76231e;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+:global(.manager-hr-page .hr-payroll-actions),
+:global(.manager-hr-page .confirmation-actions),
+:global(.manager-hr-page .request-card__actions) {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+/* Exact Finance canvas colors. */
+:global(body:has(.manager-hr-page)),
+:global(.admin-page:has(.manager-hr-page)),
+:global(.admin-layout:has(.manager-hr-page)),
+:global(.admin-main:has(.manager-hr-page)),
+:global(.manager-hr-page) {
+  background: #e7d9cf;
+}
+
+:global(.manager-hr-sidebar) {
+  background: #e7d9cf;
+}
+
+:global(.manager-hr-topbar) {
+  background: rgba(255, 255, 255, 0.12);
+}

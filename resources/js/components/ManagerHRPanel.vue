@@ -32,8 +32,40 @@
       </div>
     </template>
     <template #main>
-      <div class="manager-hr-page">
-        <header class="manager-hr-hero">
+      <header class="manager-hr-topbar">
+        <button
+          class="manager-hr-menu-toggle"
+          type="button"
+          :aria-label="hrSidebarCollapsed ? 'Show menu' : 'Hide menu'"
+          :aria-expanded="(!hrSidebarCollapsed).toString()"
+          @click="hrSidebarCollapsed = !hrSidebarCollapsed"
+        >☰</button>
+        <div class="manager-hr-topbar__spacer"></div>
+        <div class="manager-hr-topbar__profile">
+          <div class="manager-hr-topbar__avatar">{{ (userProfile.fullName || userProfile.full_name || userProfile.name || 'H').toString().charAt(0).toUpperCase() }}</div>
+          <span>{{ 'HR Manager - ' + (userProfile.branch || userProfile.branch_name || 'Dasma Branch') }}</span>
+        </div>
+      </header>
+      <div class="manager-hr-page" :class="{ 'manager-hr-sidebar-collapsed': hrSidebarCollapsed }">
+        <aside class="manager-hr-sidebar" :aria-hidden="hrSidebarCollapsed">
+          <nav class="manager-hr-sidebar__nav" aria-label="HR sections">
+            <button class="manager-hr-sidebar__item" :class="{ 'manager-hr-sidebar__item--active': selectedHrSection === 'overview' }" :aria-current="selectedHrSection === 'overview' ? 'page' : undefined" @click="scrollToHrSection('overview', '.manager-hr-hero')">HR Overview</button>
+            <button class="manager-hr-sidebar__item" :class="{ 'manager-hr-sidebar__item--active': selectedHrSection === 'confirmations' }" :aria-current="selectedHrSection === 'confirmations' ? 'page' : undefined" @click="scrollToHrSection('confirmations', '.hr-confirmation-panel')">Confirmations</button>
+            <button class="manager-hr-sidebar__item" :class="{ 'manager-hr-sidebar__item--active': selectedHrSection === 'attendance' }" :aria-current="selectedHrSection === 'attendance' ? 'page' : undefined" @click="scrollToHrSection('attendance', '.hr-attendance-panel')">Attendance</button>
+            <button class="manager-hr-sidebar__item" :class="{ 'manager-hr-sidebar__item--active': selectedHrSection === 'payroll' }" :aria-current="selectedHrSection === 'payroll' ? 'page' : undefined" @click="scrollToHrSection('payroll', '.hr-payroll-panel')">Payroll</button>
+          </nav>
+          <div class="manager-hr-sidebar__footer">
+            <button class="manager-hr-sidebar__account" type="button" @click="showAccountInfoModal = true">Account Info</button>
+            <button class="manager-hr-sidebar__logout" type="button" @click="askLogout">Logout</button>
+          </div>
+        </aside>
+        <Transition name="manager-hr-section" mode="out-in">
+        <div :key="selectedHrSection" class="manager-hr-section-view">
+        <div v-if="selectedHrSection !== 'overview'" class="manager-hr-section-heading">
+          <span class="manager-hr-section-heading__eyebrow">Manager dashboard</span>
+          <h1>{{ hrSectionTitle }}</h1>
+        </div>
+        <header v-if="selectedHrSection === 'overview'" class="manager-hr-hero">
           <div class="manager-hr-hero__copy">
             <span class="manager-hr-hero__eyebrow">Manager dashboard</span>
             <h2 class="manager-hr-hero__title">HR overview</h2>
@@ -97,41 +129,41 @@
                       <button class="btn-success btn-sm" @click="openApplicationDetails(a)">
                         View Application Details
                       </button>
-                      
+
                       <!-- Show "Ready for Interview" button if status is NOT "Ready for Interview" -->
-                      <button 
+                      <button
                         v-if="!isReadyForInterview(a.status)"
-                        class="btn-primary btn-sm" 
+                        class="btn-primary btn-sm"
                         @click="openInterviewScheduleModal(a)"
                         :disabled="sendingInterviewEmail[a.id]"
                       >
                         {{ sendingInterviewEmail[a.id] ? 'Sending...' : 'Ready for Interview' }}
                       </button>
-                      
+
                        <!-- Show "Mark as Passed" and "Mark as Not Passed" buttons when status is "Ready for Interview" -->
-                       <button 
+                       <button
                          v-if="isReadyForInterview(a.status) && !isPassedForHiring(a.status)"
-                         class="btn-success btn-sm" 
+                         class="btn-success btn-sm"
                          @click="markAsPassed(a)"
                          :disabled="markingAsPassed[a.id]"
                        >
                          {{ markingAsPassed[a.id] ? 'Processing...' : '✓ Mark as Passed' }}
                        </button>
-                       
-                       <button 
+
+                       <button
                          v-if="isReadyForInterview(a.status) && !isPassedForHiring(a.status)"
-                         class="btn-danger btn-sm" 
+                         class="btn-danger btn-sm"
                          @click="markAsNotPassed(a)"
                          :disabled="markingAsNotPassed[a.id]"
                        >
                          {{ markingAsNotPassed[a.id] ? 'Processing...' : '✗ Mark as Not Passed' }}
                        </button>
-                       
+
                        <!-- Show indicator when status is "Passed - Ready for Hiring" -->
                        <span v-else-if="isPassedForHiring(a.status)" class="badge badge--success" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">
                          ✓ Passed - Ready for Hiring
                        </span>
-                       
+
                        <!-- Show indicator when status is "Not Passed" -->
                        <span v-else-if="(a.status || '').toString().toLowerCase().trim() === 'not passed'" class="badge badge--warning" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">
                          ✗ Not Passed
@@ -164,9 +196,9 @@
               <div v-if="selectedApplication" class="interview-schedule-form">
                 <div class="form-group">
                   <label class="field-label">Interview Date *</label>
-                  <input 
-                    type="date" 
-                    class="field-input" 
+                  <input
+                    type="date"
+                    class="field-input"
                     v-model="interviewSchedule.date"
                     :min="getMinDate()"
                     required
@@ -175,9 +207,9 @@
 
                 <div class="form-group">
                   <label class="field-label">Interview Time *</label>
-                  <input 
-                    type="time" 
-                    class="field-input" 
+                  <input
+                    type="time"
+                    class="field-input"
                     v-model="interviewSchedule.time"
                     required
                   />
@@ -185,9 +217,9 @@
 
                 <div class="form-group">
                   <label class="field-label">Additional Notes (Optional)</label>
-                  <textarea 
-                    class="field-textarea" 
-                    rows="3" 
+                  <textarea
+                    class="field-textarea"
+                    rows="3"
                     v-model="interviewSchedule.notes"
                     placeholder="e.g., Bring portfolio, interview with HR Manager, etc."
                   ></textarea>
@@ -202,8 +234,8 @@
 
             <div class="positions-modal__footer">
               <button class="btn-secondary" @click="closeInterviewScheduleModal">Cancel</button>
-              <button 
-                class="btn-primary" 
+              <button
+                class="btn-primary"
                 @click="confirmInterviewSchedule"
                 :disabled="!isInterviewScheduleValid() || sendingInterviewEmail[selectedApplication?.id]"
               >
@@ -322,9 +354,9 @@
                     <div class="detail-item">
                       <span class="detail-label">Resume/CV:</span>
                       <span class="detail-value">
-                        <a v-if="selectedApplicationDetails.resume_path" 
-                           :href="getStorageUrl(selectedApplicationDetails.resume_path)" 
-                           target="_blank" 
+                        <a v-if="selectedApplicationDetails.resume_path"
+                           :href="getStorageUrl(selectedApplicationDetails.resume_path)"
+                           target="_blank"
                            rel="noopener noreferrer"
                            class="btn-link">
                           📄 View Resume
@@ -390,11 +422,11 @@
 
             <div class="positions-modal__footer">
               <button class="btn-secondary" @click="closeApplicationDetailsModal">Close</button>
-              <a v-if="selectedApplicationDetails.resume_path" 
-                 :href="getStorageUrl(selectedApplicationDetails.resume_path)" 
-                 target="_blank" 
+              <a v-if="selectedApplicationDetails.resume_path"
+                 :href="getStorageUrl(selectedApplicationDetails.resume_path)"
+                 target="_blank"
                  rel="noopener noreferrer"
-                 class="btn-primary" 
+                 class="btn-primary"
                  style="text-decoration: none; display: inline-block; padding: 0.625rem 1.25rem; border-radius: 4px;"
                  @click.prevent="openResume(getStorageUrl(selectedApplicationDetails.resume_path))">
                 Open Resume in New Tab
@@ -470,7 +502,7 @@
 
       <!-- HR Positions Management -->
       <!-- Bento-style Stats Cards -->
-      <div class="manager-hr-main-wrapper">
+      <div v-if="selectedHrSection === 'overview'" class="manager-hr-main-wrapper">
         <div class="hr-stats-grid manager-hr-stats-grid">
           <div class="hr-stat-card hr-stat-card--total">
             <div class="hr-stat-icon">
@@ -503,10 +535,10 @@
       </div>
 
       <!-- Clock-in Confirmation Section -->
-      <section class="panel-block hr-confirmation-panel">
+      <section v-if="selectedHrSection === 'confirmations'" class="panel-block hr-confirmation-panel">
         <div class="panel-header hr-confirmation-header">
           <h2>
-            📸 Pending Clock-in Confirmations
+            Pending Clock-in Confirmations
             <span v-if="pendingConfirmations.length > 0" class="panel-badge">{{ pendingConfirmations.length }}</span>
           </h2>
           <button class="panel-action" @click="loadPendingConfirmations" :disabled="isLoadingConfirmations">
@@ -552,7 +584,7 @@
         </div>
       </section>
 
-      <section class="panel-block hr-attendance-panel">
+      <section v-if="selectedHrSection === 'attendance'" class="panel-block hr-attendance-panel">
         <div class="panel-header hr-attendance-header">
           <h2>
             Attendance Monitoring
@@ -602,7 +634,7 @@
       </section>
 
       <!-- Payroll Tracking Section -->
-      <section class="panel-block hr-payroll-panel">
+      <section v-if="selectedHrSection === 'payroll'" class="panel-block hr-payroll-panel">
         <div class="panel-header hr-payroll-header">
           <h2>Payroll Management</h2>
           <div class="hr-payroll-actions">
@@ -712,6 +744,8 @@
           </div>
         </div>
       </transition>
+        </div>
+        </Transition>
       </div>
     </template>
 
@@ -790,8 +824,8 @@
         </div>
 
         <div class="photo-modal__body">
-          <img 
-            :src="selectedConfirmation.face_image" 
+          <img
+            :src="selectedConfirmation.face_image"
             :alt="`Clock-in photo for ${selectedConfirmation.user_name}`"
             class="photo-modal__image"
           />
@@ -839,7 +873,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import axios from 'axios'
@@ -879,6 +913,22 @@ const showApplicationDetailsModal = ref(false)
 const selectedApplicationDetails = ref(null)
 
 const router = useRouter()
+const hrSidebarCollapsed = ref(false)
+const selectedHrSection = ref('overview')
+const hrSectionTitle = computed(() => {
+  const titles = {
+    confirmations: 'Confirmations',
+    attendance: 'Attendance',
+    payroll: 'Payroll'
+  }
+  return titles[selectedHrSection.value] || 'HR Overview'
+})
+
+const scrollToHrSection = async (section, selector) => {
+  selectedHrSection.value = section
+  await nextTick()
+  document.querySelector(selector)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 const errorMessage = ref('')
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
 const showLogoutConfirm = ref(false)
@@ -916,7 +966,7 @@ const editingStaffId = ref(null)
   const hrAlertCount = computed(() => {
     return (hrAttendance.value || []).filter(a => (a.status || '').toLowerCase() !== 'present').length
   })
-  
+
   // Clock-in confirmation state
   const pendingConfirmations = ref([])
   const isLoadingConfirmations = ref(false)
@@ -1433,7 +1483,7 @@ function openInterviewScheduleModal(application) {
     alert('Invalid application data')
     return
   }
-  
+
   selectedApplication.value = application
   interviewSchedule.value = {
     date: '',
@@ -1468,11 +1518,11 @@ function getMinDate() {
 function formatInterviewDate(dateStr) {
   if (!dateStr) return ''
   const date = new Date(dateStr + 'T00:00:00')
-  return date.toLocaleDateString('en-US', { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
+  return date.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
   })
 }
 
@@ -1481,10 +1531,10 @@ function formatInterviewTime(timeStr) {
   const [hours, minutes] = timeStr.split(':')
   const date = new Date()
   date.setHours(parseInt(hours), parseInt(minutes))
-  return date.toLocaleTimeString('en-US', { 
-    hour: 'numeric', 
+  return date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
     minute: '2-digit',
-    hour12: true 
+    hour12: true
   })
 }
 
