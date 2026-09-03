@@ -1,13 +1,6 @@
 <template>
-  <div class="manager-finance finance-manager-layout">
-    <aside class="finance-sidebar">
-      <div class="finance-brand">
-        <div class="finance-brand__logo">{{ userRoleInitial }}</div>
-        <div class="finance-brand__text">
-          <span class="finance-brand__name">{{ userRoleDepartmentLabel }}</span>
-        </div>
-      </div>
-
+  <div class="manager-finance finance-manager-layout" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
+    <aside class="finance-sidebar" :aria-hidden="sidebarCollapsed">
       <nav class="finance-sidebar__nav">
         <button class="finance-sidebar__item" :class="{ active: selectedSection === 'overview' }" @click="selectedSection = 'overview'">
           <span class="finance-sidebar__label">Financial Overview</span>
@@ -21,15 +14,16 @@
         <button class="finance-sidebar__item" :class="{ active: selectedSection === 'transactions' }" @click="selectedSection = 'transactions'">
           <span class="finance-sidebar__label">Transactions</span>
         </button>
+        <button class="finance-sidebar__item" :class="{ active: selectedSection === 'attendance' }" @click="selectedSection = 'attendance'">
+          <span class="finance-sidebar__label">Attendance</span>
+        </button>
       </nav>
 
       <div class="finance-sidebar__footer">
         <button class="finance-sidebar__account-info" @click="showAccountInfoModal = true" aria-label="Account Info">
-          <span class="finance-sidebar__account-icon">👤</span>
           <span class="finance-sidebar__account-text">Account Info</span>
         </button>
         <button class="finance-sidebar__logout" @click="askLogout" aria-label="Logout">
-          <span class="finance-sidebar__logout-icon">↪️</span>
           <span class="finance-sidebar__logout-text">Logout</span>
         </button>
       </div>
@@ -37,19 +31,17 @@
 
     <div class="finance-main-panel">
       <header class="finance-main-header">
-        <button class="finance-hamburger" aria-label="Open menu">☰</button>
+        <button
+          class="finance-hamburger"
+          :aria-label="sidebarCollapsed ? 'Show menu' : 'Hide menu'"
+          :aria-expanded="(!sidebarCollapsed).toString()"
+          @click="sidebarCollapsed = !sidebarCollapsed"
+        >☰</button>
         <div class="finance-header__spacer"></div>
         <div class="finance-header__actions">
-          <button class="finance-search-btn" aria-label="Search">⌕</button>
           <div class="finance-user-pill" @click.stop>
             <div class="finance-user-pill__avatar">{{ userInitial }}</div>
             <span>{{ userProfile?.fullName || userProfile?.full_name || 'Manager' }}</span>
-            <button class="finance-user-menu-btn" @click="toggleProfileDropdown" style="background: none; border: none; cursor: pointer; padding: 0; color: inherit;">
-              ⋮
-            </button>
-            <div v-if="profileDropdownVisible" class="finance-profile-dropdown">
-              <button class="finance-dropdown-item" @click="openInfoFromHeader">Info</button>
-            </div>
           </div>
         </div>
       </header>
@@ -65,7 +57,9 @@
           </button>
         </section>
 
-        <div v-if="!hideAttendanceCard" class="finance-main-attendance-card">
+        <Transition name="finance-section" mode="out-in">
+        <div :key="selectedSection" class="finance-section-view">
+        <div v-if="selectedSection === 'attendance'" class="finance-main-attendance-card">
           <section class="attendance-card">
             <div class="attendance-header">
               <span class="attendance-title">Attendance</span>
@@ -285,6 +279,8 @@
             <finance-panel-content :reports="financeReports" :transactions="transactions" />
           </section>
         </template>
+        </div>
+        </Transition>
       </main>
     </div>
 
@@ -331,7 +327,7 @@
         </div>
       </div>
     </transition>
-    
+
     <!-- Account Info Modal -->
     <transition name="fade">
       <div v-if="showAccountInfoModal" class="account-info-backdrop" @click.self="showAccountInfoModal = false">
@@ -474,9 +470,6 @@ const isLoggingOut = ref(false)
 const showOverlay = ref(false)
 const overlayText = ref('Logging out...')
 
-// Header profile dropdown (match Logistics panel behavior)
-const profileDropdownVisible = ref(false)
-const ownerLayout = ref(null)
 const showAccountInfoModal = ref(false)
 
   const attendanceStatus = ref({
@@ -495,6 +488,7 @@ const showAccountInfoModal = ref(false)
 
   // Dashboard section navigation
   const selectedSection = ref('overview')
+  const sidebarCollapsed = ref(false)
 
   // Face capture state
   const showFaceCapture = ref(false)
@@ -510,47 +504,9 @@ const locationError = ref('')
 const canClockInGeofencing = ref(true)
 const geofencingMessage = ref('')
 
-const isCustomAccount = computed(() => {
-  try {
-    const raw = localStorage.getItem('user') || 'null'
-    const u = JSON.parse(raw)
-    return (u?.role || '').toLowerCase() === 'custom'
-  } catch (e) {
-    return false
-  }
-})
-
-const hideAttendanceCard = computed(() => {
-  try {
-    // Hide attendance card in main branch finance view (shown in sidebar instead)
-    if (props.isMainBranchFinance) return true
-    return new URLSearchParams(window.location.search).get('from') === 'custom-panel' || isCustomAccount.value
-  } catch (e) {
-    return isCustomAccount.value
-  }
-})
-
 const userInitial = computed(() => {
   const name = userProfile.value?.fullName || userProfile.value?.full_name || 'U'
   return name.charAt(0).toUpperCase()
-})
-
-const userRoleInitial = computed(() => {
-  const role = (userProfile.value?.role || userProfile.value?.position || 'M').toString()
-  const department = (userProfile.value?.department || '').toString()
-  const source = role || department || 'M'
-  return source.charAt(0).toUpperCase()
-})
-
-const userRoleDepartmentLabel = computed(() => {
-  const role = (userProfile.value?.role || userProfile.value?.position || 'MANAGER').toString().toUpperCase()
-  const department = (userProfile.value?.department || '').toString()
-
-  if (!department) {
-    return role
-  }
-
-  return `${role} • ${department.toUpperCase()}`
 })
 
 const scheduledTimeOut = computed(() => {
@@ -570,51 +526,6 @@ const canClockOut = computed(() => {
   const [scheduledHours, scheduledMinutes] = (attendanceSettings.value.scheduled_time_out || '17:00:00').split(':')
   const scheduledTotalMinutes = parseInt(scheduledHours) * 60 + parseInt(scheduledMinutes)
   return currentTotalMinutes >= scheduledTotalMinutes
-})
-
-function toggleProfileDropdown() {
-  profileDropdownVisible.value = !profileDropdownVisible.value
-}
-
-function closeProfileDropdown() { profileDropdownVisible.value = false }
-
-function openInfoFromHeader() {
-  closeProfileDropdown()
-  try {
-    if (ownerLayout.value && typeof ownerLayout.value.openInfoModal === 'function') {
-      ownerLayout.value.openInfoModal()
-      return
-    }
-  } catch (e) {}
-  try { window.dispatchEvent(new Event('open-owner-info')); return } catch (e) {}
-  const infoBtn = document.querySelector('.admin-info-btn')
-  if (infoBtn) infoBtn.click()
-}
-
-function openEditProfileFromHeader() {
-  closeProfileDropdown()
-  try {
-    if (ownerLayout.value && typeof ownerLayout.value.openAvatarPicker === 'function') {
-      ownerLayout.value.openAvatarPicker()
-      return
-    }
-  } catch (e) {}
-  try { window.dispatchEvent(new Event('open-owner-edit-profile')); return } catch (e) {}
-  const fileInput = document.querySelector('#avatar-input') || document.querySelector('#avatar-input-modal') || document.querySelector('#global-avatar-input')
-  if (fileInput) fileInput.click()
-}
-
-async function triggerLogoutFromHeader() {
-  closeProfileDropdown()
-  try {
-    const ok = await (window.swalConfirm ? window.swalConfirm('This will end your current session for Chikin Tayo Manager.', 'Confirm logout') : Promise.resolve(false))
-    if (ok) await confirmLogout()
-  } catch (e) { console.error('triggerLogoutFromHeader failed', e) }
-}
-
-// Close dropdown when clicking outside
-window.addEventListener('click', (e) => {
-  try { if (profileDropdownVisible.value) closeProfileDropdown() } catch (e) {}
 })
 
 // Helper function to safely extract array from response
@@ -722,7 +633,8 @@ const getSectionTitle = computed(() => {
     overview: 'Financial Overview',
     markup: 'Current Price Markup',
     approvals: 'Budget Request Approvals',
-    transactions: 'Recent Transactions'
+    transactions: 'Recent Transactions',
+    attendance: 'Attendance'
   }
   return titles[selectedSection.value] || 'Finance Overview'
 })
@@ -1236,14 +1148,12 @@ onMounted(() => {
     }
   }, 30000)
 
-  if (!hideAttendanceCard.value) {
-    loadAttendanceStatus()
-    loadAttendanceSettings()
-    getUserLocation()
+  loadAttendanceStatus()
+  loadAttendanceSettings()
+  getUserLocation()
 
-    // Refresh location every 5 minutes
-    setInterval(getUserLocation, 300000)
-  }
+  // Refresh location every 5 minutes
+  setInterval(getUserLocation, 300000)
 })
 
 // Extract initial load into separate function
