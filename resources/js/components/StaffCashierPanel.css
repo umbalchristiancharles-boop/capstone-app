@@ -1,7 +1,7 @@
 .staff-cashier-panel {
-  --cashier-ink: #243447;
-  --cashier-muted: #64748b;
-  --cashier-surface: rgba(255, 255, 255, 0.92);
+  --cashier-ink: #3d2a1f;
+  --cashier-muted: #4b5563;
+  --cashier-surface: rgba(255, 255, 255, 0.82);
   display: flex;
   width: 100%;
   min-height: 100vh;
@@ -50,7 +50,7 @@
   padding: 0.72rem 0.75rem;
   border: 1px solid transparent;
   border-radius: 12px;
-  color: #526171;
+  color: #111827;
   background: transparent;
   font: inherit;
   font-size: 0.78rem;
@@ -63,9 +63,9 @@
 .staff-cashier-sidebar__item:hover,
 .staff-cashier-sidebar__item--active {
   color: #8f4f2f;
-  background: #fffaf5;
-  border-color: #e2cdbd;
-  box-shadow: 0 6px 16px rgba(143, 79, 47, 0.1);
+  background: rgba(255, 255, 255, 0.82);
+  border-color: rgba(148, 163, 184, 0.3);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
 }
 
 .staff-cashier-sidebar__logout {
@@ -126,10 +126,10 @@
 }
 
 .staff-cashier-feature-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.2rem 0.2rem 0.35rem; }
-.staff-cashier-feature-header p { margin: 0 0 0.2rem; color: #b66a3e; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
+.staff-cashier-feature-header p { margin: 0 0 0.2rem; color: #4b5563; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
 .staff-cashier-feature-header h1 { margin: 0; color: #1f2937; font-size: clamp(1.7rem, 2vw, 2.2rem); font-weight: 800; letter-spacing: -0.04em; }
 
-.staff-cashier-user-pill { display: inline-flex; align-items: center; gap: 0.55rem; margin-left: auto; padding: 0.45rem 0.75rem; border: 1px solid rgba(148, 163, 184, 0.25); border-radius: 999px; color: #1f2937; background: rgba(255, 255, 255, 0.38); font-size: 0.82rem; font-weight: 700; }
+.staff-cashier-user-pill { display: inline-flex; align-items: center; gap: 0.55rem; margin-left: auto; padding: 0.45rem 0.75rem; border: 1px solid rgba(148, 163, 184, 0.25); border-radius: 999px; color: #1f2937; background: rgba(255, 255, 255, 0.38); font-size: 0.82rem; font-weight: 600; }
 .staff-cashier-user-pill__avatar { display: grid; width: 26px; height: 26px; place-items: center; border-radius: 50%; color: #1f2937; background: linear-gradient(135deg, #f3d2b3, #f7b97a); font-size: 0.72rem; font-weight: 800; }
 
 .staff-cashier-content { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: 1.1rem; flex: 1; min-height: 0; padding: 1.2rem 1.3rem; overflow-y: auto; }
@@ -153,17 +153,17 @@
 .staff-cashier-panel .product-catalogue { max-height: none; padding: 1rem; }
 .staff-cashier-panel .transactions-section { align-self: start; margin-top: 0; padding: 1rem; }
 .staff-cashier-panel .cart-section { position: sticky; top: 1rem; padding: 1rem; }
-.staff-cashier-panel h2, .staff-cashier-panel h3 { color: var(--cashier-ink); }
-.staff-cashier-panel .product-catalogue h2, .staff-cashier-panel .cart-section h2, .staff-cashier-panel .transactions-section h2 { font-size: 1rem; }
-.staff-cashier-panel .scan-btn, .staff-cashier-panel .btn-confirm, .staff-cashier-panel .btn-clock-in { border: 1px solid var(--cashier-ink); background: var(--cashier-ink); box-shadow: 0 8px 18px rgba(36, 52, 71, 0.15); }
+.staff-cashier-panel h2, .staff-cashier-panel h3 { color: #1f2937; }
+.staff-cashier-panel .product-catalogue h2, .staff-cashier-panel .cart-section h2, .staff-cashier-panel .transactions-section h2 { font-size: 1rem; color: #1f2937; }
+.staff-cashier-panel .scan-btn, .staff-cashier-panel .btn-confirm, .staff-cashier-panel .btn-clock-in { border: 1px solid #111827; background: #111827; box-shadow: 0 8px 18px rgba(36, 52, 71, 0.15); }
 .staff-cashier-panel .product-card { background: #fffaf5; border-color: #ead8c7; }
 .staff-cashier-panel .product-card:hover { border-color: #c25a12; box-shadow: 0 8px 18px rgba(143, 79, 47, 0.12); }
-.staff-cashier-panel .product-name, .staff-cashier-panel .cart-item-name { color: var(--cashier-ink); }
+.staff-cashier-panel .product-name, .staff-cashier-panel .cart-item-name { color: #3d2a1f; }
 .staff-cashier-panel .product-price { color: #b45309; }
-.staff-cashier-panel .category-header { color: #8f4f2f; border-bottom-color: #d97706; }
+.staff-cashier-panel .category-header { color: #1f2937; border-bottom-color: rgba(148, 163, 184, 0.35); }
 .staff-cashier-panel .tx-table-wrap { max-height: min(44vh, 420px); overflow-x: auto; }
-.staff-cashier-panel .tx-table th { color: #6b4e39; background: #fff7ef; }
-.staff-cashier-panel .tx-table td { color: #4b3528; }
+.staff-cashier-panel .tx-table th { color: #4b5563; background: #fff7ef; }
+.staff-cashier-panel .tx-table td { color: #3d2a1f; }
 .staff-cashier-panel .attendance-card, .staff-cashier-panel .announcements-card { margin-bottom: 1rem !important; padding: 1rem; }
 .staff-cashier-content--attendance .attendance-card {
   width: 100%;
