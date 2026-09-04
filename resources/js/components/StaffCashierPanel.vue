@@ -1,20 +1,46 @@
 <template>
-  <OwnerPanelLayout
-    :userProfile="userProfile"
-    :panelTitle="`Cashier - ${branchName}`"
-    panelDescription="Process transactions and manage sales"
-    :enableProfileUpdate="false"
-    :canChangePassword="false"
-    :showProfileColumn="false"
-    :showAnnouncements="false"
-    :ownerTwoColumnLayout="true"
-    @logout="confirmLogout"
-  >
-    <template #main>
+  <div class="staff-cashier-panel" :class="{ 'staff-cashier-sidebar-collapsed': cashierSidebarCollapsed }">
+        <aside class="staff-cashier-sidebar" :aria-hidden="cashierSidebarCollapsed">
+          <nav class="staff-cashier-sidebar__nav" aria-label="Cashier sections">
+            <button class="staff-cashier-sidebar__item" :class="{ 'staff-cashier-sidebar__item--active': activeCashierSection === 'cashier' }" type="button" @click="selectCashierSection('cashier')">Cashier</button>
+            <button class="staff-cashier-sidebar__item" :class="{ 'staff-cashier-sidebar__item--active': activeCashierSection === 'products' }" type="button" @click="selectCashierSection('products')">Products</button>
+            <button class="staff-cashier-sidebar__item" :class="{ 'staff-cashier-sidebar__item--active': activeCashierSection === 'transactions' }" type="button" @click="selectCashierSection('transactions')">Transactions</button>
+            <button class="staff-cashier-sidebar__item" :class="{ 'staff-cashier-sidebar__item--active': activeCashierSection === 'attendance' }" type="button" @click="selectCashierSection('attendance')">Attendance</button>
+            <button class="staff-cashier-sidebar__item" :class="{ 'staff-cashier-sidebar__item--active': activeCashierSection === 'announcements' }" type="button" @click="selectCashierSection('announcements')">Announcements</button>
+          </nav>
+          <div class="staff-cashier-sidebar__footer">
+            <button class="staff-cashier-sidebar__account-info" type="button" @click="showAccountInfoModal = true">Account Info</button>
+            <button class="staff-cashier-sidebar__logout" type="button" @click="confirmLogout">Logout</button>
+          </div>
+        </aside>
+        <div class="staff-cashier-main">
+          <header class="staff-cashier-header">
+            <button
+              class="staff-cashier-menu-toggle"
+              type="button"
+              :aria-label="cashierSidebarCollapsed ? 'Show menu' : 'Hide menu'"
+              :aria-expanded="(!cashierSidebarCollapsed).toString()"
+              @click="cashierSidebarCollapsed = !cashierSidebarCollapsed"
+            >☰</button>
+            <div class="staff-cashier-user-pill">
+              <span class="staff-cashier-user-pill__avatar">{{ (userProfile.full_name || userProfile.username || 'C').charAt(0).toUpperCase() }}</span>
+              <span>Cashier - {{ branchName || 'Branch' }}</span>
+            </div>
+          </header>
+
+          <main class="staff-cashier-content" :class="{ 'staff-cashier-content--single': activeCashierSection !== 'cashier', 'staff-cashier-content--attendance': activeCashierSection === 'attendance' }">
+          <section class="staff-cashier-feature-header">
+            <div>
+              <p>Cashier workspace</p>
+              <h1>{{ cashierSectionTitle }}</h1>
+            </div>
+          </section>
+          <Transition name="staff-cashier-section" mode="out-in">
+          <div :key="activeCashierSection" class="staff-cashier-section-view">
       <div v-if="!branchId" class="loading-text">Loading branch information...</div>
-      <div v-else class="cashier-body">
+        <div v-else class="cashier-body" :class="{ 'staff-cashier-body--hidden': !['cashier', 'products'].includes(activeCashierSection) }">
         <!-- LEFT: Product catalogue -->
-        <section class="product-catalogue">
+        <section v-if="activeCashierSection === 'cashier' || activeCashierSection === 'products'" class="product-catalogue">
           <h2>Products</h2>
           <div class="search-bar product-lookup-bar">
             <input
@@ -56,7 +82,7 @@
       </div>
 
       <!-- Recent Transactions -->
-      <section v-if="branchId" class="transactions-section">
+      <section v-if="branchId && activeCashierSection === 'transactions'" class="transactions-section">
         <h2>
           Recent Transactions
           <span v-if="pendingTransactionsCount > 0" class="panel-badge">{{ pendingTransactionsCount }}</span>
@@ -102,13 +128,8 @@
           </table>
         </div>
       </section>
-    </template>
-
-    <template #headerActions>
-      <button class="logout-btn" @click="confirmLogout">Logout</button>
-    </template>
-    <template #side>
-      <div v-if="!hideAttendanceCard" class="attendance-card" style="margin-bottom:12px; background:#ffffff;">
+      <aside v-if="['cashier', 'attendance', 'announcements'].includes(activeCashierSection)" class="staff-cashier-order-rail">
+      <div v-if="!hideAttendanceCard && activeCashierSection === 'attendance'" class="attendance-card" style="margin-bottom:12px; background:#ffffff;">
         <div class="attendance-header">
           <span class="attendance-title">Attendance</span>
           <span :class="['attendance-status-badge', attendanceStatus.is_clocked_in ? 'status-on-duty' : 'status-off-duty']">
@@ -158,7 +179,7 @@
       </div>
 
       <!-- Announcements -->
-      <div class="announcements-card" style="margin-bottom:12px;" v-if="branchId">
+      <div class="announcements-card" style="margin-bottom:12px;" v-if="branchId && activeCashierSection === 'announcements'">
         <div class="side-card-header">
           <span class="side-card-kicker">Announcements</span>
           <span class="icon-chip">●</span>
@@ -178,7 +199,7 @@
         </div>
       </div>
 
-      <section class="cart-section">
+      <section v-if="activeCashierSection === 'cashier'" class="cart-section">
         <div class="cart-header">
           <h2>Current Order</h2>
           <span class="cart-status-dot">Live</span>
@@ -289,8 +310,34 @@
           </button>
         </div>
       </section>
-    </template>
-  </OwnerPanelLayout>
+      </aside>
+          </div>
+          </Transition>
+          </main>
+        </div>
+      </div>
+
+  <div v-if="showAccountInfoModal" class="staff-cashier-account-backdrop" @click.self="showAccountInfoModal = false">
+    <section class="staff-cashier-account-modal" role="dialog" aria-modal="true" aria-labelledby="cashier-account-title">
+      <header class="staff-cashier-account-modal__header">
+        <h2 id="cashier-account-title">Account Information</h2>
+        <button type="button" class="staff-cashier-account-modal__close" aria-label="Close account information" @click="showAccountInfoModal = false">×</button>
+      </header>
+      <div class="staff-cashier-account-modal__body">
+        <div class="staff-cashier-account-row"><span>Name</span><strong>{{ userProfile.full_name || userProfile.name || 'N/A' }}</strong></div>
+        <div class="staff-cashier-account-row"><span>Email</span><strong>{{ userProfile.email || 'N/A' }}</strong></div>
+        <div class="staff-cashier-account-row"><span>Role</span><strong>{{ userProfile.role || 'Cashier' }}</strong></div>
+        <div class="staff-cashier-account-row"><span>Department</span><strong>{{ userProfile.department || 'Cashier' }}</strong></div>
+        <div class="staff-cashier-account-row"><span>Branch</span><strong>{{ branchName || 'N/A' }}</strong></div>
+        <div class="staff-cashier-account-row"><span>Phone</span><strong>{{ userProfile.phone || userProfile.contact || 'N/A' }}</strong></div>
+        <div class="staff-cashier-account-row"><span>Position</span><strong>{{ userProfile.position || 'Cashier' }}</strong></div>
+        <div class="staff-cashier-account-row"><span>Start Date</span><strong>{{ formatDate(userProfile.hire_date || userProfile.created_at) || 'N/A' }}</strong></div>
+      </div>
+      <footer class="staff-cashier-account-modal__footer">
+        <button type="button" class="staff-cashier-account-modal__done" @click="showAccountInfoModal = false">Close</button>
+      </footer>
+    </section>
+  </div>
 
   <div v-if="scannerOpen" style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); display: flex; align-items: center; justify-content: center; z-index: 2000;" @click.self="closeBarcodeScanner">
     <div style="width: min(92vw, 560px); background: #fff; border-radius: 18px; padding: 18px; box-shadow: 0 20px 50px rgba(0,0,0,.25);">
@@ -318,16 +365,35 @@ import axios from 'axios'
 import Swal from 'sweetalert2'
 import { BrowserMultiFormatReader } from '@zxing/browser'
 import { BarcodeFormat, DecodeHintType } from '@zxing/library'
-import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import { showToast } from './toastStore'
+import './StaffCashierPanel.css'
 
 const router = useRouter()
+const cashierSidebarCollapsed = ref(false)
+const activeCashierSection = ref('cashier')
+
+const cashierSectionTitle = computed(() => {
+  const titles = {
+    cashier: 'Cashier',
+    products: 'Products',
+    transactions: 'Transactions',
+    attendance: 'Attendance',
+    announcements: 'Announcements'
+  }
+
+  return titles[activeCashierSection.value]
+})
+
+function selectCashierSection(section) {
+  activeCashierSection.value = section
+}
 
 // State
 const branchId = ref(null)
 const branchName = ref('')
 const products = ref([])
 const userProfile = ref({})
+const showAccountInfoModal = ref(false)
 const productSearch = ref('')
 const isLoadingProducts = ref(false)
 const scannerOpen = ref(false)
