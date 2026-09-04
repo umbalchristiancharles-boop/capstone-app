@@ -675,6 +675,14 @@ public function requestedProducts(Request $request)
             // Precompute which procurement requests have confirmed suppliers (have product_id in SupplierOrder)
             $confirmedSupplierProcReqIds = \App\Models\SupplierOrder::whereIn('procurement_request_id', $requests->pluck('id')->toArray())
                 ->whereNotNull('product_id')
+                ->where('admin_confirmed', true)
+                ->pluck('procurement_request_id')
+                ->unique()
+                ->toArray();
+
+            $unconfirmedSupplierProcReqIds = \App\Models\SupplierOrder::whereIn('procurement_request_id', $requests->pluck('id')->toArray())
+                ->whereNotNull('product_id')
+                ->where('admin_confirmed', false)
                 ->pluck('procurement_request_id')
                 ->unique()
                 ->toArray();
@@ -694,7 +702,7 @@ public function requestedProducts(Request $request)
                     return $orders->first();
                 });
 
-            $products = $products->map(function ($p) use ($requestsByProduct, $broadcastedProcReqIds, $confirmedSupplierProcReqIds, $existingOrders) {
+            $products = $products->map(function ($p) use ($requestsByProduct, $broadcastedProcReqIds, $confirmedSupplierProcReqIds, $unconfirmedSupplierProcReqIds, $existingOrders) {
                 $req = $requestsByProduct->get($p->id);
                 $p->procurement_request_id = $req ? $req->id : null;
                 $p->procurement_status = $req ? $req->status : null;
@@ -717,13 +725,17 @@ public function requestedProducts(Request $request)
                 // UI block placing orders and show the waiting message.
                 $wasBroadcast = $req ? in_array($req->id, $broadcastedProcReqIds) : false;
                 $p->waiting_for_supplier = $wasBroadcast && !$p->supplier_confirmed;
+                $p->awaiting_admin_confirmation = $req
+                    ? in_array($req->id, $unconfirmedSupplierProcReqIds)
+                        && !in_array($req->id, $confirmedSupplierProcReqIds)
+                    : false;
 
                 // Determine if procurement can acknowledge this request. If the product
                 // has no supplier or a non-positive price, procurement should NOT
                 // acknowledge and must request supplier input first.
                 // BUT if suppliers have already confirmed (have products), no need to request them
                 $p->needs_supplier = true;
-                if (!empty($p->supplier_id) && (float)($p->price ?? 0) > 0) {
+                if (!$wasBroadcast && !empty($p->supplier_id) && (float)($p->price ?? 0) > 0) {
                     $p->needs_supplier = false;
                 } elseif ($req && in_array($req->id, $confirmedSupplierProcReqIds)) {
                     // Suppliers have confirmed - don't need to request more suppliers
@@ -832,8 +844,14 @@ public function requestedProducts(Request $request)
             // 1. Get confirmed suppliers (those who submitted products)
             $confirmedSuppliers = SupplierOrder::where('procurement_request_id', $procRequest->id)
                 ->whereNotNull('product_id')
+                ->where('admin_confirmed', true)
                 ->with(['supplier', 'product'])
                 ->get();
+
+            $hasUnconfirmedSubmission = SupplierOrder::where('procurement_request_id', $procRequest->id)
+                ->whereNotNull('product_id')
+                ->where('admin_confirmed', false)
+                ->exists();
 
             // Accept optional supplier_id from request for multi-supplier selection
             $selectedSupplierId = $request->input('supplier_id');
@@ -854,6 +872,13 @@ public function requestedProducts(Request $request)
                 'request_body' => $request->all(),
                 'is_empty' => empty($selectedSupplierId)
             ]);
+
+            if ($hasUnconfirmedSubmission && $confirmedSuppliers->isEmpty()) {
+                return response()->json([
+                    'error' => 'At least one supplier product submission must be confirmed by admin before Procurement can continue.',
+                    'need_admin_confirmation' => true,
+                ], 400);
+            }
 
             if ($confirmedSuppliers->count() > 1 && !$selectedSupplierId) {
                 // Multiple suppliers exist but none selected
@@ -1430,6 +1455,7 @@ public function requestedProducts(Request $request)
         // Only include orders that have product_id (meaning supplier confirmed availability)
         $supplierOrders = SupplierOrder::where('procurement_request_id', $procRequest->id)
             ->whereNotNull('product_id')
+            ->where('admin_confirmed', true)
             ->with(['supplier', 'product'])
             ->get();
 

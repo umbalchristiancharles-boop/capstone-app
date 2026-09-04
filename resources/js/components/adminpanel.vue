@@ -144,6 +144,33 @@
             </div>
           </section>
 
+          <section class="panel-block supplier-review-panel">
+            <div class="panel-header">
+              <h2>Supplier Product Confirmations</h2>
+              <button class="panel-action" @click="loadSupplierSubmissions">Refresh</button>
+            </div>
+            <div class="panel-body panel-body--list">
+              <p>Review supplier product details before Procurement acknowledges the request.</p>
+              <div v-if="supplierSubmissionsLoading" class="supplier-review-empty">Loading supplier submissions...</div>
+              <div v-else-if="supplierSubmissions.length === 0" class="supplier-review-empty">No supplier submissions to review.</div>
+              <div v-else class="supplier-review-list">
+                <div v-for="submission in supplierSubmissions" :key="submission.id" class="supplier-review-item">
+                  <img v-if="submission.product?.image_url" :src="submission.product.image_url" alt="Supplier product" class="supplier-review-image" />
+                  <div class="supplier-review-details">
+                    <strong>{{ submission.product?.name || 'Product submission' }}</strong>
+                    <span>Supplier: {{ submission.supplier?.full_name || submission.supplier?.username || 'Unknown' }}</span>
+                    <span>Barcode: {{ submission.product?.barcode || 'Not provided' }}</span>
+                    <span>SKU: {{ submission.product?.sku || 'Not provided' }}</span>
+                  </div>
+                  <div class="supplier-review-action">
+                    <span v-if="submission.admin_confirmed" class="status-badge status-approved">Confirmed</span>
+                    <button v-else class="panel-action supplier-confirm-button" @click="confirmSupplierSubmission(submission)">Confirm Product</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
           <!-- Financial Metrics (moved to Attendance column) -->
 
           <!-- Orders table -->
@@ -608,6 +635,25 @@
                 <input v-model="productRequestForm.name" type="text" placeholder="e.g., Organic Chicken Breast" required />
               </div>
               <div class="form-group">
+                <label>Category*</label>
+                <select v-model="productRequestForm.category" required>
+                  <option value="">Select a category</option>
+                  <option value="Beverage">Beverage</option>
+                  <option value="Meat">Meat</option>
+                  <option value="Vegetable">Vegetable</option>
+                  <option value="Grain">Grain</option>
+                  <option value="Condiment">Condiment</option>
+                  <option value="Dairy">Dairy</option>
+                  <option value="Egg">Egg</option>
+                  <option value="Spice">Spice</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Product Brand</label>
+                <input v-model="productRequestForm.brand" type="text" placeholder="e.g., Magnolia" />
+              </div>
+              <div class="form-group">
                 <label>Description</label>
                 <textarea v-model="productRequestForm.description" rows="3" placeholder="Optional details"></textarea>
               </div>
@@ -718,8 +764,10 @@ const isLoggingOut = ref(false)
 const showOverlay = ref(false)
 // Product request modal state (Admin)
 const showProductRequestForm = ref(false)
-const productRequestForm = ref({ name: '', description: '', unit: '' })
+const productRequestForm = ref({ name: '', category: '', brand: '', description: '', unit: '' })
 const productRequestSubmitting = ref(false)
+const supplierSubmissions = ref([])
+const supplierSubmissionsLoading = ref(false)
 const showCustomerReports = ref(false)
 const showExpiredProducts = ref(false)
 const expiredProducts = ref([])
@@ -859,6 +907,8 @@ async function submitProductRequest() {
     const xsrf = await ensureCsrf()
     const payload = {
       name: productRequestForm.value.name,
+      category: productRequestForm.value.category,
+      brand: productRequestForm.value.brand || null,
       description: productRequestForm.value.description || null,
       unit: productRequestForm.value.unit || null,
     }
@@ -870,7 +920,7 @@ async function submitProductRequest() {
 
     showToast('Product request submitted for approval', 'success')
     showProductRequestForm.value = false
-    productRequestForm.value = { name: '', description: '', unit: '' }
+    productRequestForm.value = { name: '', category: '', brand: '', description: '', unit: '' }
   } catch (e) {
     const msg = e.response?.data?.error || e.response?.data?.message || e.message || 'Failed to submit product request'
     showToast(msg, 'error')
@@ -879,10 +929,38 @@ async function submitProductRequest() {
   }
 }
 
+async function loadSupplierSubmissions() {
+  supplierSubmissionsLoading.value = true
+  try {
+    const res = await axios.get('/api/superadmin/logistics/supplier-orders', { withCredentials: true, params: { per_page: 100 } })
+    const submissions = res.data?.data ?? res.data ?? []
+    supplierSubmissions.value = Array.isArray(submissions)
+      ? submissions.filter(order => order.product_id && order.supplier_id && (order.supplier?.full_name || order.supplier?.username) && order.product?.image_path && (order.product?.barcode || order.product?.sku))
+      : []
+  } catch (e) {
+    supplierSubmissions.value = []
+    console.error('Failed to load supplier submissions:', e)
+  } finally {
+    supplierSubmissionsLoading.value = false
+  }
+}
+
+async function confirmSupplierSubmission(submission) {
+  if (!submission?.id || submission.admin_confirmed) return
+  if (window.swalConfirm && !(await window.swalConfirm(`Confirm the product submitted by ${submission.supplier?.full_name || submission.supplier?.username || 'this supplier'}?`))) return
+  try {
+    await axios.post(`/api/superadmin/logistics/supplier-orders/${submission.id}/confirm`, {}, { withCredentials: true })
+    showToast('Supplier product confirmed.', 'success')
+    await loadSupplierSubmissions()
+  } catch (e) {
+    showToast(e.response?.data?.message || 'Failed to confirm supplier product.', 'error')
+  }
+}
+
 
 function cancelProductRequest() {
   showProductRequestForm.value = false
-  productRequestForm.value = { name: '', description: '', unit: '' }
+  productRequestForm.value = { name: '', category: '', brand: '', description: '', unit: '' }
 }
 
 async function loadAdminAttendance(range = 'today') {
@@ -1166,6 +1244,8 @@ onMounted(async () => {
   } catch (err) {
     console.error('Dashboard load failed:', err)
   }
+
+  await loadSupplierSubmissions()
 
 
 
@@ -1493,6 +1573,15 @@ function formatDate(dateString) {
 .primary-action-btn:hover {
   background: linear-gradient(135deg, #1a6ed8, #1557b0);
 }
+
+.supplier-review-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.supplier-review-item { display: flex; align-items: center; gap: 12px; padding: 10px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; }
+.supplier-review-image { width: 52px; height: 52px; object-fit: cover; border-radius: 6px; border: 1px solid #d1d5db; flex-shrink: 0; }
+.supplier-review-details { display: flex; flex: 1; flex-direction: column; gap: 2px; font-size: 12px; color: #6b7280; }
+.supplier-review-details strong { color: #1f2937; font-size: 14px; }
+.supplier-review-action { flex-shrink: 0; }
+.supplier-confirm-button { color: #fff; background: #2563eb; border: 0; padding: 6px 10px; }
+.supplier-review-empty { margin-top: 10px; color: #6b7280; font-size: 13px; }
 
 .modal-header-custom {
   display: flex;

@@ -147,7 +147,7 @@ class SuperAdminController extends Controller
             return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
         }
 
-        $allowed = Permission::allowed($user, ['SUPER_ADMIN', 'SUPERADMIN'], ['admin']);
+        $allowed = Permission::allowed($user, ['SUPER_ADMIN', 'SUPERADMIN', 'ADMIN', 'OWNER'], ['admin']);
         if (! $allowed) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
         }
@@ -410,7 +410,7 @@ class SuperAdminController extends Controller
             return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
         }
 
-        $allowed = Permission::allowed($user, ['SUPER_ADMIN', 'SUPERADMIN'], ['admin']);
+        $allowed = Permission::allowed($user, ['SUPER_ADMIN', 'SUPERADMIN', 'ADMIN', 'OWNER'], ['admin']);
         if (! $allowed) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
         }
@@ -419,6 +419,14 @@ class SuperAdminController extends Controller
             $branchId = $request->query('branch_id');
 
             $query = \App\Models\SupplierOrder::with(['product', 'procurementRequest.logisticsUser', 'branch', 'supplier'])
+                ->whereNotNull('supplier_id')
+                ->whereHas('product', function ($productQuery) {
+                    $productQuery->whereNotNull('image_path')
+                        ->where(function ($identifierQuery) {
+                            $identifierQuery->whereNotNull('barcode')
+                                ->orWhereNotNull('sku');
+                        });
+                })
                 ->orderBy('created_at', 'desc');
 
             if ($branchId) {
@@ -433,6 +441,35 @@ class SuperAdminController extends Controller
             Log::error('logisticsSupplierOrders failed', ['error' => $e->getMessage()]);
             return response()->json(['error' => 'Server error'], 500);
         }
+    }
+
+    public function confirmSupplierOrder(Request $request, $id)
+    {
+        $user = $this->resolveAuthenticatedUser($request);
+        if (!$user || !Permission::allowed($user, ['SUPER_ADMIN', 'SUPERADMIN', 'ADMIN', 'OWNER'], ['admin'])) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $order = \App\Models\SupplierOrder::with(['product', 'procurementRequest'])->findOrFail($id);
+        if (!$order->product_id || !$order->product || !$order->product->image_path || (!$order->product->barcode && !$order->product->sku)) {
+            return response()->json(['ok' => false, 'message' => 'Supplier has not submitted complete product details yet.'], 422);
+        }
+
+        $order->update([
+            'admin_confirmed' => true,
+            'admin_confirmed_by' => $user->id,
+            'admin_confirmed_at' => now(),
+        ]);
+
+        if ($order->procurementRequest) {
+            $order->procurementRequest->update([
+                'supplier_confirmed' => true,
+                'price' => $order->product?->price ?? $order->procurementRequest->price,
+                'total_amount' => ($order->product?->price ?? $order->procurementRequest->price) * max(1, $order->quantity),
+            ]);
+        }
+
+        return response()->json(['ok' => true, 'message' => 'Supplier product confirmed.', 'order' => $order->fresh()->load(['product', 'supplier', 'procurementRequest'])]);
     }
 
     /**

@@ -11,6 +11,10 @@
         <button class="finance-sidebar__item" :class="{ active: selectedSection === 'approvals' }" @click="selectedSection = 'approvals'">
           <span class="finance-sidebar__label">Approvals</span>
         </button>
+        <button class="finance-sidebar__item" :class="{ active: selectedSection === 'receipt-approvals' }" @click="selectedSection = 'receipt-approvals'">
+          <span class="finance-sidebar__label">Receipt Approval</span>
+          <span v-if="receiptSubmissions.length" class="finance-sidebar__badge">{{ receiptSubmissions.length }}</span>
+        </button>
         <button class="finance-sidebar__item" :class="{ active: selectedSection === 'transactions' }" @click="selectedSection = 'transactions'">
           <span class="finance-sidebar__label">Transactions</span>
         </button>
@@ -273,6 +277,59 @@
           </section>
         </template>
 
+        <!-- RECEIPT APPROVALS SECTION -->
+        <template v-if="selectedSection === 'receipt-approvals'">
+          <section class="finance-card finance-card--section-full">
+            <div class="finance-table-header">
+              <div>
+                <h3>Receipt Approval</h3>
+                <p class="finance-section-description">Review supplier receipts before delivery is marked on the way.</p>
+              </div>
+              <button class="finance-refresh-button" @click="loadReceiptSubmissions" :disabled="receiptsLoading">
+                {{ receiptsLoading ? 'Loading...' : 'Refresh' }}
+              </button>
+            </div>
+
+            <div v-if="receiptsLoading" class="loading-container">
+              <div class="loading-spinner"></div>
+              <p>Loading receipt submissions...</p>
+            </div>
+            <div v-else class="table-container">
+              <table class="branch-table data-table">
+                <thead>
+                  <tr>
+                    <th>Request</th>
+                    <th>Product</th>
+                    <th>Branch</th>
+                    <th>Uploaded</th>
+                    <th>Receipt</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="receipt in receiptSubmissions" :key="receipt.id">
+                    <td>#{{ receipt.id }}</td>
+                    <td>{{ receipt.product?.name || '(no product)' }}</td>
+                    <td>{{ receipt.branch?.name || receipt.branch_id || 'N/A' }}</td>
+                    <td>{{ formatDate(receipt.receipt_uploaded_at) }}</td>
+                    <td>
+                      <button class="btn-secondary btn-small" @click="openReceiptPreview(receipt)">View Receipt</button>
+                    </td>
+                    <td>
+                      <button class="btn-approve" @click="confirmReceipt(receipt.id)" :disabled="confirmingId === receipt.id">
+                        {{ confirmingId === receipt.id ? 'Processing...' : 'Confirm Receipt' }}
+                      </button>
+                    </td>
+                  </tr>
+                  <tr v-if="receiptSubmissions.length === 0">
+                    <td colspan="6" class="empty-message">No receipts awaiting approval.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </template>
+
         <!-- RECENT TRANSACTIONS SECTION -->
         <template v-if="selectedSection === 'transactions'">
           <section class="finance-card finance-card--section-full">
@@ -402,10 +459,11 @@
         </div>
 
         <div class="face-capture-buttons">
-          <button @click="capturePhoto" :disabled="isCapturing" class="btn-capture">
+          <button @click="capturePhoto" :disabled="isCapturing || !!cameraError || !cameraStream" class="btn-capture">
             <span v-if="!isCapturing">📸 Capture Photo</span>
             <span v-else>Capturing...</span>
           </button>
+          <button v-if="cameraError" @click="startCamera" class="btn-capture">Try Again</button>
           <button @click="cancelFaceCapture" class="btn-cancel">Cancel</button>
         </div>
 
@@ -633,6 +691,7 @@ const getSectionTitle = computed(() => {
     overview: 'Financial Overview',
     markup: 'Current Price Markup',
     approvals: 'Budget Request Approvals',
+    'receipt-approvals': 'Receipt Approval',
     transactions: 'Recent Transactions',
     attendance: 'Attendance'
   }
@@ -952,15 +1011,28 @@ async function performClockIn() {
 
 // Face capture methods
 async function startCamera() {
+  stopCamera()
+  cameraError.value = ''
+
+  if (!navigator.mediaDevices?.getUserMedia) {
+    cameraError.value = 'Camera access is unavailable. Use HTTPS or localhost and enable a camera.'
+    return
+  }
+
   try {
-    // Request camera access
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        width: { ideal: 640 },
-        height: { ideal: 480 },
-        facingMode: 'user' // Front camera
-      }
-    })
+    let stream
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+          facingMode: 'user'
+        }
+      })
+    } catch (error) {
+      if (error.name !== 'OverconstrainedError' && error.name !== 'NotFoundError') throw error
+      stream = await navigator.mediaDevices.getUserMedia({ video: true })
+    }
 
     cameraStream.value = stream
     cameraError.value = ''
@@ -972,7 +1044,15 @@ async function startCamera() {
     }
   } catch (error) {
     console.error('Camera access error:', error)
-    cameraError.value = 'Unable to access camera. Please grant camera permission.'
+    if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+      cameraError.value = 'Camera permission is blocked. Allow camera access for localhost, then click Try Again.'
+    } else if (error.name === 'NotFoundError') {
+      cameraError.value = 'No camera was found. Connect a camera, then click Try Again.'
+    } else if (error.name === 'NotReadableError') {
+      cameraError.value = 'The camera is busy in another app. Close it, then click Try Again.'
+    } else {
+      cameraError.value = 'Unable to access camera. Check browser permissions, then click Try Again.'
+    }
     stopCamera()
   }
 }

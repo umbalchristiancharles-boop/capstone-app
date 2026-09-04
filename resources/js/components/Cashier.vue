@@ -47,7 +47,7 @@
             <div v-if="p.per_pack_or_individual" class="product-type" :class="'type-' + p.per_pack_or_individual">
               {{ formatPricingType(p.per_pack_or_individual) }}
             </div>
-            <div class="product-price">₱{{ fmt(p.price) }}</div>
+            <div class="product-price">₱{{ fmt(displayPrice(p)) }}</div>
             <div v-if="p.computed_cost" class="product-cost">Cost: ₱{{ fmt(p.computed_cost) }}</div>
             <div class="product-stock" :class="{ 'stock-zero': p.stock <= 0 }">
               <template v-if="p.per_pack_or_individual && (p.per_pack_or_individual === 'per_pack' || p.per_pack_or_individual === 'both') && p.pack_quantity">
@@ -69,11 +69,11 @@
         <div v-if="cart.length === 0" class="empty-text">No items in cart. Click a product to add.</div>
 
         <div v-else class="cart-list">
-          <div v-for="(item, idx) in cart" :key="item.product_id" class="cart-item">
+          <div v-for="(item, idx) in cart" :key="item.cart_key" class="cart-item">
             <div class="cart-item-info">
               <span class="cart-item-name">{{ item.name }}</span>
               <div style="text-align:right">
-                <span class="cart-item-price">₱{{ fmt(item.unit_price) }}</span>
+                <span class="cart-item-price">{{ item.sale_mode === 'per_pack' ? 'Per pack' : 'Per piece' }}: ₱{{ fmt(item.unit_price) }}</span>
                 <div v-if="item.computed_cost" class="cart-item-cost">Cost: ₱{{ fmt(item.computed_cost) }}</div>
               </div>
             </div>
@@ -84,7 +84,7 @@
                 class="qty-input"
                 :value="item.quantity"
                 min="1"
-                :max="item.max_stock"
+                :max="item.max_sale_quantity"
                 @change="setQty(idx, $event)"
               />
               <button class="qty-btn" @click="incrementQty(idx)">+</button>
@@ -307,6 +307,25 @@ function formatPricingType(type) {
   return typeMap[type] || type
 }
 
+function pricingMode(product) {
+  const type = product.per_pack_or_individual || 'individual'
+  const packQty = Number(product.pack_quantity) || 0
+  if (packQty <= 0 || type === 'individual') return 'individual'
+  const answer = window.prompt(`Sell ${product.name} as:\n1: Per pack (₱${fmt(product.price)} for ${packQty || '?'} pieces)\n2: Individual (₱${fmt(piecePrice(product))} each)`, '1')
+  if (answer === null) return null
+  return answer.trim() === '2' ? 'individual' : 'per_pack'
+}
+
+function piecePrice(product) {
+  const packQty = Number(product.pack_quantity) || 0
+  const packPriced = ['per_pack', 'both'].includes(product.per_pack_or_individual)
+  return packPriced && packQty > 0 ? (Number(product.price) || 0) / packQty : Number(product.price) || 0
+}
+
+function displayPrice(product) {
+  return product.per_pack_or_individual === 'individual' ? piecePrice(product) : Number(product.price) || 0
+}
+
 const filteredProducts = computed(() => {
   const q = (productSearch.value || '').toLowerCase()
   return products.value.filter(p =>
@@ -439,10 +458,16 @@ function addToCart(product) {
       else return
     }
 
-    const existing = cart.value.find(i => i.product_id === chosen.id)
-    const maxPieces = availablePieces(chosen)
+    const saleMode = pricingMode(chosen)
+    if (!saleMode) return
+    const packQty = Number(chosen.pack_quantity) || 1
+    const piecesPerSale = saleMode === 'per_pack' ? packQty : 1
+    const unitPrice = saleMode === 'per_pack' ? Number(chosen.price) || 0 : piecePrice(chosen)
+    const availablePieceCount = availablePieces(chosen)
+    const maxSaleQuantity = Math.floor(availablePieceCount / piecesPerSale)
+    const existing = cart.value.find(i => i.cart_key === `${chosen.id}:${saleMode}`)
     if (existing) {
-      if (existing.quantity < maxPieces) {
+      if (existing.quantity < existing.max_sale_quantity) {
         existing.quantity++
         existing.subtotal = existing.unit_price * existing.quantity
       }
@@ -451,12 +476,15 @@ function addToCart(product) {
 
     cart.value.push({
       product_id: chosen.id,
+      cart_key: `${chosen.id}:${saleMode}`,
       name: chosen.name,
-      unit_price: Number(chosen.price) || 0,
+      sale_mode: saleMode,
+      unit_price: unitPrice,
       computed_cost: chosen.computed_cost || null,
       quantity: 1,
-      subtotal: Number(chosen.price) || 0,
-      max_stock: maxPieces,
+      subtotal: unitPrice,
+      max_sale_quantity: maxSaleQuantity,
+      pieces_per_sale: piecesPerSale,
     })
 
   }
@@ -485,7 +513,7 @@ function decrementQty(idx) {
 
 function incrementQty(idx) {
   const item = cart.value[idx]
-  if (item.quantity < item.max_stock) {
+  if (item.quantity < item.max_sale_quantity) {
     item.quantity++
     item.subtotal = item.quantity * item.unit_price
   }
@@ -494,7 +522,7 @@ function incrementQty(idx) {
 function setQty(idx, event) {
   const item = cart.value[idx]
   let val = parseInt(event.target.value) || 1
-  val = Math.max(1, Math.min(val, item.max_stock))
+  val = Math.max(1, Math.min(val, item.max_sale_quantity))
   item.quantity = val
   item.subtotal = val * item.unit_price
   event.target.value = val
@@ -544,7 +572,8 @@ async function processCheckout() {
       discount_percent: computedDiscountPercent.value || 0,
       items: cart.value.map(i => ({
         product_id: i.product_id,
-        quantity: i.quantity,
+        quantity: i.quantity * i.pieces_per_sale,
+        sale_mode: i.sale_mode,
       })),
     }
 

@@ -310,6 +310,30 @@
 
       <!-- Pending Stock Section (moved to Logistics) -->
       <div class="panel-section">
+        <h2 class="section-title">Product Barcodes</h2>
+        <p class="section-description">Supplier barcodes are preserved. Products without one receive a temporary system barcode until their real barcode is scanned.</p>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr><th>Product</th><th>Barcode</th><th>Source</th></tr>
+            </thead>
+            <tbody>
+              <tr v-for="product in inventory" :key="product.id">
+                <td>{{ product.name }}</td>
+                <td>
+                  <span v-for="(barcode, index) in (product.barcode_variants || [{ barcode: product.barcode, is_generated: product.barcode_is_generated }])" :key="barcode.barcode || index">
+                    {{ barcode.barcode || 'Generating...' }}<span v-if="index < (product.barcode_variants || []).length - 1">, </span>
+                  </span>
+                </td>
+                <td><span :class="['barcode-source', product.barcode_is_generated ? 'barcode-source--generated' : 'barcode-source--supplier']">{{ product.barcode_is_generated ? 'System generated' : 'Supplier' }}</span></td>
+              </tr>
+              <tr v-if="inventory.length === 0"><td colspan="3" class="empty-message">No products found.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel-section">
         <h2 class="section-title">
           Pending Stock
           <span v-if="managerPendingCount > 0" class="panel-badge">{{ managerPendingCount }}</span>
@@ -382,6 +406,19 @@
                     <span class="detail-label">Supplier</span>
                     <strong class="detail-value">{{ selectedPending.supplier_name }}</strong>
                   </div>
+                  <div class="detail-row">
+                    <span class="detail-label">Barcode</span>
+                    <strong class="detail-value">{{ selectedPending.product_barcode || 'Not assigned yet' }}</strong>
+                  </div>
+                </div>
+
+                <div class="form-group barcode-group">
+                  <label for="stock-barcode">Scan product barcode</label>
+                  <div class="barcode-input-row">
+                    <input id="stock-barcode" v-model.trim="confirmForm.barcode" type="text" inputmode="numeric" autocomplete="off" placeholder="Scan or enter barcode" @keyup.enter="submitPendingConfirmation" />
+                    <button class="btn-secondary" type="button" @click="openBarcodeScanner">Scan</button>
+                  </div>
+                  <div v-if="confirmForm.barcode" :class="['barcode-status', barcodeStatusClass]">{{ barcodeStatus }}</div>
                 </div>
 
                 <div class="form-group">
@@ -482,6 +519,23 @@
     </div>
   </transition>
 
+  <transition name="fade">
+    <div v-if="scannerOpen" class="info-backdrop" @click.self="closeBarcodeScanner">
+      <div class="info-modal barcode-scanner-modal">
+        <h3>Scan Product Barcode</h3>
+        <div class="barcode-camera-frame">
+          <video ref="scannerVideo" class="barcode-video" autoplay muted playsinline></video>
+          <div class="barcode-scan-guide" aria-hidden="true"></div>
+        </div>
+        <p v-if="!scannerError" class="scanner-hint">Center the barcode in the camera view.</p>
+        <p v-if="scannerError" class="info-error">{{ scannerError }}</p>
+        <div class="info-actions">
+          <button class="btn-outline" type="button" @click="closeBarcodeScanner">Close</button>
+        </div>
+      </div>
+    </div>
+  </transition>
+
   <!-- FULLSCREEN LOADING OVERLAY -->
   <transition name="fade">
     <div v-if="showOverlay" class="loading-overlay">
@@ -494,8 +548,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, computed, nextTick } from 'vue'
 import axios from 'axios'
+import { BrowserMultiFormatReader } from '@zxing/browser'
+import { BarcodeFormat, DecodeHintType } from '@zxing/library'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import { showToast } from './toastStore'
 
@@ -529,12 +585,26 @@ const pendingStockLoading = ref(false)
 const pendingStockError = ref('')
 const confirmingPending = ref({})
 const selectedPending = ref(null)
-const confirmForm = ref({ counted_stock: 0, notes: '', proof_image: null })
+const confirmForm = ref({ counted_stock: 0, notes: '', proof_image: null, barcode: '' })
 const confirmSubmitting = ref(false)
 const confirmError = ref('')
+const scannerOpen = ref(false)
+const scannerVideo = ref(null)
+const scannerError = ref('')
+let scannerControls = null
 const varianceAlerts = ref([])
 const varianceLoading = ref(false)
 const varianceError = ref('')
+
+const barcodeStatus = computed(() => {
+  if (!confirmForm.value.barcode) return selectedPending.value?.product_barcode_is_generated ? 'Scan the real supplier barcode to replace the temporary value.' : ''
+  if (selectedPending.value?.product_barcode_is_generated) return 'Scanned barcode will be saved to this product.'
+  if (!selectedPending.value?.product_barcode) return 'Barcode will be assigned to this product.'
+  return confirmForm.value.barcode === String(selectedPending.value.product_barcode)
+    ? 'Barcode matches this product.'
+    : 'Barcode does not match this product.'
+})
+const barcodeStatusClass = computed(() => barcodeStatus.value.includes('does not') ? 'barcode-status--error' : 'barcode-status--ok')
 
 // Product Request state
 const productRequests = ref([])
@@ -1015,19 +1085,80 @@ function selectPending(item) {
     counted_stock: Number(item.quantity ?? 0),
     notes: '',
     proof_image: null,
+    barcode: '',
   }
   confirmError.value = ''
 }
 
 function clearSelectedPending() {
+  closeBarcodeScanner()
   selectedPending.value = null
-  confirmForm.value = { counted_stock: 0, notes: '', proof_image: null }
+  confirmForm.value = { counted_stock: 0, notes: '', proof_image: null, barcode: '' }
   confirmError.value = ''
 }
 
 function onProofSelected(e) {
   const file = e?.target?.files?.[0] || null
   confirmForm.value = { ...confirmForm.value, proof_image: file }
+}
+
+async function openBarcodeScanner() {
+  scannerError.value = ''
+  scannerOpen.value = true
+  await nextTick()
+
+  if (!scannerVideo.value) {
+    scannerError.value = 'The camera preview could not be opened. Please close and try again.'
+    return
+  }
+
+  try {
+    const formats = [
+      BarcodeFormat.CODE_128,
+      BarcodeFormat.CODE_39,
+      BarcodeFormat.CODE_93,
+      BarcodeFormat.CODABAR,
+      BarcodeFormat.EAN_8,
+      BarcodeFormat.EAN_13,
+      BarcodeFormat.ITF,
+      BarcodeFormat.UPC_A,
+      BarcodeFormat.UPC_E,
+      BarcodeFormat.QR_CODE,
+    ]
+    const hints = new Map([
+      [DecodeHintType.POSSIBLE_FORMATS, formats],
+      [DecodeHintType.TRY_HARDER, true],
+    ])
+    const reader = new BrowserMultiFormatReader(hints)
+    scannerControls = await reader.decodeFromConstraints(
+      {
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+          focusMode: { ideal: 'continuous' },
+        },
+        audio: false,
+      },
+      scannerVideo.value,
+      (result, error) => {
+        if (result?.getText()) {
+          confirmForm.value = { ...confirmForm.value, barcode: result.getText().trim() }
+          closeBarcodeScanner()
+        }
+      }
+    )
+  } catch (error) {
+    scannerError.value = 'Camera access was denied or is unavailable. Check browser permissions and try again.'
+  }
+}
+
+function closeBarcodeScanner() {
+  scannerOpen.value = false
+  if (scannerControls) {
+    scannerControls.stop()
+    scannerControls = null
+  }
 }
 
 async function submitPendingConfirmation() {
@@ -1045,6 +1176,17 @@ async function submitPendingConfirmation() {
     return
   }
 
+  const barcode = String(confirmForm.value.barcode || '').trim()
+  if (!barcode) {
+    confirmError.value = 'Scan or enter the product barcode'
+    return
+  }
+
+  if (selectedPending.value.product_barcode && !selectedPending.value.product_barcode_is_generated && barcode !== String(selectedPending.value.product_barcode)) {
+    confirmError.value = 'The scanned barcode does not match the selected product'
+    return
+  }
+
   if (!confirmForm.value.proof_image) {
     confirmError.value = 'Proof image is required'
     return
@@ -1057,6 +1199,7 @@ async function submitPendingConfirmation() {
   try {
     const formData = new FormData()
     formData.append('counted_stock', String(qty))
+    formData.append('barcode', barcode)
     if (confirmForm.value.notes) formData.append('notes', confirmForm.value.notes)
     formData.append('proof_image', confirmForm.value.proof_image)
 
@@ -1073,6 +1216,8 @@ async function submitPendingConfirmation() {
     confirmingPending.value = { ...confirmingPending.value, [id]: false }
   }
 }
+
+onBeforeUnmount(closeBarcodeScanner)
 
 function storageUrl(path) {
   if (!path) return ''
@@ -1271,6 +1416,65 @@ function formatProductReqStatus(status) {
 }
 /* Keep small button style used in other components */
 .btn-small { padding: 6px 10px; font-size: 0.85rem; border-radius: 6px }
+
+.barcode-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.barcode-input-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.barcode-status {
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+.barcode-status--ok { color: #15803d; }
+.barcode-status--error { color: #b91c1c; }
+
+.barcode-source {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.barcode-source--generated { background: #fef3c7; color: #92400e; }
+.barcode-source--supplier { background: #dcfce7; color: #166534; }
+
+.barcode-scanner-modal {
+  max-width: 520px;
+}
+
+.barcode-video {
+  display: block;
+  width: 100%;
+  min-height: 280px;
+  max-height: 60vh;
+  object-fit: contain;
+  background: #111827;
+  border-radius: 8px;
+}
+
+.barcode-camera-frame {
+  position: relative;
+}
+
+.barcode-scan-guide {
+  position: absolute;
+  top: 25%;
+  left: 8%;
+  width: 84%;
+  height: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.12);
+  pointer-events: none;
+}
 
 .panel-section {
   background: rgba(255, 255, 255, 0.95);

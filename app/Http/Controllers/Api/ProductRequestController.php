@@ -84,6 +84,8 @@ class ProductRequestController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'category' => 'required|string|max:100',
+            'brand' => 'nullable|string|max:255',
             'description' => 'nullable|string|max:500',
             'unit' => 'nullable|string|max:50',
         ]);
@@ -97,6 +99,8 @@ class ProductRequestController extends Controller
 
             $productRequest = ProductRequest::create([
                 'name' => $validated['name'],
+                'category' => $validated['category'],
+                'brand' => $validated['brand'] ?? null,
                 'description' => $validated['description'] ?? null,
                 'unit' => $validated['unit'] ?? null,
                 'requested_by' => $user->id,
@@ -191,11 +195,15 @@ class ProductRequestController extends Controller
                 $product = Product::create([
                     'name' => $productRequest->name,
                     'slug' => $slug,
+                    'category' => $productRequest->category,
+                    'brand' => $productRequest->brand,
+                    'description' => $productRequest->description,
+                    'unit' => $productRequest->unit,
                     'price' => 0,
                     'cost_price' => 0,
                     'stock' => 0,
                     'min_stock' => 0,
-                    'sku' => 'LOGISTICS-REQUEST-' . $productRequest->id . '-' . mt_rand(1000, 9999),
+                    'sku' => null,
                     'branch_id' => $productRequest->branch_id ?? 1,
                     'supplier_name' => 'REQUESTED',
                     'supplier_id' => null,
@@ -507,12 +515,15 @@ class ProductRequestController extends Controller
                 $product = Product::create([
                     'name' => $productRequest->name,
                     'slug' => $slug,
+                    'category' => $productRequest->category,
+                    'brand' => $productRequest->brand,
                     'description' => $productRequest->description,
+                    'unit' => $productRequest->unit,
                     'price' => 0,
                     'cost_price' => 0,
                     'stock' => 0,
                     'min_stock' => 0,
-                    'sku' => 'PRODUCT-REQ-' . $productRequest->id . '-' . mt_rand(1000, 9999),
+                    'sku' => null,
                     'branch_id' => $productRequest->branch_id ?? 1,
                     'supplier_name' => 'TO BE ASSIGNED',
                     'supplier_id' => null,

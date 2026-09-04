@@ -165,8 +165,15 @@
           <div class="time-row" v-if="attendanceStatus.hours_worked > 0"><span class="time-label">Hours:</span><span class="time-value">{{ attendanceStatus.hours_worked }} hrs</span></div>
         </div>
         <div class="attendance-buttons">
-          <button @click="performClockIn" :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing" class="btn-clock-in">{{ isAttendanceProcessing ? '...' : 'Clock In' }}</button>
-          <button @click="performClockOut" :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockOut" class="btn-clock-out" :class="{ 'btn-disabled': !canClockOut && attendanceStatus.is_clocked_in }">{{ isAttendanceProcessing ? '...' : 'Clock Out' }}</button>
+          <button @click="performClockIn" :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing || locationLoading || !userLocation || !canClockInGeofencing" class="btn-clock-in">{{ locationLoading ? 'Getting Location...' : (isAttendanceProcessing ? '...' : 'Clock In') }}</button>
+          <button @click="performClockOut" :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockOut || locationLoading" class="btn-clock-out" :class="{ 'btn-disabled': !canClockOut && attendanceStatus.is_clocked_in }">{{ locationLoading ? 'Getting Location...' : (isAttendanceProcessing ? '...' : 'Clock Out') }}</button>
+        </div>
+        <div v-if="locationLoading" class="geofencing-status geofencing-loading">Getting your location...</div>
+        <div v-else-if="userLocation && canClockInGeofencing" class="geofencing-status geofencing-success">
+          <span class="status-icon">✓</span><span>Location verified</span>
+        </div>
+        <div v-else class="geofencing-status geofencing-error">
+          <span class="status-icon">⚠️</span><span>{{ locationError || 'Location is required to clock in' }}</span>
         </div>
         <div v-if="!canClockOut && attendanceStatus.is_clocked_in" class="clockout-restriction"><span class="restriction-icon">🔒</span><span>Cannot clock out before {{ scheduledTimeOut }}</span></div>
         <div v-if="attendanceMessage" :class="['attendance-message', attendanceMessageType]">{{ attendanceMessage }}</div>
@@ -322,10 +329,29 @@
       </div>
     </div>
   </transition>
+
+  <div v-if="showFaceCapture" class="face-capture-modal">
+    <div class="face-capture-content">
+      <h3>Take a Photo for Clock In</h3>
+      <p class="face-capture-instruction">Please position your face in the frame and click capture</p>
+      <div class="camera-container">
+        <video ref="cameraVideo" autoplay playsinline></video>
+        <canvas ref="cameraCanvas" style="display: none;"></canvas>
+        <div v-if="cameraError" class="camera-error">{{ cameraError }}</div>
+      </div>
+      <div class="face-capture-buttons">
+        <button @click="capturePhoto" :disabled="isCapturing || !!cameraError || !cameraStream" class="btn-capture">
+          {{ isCapturing ? 'Capturing...' : 'Capture Photo' }}
+        </button>
+        <button v-if="cameraError" @click="startCamera" class="btn-capture">Try Again</button>
+        <button @click="cancelFaceCapture" class="btn-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed, onUnmounted } from 'vue';
+import { ref, onMounted, watch, computed, onUnmounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import OwnerPanelLayout from '../OwnerPanelLayout.vue'
@@ -423,6 +449,13 @@ const locationLoading = ref(false);
 const locationError = ref('');
 const canClockInGeofencing = ref(true);
 const geofencingMessage = ref('');
+const showFaceCapture = ref(false);
+const capturedImage = ref(null);
+const cameraStream = ref(null);
+const cameraError = ref('');
+const isCapturing = ref(false);
+const cameraVideo = ref(null);
+const cameraCanvas = ref(null);
 const notificationCounts = ref({ inventory: 0 })
 const hasNotified = ref(false)
 const inventoryPendingCount = computed(() => {
@@ -1146,6 +1179,7 @@ function onDocClick(e) {
 // Register cleanup during setup (must be registered synchronously)
 onUnmounted(() => {
   try { document.removeEventListener('click', onDocClick) } catch (e) {}
+  stopCamera()
 })
 
 onMounted(async () => {
@@ -1176,6 +1210,7 @@ onMounted(async () => {
   if (!hideAttendanceCard.value) {
     loadAttendanceStatus()
     loadAttendanceSettings()
+    getUserLocation()
   }
   // ProductList will handle fetching when given a fetchUrl; if a parent passed products prop, ProductList will display them.
   // initial stats update after mount
@@ -1532,6 +1567,10 @@ const getUserLocation = async () => {
       latitude: position.coords.latitude,
       longitude: position.coords.longitude
     }
+    if (attendanceMessageType.value === 'warning') {
+      attendanceMessage.value = ''
+      attendanceMessageType.value = ''
+    }
   } catch (error) {
     console.error('Error getting location:', error)
     locationError.value = 'Unable to retrieve your location. Please enable location services.'
@@ -1561,23 +1600,97 @@ async function loadAttendanceSettings() {
 }
 
 async function performClockIn() {
-  if (isAttendanceProcessing.value) return
+  if (isAttendanceProcessing.value || locationLoading.value) return
 
   if (!userLocation.value) {
     attendanceMessage.value = 'Please enable location services to clock in'
     attendanceMessageType.value = 'warning'
     await getUserLocation()
-    setTimeout(() => { attendanceMessage.value = '' }, 3000)
+    if (!userLocation.value) return
+  }
+
+  attendanceMessage.value = ''
+  attendanceMessageType.value = ''
+  showFaceCapture.value = true
+  capturedImage.value = null
+  cameraError.value = ''
+  await startCamera()
+}
+
+async function startCamera() {
+  stopCamera()
+  cameraError.value = ''
+
+  if (!navigator.mediaDevices?.getUserMedia) {
+    cameraError.value = 'Camera access is unavailable. Use HTTPS or localhost and enable a camera.'
     return
   }
 
+  try {
+    let stream
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }
+      })
+    } catch (error) {
+      if (error.name !== 'OverconstrainedError' && error.name !== 'NotFoundError') throw error
+      stream = await navigator.mediaDevices.getUserMedia({ video: true })
+    }
+    cameraStream.value = stream
+    await nextTick()
+    if (cameraVideo.value) cameraVideo.value.srcObject = stream
+  } catch (error) {
+    console.error('Camera access error:', error)
+    cameraError.value = error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError'
+      ? 'Camera permission is blocked. Allow camera access, then click Try Again.'
+      : 'Unable to access camera. Check browser permissions, then click Try Again.'
+    stopCamera()
+  }
+}
+
+function stopCamera() {
+  if (cameraStream.value) {
+    cameraStream.value.getTracks().forEach(track => track.stop())
+    cameraStream.value = null
+  }
+}
+
+function capturePhoto() {
+  const video = cameraVideo.value
+  const canvas = cameraCanvas.value
+  if (!video || !canvas || !video.videoWidth) {
+    attendanceMessage.value = 'Camera not ready. Please try again.'
+    attendanceMessageType.value = 'error'
+    return
+  }
+
+  isCapturing.value = true
+  canvas.width = video.videoWidth
+  canvas.height = video.videoHeight
+  canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height)
+  capturedImage.value = canvas.toDataURL('image/jpeg', 0.8)
+  stopCamera()
+  showFaceCapture.value = false
+  proceedWithClockIn()
+}
+
+function cancelFaceCapture() {
+  stopCamera()
+  showFaceCapture.value = false
+  capturedImage.value = null
+  cameraError.value = ''
+  isCapturing.value = false
+}
+
+async function proceedWithClockIn() {
+  if (isAttendanceProcessing.value || !userLocation.value || !capturedImage.value) return
   isAttendanceProcessing.value = true
-  attendanceMessage.value = ''
 
   try {
     const res = await axios.post('/api/staff/clock-in', {
       latitude: userLocation.value.latitude,
-      longitude: userLocation.value.longitude
+      longitude: userLocation.value.longitude,
+      face_image: capturedImage.value
     }, { withCredentials: true })
 
     if (res.data && (res.data.success || res.data.ok)) {
@@ -1605,18 +1718,19 @@ async function performClockIn() {
     }
   } finally {
     isAttendanceProcessing.value = false
+    isCapturing.value = false
     setTimeout(() => { attendanceMessage.value = '' }, 3000)
   }
 }
 
 async function performClockOut() {
-  if (isAttendanceProcessing.value) return
+  if (isAttendanceProcessing.value || locationLoading.value) return
 
   if (!userLocation.value) {
     attendanceMessage.value = 'Please enable location services to clock out'
     attendanceMessageType.value = 'warning'
     await getUserLocation()
-    setTimeout(() => { attendanceMessage.value = '' }, 3000)
+    if (!userLocation.value) return
     return
   }
 
@@ -2635,6 +2749,36 @@ ProductList[compact] { width:100% }
   font-size: 1.1rem;
   font-weight: bold;
 }
+
+.face-capture-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.68);
+}
+
+.face-capture-content {
+  width: min(100%, 520px);
+  padding: 24px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.24);
+}
+
+.face-capture-content h3 { margin: 0 0 8px; color: #333; }
+.face-capture-instruction { margin: 0 0 16px; color: #6b6b6b; }
+.camera-container { position: relative; overflow: hidden; min-height: 240px; border-radius: 8px; background: #111827; }
+.camera-container video { display: block; width: 100%; min-height: 240px; object-fit: cover; }
+.camera-error { padding: 24px; color: #fecaca; text-align: center; }
+.face-capture-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.btn-capture, .btn-cancel { padding: 10px 14px; border: 0; border-radius: 8px; cursor: pointer; font-weight: 600; }
+.btn-capture { background: #16a34a; color: #fff; }
+.btn-capture:disabled { cursor: not-allowed; opacity: .55; }
+.btn-cancel { background: #e5e7eb; color: #1f2937; }
 
 /* Modal styles */
 .info-backdrop {

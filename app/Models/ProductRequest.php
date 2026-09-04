@@ -12,6 +12,8 @@ class ProductRequest extends Model
 
     protected $fillable = [
         'name',
+        'category',
+        'brand',
         'description',
         'unit',
         'requested_by',

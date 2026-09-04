@@ -23,6 +23,9 @@ class SupplierOrder extends Model
         'expires_at',
         'date_made',
         'estimated_delivery_datetime',
+        'admin_confirmed',
+        'admin_confirmed_by',
+        'admin_confirmed_at',
     ];
 
     protected $casts = [
@@ -31,6 +34,8 @@ class SupplierOrder extends Model
         'expires_at' => 'datetime',
         'date_made' => 'date',
         'estimated_delivery_datetime' => 'datetime',
+        'admin_confirmed' => 'boolean',
+        'admin_confirmed_at' => 'datetime',
     ];
 
     public function procurementRequest(): BelongsTo

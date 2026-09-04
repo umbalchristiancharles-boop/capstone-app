@@ -48,6 +48,7 @@
                           <th>Branch</th>
                           <th>Qty</th>
                           <th>Total</th>
+                          <th>Supplier Input</th>
                           <th>Status</th>
                         </tr>
                       </thead>
@@ -57,9 +58,20 @@
                           <td>{{ order.branch?.name || order.branch_id }}</td>
                           <td>{{ order.quantity }}</td>
                           <td>{{ formatPrice(order.product?.price * order.quantity) }}</td>
+                          <td>
+                            <div v-if="order.product_id" class="supplier-input-review">
+                              <img v-if="order.product?.image_url" :src="order.product.image_url" alt="Supplier product" class="supplier-product-image" />
+                              <div>
+                                <div>{{ order.supplier?.full_name || order.supplier?.username || 'Supplier' }}</div>
+                                <button v-if="!order.admin_confirmed" class="btn-small btn-primary" @click="confirmSupplierOrder(order)">Confirm Product</button>
+                                <span v-else class="status-badge status-approved">Admin confirmed</span>
+                              </div>
+                            </div>
+                            <span v-else class="muted">No submission</span>
+                          </td>
                           <td><span :class="['status-badge', getStatusClass(order.status)]">{{ order.status }}</span></td>
                         </tr>
-                        <tr v-if="orders.length === 0"><td colspan="5" class="empty-message">No orders.</td></tr>
+                        <tr v-if="orders.length === 0"><td colspan="6" class="empty-message">No orders.</td></tr>
                       </tbody>
                     </table>
                   </div>
@@ -282,6 +294,19 @@ async function loadOrders() {
   } finally { ordersLoading.value = false }
 }
 
+async function confirmSupplierOrder(order) {
+  if (!order?.id || order.admin_confirmed) return
+  if (!(await window.swalConfirm(`Confirm the product submitted by ${order.supplier?.full_name || order.supplier?.username || 'this supplier'}?`))) return
+  try {
+    await axios.post(`/api/superadmin/logistics/supplier-orders/${order.id}/confirm`, {}, { withCredentials: true })
+    showToast('Supplier product confirmed. Procurement can now acknowledge it.', 'success')
+    await loadOrders()
+    await loadPanelNotifications()
+  } catch (e) {
+    showToast(e.response?.data?.message || 'Failed to confirm supplier product.', 'error')
+  }
+}
+
 async function loadDeliveries() {
   deliveriesLoading.value = true
   try {
@@ -464,6 +489,9 @@ onUnmounted(() => {
 }
 
 .panel-section { background: rgba(255,255,255,0.95); border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: background-color 0.3s ease, box-shadow 0.3s ease; }
+
+.supplier-input-review { display:flex; align-items:center; gap:8px; min-width:190px; }
+.supplier-product-image { width:44px; height:44px; object-fit:cover; border-radius:6px; border:1px solid #d1d5db; }
 
 :global(.dark-mode) .panel-section {
   background: rgba(45,45,45,0.9);

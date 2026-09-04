@@ -592,6 +592,7 @@
           </h2>
           <div class="hr-attendance-actions">
             <select v-model="attendanceRange" @change="loadHrAttendance(attendanceRange)" class="hr-attendance-select">
+              <option value="all">All Records</option>
               <option value="today">Today</option>
               <option value="thisWeek">This Week</option>
               <option value="thisMonth">This Month</option>
@@ -960,7 +961,7 @@ const isSubmitting = ref(false)
 const formError = ref('')
 const editingStaffId = ref(null)
   const hrAttendance = ref([])
-  const attendanceRange = ref('today')
+  const attendanceRange = ref('all')
   const isLoadingAttendance = ref(false)
   const hasNotified = ref(false)
   const hrAlertCount = computed(() => {

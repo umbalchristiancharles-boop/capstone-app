@@ -154,6 +154,10 @@ Route::get('/', function () {
     return no_cache_view('dashboard'); // Vue SPA entry
 });
 
+Route::get('/staff-landing', function () {
+    return no_cache_view('dashboard');
+});
+
 Route::get('/test', function () {
     return 'OK';
 });

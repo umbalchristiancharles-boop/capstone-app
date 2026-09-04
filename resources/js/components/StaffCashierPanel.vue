@@ -16,8 +16,14 @@
         <!-- LEFT: Product catalogue -->
         <section class="product-catalogue">
           <h2>Products</h2>
-          <div class="search-bar">
-            <input v-model="productSearch" type="text" placeholder="Search products..." />
+          <div class="search-bar product-lookup-bar">
+            <input
+              v-model.trim="productSearch"
+              type="text"
+              placeholder="Scan or enter barcode / search product"
+              @keyup.enter="findProductByLookup"
+            />
+            <button class="scan-btn" type="button" @click="openBarcodeScanner">Scan</button>
           </div>
           <div v-if="isLoadingProducts" class="loading-text">Loading products...</div>
           <div v-else-if="filteredProducts.length === 0" class="empty-text">No products available</div>
@@ -36,7 +42,7 @@
                   <div v-if="p.per_pack_or_individual" class="product-type" :class="'type-' + p.per_pack_or_individual">
                     {{ formatPricingType(p.per_pack_or_individual) }}
                   </div>
-                  <div class="product-price">₱{{ fmt(p.price) }}</div>
+                  <div class="product-price">₱{{ fmt(displayPrice(p)) }}</div>
                   <div class="product-stock" :class="{ 'stock-zero': p.stock <= 0 }">
                     {{ p.stock > 0 ? 'Stock: ' + p.stock : 'Out of stock' }}
                   </div>
@@ -181,10 +187,10 @@
         <div v-if="cart.length === 0" class="empty-text">No items in cart. Click a product to add.</div>
 
         <div v-else class="cart-list">
-          <div v-for="(item, idx) in cart" :key="item.product_id" class="cart-item">
+          <div v-for="(item, idx) in cart" :key="item.cart_key" class="cart-item">
             <div class="cart-item-info">
               <span class="cart-item-name">{{ item.name }}</span>
-              <span class="cart-item-price">₱{{ fmt(item.unit_price) }}</span>
+                <span class="cart-item-price">{{ item.sale_mode === 'per_pack' ? 'Per pack' : 'Per piece' }}: ₱{{ fmt(item.unit_price) }}</span>
             </div>
             <div class="cart-item-controls">
               <button class="qty-btn" @click="decrementQty(idx)">−</button>
@@ -193,7 +199,7 @@
                 class="qty-input"
                 :value="item.quantity"
                 min="1"
-                :max="item.max_stock"
+                :max="item.max_sale_quantity"
                 @change="setQty(idx, $event)"
               />
               <button class="qty-btn" @click="incrementQty(idx)">+</button>
@@ -285,12 +291,33 @@
       </section>
     </template>
   </OwnerPanelLayout>
+
+  <div v-if="scannerOpen" style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); display: flex; align-items: center; justify-content: center; z-index: 2000;" @click.self="closeBarcodeScanner">
+    <div style="width: min(92vw, 560px); background: #fff; border-radius: 18px; padding: 18px; box-shadow: 0 20px 50px rgba(0,0,0,.25);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 style="margin: 0; color: #1f2937;">Scan Product Barcode</h3>
+        <button type="button" @click="closeBarcodeScanner" style="border: 0; background: transparent; font-size: 24px; cursor: pointer; color: #475569;">×</button>
+      </div>
+      <div style="position: relative; width: 100%; aspect-ratio: 4 / 3; background: #0f172a; border-radius: 12px; overflow: hidden;">
+        <video ref="scannerVideo" autoplay muted playsinline style="width: 100%; height: 100%; object-fit: cover; display: block;"></video>
+        <div style="position: absolute; inset: 16px; border: 3px solid rgba(45, 212, 191, 0.95); border-radius: 12px; box-shadow: inset 0 0 0 9999px rgba(15, 23, 42, 0.18);"></div>
+      </div>
+      <p v-if="!scannerError" style="margin: 12px 0 0; color: #475569; text-align: center;">Center the barcode in the camera view.</p>
+      <p v-if="scannerError" style="margin: 12px 0 0; color: #b91c1c; text-align: center;">{{ scannerError }}</p>
+      <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
+        <button type="button" @click="closeBarcodeScanner" style="padding: 10px 18px; border-radius: 10px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer; color: #334155;">Close</button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
+import Swal from 'sweetalert2'
+import { BrowserMultiFormatReader } from '@zxing/browser'
+import { BarcodeFormat, DecodeHintType } from '@zxing/library'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import { showToast } from './toastStore'
 
@@ -303,6 +330,10 @@ const products = ref([])
 const userProfile = ref({})
 const productSearch = ref('')
 const isLoadingProducts = ref(false)
+const scannerOpen = ref(false)
+const scannerVideo = ref(null)
+const scannerError = ref('')
+let scannerControls = null
 
 const cart = ref([])
 const customerName = ref('')
@@ -380,12 +411,152 @@ function formatPricingType(type) {
   return typeMap[type] || type
 }
 
+async function pricingMode(product) {
+  const type = product.per_pack_or_individual || 'individual'
+  const packQty = Number(product.pack_quantity) || 0
+  if (packQty <= 0 || type === 'individual') return 'individual'
+
+  const result = await Swal.fire({
+    title: `Sell ${product.name}`,
+    text: 'Choose how this item will be sold.',
+    input: 'radio',
+    inputOptions: {
+      per_pack: `Per pack — ₱${fmt(product.price)} for ${packQty} pieces`,
+      individual: `Individual — ₱${fmt(piecePrice(product))} each`
+    },
+    inputValue: 'per_pack',
+    showCancelButton: true,
+    confirmButtonText: 'Select',
+    cancelButtonText: 'Cancel',
+    showCloseButton: true,
+    allowOutsideClick: false,
+    inputValidator: (value) => {
+      if (!value) {
+        return 'Please choose a sale mode.'
+      }
+    }
+  })
+
+  if (!result.isConfirmed) return null
+  return result.value === 'individual' ? 'individual' : 'per_pack'
+}
+
+function piecePrice(product) {
+  const packQty = Number(product.pack_quantity) || 0
+  const packPriced = ['per_pack', 'both'].includes(product.per_pack_or_individual)
+  return packPriced && packQty > 0 ? (Number(product.price) || 0) / packQty : Number(product.price) || 0
+}
+
+function displayPrice(product) {
+  return product.per_pack_or_individual === 'individual' ? piecePrice(product) : Number(product.price) || 0
+}
+
 const filteredProducts = computed(() => {
-  const q = (productSearch.value || '').toLowerCase()
-  return products.value.filter(p =>
-    p.name.toLowerCase().includes(q) || (p.sku || '').toLowerCase().includes(q)
-  )
+  const q = (productSearch.value || '').trim().toLowerCase()
+  if (!q) return products.value
+
+  return products.value.filter(p => {
+    const name = (p.name || '').toLowerCase()
+    const sku = (p.sku || '').toLowerCase()
+    const barcode = (p.barcode || '').toLowerCase()
+    return name.includes(q) || sku.includes(q) || barcode.includes(q)
+  })
 })
+
+function findProductByLookup() {
+  const q = (productSearch.value || '').trim()
+  if (!q) return
+
+  const matches = products.value.filter(p => {
+    const name = (p.name || '').toLowerCase()
+    const sku = (p.sku || '').toLowerCase()
+    const barcode = (p.barcode || '').toLowerCase()
+    const lookup = q.toLowerCase()
+    return name === lookup || sku === lookup || barcode === lookup || name.includes(lookup) || sku.includes(lookup) || barcode.includes(lookup)
+  })
+
+  if (matches.length === 1) {
+    addToCart(matches[0])
+    productSearch.value = ''
+    return
+  }
+
+  if (matches.length > 1) {
+    const first = matches[0]
+    productSearch.value = first.barcode || first.sku || first.name
+    return
+  }
+
+  showToast('No product matched that barcode or search term.', 'warning')
+}
+
+async function openBarcodeScanner() {
+  scannerError.value = ''
+  scannerOpen.value = true
+  await nextTick()
+
+  if (!scannerVideo.value) {
+    scannerError.value = 'The camera preview could not be opened. Please close and try again.'
+    return
+  }
+
+  try {
+    const formats = [
+      BarcodeFormat.CODE_128,
+      BarcodeFormat.CODE_39,
+      BarcodeFormat.CODE_93,
+      BarcodeFormat.CODABAR,
+      BarcodeFormat.EAN_8,
+      BarcodeFormat.EAN_13,
+      BarcodeFormat.ITF,
+      BarcodeFormat.UPC_A,
+      BarcodeFormat.UPC_E,
+      BarcodeFormat.QR_CODE,
+    ]
+    const hints = new Map([
+      [DecodeHintType.POSSIBLE_FORMATS, formats],
+      [DecodeHintType.TRY_HARDER, true],
+    ])
+    const reader = new BrowserMultiFormatReader(hints)
+    scannerControls = await reader.decodeFromConstraints(
+      {
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+          focusMode: { ideal: 'continuous' },
+        },
+        audio: false,
+      },
+      scannerVideo.value,
+      (result, error) => {
+        if (result?.getText()) {
+          const scanned = result.getText().trim()
+          productSearch.value = scanned
+          closeBarcodeScanner()
+          const matched = products.value.find(p => {
+            const barcode = (p.barcode || '').trim().toLowerCase()
+            return barcode && barcode === scanned.toLowerCase()
+          })
+          if (matched) {
+            addToCart(matched)
+            productSearch.value = ''
+          }
+        }
+      }
+    )
+  } catch (error) {
+    scannerError.value = 'Camera access was denied or is unavailable. Check browser permissions and try again.'
+  }
+}
+
+function closeBarcodeScanner() {
+  scannerOpen.value = false
+  if (scannerControls) {
+    scannerControls.stop()
+    scannerControls = null
+  }
+}
 
 // Product categories for organizing cashier display
 const productCategories = computed(() => {
@@ -844,37 +1015,60 @@ async function getUserLocation() {
 }
 
 // Cart operations
-function addToCart(product) {
+async function addToCart(product) {
   // detect supplier-specific options with stock
   const options = getSupplierOptionsFor(product)
   let chosen = product
   if (options.length >= 2) {
-    const msg = options.map((o, idx) => `${idx+1}: ${o.name} — ₱${fmt(o.price)} (stock: ${o.stock})`).join('\n')
-    const sel = window.prompt('Multiple supplier options available:\n' + msg + '\nEnter option number to add:', '1')
-    const n = parseInt(sel)
-    if (!isNaN(n) && n >= 1 && n <= options.length) chosen = options[n-1]
-    else return
+    const result = await Swal.fire({
+      title: 'Choose supplier option',
+      text: 'Select which supplier item to add to the cart.',
+      input: 'radio',
+      inputOptions: Object.fromEntries(
+        options.map((o, idx) => [String(idx), `${o.name} — ₱${fmt(o.price)} (stock: ${o.stock})`])
+      ),
+      inputValue: '0',
+      showCancelButton: true,
+      confirmButtonText: 'Add',
+      cancelButtonText: 'Cancel',
+      allowOutsideClick: false,
+      inputValidator: (value) => {
+        if (value === undefined || value === null || value === '') {
+          return 'Please choose an option.'
+        }
+      }
+    })
+
+    if (!result.isConfirmed) return
+    chosen = options[Number(result.value)] || product
   }
 
-  const existing = cart.value.find(i => i.product_id === chosen.id)
+  const saleMode = await pricingMode(chosen)
+  if (!saleMode) return
+  const packQty = Number(chosen.pack_quantity) || 1
+  const piecesPerSale = saleMode === 'per_pack' ? packQty : 1
+  const unitPrice = saleMode === 'per_pack' ? Number(chosen.price) || 0 : piecePrice(chosen)
+  const availablePieces = chosen.is_kitchen_dish ? chosen.stock : (chosen.real_stock ?? chosen.stock) * (saleMode === 'per_pack' ? packQty : 1)
+  const maxSaleQuantity = Math.floor(availablePieces / piecesPerSale)
+  const existing = cart.value.find(i => i.cart_key === `${chosen.id}:${saleMode}`)
   if (existing) {
-    // For kitchen dishes, use display stock (generous value from backend);
-    // for regular products, use real_stock to aggregate across supplier-specific rows
-    const maxQty = chosen.is_kitchen_dish ? chosen.stock : (chosen.real_stock ?? chosen.stock);
-    if (existing.quantity < maxQty) {
+    if (existing.quantity < existing.max_sale_quantity) {
       existing.quantity++
       existing.subtotal = existing.quantity * existing.unit_price
     }
   } else {
     cart.value.push({
       product_id: chosen.id,
+      cart_key: `${chosen.id}:${saleMode}`,
       name: chosen.name,
-      unit_price: Number(chosen.price),
+      sale_mode: saleMode,
+      unit_price: unitPrice,
       quantity: 1,
-      subtotal: Number(chosen.price),
+      subtotal: unitPrice,
       // For kitchen dishes, use display stock (generous to allow multiple orders);
       // for regular products, use real_stock to aggregate across supplier-specific rows
-      max_stock: chosen.is_kitchen_dish ? chosen.stock : (chosen.real_stock ?? chosen.stock),
+      max_sale_quantity: maxSaleQuantity,
+      pieces_per_sale: piecesPerSale,
     })
   }
 }
@@ -903,7 +1097,7 @@ function decrementQty(idx) {
 
 function incrementQty(idx) {
   const item = cart.value[idx]
-  if (item.quantity < item.max_stock) {
+  if (item.quantity < item.max_sale_quantity) {
     item.quantity++
     item.subtotal = item.quantity * item.unit_price
   }
@@ -912,7 +1106,7 @@ function incrementQty(idx) {
 function setQty(idx, event) {
   const item = cart.value[idx]
   let val = parseInt(event.target.value) || 1
-  val = Math.max(1, Math.min(val, item.max_stock))
+  val = Math.max(1, Math.min(val, item.max_sale_quantity))
   item.quantity = val
   item.subtotal = val * item.unit_price
   event.target.value = val
@@ -961,7 +1155,8 @@ async function processCheckout() {
         discount_percent: computedDiscountPercent.value || 0,
       items: cart.value.map(i => ({
         product_id: i.product_id,
-        quantity: i.quantity,
+        quantity: i.quantity * i.pieces_per_sale,
+        sale_mode: i.sale_mode,
       })),
     }
 
@@ -1114,6 +1309,14 @@ async function performLogout() {
   font-size: 1.15rem;
 }
 
+.product-lookup-bar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
 .product-catalogue .search-bar {
   position: relative;
 }
@@ -1133,10 +1336,34 @@ async function performLogout() {
   border: 1px solid rgba(255,211,107,0.4);
   border-radius: 12px;
   font-size: 14px;
-  margin-bottom: 12px;
   background: #fbfbfb;
+  min-width: 0;
 }
 .search-bar input:focus { outline: none; border-color: #ff7a18; box-shadow: 0 0 0 3px rgba(255,154,74,0.14); }
+
+.scan-btn {
+  background: linear-gradient(135deg, #ff8d3a 0%, #ff6a3d 100%);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(255, 106, 61, 0.28);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.scan-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(255, 106, 61, 0.32);
+  filter: brightness(1.02);
+}
+
+.scan-btn:active {
+  transform: translateY(0);
+}
 
 .category-section {
   margin-bottom: 20px;

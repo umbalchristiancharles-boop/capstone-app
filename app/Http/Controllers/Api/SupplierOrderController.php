@@ -63,7 +63,6 @@ class SupplierOrderController extends Controller
             'name' => 'required|string|max:255',
             // price must be a positive number greater than zero
             'price' => 'required|numeric|min:0.01',
-            'category' => 'required|string|max:255|not_in:,null',
             'per_pack_or_individual' => 'required|in:individual,per_pack,both',
             // If front-end always sends the field, allow null when not per_pack by using nullable.
             // Keep required_if to force presence when per_pack is selected.
@@ -72,20 +71,44 @@ class SupplierOrderController extends Controller
             'expires_at' => 'nullable|date_format:Y-m-d\TH:i',
             'date_made' => 'nullable|date_format:Y-m-d|before_or_equal:today',
             'stock' => 'nullable|integer|min:0',
-            'sku' => 'nullable|string|max:255'
+            'sku' => 'nullable|string|max:255',
+            'barcode' => 'nullable|string|max:64',
+            'product_image' => 'required|image|max:5120',
         ]);
 
-        // Additional check: ensure category is not empty after trimming
-        if (empty(trim($validated['category'] ?? ''))) {
-            return response()->json(['error' => 'Category cannot be empty'], 422);
+        $barcode = trim($validated['barcode'] ?? '');
+        $submittedSku = trim($validated['sku'] ?? '');
+        if ($barcode === '' && $submittedSku === '') {
+            return response()->json(['error' => 'Enter the product barcode or SKU.'], 422);
+        }
+
+        if ($barcode !== '') {
+            $barcodeOwner = \App\Models\Product::where('barcode', $barcode)
+                ->where('supplier_id', $user->id)
+                ->where('branch_id', $order->branch_id)
+                ->where('name', '<>', $validated['name'])
+                ->first();
+            if ($barcodeOwner) {
+                return response()->json(['error' => 'This barcode is already assigned to another product for your supplier.'], 422);
+            }
+        }
+        if ($submittedSku !== '') {
+            $skuOwner = \App\Models\Product::where('sku', $submittedSku)
+                ->where('supplier_id', $user->id)
+                ->where('branch_id', $order->branch_id)
+                ->where('name', '<>', $validated['name'])
+                ->first();
+            if ($skuOwner) {
+                return response()->json(['error' => 'This SKU is already assigned to another product for your supplier.'], 422);
+            }
         }
 
         try {
             DB::beginTransaction();
+            $imagePath = $request->file('product_image')->store('product-images', 'public');
 
             Log::info('submitProduct: validated data', [
                 'name' => $validated['name'],
-                'category' => $validated['category'],
                 'price' => $validated['price'],
                 'expires_at' => $validated['expires_at'] ?? null,
             ]);
@@ -95,8 +118,6 @@ class SupplierOrderController extends Controller
                 ->where('branch_id', $order->branch_id)
                 ->exists();
             // Ensure SKU is not null — some databases enforce NOT NULL on sku.
-            $submittedSku = $validated['sku'] ?? null;
-            $generatedSku = $submittedSku ?: ('sku-' . time() . '-' . rand(1000, 9999));
             $ProductModel = \App\Models\Product::class;
 
             // Generate unique slug - handle duplicates
@@ -130,18 +151,20 @@ class SupplierOrderController extends Controller
 
             if ($existingProduct) {
                 // Update existing product fields (but NOT expiry date - that's now at order level)
-                Log::info('submitProduct: updating existing product', ['product_id' => $existingProduct->id, 'category' => $validated['category']]);
+                Log::info('submitProduct: updating existing product', ['product_id' => $existingProduct->id]);
                 $existingProduct->update([
                     'name' => $validated['name'],
                     'slug' => $slug,
-                    'category' => $validated['category'],
                     'per_pack_or_individual' => $validated['per_pack_or_individual'],
                     'pack_quantity' => $validated['pack_quantity'] ?? null,
                     'pack_unit' => $validated['pack_unit'] ?? null,
                     'price' => $validated['price'],
                     'cost_price' => $validated['price'],
                     'stock' => $validated['stock'] ?? $existingProduct->stock ?? 0,
-                    'sku' => $submittedSku ?: $existingProduct->sku ?: $generatedSku,
+                    'sku' => $submittedSku ?: $existingProduct->sku,
+                    'barcode' => $barcode,
+                    'barcode_is_generated' => false,
+                    'image_path' => $imagePath,
                     'branch_id' => $order->branch_id,
                     'supplier_id' => $user->id,
                     'supplier_name' => $user->full_name ?? $user->username,
@@ -153,21 +176,23 @@ class SupplierOrderController extends Controller
                 ]);
 
                 $product = $existingProduct;
-                Log::info('submitProduct: product updated successfully', ['product_id' => $product->id, 'saved_category' => $product->fresh()->category]);
+                Log::info('submitProduct: product updated successfully', ['product_id' => $product->id]);
             } else {
                 // Create new product (without expiry date - that's now at order level)
-                Log::info('submitProduct: creating new product', ['category' => $validated['category']]);
+                Log::info('submitProduct: creating new product');
                 $product = $ProductModel::create([
                     'name' => $validated['name'],
                     'slug' => $slug,
-                    'category' => $validated['category'],
                     'per_pack_or_individual' => $validated['per_pack_or_individual'],
                     'pack_quantity' => $validated['pack_quantity'] ?? null,
                     'pack_unit' => $validated['pack_unit'] ?? null,
                     'price' => $validated['price'],
                     'cost_price' => $validated['price'],
                     'stock' => $validated['stock'] ?? 0,
-                    'sku' => $generatedSku,
+                    'sku' => $submittedSku ?: null,
+                    'barcode' => $barcode,
+                    'barcode_is_generated' => false,
+                    'image_path' => $imagePath,
                     'branch_id' => $order->branch_id,
                     'supplier_id' => $user->id,
                     'supplier_name' => $user->full_name ?? $user->username,
@@ -177,7 +202,7 @@ class SupplierOrderController extends Controller
                     'is_active' => 1,
                     'is_kitchen_dish' => $isDish,
                 ]);
-                Log::info('submitProduct: product created successfully', ['product_id' => $product->id, 'saved_category' => $product->category]);
+                Log::info('submitProduct: product created successfully', ['product_id' => $product->id]);
             }
             // Recompute persisted real_stock for this product group (branch + sku/name)
             try {
@@ -200,14 +225,15 @@ class SupplierOrderController extends Controller
             if ($order->procurement_request_id) {
                 $proc = $order->procurementRequest;
                 if ($proc) {
-                    // Only update if not already confirmed (first supplier confirmation)
-                    if (!$proc->supplier_confirmed) {
-                        $proc->update([
-                            'price' => $validated['price'],
-                            'total_amount' => ($validated['price'] * max(1, $order->quantity)),
-                            'supplier_confirmed' => true,
-                        ]);
-                    }
+                    // Supplier submission is awaiting admin review. Keep the request
+                    // confirmed only when another supplier order was already approved.
+                    $proc->update([
+                        'price' => $validated['price'],
+                        'total_amount' => ($validated['price'] * max(1, $order->quantity)),
+                        'supplier_confirmed' => SupplierOrder::where('procurement_request_id', $proc->id)
+                            ->where('admin_confirmed', true)
+                            ->exists(),
+                    ]);
                 }
             }
 

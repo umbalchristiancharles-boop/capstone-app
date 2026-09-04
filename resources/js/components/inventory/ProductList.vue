@@ -72,7 +72,7 @@
                     <td class="col-name">
                       <div class="name-block">
                         <div class="name">{{ p.name }}</div>
-                        <div class="meta">{{ p.category || '—' }}</div>
+                        <div class="meta">{{ [p.category, p.brand].filter(Boolean).join(' • ') || '—' }}</div>
                       </div>
                     </td>
                     <td class="col-sku"><span class="sku">{{ p.sku || '-' }}</span></td>
@@ -135,7 +135,7 @@
                   <td class="col-name">
                     <div class="name-block">
                       <div class="name">{{ p.name }}</div>
-                      <div class="meta">{{ p.category || '—' }}</div>
+                        <div class="meta">{{ [p.category, p.brand].filter(Boolean).join(' • ') || '—' }}</div>
                     </div>
                   </td>
                   <td class="col-sku"><span class="sku">{{ p.sku || '-' }}</span></td>

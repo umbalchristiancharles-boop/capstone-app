@@ -18,6 +18,10 @@ class Product extends Model
         'name',
         'slug',
         'category',
+        'brand',
+        'description',
+        'unit',
+        'image_path',
         'per_pack_or_individual',
         'pack_quantity',
         'pack_unit',
@@ -26,6 +30,8 @@ class Product extends Model
         'stock',
         'min_stock',
         'sku',
+        'barcode',
+        'barcode_is_generated',
         'branch_id',
         'supplier_name',
         'supplier_id',
@@ -67,6 +73,7 @@ class Product extends Model
         'dish_id' => 'integer',
         'published_by' => 'integer',
         'is_dish_product' => 'boolean',
+        'barcode_is_generated' => 'boolean',
         'requires_logistics' => 'boolean',
         'approved_by_logistics_main' => 'integer',
         'approved_by_owner' => 'integer',
@@ -76,7 +83,12 @@ class Product extends Model
     // Expose aggregated real stock (sum across supplier/product duplicates) to API consumers
     // When persisted, `real_stock` column will be used. The accessor falls back to computing
     // the sum when the column is not available.
-    protected $appends = ['real_stock'];
+    protected $appends = ['real_stock', 'image_url'];
+
+    public function getImageUrlAttribute(): ?string
+    {
+        return $this->image_path ? asset('storage/' . ltrim($this->image_path, '/')) : null;
+    }
 
     /**
      * Get the aggregated stock for this logical product.

@@ -528,7 +528,7 @@ class StaffInventoryController extends Controller
         $branchId = $user->branch_id;
 
         try {
-            $requests = ProcurementRequest::with(['product:id,name,sku,price', 'logisticsUser'])
+            $requests = ProcurementRequest::with(['product:id,name,sku,barcode,barcode_is_generated,price', 'logisticsUser'])
                 ->where('branch_id', $branchId)
                 ->where('status', 'awaiting_inventory_confirmation')
                 ->orderBy('created_at', 'desc')
@@ -536,11 +536,18 @@ class StaffInventoryController extends Controller
 
             // Map to simple payload expected by frontend
             $payload = $requests->map(function ($r) {
+                if ($r->product && empty($r->product->barcode)) {
+                    $r->product->barcode = 'SYS-' . $r->product->id . '-' . strtoupper(substr(sha1($r->product->id . '|' . $r->product->name), 0, 10));
+                    $r->product->barcode_is_generated = true;
+                    $r->product->saveQuietly();
+                }
                 return [
                     'id' => $r->id,
                     'procurement_request_id' => $r->id,
                     'product_id' => $r->product_id,
                     'product_name' => $r->product?->name,
+                    'product_barcode' => $r->product?->barcode,
+                    'product_barcode_is_generated' => (bool) $r->product?->barcode_is_generated,
                     'quantity' => $r->quantity,
                     'requested_quantity' => $r->quantity,
                     'product_stock' => $r->product?->stock ?? 0,
@@ -630,6 +637,7 @@ class StaffInventoryController extends Controller
         $validated = $request->validate([
             'counted_stock' => 'required|integer|min:0',
             'proof_image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+            'barcode' => 'required|string|max:64',
             'notes' => 'nullable|string|max:1000'
         ]);
 
@@ -642,6 +650,41 @@ class StaffInventoryController extends Controller
         try {
             DB::transaction(function () use ($proc, $validated, $user, $request) {
                 $prod = \App\Models\Product::where('id', $proc->product_id)->lockForUpdate()->first();
+                if (!$prod) {
+                    throw new \RuntimeException('Product not found for this procurement request');
+                }
+
+                $barcode = trim($validated['barcode']);
+                if ($prod->barcode_is_generated && (string) $prod->barcode === $barcode) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'barcode' => 'Scan the real supplier barcode before confirming this new product.',
+                    ]);
+                }
+                $barcodeOwner = \App\Models\Product::where('barcode', $barcode)
+                    ->where('id', '<>', $prod->id)
+                    ->where('branch_id', $prod->branch_id)
+                    ->where(function ($query) use ($prod) {
+                        $query->where(function ($sameSku) use ($prod) {
+                            $sameSku->whereNotNull('sku')->where('sku', '<>', $prod->sku);
+                        })->orWhereRaw('TRIM(UPPER(name)) <> ?', [trim(strtoupper((string) $prod->name))]);
+                    })
+                    ->lockForUpdate()
+                    ->first();
+                if ($barcodeOwner) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'barcode' => 'This barcode is already assigned to another product.',
+                    ]);
+                }
+                if ($prod->barcode && !$prod->barcode_is_generated && (string) $prod->barcode !== $barcode) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'barcode' => 'The scanned barcode does not match the selected product.',
+                    ]);
+                }
+                if (!$prod->barcode || $prod->barcode_is_generated) {
+                    $prod->barcode = $barcode;
+                    $prod->barcode_is_generated = false;
+                    $prod->save();
+                }
                 $incrementBy = (int) $validated['counted_stock'];
                 if ($incrementBy < 0) $incrementBy = 0;
 

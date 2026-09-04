@@ -428,6 +428,7 @@ class CashierController extends Controller
             'items'               => 'required|array|min:1',
             'items.*.product_id'  => 'required|exists:products,id',
             'items.*.quantity'    => 'required|integer|min:1',
+            'items.*.sale_mode'   => 'nullable|in:individual,per_pack',
             'amount_paid'         => 'required|numeric|min:0',
             'discount_type'       => 'nullable|string|in:none,discount,pwd,senior',
             'discount_percent'    => 'nullable|numeric|min:0|max:100',
@@ -451,7 +452,23 @@ class CashierController extends Controller
                     abort(422, "Product #{$item['product_id']} not found in this branch.");
                 }
 
-                $unitPrice = (float) $product->price;
+                $saleMode = $item['sale_mode'] ?? null;
+                $perPackMode = in_array($product->per_pack_or_individual, ['per_pack', 'both']);
+                $packQty = (float) ($product->pack_quantity ?? 0);
+                $sellingPieces = (float) $item['quantity'];
+
+                if ($perPackMode && $packQty > 0) {
+                    $availablePieces = ((float) $product->stock * $packQty) - (float) ($product->open_pack_used ?? 0);
+                    if ($availablePieces < $sellingPieces) {
+                        abort(422, "Insufficient stock for {$product->name}. Available: {$availablePieces} pieces");
+                    }
+                    $unitPrice = (float) $product->price / $packQty;
+                } else {
+                    if ($product->stock < $sellingPieces) {
+                        abort(422, "Insufficient stock for {$product->name}. Available: {$product->stock}");
+                    }
+                    $unitPrice = (float) $product->price;
+                }
 
                 // If this is a kitchen dish, compute availability and cost using shared helper
                 if ($product->is_kitchen_dish) {
@@ -492,11 +509,7 @@ class CashierController extends Controller
                     $unitPrice = $sellingPrice;
                     $subtotal = $sellingPrice * $item['quantity'];
                 } else {
-                    if ($product->stock < $item['quantity']) {
-                        abort(422, "Insufficient stock for {$product->name}. Available: {$product->stock}");
-                    }
-
-                    $subtotal = $product->price * $item['quantity'];
+                    $subtotal = $unitPrice * $item['quantity'];
                 }
                 $grandTotal += $subtotal;
 

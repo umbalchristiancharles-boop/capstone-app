@@ -350,6 +350,8 @@ Route::middleware('auth:sanctum,web')->group(function () {
     Route::post('supplier-orders/{id}/submit-product', [\App\Http\Controllers\Api\SupplierOrderController::class, 'submitProduct']);
 });
 
+Route::post('superadmin/logistics/supplier-orders/{id}/confirm', [\App\Http\Controllers\Api\SuperAdminController::class, 'confirmSupplierOrder'])->middleware('auth:sanctum,web');
+
 Route::prefix('manager')->middleware('auth:sanctum,web')->group(function () {
         // Dashboard
         Route::get('/dashboard',        [ManagerDashboardController::class, 'index']);

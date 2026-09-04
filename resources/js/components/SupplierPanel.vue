@@ -358,21 +358,6 @@
               <label>Product Name</label>
               <input v-model="submitForm.name" type="text" placeholder="Product name" readonly />
             </div>
-            <div class="form-group">
-              <label>Category (e.g., Beverage, Meat, Vegetable, Condiment)</label>
-              <select v-model="submitForm.category">
-                <option value="">Select a category</option>
-                <option value="Beverage">Beverage</option>
-                <option value="Meat">Meat</option>
-                <option value="Vegetable">Vegetable</option>
-                <option value="Grain">Grain</option>
-                <option value="Condiment">Condiment</option>
-                <option value="Dairy">Dairy</option>
-                <option value="Egg">Egg</option>
-                <option value="Spice">Spice</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
             <div class="form-group full-span">
               <label>Pricing Type</label>
               <div class="pricing-type-options">
@@ -422,6 +407,23 @@
               <label>Date Product Made</label>
               <input v-model="submitForm.date_made" type="date" :max="todayDate" />
             </div>
+            <div class="form-group full-span">
+              <label>Product Barcode</label>
+              <div class="barcode-input-row">
+                <input ref="supplierBarcodeInput" v-model.trim="submitForm.barcode" type="text" inputmode="numeric" autocomplete="off" placeholder="Scan or enter the supplier barcode" />
+                <button class="btn-outline" type="button" @click="openSupplierBarcodeScanner">Scan</button>
+              </div>
+              <div class="muted small-text">Enter the real barcode printed on the product, or provide the product SKU below.</div>
+            </div>
+            <div class="form-group full-span">
+              <label>Product SKU</label>
+              <input v-model.trim="submitForm.sku" type="text" autocomplete="off" placeholder="Enter the supplier SKU (if there is no barcode)" />
+            </div>
+            <div class="form-group full-span">
+              <label>Product Image*</label>
+              <input type="file" accept="image/*" required @change="onSupplierProductImageChange" />
+              <div class="muted small-text">Upload a clear image of the product.</div>
+            </div>
             <div v-if="submitForm.per_pack_or_individual === 'per_pack'" class="form-group">
               <label>Pack details</label>
               <div style="display:flex;gap:8px">
@@ -467,23 +469,6 @@
               >
                 {{ field.label }}
               </button>
-            </div>
-
-            <!-- Category field -->
-            <div v-if="editFieldType === 'category'" class="edit-field-section">
-              <label>Edit Category</label>
-              <select v-model="editForm.category" class="full-width-input">
-                <option value="">Select a category</option>
-                <option value="Beverage">Beverage</option>
-                <option value="Meat">Meat</option>
-                <option value="Vegetable">Vegetable</option>
-                <option value="Grain">Grain</option>
-                <option value="Condiment">Condiment</option>
-                <option value="Dairy">Dairy</option>
-                <option value="Egg">Egg</option>
-                <option value="Spice">Spice</option>
-                <option value="Other">Other</option>
-              </select>
             </div>
 
             <!-- Pricing Type field -->
@@ -546,16 +531,36 @@
     </div>
   </transition>
 
+  <transition name="fade">
+    <div v-if="supplierScannerOpen" class="modal-backdrop" @click.self="closeSupplierBarcodeScanner">
+      <div class="modal barcode-scanner-modal">
+        <div class="modal-card">
+          <div class="modal-header"><h3>Scan Product Barcode</h3></div>
+          <div class="modal-body">
+            <video ref="supplierScannerVideo" class="barcode-video" autoplay muted playsinline></video>
+            <p class="muted small-text">Center the barcode in the camera view.</p>
+            <p v-if="supplierScannerError" class="error-msg">{{ supplierScannerError }}</p>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-outline" type="button" @click="closeSupplierBarcodeScanner">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </transition>
+
   <!-- FULLSCREEN LOADING OVERLAY -->
   <LoadingOverlay :show="showOverlay" :text="overlayText" :logo-src="logoImg" />
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import LogisticsPanelContent from './logistics/LogisticsPanelContent.vue'
 import LoadingOverlay from './LoadingOverlay.vue'
 import axios from 'axios'
+import { BrowserMultiFormatReader } from '@zxing/browser'
+import { BarcodeFormat, DecodeHintType } from '@zxing/library'
 import Swal from 'sweetalert2'
 import { showToast } from './toastStore'
 
@@ -593,22 +598,26 @@ const savingEstimatedDelivery = ref(false)
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
 // Supplier submit modal state
 const supplierSubmitModalVisible = ref(false)
-const submitForm = ref({ name: '', price: null, category: '', per_pack_or_individual: '', date_made: '', pack_quantity: null, pack_unit: '' })
+const submitForm = ref({ name: '', price: null, per_pack_or_individual: '', date_made: '', pack_quantity: null, pack_unit: '', barcode: '', sku: '', product_image: null })
 const todayDate = new Date().toLocaleDateString('en-CA')
 const submitSubmitting = ref(false)
 const submitError = ref('')
 const currentSubmitOrderId = ref(null)
+const supplierScannerOpen = ref(false)
+const supplierScannerVideo = ref(null)
+const supplierBarcodeInput = ref(null)
+const supplierScannerError = ref('')
+let supplierScannerControls = null
 const lastOrderCheck = ref(new Date().toISOString())
 
 // Edit product modal state
 const editProductModalVisible = ref(false)
-const editFieldType = ref(null) // 'category', 'pricing', 'price', 'expiration'
+const editFieldType = ref(null) // 'pricing', 'price', 'expiration'
 const editFields = [
-  { id: 'category', label: 'Category' },
   { id: 'pricing', label: 'Pricing Type' },
   { id: 'price', label: 'Price' }
 ]
-const editForm = ref({ id: null, name: '', price: null, category: '', per_pack_or_individual: '', expires_at: '' })
+const editForm = ref({ id: null, name: '', price: null, per_pack_or_individual: '', expires_at: '' })
 const editSubmitting = ref(false)
 const editError = ref('')
 
@@ -910,7 +919,7 @@ async function completeTransaction(id) {
 function openSupplierSubmitModal(order) {
   // Prefill product name if procurement request provides it
   submitError.value = ''
-  submitForm.value = { name: '', price: null, category: '', per_pack_or_individual: '', date_made: '', pack_quantity: null, pack_unit: '' }
+  submitForm.value = { name: '', price: null, per_pack_or_individual: '', date_made: '', pack_quantity: null, pack_unit: '', barcode: '', sku: '', product_image: null }
   currentSubmitOrderId.value = null
   if (!order) return
   currentSubmitOrderId.value = order.id
@@ -918,14 +927,52 @@ function openSupplierSubmitModal(order) {
   const suggested = order.procurementRequest?.product?.name || order.product?.name || ''
   submitForm.value.name = suggested
   supplierSubmitModalVisible.value = true
+  nextTick(() => supplierBarcodeInput.value?.focus())
 }
 
 function closeSupplierSubmitModal() {
   if (submitSubmitting.value) return
   supplierSubmitModalVisible.value = false
   submitError.value = ''
-  submitForm.value = { name: '', price: null, category: '', per_pack_or_individual: '', date_made: '', pack_quantity: null, pack_unit: '' }
+  closeSupplierBarcodeScanner()
+  submitForm.value = { name: '', price: null, per_pack_or_individual: '', date_made: '', pack_quantity: null, pack_unit: '', barcode: '', sku: '', product_image: null }
   currentSubmitOrderId.value = null
+}
+
+async function openSupplierBarcodeScanner() {
+  supplierScannerError.value = ''
+  supplierScannerOpen.value = true
+  await nextTick()
+  try {
+    const hints = new Map([
+      [DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.CODE_128, BarcodeFormat.CODE_39, BarcodeFormat.EAN_8, BarcodeFormat.EAN_13, BarcodeFormat.UPC_A, BarcodeFormat.UPC_E, BarcodeFormat.QR_CODE]],
+      [DecodeHintType.TRY_HARDER, true],
+    ])
+    const reader = new BrowserMultiFormatReader(hints)
+    supplierScannerControls = await reader.decodeFromConstraints({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 }, focusMode: { ideal: 'continuous' } },
+      audio: false,
+    }, supplierScannerVideo.value, (result) => {
+      if (result?.getText()) {
+        submitForm.value = { ...submitForm.value, barcode: result.getText().trim() }
+        closeSupplierBarcodeScanner()
+      }
+    })
+  } catch (error) {
+    supplierScannerError.value = 'Camera access was denied or is unavailable. Check browser permissions and try again.'
+  }
+}
+
+function closeSupplierBarcodeScanner() {
+  supplierScannerOpen.value = false
+  if (supplierScannerControls) {
+    supplierScannerControls.stop()
+    supplierScannerControls = null
+  }
+}
+
+function onSupplierProductImageChange(event) {
+  submitForm.value.product_image = event.target.files?.[0] || null
 }
 
 function openEditProductModal(product) {
@@ -936,7 +983,6 @@ function openEditProductModal(product) {
     id: product.id,
     name: product.name,
     price: product.price,
-    category: product.category || '',
     per_pack_or_individual: product.per_pack_or_individual || '',
     expires_at: product.expires_at ? formatDateTimeLocal(product.expires_at) : ''
   }
@@ -948,7 +994,7 @@ function closeEditProductModal() {
   editProductModalVisible.value = false
   editError.value = ''
   editFieldType.value = null
-  editForm.value = { id: null, name: '', price: null, category: '', per_pack_or_individual: '', expires_at: '' }
+  editForm.value = { id: null, name: '', price: null, per_pack_or_individual: '', expires_at: '' }
 }
 
 async function saveProductChanges() {
@@ -956,9 +1002,6 @@ async function saveProductChanges() {
   if (!editFieldType.value) { editError.value = 'Please select a field to edit'; return }
 
   // Validate only the selected field
-  if (editFieldType.value === 'category' && !editForm.value.category) {
-    editError.value = 'Category is required'; return
-  }
   if (editFieldType.value === 'pricing' && !editForm.value.per_pack_or_individual) {
     editError.value = 'Pricing type is required'; return
   }
@@ -971,7 +1014,6 @@ async function saveProductChanges() {
   try {
     // Build payload with only the selected field
     const payload = {}
-    if (editFieldType.value === 'category') payload.category = editForm.value.category
     if (editFieldType.value === 'pricing') payload.per_pack_or_individual = editForm.value.per_pack_or_individual
     if (editFieldType.value === 'price') payload.price = editForm.value.price
 
@@ -998,7 +1040,6 @@ async function saveProductChanges() {
 async function submitProductForm() {
   if (!currentSubmitOrderId.value) return
   if (!submitForm.value.name) { await Swal.fire({ icon: 'error', title: 'Validation', text: 'Product name is required' }); return }
-  if (!submitForm.value.category) { await Swal.fire({ icon: 'error', title: 'Validation', text: 'Category is required' }); return }
   if (!submitForm.value.per_pack_or_individual) { await Swal.fire({ icon: 'error', title: 'Validation', text: 'Pricing type is required' }); return }
   // If per-pack, require pack quantity and unit
   if (submitForm.value.per_pack_or_individual === 'per_pack') {
@@ -1008,19 +1049,22 @@ async function submitProductForm() {
   if (submitForm.value.price === null || submitForm.value.price === undefined) { await Swal.fire({ icon: 'error', title: 'Validation', text: 'Price is required' }); return }
   // Ensure price is greater than zero
   if (Number(submitForm.value.price) <= 0) { await Swal.fire({ icon: 'error', title: 'Validation', text: 'Price must be greater than 0' }); return }
+  if (!String(submitForm.value.barcode || '').trim() && !String(submitForm.value.sku || '').trim()) { await Swal.fire({ icon: 'error', title: 'Validation', text: 'Enter the product barcode or SKU.' }); return }
+  if (!submitForm.value.product_image) { await Swal.fire({ icon: 'error', title: 'Validation', text: 'Product image is required.' }); return }
   submitSubmitting.value = true
   submitError.value = ''
   try {
-    const payload = {
-      name: submitForm.value.name,
-      price: submitForm.value.price,
-      category: submitForm.value.category,
-      per_pack_or_individual: submitForm.value.per_pack_or_individual,
-      pack_quantity: submitForm.value.pack_quantity,
-      pack_unit: submitForm.value.pack_unit,
-      date_made: submitForm.value.date_made || null
-    }
-    const res = await axios.post(`/api/supplier-orders/${currentSubmitOrderId.value}/submit-product`, payload, { withCredentials: true })
+    const payload = new FormData()
+    payload.append('name', submitForm.value.name)
+    payload.append('price', submitForm.value.price)
+    payload.append('per_pack_or_individual', submitForm.value.per_pack_or_individual)
+    if (submitForm.value.pack_quantity !== null) payload.append('pack_quantity', submitForm.value.pack_quantity)
+    if (submitForm.value.pack_unit) payload.append('pack_unit', submitForm.value.pack_unit)
+    if (submitForm.value.date_made) payload.append('date_made', submitForm.value.date_made)
+    payload.append('barcode', String(submitForm.value.barcode || '').trim())
+    if (String(submitForm.value.sku || '').trim()) payload.append('sku', String(submitForm.value.sku).trim())
+    payload.append('product_image', submitForm.value.product_image)
+    const res = await axios.post(`/api/supplier-orders/${currentSubmitOrderId.value}/submit-product`, payload, { withCredentials: true, headers: { 'Content-Type': 'multipart/form-data' } })
     if (res && res.data && res.data.ok) {
       showToast('Product submitted and linked to order', 'success')
       await loadOrders()
@@ -1040,6 +1084,8 @@ async function submitProductForm() {
     submitSubmitting.value = false
   }
 }
+
+onUnmounted(closeSupplierBarcodeScanner)
 
 function closeReceipt() {
   if (!deliveryScheduleConfirmed.value) {

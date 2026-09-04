@@ -240,7 +240,10 @@
               <div class="product-meta">
                 <div class="product-price">{{ formatPrice(p.price) }}</div>
                 <div>
-                  <template v-if="(p.procurement_status === 'pending' || p.status === 'pending') && !p.needs_supplier && (p.acknowledge_allowed === undefined ? true : p.acknowledge_allowed)">
+                  <template v-if="p.awaiting_admin_confirmation">
+                    <button class="btn-small btn-outline" disabled>Awaiting admin confirmation</button>
+                  </template>
+                  <template v-else-if="(p.procurement_status === 'pending' || p.status === 'pending') && !p.needs_supplier && (p.acknowledge_allowed === undefined ? true : p.acknowledge_allowed)">
                     <button class="btn-small btn-primary" @click="acknowledgeRequest(p)">Acknowledge</button>
                   </template>
                   <template v-else-if="(p.procurement_status === 'pending' || p.status === 'pending') && p.needs_supplier">

@@ -1323,7 +1323,7 @@ public function logisticsProducts(Request $request)
         $products = Product::where('branch_id', $branchId)
             ->where('is_active', 1)
             ->with(['dishIngredients.dish'])
-            ->select('id', 'name', 'slug', 'price', 'stock', 'sku', 'branch_id', 'supplier_name', 'is_published', 'created_at', 'updated_at', 'is_kitchen_dish')
+            ->select('id', 'name', 'slug', 'price', 'stock', 'sku', 'barcode', 'barcode_is_generated', 'branch_id', 'supplier_name', 'is_published', 'created_at', 'updated_at', 'is_kitchen_dish')
             ->orderBy('name', 'asc')
             ->get();
 
@@ -2184,7 +2184,7 @@ public function logisticsInventory(Request $request)
     $allProducts = Product::where('branch_id', $branchId)
         ->where('is_active', 1)
         ->with(['dishIngredients.dish'])
-        ->select('id', 'name', 'category', 'price', 'stock', 'min_stock', 'expires_at', 'branch_id', 'is_kitchen_dish')
+        ->select('id', 'name', 'category', 'price', 'stock', 'min_stock', 'expires_at', 'sku', 'barcode', 'barcode_is_generated', 'branch_id', 'is_kitchen_dish')
         ->get()
         ->filter(function ($product) {
             // Filter out products from unapproved kitchen dishes
@@ -2226,10 +2226,24 @@ public function logisticsInventory(Request $request)
             $groupedProducts[$productName]['stock'] = (int) $product->stock;
             $groupedProducts[$productName]['min_stock'] = (int) $product->min_stock > 0 ? (int) $product->min_stock : 10;
             $groupedProducts[$productName]['related_products'] = 1; // Track how many products are grouped
+            $groupedProducts[$productName]['barcode_variants'] = [[
+                'barcode' => $product->barcode,
+                'is_generated' => (bool) $product->barcode_is_generated,
+            ]];
         } else {
             // Subsequent products with same name - combine stock and track variants
             $groupedProducts[$productName]['stock'] += (int) $product->stock;
             $groupedProducts[$productName]['related_products'] += 1;
+            if (!collect($groupedProducts[$productName]['barcode_variants'])->contains('barcode', $product->barcode)) {
+                $groupedProducts[$productName]['barcode_variants'][] = [
+                    'barcode' => $product->barcode,
+                    'is_generated' => (bool) $product->barcode_is_generated,
+                ];
+            }
+            if ($groupedProducts[$productName]['barcode_is_generated'] && !$product->barcode_is_generated) {
+                $groupedProducts[$productName]['barcode'] = $product->barcode;
+                $groupedProducts[$productName]['barcode_is_generated'] = false;
+            }
 
             // Update expiry to the earliest (most urgent)
             $currentExpiry = $groupedProducts[$productName]['expires_at'];
@@ -2475,7 +2489,7 @@ public function logisticsInventory(Request $request)
         }
 
         try {
-            $requests = ProcurementRequest::with(['product:id,name,sku,price', 'logisticsUser'])
+            $requests = ProcurementRequest::with(['product:id,name,sku,barcode,barcode_is_generated,price', 'logisticsUser'])
                 ->where('branch_id', $user->branch_id)
                 ->where('status', 'awaiting_inventory_confirmation')
                 ->orderBy('created_at', 'desc')
@@ -2487,6 +2501,8 @@ public function logisticsInventory(Request $request)
                     'procurement_request_id' => $r->id,
                     'product_id' => $r->product_id,
                     'product_name' => $r->product?->name,
+                    'product_barcode' => $r->product?->barcode,
+                    'product_barcode_is_generated' => (bool) ($r->product?->barcode_is_generated ?? false),
                     'quantity' => $r->quantity,
                     'price' => $r->price,
                     'receipt_path' => $r->receipt_path ?? null,
