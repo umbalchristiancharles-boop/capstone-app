@@ -2748,6 +2748,12 @@ h1, h2, h3, h4, h5, h6, .section-subtitle, .admin-name, .admin-role {
   border: 1px solid var(--border-stroke);
 }
 
+.dashboard-white-panel,
+.dashboard-white-panel .panel-header,
+.dashboard-white-panel .panel-body {
+  background: #ffffff;
+}
+
 .panel-header {
   display: flex;
   align-items: center;
@@ -4694,9 +4700,50 @@ h1[style*="orange"] {
 }
 
 /* Let the admin dashboard use the full viewport like Manager Finance. */
+html:has(.admin-panel-shell),
+body:has(.admin-panel-shell),
+#app:has(.admin-panel-shell) {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: #e7d9cf !important;
+}
+
+html:has(.admin-panel-shell) {
+  scrollbar-color: #8b8b8b #f7f7f7;
+  scrollbar-width: thin;
+}
+
+html:has(.admin-panel-shell)::-webkit-scrollbar {
+  width: 8px;
+}
+
+html:has(.admin-panel-shell)::-webkit-scrollbar-track {
+  background: #f7f7f7;
+}
+
+html:has(.admin-panel-shell)::-webkit-scrollbar-thumb {
+  border-radius: 8px;
+  background: #8b8b8b;
+}
+
+html:has(.admin-panel-shell)::-webkit-scrollbar-thumb:hover {
+  background: #6f6f6f;
+}
+
+.admin-panel-shell {
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  overflow-y: visible;
+  background: #e7d9cf !important;
+}
+
 .admin-page {
   padding: 0;
-  background: #e7d9cf;
+  background: #e7d9cf !important;
 }
 
 .admin-layout {
@@ -4704,7 +4751,7 @@ h1[style*="orange"] {
   padding: 0;
   border: 0;
   border-radius: 0 !important;
-  background: transparent;
+  background: #e7d9cf !important;
   box-shadow: none;
 }
 
@@ -4716,7 +4763,8 @@ h1[style*="orange"] {
 }
 
 .admin-main {
-  background: rgba(255, 255, 255, 0.2);
+  background: #e7d9cf !important;
+  overflow: visible !important;
 }
 
 .admin-hamburger {
@@ -4927,20 +4975,28 @@ h1[style*="orange"] {
 
 .admin-layout > .admin-topbar {
   grid-row: 1 !important;
-  position: sticky !important;
+  position: fixed !important;
   top: 0 !important;
+  right: 0;
+  left: 156px;
   z-index: 19 !important;
   align-self: start !important;
+  height: 66px;
+  min-height: 66px;
+  padding: 0.75rem 1.25rem !important;
+  box-sizing: border-box;
+  transition: left 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 .admin-layout > .admin-main { grid-row: 2 !important; }
 .admin-layout > .admin-left { grid-row: 3 !important; }
 .admin-layout > .admin-side { grid-row: 4 !important; }
 
 .admin-layout > .admin-topbar {
-  position: sticky;
-  top: 0;
-  z-index: 15;
-  align-self: start;
+  position: fixed;
+  right: 0;
+  left: 156px;
+  z-index: 19;
+  background: #e7d9cf !important;
 }
 
 .admin-layout > .admin-sidebar {
@@ -4954,7 +5010,7 @@ h1[style*="orange"] {
   width: 156px;
   height: 100vh;
   max-height: 100vh;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .admin-sidebar-collapsed > .admin-sidebar {
@@ -4964,4 +5020,56 @@ h1[style*="orange"] {
   border-right-color: transparent;
   opacity: 0;
   overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .admin-layout {
+    grid-template-rows: 66px auto auto auto;
+  }
+
+  .admin-sidebar-collapsed > .admin-topbar {
+    left: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  .admin-layout {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto;
+    overflow-x: hidden;
+  }
+
+  .admin-layout > .admin-sidebar {
+    position: static;
+    grid-column: 1 !important;
+    grid-row: auto !important;
+    width: 100%;
+    min-height: 0;
+    height: auto;
+    max-height: none;
+  }
+
+  .admin-layout > .admin-topbar,
+  .admin-layout > .admin-main,
+  .admin-layout > .admin-left,
+  .admin-layout > .admin-side {
+    grid-column: 1 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .admin-layout > .admin-topbar {
+    position: sticky !important;
+    top: 0 !important;
+    right: auto;
+    left: auto;
+    width: 100% !important;
+    height: auto;
+    min-height: 0;
+    transition: none;
+  }
+
+  .admin-layout > .admin-main {
+    margin-top: 0;
+  }
 }

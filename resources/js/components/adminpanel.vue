@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-b from-[#F8F1E4] to-[#FFFFFF]">
+  <div class="admin-panel-shell min-h-screen bg-gradient-to-b from-[#F8F1E4] to-[#FFFFFF]">
     <div class="admin-page">
       <section class="admin-layout" :class="{ 'admin-sidebar-collapsed': adminSidebarCollapsed }">
         <div class="admin-topbar">
@@ -47,7 +47,7 @@
         </aside>
         <!-- LEFT: Announcements column -->
         <aside id="admin-announcements" class="admin-left">
-          <section class="panel-block announcements-panel">
+          <section class="panel-block announcements-panel dashboard-white-panel">
             <div class="panel-header"><h2>Announcements</h2></div>
             <div class="panel-body panel-body--list">
               <div v-if="loadingAnnouncements">Loading...</div>
@@ -346,7 +346,7 @@
         <!-- RIGHT: SIDE PANELS -->
         <aside class="admin-side">
           <!-- Top products -->
-          <section class="panel-block">
+          <section class="panel-block dashboard-white-panel">
             <div class="panel-header">
               <h2>Top Products</h2>
             </div>
@@ -370,7 +370,7 @@
           </section>
 
           <!-- Low stock -->
-          <section class="panel-block">
+          <section class="panel-block dashboard-white-panel">
             <div class="panel-header">
               <h2>Low Stock Items</h2>
             </div>
@@ -394,7 +394,7 @@
           </section>
 
           <!-- Staff activity -->
-          <section class="panel-block">
+          <section class="panel-block dashboard-white-panel">
             <div class="panel-header">
               <h2>Staff Activity</h2>
             </div>
@@ -423,7 +423,7 @@
 
 
             <!-- Attendance Monitoring (Admin) -->
-            <section id="admin-attendance" class="panel-block">
+            <section id="admin-attendance" class="panel-block dashboard-white-panel">
               <div class="panel-header" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
                 <h2>Attendance Monitoring</h2>
                 <div style="display:flex; gap:8px; align-items:center;">
@@ -1671,6 +1671,37 @@ h1, h2 {
   background: transparent !important;
 }
 
+.admin-page,
+.admin-layout,
+.admin-main {
+  background: #e7d9cf !important;
+}
+
+.admin-main .overview-grid {
+  gap: 1rem;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.admin-main .overview-card {
+  display: flex;
+  align-items: center;
+  min-height: 96px;
+  padding: 1rem 1.05rem;
+  border: 1px solid rgba(219, 188, 160, 0.42) !important;
+  border-radius: 18px !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 246, 236, 0.92)) !important;
+  box-shadow: 0 12px 28px rgba(16, 24, 40, 0.06) !important;
+}
+
+.admin-main > .panel-block {
+  margin-bottom: 1rem;
+  border: 1px solid rgba(219, 188, 160, 0.42) !important;
+  border-radius: 18px !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 248, 240, 0.92)) !important;
+  box-shadow: 0 12px 28px rgba(16, 24, 40, 0.06) !important;
+}
+
 .panel-block,
 .overview-card,
 .panel-header,
@@ -1679,11 +1710,24 @@ h1, h2 {
   border: 1px solid #e5e7eb !important;
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06) !important;
     border-radius: 8px !important;
-  background: transparent !important;
+}
+
+.panel-block > .panel-header,
+.panel-block > .panel-body {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.panel-header h2 {
+  margin: 0 !important;
+  min-width: 0;
+  overflow: visible !important;
+  white-space: normal;
 }
 
 .admin-page {
-  background: #f8f1e4;
+  background: #e7d9cf !important;
 }
 
 .admin-topbar {
@@ -2259,6 +2303,37 @@ h1, h2 {
   .btn-review,
   .btn-resolve {
     width: 100%;
+  }
+}
+
+/* Finance-style KPI cards for the admin dashboard overview. */
+.admin-main > .overview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.admin-main > .overview-grid > .overview-card {
+  display: flex;
+  align-items: center;
+  min-height: 96px;
+  padding: 1rem 1.05rem;
+  border: 1px solid rgba(219, 188, 160, 0.42) !important;
+  border-radius: 18px !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 246, 236, 0.92)) !important;
+  box-shadow: 0 12px 28px rgba(16, 24, 40, 0.06) !important;
+}
+
+.admin-main > .overview-grid > .overview-card:hover {
+  border-color: rgba(255, 159, 67, 0.18) !important;
+  box-shadow: 0 16px 32px rgba(16, 24, 40, 0.08) !important;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 767px) {
+  .admin-main > .overview-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>
