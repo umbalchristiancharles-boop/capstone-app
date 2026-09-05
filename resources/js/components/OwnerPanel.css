@@ -5,14 +5,6 @@
     linear-gradient(180deg, rgba(248, 250, 252, 0.96), rgba(241, 245, 249, 1));
 }
 
-.dark .owner-panel-shell,
-.dark-mode .owner-panel-shell {
-  background:
-    radial-gradient(circle at top left, rgba(255, 106, 61, 0.12), transparent 28%),
-    radial-gradient(circle at top right, rgba(251, 191, 36, 0.08), transparent 24%),
-    linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 1));
-}
-
 .owner-panel-sidebar {
   -webkit-backdrop-filter: blur(18px);
   backdrop-filter: blur(18px);
@@ -129,13 +121,6 @@
   line-height: 1;
   color: rgb(153 27 27);
   box-shadow: 0 10px 22px rgba(239, 68, 68, 0.18);
-}
-
-.dark .owner-panel-badge,
-.dark-mode .owner-panel-badge {
-  background: rgba(127, 29, 29, 0.35);
-  color: rgb(252 165 165);
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.2);
 }
 
 @media (max-width: 767px) {

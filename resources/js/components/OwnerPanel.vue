@@ -1,5 +1,6 @@
 <template>
   <OwnerPanelLayout
+    ref="ownerLayout"
     :userProfile="userProfile"
     panelTitle="Owner Panel"
     panelDescription="Overview and controls for store owners"
@@ -7,6 +8,8 @@
     :ownerTwoColumnLayout="true"
     :showOwnerSidebar="true"
     :showOwnerTopbar="true"
+    :showProfileColumn="false"
+    :enableDarkMode="false"
     :fitContent="true"
     :enableProfileUpdate="true"
     :canEditProfile="true"
@@ -26,6 +29,17 @@
         <router-link to="/owner/branch-confirmations" class="owner-sidebar-link" active-class="owner-sidebar-link--active">Branch Confirmations</router-link>
         <router-link to="/owner/price-markup-approvals" class="owner-sidebar-link" active-class="owner-sidebar-link--active">Price Markups</router-link>
       </nav>
+    </template>
+
+    <template #ownerSidebarFooter>
+      <div class="owner-sidebar-actions">
+        <button type="button" class="owner-sidebar-account" @click="ownerLayout?.openInfoModal()">
+          Account Info
+        </button>
+        <button type="button" class="owner-sidebar-logout" @click="handleLogout">
+          Logout
+        </button>
+      </div>
     </template>
 
     <template #main>
@@ -144,7 +158,7 @@
       </section>
     </template>
 
-    <template #profileBottom="{ announcements, loadingAnnouncements, attendanceStatus, scheduledTimeOut, canClockOut, isAttendanceProcessing, attendanceMessage, attendanceMessageType, performClockIn, performClockOut }">
+    <template #profileBottom="{ announcements, loadingAnnouncements }">
       <div class="owner-profile-bottom">
 
         <!-- ── Quick Links Card ── -->
@@ -239,39 +253,6 @@
           </div>
         </section>
 
-        <section class="owner-attendance-card" aria-label="Attendance">
-          <div class="owner-attendance-card__header">
-            <span class="owner-attendance-card__title">Attendance</span>
-            <span :class="['owner-attendance-card__status', attendanceStatus.is_clocked_in ? 'owner-attendance-card__status--on' : 'owner-attendance-card__status--off']">
-              {{ attendanceStatus.is_clocked_in ? 'On Duty' : 'Off Duty' }}
-            </span>
-          </div>
-
-          <div v-if="attendanceStatus.clock_in_time || attendanceStatus.clock_out_time" class="owner-attendance-card__times">
-            <div class="owner-attendance-card__time-row"><span>Clock In:</span><strong>{{ attendanceStatus.clock_in_time || '-' }}</strong></div>
-            <div class="owner-attendance-card__time-row"><span>Clock Out:</span><strong>{{ attendanceStatus.clock_out_time || '-' }}</strong></div>
-            <div v-if="attendanceStatus.hours_worked > 0" class="owner-attendance-card__time-row"><span>Hours:</span><strong>{{ attendanceStatus.hours_worked }} hrs</strong></div>
-          </div>
-
-          <div class="owner-attendance-card__actions">
-            <button @click="performClockIn" :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing" class="owner-attendance-card__clock-btn owner-attendance-card__clock-btn--in">
-              {{ isAttendanceProcessing ? '...' : 'Clock In' }}
-            </button>
-            <button @click="performClockOut" :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockOut" class="owner-attendance-card__clock-btn owner-attendance-card__clock-btn--out" :class="{ 'is-disabled': !canClockOut && attendanceStatus.is_clocked_in }">
-              {{ isAttendanceProcessing ? '...' : 'Clock Out' }}
-            </button>
-          </div>
-
-          <div v-if="!canClockOut && attendanceStatus.is_clocked_in" class="owner-attendance-card__restriction">
-            <span class="owner-attendance-card__restriction-icon">🔒</span>
-            <span>Cannot clock out before {{ scheduledTimeOut }}</span>
-          </div>
-
-          <div v-if="attendanceMessage" :class="['owner-attendance-card__message', attendanceMessageType]">
-            {{ attendanceMessage }}
-          </div>
-        </section>
-
       </div>
     </template>
   </OwnerPanelLayout>
@@ -284,6 +265,7 @@ import axios from 'axios'
 import { showToast } from './toastStore'
 import Swal from 'sweetalert2'
 
+const ownerLayout = ref(null)
 const userProfile = ref({})
 const pendingCounts = ref({
   kitchen: 0,
@@ -477,6 +459,51 @@ const handleLogout = async () => {
   color: #9a3412;
   background: #fff7ed;
   border-color: #fed7aa;
+}
+
+.owner-sidebar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.owner-sidebar-account,
+.owner-sidebar-logout {
+  width: 100%;
+  padding: 0.7rem 0.75rem;
+  border: 1px solid;
+  border-radius: 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 12px #24344712;
+  transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.owner-sidebar-account {
+  border-color: #cbd5df;
+  background: #f7f9fa;
+  color: #243447;
+}
+
+.owner-sidebar-logout {
+  border-color: #d8b8b4;
+  background: #fff8f7;
+  color: #8f3028;
+}
+
+.owner-sidebar-account:hover {
+  border-color: #8796a5;
+  background: #e9eef2;
+  color: #1b2a3a;
+  box-shadow: 0 6px 16px #2434471c;
+}
+
+.owner-sidebar-logout:hover {
+  border-color: #b96b63;
+  background: #f9e9e7;
+  color: #76231e;
+  box-shadow: 0 6px 16px #8f30281c;
 }
 
 @media (max-width: 767px) {
@@ -1335,210 +1362,4 @@ const handleLogout = async () => {
   }
 }
 
-/* ── Dark mode ── */
-:global(.dark-mode) .owner-hero-card {
-  background: linear-gradient(135deg, #1e293b 0%, #1a2332 60%, #1e1a2e 100%);
-  border-color: rgba(249, 115, 22, 0.2);
-}
-
-:global(.dark-mode) .owner-hero-eyebrow {
-  background: rgba(249, 115, 22, 0.15);
-  border-color: rgba(249, 115, 22, 0.3);
-  color: #fb923c;
-}
-
-:global(.dark-mode) .owner-hero-title {
-  color: #f1f5f9;
-}
-
-:global(.dark-mode) .owner-hero-name {
-  color: #fb923c;
-}
-
-:global(.dark-mode) .owner-hero-subtitle {
-  color: #94a3b8;
-}
-
-:global(.dark-mode) .owner-stat-pill--orange {
-  background: rgba(249, 115, 22, 0.1);
-  border-color: rgba(249, 115, 22, 0.25);
-}
-:global(.dark-mode) .owner-stat-pill--amber {
-  background: rgba(251, 191, 36, 0.08);
-  border-color: rgba(251, 191, 36, 0.2);
-}
-:global(.dark-mode) .owner-stat-pill--rose {
-  background: rgba(244, 63, 94, 0.08);
-  border-color: rgba(244, 63, 94, 0.2);
-}
-
-:global(.dark-mode) .owner-stat-pill__value {
-  color: #f1f5f9;
-}
-:global(.dark-mode) .owner-stat-pill__label {
-  color: #94a3b8;
-}
-
-:global(.dark-mode) .owner-quicklinks-card {
-  background: #1e293b;
-  border-color: rgba(255, 255, 255, 0.06);
-}
-
-:global(.dark-mode) .owner-quicklinks-header {
-  background: linear-gradient(135deg, rgba(249, 115, 22, 0.12), rgba(251, 191, 36, 0.06));
-  border-bottom-color: rgba(249, 115, 22, 0.2);
-}
-
-:global(.dark-mode) .owner-quicklinks-header__title {
-  color: #f1f5f9;
-}
-
-:global(.dark-mode) .owner-quicklink-row {
-  color: #cbd5e1;
-}
-
-:global(.dark-mode) .owner-quicklink-row:hover {
-  background: rgba(249, 115, 22, 0.1);
-  border-color: rgba(249, 115, 22, 0.25);
-  color: #fb923c;
-}
-
-:global(.dark-mode) .owner-hero-card,
-:global(.dark-mode) .owner-quicklinks-card,
-:global(.dark-mode) .owner-announcements-card,
-:global(.dark-mode) .owner-attendance-card,
-:global(.dark-mode) .owner-dish-section {
-  border-color: rgba(255,255,255,0.06) !important;
-}
-
-:global(.dark-mode) .owner-dish-section .panel-header {
-  border-bottom-color: rgba(255,255,255,0.05) !important;
-}
-
-:global(.dark-mode) .owner-announcements-card__header {
-  border-bottom-color: rgba(255,255,255,0.05) !important;
-}
-
-:global(.dark-mode) .owner-quicklink-row {
-  border: 1px solid transparent !important;
-}
-
-:global(.dark-mode) .owner-quicklink-icon--orange  { background: rgba(249, 115, 22, 0.2); color: #fb923c; }
-:global(.dark-mode) .owner-quicklink-icon--blue    { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
-:global(.dark-mode) .owner-quicklink-icon--emerald { background: rgba(16, 185, 129, 0.15); color: #34d399; }
-:global(.dark-mode) .owner-quicklink-icon--rose    { background: rgba(244, 63, 94, 0.15); color: #fb7185; }
-
-:global(.dark-mode) .owner-quicklink-badge {
-  background: rgba(239, 68, 68, 0.2);
-  color: #fca5a5;
-}
-
-:global(.dark-mode) .owner-dish-section {
-  background: #181a20;
-  border-color: #2d3342;
-}
-
-:global(.dark-mode) .owner-dish-section .panel-header {
-  background: #16181f;
-  border-bottom-color: rgba(255,255,255,0.08);
-}
-
-:global(.dark-mode) .owner-dish-section .panel-body {
-  background: #1f2028;
-}
-
-:global(.dark-mode) .owner-dish-section .form-row {
-  background: transparent;
-}
-
-:global(.dark-mode) .owner-dish-section .form-row input,
-:global(.dark-mode) .owner-dish-section .form-row select,
-:global(.dark-mode) .owner-dish-section .ingredient-row input,
-:global(.dark-mode) .owner-dish-section .ingredient-row select {
-  background: #1f2028;
-  color: #f8fafc;
-  border-color: rgba(255,255,255,0.12);
-}
-
-:global(.dark-mode) .owner-dish-section .ingredient-row {
-  background: #1f2028;
-  border-color: rgba(255,255,255,0.10);
-}
-
-:global(.dark-mode) .owner-dish-section .ingredient-row button {
-  background: #22252f;
-  color: #f8fafc;
-  border-color: rgba(255,255,255,0.12);
-}
-
-:global(.dark-mode) .owner-attendance-card {
-  background: #181a20;
-  border-color: #2d3342;
-}
-
-:global(.dark-mode) .owner-attendance-card__header,
-:global(.dark-mode) .owner-attendance-card__times,
-:global(.dark-mode) .owner-attendance-card__actions {
-  background: transparent;
-}
-
-:global(.dark-mode) .owner-attendance-card__title,
-:global(.dark-mode) .owner-attendance-card__status,
-:global(.dark-mode) .owner-attendance-card__time-row strong {
-  color: #f8fafc;
-}
-
-:global(.dark-mode) .owner-attendance-card__status--off {
-  background: rgba(248, 113, 113, 0.18);
-  color: #fecaca;
-}
-
-:global(.dark-mode) .owner-attendance-card__status--on {
-  background: rgba(34, 197, 94, 0.18);
-  color: #bbf7d0;
-}
-
-:global(.dark-mode) .owner-attendance-card__clock-btn--out {
-  background: #272b37;
-  color: #e2e8f0;
-}
-
-:global(.dark-mode) .owner-attendance-card__clock-btn--in {
-  background: #16a34a;
-  color: #ffffff;
-}
-
-:global(.dark-mode) .owner-attendance-card__restriction {
-  background: rgba(248, 113, 113, 0.12);
-  color: #f8fafc;
-  border: 1px solid rgba(248, 113, 113, 0.28);
-}
-
-:global(.dark-mode) .owner-attendance-card__message.success {
-  background: rgba(16, 185, 129, 0.18);
-  color: #a7f3d0;
-  border: 1px solid rgba(16, 185, 129, 0.28);
-}
-
-:global(.dark-mode) .owner-attendance-card__message.error {
-  background: rgba(248, 113, 113, 0.16);
-  color: #fecaca;
-  border: 1px solid rgba(248, 113, 113, 0.28);
-}
-
-:global(.dark-mode) .owner-announcement-item__meta {
-  color: rgba(248, 250, 252, 0.72);
-}
-
-:global(.dark-mode) .owner-announcement-item__message {
-  color: rgba(248, 250, 252, 0.84);
-}
-
-:global(.dark-mode) .owner-quicklink-row:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-:global(.dark-mode) .owner-quicklink-chevron {
-  color: #475569;
-}
 </style>

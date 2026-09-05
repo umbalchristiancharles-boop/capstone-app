@@ -1,5 +1,5 @@
 ﻿<template>
-  <div class="min-h-screen bg-gradient-to-b from-[#FF9A4A] to-[#FF6A3D]">
+  <div class="min-h-screen owner-panel-light-mode bg-gradient-to-b from-[#FF9A4A] to-[#FF6A3D]">
     <div class="admin-page" :class="[pageClass, { 'admin-page--wider': fullWidth }]">
       <section class="admin-layout" :class="{ 'admin-layout--wider': fullWidth, 'admin-layout--owner-two-column': ownerTwoColumnLayout, 'admin-layout--owner-sidebar-layout': showOwnerSidebar, 'owner-sidebar-collapsed': ownerSidebarCollapsed, 'admin-layout--single-column': singleColumnLayout, 'admin-layout--fit-content': fitContent, 'no-profile-column': !showProfileColumn, 'kitchen-staff-container': pageClass === 'kitchen-staff-page' }">
         <header v-if="showOwnerTopbar" class="owner-panel-topbar">
@@ -8,7 +8,7 @@
             class="owner-panel-hamburger"
             :aria-label="ownerSidebarCollapsed ? 'Show menu' : 'Hide menu'"
             :aria-expanded="(!ownerSidebarCollapsed).toString()"
-            @click="ownerSidebarCollapsed = !ownerSidebarCollapsed"
+            @click.prevent.stop="toggleOwnerSidebar"
           >☰</button>
           <div class="owner-panel-topbar-spacer"></div>
           <div class="owner-panel-user-pill" aria-label="Current account">
@@ -18,6 +18,9 @@
         </header>
         <aside v-if="showOwnerSidebar" class="owner-panel-sidebar" aria-label="Owner sections">
           <slot name="ownerSidebar"></slot>
+          <div class="owner-sidebar-footer">
+            <slot name="ownerSidebarFooter"></slot>
+          </div>
         </aside>
         <!-- MIDDLE: MAIN DASHBOARD -->
         <main class="admin-main">
@@ -35,7 +38,7 @@
                 <template v-if="!isRightColumnHeaderRoute()">
                   <slot name="headerActions"></slot>
                 </template>
-                <button v-if="showThemeToggle" type="button" class="theme-toggle-btn" @click="toggleTheme" :title="isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
+                <button v-if="showThemeToggle && enableDarkMode" type="button" class="theme-toggle-btn" @click="toggleTheme" :title="isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
                   <span class="theme-toggle-btn__icon" aria-hidden="true">
                     <svg v-if="isDarkMode" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <circle cx="12" cy="12" r="4"></circle>
@@ -60,7 +63,7 @@
           <slot name="main"></slot>
         </main>
         <!-- RIGHT: SIDE PANELS -->
-        <aside v-if="!singleColumnLayout" class="admin-side">
+        <aside v-if="!singleColumnLayout && showProfileColumn" class="admin-side">
           <div v-if="showProfileColumn && userProfile" class="admin-card admin-card--stacked">
             <div class="admin-card__header admin-card__header--stacked">
               <label class="admin-avatar admin-avatar--photo avatar-upload" for="avatar-input">
@@ -94,7 +97,7 @@
             </div>
             <div class="admin-card__footer admin-card__footer--stacked">
               <slot name="profileFooter"></slot>
-              <button v-if="showThemeToggle" type="button" class="theme-toggle-btn logout-btn--center" @click="toggleTheme" :title="isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
+              <button v-if="showThemeToggle && enableDarkMode" type="button" class="theme-toggle-btn logout-btn--center" @click="toggleTheme" :title="isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
                 <span class="theme-toggle-btn__icon" aria-hidden="true">
                   <svg v-if="isDarkMode" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="4"></circle>
@@ -376,6 +379,8 @@ const props = defineProps({
   ,
   showAttendanceCard: { type: Boolean, default: true }
   ,
+  enableDarkMode: { type: Boolean, default: true }
+  ,
   showOwnerSidebar: { type: Boolean, default: false },
   showOwnerTopbar: { type: Boolean, default: false }
 })
@@ -384,6 +389,10 @@ const emit = defineEmits(['logout', 'profile-updated', 'back'])
 const route = useRoute()
 const router = useRouter()
 const ownerSidebarCollapsed = ref(false)
+
+function toggleOwnerSidebar() {
+  ownerSidebarCollapsed.value = !ownerSidebarCollapsed.value
+}
 
 const isCustomAccount = computed(() => {
   try {
@@ -537,7 +546,7 @@ const themeKey = 'owner_module_theme'
 const theme = ref('light')
 const isDarkMode = computed(() => theme.value === 'dark')
 const themeButtonLabel = computed(() => (isDarkMode.value ? 'Light Mode' : 'Dark Mode'))
-const showThemeToggle = computed(() => !isInventoryRoute() && !isRightColumnHeaderRoute() && !isKitchenStaffRoute() && !isManagerLogisticsRoute() && !isManagerProcurementRoute() && !isMainBranchHrRoute() && !isSupplierRoute())
+const showThemeToggle = computed(() => props.enableDarkMode && !isInventoryRoute() && !isRightColumnHeaderRoute() && !isKitchenStaffRoute() && !isManagerLogisticsRoute() && !isManagerProcurementRoute() && !isMainBranchHrRoute() && !isSupplierRoute())
 
 const isInventoryRoute = () => {
   try {
@@ -661,6 +670,12 @@ const persistThemeMode = () => {
 
 const loadThemeMode = () => {
   try {
+    if (!props.enableDarkMode) {
+      theme.value = 'light'
+      applyThemeMode()
+      return
+    }
+
     if (isManagerLogisticsRoute() || isManagerProcurementRoute() || isMainBranchAdminRoute() || isMainBranchHrRoute() || isSupplierRoute()) {
       theme.value = 'light'
       applyThemeMode()
@@ -1054,6 +1069,19 @@ async function onAvatarChange(event) {
 <style scoped>
 @import '../css/adminpanel.css';
 
+:global(.owner-panel-light-mode) {
+  --color-royal-blue: #ff6b1c;
+  --color-golden-yellow: #ffd66b;
+  --color-deep-navy: #42210b;
+  --bg-main: radial-gradient(circle at center, #ffffff 0%, #fcfcfc 40%, #efefef 100%);
+  --surface-card: #ffffff;
+  --border-stroke: #f0e9e0;
+  --text-dark: #42210b;
+  --text-primary: #42210b;
+  --text-secondary: rgba(66, 33, 11, 0.6);
+  color: #42210b;
+}
+
 .admin-page--wider {
   max-width: 100%;
   padding: 0;
@@ -1088,13 +1116,22 @@ async function onAvatarChange(event) {
 }
 
 .admin-layout--owner-sidebar-layout {
-  grid-template-columns: 180px minmax(0, 1fr) minmax(260px, 360px);
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
+  border: 0;
+  grid-template-columns: 156px minmax(0, 1fr);
   grid-template-rows: auto 1fr;
-  gap: 20px;
+  gap: 0;
 }
 
 .owner-panel-topbar {
-  grid-column: 1 / -1;
+  grid-column: 2 / -1;
+  grid-row: 1;
+  position: relative;
+  z-index: 300;
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -1116,6 +1153,18 @@ async function onAvatarChange(event) {
   color: #334155;
   background: rgba(255, 255, 255, 0.7);
   cursor: pointer;
+  position: relative;
+  z-index: 301;
+  pointer-events: auto;
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1), background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.owner-sidebar-collapsed .owner-panel-hamburger {
+  transform: rotate(180deg);
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 10000;
 }
 
 .owner-panel-topbar-spacer {
@@ -1148,7 +1197,7 @@ async function onAvatarChange(event) {
 }
 
 .owner-sidebar-collapsed.admin-layout--owner-sidebar-layout {
-  grid-template-columns: 0 minmax(0, 1fr) minmax(260px, 360px);
+  grid-template-columns: 0 minmax(0, 1fr);
 }
 
 .owner-sidebar-collapsed .owner-panel-sidebar {
@@ -1162,20 +1211,54 @@ async function onAvatarChange(event) {
 
 .admin-layout--owner-sidebar-layout .owner-panel-sidebar {
   grid-column: 1;
-  width: 180px;
-  min-height: 100%;
-  padding: 1rem 0.75rem;
+  grid-row: 1 / -1;
+  width: 156px;
+  min-height: 100vh;
+  padding: 1.5rem 1rem 1rem;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
   background: rgba(255, 255, 255, 0.42);
   border-right: 1px solid rgba(138, 113, 95, 0.18);
 }
 
+.admin-layout--owner-sidebar-layout:not(.owner-sidebar-collapsed) .owner-panel-sidebar {
+  width: 156px;
+  min-width: 156px;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.owner-panel-light-mode .owner-panel-sidebar {
+  background: #f3e9e1 !important;
+  color: #243447 !important;
+  border-right-color: #d8c8bc !important;
+}
+
+.owner-panel-light-mode .owner-panel-topbar {
+  background: #eee2d9 !important;
+  border-bottom-color: #d8c8bc !important;
+}
+
+.owner-panel-light-mode .owner-sidebar-footer {
+  border-top-color: #d8c8bc !important;
+}
+
+.owner-sidebar-footer {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(138, 113, 95, 0.16);
+}
+
 .admin-layout--owner-sidebar-layout .admin-main {
   grid-column: 2;
+  grid-row: 2;
 }
 
 .admin-layout--owner-sidebar-layout .admin-side {
-  grid-column: 3;
+  display: none;
 }
 
 .admin-layout--owner-two-column .admin-side {
@@ -1257,6 +1340,16 @@ async function onAvatarChange(event) {
 }
 :deep(.admin-layout.no-profile-column) .admin-side {
   width: 360px;
+}
+
+/* Keep the owner shell two-column when its profile column is disabled. */
+:deep(.admin-layout--owner-sidebar-layout.no-profile-column) {
+  grid-template-columns: 156px minmax(0, 1fr) !important;
+  gap: 0 !important;
+}
+
+:deep(.owner-sidebar-collapsed.admin-layout--owner-sidebar-layout.no-profile-column) {
+  grid-template-columns: 0 minmax(0, 1fr) !important;
 }
 
 /* Ensure announcements sit below the header profile button when the
@@ -1371,4 +1464,167 @@ async function onAvatarChange(event) {
 .header-profile-dropdown { position:absolute; right:0; top:46px; background:#fff; border-radius:8px; box-shadow:0 8px 24px rgba(16,24,40,0.12); padding:6px; min-width:160px; z-index:100200 }
 .dropdown-item { display:block; width:100%; text-align:left; padding:8px 12px; background:transparent; border:none; color:#374151; cursor:pointer }
 .dropdown-item:hover { background:#f7f7f8 }
+
+@media (max-width: 767px) {
+  .admin-layout--owner-sidebar-layout {
+    display: block;
+    position: relative;
+    width: 100% !important;
+    height: 100vh;
+    min-height: 100vh;
+    overflow-x: hidden;
+    overflow-y: hidden;
+  }
+
+  .admin-page:has(.admin-layout--owner-sidebar-layout),
+  .admin-page:has(.admin-layout--owner-sidebar-layout) .admin-layout--owner-sidebar-layout,
+  .admin-layout--owner-sidebar-layout .admin-main {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+  }
+
+  .admin-layout--owner-sidebar-layout .owner-panel-topbar {
+    position: relative;
+    z-index: 300;
+    width: 100%;
+  }
+
+  .admin-layout--owner-sidebar-layout .owner-panel-sidebar {
+    position: absolute;
+    inset: 66px auto 0 0;
+    z-index: 200;
+    width: 156px;
+    min-height: 100%;
+    transform: translateX(0);
+    transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease;
+  }
+
+  .admin-layout--owner-sidebar-layout:not(.owner-sidebar-collapsed) .owner-panel-sidebar {
+    width: 156px;
+    min-width: 156px;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .owner-sidebar-collapsed.admin-layout--owner-sidebar-layout .owner-panel-sidebar {
+    width: 156px;
+    transform: translateX(-100%);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .admin-layout--owner-sidebar-layout .admin-main {
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  .admin-layout--owner-sidebar-layout .owner-main-section,
+  .admin-layout--owner-sidebar-layout .owner-hero-card,
+  .admin-layout--owner-sidebar-layout .owner-dish-section {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .admin-layout--owner-sidebar-layout .owner-hero-content,
+  .admin-layout--owner-sidebar-layout .owner-hero-left,
+  .admin-layout--owner-sidebar-layout .owner-hero-stats {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .admin-layout--owner-sidebar-layout .owner-hero-stats {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .admin-layout--owner-sidebar-layout .owner-dish-section .ingredient-row {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .admin-layout--owner-sidebar-layout .owner-dish-section .ingredient-row > * {
+    flex: 1 1 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+@media (min-width: 768px) {
+  .admin-layout--owner-sidebar-layout {
+    display: block;
+    position: relative;
+    width: 100% !important;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .admin-layout--owner-sidebar-layout .owner-panel-sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 400;
+    width: 156px;
+    min-width: 156px;
+    min-height: 100vh;
+    transform: translateX(0);
+    transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease;
+  }
+
+  .owner-sidebar-collapsed.admin-layout--owner-sidebar-layout .owner-panel-sidebar {
+    width: 156px;
+    min-width: 156px;
+    transform: translateX(-100%);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .admin-layout--owner-sidebar-layout .owner-panel-topbar,
+  .admin-layout--owner-sidebar-layout .admin-main {
+    width: calc(100% - 156px);
+    margin-left: 156px;
+    transition: width 260ms cubic-bezier(0.22, 1, 0.36, 1), margin-left 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .owner-sidebar-collapsed.admin-layout--owner-sidebar-layout .owner-panel-topbar,
+  .owner-sidebar-collapsed.admin-layout--owner-sidebar-layout .admin-main {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .admin-layout--owner-sidebar-layout .owner-panel-topbar {
+    height: 66px;
+    min-height: 66px;
+  }
+
+  .admin-layout--owner-sidebar-layout .admin-main {
+    height: calc(100vh - 66px);
+    box-sizing: border-box;
+    padding: 1.2rem 1.3rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .admin-layout--owner-sidebar-layout .admin-main > .owner-main-section,
+  .admin-layout--owner-sidebar-layout .admin-main > .owner-dish-section {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .admin-layout--owner-sidebar-layout .admin-main > .owner-main-section {
+    margin-bottom: 0;
+  }
+
+  .admin-layout--owner-sidebar-layout .admin-main > * {
+    flex: 0 0 auto;
+  }
+}
 </style>
