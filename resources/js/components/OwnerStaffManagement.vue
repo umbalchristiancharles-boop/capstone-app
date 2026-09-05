@@ -130,10 +130,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import '../css/adminpanel.css'
-import { useTheme } from '../composables/useTheme'
 import OwnerStaffModal from './OwnerStaffModal.vue'
-
-const { initializeTheme } = useTheme()
 
 function onStaffModalSuccess() {
   showAddStaffModal.value = false
@@ -579,11 +576,12 @@ async function toggleStatus(member) {
 }
 
 onMounted(async () => {
-  try {
-    initializeTheme()
-  } catch (e) {
-    console.warn('Theme initialize failed', e)
-  }
+  document.documentElement.classList.remove('dark-mode', 'dark')
+  document.body.classList.remove('dark-mode', 'dark')
+  document.documentElement.classList.add('light-mode')
+  document.body.classList.add('light-mode')
+  document.documentElement.removeAttribute('data-theme')
+  document.documentElement.removeAttribute('data-superadmin-theme')
 
   await loadCurrentOwner()
   await loadBranches()
@@ -616,7 +614,7 @@ function formatDate(dateString) {
 <style scoped>
 .staff-management-page {
   padding: 1.5rem;
-  background: #f8fafc;
+  background: #e7d9cf;
   min-height: 100vh;
   color: #1f2937;
 }

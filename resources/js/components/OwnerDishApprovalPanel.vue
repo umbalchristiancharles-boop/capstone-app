@@ -9,6 +9,7 @@
     :showHeader="false"
     :showAnnouncements="false"
     :showAttendanceCard="false"
+    :enableDarkMode="false"
     :singleColumnLayout="true"
     :fullWidth="true"
     @profile-updated="onProfileUpdated"
@@ -361,16 +362,25 @@ onMounted(() => {
 </script>
 
 <style scoped>
+:global(body:has(.owner-panel-light-mode)) {
+  margin: 0 !important;
+  background: #e7d9cf !important;
+}
+
+:global(.owner-panel-light-mode) {
+  background: #e7d9cf !important;
+}
+
 .dish-approval-page {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.5rem;
   width: 100%;
   max-width: 100%;
-  padding: 1.5rem 1.25rem 2rem;
+  padding: 1.5rem;
   min-height: 100vh;
-  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+  background: #e7d9cf;
   color: #1f2937;
 }
 
@@ -385,12 +395,11 @@ onMounted(() => {
 
 .panel-block {
   margin-bottom: 0;
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid rgba(255, 106, 61, 0.16);
-  border-radius: 24px;
-  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 106, 61, 0.14);
+  border-radius: 22px;
+  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.06);
   overflow: hidden;
-  backdrop-filter: blur(16px);
 }
 
 .panel-header {
@@ -398,15 +407,15 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 0;
-  padding: 1.2rem 1.4rem 1rem;
+  padding: 1rem 1.25rem;
   border-bottom: 1px solid rgba(255, 106, 61, 0.12);
-  background: linear-gradient(90deg, rgba(255, 244, 235, 0.95), rgba(255, 255, 255, 0.98));
+  background: #fff7ed;
 }
 
 .panel-header h2 {
   position: relative;
   margin: 0;
-  font-size: 1.35rem;
+  font-size: 1.25rem;
   color: #1f2937;
   letter-spacing: -0.02em;
 }
@@ -435,21 +444,22 @@ onMounted(() => {
 
 .dish-approval-header {
   display: block;
-  margin-bottom: 1.75rem;
-  padding: 1.25rem 1.5rem;
+  margin-bottom: 0;
+  padding: 1.5rem;
   border-radius: 24px;
-  background: linear-gradient(135deg, #fff7f0, #fff6f1);
-  border: 1px solid rgba(255, 106, 61, 0.15);
-  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.08);
 }
 
 .dish-approval-back-button {
-  margin-bottom: 1rem;
+  margin-bottom: 0;
 }
 
 .dish-approval-title-block h1 {
   margin: 0 0 0.25rem;
-  font-size: 2rem;
+  font-size: 2.15rem;
+  font-weight: 800;
   line-height: 1.05;
   color: #1f2937;
 }
@@ -457,7 +467,7 @@ onMounted(() => {
 .dish-approval-title-block p {
   margin: 0;
   color: #475569;
-  font-size: 0.98rem;
+  font-size: 0.95rem;
 }
 
 .dish-approval-back-button,
@@ -491,19 +501,42 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-/* Remove the reserved right side column for the dish approval page. */
-:deep(.admin-layout.no-profile-column),
-:deep(.admin-layout.admin-layout--wider.no-profile-column) {
-  grid-template-columns: minmax(0, 1fr) !important;
+/* Keep this approval workflow fluid even when shared panel rules are loaded later. */
+:deep(.admin-page.admin-page--wider) {
+  width: 100%;
+  max-width: none;
+  background: #e7d9cf !important;
+  padding: 0 !important;
 }
 
-:deep(.admin-layout.no-profile-column) .admin-side,
-:deep(.admin-layout.admin-layout--wider.no-profile-column) .admin-side {
+:deep(.admin-page.admin-page--wider .admin-layout),
+:deep(.admin-page.admin-page--wider .admin-layout.admin-layout--wider) {
+  grid-template-columns: minmax(0, 1fr) !important;
+  width: 100% !important;
+  max-width: none !important;
+}
+
+:deep(.admin-page.admin-page--wider .admin-main) {
+  grid-column: 1 !important;
+  grid-row: auto !important;
+  min-width: 0;
+  width: 100% !important;
+  background: #e7d9cf !important;
+}
+
+:deep(.admin-page.admin-page--wider .admin-layout) {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+:deep(.admin-page.admin-page--wider .admin-side) {
   display: none !important;
 }
 
 .refresh-btn {
-  padding: 0.6rem 1rem;
+  padding: 0.85rem 1.25rem;
   background: linear-gradient(135deg, #ff6a3d, #f59e0b);
   color: white;
   border: none;
@@ -511,7 +544,7 @@ onMounted(() => {
   cursor: pointer;
   font-weight: 700;
   transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
-  box-shadow: 0 10px 20px rgba(255, 106, 61, 0.18);
+  box-shadow: 0 14px 30px rgba(255, 106, 61, 0.18);
 }
 
 .refresh-btn:hover:not(:disabled) {
@@ -547,11 +580,11 @@ onMounted(() => {
 }
 
 .product-request-card {
-  background: linear-gradient(180deg, #fffdfb 0%, #ffffff 100%);
-  border: 1px solid rgba(251, 146, 60, 0.18);
-  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 106, 61, 0.14);
+  border-radius: 22px;
   overflow: hidden;
-  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.06);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -564,8 +597,8 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 1.2rem 1.2rem 1rem;
-  background: linear-gradient(90deg, rgba(255, 247, 237, 0.95), rgba(255, 250, 244, 0.95));
+  padding: 1rem 1.25rem;
+  background: #fff7ed;
   border-bottom: 1px solid rgba(255, 106, 61, 0.12);
 }
 
@@ -575,8 +608,9 @@ onMounted(() => {
 
 .product-name {
   margin: 0 0 0.45rem 0;
-  font-size: 1.15rem;
-  color: #111827;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1f2937;
 }
 
 .product-meta {
@@ -623,8 +657,9 @@ onMounted(() => {
 .description-text,
 .unit-text {
   margin: 0;
-  color: #374151;
+  color: #334155;
   line-height: 1.55;
+  font-size: 0.94rem;
 }
 
 .approval-section {
@@ -725,8 +760,10 @@ onMounted(() => {
 
 .approved-products-table {
   overflow-x: auto;
-  border: 1px solid rgba(251, 146, 60, 0.14);
-  border-radius: 18px;
+  border: 1px solid rgba(255, 106, 61, 0.14);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.06);
   overflow: hidden;
 }
 
@@ -737,7 +774,7 @@ table {
 }
 
 thead {
-  background: linear-gradient(90deg, rgba(255, 247, 237, 0.95), rgba(255, 250, 244, 0.95));
+  background: #fff7ed;
   border-bottom: 1px solid rgba(255, 106, 61, 0.12);
 }
 
@@ -745,10 +782,9 @@ th {
   padding: 0.95rem 1rem;
   text-align: left;
   font-weight: 700;
-  color: #4b5563;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  color: #334155;
+  font-size: 0.88rem;
+  letter-spacing: 0.01em;
 }
 
 tbody tr {
@@ -762,7 +798,8 @@ tbody tr:hover {
 
 td {
   padding: 0.95rem 1rem;
-  color: #111827;
+  color: #334155;
+  font-size: 0.94rem;
 }
 
 .product-name-cell {
@@ -776,8 +813,22 @@ small {
 }
 
 @media (max-width: 768px) {
+  .dish-approval-page {
+    gap: 1rem;
+  }
+
+  .dish-approval-header {
+    padding: 1rem;
+  }
+
+  .dish-approval-title-block h1 {
+    font-size: 1.6rem;
+  }
+
   .panel-header {
     padding: 1rem 1rem 0.9rem;
+    align-items: flex-start;
+    gap: 0.75rem;
   }
 
   .panel-body {
@@ -791,6 +842,26 @@ small {
   .approval-actions,
   .reject-actions {
     flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .dish-approval-back-button,
+  .refresh-btn {
+    font-size: 0.82rem;
+  }
+
+  .panel-header {
+    flex-direction: column;
+  }
+
+  .refresh-btn {
+    align-self: flex-start;
+  }
+
+  .product-request-card,
+  .panel-block {
+    border-radius: 16px;
   }
 }
 </style>
