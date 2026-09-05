@@ -1,7 +1,24 @@
 ﻿<template>
   <div class="min-h-screen bg-gradient-to-b from-[#FF9A4A] to-[#FF6A3D]">
     <div class="admin-page" :class="[pageClass, { 'admin-page--wider': fullWidth }]">
-      <section class="admin-layout" :class="{ 'admin-layout--wider': fullWidth, 'admin-layout--owner-two-column': ownerTwoColumnLayout, 'admin-layout--single-column': singleColumnLayout, 'admin-layout--fit-content': fitContent, 'no-profile-column': !showProfileColumn, 'kitchen-staff-container': pageClass === 'kitchen-staff-page' }">
+      <section class="admin-layout" :class="{ 'admin-layout--wider': fullWidth, 'admin-layout--owner-two-column': ownerTwoColumnLayout, 'admin-layout--owner-sidebar-layout': showOwnerSidebar, 'owner-sidebar-collapsed': ownerSidebarCollapsed, 'admin-layout--single-column': singleColumnLayout, 'admin-layout--fit-content': fitContent, 'no-profile-column': !showProfileColumn, 'kitchen-staff-container': pageClass === 'kitchen-staff-page' }">
+        <header v-if="showOwnerTopbar" class="owner-panel-topbar">
+          <button
+            type="button"
+            class="owner-panel-hamburger"
+            :aria-label="ownerSidebarCollapsed ? 'Show menu' : 'Hide menu'"
+            :aria-expanded="(!ownerSidebarCollapsed).toString()"
+            @click="ownerSidebarCollapsed = !ownerSidebarCollapsed"
+          >☰</button>
+          <div class="owner-panel-topbar-spacer"></div>
+          <div class="owner-panel-user-pill" aria-label="Current account">
+            <span class="owner-panel-user-pill__avatar">{{ (userProfile.fullName || userProfile.full_name || userProfile.role || 'O').charAt(0).toUpperCase() }}</span>
+            <span>{{ (userProfile.role || 'OWNER') + (userProfile.branch?.name ? ' - ' + userProfile.branch.name : (userProfile.branch ? ' - ' + userProfile.branch : '')) }}</span>
+          </div>
+        </header>
+        <aside v-if="showOwnerSidebar" class="owner-panel-sidebar" aria-label="Owner sections">
+          <slot name="ownerSidebar"></slot>
+        </aside>
         <!-- MIDDLE: MAIN DASHBOARD -->
         <main class="admin-main">
           <header v-if="showHeader" class="admin-main-header" :class="{ 'kitchen-staff-header': pageClass === 'kitchen-staff-page' }">
@@ -358,11 +375,15 @@ const props = defineProps({
   announcementsAfterAttendance: { type: Boolean, default: false }
   ,
   showAttendanceCard: { type: Boolean, default: true }
+  ,
+  showOwnerSidebar: { type: Boolean, default: false },
+  showOwnerTopbar: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['logout', 'profile-updated', 'back'])
 const route = useRoute()
 const router = useRouter()
+const ownerSidebarCollapsed = ref(false)
 
 const isCustomAccount = computed(() => {
   try {
@@ -1066,13 +1087,95 @@ async function onAvatarChange(event) {
   gap: 20px;
 }
 
-.admin-layout--single-column {
-  grid-template-columns: minmax(0, 1fr);
+.admin-layout--owner-sidebar-layout {
+  grid-template-columns: 180px minmax(0, 1fr) minmax(260px, 360px);
+  grid-template-rows: auto 1fr;
+  gap: 20px;
 }
 
-.admin-layout--owner-two-column .admin-main {
+.owner-panel-topbar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-height: 66px;
+  padding: 0.75rem 1rem;
+  box-sizing: border-box;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.owner-panel-hamburger {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 10px;
+  color: #334155;
+  background: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+}
+
+.owner-panel-topbar-spacer {
+  flex: 1;
+}
+
+.owner-panel-user-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 999px;
+  color: #1f2937;
+  background: rgba(255, 255, 255, 0.58);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.owner-panel-user-pill__avatar {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 50%;
+  background: #f7b97a;
+  color: #1f2937;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.owner-sidebar-collapsed.admin-layout--owner-sidebar-layout {
+  grid-template-columns: 0 minmax(0, 1fr) minmax(260px, 360px);
+}
+
+.owner-sidebar-collapsed .owner-panel-sidebar {
+  width: 0;
+  min-width: 0;
+  padding-left: 0;
+  padding-right: 0;
+  overflow: hidden;
+  opacity: 0;
+}
+
+.admin-layout--owner-sidebar-layout .owner-panel-sidebar {
   grid-column: 1;
-  width: 100%;
+  width: 180px;
+  min-height: 100%;
+  padding: 1rem 0.75rem;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.42);
+  border-right: 1px solid rgba(138, 113, 95, 0.18);
+}
+
+.admin-layout--owner-sidebar-layout .admin-main {
+  grid-column: 2;
+}
+
+.admin-layout--owner-sidebar-layout .admin-side {
+  grid-column: 3;
 }
 
 .admin-layout--owner-two-column .admin-side {
@@ -1183,6 +1286,42 @@ async function onAvatarChange(event) {
   .admin-layout--wider {
     padding: 1.5rem 1.5rem;
   }
+}
+
+@media (max-width: 900px) {
+  .admin-layout--owner-sidebar-layout {
+    grid-template-columns: 150px minmax(0, 1fr);
+  }
+
+  .owner-sidebar-collapsed.admin-layout--owner-sidebar-layout {
+    grid-template-columns: 0 minmax(0, 1fr);
+  }
+
+  .admin-layout--owner-sidebar-layout .owner-panel-sidebar {
+    width: 150px;
+  }
+
+  .admin-layout--owner-sidebar-layout .admin-main {
+    grid-column: 2;
+  }
+
+  .admin-layout--owner-sidebar-layout .admin-side {
+    grid-column: 2;
+  }
+}
+
+@media (max-width: 767px) {
+  .admin-layout--owner-sidebar-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-layout--owner-sidebar-layout .owner-panel-sidebar,
+  .admin-layout--owner-sidebar-layout .admin-main,
+  .admin-layout--owner-sidebar-layout .admin-side {
+    grid-column: 1;
+    width: 100%;
+  }
+
 }
 
 @media (min-width: 1024px) {

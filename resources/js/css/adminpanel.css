@@ -2691,6 +2691,8 @@ h1, h2, h3, h4, h5, h6, .section-subtitle, .admin-name, .admin-role {
   background: var(--color-royal-blue);
   color: #ffffff;
   border-radius: 999px;
+  outline: 2px solid #ffffff;
+  outline-offset: -2px;
 }
 
 /* OVERVIEW CARDS */
@@ -2945,6 +2947,11 @@ h1, h2, h3, h4, h5, h6, .section-subtitle, .admin-name, .admin-role {
 
 .table-row:first-of-type {
   border-top: none;
+}
+
+.attendance-table .table-header,
+.attendance-table .table-row {
+  grid-template-columns: minmax(150px, 1.4fr) minmax(110px, 1fr) repeat(3, minmax(85px, 1fr)) minmax(100px, 1fr);
 }
 
 /* LIST PANELS */
@@ -4809,7 +4816,6 @@ html:has(.admin-panel-shell)::-webkit-scrollbar-thumb:hover {
   font: inherit;
   font-size: 0.82rem;
   font-weight: 600;
-  cursor: pointer;
 }
 
 .admin-user-pill__avatar {
@@ -4824,7 +4830,6 @@ html:has(.admin-panel-shell)::-webkit-scrollbar-thumb:hover {
   font-weight: 800;
 }
 
-.admin-user-pill:hover,
 .admin-hamburger:hover {
   border-color: #8796a5;
   background: #e9eef2;
@@ -4883,6 +4888,10 @@ html:has(.admin-panel-shell)::-webkit-scrollbar-thumb:hover {
     grid-column: 2;
     grid-row: 4;
     margin: 0 1.3rem;
+  }
+
+  .admin-layout--staff .admin-side {
+    grid-row: 3;
   }
 
   .admin-sidebar-collapsed {
@@ -4964,6 +4973,16 @@ html:has(.admin-panel-shell)::-webkit-scrollbar-thumb:hover {
   overflow-y: visible;
 }
 
+@media (min-width: 768px) {
+  .admin-layout {
+    transition: grid-template-columns 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .admin-layout.admin-sidebar-collapsed {
+    grid-template-columns: 0 minmax(0, 1fr) !important;
+  }
+}
+
 .admin-layout > .admin-topbar,
 .admin-layout > .admin-main,
 .admin-layout > .admin-left,
@@ -4999,6 +5018,24 @@ html:has(.admin-panel-shell)::-webkit-scrollbar-thumb:hover {
   background: #e7d9cf !important;
 }
 
+.admin-layout--staff > .admin-side {
+  grid-row: 3 !important;
+}
+
+.admin-layout--dashboard > .admin-side {
+  grid-row: 3 !important;
+}
+
+.admin-layout--dashboard {
+  align-content: start;
+  grid-template-rows: 66px auto auto !important;
+}
+
+.admin-layout--compact {
+  align-content: start;
+  grid-template-rows: 66px auto auto !important;
+}
+
 .admin-layout > .admin-sidebar {
   grid-column: 1 !important;
   grid-row: 1 / -1 !important;
@@ -5011,6 +5048,7 @@ html:has(.admin-panel-shell)::-webkit-scrollbar-thumb:hover {
   height: 100vh;
   max-height: 100vh;
   overflow: hidden;
+  transition: width 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease;
 }
 
 .admin-sidebar-collapsed > .admin-sidebar {

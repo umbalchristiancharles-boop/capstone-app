@@ -69,8 +69,8 @@
               <div class="password-label">Default Password:</div>
               <div class="password-value">
                 <span class="password-text" :id="`password-${group.branchName}`">{{ group.defaultPassword }}</span>
-                <button 
-                  @click="copyToClipboard(`password-${group.branchName}`, group.defaultPassword)" 
+                <button
+                  @click="copyToClipboard(`password-${group.branchName}`, group.defaultPassword)"
                   class="btn-copy"
                   title="Copy to clipboard"
                 >
@@ -459,13 +459,13 @@ async function loadStaff() {
         const branches = {}
         res.data.data.forEach(branch => {
           const branchName = branch.branch_name || ''
-          
+
           // Store branch-level data including default password
           branches[branchName] = {
             defaultPassword: branch.default_password,
             defaultPasswordUpdatedAt: branch.default_password_updated_at
           }
-          
+
           if (branch.branch_manager) {
             list.push({ ...branch.branch_manager, branch_name: branchName })
           }
@@ -529,7 +529,7 @@ function editStaff(member) {
     editingStaffBranchName.value = member.branch_name || ''
     editingStaffBranchDefaultPassword.value = branchData.value[member.branch_name]?.defaultPassword || ''
     isViewOnly.value = true
-    
+
     // Fetch password if not available, then open modal
     if (!editingStaffBranchDefaultPassword.value && member.branch_id) {
       fetchBranchPassword(member.branch_id, () => {
@@ -554,7 +554,7 @@ function editStaff(member) {
     password: '',
     department: member.department || '',
   }
-  
+
   // Fetch password if not available, then open modal
   if (!editingStaffBranchDefaultPassword.value && member.branch_id) {
     fetchBranchPassword(member.branch_id, () => {
@@ -656,7 +656,7 @@ async function onResetPasswordClick(staffId) {
   try {
     const baseUrl = isBranchManager.value ? '/api/manager/staff' : '/api/admin/staff'
     const res = await axios.post(`${baseUrl}/${staffId}/reset-password`, {}, { withCredentials: true })
-    
+
     if (res.data.success) {
       alert('Password reset to default successfully!')
       loadStaff()
@@ -673,7 +673,7 @@ async function onResetPasswordClick(staffId) {
 <style scoped>
 .staff-management-page {
   padding: 2rem;
-  background: transparent;
+  background: #e7d9cf;
   min-height: 100vh;
   font-family: 'Inter', 'Poppins', sans-serif;
   color: var(--text-dark);

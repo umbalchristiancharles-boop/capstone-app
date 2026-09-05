@@ -1,7 +1,7 @@
 <template>
   <div class="admin-panel-shell min-h-screen bg-gradient-to-b from-[#F8F1E4] to-[#FFFFFF]">
     <div class="admin-page">
-      <section class="admin-layout" :class="{ 'admin-sidebar-collapsed': adminSidebarCollapsed }">
+      <section class="admin-layout" :class="{ 'admin-sidebar-collapsed': adminSidebarCollapsed, 'admin-layout--dashboard': activeSection === 'dashboard', 'admin-layout--staff': activeSection === 'staff', 'admin-layout--announcements': activeSection === 'announcements', 'admin-layout--compact': activeSection !== 'dashboard' }">
         <div class="admin-topbar">
           <button
             class="admin-hamburger"
@@ -12,33 +12,30 @@
           >☰</button>
           <div class="admin-header__spacer"></div>
           <div class="admin-header__actions">
-            <div class="header-profile-wrapper" @click.stop>
-              <button class="admin-user-pill" type="button" @click="toggleProfileDropdown">
+            <div class="header-profile-wrapper">
+              <div class="admin-user-pill" aria-label="Current account">
                 <div class="admin-user-pill__avatar">{{ (ownerProfile.fullName || ownerProfile.role || 'A').charAt(0).toUpperCase() }}</div>
                 <span>{{ ((ownerProfile.role || 'ADMIN') + (typeof ownerProfile.branch === 'object' && ownerProfile.branch?.name ? ' - ' + ownerProfile.branch.name : (ownerProfile.branch ? ' - ' + ownerProfile.branch : ''))) }}</span>
-              </button>
-              <div v-if="profileDropdownVisible" class="header-profile-dropdown" @click.stop>
-                <button class="dropdown-item" @click="openInfoModal">Info</button>
-                <button
-                  v-if="(ownerProfile.role || '').toString().toUpperCase() !== 'STAFF'"
-                  class="dropdown-item"
-                  @click="goToStaffManagement"
-                >
-                  Staff Management
-                </button>
-                <button class="dropdown-item" @click="askLogout">Logout</button>
               </div>
             </div>
           </div>
         </div>
         <aside class="admin-sidebar" aria-label="Admin sections">
           <nav class="admin-sidebar__nav">
-            <a class="admin-sidebar__item admin-sidebar__item--active" href="#admin-dashboard">Dashboard</a>
-            <a class="admin-sidebar__item" href="#admin-announcements">Announcements</a>
-            <a class="admin-sidebar__item" href="#admin-orders">Orders</a>
-            <a class="admin-sidebar__item" href="#admin-production">Production Queue</a>
-            <a class="admin-sidebar__item" href="#admin-reports">Reports</a>
-            <a class="admin-sidebar__item" href="#admin-attendance">Attendance</a>
+            <button type="button" class="admin-sidebar__item" :class="{ 'admin-sidebar__item--active': activeSection === 'dashboard' }" @click="activeSection = 'dashboard'">Dashboard</button>
+            <button type="button" class="admin-sidebar__item" :class="{ 'admin-sidebar__item--active': activeSection === 'orders' }" @click="activeSection = 'orders'">Orders &amp; Production</button>
+            <button type="button" class="admin-sidebar__item" :class="{ 'admin-sidebar__item--active': activeSection === 'inventory' }" @click="activeSection = 'inventory'">Inventory &amp; Procurement</button>
+            <button type="button" class="admin-sidebar__item" :class="{ 'admin-sidebar__item--active': activeSection === 'reports' }" @click="activeSection = 'reports'">Reports &amp; CRM</button>
+            <button type="button" class="admin-sidebar__item" :class="{ 'admin-sidebar__item--active': activeSection === 'staff' }" @click="activeSection = 'staff'">Staff &amp; Attendance</button>
+            <button type="button" class="admin-sidebar__item" :class="{ 'admin-sidebar__item--active': activeSection === 'announcements' }" @click="activeSection = 'announcements'">Announcements</button>
+            <button
+              v-if="(ownerProfile.role || '').toString().toUpperCase() !== 'STAFF'"
+              type="button"
+              class="admin-sidebar__item"
+              @click="goToStaffManagement"
+            >
+              Staff Management
+            </button>
           </nav>
           <div class="admin-sidebar__footer">
             <button class="admin-sidebar__account" type="button" @click="openInfoModal">Account Info</button>
@@ -46,7 +43,8 @@
           </div>
         </aside>
         <!-- LEFT: Announcements column -->
-        <aside id="admin-announcements" class="admin-left">
+        <Transition name="admin-section" mode="out-in" appear>
+        <aside v-if="activeSection === 'announcements'" id="admin-announcements" class="admin-left" :key="activeSection">
           <section class="panel-block announcements-panel dashboard-white-panel">
             <div class="panel-header"><h2>Announcements</h2></div>
             <div class="panel-body panel-body--list">
@@ -62,6 +60,7 @@
             </div>
           </section>
         </aside>
+        </Transition>
 
         <!-- MIDDLE: MAIN DASHBOARD -->
         <main class="admin-main">
@@ -69,12 +68,14 @@
           <section class="admin-feature-header">
             <div>
               <p class="admin-eyebrow">Admin dashboard</p>
-              <h1 class="admin-feature-title">{{ panelTitle }}</h1>
+              <h1 class="admin-feature-title">{{ activeSectionTitle }}</h1>
             </div>
           </section>
 
+          <Transition name="admin-section" mode="out-in" appear>
+          <div :key="activeSection" class="admin-section-view">
           <!-- Date range tabs (moved out of header) -->
-          <div class="range-tabs">
+          <div v-if="activeSection === 'dashboard'" class="range-tabs">
             <button
               class="range-tab"
               :class="{ 'range-tab--active': activeRange === 'today' }"
@@ -120,7 +121,7 @@
           </div>
 
           <!-- Overview cards - Operational Metrics -->
-          <section id="admin-dashboard" class="overview-grid">
+          <section v-if="activeSection === 'dashboard'" id="admin-dashboard" class="overview-grid">
             <div class="overview-card">
               <span class="overview-label">
                 Orders:
@@ -150,7 +151,7 @@
           </section>
 
           <!-- Request New Product (Admin) -->
-          <section id="admin-reports" class="panel-block">
+          <section v-if="activeSection === 'inventory'" id="admin-inventory-procurement" class="panel-block">
             <div class="panel-header">
               <h2>Request New Product</h2>
               <button class="panel-action" @click="showProductRequestForm = true">+ Request New Product</button>
@@ -160,7 +161,7 @@
             </div>
           </section>
 
-          <section class="panel-block supplier-review-panel">
+          <section v-if="activeSection === 'inventory'" id="admin-supplier-confirmations" class="panel-block supplier-review-panel">
             <div class="panel-header">
               <h2>Supplier Product Confirmations</h2>
               <button class="panel-action" @click="loadSupplierSubmissions">Refresh</button>
@@ -190,7 +191,7 @@
           <!-- Financial Metrics (moved to Attendance column) -->
 
           <!-- Orders table -->
-          <section id="admin-orders" class="panel-block">
+          <section v-if="activeSection === 'orders'" id="admin-orders" class="panel-block">
             <div class="panel-header">
               <h2>Orders</h2>
               <button
@@ -245,7 +246,7 @@
           </section>
 
           <!-- Production queue -->
-          <section id="admin-production" class="panel-block">
+          <section v-if="activeSection === 'orders'" id="admin-production" class="panel-block">
             <div class="panel-header">
               <h2>Production Queue</h2>
             </div>
@@ -279,7 +280,7 @@
 
 
           <!-- Customer Reports / CRM Section -->
-          <section class="panel-block">
+          <section v-if="activeSection === 'reports'" id="admin-reports-crm" class="panel-block">
             <div class="panel-header">
               <h2>Customer Reports / CRM</h2>
               <button class="panel-action" @click="showCustomerReports = !showCustomerReports">
@@ -292,7 +293,7 @@
           </section>
 
           <!-- Expired Products Review Section -->
-          <section class="panel-block">
+          <section v-if="activeSection === 'reports'" id="admin-expired-products" class="panel-block">
             <div class="panel-header">
               <h2>Expired Products Review</h2>
               <button class="panel-action" @click="showExpiredProducts = !showExpiredProducts">
@@ -342,11 +343,14 @@
               </div>
             </div>
           </section>
+          </div>
+          </Transition>
         </main>
         <!-- RIGHT: SIDE PANELS -->
-        <aside class="admin-side">
+        <Transition name="admin-section" mode="out-in" appear>
+        <aside v-if="activeSection === 'dashboard' || activeSection === 'staff'" class="admin-side" :key="activeSection">
           <!-- Top products -->
-          <section class="panel-block dashboard-white-panel">
+          <section v-if="activeSection === 'dashboard'" class="panel-block dashboard-white-panel">
             <div class="panel-header">
               <h2>Top Products</h2>
             </div>
@@ -370,7 +374,7 @@
           </section>
 
           <!-- Low stock -->
-          <section class="panel-block dashboard-white-panel">
+          <section v-if="activeSection === 'dashboard'" class="panel-block dashboard-white-panel">
             <div class="panel-header">
               <h2>Low Stock Items</h2>
             </div>
@@ -394,7 +398,7 @@
           </section>
 
           <!-- Staff activity -->
-          <section class="panel-block dashboard-white-panel">
+          <section v-if="activeSection === 'staff'" class="panel-block dashboard-white-panel">
             <div class="panel-header">
               <h2>Staff Activity</h2>
             </div>
@@ -423,7 +427,7 @@
 
 
             <!-- Attendance Monitoring (Admin) -->
-            <section id="admin-attendance" class="panel-block dashboard-white-panel">
+            <section v-if="activeSection === 'staff'" id="admin-attendance" class="panel-block dashboard-white-panel">
               <div class="panel-header" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
                 <h2>Attendance Monitoring</h2>
                 <div style="display:flex; gap:8px; align-items:center;">
@@ -452,7 +456,7 @@
               </label>
             </div>
 
-              <div class="panel-body panel-body--table">
+              <div class="panel-body panel-body--table attendance-table">
                 <div class="table-header">
                   <span>Staff Name</span>
                   <span>Branch</span>
@@ -487,6 +491,7 @@
 
 
         </aside>
+        </Transition>
       </section>
 
       <!-- ANNOUNCEMENT MODAL (Owner) -->
@@ -728,7 +733,7 @@
 </template>
 
 <script setup>
-import { createApp, h, ref, onMounted, onUnmounted, computed } from 'vue'
+import { createApp, h, ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import LoadingOverlay from './LoadingOverlay.vue'
@@ -738,7 +743,17 @@ import { showToast } from './toastStore'
 
 const router = useRouter()
 const activeRange = ref('today')
+const activeSection = ref('dashboard')
 const adminSidebarCollapsed = ref(false)
+
+const activeSectionTitle = computed(() => ({
+  dashboard: panelTitle.value,
+  orders: 'Orders & Production',
+  inventory: 'Inventory & Procurement',
+  reports: 'Reports & CRM',
+  staff: 'Staff & Attendance',
+  announcements: 'Announcements',
+}[activeSection.value] || panelTitle.value))
 
 const dashboardTotals = ref({
   orders: 0,
@@ -806,17 +821,6 @@ const ownerProfile = ref({
 
 
 const isEditingInfo = ref(false)
-
-// Header profile dropdown state (moved from side column)
-const profileDropdownVisible = ref(false)
-
-function toggleProfileDropdown() {
-  profileDropdownVisible.value = !profileDropdownVisible.value
-}
-
-function onDocumentClick() {
-  try { if (profileDropdownVisible.value) profileDropdownVisible.value = false } catch (e) {}
-}
 
 // Early clock-out override toggle
 const earlyClockoutOverride = ref(false)
@@ -1558,18 +1562,11 @@ function formatDate(dateString) {
       })
       .catch(() => {})
 
-    // Close profile dropdown when clicking outside
-    try { window.addEventListener('click', onDocumentClick) } catch (e) {}
-
     // load announcements for side panel
     fetchAnnouncements()
 
     // load expired products for admin review
     fetchExpiredProducts()
-  })
-
-  onUnmounted(() => {
-    try { window.removeEventListener('click', onDocumentClick) } catch (e) {}
   })
 
 </script>
@@ -1776,6 +1773,67 @@ h1, h2 {
   font-weight: 800 !important;
   letter-spacing: -0.04em !important;
   line-height: 1.1 !important;
+}
+
+.admin-section-view {
+  min-height: 1px;
+}
+
+.admin-section-enter-active,
+.admin-section-leave-active {
+  transition: opacity 220ms ease, transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+.admin-section-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.admin-section-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+@keyframes admin-content-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.admin-layout--dashboard .overview-card,
+.admin-layout--dashboard .admin-side .panel-block,
+.admin-layout--staff .admin-side .panel-block,
+.admin-layout--announcements .announcements-panel {
+  animation: admin-content-reveal 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.admin-layout--dashboard .overview-card:nth-child(2),
+.admin-layout--dashboard .admin-side .panel-block:nth-child(2),
+.admin-layout--staff .admin-side .panel-block:nth-child(2) {
+  animation-delay: 45ms;
+}
+
+.admin-layout--dashboard .overview-card:nth-child(3) {
+  animation-delay: 90ms;
+}
+
+.admin-layout--dashboard .overview-card:nth-child(4) {
+  animation-delay: 135ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-layout--dashboard .overview-card,
+  .admin-layout--dashboard .admin-side .panel-block,
+  .admin-layout--staff .admin-side .panel-block,
+  .admin-layout--announcements .announcements-panel {
+    animation: none;
+  }
 }
 
 

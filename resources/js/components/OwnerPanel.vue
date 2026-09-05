@@ -5,6 +5,8 @@
     panelDescription="Overview and controls for store owners"
     :showHeader="false"
     :ownerTwoColumnLayout="true"
+    :showOwnerSidebar="true"
+    :showOwnerTopbar="true"
     :fitContent="true"
     :enableProfileUpdate="true"
     :canEditProfile="true"
@@ -16,6 +18,16 @@
     avatarEndpoint="/api/profile/avatar"
     @logout="handleLogout"
   >
+    <template #ownerSidebar>
+      <nav class="owner-sidebar-nav" aria-label="Owner sections">
+        <router-link to="/owner-panel" class="owner-sidebar-link" exact-active-class="owner-sidebar-link--active">Dashboard</router-link>
+        <router-link to="/owner/dish-approval" class="owner-sidebar-link" active-class="owner-sidebar-link--active">Dish Approval</router-link>
+        <router-link to="/owner/staff-management" class="owner-sidebar-link" active-class="owner-sidebar-link--active">Staff Management</router-link>
+        <router-link to="/owner/branch-confirmations" class="owner-sidebar-link" active-class="owner-sidebar-link--active">Branch Confirmations</router-link>
+        <router-link to="/owner/price-markup-approvals" class="owner-sidebar-link" active-class="owner-sidebar-link--active">Price Markups</router-link>
+      </nav>
+    </template>
+
     <template #main>
       <section class="owner-main-section">
 
@@ -436,6 +448,42 @@ const handleLogout = async () => {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+.owner-sidebar-nav {
+  display: grid;
+  gap: 0.5rem;
+  position: sticky;
+  top: 1rem;
+}
+
+.owner-sidebar-link {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.7rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 0.75rem;
+  color: #334155;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-decoration: none;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.owner-sidebar-link:hover,
+.owner-sidebar-link--active {
+  color: #9a3412;
+  background: #fff7ed;
+  border-color: #fed7aa;
+}
+
+@media (max-width: 767px) {
+  .owner-sidebar-nav {
+    position: static;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 /* ── Hero Card ── */
