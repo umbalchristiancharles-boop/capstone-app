@@ -1,26 +1,21 @@
 <template>
   <div class="min-h-screen bg-gradient-to-b from-[#F8F1E4] to-[#FFFFFF]">
     <div class="admin-page">
-      <section class="admin-layout">
+      <section class="admin-layout" :class="{ 'admin-sidebar-collapsed': adminSidebarCollapsed }">
         <div class="admin-topbar">
-          <div class="admin-topbar-title">
-            <div class="admin-topbar-heading">{{ panelTitle }}</div>
-            <p class="admin-topbar-sub">{{ panelDescription }}</p>
-            <p v-if="isLoadingDashboard && !isInitialMount" class="admin-topbar-hint">
-              Loading dashboard…
-            </p>
-            <p v-else-if="dashboardError" class="admin-topbar-hint admin-topbar-hint--error">
-              {{ dashboardError }}
-            </p>
-          </div>
-          <div class="admin-topbar-actions">
+          <button
+            class="admin-hamburger"
+            type="button"
+            :aria-label="adminSidebarCollapsed ? 'Show menu' : 'Hide menu'"
+            :aria-expanded="(!adminSidebarCollapsed).toString()"
+            @click="adminSidebarCollapsed = !adminSidebarCollapsed"
+          >☰</button>
+          <div class="admin-header__spacer"></div>
+          <div class="admin-header__actions">
             <div class="header-profile-wrapper" @click.stop>
-              <button class="header-profile-btn" @click="toggleProfileDropdown">
-                <div class="header-avatar">
-                  <div v-if="ownerProfile.avatarUrl" class="header-avatar-img" :style="{ backgroundImage: 'url('+ownerProfile.avatarUrl+')' }"></div>
-                  <div v-else class="header-avatar-initials">{{ (ownerProfile.fullName || 'L').charAt(0).toUpperCase() }}</div>
-                </div>
-                <div class="header-name">{{ ((ownerProfile.role || 'ADMIN') + (typeof ownerProfile.branch === 'object' && ownerProfile.branch?.name ? ' - ' + ownerProfile.branch.name : (ownerProfile.branch ? ' - ' + ownerProfile.branch : ''))) }}</div>
+              <button class="admin-user-pill" type="button" @click="toggleProfileDropdown">
+                <div class="admin-user-pill__avatar">{{ (ownerProfile.fullName || ownerProfile.role || 'A').charAt(0).toUpperCase() }}</div>
+                <span>{{ ((ownerProfile.role || 'ADMIN') + (typeof ownerProfile.branch === 'object' && ownerProfile.branch?.name ? ' - ' + ownerProfile.branch.name : (ownerProfile.branch ? ' - ' + ownerProfile.branch : ''))) }}</span>
               </button>
               <div v-if="profileDropdownVisible" class="header-profile-dropdown" @click.stop>
                 <button class="dropdown-item" @click="openInfoModal">Info</button>
@@ -36,8 +31,22 @@
             </div>
           </div>
         </div>
+        <aside class="admin-sidebar" aria-label="Admin sections">
+          <nav class="admin-sidebar__nav">
+            <a class="admin-sidebar__item admin-sidebar__item--active" href="#admin-dashboard">Dashboard</a>
+            <a class="admin-sidebar__item" href="#admin-announcements">Announcements</a>
+            <a class="admin-sidebar__item" href="#admin-orders">Orders</a>
+            <a class="admin-sidebar__item" href="#admin-production">Production Queue</a>
+            <a class="admin-sidebar__item" href="#admin-reports">Reports</a>
+            <a class="admin-sidebar__item" href="#admin-attendance">Attendance</a>
+          </nav>
+          <div class="admin-sidebar__footer">
+            <button class="admin-sidebar__account" type="button" @click="openInfoModal">Account Info</button>
+            <button class="admin-sidebar__logout" type="button" @click="askLogout">Logout</button>
+          </div>
+        </aside>
         <!-- LEFT: Announcements column -->
-        <aside class="admin-left">
+        <aside id="admin-announcements" class="admin-left">
           <section class="panel-block announcements-panel">
             <div class="panel-header"><h2>Announcements</h2></div>
             <div class="panel-body panel-body--list">
@@ -56,6 +65,13 @@
 
         <!-- MIDDLE: MAIN DASHBOARD -->
         <main class="admin-main">
+
+          <section class="admin-feature-header">
+            <div>
+              <p class="admin-eyebrow">Admin dashboard</p>
+              <h1 class="admin-feature-title">{{ panelTitle }}</h1>
+            </div>
+          </section>
 
           <!-- Date range tabs (moved out of header) -->
           <div class="range-tabs">
@@ -104,7 +120,7 @@
           </div>
 
           <!-- Overview cards - Operational Metrics -->
-          <section class="overview-grid">
+          <section id="admin-dashboard" class="overview-grid">
             <div class="overview-card">
               <span class="overview-label">
                 Orders:
@@ -134,7 +150,7 @@
           </section>
 
           <!-- Request New Product (Admin) -->
-          <section class="panel-block">
+          <section id="admin-reports" class="panel-block">
             <div class="panel-header">
               <h2>Request New Product</h2>
               <button class="panel-action" @click="showProductRequestForm = true">+ Request New Product</button>
@@ -174,7 +190,7 @@
           <!-- Financial Metrics (moved to Attendance column) -->
 
           <!-- Orders table -->
-          <section class="panel-block">
+          <section id="admin-orders" class="panel-block">
             <div class="panel-header">
               <h2>Orders</h2>
               <button
@@ -229,7 +245,7 @@
           </section>
 
           <!-- Production queue -->
-          <section class="panel-block">
+          <section id="admin-production" class="panel-block">
             <div class="panel-header">
               <h2>Production Queue</h2>
             </div>
@@ -407,7 +423,7 @@
 
 
             <!-- Attendance Monitoring (Admin) -->
-            <section class="panel-block">
+            <section id="admin-attendance" class="panel-block">
               <div class="panel-header" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
                 <h2>Attendance Monitoring</h2>
                 <div style="display:flex; gap:8px; align-items:center;">
@@ -722,6 +738,7 @@ import { showToast } from './toastStore'
 
 const router = useRouter()
 const activeRange = ref('today')
+const adminSidebarCollapsed = ref(false)
 
 const dashboardTotals = ref({
   orders: 0,
@@ -1670,12 +1687,13 @@ h1, h2 {
 }
 
 .admin-topbar {
-  background: linear-gradient(135deg, #fffaf5 0%, #ffffff 72%) !important;
-  border: 1px solid #f1e5d8 !important;
-  border-radius: 14px !important;
-  box-shadow: 0 4px 14px rgba(66, 33, 11, 0.05) !important;
-  padding: 18px 20px !important;
-  margin-bottom: 14px !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0.75rem 1.25rem !important;
+  margin-bottom: 0 !important;
 }
 
 .admin-topbar-heading {
@@ -1687,6 +1705,33 @@ h1, h2 {
 .admin-topbar-sub {
   color: #64748b !important;
   margin-top: 6px !important;
+}
+
+.admin-feature-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.2rem 0.2rem 0.6rem;
+}
+
+.admin-eyebrow {
+  margin: 0 0 0.2rem;
+  color: #b66a3e !important;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.admin-feature-title {
+  margin: 0 !important;
+  color: #1f2937 !important;
+  font-size: clamp(2rem, 2vw, 2.2rem) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.04em !important;
+  line-height: 1.1 !important;
 }
 
 
