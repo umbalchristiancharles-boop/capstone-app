@@ -15,8 +15,8 @@
   >
     <template #ownerSidebar>
       <nav class="owner-sidebar-nav inventory-sidebar-nav" aria-label="Inventory sections">
-        <router-link to="/staff/inventory" class="owner-sidebar-link" exact-active-class="owner-sidebar-link--active">Inventory</router-link>
-        <router-link to="/staff/inventory/disposal-list" class="owner-sidebar-link" active-class="owner-sidebar-link--active">Disposal Reports</router-link>
+        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': !isDisposalView }" @click="isDisposalView = false">Inventory</button>
+        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': isDisposalView }" @click="isDisposalView = true">Product Disposal</button>
       </nav>
     </template>
 
@@ -51,8 +51,10 @@
     </template>
 
     <template #main>
+      <Transition name="inventory-section" mode="out-in">
+        <div :key="isDisposalView ? 'product-disposal' : 'inventory-monitor'" class="inventory-section-view">
       <!-- Dashboard stats (match manager panel) -->
-      <div v-if="!isDisposalRoute" class="hr-stats-grid">
+      <div v-if="!isDisposalView" class="hr-stats-grid">
         <div class="hr-stat-card hr-stat-card--total">
           <div class="hr-stat-icon">●</div>
           <div class="hr-stat-content">
@@ -78,7 +80,7 @@
       </div>
 
       <!-- Inventory Monitor (manager-style table) -->
-      <div v-if="!isDisposalRoute" class="panel-section">
+      <div v-if="!isDisposalView" class="panel-section">
         <h2 class="section-title">Inventory Monitor</h2>
         <p class="section-description">Current stock levels for your branch (Read-only)</p>
         <p class="section-note" style="color: #666; font-size: 13px; margin-top: 8px;">💡 <strong>Request Procurement:</strong> Click the button in the table to automatically request <strong>minimum 10 units</strong> of any low-stock product.</p>
@@ -99,7 +101,7 @@
       </div>
 
       <!-- Product Disposal List Section -->
-      <div v-if="isDisposalRoute" class="panel-section disposal-only-section">
+      <div v-if="isDisposalView" class="panel-section disposal-only-section">
         <h2 class="section-title">Product Disposal List</h2>
         <p class="section-description">View and manage all expired product disposal reports</p>
 
@@ -179,6 +181,8 @@
       </div>
 
       <!-- Announcements removed per request -->
+        </div>
+      </Transition>
     </template>
   </OwnerPanelLayout>
   </div>
@@ -352,17 +356,16 @@
 
 <script setup>
 import { ref, onMounted, watch, computed, onUnmounted, nextTick } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { useRouter } from 'vue-router';
 import axios from 'axios';
 import OwnerPanelLayout from '../OwnerPanelLayout.vue'
 import ProductList from './ProductList.vue'
 import { showToast } from '../toastStore'
 
 const router = useRouter();
-const route = useRoute();
 const ownerLayout = ref(null);
 
-const isDisposalRoute = computed(() => route.path === '/staff/inventory/disposal-list');
+const isDisposalView = ref(false);
 
 // Back button logic
 const showBackButton = computed(() => {
