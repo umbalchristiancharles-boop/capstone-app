@@ -16,6 +16,7 @@
     :canChangePassword="true"
     :showAnnouncements="false"
     :showAttendanceCard="false"
+    accountInfoStyle="finance"
     profileEndpoint="/api/profile"
     updateEndpoint="/api/profile/update"
     avatarEndpoint="/api/profile/avatar"

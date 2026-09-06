@@ -218,7 +218,7 @@
 
     <!-- PROFILE INFO MODAL -->
     <transition name="fade">
-      <div v-if="showInfoModal" class="info-backdrop">
+      <div v-if="showInfoModal" class="info-backdrop" :class="{ 'info-backdrop--finance-style': accountInfoStyle === 'finance' }">
         <div class="info-modal" :class="{ 'info-modal--finance-style': accountInfoStyle === 'finance' }">
           <button v-if="accountInfoStyle === 'finance'" type="button" class="info-modal-close" aria-label="Close account information" @click="handleInfoClose">✕</button>
           <h3>{{ accountInfoStyle === 'finance' ? 'Account Information' : 'Info' }}</h3>
@@ -1202,6 +1202,102 @@ async function onAvatarChange(event) {
   color: #1f2937;
   font-size: 0.72rem;
   font-weight: 800;
+}
+
+.info-modal--finance-style {
+  position: relative;
+  width: min(90vw, 520px);
+  max-height: 80vh;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: linear-gradient(180deg, #ffffff 0%, #fef8f3 100%);
+  border: 1px solid rgba(219, 188, 160, 0.4);
+  border-radius: 20px;
+  box-shadow: 0 28px 72px rgba(15, 23, 42, 0.18);
+}
+
+.info-backdrop--finance-style {
+  background: rgba(0, 0, 0, 0.42);
+  z-index: 500;
+}
+
+.info-modal--finance-style h3 {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 1.25rem 1.5rem 0.35rem;
+  color: #3d2a1f;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.info-modal--finance-style .info-sub {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0 1.5rem 1rem;
+  color: #94735f;
+  border-bottom: 1px solid rgba(219, 188, 160, 0.3);
+}
+
+.info-modal--finance-style .info-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+}
+
+.info-modal--finance-style .info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid rgba(219, 188, 160, 0.3);
+}
+
+.info-modal--finance-style .info-row + .info-row {
+  border-top: 0;
+  margin-top: 0;
+  padding-top: 0.65rem;
+}
+
+.info-modal--finance-style .info-label {
+  color: #7c6758;
+  font-weight: 700;
+}
+
+.info-modal--finance-style .info-value {
+  color: #3d2a1f;
+  font-weight: 700;
+  text-align: right;
+}
+
+.info-modal--finance-style .info-actions {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0.75rem 1.5rem 1rem;
+  border-top: 1px solid rgba(219, 188, 160, 0.3);
+}
+
+.info-modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1.25rem;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #94735f;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.info-modal-close:hover {
+  color: #3d2a1f;
+  transform: scale(1.1);
 }
 
 .owner-sidebar-collapsed.admin-layout--owner-sidebar-layout {
