@@ -149,7 +149,7 @@ const routes = [
   {
     path: '/staff/inventory/disposal-list',
     name: 'DisposalList',
-    component: () => import('../components/inventory/DisposalList.vue'),
+    component: () => import('../components/inventory/InventoryStaffPanel.vue'),
     meta: { requiresAuth: true, role: 'staff', department: 'inventory' }
   },
   {

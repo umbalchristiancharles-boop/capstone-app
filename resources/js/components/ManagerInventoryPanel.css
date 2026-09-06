@@ -1,13 +1,60 @@
 /* Manager Inventory Panel - UI styling only (no logic) */
 
-/* Page background (match manager panels) */
+/* Page background / shell (match Manager Finance) */
+:global(.admin-page:has(.inventory-content)) {
+  width: 100%;
+  max-width: none;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  background:
+    radial-gradient(circle at top left, rgba(255, 159, 67, 0.08), transparent 26%),
+    linear-gradient(180deg, #e7d9cf 0%, #eee5df 100%);
+  color: #243447;
+}
+
+:global(.admin-layout:has(.inventory-content)) {
+  width: 100%;
+  max-width: none;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  gap: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  grid-template-columns: 156px minmax(0, 1fr);
+}
+
+:global(.admin-layout:has(.inventory-content) > .admin-side) {
+  display: block;
+  width: 156px;
+  min-height: 100vh;
+  padding: 1.2rem 0.75rem 1rem;
+  border-right: 1px solid rgba(138, 113, 95, 0.18);
+  background: rgba(255, 255, 255, 0.24);
+}
+
+:global(.admin-layout:has(.inventory-content) > .admin-main) {
+  min-width: 0;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+:global(.admin-layout:has(.inventory-content) .announcements-panel) {
+  margin-top: 0;
+}
+
 .overview-grid,
 .inventory-content {
   box-sizing: border-box;
 }
 
 .inventory-content {
-  padding: clamp(0.9rem, 2vw, 1.25rem);
+  padding: clamp(0.85rem, 1.6vw, 1.25rem);
+  font-family: 'Inter', 'Poppins', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: #243447;
 }
 
 /* Overview / KPI cards */
@@ -15,7 +62,8 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
-  margin: 0 0 1rem 0;
+  margin: 0;
+  padding: 0.1rem 0 0.25rem;
 }
 
 .overview-card {
@@ -25,45 +73,45 @@
   gap: 0.9rem;
   min-height: 96px;
   padding: 1rem 1rem 1rem 1.05rem;
-  border-radius: 18px;
+  border-radius: 16px;
   border: 1px solid rgba(219, 188, 160, 0.45);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 246, 236, 0.92) 100%);
-  box-shadow: 0 12px 28px rgba(16, 24, 40, 0.06);
+  box-shadow: 0 10px 22px rgba(16, 24, 40, 0.05);
   transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
 }
 
 .overview-card:hover {
   transform: translateY(-1px);
-  box-shadow: 0 16px 34px rgba(16, 24, 40, 0.08);
+  box-shadow: 0 14px 28px rgba(16, 24, 40, 0.08);
   border-color: rgba(255, 159, 67, 0.22);
 }
 
 .overview-label {
   display: block;
   color: #7c6758;
-  font-size: 0.82rem;
+  font-size: 0.84rem;
   font-weight: 800;
   letter-spacing: -0.01em;
 }
 
 .overview-value {
   display: block;
-  color: #3d2a1f;
-  font-size: 1.55rem;
+  color: #243447;
+  font-size: 1.6rem;
   font-weight: 900;
   line-height: 1;
   letter-spacing: -0.03em;
-  margin-top: 0.15rem;
+  margin-top: 0.2rem;
 }
 
 /* Section blocks */
 .section {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.2rem;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(255, 249, 242, 0.96));
   border: 1px solid rgba(219, 188, 160, 0.42);
   padding: 1.1rem 1.1rem 0.95rem;
-  border-radius: 18px;
-  box-shadow: 0 14px 34px rgba(16, 24, 40, 0.06);
+  border-radius: 16px;
+  box-shadow: 0 12px 28px rgba(16, 24, 40, 0.05);
   overflow: hidden;
 }
 
@@ -73,10 +121,11 @@
   align-items: center;
   gap: 0.7rem;
   flex-wrap: wrap;
-  color: #3d2a1f;
+  color: #243447;
   font-size: 1.15rem;
   font-weight: 900;
   letter-spacing: -0.02em;
+  font-family: 'Poppins', 'Inter', system-ui, sans-serif;
 }
 
 /* Section divider line accent (gold) */

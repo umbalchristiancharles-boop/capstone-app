@@ -1,13 +1,36 @@
 <template>
+  <div class="inventory-staff-panel-shell">
   <OwnerPanelLayout
+    ref="ownerLayout"
     :userProfile="staffProfile"
     :panelTitle="pageTitle"
-    panelDescription="Manage your branch inventory"
     :enableProfileUpdate="true"
     :showProfileColumn="false"
     :ownerTwoColumnLayout="true"
+    :showOwnerSidebar="true"
+    :showOwnerTopbar="true"
+    :enableDarkMode="false"
+    :showAnnouncements="false"
     @logout="logout"
   >
+    <template #ownerSidebar>
+      <nav class="owner-sidebar-nav inventory-sidebar-nav" aria-label="Inventory sections">
+        <router-link to="/staff/inventory" class="owner-sidebar-link" exact-active-class="owner-sidebar-link--active">Inventory</router-link>
+        <router-link to="/staff/inventory/disposal-list" class="owner-sidebar-link" active-class="owner-sidebar-link--active">Disposal Reports</router-link>
+      </nav>
+    </template>
+
+    <template #ownerSidebarFooter>
+      <div class="owner-sidebar-actions inventory-sidebar-actions">
+        <button type="button" class="owner-sidebar-account" @click="ownerLayout?.openInfoModal()">
+          Account Info
+        </button>
+        <button type="button" class="owner-sidebar-logout" @click="logout">
+          Logout
+        </button>
+      </div>
+    </template>
+
     <template #sideTop>
       <div class="header-profile-wrapper" ref="headerProfileWrapper" style="margin: 0 0 12px;">
         <button class="header-profile-btn" @click.stop="toggleProfileMenu" type="button">
@@ -29,7 +52,7 @@
 
     <template #main>
       <!-- Dashboard stats (match manager panel) -->
-      <div class="hr-stats-grid">
+      <div v-if="!isDisposalRoute" class="hr-stats-grid">
         <div class="hr-stat-card hr-stat-card--total">
           <div class="hr-stat-icon">●</div>
           <div class="hr-stat-content">
@@ -55,7 +78,7 @@
       </div>
 
       <!-- Inventory Monitor (manager-style table) -->
-      <div class="panel-section">
+      <div v-if="!isDisposalRoute" class="panel-section">
         <h2 class="section-title">Inventory Monitor</h2>
         <p class="section-description">Current stock levels for your branch (Read-only)</p>
         <p class="section-note" style="color: #666; font-size: 13px; margin-top: 8px;">💡 <strong>Request Procurement:</strong> Click the button in the table to automatically request <strong>minimum 10 units</strong> of any low-stock product.</p>
@@ -76,43 +99,40 @@
       </div>
 
       <!-- Product Disposal List Section -->
-      <div class="panel-section">
+      <div v-if="isDisposalRoute" class="panel-section disposal-only-section">
         <h2 class="section-title">Product Disposal List</h2>
         <p class="section-description">View and manage all expired product disposal reports</p>
 
-        <!-- Disposal Stats -->
         <div class="disposal-stats-row">
-          <div class="disposal-stat-mini">
-            <span class="disposal-stat-label">Total Disposals</span>
-            <span class="disposal-stat-value">{{ disposalStats.total }}</span>
+          <div class="disposal-stat-mini"><span class="disposal-stat-label">Total Disposals</span><span class="disposal-stat-value">{{ disposalStats.total }}</span></div>
+          <div class="disposal-stat-mini"><span class="disposal-stat-label">Pending Review</span><span class="disposal-stat-value">{{ disposalStats.pending }}</span></div>
+          <div class="disposal-stat-mini"><span class="disposal-stat-label">Resolved</span><span class="disposal-stat-value">{{ disposalStats.resolved }}</span></div>
+          <div class="disposal-stat-mini"><span class="disposal-stat-label">Total Units</span><span class="disposal-stat-value">{{ disposalStats.totalQuantity }}</span></div>
+        </div>
+
+        <div class="disposal-controls">
+          <div class="disposal-filters">
+            <input v-model="disposalSearchQuery" @input="filterDisposals" type="text" placeholder="Search by product name or SKU..." class="disposal-search" />
+            <select v-model="statusFilter" @change="filterDisposals" class="disposal-filter">
+              <option value="all">All Status</option>
+              <option value="pending">Pending Review</option>
+              <option value="reviewed">Reviewed</option>
+              <option value="resolved">Resolved</option>
+            </select>
+            <input v-model="dateFrom" @change="filterDisposals" type="date" class="disposal-date-filter" />
+            <input v-model="dateTo" @change="filterDisposals" type="date" class="disposal-date-filter" />
           </div>
-          <div class="disposal-stat-mini">
-            <span class="disposal-stat-label">Pending Review</span>
-            <span class="disposal-stat-value">{{ disposalStats.pending }}</span>
-          </div>
-          <div class="disposal-stat-mini">
-            <span class="disposal-stat-label">Resolved</span>
-            <span class="disposal-stat-value">{{ disposalStats.resolved }}</span>
-          </div>
-          <div class="disposal-stat-mini">
-            <span class="disposal-stat-label">Total Units</span>
-            <span class="disposal-stat-value">{{ disposalStats.totalQuantity }}</span>
+          <div class="disposal-actions">
+            <button @click="exportDisposals" class="btn btn-light">Export CSV</button>
+            <button @click="refreshDisposals" class="btn btn-primary" :disabled="isLoadingDisposals">Refresh</button>
           </div>
         </div>
 
-        <!-- Disposal List Table -->
-        <div v-if="isLoadingDisposals" class="loading-container">
-          <p>Loading disposal records...</p>
-        </div>
-        <div v-else-if="disposalError" class="error-container">
-          <p class="error-message">{{ disposalError }}</p>
-          <button @click="loadDisposals" class="btn-retry">Retry</button>
-        </div>
-        <div v-else-if="!disposals.length" class="empty-message">
-          <p>No disposal records found.</p>
-        </div>
-        <div v-else class="disposal-table-wrapper">
-          <table class="disposal-table">
+        <div class="disposal-table-container">
+          <div v-if="isLoadingDisposals" class="loading-container"><div class="loading-spinner"></div><p>Loading disposal records...</p></div>
+          <div v-else-if="disposalError" class="error-container"><p class="error-message">{{ disposalError }}</p><button @click="refreshDisposals" class="btn-retry">Retry</button></div>
+          <div v-else-if="filteredDisposals.length === 0" class="empty-container"><p>No disposal records found.</p></div>
+          <table v-else class="disposal-table">
             <thead>
               <tr>
                 <th>Date</th>
@@ -120,70 +140,48 @@
                 <th>SKU</th>
                 <th>Quantity</th>
                 <th>Reported By</th>
+                <th>Notes</th>
+                <th>Image</th>
                 <th>Status</th>
-                <th>Action</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="disposal in recentDisposals" :key="disposal.id">
-                <td>{{ formatDate(disposal.created_at) }}</td>
-                <td>{{ disposal.product_name }}</td>
-                <td>{{ disposal.product_sku || 'N/A' }}</td>
-                <td>{{ disposal.quantity }}</td>
-                <td>{{ disposal.reported_by }}</td>
+              <tr v-for="disposal in paginatedDisposals" :key="disposal.id" class="disposal-row">
+                <td class="disposal-date">{{ formatDisposalDate(disposal.created_at) }}</td>
+                <td class="disposal-product">{{ disposal.product_name }}</td>
+                <td class="disposal-sku">{{ disposal.product_sku || 'N/A' }}</td>
+                <td class="disposal-quantity">{{ disposal.quantity }}</td>
+                <td class="disposal-reporter">{{ disposal.reported_by }}</td>
+                <td class="disposal-notes"><span v-if="disposal.notes" class="notes-text" :title="disposal.notes">{{ truncateText(disposal.notes, 50) }}</span><span v-else class="no-notes">-</span></td>
+                <td class="disposal-image"><img v-if="disposal.image_path" :src="disposal.image_path" :alt="disposal.product_name" class="disposal-thumb" @click="viewImage(disposal.image_path)" /><span v-else class="no-image">No image</span></td>
                 <td>
-                  <span :class="['status-badge', getDisposalStatusClass(disposal.status)]">
-                    {{ getDisposalStatusLabel(disposal.status) }}
-                  </span>
-                </td>
-                <td>
-                  <span class="text-muted">-</span>
+                  <span :class="['status-badge', getDisposalStatusClass(disposal.status)]">{{ getDisposalStatusLabel(disposal.status) }}</span>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
+
+        <div v-if="filteredDisposals.length > perPage" class="disposal-pagination">
+          <button class="page-btn" :disabled="currentPage === 1" @click="currentPage = 1">First</button>
+          <button class="page-btn" :disabled="currentPage === 1" @click="currentPage--">Prev</button>
+          <span class="page-info">Page {{ currentPage }} of {{ totalPages }}</span>
+          <button class="page-btn" :disabled="currentPage === totalPages" @click="currentPage++">Next</button>
+          <button class="page-btn" :disabled="currentPage === totalPages" @click="currentPage = totalPages">Last</button>
+          <select v-model.number="perPage" class="per-page-select"><option :value="10">10 / page</option><option :value="25">25 / page</option><option :value="50">50 / page</option></select>
+        </div>
+
+        <transition name="fade">
+          <div v-if="showImageModal" class="image-modal-backdrop" @click.self="closeImageModal">
+            <div class="image-modal"><button @click="closeImageModal" class="image-modal-close">x</button><img :src="selectedImage" alt="Disposal evidence" class="image-modal-img" /></div>
+          </div>
+        </transition>
       </div>
-
-      <!-- ProcurementRequests moved to Procurement Manager panel per request -->
-
-      <!-- Product request moved to Admin Panel -->
-    </template>
-
-    <template #side>
-      <div v-if="!hideAttendanceCard" class="attendance-card" style="margin-top:12px; background: #ffffff;">
-        <div class="attendance-header">
-          <span class="attendance-title">Attendance</span>
-          <span :class="['attendance-status-badge', attendanceStatus.is_clocked_in ? 'status-on-duty' : 'status-off-duty']">
-            {{ attendanceStatus.is_clocked_in ? 'On Duty' : 'Off Duty' }}
-          </span>
-        </div>
-        <!-- rest of attendance card markup preserved -->
-        <div class="attendance-times" v-if="attendanceStatus.clock_in_time || attendanceStatus.clock_out_time">
-          <div class="time-row"><span class="time-label">Clock In:</span><span class="time-value">{{ attendanceStatus.clock_in_time || '-' }}</span></div>
-          <div class="time-row"><span class="time-label">Clock Out:</span><span class="time-value">{{ attendanceStatus.clock_out_time || '-' }}</span></div>
-          <div class="time-row" v-if="attendanceStatus.hours_worked > 0"><span class="time-label">Hours:</span><span class="time-value">{{ attendanceStatus.hours_worked }} hrs</span></div>
-        </div>
-        <div class="attendance-buttons">
-          <button @click="performClockIn" :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing || locationLoading || !userLocation || !canClockInGeofencing" class="btn-clock-in">{{ locationLoading ? 'Getting Location...' : (isAttendanceProcessing ? '...' : 'Clock In') }}</button>
-          <button @click="performClockOut" :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockOut || locationLoading" class="btn-clock-out" :class="{ 'btn-disabled': !canClockOut && attendanceStatus.is_clocked_in }">{{ locationLoading ? 'Getting Location...' : (isAttendanceProcessing ? '...' : 'Clock Out') }}</button>
-        </div>
-        <div v-if="locationLoading" class="geofencing-status geofencing-loading">Getting your location...</div>
-        <div v-else-if="userLocation && canClockInGeofencing" class="geofencing-status geofencing-success">
-          <span class="status-icon">✓</span><span>Location verified</span>
-        </div>
-        <div v-else class="geofencing-status geofencing-error">
-          <span class="status-icon">⚠️</span><span>{{ locationError || 'Location is required to clock in' }}</span>
-        </div>
-        <div v-if="!canClockOut && attendanceStatus.is_clocked_in" class="clockout-restriction"><span class="restriction-icon">🔒</span><span>Cannot clock out before {{ scheduledTimeOut }}</span></div>
-        <div v-if="attendanceMessage" :class="['attendance-message', attendanceMessageType]">{{ attendanceMessage }}</div>
-      </div>
-
-
 
       <!-- Announcements removed per request -->
     </template>
   </OwnerPanelLayout>
+  </div>
 
   <!-- INFO MODAL -->
   <transition name="fade">
@@ -350,15 +348,21 @@
   </div>
 </template>
 
+<style scoped src="./InventoryStaffPanel.css"></style>
+
 <script setup>
 import { ref, onMounted, watch, computed, onUnmounted, nextTick } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
 import OwnerPanelLayout from '../OwnerPanelLayout.vue'
 import ProductList from './ProductList.vue'
 import { showToast } from '../toastStore'
 
 const router = useRouter();
+const route = useRoute();
+const ownerLayout = ref(null);
+
+const isDisposalRoute = computed(() => route.path === '/staff/inventory/disposal-list');
 
 // Back button logic
 const showBackButton = computed(() => {
@@ -643,7 +647,7 @@ async function submitProcRequest() {
     if (e.response?.status === 409) {
       const data = e.response.data
       const message = `${data.error}\n\n${data.details}\n\nExisting Request ID: ${data.existing_request_id}\nStatus: ${data.existing_status}`
-      
+
       if (window.swal) {
         window.swal('⚠️ Cannot Create Duplicate Request', message, 'warning')
       } else {
@@ -687,13 +691,13 @@ async function requestProcurement(product) {
     if (created && created.id) {
       procurementRequests.value = [created, ...procurementRequests.value.filter(r => r.id !== created.id)]
     }
-    
+
     if (window.swal) {
       window.swal('Success!', `✅ Procurement request created for ${quantity} units`, 'success')
     } else {
       showToast(`✓ Procurement request created for ${quantity} units`, 'success')
     }
-    
+
     // Add timeout to prevent hanging indefinitely
     try {
       await Promise.race([
@@ -709,7 +713,7 @@ async function requestProcurement(product) {
     if (e.response?.status === 409) {
       const data = e.response.data
       const message = `${data.error}\n\n${data.details}\n\nExisting Request ID: ${data.existing_request_id}\nStatus: ${data.existing_status}`
-      
+
       if (window.swal) {
         window.swal('⚠️ Cannot Create Duplicate Request', message, 'warning')
       } else {
@@ -837,6 +841,20 @@ const disposalStats = ref({
   resolved: 0,
   totalQuantity: 0
 })
+const filteredDisposals = ref([])
+const disposalSearchQuery = ref('')
+const statusFilter = ref('all')
+const dateFrom = ref('')
+const dateTo = ref('')
+const currentPage = ref(1)
+const perPage = ref(25)
+const showImageModal = ref(false)
+const selectedImage = ref('')
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredDisposals.value.length / perPage.value)))
+const paginatedDisposals = computed(() => {
+  const start = (currentPage.value - 1) * perPage.value
+  return filteredDisposals.value.slice(start, start + perPage.value)
+})
 
 // Expired lots summary for the modal
 const expiredLotsSummary = ref(null);
@@ -869,15 +887,18 @@ async function loadDisposals() {
     if (res.data && res.data.ok) {
       const data = res.data.data || []
       disposals.value = data
+      filteredDisposals.value = data
       calculateDisposalStats()
     } else {
       disposals.value = []
+      filteredDisposals.value = []
       calculateDisposalStats()
     }
   } catch (e) {
     console.error('Failed to fetch disposals:', e)
     disposalError.value = 'Failed to load disposal records: ' + (e.response?.data?.message || e.message)
     disposals.value = []
+    filteredDisposals.value = []
     calculateDisposalStats()
   } finally {
     isLoadingDisposals.value = false
@@ -906,6 +927,63 @@ function calculateDisposalStats() {
 const recentDisposals = computed(() => {
   return disposals.value.slice(0, 10) // Show only the 10 most recent disposals
 })
+
+function filterDisposals() {
+  currentPage.value = 1
+  let filtered = [...disposals.value]
+  const query = disposalSearchQuery.value.trim().toLowerCase()
+  if (query) {
+    filtered = filtered.filter(item =>
+      String(item.product_name || '').toLowerCase().includes(query) ||
+      String(item.product_sku || '').toLowerCase().includes(query)
+    )
+  }
+  if (statusFilter.value !== 'all') filtered = filtered.filter(item => item.status === statusFilter.value)
+  if (dateFrom.value) filtered = filtered.filter(item => new Date(item.created_at) >= new Date(dateFrom.value))
+  if (dateTo.value) {
+    const end = new Date(dateTo.value)
+    end.setHours(23, 59, 59, 999)
+    filtered = filtered.filter(item => new Date(item.created_at) <= end)
+  }
+  filteredDisposals.value = filtered
+}
+
+function refreshDisposals() {
+  loadDisposals()
+}
+
+function exportDisposals() {
+  const headers = ['Date', 'Product Name', 'SKU', 'Quantity', 'Reported By', 'Notes', 'Status']
+  const rows = [headers.join(',')]
+  filteredDisposals.value.forEach(item => rows.push([
+    formatDate(item.created_at),
+    `"${String(item.product_name || '').replace(/"/g, '""')}"`,
+    item.product_sku || 'N/A',
+    item.quantity || 0,
+    `"${String(item.reported_by || '').replace(/"/g, '""')}"`,
+    `"${String(item.notes || '').replace(/"/g, '""')}"`,
+    item.status || 'Unknown'
+  ].join(',')))
+  const url = URL.createObjectURL(new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `disposal-list-${new Date().toISOString().split('T')[0]}.csv`
+  link.click()
+  URL.revokeObjectURL(url)
+  showToast('Disposal list exported successfully', 'success')
+}
+
+function viewImage(imagePath) {
+  if (imagePath) {
+    selectedImage.value = imagePath
+    showImageModal.value = true
+  }
+}
+
+function closeImageModal() {
+  showImageModal.value = false
+  selectedImage.value = ''
+}
 
 function getDisposalStatusLabel(status) {
   const labels = {
@@ -1968,9 +2046,6 @@ async function submitExpiredReport() {
 </style>
 
 <style scoped>
-.hr-stat-card { position: relative; }
-.panel-badge { position:absolute; top:-8px; right:-8px; min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:#ef4444; color:#ffffff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(239,68,68,0.35) }
-.stat-alert { border:1px solid #fecaca; box-shadow:0 0 0 2px rgba(239,68,68,0.12) }
 .inventory-table th, .inventory-table td {
   padding: 0.55rem 0.7rem;
   font-size: 0.92rem;
