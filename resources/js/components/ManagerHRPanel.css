@@ -1054,6 +1054,87 @@
   font-weight: 800;
 }
 
+/* Match the inventory navigation chrome and topbar palette. */
+:global(.admin-page:has(.manager-hr-page) .manager-hr-sidebar) {
+  background: rgba(255, 255, 255, 0.42);
+  border-right-color: rgba(115, 93, 84, 0.18);
+}
+
+:global(.admin-page:has(.manager-hr-page) .manager-hr-sidebar__item) {
+  color: #29384a;
+  background: transparent;
+}
+
+:global(.admin-page:has(.manager-hr-page) .manager-hr-sidebar__item:hover) {
+  background: rgba(255, 255, 255, 0.68);
+  border-color: rgba(215, 125, 61, 0.22);
+  color: #9b4e21;
+}
+
+:global(.admin-page:has(.manager-hr-page) .manager-hr-sidebar__item--active) {
+  background: #fffaf5;
+  border-color: #efb47f;
+  color: #a34f21;
+  box-shadow: 0 5px 12px rgba(184, 111, 61, 0.08);
+}
+
+:global(.admin-page:has(.manager-hr-page) .manager-hr-topbar) {
+  background: linear-gradient(180deg, #e7d9cf 0%, #eee5df 100%);
+  border-bottom-color: rgba(115, 93, 84, 0.18);
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.12);
+}
+
+:global(.admin-page:has(.manager-hr-page) .manager-hr-menu-toggle) {
+  border-color: #cbd5df;
+  background: #f7f9fa;
+  color: #243447;
+  box-shadow: 0 4px 12px #24344712;
+}
+
+:global(.admin-page:has(.manager-hr-page) .manager-hr-menu-toggle:hover) {
+  border-color: #8796a5;
+  background: #e9eef2;
+  color: #1b2a3a;
+  box-shadow: 0 6px 16px #2434471c;
+}
+
+:global(.admin-page:has(.manager-hr-page) .manager-hr-topbar__profile) {
+  background: rgba(255, 255, 255, 0.58);
+  border-color: rgba(148, 163, 184, 0.25);
+  color: #1f2937;
+}
+
+:global(.admin-page:has(.manager-hr-page) .manager-hr-topbar__avatar) {
+  background: linear-gradient(135deg, #f9d6b2, #dd8d4c);
+  color: #1f2937;
+}
+
+:global(.admin-page:has(.manager-hr-page) .manager-hr-sidebar__account) {
+  border-color: #c9d9e5;
+  background: #f7fbff;
+  color: #30445a;
+}
+
+:global(.admin-page:has(.manager-hr-page) .manager-hr-sidebar__account:hover) {
+  border-color: #a9c3d6;
+  background: #eaf3fa;
+  color: #30445a;
+  box-shadow: 0 6px 14px rgba(61, 50, 43, 0.08);
+}
+
+:global(.admin-page:has(.manager-hr-page) .manager-hr-sidebar__logout) {
+  border-color: #e3b1a5;
+  background: #fff9f7;
+  color: #a23d32;
+}
+
+:global(.admin-page:has(.manager-hr-page) .manager-hr-sidebar__logout:hover) {
+  border-color: #b96b63;
+  background: #f9e9e7;
+  color: #76231e;
+  box-shadow: 0 6px 16px #8f30281c;
+}
+
 :global(.admin-main:has(.manager-hr-sidebar-collapsed) .manager-hr-topbar) {
   left: 0;
 }

@@ -69,7 +69,6 @@
           <div class="manager-hr-hero__copy">
             <span class="manager-hr-hero__eyebrow">Manager dashboard</span>
             <h2 class="manager-hr-hero__title">HR overview</h2>
-            <p class="manager-hr-hero__subtitle">Manage attendance, review applications, and request open positions from one place.</p>
           </div>
 
           <div class="positions-top-actions manager-hr-hero__actions">
