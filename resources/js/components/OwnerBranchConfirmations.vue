@@ -11,6 +11,8 @@
     :showAttendanceCard="false"
     :singleColumnLayout="true"
     :fullWidth="true"
+    :enableDarkMode="false"
+    pageClass="owner-branch-confirmations-page"
     @logout="confirmLogout"
   >
     <template #main>
@@ -259,6 +261,36 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+:deep(.admin-page.owner-branch-confirmations-page),
+:deep(.admin-page.owner-branch-confirmations-page .admin-layout) {
+  background: #e7d9cf !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  width: 100% !important;
+  max-width: none !important;
+}
+
+:deep(.admin-page.owner-branch-confirmations-page) {
+  padding: 0 !important;
+  color: #2f261f !important;
+}
+
+:deep(.admin-page.owner-branch-confirmations-page .admin-layout) {
+  padding: 0 !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  justify-content: stretch !important;
+}
+
+:deep(.admin-page.owner-branch-confirmations-page .admin-main) {
+  width: 100% !important;
+  max-width: none !important;
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
 .branch-approval {
   --paper: #fff8ef;
   --ink: #2f261f;
@@ -266,7 +298,10 @@ onMounted(async () => {
   --accent-soft: #ffe3d6;
   --success: #16a34a;
   --danger: #dc2626;
-  padding: 16px 18px 40px;
+  width: 100%;
+  min-height: 100vh;
+  padding: 1.5rem;
+  background: #e7d9cf;
 }
 
 .branch-approval__header {
@@ -309,7 +344,7 @@ onMounted(async () => {
 
 .branch-approval-header p {
   margin: 0;
-  color: rgba(47,38,31,0.7);
+  color: #2f261f;
 }
 
 .branch-approval-back-button {
@@ -380,7 +415,7 @@ onMounted(async () => {
 }
 
 .muted {
-  color: rgba(47,38,31,0.7);
+  color: #2f261f;
   padding: 12px 0;
 }
 
@@ -389,6 +424,14 @@ onMounted(async () => {
   padding: 18px;
   border-radius: 14px;
   color: var(--ink);
+}
+
+.empty-state p,
+.request-meta,
+.address-block .label,
+.address-block .value,
+.request-id {
+  color: #2f261f;
 }
 
 .alert-error {
@@ -509,6 +552,20 @@ onMounted(async () => {
 }
 
 @media (max-width: 640px) {
+  .branch-approval {
+    padding: 1rem;
+  }
+
+  .branch-approval-header {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 1rem;
+  }
+
+  .branch-approval-header h1 {
+    font-size: 1.6rem;
+  }
+
   .branch-approval__header {
     flex-direction: column;
     align-items: flex-start;

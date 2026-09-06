@@ -461,12 +461,12 @@ onMounted(() => {
   font-size: 2.15rem;
   font-weight: 800;
   line-height: 1.05;
-  color: #1f2937;
+  color: #2f261f !important;
 }
 
 .dish-approval-title-block p {
   margin: 0;
-  color: #475569;
+  color: #2f261f !important;
   font-size: 0.95rem;
 }
 
