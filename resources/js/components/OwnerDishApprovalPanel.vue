@@ -355,6 +355,11 @@ function confirmRejectProduct(prodReqId) {
 }
 
 onMounted(() => {
+  document.documentElement.classList.add('light-mode')
+  document.body.classList.add('light-mode')
+  document.documentElement.removeAttribute('data-theme')
+  document.documentElement.removeAttribute('data-superadmin-theme')
+
   loadUserProfile()
   loadPendingProductRequests()
   loadApprovedProductRequests()
@@ -461,12 +466,23 @@ onMounted(() => {
   font-size: 2.15rem;
   font-weight: 800;
   line-height: 1.05;
-  color: #2f261f !important;
+  background: none !important;
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+}
+
+:deep(.dish-approval-page .dish-approval-title-block h1),
+:deep(.dish-approval-page .dish-approval-title-block p) {
+  background: none !important;
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
 }
 
 .dish-approval-title-block p {
   margin: 0;
-  color: #2f261f !important;
+  background: none !important;
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
   font-size: 0.95rem;
 }
 
@@ -480,7 +496,7 @@ onMounted(() => {
   padding: 0.7rem 1rem;
   border-radius: 999px;
   background: linear-gradient(90deg, rgba(255, 106, 61, 0.12), rgba(251, 191, 36, 0.16));
-  color: #c2410c;
+  color: #000000 !important;
   cursor: pointer;
   font-weight: 700;
   font-size: 0.92rem;
@@ -491,7 +507,13 @@ onMounted(() => {
   transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
 }
 
-.back-to-dashboard-btn:hover {
+.dish-approval-back-button:hover,
+.dish-approval-back-button:focus,
+.dish-approval-back-button:focus-visible,
+.back-to-dashboard-btn:hover,
+.back-to-dashboard-btn:focus,
+.back-to-dashboard-btn:focus-visible {
+  color: #000000 !important;
   transform: translateY(-1px);
   box-shadow: 0 10px 20px rgba(255, 106, 61, 0.16);
   opacity: 0.95;

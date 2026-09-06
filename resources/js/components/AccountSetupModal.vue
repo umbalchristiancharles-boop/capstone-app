@@ -323,7 +323,7 @@ const documentSuccess = ref('')
 
 const steps = computed(() => {
   const s = []
-  
+
   // Only include full setup steps if setupType is 'full'
   if (props.setupType === 'full') {
     if (props.missingFields.includes('email')) s.push('email')
@@ -331,7 +331,7 @@ const steps = computed(() => {
     if (props.missingFields.includes('phone_number')) s.push('phone')
     if (props.missingFields.includes('address')) s.push('address')
   }
-  
+
   // Always include documents step if any required documents are missing
   if (
     props.missingFields.includes('sss_id') ||
@@ -344,7 +344,7 @@ const steps = computed(() => {
   ) {
     s.push('documents')
   }
-  
+
   s.push('complete')
   return s
 })
@@ -655,7 +655,7 @@ watch(() => props.setupType, (newType) => {
 .setup-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(61, 42, 31, 0.48);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -666,16 +666,17 @@ watch(() => props.setupType, (newType) => {
 .setup-modal-card {
   width: 100%;
   max-width: 600px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  background: #fffaf5;
+  border: 1px solid #f1e5d8;
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(66, 33, 11, 0.2);
   overflow: hidden;
 }
 
 .setup-modal-header {
-  background: linear-gradient(135deg, #ff9a4a 0%, #ff6a3d 100%);
+  background: linear-gradient(135deg, #ff9f43 0%, #f97316 100%);
   color: white;
-  padding: 2rem;
+  padding: 1.75rem 2rem;
   text-align: center;
 }
 
@@ -692,7 +693,7 @@ watch(() => props.setupType, (newType) => {
 }
 
 .setup-steps {
-  padding: 2rem;
+  padding: 1.5rem 2rem 2rem;
 }
 
 .setup-step {
@@ -709,18 +710,18 @@ watch(() => props.setupType, (newType) => {
   align-items: center;
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
-  border-bottom: 2px solid #e5e7eb;
+  border-bottom: 1px solid #f1e5d8;
 }
 
 .step-header h3 {
   margin: 0;
   font-size: 1.3rem;
-  color: #1f2937;
+  color: #3d2a1f;
 }
 
 .step-badge {
-  background: #fff3cd;
-  color: #856404;
+  background: #fff1d9;
+  color: #9a4b12;
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
   font-size: 0.8rem;
@@ -734,7 +735,7 @@ watch(() => props.setupType, (newType) => {
 }
 
 .step-description {
-  color: #6b7280;
+  color: #64748b;
   font-size: 0.95rem;
   margin: 0;
 }
@@ -743,7 +744,7 @@ watch(() => props.setupType, (newType) => {
 .code-input {
   width: 100%;
   padding: 0.75rem 1rem;
-  border: 2px solid #e5e7eb;
+  border: 1px solid #f1e5d8;
   border-radius: 8px;
   font-size: 1rem;
   font-family: inherit;
@@ -753,8 +754,8 @@ watch(() => props.setupType, (newType) => {
 .step-input:focus,
 .code-input:focus {
   outline: none;
-  border-color: #ff9a4a;
-  box-shadow: 0 0 0 3px rgba(255, 154, 74, 0.1);
+  border-color: #ff9f43;
+  box-shadow: 0 0 0 3px rgba(255, 159, 67, 0.14);
 }
 
 .code-input {
@@ -790,13 +791,13 @@ watch(() => props.setupType, (newType) => {
 }
 
 .step-btn-secondary {
-  background: #f3f4f6;
-  color: #374151;
-  border: 1px solid #e5e7eb;
+  background: #fffaf5;
+  color: #3d2a1f;
+  border: 1px solid #ead2bd;
 }
 
 .step-btn-secondary:hover:not(:disabled) {
-  background: #e5e7eb;
+  background: #f3e5d7;
 }
 
 .verification-section {
@@ -805,7 +806,7 @@ watch(() => props.setupType, (newType) => {
   gap: 1rem;
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 2px solid #f3f4f6;
+  border-top: 1px solid #f1e5d8;
 }
 
 .verification-label {
@@ -835,20 +836,20 @@ watch(() => props.setupType, (newType) => {
 .documents-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1rem;
+  gap: 0.85rem;
 }
 
 .document-item {
-  background: #f9fafb;
-  border: 2px dashed #e5e7eb;
-  border-radius: 8px;
-  padding: 1rem;
+  background: #fff;
+  border: 1px dashed #ead2bd;
+  border-radius: 10px;
+  padding: 1rem 0.85rem;
   text-align: center;
 }
 
 .document-label {
   font-weight: 600;
-  color: #1f2937;
+  color: #3d2a1f;
   margin-bottom: 0.75rem;
   font-size: 0.95rem;
 }
@@ -880,7 +881,7 @@ watch(() => props.setupType, (newType) => {
 
 .document-preview {
   background: white;
-  border: 2px solid #dbeafe;
+  border: 1px solid #f1e5d8;
   border-radius: 6px;
   padding: 0.5rem;
   display: flex;
@@ -890,7 +891,7 @@ watch(() => props.setupType, (newType) => {
 }
 
 .document-name {
-  color: #1e40af;
+  color: #9a4b12;
   font-size: 0.85rem;
   flex: 1;
   overflow: hidden;
@@ -968,12 +969,28 @@ watch(() => props.setupType, (newType) => {
     padding: 1.5rem;
   }
 
+  .setup-steps {
+    padding: 1.25rem;
+  }
+
+  .step-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+
   .setup-modal-header h2 {
     font-size: 1.5rem;
   }
 
   .documents-grid {
     grid-template-columns: 1fr;
+  }
+
+  .step-btn-primary,
+  .step-btn-secondary {
+    width: 100%;
   }
 }
 </style>

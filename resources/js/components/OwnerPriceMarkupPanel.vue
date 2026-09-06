@@ -11,6 +11,8 @@
     :showAttendanceCard="false"
     :singleColumnLayout="true"
     :fullWidth="true"
+    :enableDarkMode="false"
+    pageClass="owner-price-markup-page"
     @profile-updated="onProfileUpdated"
     @logout="confirmLogout"
   >
@@ -363,18 +365,52 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+:deep(.admin-page.owner-price-markup-page),
+:deep(.admin-page.owner-price-markup-page .admin-layout) {
+  background: #e7d9cf !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  width: 100% !important;
+  max-width: none !important;
+}
+
+:deep(.admin-page.owner-price-markup-page) {
+  padding: 0 !important;
+  color: #2f261f !important;
+}
+
+:deep(.admin-page.owner-price-markup-page .admin-layout) {
+  padding: 0 !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  justify-content: stretch !important;
+}
+
+:deep(.admin-page.owner-price-markup-page .admin-main) {
+  width: 100% !important;
+  max-width: none !important;
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
 .centered-wrapper {
-  max-width: 100%;
+  max-width: none;
   margin: 0;
   width: 100%;
-  padding: 0 24px;
+  padding: 0 !important;
   box-sizing: border-box;
+}
+
+.price-markup-page.centered-wrapper {
+  padding: 1.5rem !important;
 }
 
 .panel-block {
   background: linear-gradient(135deg, #ffffff 0%, #faf5f1 100%);
   border-radius: 16px;
-  padding: 28px;
+  padding: 1.25rem;
   box-shadow: 0 8px 32px rgba(255, 107, 28, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
   border: 2px solid rgba(255, 107, 28, 0.1);
   width: 100%;
@@ -445,15 +481,21 @@ onMounted(async () => {
 }
 
 .price-markup-page {
-  width: 100%;
+  min-height: 100vh;
+  width: calc(100% - 2rem);
+  margin: 0 1rem;
+  box-sizing: border-box;
+  padding: 1.5rem !important;
+  background: #e7d9cf;
+  color: #2f261f;
 }
 
 .page-header-row {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
 }
 
 .price-markup-header {
@@ -470,7 +512,7 @@ onMounted(async () => {
   margin: 0 0 0.25rem;
   font-size: 2rem;
   line-height: 1.05;
-  color: #1f2937;
+  color: #000000 !important;
 }
 
 :deep(.admin-layout.no-profile-column),
@@ -486,7 +528,7 @@ onMounted(async () => {
 
 .price-markup-title-block p {
   margin: 0;
-  color: #475569;
+  color: #000000 !important;
 }
 
 .price-markup-back-button,
@@ -523,7 +565,7 @@ onMounted(async () => {
 
 .muted {
   color: #6b7280;
-  padding: 48px 30px;
+  padding: 2rem 1.25rem;
   text-align: center;
   font-size: 15px;
   background: linear-gradient(to bottom, #ffffff 0%, #faf5f1 100%);
@@ -898,6 +940,39 @@ onMounted(async () => {
 }
 
 @media (max-width: 768px) {
+  .price-markup-page {
+    width: calc(100% - 2rem);
+    margin: 0 1rem;
+    padding: 1rem !important;
+  }
+
+  .price-markup-page.centered-wrapper {
+    padding: 1rem !important;
+  }
+
+  .price-markup-header {
+    padding: 1rem;
+  }
+
+  .price-markup-title-block h1 {
+    font-size: 1.6rem;
+  }
+
+  .panel-block {
+    padding: 1rem;
+  }
+
+  .panel-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding-bottom: 1rem;
+  }
+
+  .panel-header .refresh-btn {
+    width: 100%;
+  }
+
   .card-header {
     flex-direction: column;
     gap: 12px;
@@ -922,6 +997,6 @@ onMounted(async () => {
 }
 
 .centered-wrapper {
-  padding: 0 12px;
+  padding: 0 !important;
 }
 </style>

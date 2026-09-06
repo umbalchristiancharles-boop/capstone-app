@@ -5,12 +5,11 @@
   align-items: center;
   justify-content: center;
   padding: 24px;
-  /* Match global radial background used on index.vue */
   background: radial-gradient(
     circle at center,
-    #FFFFFF 0%,
-    #FCFCFC 40%,
-    #EFEFEF 100%
+    rgba(255, 159, 67, 0.12) 0%,
+    rgba(251, 247, 244, 0.98) 42%,
+    #f7f4f0 100%
   );
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
 }
@@ -18,11 +17,12 @@
 /* CARD */
 .login-card {
   width: 100%;
-  max-width: 400px;
-  background: white;
-  border-radius: 12px;
-  padding: 30px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  max-width: 420px;
+  background: linear-gradient(135deg, #fffaf5 0%, #ffffff 72%);
+  border-radius: 16px;
+  padding: 34px;
+  border: 1px solid #f1e5d8;
+  box-shadow: 0 12px 40px rgba(66, 33, 11, 0.1);
   position: relative;
   color: var(--text-dark);
 }
@@ -33,8 +33,8 @@
   top: 14px;
   right: 16px;
   border: none;
-  background: rgba(0, 102, 255, 0.1);
-  color: #0066FF;
+  background: rgba(255, 159, 67, 0.12);
+  color: #c25a12;
   border-radius: 999px;
   width: 30px;
   height: 30px;
@@ -48,9 +48,9 @@
 }
 
 .back-btn:hover:not(:disabled) {
-  background: rgba(0, 102, 255, 0.2);
+  background: rgba(255, 159, 67, 0.2);
   transform: translateY(-1px);
-  box-shadow: 0 6px 14px rgba(0, 102, 255, 0.3);
+  box-shadow: 0 6px 14px rgba(255, 159, 67, 0.3);
 }
 
 .back-btn:disabled {
@@ -64,7 +64,7 @@
   align-items: center;
   gap: 14px;
   margin-bottom: 18px;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .brand-logo {
@@ -82,15 +82,27 @@
 }
 
 .brand-text {
-  text-align: center;
+  text-align: left;
 }
 
 .brand-text h1 {
   font-size: 1.25rem;
   margin: 0 0 2px;
-  color: var(--text-dark);
+  color: #3d2a1f;
   font-weight: 800;
   font-family: 'Inter', 'Poppins', sans-serif;
+}
+
+.login-card .btn-secondary {
+  background: #f3e5d7 !important;
+  color: #3d2a1f !important;
+  border: 1px solid #ead2bd !important;
+  box-shadow: none !important;
+}
+
+.login-card .btn-secondary:hover:not(:disabled) {
+  background: #f0d8c2 !important;
+  color: #3d2a1f !important;
 }
 
 .brand-text p {
@@ -122,8 +134,8 @@
 
 .field-group input {
   border-radius: 8px;
-  border: 1px solid #E5E7EB;
-  background: white;
+  border: 1px solid #f1e5d8;
+  background: #ffffff;
   padding: 10px 14px;
   font-size: 0.88rem;
   color: var(--text-dark);
@@ -138,8 +150,8 @@
 }
 
 .field-group input:focus {
-  border-color: #0066FF;
-  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
+  border-color: #ff9f43;
+  box-shadow: 0 0 0 3px rgba(255, 159, 67, 0.14);
 }
 
 /* LOGIN BUTTON */
@@ -158,21 +170,21 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  box-shadow: 0 4px 14px rgba(0, 102, 255, 0.3);
+  box-shadow: 0 4px 14px rgba(255, 159, 67, 0.3);
   transition: all 0.2s ease;
 }
 
 .login-btn:hover:not(:disabled) {
   background: linear-gradient(135deg, rgba(220,85,15,1), rgba(230,110,35,1));
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(0, 102, 255, 0.4);
+  box-shadow: 0 6px 20px rgba(255, 159, 67, 0.4);
 }
 
 .login-btn:disabled {
   opacity: 0.7;
   cursor: default;
   transform: none;
-  box-shadow: 0 2px 8px rgba(0, 102, 255, 0.2);
+  box-shadow: 0 2px 8px rgba(255, 159, 67, 0.2);
 }
 
 /* Inline loading dots sa button */
@@ -331,9 +343,9 @@
 /* SECURITY BANNER (scoped style override) */
 .security-banner {
   margin: 0.75rem 0 0.5rem;
-  background: #EFF6FF;
-  border: 1px solid #B4D4FF;
-  color: #1E40AF;
+  background: #fff4e8;
+  border: 1px solid #f6cfae;
+  color: #9a4b12;
   padding: 0.75rem 1rem;
   border-radius: 8px;
   font-weight: 600;
@@ -347,8 +359,12 @@
   }
 
   .login-card {
-    padding: 24px 20px;
+    padding: 28px 22px;
     margin: 0 8px;
+  }
+
+  .login-brand {
+    gap: 12px;
   }
 }
 
