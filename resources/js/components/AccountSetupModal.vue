@@ -655,45 +655,49 @@ watch(() => props.setupType, (newType) => {
 .setup-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(61, 42, 31, 0.48);
+  background: rgba(92, 79, 68, 0.28);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 9999;
-  padding: 1rem;
+  padding: 1.5rem;
 }
 
 .setup-modal-card {
   width: 100%;
-  max-width: 600px;
-  background: #fffaf5;
-  border: 1px solid #f1e5d8;
-  border-radius: 16px;
-  box-shadow: 0 24px 64px rgba(66, 33, 11, 0.2);
+  max-width: 860px;
+  background: #f3efe8;
+  border: 1px solid #ebdfd2;
+  border-radius: 28px;
+  box-shadow: 0 22px 48px rgba(60, 39, 18, 0.18);
   overflow: hidden;
 }
 
 .setup-modal-header {
-  background: linear-gradient(135deg, #ff9f43 0%, #f97316 100%);
-  color: white;
-  padding: 1.75rem 2rem;
+  background: #f39a45;
+  color: #1f1d1b;
+  padding: 2rem 2.25rem 1.5rem;
   text-align: center;
 }
 
 .setup-modal-header h2 {
   margin: 0 0 0.5rem;
-  font-size: 1.75rem;
-  font-weight: 700;
+  font-size: clamp(2rem, 2.8vw, 3rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: #1f1d1b;
 }
 
 .setup-subtitle {
   margin: 0;
+  font-size: 1.1rem;
+  color: #2d2a28;
   opacity: 0.9;
-  font-size: 0.95rem;
 }
 
 .setup-steps {
-  padding: 1.5rem 2rem 2rem;
+  padding: 1.25rem 2rem 2rem;
+  background: #f3efe8;
 }
 
 .setup-step {
@@ -708,24 +712,27 @@ watch(() => props.setupType, (newType) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #f1e5d8;
+  margin-bottom: 1.2rem;
+  padding: 0.9rem 0.25rem 1rem;
+  border-bottom: 1px solid #e7d9ca;
+  background: transparent;
 }
 
 .step-header h3 {
   margin: 0;
-  font-size: 1.3rem;
-  color: #3d2a1f;
+  font-size: 2rem;
+  font-weight: 800;
+  color: #1f1d1b;
 }
 
 .step-badge {
-  background: #fff1d9;
-  color: #9a4b12;
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
+  background: #f4e8dc;
+  color: #7e4a24;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border: 1px solid #ead7c3;
 }
 
 .step-content {
@@ -735,8 +742,8 @@ watch(() => props.setupType, (newType) => {
 }
 
 .step-description {
-  color: #64748b;
-  font-size: 0.95rem;
+  color: #4b4139;
+  font-size: 1rem;
   margin: 0;
 }
 
@@ -765,24 +772,25 @@ watch(() => props.setupType, (newType) => {
 
 .step-btn-primary,
 .step-btn-secondary {
-  padding: 0.75rem 1.5rem;
+  padding: 0.8rem 1.4rem;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
   white-space: nowrap;
 }
 
 .step-btn-primary {
-  background: linear-gradient(135deg, #ff9a4a 0%, #ff6a3d 100%);
-  color: white;
+  background: #f39a45;
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(243, 154, 69, 0.18);
 }
 
 .step-btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 106, 61, 0.3);
+  transform: translateY(-1px);
+  background: #ea8d2d;
 }
 
 .step-btn-primary:disabled {
@@ -792,12 +800,12 @@ watch(() => props.setupType, (newType) => {
 
 .step-btn-secondary {
   background: #fffaf5;
-  color: #3d2a1f;
-  border: 1px solid #ead2bd;
+  color: #2a241f;
+  border: 1px solid #e9d4bd;
 }
 
 .step-btn-secondary:hover:not(:disabled) {
-  background: #f3e5d7;
+  background: #f5ebdf;
 }
 
 .verification-section {
@@ -835,23 +843,24 @@ watch(() => props.setupType, (newType) => {
 
 .documents-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 0.85rem;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 1rem;
 }
 
 .document-item {
-  background: #fff;
-  border: 1px dashed #ead2bd;
-  border-radius: 10px;
-  padding: 1rem 0.85rem;
+  background: #fffaf5;
+  border: 1px dashed #e9d4bd;
+  border-radius: 16px;
+  padding: 1rem 0.9rem 1.05rem;
   text-align: center;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
 }
 
 .document-label {
-  font-weight: 600;
-  color: #3d2a1f;
-  margin-bottom: 0.75rem;
-  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1f1d1b;
+  margin-bottom: 0.8rem;
+  font-size: 1.05rem;
 }
 
 .document-upload {
@@ -865,18 +874,19 @@ watch(() => props.setupType, (newType) => {
 
 .document-upload span {
   display: inline-block;
-  background: linear-gradient(135deg, #ff9a4a 0%, #ff6a3d 100%);
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  font-weight: 600;
-  font-size: 0.9rem;
-  transition: all 0.2s;
+  background: #f39a45;
+  color: #fff;
+  padding: 0.7rem 1.25rem;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  min-width: 150px;
 }
 
 .document-upload:hover span {
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(255, 106, 61, 0.2);
+  background: #ea8d2d;
 }
 
 .document-preview {
