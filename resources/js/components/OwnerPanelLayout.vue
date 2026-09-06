@@ -13,7 +13,7 @@
           <div class="owner-panel-topbar-spacer"></div>
           <div class="owner-panel-user-pill" aria-label="Current account">
             <span class="owner-panel-user-pill__avatar">{{ (userProfile.fullName || userProfile.full_name || userProfile.role || 'O').charAt(0).toUpperCase() }}</span>
-            <span>{{ (userProfile.role || 'OWNER') + (userProfile.branch?.name ? ' - ' + userProfile.branch.name : (userProfile.branch ? ' - ' + userProfile.branch : '')) }}</span>
+            <span>{{ ownerUserLabel }}</span>
           </div>
         </header>
         <aside v-if="showOwnerSidebar" class="owner-panel-sidebar" aria-label="Owner sections">
@@ -219,8 +219,9 @@
     <!-- PROFILE INFO MODAL -->
     <transition name="fade">
       <div v-if="showInfoModal" class="info-backdrop">
-        <div class="info-modal">
-          <h3>Info</h3>
+        <div class="info-modal" :class="{ 'info-modal--finance-style': accountInfoStyle === 'finance' }">
+          <button v-if="accountInfoStyle === 'finance'" type="button" class="info-modal-close" aria-label="Close account information" @click="handleInfoClose">✕</button>
+          <h3>{{ accountInfoStyle === 'finance' ? 'Account Information' : 'Info' }}</h3>
           <p class="info-sub">Your account information.</p>
 
           <div class="info-grid">
@@ -382,13 +383,20 @@ const props = defineProps({
   enableDarkMode: { type: Boolean, default: true }
   ,
   showOwnerSidebar: { type: Boolean, default: false },
-  showOwnerTopbar: { type: Boolean, default: false }
+  showOwnerTopbar: { type: Boolean, default: false },
+  accountInfoStyle: { type: String, default: 'default' }
 })
 
 const emit = defineEmits(['logout', 'profile-updated', 'back'])
 const route = useRoute()
 const router = useRouter()
 const ownerSidebarCollapsed = ref(false)
+
+const ownerUserLabel = computed(() => {
+  const displayRole = props.userProfile.displayRole || props.userProfile.role || 'OWNER'
+  const branchName = props.userProfile.branch?.name || props.userProfile.branch || props.userProfile.branch_name
+  return branchName ? `${displayRole} - ${branchName}` : displayRole
+})
 
 function toggleOwnerSidebar() {
   ownerSidebarCollapsed.value = !ownerSidebarCollapsed.value
