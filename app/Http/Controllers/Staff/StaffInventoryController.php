@@ -528,7 +528,7 @@ class StaffInventoryController extends Controller
         $branchId = $user->branch_id;
 
         try {
-            $requests = ProcurementRequest::with(['product:id,name,sku,barcode,barcode_is_generated,price', 'logisticsUser'])
+            $requests = ProcurementRequest::with(['product:id,name,sku,barcode,barcode_is_generated,is_kitchen_dish,price', 'logisticsUser'])
                 ->where('branch_id', $branchId)
                 ->where('status', 'awaiting_inventory_confirmation')
                 ->orderBy('created_at', 'desc')
@@ -548,6 +548,7 @@ class StaffInventoryController extends Controller
                     'product_name' => $r->product?->name,
                     'product_barcode' => $r->product?->barcode,
                     'product_barcode_is_generated' => (bool) $r->product?->barcode_is_generated,
+                    'product_is_kitchen_ingredient' => (bool) $r->product?->is_kitchen_dish,
                     'quantity' => $r->quantity,
                     'requested_quantity' => $r->quantity,
                     'product_stock' => $r->product?->stock ?? 0,
@@ -637,7 +638,7 @@ class StaffInventoryController extends Controller
         $validated = $request->validate([
             'counted_stock' => 'required|integer|min:0',
             'proof_image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
-            'barcode' => 'required|string|max:64',
+            'barcode' => 'nullable|string|max:64',
             'notes' => 'nullable|string|max:1000'
         ]);
 
@@ -646,6 +647,11 @@ class StaffInventoryController extends Controller
         if ($proc->branch_id != $user->branch_id) return response()->json(['error' => 'Not your branch'], 403);
         // Accept the new status used by procurement completion flow.
         if ($proc->status !== 'awaiting_inventory_confirmation') return response()->json(['error' => 'Procurement not awaiting inventory confirmation'], 400);
+        if (!$proc->product?->is_kitchen_dish && trim($validated['barcode'] ?? '') === '') {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'barcode' => 'Scan or enter the product barcode.',
+            ]);
+        }
 
         try {
             DB::transaction(function () use ($proc, $validated, $user, $request) {
@@ -654,13 +660,13 @@ class StaffInventoryController extends Controller
                     throw new \RuntimeException('Product not found for this procurement request');
                 }
 
-                $barcode = trim($validated['barcode']);
-                if ($prod->barcode_is_generated && (string) $prod->barcode === $barcode) {
+                $barcode = trim($validated['barcode'] ?? '');
+                if ($barcode !== '' && $prod->barcode_is_generated && (string) $prod->barcode === $barcode) {
                     throw \Illuminate\Validation\ValidationException::withMessages([
                         'barcode' => 'Scan the real supplier barcode before confirming this new product.',
                     ]);
                 }
-                $barcodeOwner = \App\Models\Product::where('barcode', $barcode)
+                $barcodeOwner = $barcode === '' ? null : \App\Models\Product::where('barcode', $barcode)
                     ->where('id', '<>', $prod->id)
                     ->where('branch_id', $prod->branch_id)
                     ->where(function ($query) use ($prod) {
@@ -675,12 +681,12 @@ class StaffInventoryController extends Controller
                         'barcode' => 'This barcode is already assigned to another product.',
                     ]);
                 }
-                if ($prod->barcode && !$prod->barcode_is_generated && (string) $prod->barcode !== $barcode) {
+                if ($barcode !== '' && $prod->barcode && !$prod->barcode_is_generated && (string) $prod->barcode !== $barcode) {
                     throw \Illuminate\Validation\ValidationException::withMessages([
                         'barcode' => 'The scanned barcode does not match the selected product.',
                     ]);
                 }
-                if (!$prod->barcode || $prod->barcode_is_generated) {
+                if ($barcode !== '' && (!$prod->barcode || $prod->barcode_is_generated)) {
                     $prod->barcode = $barcode;
                     $prod->barcode_is_generated = false;
                     $prod->save();

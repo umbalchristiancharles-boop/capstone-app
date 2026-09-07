@@ -407,13 +407,13 @@
                     <strong class="detail-value">{{ selectedPending.supplier_name }}</strong>
                   </div>
                   <div class="detail-row">
-                    <span class="detail-label">Barcode</span>
+                    <span class="detail-label">Barcode<span v-if="selectedPending.product_is_kitchen_ingredient"> (optional)</span></span>
                     <strong class="detail-value">{{ selectedPending.product_barcode || 'Not assigned yet' }}</strong>
                   </div>
                 </div>
 
                 <div class="form-group barcode-group">
-                  <label for="stock-barcode">Scan product barcode</label>
+                  <label for="stock-barcode">Scan product barcode<span v-if="selectedPending.product_is_kitchen_ingredient"> (optional for kitchen ingredients)</span></label>
                   <div class="barcode-input-row">
                     <input id="stock-barcode" v-model.trim="confirmForm.barcode" type="text" inputmode="numeric" autocomplete="off" placeholder="Scan or enter barcode" @keyup.enter="submitPendingConfirmation" />
                     <button class="btn-secondary" type="button" @click="openBarcodeScanner">Scan</button>
@@ -1177,7 +1177,7 @@ async function submitPendingConfirmation() {
   }
 
   const barcode = String(confirmForm.value.barcode || '').trim()
-  if (!barcode) {
+  if (!barcode && !selectedPending.value.product_is_kitchen_ingredient) {
     confirmError.value = 'Scan or enter the product barcode'
     return
   }
@@ -1199,7 +1199,7 @@ async function submitPendingConfirmation() {
   try {
     const formData = new FormData()
     formData.append('counted_stock', String(qty))
-    formData.append('barcode', barcode)
+    if (barcode) formData.append('barcode', barcode)
     if (confirmForm.value.notes) formData.append('notes', confirmForm.value.notes)
     formData.append('proof_image', confirmForm.value.proof_image)
 

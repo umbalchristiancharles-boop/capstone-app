@@ -408,12 +408,12 @@
               <input v-model="submitForm.date_made" type="date" :max="todayDate" />
             </div>
             <div class="form-group full-span">
-              <label>Product Barcode</label>
+              <label>Product Barcode<span v-if="submitIsKitchenIngredient"> (optional for kitchen ingredients)</span></label>
               <div class="barcode-input-row">
                 <input ref="supplierBarcodeInput" v-model.trim="submitForm.barcode" type="text" inputmode="numeric" autocomplete="off" placeholder="Scan or enter the supplier barcode" />
                 <button class="btn-outline" type="button" @click="openSupplierBarcodeScanner">Scan</button>
               </div>
-              <div class="muted small-text">Enter the real barcode printed on the product, or provide the product SKU below.</div>
+              <div class="muted small-text">{{ submitIsKitchenIngredient ? 'Barcode is optional for kitchen ingredients.' : 'Enter the real barcode printed on the product, or provide the product SKU below.' }}</div>
             </div>
             <div class="form-group full-span">
               <label>Product SKU</label>
@@ -599,6 +599,7 @@ const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
 // Supplier submit modal state
 const supplierSubmitModalVisible = ref(false)
 const submitForm = ref({ name: '', price: null, per_pack_or_individual: '', date_made: '', pack_quantity: null, pack_unit: '', barcode: '', sku: '', product_image: null })
+const submitIsKitchenIngredient = ref(false)
 const todayDate = new Date().toLocaleDateString('en-CA')
 const submitSubmitting = ref(false)
 const submitError = ref('')
@@ -921,8 +922,10 @@ function openSupplierSubmitModal(order) {
   submitError.value = ''
   submitForm.value = { name: '', price: null, per_pack_or_individual: '', date_made: '', pack_quantity: null, pack_unit: '', barcode: '', sku: '', product_image: null }
   currentSubmitOrderId.value = null
+  submitIsKitchenIngredient.value = false
   if (!order) return
   currentSubmitOrderId.value = order.id
+  submitIsKitchenIngredient.value = Boolean(order.product?.is_kitchen_dish || order.procurementRequest?.product?.is_kitchen_dish)
   // Try to prefill from procurementRequest or product name
   const suggested = order.procurementRequest?.product?.name || order.product?.name || ''
   submitForm.value.name = suggested
@@ -937,6 +940,7 @@ function closeSupplierSubmitModal() {
   closeSupplierBarcodeScanner()
   submitForm.value = { name: '', price: null, per_pack_or_individual: '', date_made: '', pack_quantity: null, pack_unit: '', barcode: '', sku: '', product_image: null }
   currentSubmitOrderId.value = null
+  submitIsKitchenIngredient.value = false
 }
 
 async function openSupplierBarcodeScanner() {
@@ -1049,7 +1053,7 @@ async function submitProductForm() {
   if (submitForm.value.price === null || submitForm.value.price === undefined) { await Swal.fire({ icon: 'error', title: 'Validation', text: 'Price is required' }); return }
   // Ensure price is greater than zero
   if (Number(submitForm.value.price) <= 0) { await Swal.fire({ icon: 'error', title: 'Validation', text: 'Price must be greater than 0' }); return }
-  if (!String(submitForm.value.barcode || '').trim() && !String(submitForm.value.sku || '').trim()) { await Swal.fire({ icon: 'error', title: 'Validation', text: 'Enter the product barcode or SKU.' }); return }
+  if (!submitIsKitchenIngredient.value && !String(submitForm.value.barcode || '').trim() && !String(submitForm.value.sku || '').trim()) { await Swal.fire({ icon: 'error', title: 'Validation', text: 'Enter the product barcode or SKU.' }); return }
   if (!submitForm.value.product_image) { await Swal.fire({ icon: 'error', title: 'Validation', text: 'Product image is required.' }); return }
   submitSubmitting.value = true
   submitError.value = ''

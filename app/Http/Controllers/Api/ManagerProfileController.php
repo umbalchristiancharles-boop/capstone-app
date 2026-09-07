@@ -2489,7 +2489,7 @@ public function logisticsInventory(Request $request)
         }
 
         try {
-            $requests = ProcurementRequest::with(['product:id,name,sku,barcode,barcode_is_generated,price', 'logisticsUser'])
+            $requests = ProcurementRequest::with(['product:id,name,sku,barcode,barcode_is_generated,is_kitchen_dish,price', 'logisticsUser'])
                 ->where('branch_id', $user->branch_id)
                 ->where('status', 'awaiting_inventory_confirmation')
                 ->orderBy('created_at', 'desc')
@@ -2503,6 +2503,7 @@ public function logisticsInventory(Request $request)
                     'product_name' => $r->product?->name,
                     'product_barcode' => $r->product?->barcode,
                     'product_barcode_is_generated' => (bool) ($r->product?->barcode_is_generated ?? false),
+                    'product_is_kitchen_ingredient' => (bool) ($r->product?->is_kitchen_dish ?? false),
                     'quantity' => $r->quantity,
                     'price' => $r->price,
                     'receipt_path' => $r->receipt_path ?? null,

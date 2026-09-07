@@ -28,7 +28,7 @@ class SupplierOrderController extends Controller
                 return response()->json(['error' => 'Unauthorized'], 401);
             }
 
-            $query = SupplierOrder::with(['product', 'procurementRequest.logisticsUser', 'branch'])
+            $query = SupplierOrder::with(['product', 'procurementRequest.product', 'procurementRequest.logisticsUser', 'branch'])
                 ->where('supplier_id', $user->id)
                 ->orderBy('updated_at', 'desc')
                 ->orderBy('created_at', 'desc');
@@ -58,6 +58,8 @@ class SupplierOrderController extends Controller
 
         $order = SupplierOrder::findOrFail($id);
         if ($order->supplier_id != $user->id) return response()->json(['error' => 'Not your order'], 403);
+        $order->loadMissing('product', 'procurementRequest.product');
+        $isKitchenIngredient = (bool) ($order->product?->is_kitchen_dish || $order->procurementRequest?->product?->is_kitchen_dish);
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -78,7 +80,7 @@ class SupplierOrderController extends Controller
 
         $barcode = trim($validated['barcode'] ?? '');
         $submittedSku = trim($validated['sku'] ?? '');
-        if ($barcode === '' && $submittedSku === '') {
+        if (!$isKitchenIngredient && $barcode === '' && $submittedSku === '') {
             return response()->json(['error' => 'Enter the product barcode or SKU.'], 422);
         }
 
@@ -172,7 +174,7 @@ class SupplierOrderController extends Controller
                     'date_made' => $validated['date_made'] ?? null,
                     'is_published' => 1,
                     'is_active' => 1,
-                    'is_kitchen_dish' => $isDish,
+                    'is_kitchen_dish' => $isKitchenIngredient || $isDish,
                 ]);
 
                 $product = $existingProduct;
@@ -200,7 +202,7 @@ class SupplierOrderController extends Controller
                     'date_made' => $validated['date_made'] ?? null,
                     'is_published' => 1,
                     'is_active' => 1,
-                    'is_kitchen_dish' => $isDish,
+                    'is_kitchen_dish' => $isKitchenIngredient || $isDish,
                 ]);
                 Log::info('submitProduct: product created successfully', ['product_id' => $product->id]);
             }
