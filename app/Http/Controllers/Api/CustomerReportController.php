@@ -40,9 +40,39 @@ class CustomerReportController extends Controller
             'status' => 'pending',
         ]);
 
+        // Acknowledge the report immediately so staff do not need to send the first CRM email manually.
+        if ($report->customer_email) {
+            $autoResponseSubject = 'Re: ' . $report->subject;
+            $autoResponseMessage = "Dear " . $report->customer_name . ",\n\n";
+            $autoResponseMessage .= "Thank you for reaching out to us. We have received your message and our team is reviewing it.\n\n";
+            $autoResponseMessage .= "We will get back to you as soon as possible.\n\n";
+            $autoResponseMessage .= "Best regards,\n";
+            $autoResponseMessage .= "Customer Support Team";
+
+            $autoResponseMessageId = send_raw_mail_notification(
+                $report->customer_email,
+                $autoResponseSubject,
+                $autoResponseMessage
+            );
+
+            EmailCommunication::create([
+                'customer_report_id' => $report->id,
+                'sender_email' => config('mail.from.address'),
+                'sender_name' => config('mail.from.name', 'Customer Support'),
+                'recipient_email' => $report->customer_email,
+                'recipient_name' => $report->customer_name,
+                'subject' => $autoResponseSubject,
+                'message' => $autoResponseMessage,
+                'direction' => 'outbound',
+                'status' => $autoResponseMessageId ? 'sent' : 'failed',
+                'message_id' => $autoResponseMessageId,
+                'sent_by' => null,
+            ]);
+        }
+
         return response()->json([
             'ok' => true,
-            'message' => 'Your message has been sent to the admin. We will get back to you soon.',
+            'message' => 'Your message has been sent to the admin. An acknowledgment email has been sent to you.',
             'report' => $report,
         ], 201);
     }
@@ -229,21 +259,10 @@ class CustomerReportController extends Controller
 
         $report = CustomerReport::findOrFail($id);
 
-        // Check if this is the first email (no outbound emails yet)
-        $existingOutboundEmails = EmailCommunication::where('customer_report_id', $report->id)
-            ->where('direction', 'outbound')
-            ->exists();
-        $isFirstEmail = !$existingOutboundEmails;
-
-        // For first emails, only subject is required (message is optional)
-        // For subsequent emails, both subject and message are required
         $validationRules = [
             'subject' => 'required|string|max:255',
+            'message' => 'required|string|max:5000',
         ];
-        
-        if (!$isFirstEmail) {
-            $validationRules['message'] = 'required|string|max:5000';
-        }
         
         $request->validate($validationRules);
 
@@ -257,65 +276,28 @@ class CustomerReportController extends Controller
 
         try {
             $emailSubject = $request->subject;
-            $emailBody = $request->message ?? '';
+            $emailBody = $request->message;
 
-            // If this is the first email, send an automatic acknowledgment
-            if ($isFirstEmail) {
-                $autoResponseSubject = 'Re: ' . $report->subject;
-                $autoResponseMessage = "Dear " . $report->customer_name . ",\n\n";
-                $autoResponseMessage .= "Thank you for reaching out to us. We have received your message and our team is reviewing it.\n\n";
-                $autoResponseMessage .= "We will get back to you as soon as possible.\n\n";
-                $autoResponseMessage .= "Best regards,\n";
-                $autoResponseMessage .= "Customer Support Team";
-                
-                // Send the automatic response first and capture Message-ID
-                $autoResponseMessageId = send_raw_mail_notification($report->customer_email, $autoResponseSubject, $autoResponseMessage);
+            // Send and record only the staff-authored response. The acknowledgment is sent during report creation.
+            $staffMessageId = send_raw_mail_notification($report->customer_email, $emailSubject, $emailBody);
 
-                // Save the automatic response to database
-                EmailCommunication::create([
-                    'customer_report_id' => $report->id,
-                    'sender_email' => config('mail.from.address'),
-                    'sender_name' => config('mail.from.name', 'Customer Support'),
-                    'recipient_email' => $report->customer_email,
-                    'recipient_name' => $report->customer_name,
-                    'subject' => $autoResponseSubject,
-                    'message' => $autoResponseMessage,
-                    'direction' => 'outbound',
-                    'status' => $autoResponseMessageId ? 'sent' : 'failed',
-                    'message_id' => $autoResponseMessageId,
-                    'sent_by' => $user->id,
-                ]);
-            }
-            
-            // Only send the staff's email if message is provided
-            if (!empty($emailBody)) {
-                // Send the actual email using the helper function and capture Message-ID
-                $staffMessageId = send_raw_mail_notification($report->customer_email, $emailSubject, $emailBody);
-
-                // Save email communication to database
-                EmailCommunication::create([
-                    'customer_report_id' => $report->id,
-                    'sender_email' => $user->email,
-                    'sender_name' => $user->full_name ?? $user->name ?? 'Staff',
-                    'recipient_email' => $report->customer_email,
-                    'recipient_name' => $report->customer_name,
-                    'subject' => $emailSubject,
-                    'message' => $emailBody,
-                    'direction' => 'outbound',
-                    'status' => $staffMessageId ? 'sent' : 'failed',
-                    'message_id' => $staffMessageId,
-                    'sent_by' => $user->id,
-                ]);
-            }
-
-            $responseMessage = $existingOutboundEmails 
-                ? 'Email sent successfully to ' . $report->customer_email
-                : 'First email sent successfully with automatic acknowledgment to ' . $report->customer_email;
+            EmailCommunication::create([
+                'customer_report_id' => $report->id,
+                'sender_email' => $user->email,
+                'sender_name' => $user->full_name ?? $user->name ?? 'Staff',
+                'recipient_email' => $report->customer_email,
+                'recipient_name' => $report->customer_name,
+                'subject' => $emailSubject,
+                'message' => $emailBody,
+                'direction' => 'outbound',
+                'status' => $staffMessageId ? 'sent' : 'failed',
+                'message_id' => $staffMessageId,
+                'sent_by' => $user->id,
+            ]);
 
             return response()->json([
                 'ok' => true,
-                'message' => $responseMessage,
-                'is_first_email' => !$existingOutboundEmails,
+                'message' => 'Email sent successfully to ' . $report->customer_email,
             ]);
         } catch (\Throwable $e) {
             Log::error('Failed to send email to customer', [

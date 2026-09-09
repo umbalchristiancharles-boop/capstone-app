@@ -253,7 +253,7 @@
       <!-- Edit Report Modal -->
       <transition name="fade">
         <div v-if="showEditReportModal" class="modal-backdrop" @click.self="closeEditReportModal">
-          <div class="modal">
+          <div class="modal modal-email">
             <div class="modal-header">
               <h3>Update Report</h3>
               <button class="modal-close" @click="closeEditReportModal">✕</button>
@@ -420,29 +420,6 @@
                 </div>
               </div>
 
-              <!-- Automatic Response Preview -->
-              <div v-if="isFirstEmail" class="auto-response-preview">
-                <div class="auto-response-header">
-                  <span class="auto-response-icon">📧</span>
-                  <strong>Automatic Acknowledgment Will Be Sent First</strong>
-                </div>
-                <div class="auto-response-content">
-                  <p class="auto-response-label">The customer will receive this automatic response before your message:</p>
-                  <div class="auto-response-box">
-                    <div class="auto-response-subject">
-                      <strong>Subject:</strong> Re: {{ editingReport.subject || emailForm.subject }}
-                    </div>
-                    <div class="auto-response-message">
-                      <strong>Message:</strong><br />
-                      Dear {{ editingReport.customer_name }},<br /><br />
-                      Thank you for reaching out to us. We have received your message and our team is reviewing it.<br /><br />
-                      We will get back to you as soon as possible.<br /><br />
-                      Best regards,<br />
-                      Customer Support Team
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
 
             <div class="modal-footer">
@@ -508,8 +485,6 @@ const emailForm = ref({
 const expandedEmailHistory = ref(null)
 const emailHistoryCache = ref({})
 const loadingEmails = ref({})
-const isFirstEmail = ref(false)
-const checkingFirstEmail = ref(false)
 
 let reportSearchTimeout = null
 
@@ -772,24 +747,6 @@ async function openEmailModal() {
     message: '',
   }
 
-  // Check if this is the first email for this report
-  checkingFirstEmail.value = true
-  try {
-    const response = await axios.get(`/api/customer-reports/${editingReport.value.id}/emails`, { withCredentials: true })
-    if (response.data.ok) {
-      const emails = response.data.emails || []
-      const hasOutboundEmails = emails.some(email => email.direction === 'outbound')
-      isFirstEmail.value = !hasOutboundEmails
-    } else {
-      isFirstEmail.value = false
-    }
-  } catch (error) {
-    console.error('Error checking email history:', error)
-    isFirstEmail.value = false
-  } finally {
-    checkingFirstEmail.value = false
-  }
-
   showEmailModal.value = true
 }
 
@@ -802,18 +759,9 @@ function closeEmailModal() {
 }
 
 async function sendEmail() {
-  // For first emails, only subject is required (message is optional since auto-acknowledgment is sent)
-  // For subsequent emails, both subject and message are required
-  if (!emailForm.value.subject.trim()) {
+  if (!emailForm.value.subject.trim() || !emailForm.value.message.trim()) {
     if (window.swalAlert) {
-      await window.swalAlert('Please fill in the subject', 'Error', 'error')
-    }
-    return
-  }
-
-  if (!isFirstEmail.value && !emailForm.value.message.trim()) {
-    if (window.swalAlert) {
-      await window.swalAlert('Please fill in the message', 'Error', 'error')
+      await window.swalAlert('Please fill in both subject and message', 'Error', 'error')
     }
     return
   }
@@ -829,17 +777,8 @@ async function sendEmail() {
       // Automatically update status to "in_progress" after sending email
       await updateReportStatusToInProgress()
 
-      let successMessage = response.data.message || 'Email sent successfully'
-
-      // Show additional notification if automatic acknowledgment was sent
-      if (response.data.is_first_email && window.swalAlert) {
-        await window.swalAlert(
-          'First email sent! An automatic acknowledgment has been sent to the customer notifying them that their message has been received.',
-          'Automatic Acknowledgment Sent',
-          'info'
-        )
-      } else if (window.swalAlert) {
-        await window.swalAlert(successMessage, 'Success', 'success')
+      if (window.swalAlert) {
+        await window.swalAlert(response.data.message || 'Email sent successfully', 'Success', 'success')
       }
 
       closeEmailModal()
@@ -1165,6 +1104,7 @@ onMounted(async () => {
 /* Modal */
 .modal-backdrop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 24px; }
 .modal { background: white; border-radius: 12px; max-width: 800px; width: 100%; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); }
+.modal-email { max-width: 1100px; }
 .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid #E5E7EB; flex-shrink: 0; }
 .modal-header h3 { margin: 0; font-size: 1.25rem; color: #1F2937; }
 .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6B7280; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 6px; }

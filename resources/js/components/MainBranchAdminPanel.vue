@@ -1,6 +1,7 @@
 <template>
   <div class="main-branch-admin-panel">
     <OwnerPanelLayout
+      ref="ownerLayout"
       :userProfile="userProfile"
       :panelTitle="'Main Branch Administration'"
       :panelDescription="'Main Branch management and configuration'"
@@ -11,11 +12,31 @@
       :showHeader="false"
       :showProfileColumn="false"
       :showAnnouncements="false"
-      :ownerTwoColumnLayout="true"
+      :showOwnerSidebar="true"
+      :showOwnerTopbar="true"
+      :showAttendanceCard="false"
+      accountInfoStyle="finance"
       @logout="askLogout"
       @profile-updated="onProfileUpdated"
     >
+      <template #ownerSidebar>
+        <nav class="owner-sidebar-nav" aria-label="Administration sections">
+          <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': activeSection === 'finance-overview' }" @click="showFinanceSection('branch-financial-reports')">Branch Financial Reports</button>
+          <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': activeSection === 'transactions' }" @click="showFinanceSection('recent-transactions')">Recent Transactions</button>
+          <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': activeSection === 'crm' }" @click="activeSection = 'crm'">CRM</button>
+          <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': activeSection === 'branches' }" @click="activeSection = 'branches'">Add Branch</button>
+        </nav>
+      </template>
+
+      <template #ownerSidebarFooter>
+        <div class="owner-sidebar-actions">
+          <button type="button" class="owner-sidebar-account" @click="ownerLayout?.openInfoModal()">Account Info</button>
+          <button type="button" class="owner-sidebar-logout" @click="askLogout">Logout</button>
+        </div>
+      </template>
+
       <template #main>
+        <template v-if="activeSection === 'finance-overview' || activeSection === 'transactions'">
         <header class="main-branch-admin-hero">
           <div class="main-branch-admin-hero__copy">
             <span class="main-branch-admin-hero__eyebrow">Administration dashboard</span>
@@ -27,7 +48,7 @@
           </button>
         </header>
 
-        <section class="finance-panel">
+        <section id="branch-financial-reports" class="finance-panel">
           <div class="finance-header">
             <div>
               <h3 class="finance-title">Branch Financial Reports</h3>
@@ -65,9 +86,15 @@
               :transactions="financeTransactions"
               :transactionsLoading="financeLoading"
               :chartLoading="financeLoading"
+              :showOverview="activeSection === 'finance-overview'"
+              :showTransactions="activeSection === 'transactions'"
             />
           </div>
         </section>
+        </template>
+
+        <MainBranchCRMPanel v-else-if="activeSection === 'crm'" />
+        <OwnerAddBranches v-else-if="activeSection === 'branches'" />
       </template>
 
       <template #headerActions>
@@ -90,13 +117,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import axios from 'axios'
 import FinancePanelContent from './finance/FinancePanelContent.vue'
+import MainBranchCRMPanel from './MainBranchCRMPanel.vue'
+import OwnerAddBranches from './OwnerAddBranches.vue'
 
 const userProfile = ref({})
+const ownerLayout = ref(null)
+const activeSection = ref('finance-overview')
 const profileDropdownVisible = ref(false)
 const router = useRouter()
 
@@ -179,6 +210,13 @@ function goToBranches() {
 
 function goToCRM() {
   safeNavigate('/main-branch/crm')
+}
+
+function showFinanceSection(sectionId) {
+  activeSection.value = sectionId === 'recent-transactions' ? 'transactions' : 'finance-overview'
+  nextTick(() => {
+    document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  })
 }
 
 function getSelectedBranchName() {
@@ -286,6 +324,64 @@ window.addEventListener('click', () => {
 <style scoped>
 .main-branch-admin-panel {
   width: 100%;
+}
+
+.main-branch-admin-panel :deep(.owner-sidebar-nav) {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.main-branch-admin-panel :deep(.owner-sidebar-link) {
+  width: 100%;
+  padding: 0.7rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: #4b5563;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.main-branch-admin-panel :deep(.owner-sidebar-link:hover),
+.main-branch-admin-panel :deep(.owner-sidebar-link--active) {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(148, 163, 184, 0.3);
+  color: #111827;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
+.main-branch-admin-panel :deep(.owner-sidebar-actions) {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.main-branch-admin-panel :deep(.owner-sidebar-account),
+.main-branch-admin-panel :deep(.owner-sidebar-logout) {
+  width: 100%;
+  padding: 0.7rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.main-branch-admin-panel :deep(.owner-sidebar-account) {
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  background: rgba(59, 130, 246, 0.12);
+  color: #2563eb;
+}
+
+.main-branch-admin-panel :deep(.owner-sidebar-logout) {
+  border: 1px solid rgba(138, 113, 95, 0.25);
+  background: rgba(255, 159, 67, 0.12);
+  color: #d97706;
 }
 
 .main-branch-admin-hero {

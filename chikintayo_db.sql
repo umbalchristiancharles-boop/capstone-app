@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Sep 07, 2026 at 08:57 AM
+-- Generation Time: Sep 09, 2026 at 09:02 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -131,8 +131,8 @@ CREATE TABLE `branches` (
 --
 
 INSERT INTO `branches` (`id`, `code`, `name`, `address`, `latitude`, `longitude`, `is_active`, `is_main_branch`, `approval_status`, `requested_by`, `finance_confirmed_by`, `finance_confirmed_at`, `approved_by`, `approved_at`, `rejected_at`, `budget`, `square_meters`, `geofencing_radius`, `permit_bills`, `construction_costs`, `equipment_costs`, `total_investment`, `default_password`, `default_password_updated_at`, `created_at`, `updated_at`) VALUES
-(31, 'BR743957', 'Dasma Branch', 'Dasma', NULL, NULL, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 55112, NULL, NULL, NULL, NULL, NULL, NULL, 'BDP2026090495A86B', '2026-09-04 08:14:21', '2026-03-22 10:19:21', '2026-09-04 10:04:53'),
-(32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 404000, NULL, NULL, NULL, NULL, NULL, NULL, 'BDP20260902943FB8', '2026-09-02 06:10:38', '2026-03-25 06:56:11', '2026-09-02 06:22:33');
+(31, 'BR743957', 'Dasma Branch', 'Dasma', NULL, NULL, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 55112, NULL, NULL, NULL, NULL, NULL, NULL, 'BDP20260909305040', '2026-09-09 06:22:39', '2026-03-22 10:19:21', '2026-09-09 06:22:39'),
+(32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 404000, NULL, NULL, NULL, NULL, NULL, NULL, 'BDP20260909BC6964', '2026-09-09 06:17:37', '2026-03-25 06:56:11', '2026-09-09 06:17:37');
 
 -- --------------------------------------------------------
 
@@ -273,7 +273,8 @@ CREATE TABLE `customer_reports` (
 --
 
 INSERT INTO `customer_reports` (`id`, `customer_account_id`, `customer_name`, `customer_email`, `customer_phone`, `subject`, `message`, `status`, `admin_notes`, `assigned_to`, `resolved_at`, `created_at`, `updated_at`) VALUES
-(1, NULL, 'Gabnga', 'tepih77520@fanzher.com', '09156818845', 'Complaint', 'Tuyo naman tlga yung tubig ehh', 'in_progress', NULL, NULL, NULL, '2026-08-28 10:10:46', '2026-08-28 10:11:30');
+(1, NULL, 'Gabnga', 'tepih77520@fanzher.com', '09156818845', 'Complaint', 'Tuyo naman tlga yung tubig ehh', 'in_progress', NULL, NULL, NULL, '2026-08-28 10:10:46', '2026-08-28 10:11:30'),
+(2, NULL, 'fafek combatcha', 'fafek60782@airhemp.com', '09156818841', 'Feedback', 'Cr is not working', 'pending', NULL, NULL, NULL, '2026-09-09 06:36:36', '2026-09-09 06:36:36');
 
 -- --------------------------------------------------------
 
@@ -345,7 +346,8 @@ CREATE TABLE `email_communications` (
 --
 
 INSERT INTO `email_communications` (`id`, `customer_report_id`, `sender_email`, `sender_name`, `recipient_email`, `recipient_name`, `subject`, `message`, `direction`, `status`, `message_id`, `in_reply_to`, `references`, `error_message`, `read_at`, `sent_by`, `created_at`, `updated_at`) VALUES
-(1, 1, 'support@chikintayo.com', 'Chikin Tayo', 'tepih77520@fanzher.com', 'Gabnga', 'Re: Complaint', 'Dear Gabnga,\n\nThank you for reaching out to us. We have received your message and our team is reviewing it.\n\nWe will get back to you as soon as possible.\n\nBest regards,\nCustomer Support Team', 'outbound', 'sent', '1787911884.a89695f66a6506d7@localhost', NULL, NULL, NULL, NULL, 159, '2026-08-28 10:11:29', '2026-08-28 10:11:29');
+(1, 1, 'support@chikintayo.com', 'Chikin Tayo', 'tepih77520@fanzher.com', 'Gabnga', 'Re: Complaint', 'Dear Gabnga,\n\nThank you for reaching out to us. We have received your message and our team is reviewing it.\n\nWe will get back to you as soon as possible.\n\nBest regards,\nCustomer Support Team', 'outbound', 'sent', '1787911884.a89695f66a6506d7@localhost', NULL, NULL, NULL, NULL, 159, '2026-08-28 10:11:29', '2026-08-28 10:11:29'),
+(2, 2, 'support@chikintayo.com', 'Chikin Tayo', 'fafek60782@airhemp.com', 'fafek combatcha', 'Re: Feedback', 'Dear fafek combatcha,\n\nThank you for reaching out to us. We have received your message and our team is reviewing it.\n\nWe will get back to you as soon as possible.\n\nBest regards,\nCustomer Support Team', 'outbound', 'sent', '1788935796.f635d814317c8d0c@localhost', NULL, NULL, NULL, NULL, NULL, '2026-09-09 06:36:43', '2026-09-09 06:36:43');
 
 -- --------------------------------------------------------
 
@@ -2651,7 +2653,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('LJhIXKHGkh3CG3kjyRrOVLeizAbvomd4K7C6C2IL', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiam9IMEIyeExnYVBpVThFNWtDNGFhZTdxM1U4emVrRk9oYWFPUWNoZSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO319', 1788764247);
+('73TxpQzgdf0fSjxYvFjt2CLN0OmZPgoIXMGtyhnB', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.136.1 Chrome/148.0.7778.280 Electron/42.10.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiRW9nenkxSVUzRmtXZFZwT2hwY214SzI5bGw3ZkpRcHNXTm9MSEJXQyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mzk6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9tYWluLWJyYW5jaC9hZG1pbiI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1788934843),
+('Ywjtati1mqlXMUK5h27p9YcFAbJtyG14Gaim7rGB', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoiMWd4bG56S3RYMFIxcFdtNnRiSE5ybzRvUDV1MU5BekhYaHozSFpVaCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1788935996);
 
 -- --------------------------------------------------------
 
@@ -3305,7 +3308,7 @@ ALTER TABLE `customer_accounts`
 -- AUTO_INCREMENT for table `customer_reports`
 --
 ALTER TABLE `customer_reports`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `dishes`
@@ -3323,7 +3326,7 @@ ALTER TABLE `dish_ingredients`
 -- AUTO_INCREMENT for table `email_communications`
 --
 ALTER TABLE `email_communications`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `employee_timesheets`
@@ -3401,7 +3404,7 @@ ALTER TABLE `payrolls`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3080;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3082;
 
 --
 -- AUTO_INCREMENT for table `positions`

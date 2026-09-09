@@ -1,6 +1,6 @@
 <template>
   <div class="finance-content">
-    <div class="panel-section">
+    <div v-if="showOverview" class="panel-section">
       <h2 class="section-title">Financial Overview</h2>
       <div v-if="chartLoading" class="loading-container">
         <div class="loading-spinner"></div>
@@ -18,7 +18,7 @@
     </div>
 
     <!-- Recent Transactions Table -->
-    <div class="panel-section">
+    <div v-if="showTransactions" id="recent-transactions" class="panel-section">
       <h2 class="section-title">Recent Transactions</h2>
       <div v-if="transactionsLoading" class="loading-container">
         <div class="loading-spinner"></div>
@@ -114,6 +114,14 @@ const props = defineProps({
   chartLoading: {
     type: Boolean,
     default: false
+  },
+  showOverview: {
+    type: Boolean,
+    default: true
+  },
+  showTransactions: {
+    type: Boolean,
+    default: true
   }
 })
 
