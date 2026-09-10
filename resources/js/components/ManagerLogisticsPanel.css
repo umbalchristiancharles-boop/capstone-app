@@ -54,6 +54,7 @@
   box-sizing: border-box;
   background: rgba(255, 255, 255, 0.22);
   border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
 }
 
 .manager-logistics-panel :deep(.owner-sidebar-collapsed .owner-panel-topbar) {
@@ -72,6 +73,10 @@
   gap: 0.75rem;
   overflow-x: hidden;
   overflow-y: auto;
+}
+
+.manager-logistics-panel :deep(.owner-panel-user-pill) {
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
 }
 
 .manager-logistics-panel :deep(.owner-sidebar-collapsed .admin-main) {

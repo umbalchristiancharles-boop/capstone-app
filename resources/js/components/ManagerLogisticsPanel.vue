@@ -11,7 +11,7 @@
     :ownerTwoColumnLayout="true"
     :showOwnerSidebar="true"
     :showOwnerTopbar="true"
-    topbarLabel="Logistics Manager"
+    :topbarLabel="logisticsTopbarLabel"
     accountInfoStyle="finance"
     @logout="askLogout"
     @profile-updated="onProfileUpdated"
@@ -570,6 +570,10 @@ import { showToast } from './toastStore'
 const userProfile = ref({})
 const selectedSection = ref('overview')
 const dashboardTotals = ref({ totalProducts: 0, lowStock: 0, pendingRequests: 0 })
+const logisticsTopbarLabel = computed(() => {
+  const branchName = userProfile.value?.branch?.name || userProfile.value?.branch || userProfile.value?.branch_name
+  return branchName ? `Logistics Manager - ${branchName}` : 'Logistics Manager'
+})
 
 const inventory = ref([])
 const inventoryLoading = ref(false)
