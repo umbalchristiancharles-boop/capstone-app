@@ -1,0 +1,231 @@
+.manager-logistics-panel {
+  min-height: 100vh;
+  background: #e7d9cf;
+  color: #3d2a1f;
+}
+
+.manager-logistics-panel :deep(.admin-page),
+.manager-logistics-panel :deep(.admin-layout) {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.manager-logistics-panel :deep(.admin-layout--owner-sidebar-layout) {
+  display: block;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.manager-logistics-panel :deep(.owner-panel-sidebar) {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 400;
+  width: 156px;
+  min-width: 156px;
+  min-height: 100vh;
+  padding: 1.5rem 1rem 1rem;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.3);
+  border-right: 1px solid rgba(138, 113, 95, 0.18);
+  transform: translateX(0);
+  opacity: 1;
+  transition: transform 260ms ease, opacity 180ms ease;
+}
+
+.manager-logistics-panel :deep(.owner-sidebar-collapsed .owner-panel-sidebar) {
+  transform: translateX(-100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.manager-logistics-panel :deep(.owner-panel-topbar) {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 156px;
+  z-index: 300;
+  width: auto;
+  height: 66px;
+  min-height: 66px;
+  margin: 0;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.22);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.manager-logistics-panel :deep(.owner-sidebar-collapsed .owner-panel-topbar) {
+  left: 0;
+}
+
+.manager-logistics-panel :deep(.admin-main) {
+  display: flex;
+  width: auto;
+  min-width: 0;
+  height: 100vh;
+  margin: 0 0 0 156px;
+  padding: 66px 1.3rem 1.25rem;
+  box-sizing: border-box;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.manager-logistics-panel :deep(.owner-sidebar-collapsed .admin-main) {
+  margin-left: 0;
+}
+
+.manager-logistics-sidebar-nav,
+.manager-logistics-sidebar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.manager-logistics-sidebar-link,
+.manager-logistics-sidebar-account,
+.manager-logistics-sidebar-logout {
+  width: 100%;
+  min-height: 40px;
+  padding: 0.7rem 0.65rem;
+  border-radius: 10px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+}
+
+.manager-logistics-sidebar-link {
+  border: 1px solid transparent;
+  background: transparent;
+  color: #3d2a1f;
+}
+
+.manager-logistics-sidebar-link:hover,
+.manager-logistics-sidebar-link--active {
+  background: #fffaf5;
+  border-color: #f1e5d8;
+  box-shadow: 0 8px 18px #eadfd5;
+}
+
+.manager-logistics-sidebar-account {
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #17100b;
+  text-align: center;
+}
+
+.manager-logistics-sidebar-logout {
+  border: 1px solid #f1c7c2;
+  background: #fff1f0;
+  color: #17100b;
+  text-align: center;
+}
+
+.manager-logistics-panel :deep(.admin-main h1),
+.manager-logistics-panel :deep(.admin-main h2) {
+  color: #3d2a1f;
+  font-size: 26px;
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+
+.manager-logistics-panel :deep(.admin-main-header) {
+  padding: 1.2rem 0.2rem 0.6rem;
+  border-bottom: 0;
+}
+
+.manager-logistics-panel :deep(.admin-main-header-top) {
+  align-items: flex-start;
+}
+
+.manager-logistics-panel :deep(.admin-main-header-top > div:nth-child(2)) {
+  width: 100%;
+}
+
+.manager-logistics-panel :deep(.admin-main-header h1) {
+  margin: 0;
+  color: #1f2937;
+  font-size: clamp(2rem, 2vw, 2.2rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.manager-logistics-panel :deep(.admin-main-header h1::before) {
+  content: 'LOGISTICS DASHBOARD';
+  display: block;
+  margin-bottom: 0.2rem;
+  color: #b66a3e;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.25;
+}
+
+.manager-logistics-panel :deep(.admin-main-header p) {
+  margin: 0.45rem 0 0;
+  color: #967d6c;
+  font-size: 0.95rem;
+}
+
+.manager-logistics-panel :deep(.admin-main > *) {
+  margin-bottom: 0;
+}
+
+.manager-logistics-panel .hr-stats-grid {
+  gap: 12px !important;
+  margin-bottom: 14px !important;
+}
+
+.manager-logistics-panel .panel-section {
+  margin-bottom: 16px !important;
+  padding: 18px !important;
+  border-radius: 14px !important;
+}
+
+.manager-logistics-panel .section-title {
+  margin-bottom: 6px !important;
+}
+
+.manager-logistics-panel .section-description {
+  margin-bottom: 12px !important;
+}
+
+.manager-logistics-section-enter-active,
+.manager-logistics-section-leave-active {
+  transition: opacity 220ms ease, transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.manager-logistics-section-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.manager-logistics-section-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+@media (max-width: 767px) {
+  .manager-logistics-panel :deep(.owner-panel-sidebar) {
+    width: 190px;
+    min-width: 190px;
+  }
+
+  .manager-logistics-panel :deep(.owner-panel-topbar) {
+    left: 0;
+  }
+
+  .manager-logistics-panel :deep(.admin-main) {
+    margin-left: 0;
+    padding: 66px 0.85rem 1rem;
+  }
+
+  .manager-logistics-panel :deep(.admin-layout--owner-sidebar-layout:not(.owner-sidebar-collapsed) .owner-panel-sidebar) {
+    transform: translateX(0);
+  }
+}

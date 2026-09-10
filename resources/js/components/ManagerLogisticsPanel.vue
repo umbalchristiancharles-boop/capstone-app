@@ -1,19 +1,41 @@
 <template>
+  <div class="manager-logistics-panel">
   <OwnerPanelLayout
     ref="ownerLayout"
     :userProfile="userProfile"
     :panelTitle="'Logistics Manager Panel'"
-    :panelDescription="'Monitor inventory, procurement requests, and manage budgets for your branch.'"
     :enableProfileUpdate="true"
     :canEditProfile="userProfile.role === 'OWNER'"
     :canChangePassword="true"
     :showProfileColumn="false"
     :ownerTwoColumnLayout="true"
+    :showOwnerSidebar="true"
+    :showOwnerTopbar="true"
+    topbarLabel="Logistics Manager"
+    accountInfoStyle="finance"
     @logout="askLogout"
     @profile-updated="onProfileUpdated"
   >
+    <template #ownerSidebar>
+      <nav class="manager-logistics-sidebar-nav" aria-label="Logistics sections">
+        <button type="button" class="manager-logistics-sidebar-link" :class="{ 'manager-logistics-sidebar-link--active': selectedSection === 'overview' }" @click="selectedSection = 'overview'">Overview</button>
+        <button type="button" class="manager-logistics-sidebar-link" :class="{ 'manager-logistics-sidebar-link--active': selectedSection === 'barcodes' }" @click="selectedSection = 'barcodes'">Product Barcodes</button>
+        <button type="button" class="manager-logistics-sidebar-link" :class="{ 'manager-logistics-sidebar-link--active': selectedSection === 'pending-stock' }" @click="selectedSection = 'pending-stock'">Pending Stock</button>
+      </nav>
+    </template>
+
+    <template #ownerSidebarFooter>
+      <div class="manager-logistics-sidebar-actions">
+        <button type="button" class="manager-logistics-sidebar-account" @click="ownerLayout?.openInfoModal()">Account Info</button>
+        <button type="button" class="manager-logistics-sidebar-logout" @click="askLogout">Logout</button>
+      </div>
+    </template>
+
     <template #main>
-        <div class="hr-stats-grid">
+      <Transition name="manager-logistics-section" mode="out-in">
+      <div :key="selectedSection" class="manager-logistics-section-view">
+      <template v-if="selectedSection === 'overview'">
+        <div id="logistics-overview" class="hr-stats-grid">
           <div class="hr-stat-card hr-stat-card--total">
             <div class="hr-stat-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
@@ -309,7 +331,9 @@
       </div>
 
       <!-- Pending Stock Section (moved to Logistics) -->
-      <div class="panel-section">
+      </template>
+
+      <div v-if="selectedSection === 'overview' || selectedSection === 'barcodes'" id="logistics-barcodes" class="panel-section">
         <h2 class="section-title">Product Barcodes</h2>
         <p class="section-description">Supplier barcodes are preserved. Products without one receive a temporary system barcode until their real barcode is scanned.</p>
         <div class="table-container">
@@ -333,7 +357,7 @@
         </div>
       </div>
 
-      <div class="panel-section">
+      <div v-if="selectedSection === 'overview' || selectedSection === 'pending-stock'" id="logistics-pending-stock" class="panel-section">
         <h2 class="section-title">
           Pending Stock
           <span v-if="managerPendingCount > 0" class="panel-badge">{{ managerPendingCount }}</span>
@@ -474,6 +498,9 @@
         </div>
       </div>
 
+      </div>
+      </Transition>
+
       <!-- Budget Request Section (legacy - hidden for logistics minimal view) -->
       <div class="panel-section" v-if="false">
         <h2 class="section-title">Budget Requests (Legacy)</h2>
@@ -485,25 +512,9 @@
       </div>
     </template>
 
-    <template #sideTop>
-      <div class="header-profile-wrapper" style="margin:-200px 0 12px;" @click.stop>
-        <button class="header-profile-btn" @click="toggleProfileDropdown">
-          <div class="header-avatar">
-            <div v-if="userProfile.avatarUrl" class="header-avatar-img" :style="{ backgroundImage: 'url('+userProfile.avatarUrl+')' }"></div>
-            <div v-else class="header-avatar-initials">{{ (userProfile.fullName || userProfile.full_name || 'U').charAt(0) }}</div>
-          </div>
-          <div class="header-name">{{ ((userProfile.fullName || userProfile.full_name) || ((userProfile.role || 'Manager') + (userProfile.branch_name ? ' - ' + userProfile.branch_name : (userProfile.branch ? ' - ' + userProfile.branch : '')) )).toUpperCase() }}</div>
-        </button>
-        <div v-if="profileDropdownVisible" class="header-profile-dropdown" @click.stop>
-          <button class="dropdown-item" @click="openInfoFromHeader">Info</button>
-          <button class="dropdown-item" @click="triggerLogoutFromHeader">Logout</button>
-        </div>
-
-      </div>
-    </template>
-
-    <!-- Side panel removed as requested -->
   </OwnerPanelLayout>
+
+  </div>
 
   <!-- LOGOUT CONFIRM -->
   <transition name="fade">
@@ -557,6 +568,7 @@ import { showToast } from './toastStore'
 
 // basic state
 const userProfile = ref({})
+const selectedSection = ref('overview')
 const dashboardTotals = ref({ totalProducts: 0, lowStock: 0, pendingRequests: 0 })
 
 const inventory = ref([])
@@ -1306,7 +1318,7 @@ async function confirmLogout() {
   try { localStorage.clear(); sessionStorage.clear() } catch (e) {}
   setTimeout(() => {
     try { localStorage.clear(); sessionStorage.clear() } catch (e) {}
-    try { window.location.replace('/staff-landing') } catch (e) { /* ignore */ }
+    try { window.location.replace('/admin-login') } catch (e) { /* ignore */ }
   }, 600)
 }
 
@@ -1388,6 +1400,7 @@ function formatProductReqStatus(status) {
 </script>
 
 <style scoped>
+
 .panel-badge {
   position: absolute;
   top: -8px;
@@ -2037,24 +2050,58 @@ function formatProductReqStatus(status) {
 
 .loading-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.95);
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1001;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(4px);
+  z-index: 501;
 }
 
-.logo-loading-box {
+.loading-overlay .logo-loading-box {
+  min-width: 168px;
+  display: block;
+  padding: 12px 18px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
   text-align: center;
 }
 
-.logo-loading-img {
-  width: 120px;
-  margin-bottom: 16px;
+.loading-overlay .logo-loading-img {
+  width: 80px;
+  height: auto;
+  display: block;
+  margin: 0 auto 8px;
+  animation: mr-bounce 0.8s ease-in-out infinite;
+}
+
+.loading-overlay .logo-loading-box p {
+  margin: 0;
+  color: #6b6b6b;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+@keyframes mr-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.24s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
 /* Announcements panel uses the default layout so it scrolls with page */
@@ -2157,3 +2204,5 @@ function formatProductReqStatus(status) {
   font-size: 12px;
 }
 </style>
+
+<style scoped src="./ManagerLogisticsPanel.css"></style>
