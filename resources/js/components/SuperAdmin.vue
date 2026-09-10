@@ -1,56 +1,72 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-b from-[#FF9A4A] to-[#FF6A3D]" :class="{ 'dark-mode': theme === 'dark' }">
-    <div class="admin-page" :class="{ 'dark-mode': theme === 'dark' }">
-      <section class="admin-layout">
-        <!-- HEADER AT TOP (spans all columns) -->
-        <div class="page-header-top">
-          <div>
-            <h1>{{ panelTitle }}</h1>
-            <p>{{ panelDescription }}</p>
-            <p v-if="isLoadingDashboard && !isInitialMount" class="small-hint">Loading dashboard…</p>
-            <p v-else-if="dashboardError" class="small-hint small-hint--error">{{ dashboardError }}</p>
-          </div>
+  <div class="super-admin-shell" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
+    <aside class="super-admin-sidebar" :aria-hidden="sidebarCollapsed">
+      <nav class="super-admin-sidebar__nav" aria-label="Super Admin modules">
+        <button class="super-admin-sidebar__item" :class="{ active: isDashboardSection('staff') }" @click="goToSuperAdminStaff">Staff Management</button>
+        <button class="super-admin-sidebar__item" :class="{ active: isDashboardSection('hr') }" @click="openModule('hr')">HR Staff Management</button>
+        <button class="super-admin-sidebar__item" @click="openModule('kitchen')">Kitchen Staff Monitoring</button>
+        <button class="super-admin-sidebar__item" @click="openModule('finance')">Finance <span v-if="pendingCounts.finance > 0" class="panel-badge">{{ pendingCounts.finance }}</span></button>
+        <button class="super-admin-sidebar__item" @click="openModule('cashier')">Cashier <span v-if="pendingCounts.cashier > 0" class="panel-badge">{{ pendingCounts.cashier }}</span></button>
+        <button class="super-admin-sidebar__item" @click="openModule('logistics')">Logistics <span v-if="pendingCounts.logistics > 0" class="panel-badge">{{ pendingCounts.logistics }}</span></button>
+        <button class="super-admin-sidebar__item" @click="openModule('supplier')">Supplier Management <span v-if="pendingCounts.supplier > 0" class="panel-badge">{{ pendingCounts.supplier }}</span></button>
+        <button class="super-admin-sidebar__item" @click="openModule('procurement')">Procurement <span v-if="pendingCounts.procurement > 0" class="panel-badge">{{ pendingCounts.procurement }}</span></button>
+        <button class="super-admin-sidebar__item" @click="ownerAddBranches">Owner Add Branches</button>
+      </nav>
+
+      <div class="super-admin-sidebar__footer">
+        <button class="super-admin-sidebar__account" @click="openInfoModal">Account Info</button>
+        <button class="super-admin-sidebar__action super-admin-sidebar__action--primary" @click="showAnnouncement = true">Send Announcement</button>
+        <button class="super-admin-sidebar__action" @click="showTerms = true">Update Terms</button>
+        <button class="super-admin-sidebar__logout" @click.prevent="askLogout">Logout</button>
+      </div>
+    </aside>
+
+    <div class="super-admin-main-panel">
+      <header class="super-admin-topbar">
+        <button class="super-admin-hamburger" :aria-label="sidebarCollapsed ? 'Show menu' : 'Hide menu'" @click="sidebarCollapsed = !sidebarCollapsed">☰</button>
+        <div class="super-admin-topbar__spacer"></div>
+        <div class="super-admin-user-pill">
+          <span class="super-admin-user-pill__avatar">{{ userInitial }}</span>
+          <span>{{ superAdminProfile.fullName || 'Super Admin' }}</span>
         </div>
+      </header>
 
-        <!-- LEFT: SIDE PANELS (Super Admin only) -->
-        <aside class="admin-side">
-          <section class="panel-block">
-            <div class="panel-header"><h2>Top Products (All Branches)</h2></div>
-            <div class="panel-body panel-body--list">
-              <div v-if="topProducts.length === 0" class="side-item"><span>No data for this range.</span></div>
-              <div v-else v-for="prod in topProducts" :key="prod.id" class="side-item"><span>{{ prod.name }}</span><span class="side-value">{{ prod.orders }} orders</span></div>
+      <div class="admin-page">
+      <section class="admin-layout">
+          <div class="page-header-top">
+            <div>
+              <h1>{{ panelTitle }}</h1>
+              <p>{{ panelDescription }}</p>
+              <p v-if="isLoadingDashboard && !isInitialMount" class="small-hint">Loading dashboard...</p>
+              <p v-else-if="dashboardError" class="small-hint small-hint--error">{{ dashboardError }}</p>
             </div>
-          </section>
+          </div>
 
-          <section class="panel-block">
-            <div class="panel-header"><h2>Low Stock Alerts</h2></div>
-            <div class="panel-body panel-body--list">
-              <div v-if="lowStockItems.length === 0" class="side-item side-item--alert"><span>All items above minimum stock.</span></div>
-              <div v-else v-for="item in lowStockItems" :key="item.id" class="side-item side-item--alert"><span>{{ item.name }}</span><span class="side-value">{{ item.stock }}</span></div>
-            </div>
-          </section>
-
-          <section class="panel-block">
-            <div class="panel-header"><h2>Staff Attendance (All Branches)</h2></div>
-            <div class="panel-body panel-body--table">
-              <div class="table-header"><span>Staff</span><span>Branch</span><span>Status</span></div>
-              <div v-if="adminAttendance.length === 0" class="table-row"><span>No records.</span><span></span><span></span></div>
-              <div v-else v-for="att in adminAttendance.slice(0, 10)" :key="att.id" class="table-row">
-                <span>{{ att.user_name }}</span>
-                <span>{{ att.branch_name || '-' }}</span>
-                <span>
-                  <span class="badge" :class="{
-                    'badge--success': att.status === 'present',
-                    'badge--warning': att.status === 'late',
-                    'badge--info': att.status === 'absent'
-                  }">{{ att.status || '-' }}</span>
-                </span>
+          <aside class="admin-side super-admin-dashboard-side">
+            <section class="panel-block">
+              <div class="panel-header"><h2>Top Products (All Branches)</h2></div>
+              <div class="panel-body panel-body--list">
+                <div v-if="topProducts.length === 0" class="side-item"><span>No data for this range.</span></div>
+                <div v-else v-for="prod in topProducts" :key="prod.id" class="side-item"><span>{{ prod.name }}</span><span class="side-value">{{ prod.orders }} orders</span></div>
               </div>
-            </div>
-          </section>
-        </aside>
+            </section>
+            <section class="panel-block">
+              <div class="panel-header"><h2>Low Stock Alerts</h2></div>
+              <div class="panel-body panel-body--list">
+                <div v-if="lowStockItems.length === 0" class="side-item side-item--alert"><span>All items above minimum stock.</span></div>
+                <div v-else v-for="item in lowStockItems" :key="item.id" class="side-item side-item--alert"><span>{{ item.name }}</span><span class="side-value">{{ item.stock }}</span></div>
+              </div>
+            </section>
+            <section class="panel-block">
+              <div class="panel-header"><h2>Staff Attendance (All Branches)</h2></div>
+              <div class="panel-body panel-body--table">
+                <div class="table-header"><span>Staff</span><span>Branch</span><span>Status</span></div>
+                <div v-if="adminAttendance.length === 0" class="table-row"><span>No records.</span><span></span><span></span></div>
+                <div v-else v-for="att in adminAttendance.slice(0, 10)" :key="att.id" class="table-row"><span>{{ att.user_name }}</span><span>{{ att.branch_name || '-' }}</span><span><span class="badge" :class="{ 'badge--success': att.status === 'present', 'badge--warning': att.status === 'late', 'badge--info': att.status === 'absent' }">{{ att.status || '-' }}</span></span></div>
+              </div>
+            </section>
+          </aside>
 
-        <!-- MIDDLE: MAIN DASHBOARD -->
         <main class="admin-main">
           <div class="range-tabs">
             <button class="range-tab" :class="{ 'range-tab--active': activeRange === 'today' }" @click="changeRange('today')">Today</button>
@@ -104,157 +120,6 @@
           </section>
         </main>
 
-        <!-- RIGHT: SUPER ADMIN PROFILE COLUMN -->
-        <aside class="admin-profile-column">
-          <div v-if="!isProfileLoading" class="admin-card admin-card--stacked">
-            <!-- PROFILE PICTURE + NAME + ROLE -->
-            <div class="admin-card__header admin-card__header--stacked">
-              <label class="admin-avatar admin-avatar--photo avatar-upload" for="avatar-input">
-                <img
-                  v-if="superAdminProfile.avatarUrl"
-                  :src="superAdminProfile.avatarUrl"
-                  alt="Profile picture"
-                  class="avatar-img"
-                />
-                <div v-else class="avatar-placeholder">
-                  <span class="avatar-initials">SA</span>
-                </div>
-                <div class="avatar-overlay">
-                  <span class="avatar-change-text">Change Photo</span>
-                </div>
-              </label>
-
-              <div class="admin-header-text admin-admin-header-text--center">
-                <div class="admin-label">Account</div>
-                <div class="admin-name">
-                  {{ superAdminProfile.fullName || 'Super Admin' }}
-                </div>
-                <div class="admin-role">
-                  {{ superAdminProfile.role || 'SUPER_ADMIN' }}
-                </div>
-              </div>
-
-              <input
-                id="avatar-input"
-                type="file"
-                accept="image/*"
-                @change="onAvatarChange"
-                style="display: none"
-              />
-            </div>
-
-            <div class="admin-card__body admin-card__body--stacked">
-              <div class="admin-id-block admin-id-block--center">
-                <span class="admin-id-label">Account I.D: </span>
-                <span class="admin-id-value">&nbsp;{{ superAdminProfile.accountId || 'sa0001' }}</span>
-              </div>
-
-              <button class="admin-info-btn admin-info-btn--center" @click="openInfoModal">Info</button>
-            </div>
-
-            <div class="admin-card__footer admin-card__footer--stacked">
-              <div class="admin-metrics-row">
-                <div class="admin-metric">
-                  <div class="metric-icon">🏢</div>
-                  <div class="metric-text">
-                    <span class="metric-label">Total Branches: </span>
-                    <span class="metric-value">&nbsp;{{ summaryTotals.totalBranches }}</span>
-                  </div>
-                </div>
-
-                <div class="admin-metric">
-                  <div class="metric-icon">👨‍🍳</div>
-                  <div class="metric-text">
-                    <span class="metric-label">Total Employees:</span>
-                    <span class="metric-value">&nbsp;{{ summaryTotals.totalEmployees }}</span>
-                  </div>
-                </div>
-
-                <div class="admin-metric">
-                  <div class="metric-icon">👤</div>
-                  <div class="metric-text">
-                    <span class="metric-label">Total Admins:</span>
-                    <span class="metric-value">&nbsp;{{ summaryTotals.totalAdmins }}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="owner-extra">
-                <div class="owner-extra-row">
-                  <span class="owner-label">Access Level:</span>
-                  <span class="owner-value">System Wide</span>
-                </div>
-                <div class="owner-extra-row">
-                  <span class="owner-label">System Status:</span>
-                  <span class="owner-value" style="color: #28a745;">Active</span>
-                </div>
-              </div>
-
-              <!-- Module Navigation -->
-              <div class="admin-actions-row">
-                <button v-if="superAdminProfile.role && superAdminProfile.role.toUpperCase().includes('SUPER')" class="staff-btn staff-btn--center" @click="goToSuperAdminStaff">Staff Management</button>
-                <button class="staff-btn staff-btn--center" @click="openModule('hr')">
-                  HR Staff Management
-                </button>
-                <button class="staff-btn staff-btn--center" @click="openModule('kitchen')">
-                  Kitchen Staff Monitoring
-                  <span v-if="pendingCounts.kitchen > 0" class="panel-badge">{{ pendingCounts.kitchen }}</span>
-                </button>
-                <button class="staff-btn staff-btn--center" @click="openModule('finance')">
-                  Finance
-                  <span v-if="pendingCounts.finance > 0" class="panel-badge">{{ pendingCounts.finance }}</span>
-                </button>
-                <button class="staff-btn staff-btn--center" @click="openModule('cashier')">
-                  Cashier
-                  <span v-if="pendingCounts.cashier > 0" class="panel-badge">{{ pendingCounts.cashier }}</span>
-                </button>
-              </div>
-
-              <div class="admin-actions-row">
-                <button class="staff-btn staff-btn--center" @click="openModule('logistics')">
-                  Logistics
-                  <span v-if="pendingCounts.logistics > 0" class="panel-badge">{{ pendingCounts.logistics }}</span>
-                </button>
-              </div>
-
-              <div class="admin-actions-row">
-                <button class="staff-btn staff-btn--center" @click="openModule('supplier')">
-                  Supplier Management
-                  <span v-if="pendingCounts.supplier > 0" class="panel-badge">{{ pendingCounts.supplier }}</span>
-                </button>
-              </div>
-
-              <div class="admin-actions-row">
-                <button class="staff-btn staff-btn--center" @click="openModule('procurement')">
-                  Procurement
-                  <span v-if="pendingCounts.procurement > 0" class="panel-badge">{{ pendingCounts.procurement }}</span>
-                </button>
-              </div>
-
-              <div class="admin-actions-row">
-                <button class="staff-btn staff-btn--center" @click="ownerAddBranches">OwnerAddBranches</button>
-              </div>
-              <div class="admin-actions-row">
-                <button class="primary-action-btn" @click="showAnnouncement = true">Send Announcement</button>
-                <button class="secondary-action-btn" @click="showTerms = true">📄 Update Terms</button>
-              </div>
-
-              <div class="admin-actions-row">
-                <button
-                  class="secondary-action-btn"
-                  @click="toggleTheme"
-                  :title="theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
-                >
-                  {{ theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode' }}
-                </button>
-              </div>
-
-              <div class="admin-actions-row">
-                <button class="logout-btn logout-btn--center" @click.prevent="askLogout">Logout</button>
-              </div>
-            </div>
-          </div>
-        </aside>
       </section>
 
       <!-- ANNOUNCEMENT MODAL -->
@@ -422,6 +287,7 @@
       </transition>
     </div>
   </div>
+  </div>
 </template>
 
 <script setup>
@@ -429,14 +295,10 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import '../css/adminpanel.css'
-import { useTheme } from '../composables/useTheme'
 import { showToast } from './toastStore'
 
 const router = useRouter()
 const route = useRoute()
-
-// Theme composable
-const { theme, initializeTheme, toggleTheme } = useTheme()
 
 // Profile state
 const superAdminProfile = ref({
@@ -460,6 +322,7 @@ const showLogoutConfirm = ref(false)
 const showAnnouncement = ref(false)
 const showTerms = ref(false)
 const isLoggingOut = ref(false)
+const sidebarCollapsed = ref(false)
 
 // Announcement
 const announcementTitle = ref('')
@@ -510,6 +373,13 @@ const hasNotified = ref(false)
 
 const panelTitle = computed(() => 'Chikin Tayo Super Admin Panel')
 const panelDescription = computed(() => 'Full system access - manage all modules, branches, and system settings.')
+const userInitial = computed(() => (superAdminProfile.value.fullName || superAdminProfile.value.role || 'S').charAt(0).toUpperCase())
+
+function isDashboardSection(section) {
+  if (section === 'staff') return route.path.includes('/staff-management')
+  if (section === 'hr') return route.path.includes('/hr')
+  return false
+}
 
 function normalizeUser(u) {
   if (!u) return { fullName: '', username: '', role: '', email: '', contact: '', accountId: '', avatarUrl: '' }
@@ -826,9 +696,6 @@ async function askLogout() {
 }
 
 onMounted(async () => {
-  // Initialize theme first
-  initializeTheme()
-
   isInitialMount.value = false
   superAdminProfile.value = { fullName: '', role: 'SUPER_ADMIN', email: '', contact: '', accountId: '', avatarUrl: '' }
   await loadProfile()
@@ -848,6 +715,217 @@ watch(() => route.path, (p) => {
 </script>
 
 <style scoped>
+.super-admin-shell {
+  min-height: 100vh;
+  background: #f1e5dc;
+  color: #42210b;
+}
+
+.super-admin-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 400;
+  display: flex;
+  width: 156px;
+  min-height: 100vh;
+  padding: 1.5rem 1rem 1rem;
+  box-sizing: border-box;
+  flex-direction: column;
+  background: #f3e9e1;
+  border-right: 1px solid #d8c8bc;
+  transition: transform 220ms ease, opacity 220ms ease;
+}
+
+.super-admin-sidebar__nav,
+.super-admin-sidebar__footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.super-admin-sidebar__nav {
+  overflow-y: auto;
+}
+
+.super-admin-sidebar__footer {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid #d8c8bc;
+}
+
+.super-admin-sidebar__item,
+.super-admin-sidebar__account,
+.super-admin-sidebar__action,
+.super-admin-sidebar__logout {
+  position: relative;
+  width: 100%;
+  min-height: 40px;
+  padding: 0.65rem 0.55rem;
+  border-radius: 10px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.25;
+  cursor: pointer;
+}
+
+.super-admin-sidebar__item {
+  border: 1px solid transparent;
+  background: transparent;
+  color: #3d2a1f;
+  text-align: left;
+}
+
+.super-admin-sidebar__item:hover,
+.super-admin-sidebar__item.active {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(148, 163, 184, 0.3);
+  box-shadow: 0 8px 18px rgba(66, 33, 11, 0.08);
+}
+
+.super-admin-sidebar__account {
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  background: rgba(59, 130, 246, 0.12);
+  color: #30445a;
+}
+
+.super-admin-sidebar__action {
+  border: 0;
+  background: #64748b;
+  color: #fff;
+}
+
+.super-admin-sidebar__action--primary {
+  background: #ff5c1a;
+}
+
+.super-admin-sidebar__logout {
+  border: 1px solid rgba(138, 113, 95, 0.25);
+  background: rgba(255, 159, 67, 0.12);
+  color: #a23d32;
+}
+
+.super-admin-main-panel {
+  min-height: 100vh;
+  margin-left: 156px;
+}
+
+.super-admin-topbar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 156px;
+  z-index: 300;
+  display: flex;
+  min-height: 66px;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  box-sizing: border-box;
+  background: #eee2d9;
+  border-bottom: 1px solid #d8c8bc;
+}
+
+.super-admin-hamburger {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.7);
+  color: #334155;
+  cursor: pointer;
+}
+
+.super-admin-topbar__spacer { flex: 1; }
+
+.super-admin-user-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.58);
+  color: #1f2937;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.super-admin-user-pill__avatar {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 50%;
+  background: #f7b97a;
+  color: #1f2937;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.super-admin-main-panel > .admin-page {
+  min-height: 100vh;
+  padding-top: 66px;
+  box-sizing: border-box;
+}
+
+.super-admin-main-panel :deep(.admin-layout) {
+  display: block;
+  width: 100%;
+  min-height: calc(100vh - 66px);
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.super-admin-main-panel :deep(.admin-main) {
+  width: 100%;
+  margin: 0;
+}
+
+.super-admin-main-panel .page-header-top {
+  width: 100%;
+  margin: 0 0 1rem;
+  padding: 1rem 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.super-admin-dashboard-side {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.super-admin-dashboard-side .panel-block { margin: 0; }
+
+.sidebar-collapsed .super-admin-sidebar {
+  transform: translateX(-100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sidebar-collapsed .super-admin-main-panel { margin-left: 0; }
+
+.sidebar-collapsed .super-admin-topbar { left: 0; }
+
+@media (max-width: 900px) {
+  .super-admin-sidebar { width: 190px; }
+  .super-admin-main-panel { margin-left: 190px; }
+  .super-admin-topbar { left: 190px; }
+  .super-admin-dashboard-side { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .super-admin-sidebar { width: 230px; }
+  .super-admin-main-panel { margin-left: 0; }
+  .super-admin-topbar { left: 0; }
+  .super-admin-shell:not(.sidebar-collapsed) .super-admin-sidebar { transform: translateX(0); }
+}
+
 .primary-action-btn {
   background: linear-gradient(135deg, #2b8aef, #1a6ed8);
   color: white;
@@ -941,12 +1019,6 @@ textarea.info-input {
   transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-.dark-mode .page-header-top {
-  background: var(--surface-card);
-  border-bottom-color: var(--border-stroke);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-
 .page-header-top div {
   padding: 0;
 }
@@ -962,19 +1034,11 @@ textarea.info-input {
   transition: color 0.3s ease;
 }
 
-.dark-mode .page-header-top h1 {
-  color: #ffffff;
-}
-
 .page-header-top p {
   font-size: 0.9rem;
   color: rgba(66,33,11,0.6);
   margin: 4px 0;
   transition: color 0.3s ease;
-}
-
-.dark-mode .page-header-top p {
-  color: #a0aafb;
 }
 
 .page-header-top .small-hint {
@@ -983,16 +1047,8 @@ textarea.info-input {
   transition: color 0.3s ease;
 }
 
-.dark-mode .page-header-top .small-hint {
-  color: #d1d5db;
-}
-
 .page-header-top .small-hint--error {
   color: #dc2626;
-}
-
-.dark-mode .page-header-top .small-hint--error {
-  color: #ff7b7b;
 }
 
 @media (max-width: 479px) {

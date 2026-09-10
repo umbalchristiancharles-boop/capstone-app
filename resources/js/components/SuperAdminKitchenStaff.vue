@@ -29,10 +29,6 @@
     </div>
 
     <div v-if="!loading && kitchenStaff.length > 0">
-      <div class="summary-card">
-        <h3 class="owner-staff-total">Kitchen Staff Members: {{ filteredStaff.length }}</h3>
-      </div>
-
       <div class="staff-table-wrapper">
         <table class="staff-table">
           <thead>
@@ -90,10 +86,8 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import '../css/adminpanel.css'
-import { useTheme } from '../composables/useTheme'
 
 const router = useRouter()
-const { initializeTheme } = useTheme()
 const loading = ref(false)
 const errorMessage = ref('')
 const searchQuery = ref('')
@@ -206,7 +200,6 @@ async function refreshAll() {
 }
 
 onMounted(async () => {
-  initializeTheme()
   await loadBranches()
   await refreshAll()
   // Poll every 10s for updates to approximate realtime
@@ -224,7 +217,7 @@ onUnmounted(() => {
 /* Updated to match HR Staff Management visual style */
 .staff-management-page {
   padding: 2rem;
-  background: #f8fafc; /* neutral page background to match HR page */
+  background: #e7d9cf;
   min-height: 100vh;
   font-family: 'Inter', 'Poppins', sans-serif;
   color: #1f2937;
@@ -248,12 +241,13 @@ onUnmounted(() => {
   background: #ffffff;
   padding: 1.25rem 1.5rem;
   border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(15,23,42,0.06);
+  box-shadow: 0 4px 14px #eadfd5;
 }
 
 .owner-staff-title {
   margin: 0;
-  font-size: 2.25rem;
+  font-size: 26px;
+  line-height: 1.1;
   font-weight: 800;
   color: #2b2b2b;
 }
@@ -261,7 +255,7 @@ onUnmounted(() => {
 .header-actions { display: flex; gap: 1rem; align-items: center }
 .filter-select, .search-input {
   padding: 0.6rem 0.9rem;
-  border: 1px solid #e6eef7;
+  border: 1px solid #d8c8bc;
   border-radius: 8px;
   background: #fff;
   font-size: 0.95rem;
@@ -269,17 +263,17 @@ onUnmounted(() => {
 .search-input { width: 300px }
 
 .btn-primary {
-  background: #0066FF;
+  background: #1f2937;
   color: #fff;
   border: none;
   padding: 0.6rem 0.9rem;
   border-radius: 8px;
   cursor: pointer;
 }
-.btn-primary:hover { background: #0057e6 }
+.btn-primary:hover { background: #374151 }
 
 .btn-secondary {
-  background: #64748B;
+  background: #64748b;
   color: #fff;
   border: none;
   padding: 0.5rem 0.85rem;
@@ -292,7 +286,7 @@ onUnmounted(() => {
   padding: 1rem 1.25rem;
   border-radius: 12px;
   margin-bottom: 1rem;
-  box-shadow: 0 2px 6px rgba(15,23,42,0.04);
+  box-shadow: 0 4px 14px #eadfd5;
 }
 .owner-staff-total { margin: 0; color: #111827; font-weight: 700 }
 
@@ -300,25 +294,25 @@ onUnmounted(() => {
   background: #ffffff;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 6px rgba(15,23,42,0.04);
+  box-shadow: 0 4px 14px #eadfd5;
 }
 
 .staff-table { width: 100%; border-collapse: collapse; font-size: 0.95rem }
-.staff-table thead { background: #eff6ff }
-.staff-table th { padding: 1rem; text-align: left; font-weight: 700; color: #0f172a }
-.staff-table td { padding: 0.9rem 1rem; border-bottom: 1px solid #eef2f6; color: #111827 }
-.staff-table tbody tr:hover { background: #fbfdff }
+.staff-table thead { background: #fff4e8 }
+.staff-table th { padding: 1rem; text-align: left; font-weight: 700; color: #3d2a1f }
+.staff-table td { padding: 0.9rem 1rem; border-bottom: 1px solid #eadfd5; color: #3d2a1f }
+.staff-table tbody tr:hover { background: #fffaf5 }
 
 .staff-info { display: flex; align-items: center; gap: 0.75rem }
 .avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover }
 
 .muted { color: #6b7280 }
 .badge { padding: 0.25rem 0.6rem; border-radius: 999px; font-weight: 600; font-size: 0.8rem }
-.badge-online { background: #10b981; color: #fff }
-.badge-offline { background: #6b7280; color: #fff }
+.badge-online { background: #dcfce7; color: #166534 }
+.badge-offline { background: #e5e7eb; color: #475569 }
 
 .loading-state, .empty-state { text-align: center; padding: 2rem; background: #fff; border-radius: 8px }
-.alert-danger { background: #f8d7da; color: #721c24; padding: 1rem; border-radius: 4px }
+.alert-danger { background: #fef2f2; color: #b42318; padding: 1rem; border-radius: 4px }
 
 @media (max-width: 900px) {
   .search-input { width: 100% }

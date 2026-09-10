@@ -1,5 +1,26 @@
 <template>
-  <div class="cashier-page" :class="{ 'dark-mode': theme === 'dark' }">
+  <div class="cashier-page" :class="{ 'cashier-sidebar-collapsed': cashierSidebarCollapsed }">
+    <aside class="cashier-right-sidebar" aria-label="Cashier sections">
+      <button
+        type="button"
+        class="cashier-right-sidebar__toggle"
+        :aria-label="cashierSidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'"
+        @click="cashierSidebarCollapsed = !cashierSidebarCollapsed"
+      >☰</button>
+      <nav class="cashier-right-sidebar__nav">
+        <button type="button" class="cashier-right-sidebar__item" :class="{ 'cashier-right-sidebar__item--active': activeCashierSection === 'products' }" @click="selectCashierSection('products')">Products</button>
+        <button type="button" class="cashier-right-sidebar__item" :class="{ 'cashier-right-sidebar__item--active': activeCashierSection === 'order' }" @click="selectCashierSection('order')">Current Order</button>
+        <button type="button" class="cashier-right-sidebar__item" :class="{ 'cashier-right-sidebar__item--active': activeCashierSection === 'transactions' }" @click="selectCashierSection('transactions')">Transactions</button>
+      </nav>
+    </aside>
+    <button
+      v-if="cashierSidebarCollapsed"
+      type="button"
+      class="cashier-right-sidebar__reopen"
+      aria-label="Show sidebar"
+      @click="cashierSidebarCollapsed = false"
+    >☰</button>
+
     <!-- Back to Dashboard Button - Same as Finance Panel -->
     <button @click="router.push('/super-admin-panel')" class="btn-secondary back-to-dashboard-btn">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="back-icon">
@@ -26,9 +47,9 @@
       </select>
     </div>
 
-    <div v-if="selectedBranch" class="cashier-body">
+    <div v-if="selectedBranch && activeCashierSection !== 'transactions'" class="cashier-body" :class="`cashier-body--${activeCashierSection}`">
       <!-- LEFT: Product catalogue -->
-      <section class="product-catalogue">
+      <section v-if="activeCashierSection === 'products'" id="cashier-products" class="product-catalogue">
         <h2>Products</h2>
         <div class="search-bar">
           <input v-model="productSearch" type="text" placeholder="Search products..." />
@@ -63,7 +84,7 @@
       </section>
 
       <!-- RIGHT: Cart + Payment -->
-      <section class="cart-section">
+      <section v-if="activeCashierSection === 'order'" id="cashier-order" class="cart-section">
         <h2>Current Order</h2>
 
         <div v-if="cart.length === 0" class="empty-text">No items in cart. Click a product to add.</div>
@@ -137,10 +158,6 @@
             </div>
           </div>
           <div class="form-group">
-            <label>Customer Name (optional)</label>
-            <input v-model="customerName" type="text" placeholder="Walk-in" />
-          </div>
-          <div class="form-group">
             <label>Amount Paid (₱)</label>
             <input
               v-model.number="amountPaid"
@@ -160,24 +177,6 @@
 
         <div v-if="checkoutError" class="error-msg">{{ checkoutError }}</div>
         <div v-if="checkoutSuccess" class="success-msg">{{ checkoutSuccess }}</div>
-
-        <!-- Announcements -->
-            <div class="announcements-card">
-              <h3 class="announcements-title">Announcements</h3>
-              <div class="announcements-list">
-                <div v-if="loadingAnnouncements" class="loading-text">Loading announcements...</div>
-                <div v-else>
-                  <div v-if="announcements.length">
-                    <div v-for="a in announcements" :key="a.id" class="announcement-item">
-                      <div class="announcement-title">{{ a.title }}</div>
-                      <div class="announcement-message">{{ a.message }}</div>
-                      <div class="announcement-meta">{{ formatDate(a.created_at) }}</div>
-                    </div>
-                  </div>
-                  <div v-else class="empty-text">No announcements</div>
-                </div>
-              </div>
-            </div>
 
         <!-- Branch Budget Card (placed under Announcements) -->
         <div v-if="selectedBranch" class="branch-budget-card" style="margin-top:12px;">
@@ -204,7 +203,7 @@
     </div>
 
     <!-- Recent Transactions -->
-    <section v-if="selectedBranch" class="transactions-section">
+    <section v-if="selectedBranch && activeCashierSection === 'transactions'" id="cashier-transactions" class="transactions-section">
       <h2>Recent Transactions</h2>
       <div v-if="transactions.length === 0" class="empty-text">No transactions yet</div>
       <div v-else class="tx-table-wrap">
@@ -245,10 +244,10 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
-import { useTheme } from '../composables/useTheme'
 
 const router = useRouter()
-const { theme, initializeTheme } = useTheme()
+const cashierSidebarCollapsed = ref(false)
+const activeCashierSection = ref('products')
 
 // State
 const branches = ref([])
@@ -258,7 +257,6 @@ const productSearch = ref('')
 const isLoadingProducts = ref(false)
 
 const cart = ref([])
-const customerName = ref('')
 const amountPaid = ref(null)
 const isProcessing = ref(false)
 const pendingOrderCode = ref(null)  // Track latest pending order for cancel
@@ -387,9 +385,13 @@ function goBack() {
   router.push('/super-admin-panel')
 }
 
+function selectCashierSection(section) {
+  activeCashierSection.value = section
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
 // Fetch branches on mount
 onMounted(async () => {
-  initializeTheme()
   await loadBranches()
   // load announcements for cashier/staff
   fetchAnnouncements()
@@ -548,7 +550,6 @@ async function clearCart() {
   }
 
   cart.value = []
-  customerName.value = ''
   amountPaid.value = null
   checkoutError.value = ''
   checkoutSuccess.value = ''
@@ -566,7 +567,7 @@ async function processCheckout() {
   try {
     const payload = {
       branch_id: selectedBranch.value,
-      customer_name: customerName.value || 'Walk-in',
+      customer_name: 'Walk-in',
       amount_paid: amountPaid.value,
       discount_type: discountType.value || 'none',
       discount_percent: computedDiscountPercent.value || 0,
@@ -603,9 +604,98 @@ async function processCheckout() {
 /* Page background and container */
 .cashier-page,
 .cashier-container {
-  background-color: #F8FAFC;
-  padding: 28px;
+  background: #e7d9cf;
+  padding: 28px 184px 28px 28px;
   min-height: 100vh;
+}
+
+.cashier-right-sidebar {
+  position: fixed;
+  inset: 0 0 0 auto;
+  z-index: 20;
+  display: flex;
+  width: 156px;
+  min-height: 100vh;
+  padding: 1.5rem 1rem 1rem;
+  box-sizing: border-box;
+  flex-direction: column;
+  background: #f3e9e1;
+  border-left: 1px solid #d8c8bc;
+  transition: transform 220ms ease, opacity 220ms ease;
+}
+
+.cashier-right-sidebar__toggle {
+  align-self: flex-start;
+  width: 34px;
+  height: 34px;
+  margin-bottom: 1rem;
+  padding: 0;
+  border: 1px solid #d8c8bc;
+  border-radius: 10px;
+  background: #fffaf5;
+  color: #3d2a1f;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.cashier-right-sidebar__toggle:hover {
+  background: #fff4e8;
+}
+
+.cashier-right-sidebar__reopen {
+  position: fixed;
+  top: 1.5rem;
+  right: 0;
+  z-index: 21;
+  width: 32px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid #d8c8bc;
+  border-right: 0;
+  border-radius: 10px 0 0 10px;
+  background: #fffaf5;
+  color: #3d2a1f;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.cashier-sidebar-collapsed .cashier-right-sidebar {
+  transform: translateX(100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cashier-sidebar-collapsed {
+  padding-right: 28px;
+}
+
+.cashier-right-sidebar__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cashier-right-sidebar__item {
+  width: 100%;
+  min-height: 40px;
+  padding: 0.7rem 0.65rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: #3d2a1f;
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cashier-right-sidebar__item:hover,
+.cashier-right-sidebar__item--active {
+  background: #fffaf5;
+  border-color: #f1e5d8;
+  box-shadow: 0 8px 18px #eadfd5;
 }
 
 /* Basic typography for headers */
@@ -613,20 +703,20 @@ async function processCheckout() {
 .cashier-page h2 {
   font-family: 'Inter', 'Poppins', sans-serif;
   font-weight: 800;
-  color: var(--text-dark);
+  color: #3d2a1f;
   margin: 0 0 6px;
 }
 
 /* Larger responsive H1 like StaffIndex */
 .cashier-page h1 {
   /* Slightly smaller for better balance on this layout */
-  font-size: clamp(1.8rem, 2.4vw, 2.4rem);
+  font-size: 26px;
   line-height: 1.08;
 }
 
 /* Global button styles (visual only) */
 button {
-  background: #0066FF;
+  background: #1f2937;
   color: white;
   border: none;
   border-radius: 8px;
@@ -636,13 +726,13 @@ button {
   cursor: pointer;
 }
 
-button:hover { background: #3B82F6; }
+button:hover { background: #374151; }
 
 /* Secondary / accent buttons */
 .btn-secondary,
 .btn-cancel {
-  background: #FACC15;
-  color: #1F2937;
+  background: #64748b;
+  color: #ffffff;
   border: none;
   border-radius: 8px;
   padding: 8px 12px;
@@ -650,7 +740,7 @@ button:hover { background: #3B82F6; }
 
 /* Keep confirm button prominent */
 .btn-confirm {
-  background: #0066FF;
+  background: #0f766e;
   color: #ffffff;
   border-radius: 8px;
   padding: 10px 20px;
@@ -674,8 +764,8 @@ input:focus,
 select:focus,
 textarea:focus {
   outline: none;
-  border-color: #0066FF;
-  box-shadow: 0 0 0 3px rgba(59,130,246,0.08);
+  border-color: #c25a12;
+  box-shadow: 0 0 0 3px #f8dfcc;
 }
 
 /* Cards and panels */
@@ -686,10 +776,10 @@ textarea:focus {
 .totals-box,
 .announcements-card,
 .product-card {
-  background: #ffffff;
+  background: #fffaf5;
   border-radius: 12px;
   padding: 15px;
-  box-shadow: 0 4px 12px rgba(2,6,23,0.04);
+  box-shadow: 0 4px 14px #eadfd5;
 }
 
 /* Keep older helper classes available */
@@ -713,15 +803,17 @@ textarea:focus {
 .branch-budget-card div { background: #ffffff; border-radius:8px; padding:12px; }
 
 /* Announcements responsive card */
-.announcements-card { margin:12px 0; padding:12px; border-radius:8px; background:var(--surface-card); border:1px solid rgba(255,211,107,0.4); width:100%; box-sizing:border-box; }
+.announcements-card { margin:12px 0; padding:12px; border-radius:8px; background:#fffaf5; border:1px solid #f1e5d8; width:100%; box-sizing:border-box; }
 .announcements-title { margin:0 0 8px; color:var(--text-dark); font-size:0.95rem }
 .announcements-list { max-height:320px; overflow:auto; padding-right:6px }
-.announcement-item { margin-bottom:8px; padding:10px; border-radius:6px; background:var(--surface-card) }
+.announcement-item { margin-bottom:8px; padding:10px; border-radius:6px; background:#ffffff }
 .announcement-title { font-weight:700; color:var(--text-dark) }
 .announcement-message { color:rgba(66,33,11,0.9); margin-top:6px }
 .announcement-meta { font-size:0.75rem; color:rgba(66,33,11,0.7); margin-top:6px }
 
 .cashier-body { display:grid; grid-template-columns: 1fr 440px; gap:24px; margin-bottom:24px; }
+.cashier-body--products,
+.cashier-body--order { grid-template-columns: minmax(0, 1fr); }
 
 .product-catalogue h2,
 .cart-section h2,
@@ -737,13 +829,13 @@ textarea:focus {
   border: 1px solid rgba(15,23,42,0.03);
   padding: 16px;
 }
-.product-card:hover { transform: translateY(-4px); box-shadow: 0 10px 28px rgba(2,6,23,0.07); border-color: rgba(59,130,246,0.18); }
+.product-card:hover { transform: translateY(-4px); box-shadow: 0 10px 28px #eadfd5; border-color: #f59e0b; }
 .product-card.out-of-stock { opacity:0.6; cursor:not-allowed; }
 
 .product-name { font-weight:800; color:var(--text-dark); margin-bottom:8px; font-size:1.02rem }
 .product-type { display: inline-block; font-size: 0.78rem; font-weight: 600; padding: 4px 10px; border-radius: 6px; margin-bottom: 8px; }
-.product-type.type-individual { background: #dbeafe; color: #1e40af; }
-.product-type.type-per_pack { background: #d1fae5; color: #065f46; }
+.product-type.type-individual { background: #f1f5f9; color: #475569; }
+.product-type.type-per_pack { background: #dcfce7; color: #166534; }
 .product-type.type-both { background: #fef3c7; color: #92400e; }
 .product-price { color:var(--text-dark); font-weight:900; font-size:1.15rem; }
 .product-stock { color:rgba(66,33,11,0.6); font-size:0.9rem; }
@@ -760,13 +852,13 @@ textarea:focus {
 .qty-btn:hover { background: #F1F5F9; }
 .qty-input { width:60px; text-align:center; border-radius:8px; border:1px solid #E5E7EB; }
 
-.cart-item-subtotal { margin-left:auto; font-weight:700; color:#0066FF; min-width:70px; text-align:right; }
+.cart-item-subtotal { margin-left:auto; font-weight:700; color:#0f766e; min-width:70px; text-align:right; }
 .remove-btn { background:none; border:none; color:#ef4444; cursor:pointer; }
 
 /* Totals */
 .totals-box { padding:14px; }
 .total-row { display:flex; justify-content:space-between; padding:8px 0; color:#0f172a; }
-.total-grand { font-size:1.28rem; font-weight:900; color:#0066FF; border-top:2px solid rgba(6,95,212,0.06); padding-top:8px; margin-top:8px; }
+.total-grand { font-size:1.28rem; font-weight:900; color:#3d2a1f; border-top:2px solid #eadfd5; padding-top:8px; margin-top:8px; }
 
 /* Payment */
 .form-group label { display:block; margin-bottom:6px; font-weight:600; color:#0f172a; }
@@ -781,15 +873,103 @@ textarea:focus {
 .checkout-actions { display:flex; gap:10px; justify-content:flex-end; }
 
 /* Transactions table */
-.tx-table th { background:#ffffff; color:#0f172a; font-weight:700; padding:10px 12px; border-bottom:2px solid rgba(2,6,23,0.04); }
-.tx-table td { padding:8px 12px; border-bottom:1px solid rgba(2,6,23,0.03); color:#0f172a; }
-.tx-table tbody tr:hover { background: #ffffff; }
-.item-badge { display:inline-block; background: rgba(59,130,246,0.08); color:#0f172a; padding:4px 8px; border-radius:9999px; font-size:0.8rem; margin:2px; }
+.tx-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.tx-table th {
+  padding: 12px 14px;
+  background: #fff4e8;
+  color: #3d2a1f;
+  border-bottom: 1px solid #eadfd5;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-align: left;
+}
+
+.tx-table th:nth-child(1) { width: 12%; }
+.tx-table th:nth-child(2) { width: 14%; }
+.tx-table th:nth-child(3) { width: 25%; }
+.tx-table th:nth-child(4),
+.tx-table th:nth-child(5),
+.tx-table th:nth-child(6) { width: 12%; }
+.tx-table th:nth-child(7) { width: 20%; }
+
+.tx-table td {
+  padding: 11px 14px;
+  border-bottom: 1px solid #eadfd5;
+  color: #3d2a1f;
+  font-size: 0.86rem;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.tx-table tbody tr:hover { background: #fffaf5; }
+
+.tx-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #f1e5d8;
+  border-radius: 8px;
+}
+
+.item-badge {
+  display: inline-block;
+  margin: 2px;
+  padding: 4px 8px;
+  border-radius: 9999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.78rem;
+}
 
 /* Misc */
 .loading-text, .empty-text { color:#6b7280; text-align:center; padding:20px 0; font-size:0.98rem }
 
 @media (max-width:860px) { .cashier-body { grid-template-columns: 1fr; } }
+
+@media (max-width: 700px) {
+  .cashier-page,
+  .cashier-container {
+    padding-right: 28px;
+    padding-bottom: 104px;
+  }
+
+  .cashier-right-sidebar {
+    inset: auto 0 0 0;
+    width: 100%;
+    min-height: auto;
+    padding: 0.65rem;
+    border-top: 1px solid #d8c8bc;
+    border-left: 0;
+  }
+
+  .cashier-sidebar-collapsed .cashier-right-sidebar {
+    transform: translateY(100%);
+  }
+
+  .cashier-right-sidebar__nav {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.4rem;
+  }
+
+  .cashier-right-sidebar__item {
+    min-height: 36px;
+    padding: 0.45rem 0.25rem;
+    text-align: center;
+  }
+
+  .cashier-right-sidebar__reopen {
+    top: auto;
+    right: 0.65rem;
+    bottom: 0.65rem;
+    border-right: 1px solid #d8c8bc;
+    border-radius: 10px;
+  }
+}
 
 /* ===== DARK MODE STYLES ===== */
 .cashier-page.dark-mode,

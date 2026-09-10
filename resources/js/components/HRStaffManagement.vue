@@ -13,22 +13,15 @@
     <div class="staff-header">
       <h1 class="owner-staff-title">HR Staff Management</h1>
       <div class="header-actions">
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Search staff..."
-          class="search-input"
-        >
+        <input v-model="searchQuery" type="text" placeholder="Search staff..." class="search-input">
         <select v-model="branchFilter" class="filter-select">
           <option value="">All Branches</option>
           <option v-for="b in branches" :key="b.id" :value="b.name">{{ b.name }}</option>
         </select>
-
         <select v-model="roleFilter" class="filter-select">
           <option value="">All Roles</option>
           <option v-for="r in availableRoles" :key="r" :value="r">{{ r }}</option>
         </select>
-
         <select v-model="departmentFilter" class="filter-select">
           <option value="">All Departments</option>
           <option v-for="d in availableDepartments" :key="d" :value="d">{{ d }}</option>
@@ -38,84 +31,25 @@
       </div>
     </div>
 
-    <!-- Loading State -->
-    <div v-if="loading" class="loading-state">
-      <p>Loading staff...</p>
-    </div>
+    <div v-if="loading" class="loading-state"><p>Loading staff...</p></div>
+    <div v-if="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
 
-    <!-- Error State -->
-    <div v-if="errorMessage" class="alert alert-danger">
-      {{ errorMessage }}
-    </div>
-
-    <!-- Summary -->
-    <div v-if="!loading && filteredStaff.length > 0" class="summary-card">
-      <h3 class="owner-staff-total">Total Staff Members: {{ filteredStaff.length }}</h3>
-    </div>
-    <div v-if="!loading && filteredStaff.length === 0" class="summary-card">
-      <h3 class="owner-staff-total">Total Staff Members: 0</h3>
-    </div>
-
-    <!-- Staff Tables Grouped by Branch -->
     <div v-if="!loading && groupedStaff.length > 0">
       <div v-for="group in groupedStaff" :key="group.branchName" class="branch-group">
-        <!-- Branch Header -->
         <div class="branch-header">
           <h2 class="branch-title">{{ group.branchName }}{{ group.branchName !== 'Unassigned' ? ' Branch' : '' }}</h2>
           <span class="branch-count">{{ group.staff.length }} staff member{{ group.staff.length !== 1 ? 's' : '' }}</span>
         </div>
-
-        <!-- Branch Staff Table -->
         <div class="staff-table-wrapper">
           <table class="staff-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Role</th>
-                <th>Department</th>
-                <th>Username</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Status</th>
-                <th>Joined</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
+            <thead><tr><th>Name</th><th>Role</th><th>Department</th><th>Username</th><th>Email</th><th>Phone</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
             <tbody>
-              <tr v-for="member in group.staff" :key="member.id" :class="{ 'inactive': !member.is_active }">
-                <td>
-                  <div class="staff-info">
-                    <img v-if="member.avatar_url" :src="member.avatar_url" :alt="member.full_name" class="avatar">
-                    <strong>{{ member.full_name || member.username }}</strong>
-                  </div>
-                </td>
-                <td>{{ displayRole(member.role) }}</td>
-                <td>{{ (member.department || '-') }}</td>
-                <td>{{ member.username }}</td>
-                <td>{{ member.email }}</td>
-                <td>{{ member.phone_number || '-' }}</td>
-                <td>
-                  <span :class="['badge', statusBadgeClass(getMemberStatus(member))]">
-                    {{ getMemberStatus(member) }}
-                  </span>
-                </td>
+              <tr v-for="member in group.staff" :key="member.id" :class="{ inactive: !member.is_active }">
+                <td><div class="staff-info"><img v-if="member.avatar_url" :src="member.avatar_url" :alt="member.full_name" class="avatar"><strong>{{ member.full_name || member.username }}</strong></div></td>
+                <td>{{ displayRole(member.role) }}</td><td>{{ member.department || '-' }}</td><td>{{ member.username }}</td><td>{{ member.email }}</td><td>{{ member.phone_number || '-' }}</td>
+                <td><span :class="['badge', statusBadgeClass(getMemberStatus(member))]">{{ getMemberStatus(member) }}</span></td>
                 <td>{{ formatDate(member.created_at) }}</td>
-                <td class="actions">
-                  <button
-                    @click="editStaff(member)"
-                    class="btn-sm btn-info"
-                    title="Edit"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    @click="toggleStatus(member)"
-                    :class="['btn-sm', member.is_active ? 'btn-danger' : 'btn-success']"
-                    :title="member.is_active ? 'Deactivate' : 'Activate'"
-                  >
-                    {{ member.is_active ? 'Deactivate' : 'Activate' }}
-                  </button>
-                </td>
+                <td class="actions"><button @click="editStaff(member)" class="btn-sm btn-info" title="Edit">Edit</button><button @click="toggleStatus(member)" :class="['btn-sm', member.is_active ? 'btn-danger' : 'btn-success']" :title="member.is_active ? 'Deactivate' : 'Activate'">{{ member.is_active ? 'Deactivate' : 'Activate' }}</button></td>
               </tr>
             </tbody>
           </table>
@@ -123,119 +57,35 @@
       </div>
     </div>
 
-    <!-- Empty State -->
-    <div v-if="!loading && filteredStaff.length === 0" class="empty-state">
-      <p>No staff members found</p>
-    </div>
+    <div v-if="!loading && filteredStaff.length === 0" class="empty-state"><p>No staff members found</p></div>
 
-    <!-- Add/Edit Staff Modal -->
-    <StaffModal
-      :show="showAddStaffModal"
-      :staff="isEditingStaff ? staff.find(s => s.id === editingStaffId) : null"
-      :isEdit="isEditingStaff"
-      :preSelectedBranchId="currentBranchId"
-      @close="showAddStaffModal = false"
-      @success="onStaffModalSuccess"
-    />
+    <StaffModal :show="showAddStaffModal" :staff="isEditingStaff ? staff.find(s => s.id === editingStaffId) : null" :isEdit="isEditingStaff" :preSelectedBranchId="currentBranchId" @close="showAddStaffModal = false" @success="onStaffModalSuccess" />
 
-    <!-- Position Open Requests Section -->
     <div class="position-requests-section" style="display: block;">
       <div class="section-header">
-        <h2 class="section-title">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
-          Open Position Requests
-          <span v-if="positionRequestsPendingCount > 0" style="background: #ffc107; color: #000; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold; margin-left: 8px;">{{ positionRequestsPendingCount }}</span>
-        </h2>
-        <div class="section-actions">
-          <button @click="loadPositionRequests" class="btn-secondary" :disabled="loadingPositionRequests">
-            {{ loadingPositionRequests ? 'Loading...' : 'Refresh' }}
-          </button>
-        </div>
+        <h2 class="section-title">Open Position Requests <span v-if="positionRequestsPendingCount > 0" style="background: #ffc107; color: #000; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold; margin-left: 8px;">{{ positionRequestsPendingCount }}</span></h2>
+        <div class="section-actions"><button @click="loadPositionRequests" class="btn-secondary" :disabled="loadingPositionRequests">{{ loadingPositionRequests ? 'Loading...' : 'Refresh' }}</button></div>
       </div>
-
-      <div v-if="loadingPositionRequests" class="loading-state">
-        <p>Loading requests...</p>
-      </div>
-
-      <div v-else-if="positionRequests.length === 0" class="empty-state">
-        <p>No position requests found.</p>
-      </div>
-
+      <div v-if="loadingPositionRequests" class="loading-state"><p>Loading requests...</p></div>
+      <div v-else-if="positionRequests.length === 0" class="empty-state"><p>No position requests found.</p></div>
       <div v-else class="requests-list">
         <div v-for="req in positionRequests" :key="req.id" class="request-card" :class="'request-card--' + req.status.toLowerCase()">
-          <div class="request-card__header">
-            <div class="request-card__position">{{ req.position?.name || 'Unknown Position' }}</div>
-            <span class="badge" :class="statusBadgeClass(req.status)">{{ req.status }}</span>
-          </div>
-
+          <div class="request-card__header"><div class="request-card__position">{{ req.position?.name || 'Unknown Position' }}</div><span class="badge" :class="statusBadgeClass(req.status)">{{ req.status }}</span></div>
           <div class="request-card__body">
-            <div class="request-card__info">
-              <span class="label">Branch:</span>
-              <span class="value">{{ req.branch?.name || 'Main HR' }}</span>
-            </div>
-            <div class="request-card__info">
-              <span class="label">Quantity:</span>
-              <span class="value">{{ req.quantity }}</span>
-            </div>
-            <div class="request-card__info">
-              <span class="label">Requested by:</span>
-              <span class="value">{{ req.requested_by?.full_name || req.requested_by?.username || 'Unknown' }}</span>
-            </div>
-            <div class="request-card__info">
-              <span class="label">Date:</span>
-              <span class="value">{{ formatDate(req.created_at) }}</span>
-            </div>
-            <div v-if="req.notes" class="request-card__notes">
-              <span class="label">Notes:</span>
-              <p>{{ req.notes }}</p>
-            </div>
-            <div v-if="req.rejection_reason" class="request-card__notes request-card__notes--rejection">
-              <span class="label">Rejection reason:</span>
-              <p>{{ req.rejection_reason }}</p>
-            </div>
+            <div class="request-card__info"><span class="label">Branch:</span><span class="value">{{ req.branch?.name || 'Main HR' }}</span></div>
+            <div class="request-card__info"><span class="label">Quantity:</span><span class="value">{{ req.quantity }}</span></div>
+            <div class="request-card__info"><span class="label">Requested by:</span><span class="value">{{ req.requested_by?.full_name || req.requested_by?.username || 'Unknown' }}</span></div>
+            <div class="request-card__info"><span class="label">Date:</span><span class="value">{{ formatDate(req.created_at) }}</span></div>
+            <div v-if="req.notes" class="request-card__notes"><span class="label">Notes:</span><p>{{ req.notes }}</p></div>
+            <div v-if="req.rejection_reason" class="request-card__notes request-card__notes--rejection"><span class="label">Rejection reason:</span><p>{{ req.rejection_reason }}</p></div>
           </div>
-
-          <div v-if="req.status === 'Pending'" class="request-card__actions">
-            <button @click="approveRequest(req)" class="btn-success btn-sm" :disabled="processingRequestId === req.id">
-              {{ processingRequestId === req.id ? 'Processing...' : 'Approve' }}
-            </button>
-            <button @click="openRejectModal(req)" class="btn-danger btn-sm" :disabled="processingRequestId === req.id">
-              Reject
-            </button>
-          </div>
+          <div v-if="req.status === 'Pending'" class="request-card__actions"><button @click="approveRequest(req)" class="btn-success btn-sm" :disabled="processingRequestId === req.id">{{ processingRequestId === req.id ? 'Processing...' : 'Approve' }}</button><button @click="openRejectModal(req)" class="btn-danger btn-sm" :disabled="processingRequestId === req.id">Reject</button></div>
         </div>
       </div>
     </div>
 
-    <!-- Reject Reason Modal -->
     <div v-if="showRejectModal" class="modal-backdrop" @click.self="closeRejectModal">
-      <div class="modal">
-        <div class="modal-header">
-          <h2>Reject Request</h2>
-          <button class="close-button" @click="closeRejectModal">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label>Reason for rejection (optional)</label>
-            <textarea
-              v-model="rejectReason"
-              class="form-input"
-              rows="3"
-              placeholder="Enter reason..."
-            ></textarea>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-secondary" @click="closeRejectModal">Cancel</button>
-          <button
-            class="btn-danger"
-            @click="confirmReject"
-            :disabled="processingRequestId === rejectingRequest?.id"
-          >
-            {{ processingRequestId === rejectingRequest?.id ? 'Processing...' : 'Reject Request' }}
-          </button>
-        </div>
-      </div>
+      <div class="modal"><div class="modal-header"><h2>Reject Request</h2><button class="close-button" @click="closeRejectModal">&times;</button></div><div class="modal-body"><div class="form-group"><label>Reason for rejection (optional)</label><textarea v-model="rejectReason" class="form-input" rows="3" placeholder="Enter reason..."></textarea></div></div><div class="modal-footer"><button class="btn-secondary" @click="closeRejectModal">Cancel</button><button class="btn-danger" @click="confirmReject" :disabled="processingRequestId === rejectingRequest?.id">{{ processingRequestId === rejectingRequest?.id ? 'Processing...' : 'Reject Request' }}</button></div></div>
     </div>
   </div>
 </template>
@@ -246,10 +96,8 @@ import { useRouter } from 'vue-router'
 import axios from 'axios'
 import '../css/adminpanel.css'
 import StaffModal from './StaffModal.vue'
-import { useTheme } from '../composables/useTheme'
 
 const router = useRouter()
-const { initializeTheme } = useTheme()
 
 function onStaffModalSuccess() {
   showAddStaffModal.value = false
@@ -618,7 +466,6 @@ async function toggleStatus(member) {
 }
 
 onMounted(async () => {
-  initializeTheme()
   // Force page reload effect for HR Staff Management (user request)
   if (sessionStorage.getItem('forceHrReload') === '1') {
     console.log('[HRStaffManagement] Force reload flag detected - full refresh complete')
@@ -675,7 +522,7 @@ function formatDate(dateString) {
 /* styles copied unchanged from original component */
 .staff-management-page {
   padding: 30px;
-  background-color: #F8FAFC;
+  background: #e7d9cf;
   min-height: 100vh;
 }
 
@@ -684,10 +531,10 @@ function formatDate(dateString) {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
-  background: white;
+  background: #fffaf5;
   border-radius: 12px;
   padding: 20px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 14px #eadfd5;
 }
 
 .staff-management-page h1,
@@ -706,12 +553,12 @@ function formatDate(dateString) {
 }
 
 .btn-primary {
-  background: #0066FF !important;
+  background: #1f2937 !important;
   color: white !important;
 }
 
 .btn-primary:hover {
-  background: #0057e6 !important;
+  background: #374151 !important;
 }
 
 .btn-secondary, .btn-outline {
@@ -720,14 +567,15 @@ function formatDate(dateString) {
 }
 
 .btn-secondary:hover, .btn-outline:hover {
-  background: #525c6a !important;
+  background: #475569 !important;
 }
 
 .staff-header h1 {
   margin: 0;
-  font-size: 2.5rem;
-  font-weight: 700;
-  letter-spacing: -1px;
+  font-size: 26px;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: 0;
 }
 
 .owner-staff-title {
@@ -744,7 +592,7 @@ function formatDate(dateString) {
 
 .filter-select {
   padding: 0.75rem 1rem;
-  border: 1px solid #D1D5DB;
+  border: 1px solid #d8c8bc;
   border-radius: 8px;
   background: white;
   font-size: 0.9rem;
@@ -752,7 +600,7 @@ function formatDate(dateString) {
 
 .search-input {
   padding: 0.75rem 1rem;
-  border: 1px solid #D1D5DB;
+  border: 1px solid #d8c8bc;
   border-radius: 8px;
   font-size: 0.9rem;
   width: 280px;
@@ -760,8 +608,8 @@ function formatDate(dateString) {
 
 .search-input:focus {
   outline: none;
-  border-color: #0066FF;
-  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
+  border-color: #c25a12;
+  box-shadow: 0 0 0 3px #f8dfcc;
 }
 
 .btn-primary, .btn-success, .btn-secondary, .btn-info, .btn-danger {
@@ -775,34 +623,34 @@ function formatDate(dateString) {
 }
 
 .btn-primary {
-  background: #0066FF;
+  background: #1f2937;
   color: white;
 }
 
 .btn-primary:hover {
-  background: #3B82F6;
+  background: #374151;
 }
 
 .btn-success {
-  background: #10B981;
+  background: #0f766e;
   color: white;
 }
 
 .btn-success:hover {
-  background: #059669;
+  background: #115e59;
 }
 
 .btn-secondary {
-  background: #6c757d;
+  background: #64748b;
   color: #fff;
 }
 
 .btn-secondary:hover {
-  background: #5a6268;
+  background: #475569;
 }
 
 .btn-info {
-  background: #3B82F6;
+  background: #1f2937;
   color: white;
   padding: 0.35rem 0.7rem;
   font-size: 0.8rem;
@@ -810,11 +658,11 @@ function formatDate(dateString) {
 }
 
 .btn-info:hover {
-  background: #2563EB;
+  background: #374151;
 }
 
 .btn-danger {
-  background: #EF4444;
+  background: #b42318;
   color: white;
   padding: 0.35rem 0.7rem;
   font-size: 0.8rem;
@@ -822,7 +670,7 @@ function formatDate(dateString) {
 }
 
 .btn-danger:hover {
-  background: #DC2626;
+  background: #912018;
 }
 
 .btn-sm {
@@ -846,10 +694,10 @@ function formatDate(dateString) {
 }
 
 .summary-card {
-  background: white;
+  background: #ffffff;
   border-radius: 12px;
   padding: 20px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 14px #eadfd5;
   margin-bottom: 2rem;
 }
 
@@ -872,10 +720,10 @@ function formatDate(dateString) {
   gap: 1rem;
   margin-bottom: 1rem;
   padding: 1rem 1.5rem;
-  background: white;
+  background: #fffaf5;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-  border-left: 4px solid #0066FF;
+  box-shadow: 0 2px 8px #eadfd5;
+  border-left: 4px solid #f59e0b;
 }
 
 .branch-title {
@@ -888,15 +736,15 @@ function formatDate(dateString) {
 .branch-count {
   color: #555;
   font-size: 0.9rem;
-  background: rgba(255, 255, 255, 0.4);
+  background: #fff4e8;
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
 }
 
 .staff-table-wrapper {
-  background: white;
+  background: #ffffff;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 14px #eadfd5;
   overflow: hidden;
 }
 
@@ -1120,12 +968,12 @@ function formatDate(dateString) {
 .staff-table {
   width: 100%;
   border-collapse: collapse;
-  background: white;
+  background: #ffffff;
 }
 
 .staff-table th {
-  background: #EFF6FF;
-  color: #1E3A8A;
+  background: #fff4e8;
+  color: #3d2a1f;
   font-weight: 600;
   padding: 1rem;
   text-align: left;
@@ -1149,7 +997,7 @@ function formatDate(dateString) {
 }
 
 .staff-table tbody tr:hover {
-  background: rgba(0, 102, 255, 0.05);
+  background: #fffaf5;
 }
 
 .staff-table tbody tr.inactive {
@@ -1199,16 +1047,16 @@ function formatDate(dateString) {
 
 /* Position Requests Section */
 .position-requests-section {
-  background: #fff;
+  background: #fffaf5;
   border-radius: 12px;
   padding: 20px;
   margin-top: 2rem;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 14px #eadfd5;
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
   margin-top: 2rem;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 14px #eadfd5;
 }
 
 .section-header {
@@ -1238,22 +1086,22 @@ function formatDate(dateString) {
 }
 
 .request-card {
-  background: #fafafa;
+  background: #ffffff;
   border-radius: 8px;
   border: 1px solid #eee;
   padding: 1rem;
 }
 
 .request-card--approved {
-  border-left: 4px solid #28a745;
+  border-left: 4px solid #0f766e;
 }
 
 .request-card--rejected {
-  border-left: 4px solid #dc3545;
+  border-left: 4px solid #b42318;
 }
 
 .request-card--pending {
-  border-left: 4px solid #ffc107;
+  border-left: 4px solid #f59e0b;
 }
 
 .request-card__header {
@@ -1266,7 +1114,7 @@ function formatDate(dateString) {
 .request-card__position {
   font-weight: 600;
   font-size: 1.1rem;
-  color: #333;
+  color: #3d2a1f;
 }
 
 .request-card__body {
@@ -1282,12 +1130,12 @@ function formatDate(dateString) {
 }
 
 .request-card__info .label {
-  color: #666;
+  color: #64748b;
   min-width: 100px;
 }
 
 .request-card__info .value {
-  color: #333;
+  color: #3d2a1f;
   font-weight: 500;
 }
 
@@ -1300,18 +1148,18 @@ function formatDate(dateString) {
 .request-card__notes .label {
   display: block;
   font-size: 0.85rem;
-  color: #666;
+  color: #64748b;
   margin-bottom: 0.25rem;
 }
 
 .request-card__notes p {
   margin: 0;
   font-size: 0.9rem;
-  color: #333;
+  color: #3d2a1f;
 }
 
 .request-card__notes--rejection p {
-  color: #dc3545;
+  color: #b42318;
 }
 
 .request-card__actions {

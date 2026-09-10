@@ -273,10 +273,6 @@
             </div>
           </div>
           <div class="form-group">
-            <label>Customer Name (optional)</label>
-            <input v-model="customerName" type="text" placeholder="Walk-in" />
-          </div>
-          <div class="form-group">
             <label>Amount Paid (₱)</label>
             <input
               v-model.number="amountPaid"
@@ -402,7 +398,6 @@ const scannerError = ref('')
 let scannerControls = null
 
 const cart = ref([])
-const customerName = ref('')
 const amountPaid = ref(null)
 const isProcessing = ref(false)
 const pendingOrderCode = ref(null)
@@ -1197,7 +1192,6 @@ async function clearCart() {
   }
 
   cart.value = []
-  customerName.value = ''
   amountPaid.value = null
   checkoutError.value = ''
   checkoutSuccess.value = ''
@@ -1215,7 +1209,7 @@ async function processCheckout() {
   try {
     const payload = {
       branch_id: branchId.value,
-      customer_name: customerName.value || 'Walk-in',
+      customer_name: 'Walk-in',
         amount_paid: amountPaid.value,
         discount_type: discountType.value || 'none',
         discount_percent: computedDiscountPercent.value || 0,
@@ -1239,7 +1233,6 @@ async function processCheckout() {
       cart.value = []
     }
 
-    customerName.value = ''
     amountPaid.value = null
     discountType.value = 'none'
     discountPercent.value = 0

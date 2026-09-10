@@ -126,10 +126,8 @@ import { useRouter } from 'vue-router'
 import axios from 'axios'
 import '../css/adminpanel.css'
 import OwnerStaffModal from './OwnerStaffModal.vue'
-import { useTheme } from '../composables/useTheme'
 
 const router = useRouter()
-const { initializeTheme } = useTheme()
 
 const loading = ref(false)
 const errorMessage = ref('')
@@ -346,7 +344,6 @@ async function onResetPasswordClick(staffId) {
 }
 
 onMounted(async () => {
-  initializeTheme()
   await loadBranches()
   await loadStaff()
 })
@@ -356,7 +353,7 @@ onMounted(async () => {
 /* styles copied from HRStaffManagement.vue for exact match */
 .staff-management-page {
   padding: 30px;
-  background-color: #F8FAFC;
+  background: #e7d9cf;
   min-height: 100vh;
 }
 
@@ -365,10 +362,10 @@ onMounted(async () => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
-  background: white;
+  background: #fffaf5;
   border-radius: 12px;
   padding: 20px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 14px #eadfd5;
 }
 
 .staff-management-page h1,
@@ -387,12 +384,12 @@ onMounted(async () => {
 }
 
 .btn-primary {
-  background: #0066FF !important;
+  background: #1f2937 !important;
   color: white !important;
 }
 
 .btn-primary:hover {
-  background: #3B82F6 !important;
+  background: #374151 !important;
 }
 
 .btn-secondary, .btn-outline {
@@ -401,14 +398,15 @@ onMounted(async () => {
 }
 
 .btn-secondary:hover, .btn-outline:hover {
-  background: #525c6a !important;
+  background: #475569 !important;
 }
 
 .staff-header h1 {
   margin: 0;
-  font-size: 2.5rem;
-  font-weight: 700;
-  letter-spacing: -1px;
+  font-size: 26px;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: 0;
 }
 
 .owner-staff-title {
@@ -425,15 +423,15 @@ onMounted(async () => {
 
 .filter-select {
   padding: 0.75rem 1rem;
-  border: 1px solid #D1D5DB;
+  border: 1px solid #d8c8bc;
   border-radius: 8px;
-  background: white;
+  background: #ffffff;
   font-size: 0.9rem;
 }
 
 .search-input {
   padding: 0.75rem 1rem;
-  border: 1px solid #D1D5DB;
+  border: 1px solid #d8c8bc;
   border-radius: 8px;
   font-size: 0.9rem;
   width: 280px;
@@ -441,8 +439,8 @@ onMounted(async () => {
 
 .search-input:focus {
   outline: none;
-  border-color: #0066FF;
-  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
+  border-color: #c25a12;
+  box-shadow: 0 0 0 3px #f8dfcc;
 }
 
 .btn-primary, .btn-success, .btn-secondary, .btn-info, .btn-danger {
@@ -456,34 +454,34 @@ onMounted(async () => {
 }
 
 .btn-primary {
-  background: #0066FF;
+  background: #1f2937;
   color: white;
 }
 
 .btn-primary:hover {
-  background: #3B82F6;
+  background: #374151;
 }
 
 .btn-success {
-  background: #10B981;
+  background: #0f766e;
   color: white;
 }
 
 .btn-success:hover {
-  background: #059669;
+  background: #115e59;
 }
 
 .btn-secondary {
-  background: #6c757d;
+  background: #64748b;
   color: #fff;
 }
 
 .btn-secondary:hover {
-  background: #5a6268;
+  background: #475569;
 }
 
 .btn-info {
-  background: #3B82F6;
+  background: #1f2937;
   color: white;
   padding: 0.35rem 0.7rem;
   font-size: 0.8rem;
@@ -491,11 +489,11 @@ onMounted(async () => {
 }
 
 .btn-info:hover {
-  background: #2563EB;
+  background: #374151;
 }
 
 .btn-danger {
-  background: #EF4444;
+  background: #b42318;
   color: white;
   padding: 0.35rem 0.7rem;
   font-size: 0.8rem;
@@ -503,7 +501,7 @@ onMounted(async () => {
 }
 
 .btn-danger:hover {
-  background: #DC2626;
+  background: #912018;
 }
 
 .btn-sm {
@@ -532,10 +530,10 @@ onMounted(async () => {
 }
 
 .summary-card {
-  background: white;
+  background: #ffffff;
   border-radius: 12px;
   padding: 20px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 14px #eadfd5;
   margin-bottom: 2rem;
 }
 
@@ -558,10 +556,10 @@ onMounted(async () => {
   gap: 1rem;
   margin-bottom: 1rem;
   padding: 1rem 1.5rem;
-  background: white;
+  background: #fffaf5;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-  border-left: 4px solid #0066FF;
+  box-shadow: 0 2px 8px #eadfd5;
+  border-left: 4px solid #f59e0b;
 }
 
 .branch-title {
@@ -574,15 +572,15 @@ onMounted(async () => {
 .branch-count {
   color: #555;
   font-size: 0.9rem;
-  background: rgba(255, 255, 255, 0.4);
+  background: #fff4e8;
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
 }
 
 .staff-table-wrapper {
-  background: white;
+  background: #ffffff;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 14px #eadfd5;
   overflow: hidden;
 }
 
@@ -592,8 +590,8 @@ onMounted(async () => {
 }
 
 .staff-table th {
-  background: #EFF6FF;
-  color: #1E3A8A;
+  background: #fff4e8;
+  color: #3d2a1f;
   font-weight: 600;
   padding: 1rem;
   text-align: left;
@@ -607,7 +605,7 @@ onMounted(async () => {
 }
 
 .staff-table tbody tr:hover {
-  background: rgba(255,255,255,0.14);
+  background: #fffaf5;
 }
 
 .staff-table tbody tr.inactive {
@@ -630,8 +628,8 @@ onMounted(async () => {
 
 .badge {
   display: inline-block;
-  background: #FACC15;
-  color: #1F2937;
+  background: #fef3c7;
+  color: #92400e;
   border-radius: 6px;
   padding: 4px 10px;
   font-size: 0.8rem;
@@ -639,13 +637,13 @@ onMounted(async () => {
 }
 
 .badge-online {
-  background: #10B981;
-  color: white;
+  background: #dcfce7;
+  color: #166534;
 }
 
 .badge-offline {
-  background: #6B7280;
-  color: white;
+  background: #e5e7eb;
+  color: #475569;
 }
 
 .actions {
@@ -659,7 +657,7 @@ onMounted(async () => {
   background: white;
   border-radius: 12px;
   color: #6B7280;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 14px #eadfd5;
 }
 
 .alert {
@@ -669,9 +667,9 @@ onMounted(async () => {
 }
 
 .alert-danger {
-  background: #FEF2F2;
-  color: #DC2626;
-  border: 1px solid #FECACA;
+  background: #fef2f2;
+  color: #b42318;
+  border: 1px solid #fecdca;
 }
 
 @media (max-width: 768px) {
@@ -941,7 +939,7 @@ onMounted(async () => {
 }
 
 .staff-table tbody tr:hover {
-  background: rgba(0, 102, 255, 0.05);
+  background: #fffaf5;
 }
 
 .staff-table tbody tr.inactive {
@@ -1002,17 +1000,17 @@ onMounted(async () => {
 }
 
 .password-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #334155;
   border-radius: 8px;
   padding: 0.75rem 1.25rem;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 15px #cfc2b8;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
 .password-label {
-  color: rgba(255, 255, 255, 0.85);
+  color: #f8fafc;
   font-size: 0.8rem;
   font-weight: 500;
   text-transform: uppercase;
@@ -1026,7 +1024,7 @@ onMounted(async () => {
 }
 
 .password-text {
-  background: rgba(255, 255, 255, 0.15);
+  background: #475569;
   color: #ffffff;
   padding: 0.5rem 0.75rem;
   border-radius: 4px;
@@ -1038,7 +1036,7 @@ onMounted(async () => {
 }
 
 .btn-copy {
-  background: rgba(255, 255, 255, 0.25);
+  background: #64748b;
   border: none;
   color: #ffffff;
   padding: 0.35rem 0.6rem;
@@ -1049,16 +1047,12 @@ onMounted(async () => {
 }
 
 .btn-copy:hover {
-  background: rgba(255, 255, 255, 0.4);
+  background: #94a3b8;
   transform: scale(1.05);
 }
 
 .btn-copy:active {
   transform: scale(0.98);
-}
-
-.dark-mode .password-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 @media (max-width: 768px) {
