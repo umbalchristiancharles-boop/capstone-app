@@ -1,14 +1,5 @@
 <template>
   <div :class="['staff-management-page', { 'main-branch-theme': (isMainBranch || isFromSuperAdmin), 'from-superadmin': isFromSuperAdmin }]">
-    <!-- Back button: goes to Owner or Super Admin depending on role -->
-    <button @click="handleBack" class="btn-secondary back-to-dashboard-btn">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="back-icon">
-        <line x1="19" y1="12" x2="5" y2="12"></line>
-        <polyline points="12 19 5 12 12 5"></polyline>
-      </svg>
-      {{ backLabel }}
-    </button>
-
     <!-- Header -->
     <div class="staff-header">
       <h1 class="owner-staff-title">Branch Management</h1>
@@ -1214,6 +1205,118 @@ textarea.form-input { resize: vertical; }
   /* Use cleaner, pale background with consistent typography */
   background: linear-gradient(180deg, rgba(255,154,74,0.08) 0%, rgba(255,106,61,0.06) 100%);
   font-family: 'Inter', 'Poppins', sans-serif;
+}
+
+.staff-management-page.main-branch-theme {
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.staff-management-page.main-branch-theme .staff-header {
+  margin-bottom: 14px;
+  padding: 18px 16px;
+  background: linear-gradient(135deg, #fffaf5 0%, #fff 72%);
+  border: 1px solid #f1e5d8;
+  border-radius: 14px;
+  box-shadow: 0 4px 14px rgba(66, 33, 11, 0.05);
+}
+
+.staff-management-page.main-branch-theme .owner-staff-title {
+  padding-bottom: 0;
+  color: #1f2937;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+
+.staff-management-page.main-branch-theme .summary-card {
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  background: #ffffff;
+  border: 1px solid #eef2f7;
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(16, 24, 40, 0.04);
+}
+
+.staff-management-page.main-branch-theme .owner-staff-total {
+  color: #1f2937;
+  font-size: 16px;
+}
+
+.staff-management-page.main-branch-theme .branch-group {
+  margin-bottom: 0;
+}
+
+.staff-management-page.main-branch-theme .staff-table-wrapper {
+  overflow-x: auto;
+  background: #ffffff;
+  border: 1px solid #eef2f7;
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(16, 24, 40, 0.04);
+}
+
+.staff-management-page.main-branch-theme .staff-table thead {
+  background: #f8fafc;
+  box-shadow: none;
+}
+
+.staff-management-page.main-branch-theme .staff-table th {
+  padding: 12px 16px;
+  color: #1f2937;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.staff-management-page.main-branch-theme .staff-table td {
+  padding: 12px 16px;
+  color: #3d2a1f;
+  font-size: 13px;
+}
+
+.staff-management-page.main-branch-theme .header-actions .btn-primary,
+.staff-management-page.main-branch-theme .header-actions .btn-success {
+  padding: 10px 16px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(36, 52, 71, 0.12);
+}
+
+.staff-management-page.main-branch-theme .header-actions .btn-primary {
+  background: #4b5563;
+  color: #ffffff;
+}
+
+.staff-management-page.main-branch-theme .header-actions .btn-success {
+  background: #111827;
+  color: #ffffff;
+}
+
+.staff-management-page.main-branch-theme .btn-deactivate,
+.staff-management-page.main-branch-theme .btn-reactivate,
+.staff-management-page.main-branch-theme .btn-protected {
+  padding: 8px 12px;
+  border-radius: 8px;
+  box-shadow: none;
+  font-size: 12px;
+}
+
+.staff-management-page.main-branch-theme .btn-deactivate {
+  background: #fff8f7;
+  border: 1px solid #e3b1a5;
+  color: #a23d32;
+}
+
+.staff-management-page.main-branch-theme .btn-reactivate {
+  background: #f0fdf4;
+  border: 1px solid #bbdec5;
+  color: #18733a;
+}
+
+.staff-management-page.main-branch-theme .btn-protected {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
 }
 
 .staff-management-page.main-branch-theme .owner-staff-title,

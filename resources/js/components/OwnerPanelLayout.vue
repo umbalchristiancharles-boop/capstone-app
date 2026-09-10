@@ -384,6 +384,7 @@ const props = defineProps({
   ,
   showOwnerSidebar: { type: Boolean, default: false },
   showOwnerTopbar: { type: Boolean, default: false },
+  topbarLabel: { type: String, default: '' },
   accountInfoStyle: { type: String, default: 'default' }
 })
 
@@ -393,6 +394,7 @@ const router = useRouter()
 const ownerSidebarCollapsed = ref(false)
 
 const ownerUserLabel = computed(() => {
+  if (props.topbarLabel) return props.topbarLabel
   const displayRole = props.userProfile.displayRole || props.userProfile.role || 'OWNER'
   const branchName = props.userProfile.branch?.name || props.userProfile.branch || props.userProfile.branch_name
   return branchName ? `${displayRole} - ${branchName}` : displayRole

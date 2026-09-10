@@ -14,6 +14,7 @@
       :showAnnouncements="false"
       :showOwnerSidebar="true"
       :showOwnerTopbar="true"
+      topbarLabel="ADMIN - Main Branch"
       :showAttendanceCard="false"
       accountInfoStyle="finance"
       @logout="askLogout"
@@ -36,6 +37,8 @@
       </template>
 
       <template #main>
+        <Transition name="main-branch-section" mode="out-in">
+        <div :key="activeSection" class="main-branch-section-view">
         <template v-if="activeSection === 'finance-overview' || activeSection === 'transactions'">
         <header class="main-branch-admin-hero">
           <div class="main-branch-admin-hero__copy">
@@ -95,6 +98,8 @@
 
         <MainBranchCRMPanel v-else-if="activeSection === 'crm'" />
         <OwnerAddBranches v-else-if="activeSection === 'branches'" />
+        </div>
+        </Transition>
       </template>
 
       <template #headerActions>
@@ -170,7 +175,7 @@ async function confirmLogout() {
   } catch (e) {}
   try { localStorage.clear(); sessionStorage.clear() } catch (e) {}
   setTimeout(() => {
-    safeNavigate('/')
+    safeNavigate('/admin-login')
   }, 600)
 }
 
@@ -215,7 +220,10 @@ function goToCRM() {
 function showFinanceSection(sectionId) {
   activeSection.value = sectionId === 'recent-transactions' ? 'transactions' : 'finance-overview'
   nextTick(() => {
-    document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    document.querySelector('.main-branch-admin-panel .admin-main')?.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    })
   })
 }
 
@@ -326,6 +334,51 @@ window.addEventListener('click', () => {
   width: 100%;
 }
 
+.main-branch-section-view {
+  min-height: 1px;
+}
+
+.main-branch-section-enter-active,
+.main-branch-section-leave-active {
+  transition: opacity 220ms ease, transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.main-branch-section-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.main-branch-section-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+.main-branch-admin-panel :deep(.admin-layout--owner-sidebar-layout) {
+  padding: 0;
+}
+
+.main-branch-admin-panel :deep(.owner-panel-topbar) {
+  position: fixed;
+  top: 0;
+  right: 0;
+  padding: 0.75rem 1.25rem;
+  background: linear-gradient(180deg, #e7d9cf 0%, #eee5df 100%) !important;
+  border-bottom-color: rgba(115, 93, 84, 0.18);
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.12);
+}
+
+.main-branch-admin-panel :deep(.admin-main) {
+  margin-top: 66px !important;
+}
+
+@media (max-width: 767px) {
+  .main-branch-admin-panel :deep(.owner-panel-topbar) {
+    left: 0;
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
 .main-branch-admin-panel :deep(.owner-sidebar-nav) {
   display: flex;
   flex-direction: column;
@@ -339,7 +392,7 @@ window.addEventListener('click', () => {
   border: 1px solid transparent;
   border-radius: 12px;
   background: transparent;
-  color: #4b5563;
+  color: #1f2937;
   font-size: 0.78rem;
   font-weight: 600;
   line-height: 1.25;
@@ -375,13 +428,13 @@ window.addEventListener('click', () => {
 .main-branch-admin-panel :deep(.owner-sidebar-account) {
   border: 1px solid rgba(59, 130, 246, 0.25);
   background: rgba(59, 130, 246, 0.12);
-  color: #2563eb;
+  color: #30445a;
 }
 
 .main-branch-admin-panel :deep(.owner-sidebar-logout) {
   border: 1px solid rgba(138, 113, 95, 0.25);
   background: rgba(255, 159, 67, 0.12);
-  color: #d97706;
+  color: #a23d32;
 }
 
 .main-branch-admin-hero {
