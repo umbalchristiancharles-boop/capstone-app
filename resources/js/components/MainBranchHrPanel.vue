@@ -1,6 +1,7 @@
 <template>
   <div class="main-branch-hr-panel">
     <OwnerPanelLayout
+      ref="ownerLayout"
       :userProfile="userProfile"
       :panelTitle="'Main Branch HR Management'"
       :panelDescription="'Human Resources management for Main Branch'"
@@ -9,30 +10,47 @@
       :canChangePassword="true"
       :showHeader="false"
       :showProfileColumn="false"
-      :ownerTwoColumnLayout="true"
+      :showOwnerSidebar="true"
+      :showOwnerTopbar="true"
+      topbarLabel="HR - Main Branch"
+      accountInfoStyle="finance"
       @logout="askLogout"
       @profile-updated="onProfileUpdated"
     >
+      <template #ownerSidebar>
+        <nav class="main-branch-hr-sidebar-nav" aria-label="HR sections">
+          <button type="button" class="main-branch-hr-sidebar-link" :class="{ 'main-branch-hr-sidebar-link--active': activeHrSection === 'overview' }" @click="showHrSection('overview')">HR Overview</button>
+          <button type="button" class="main-branch-hr-sidebar-link" :class="{ 'main-branch-hr-sidebar-link--active': activeHrSection === 'requests' }" @click="showHrSection('requests')">Position Requests</button>
+          <button type="button" class="main-branch-hr-sidebar-link" :class="{ 'main-branch-hr-sidebar-link--active': activeHrSection === 'accounts' }" @click="showHrSection('accounts')">Branch Accounts</button>
+        </nav>
+      </template>
+
+      <template #ownerSidebarFooter>
+        <div class="main-branch-hr-sidebar-actions">
+          <button type="button" class="main-branch-hr-sidebar-account" @click="ownerLayout?.openInfoModal()">Account Info</button>
+          <button type="button" class="main-branch-hr-sidebar-logout" @click="askLogout">Logout</button>
+        </div>
+      </template>
+
       <template #main>
         <div class="main-branch-hr-page">
-          <header class="main-branch-hr-hero">
+          <Transition name="main-branch-hr-section" mode="out-in">
+          <div :key="activeHrSection" class="main-branch-hr-section-view">
+          <template v-if="activeHrSection === 'overview'">
+          <header id="hr-overview" class="main-branch-hr-hero">
             <div>
               <span class="main-branch-hr-eyebrow">HR dashboard</span>
               <h2 class="main-branch-hr-title">HR overview</h2>
               <p class="main-branch-hr-subtitle">Review position requests and manage workforce accounts across all branches.</p>
             </div>
             <div class="main-branch-hr-hero__actions">
-              <button class="pill-btn main-branch-hr-hero__action" @click="openApplicationsModal" :disabled="loadingApplications">
-                {{ loadingApplications ? 'Loading...' : 'View Applications' }}
-              </button>
-              <span v-if="applicationsCount > 0" class="pending-badge">{{ applicationsCount }} total</span>
               <button class="pill-btn main-branch-hr-hero__action" @click="loadPositionRequests" :disabled="loadingPositionRequests">
                 {{ loadingPositionRequests ? 'Loading...' : 'Refresh Requests' }}
               </button>
             </div>
           </header>
 
-          <div class="info-box">
+          <div v-if="activeHrSection === 'overview'" class="info-box">
             <p>This panel provides HR functions for Main Branch headquarters personnel.</p>
             <p>Manage staff schedules, attendance, benefits, and performance from this location.</p>
           </div>
@@ -56,7 +74,46 @@
             </div>
           </div>
 
-          <div class="position-requests-section">
+          <section class="applications-section">
+            <div class="section-header">
+              <div>
+                <h3>Job Applications</h3>
+                <p class="muted">Applications submitted for positions on your branch.</p>
+              </div>
+              <span v-if="applicationsCount > 0" class="pending-badge">{{ applicationsCount }} total</span>
+            </div>
+
+            <div v-if="loadingApplications" class="loading-box">Loading applications...</div>
+            <div v-else-if="applications.length === 0" class="empty-box">No applications found.</div>
+            <div v-else class="positions-list">
+              <div v-for="application in applications" :key="application.id" class="position-row">
+                <div class="position-row__meta">
+                  <div class="position-row__name">{{ application.applicant_full_name }}</div>
+                  <div class="position-row__dept">{{ application.job_title }}</div>
+                </div>
+                <div class="request-card__info"><span class="label">Department:</span><span class="value">{{ application.department || '—' }}</span></div>
+                <div class="request-card__info"><span class="label">Status:</span><span class="value">{{ application.status || 'Submitted' }}</span></div>
+                <div class="request-card__info"><span class="label">Applied On:</span><span class="value">{{ formatDate(application.created_at) }}</span></div>
+                <div class="request-card__info"><span class="label">Contact:</span><span class="value">{{ application.applicant_email }} • {{ application.applicant_phone }}</span></div>
+                <div class="request-card__actions">
+                  <button class="btn-success btn-sm" @click="openApplicationDetails(application)">View Application Details</button>
+                  <button v-if="!isReadyForInterview(application.status)" class="btn-primary btn-sm" @click="openInterviewScheduleModal(application)" :disabled="sendingInterviewEmail[application.id]">
+                    {{ sendingInterviewEmail[application.id] ? 'Sending...' : 'Ready for Interview' }}
+                  </button>
+                  <button v-if="isReadyForInterview(application.status) && !isPassedForHiring(application.status)" class="btn-success btn-sm" @click="markAsPassed(application)" :disabled="markingAsPassed[application.id]">
+                    {{ markingAsPassed[application.id] ? 'Processing...' : '✓ Mark as Passed' }}
+                  </button>
+                  <button v-if="isReadyForInterview(application.status) && !isPassedForHiring(application.status)" class="btn-danger btn-sm" @click="markAsNotPassed(application)" :disabled="markingAsNotPassed[application.id]">
+                    {{ markingAsNotPassed[application.id] ? 'Processing...' : '✗ Mark as Not Passed' }}
+                  </button>
+                  <span v-else-if="isPassedForHiring(application.status)" class="status-approved">✓ Passed - Ready for Hiring</span>
+                </div>
+              </div>
+            </div>
+          </section>
+          </template>
+
+          <div v-if="activeHrSection === 'requests'" id="hr-position-requests" class="position-requests-section">
             <div class="section-header">
               <div>
                 <h3>Position Requests</h3>
@@ -117,7 +174,7 @@
             </div>
           </div>
 
-          <div class="branch-stats">
+          <div v-if="activeHrSection === 'accounts'" id="hr-branch-accounts" class="branch-stats">
             <div class="section-header">
               <div>
                 <h3>Accounts by Branch</h3>
@@ -202,6 +259,8 @@
               </div>
             </div>
           </div>
+          </div>
+          </Transition>
         </div>
       </template>
 
@@ -221,6 +280,13 @@
         </div>
       </template>
     </OwnerPanelLayout>
+
+    <div v-if="showLogoutOverlay" class="main-branch-hr-logout-overlay">
+      <div class="main-branch-hr-logout-box">
+        <img :src="logoImg" alt="Chikin Tayo" class="main-branch-hr-logout-logo" />
+        <p>Logging out...</p>
+      </div>
+    </div>
   </div>
 
   <!-- Applications Modal -->
@@ -392,7 +458,10 @@ import axios from 'axios'
 import { swalAlert, swalConfirm } from '../sweet-alerts'
 
 const userProfile = ref({})
+const ownerLayout = ref(null)
 const profileDropdownVisible = ref(false)
+const showLogoutOverlay = ref(false)
+const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
 const branchSections = ref([])
 const loading = ref(false)
 const errorMessage = ref('')
@@ -422,6 +491,11 @@ const selectedApplication = ref(null)
 const interviewSchedule = ref({ date: '', time: '', notes: '' })
 const showApplicationDetailsModal = ref(false)
 const selectedApplicationDetails = ref(null)
+const activeHrSection = ref('overview')
+
+function showHrSection(section) {
+  activeHrSection.value = section
+}
 
 const positionRequestsPendingCount = computed(() => {
   return positionRequests.value.filter(r => r.status === 'Pending').length
@@ -477,12 +551,14 @@ async function triggerLogoutFromHeader() {
 }
 
 async function confirmLogout() {
+  if (showLogoutOverlay.value) return
+  showLogoutOverlay.value = true
   try {
     await axios.post('/api/logout', {}, { withCredentials: true })
   } catch (e) {}
   try { localStorage.clear(); sessionStorage.clear() } catch (e) {}
   setTimeout(() => {
-    try { window.location.replace('/') } catch (e) {}
+    try { window.location.replace('/admin-login') } catch (e) {}
   }, 600)
 }
 
@@ -619,8 +695,7 @@ function getStorageUrl(path) {
   return path.startsWith('/') ? path : `/storage/${path}`
 }
 
-async function openApplicationsModal() {
-  showApplicationsModal.value = true
+async function loadApplications() {
   loadingApplications.value = true
   try {
     const res = await axios.get('/api/hr/positions/applications', { withCredentials: true })
@@ -636,6 +711,11 @@ async function openApplicationsModal() {
   } finally {
     loadingApplications.value = false
   }
+}
+
+async function openApplicationsModal() {
+  showApplicationsModal.value = true
+  await loadApplications()
 }
 
 
@@ -683,6 +763,7 @@ async function loadBranchStaff() {
 // Initial load
 loadBranchStaff()
 loadPositionRequests()
+loadApplications()
 
 // Position Requests (for approval)
 async function loadPositionRequests() {
@@ -765,6 +846,41 @@ window.addEventListener('click', () => {
 </script>
 
 <style scoped>
+.main-branch-hr-logout-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.main-branch-hr-logout-box {
+  min-width: 168px;
+  padding: 12px 18px 14px;
+  border-radius: 12px;
+  background: #ffffff;
+  text-align: center;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+}
+
+.main-branch-hr-logout-logo {
+  display: block;
+  width: 80px;
+  height: auto;
+  margin: 0 auto 8px;
+}
+
+.main-branch-hr-logout-box p {
+  margin: 0;
+  color: #6b6b6b;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
 .positions-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -881,7 +997,129 @@ window.addEventListener('click', () => {
 
 .main-branch-hr-panel { width: 100%; padding: 0; background: transparent; height: auto; min-height: 0; display: block; }
 
+.main-branch-hr-panel :deep(.owner-panel-topbar) {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 300;
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.12);
+}
+
+.main-branch-hr-panel :deep(.admin-main) {
+  margin-top: 66px !important;
+  scrollbar-width: thin;
+  scrollbar-color: #6b7280 #eee5df;
+}
+
+.main-branch-hr-panel :deep(.admin-main::-webkit-scrollbar) {
+  width: 9px;
+}
+
+.main-branch-hr-panel :deep(.admin-main::-webkit-scrollbar-track) {
+  background: #eee5df;
+}
+
+.main-branch-hr-panel :deep(.admin-main::-webkit-scrollbar-thumb) {
+  background: #6b7280;
+  border-radius: 999px;
+  border: 2px solid #eee5df;
+}
+
+.main-branch-hr-panel :deep(.admin-main::-webkit-scrollbar-thumb:hover) {
+  background: #4b5563;
+}
+
+@media (max-width: 767px) {
+  .main-branch-hr-panel :deep(.owner-panel-topbar) {
+    left: 0;
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
+.main-branch-hr-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.main-branch-hr-sidebar-link {
+  width: 100%;
+  padding: 0.7rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: #1f2937;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+}
+
+.main-branch-hr-sidebar-link:hover,
+.main-branch-hr-sidebar-link--active {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(148, 163, 184, 0.3);
+  color: #111827;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
+.main-branch-hr-sidebar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.main-branch-hr-sidebar-account,
+.main-branch-hr-sidebar-logout {
+  width: 100%;
+  padding: 0.7rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.main-branch-hr-sidebar-account:focus,
+.main-branch-hr-sidebar-account:focus-visible,
+.main-branch-hr-sidebar-logout:focus,
+.main-branch-hr-sidebar-logout:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.main-branch-hr-sidebar-account {
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  background: rgba(59, 130, 246, 0.12);
+  color: #30445a;
+}
+
+.main-branch-hr-sidebar-logout {
+  border: 1px solid rgba(138, 113, 95, 0.25);
+  background: rgba(255, 159, 67, 0.12);
+  color: #a23d32;
+}
+
 .main-branch-hr-page { width: 100%; }
+.main-branch-hr-section-view { min-height: 1px; }
+
+.main-branch-hr-section-enter-active,
+.main-branch-hr-section-leave-active {
+  transition: opacity 220ms ease, transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.main-branch-hr-section-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.main-branch-hr-section-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
 .main-branch-hr-hero {
   display: flex;
   align-items: flex-start;
@@ -903,19 +1141,30 @@ window.addEventListener('click', () => {
 
 /* Position Requests Section */
 .position-requests-section {
-  background: #fff;
-  border-radius: 8px;
-  padding: 12px;
-  margin-bottom: 4px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  background: linear-gradient(135deg, #fffaf5 0%, #fff 72%);
+  border: 1px solid #f1e5d8;
+  border-radius: 14px;
+  padding: 18px 16px;
+  margin-bottom: 14px;
+  box-shadow: 0 4px 14px rgba(66, 33, 11, 0.05);
   display: block;
   height: auto;
 }
 
+.applications-section {
+  margin-top: 14px;
+  padding: 18px 16px;
+  background: linear-gradient(135deg, #fffaf5 0%, #fff 72%);
+  border: 1px solid #f1e5d8;
+  border-radius: 14px;
+  box-shadow: 0 4px 14px rgba(66, 33, 11, 0.05);
+}
+
 .pending-badge {
   display: inline-block;
-  background: #ffc107;
-  color: #000;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
   padding: 2px 8px;
   border-radius: 6px;
   font-size: 11px;
@@ -931,15 +1180,15 @@ window.addEventListener('click', () => {
 }
 
 .request-card {
-  background: #fafafa;
-  border: 1px solid #e5e7eb;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 10px;
 }
 
 .request-card--approved { border-left: 4px solid #22c55e; }
-.request-card--rejected { border-left: 4px solid #dc3545; }
-.request-card--pending { border-left: 4px solid #ffc107; }
+.request-card--rejected { border-left: 4px solid #ef4444; }
+.request-card--pending { border-left: 4px solid #f59e0b; }
 
 .request-card__header {
   display: flex;
@@ -1028,11 +1277,26 @@ window.addEventListener('click', () => {
   font-size: 12px;
 }
 
+.position-requests-section .btn-success,
+.position-requests-section .btn-primary {
+  background: #1f2937;
+}
+
+.position-requests-section .btn-danger {
+  background: #fff8f7;
+  border: 1px solid #e3b1a5;
+  color: #a23d32;
+}
+
 .btn-success:hover,
 .btn-danger:hover,
 .btn-secondary:hover,
 .btn-primary:hover {
   background: #374151;
+}
+
+.position-requests-section .btn-danger:hover {
+  background: #fee2e2;
 }
 
 .btn-success:disabled,
@@ -1115,7 +1379,17 @@ window.addEventListener('click', () => {
 .hr-summary-card--pending { border-left: 3px solid #f59e0b; }
 .hr-summary-card--active { border-left: 3px solid #22c55e; }
 
-.branch-stats { background: transparent; padding: 0; border-radius: 8px; border: none; box-shadow: none; height: auto; min-height: 0; }
+.branch-stats {
+  width: 100%;
+  padding: 18px 16px;
+  background: linear-gradient(135deg, #fffaf5 0%, #fff 72%);
+  border: 1px solid #f1e5d8;
+  border-radius: 14px;
+  box-shadow: 0 4px 14px rgba(66, 33, 11, 0.05);
+  height: auto;
+  min-height: 0;
+  box-sizing: border-box;
+}
 .section-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin: 0 0 6px 0; flex-wrap: wrap; }
 .muted { color: #6b7280; margin: 2px 0 0 0; font-size: 12px; }
 .pill-btn { background: #4b5563; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; cursor: pointer; box-shadow: 0 1px 3px rgba(75, 85, 99, 0.1); transition: all 0.2s ease; font-size: 12px; }

@@ -118,6 +118,13 @@
         </div>
       </template>
     </OwnerPanelLayout>
+
+    <div v-if="showLogoutOverlay" class="main-branch-logout-overlay">
+      <div class="main-branch-logout-box">
+        <img :src="logoImg" alt="Chikin Tayo" class="main-branch-logout-logo" />
+        <p>Logging out...</p>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -134,6 +141,8 @@ const userProfile = ref({})
 const ownerLayout = ref(null)
 const activeSection = ref('finance-overview')
 const profileDropdownVisible = ref(false)
+const showLogoutOverlay = ref(false)
+const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
 const router = useRouter()
 
 const financeReports = ref([])
@@ -170,6 +179,8 @@ async function triggerLogoutFromHeader() {
 }
 
 async function confirmLogout() {
+  if (showLogoutOverlay.value) return
+  showLogoutOverlay.value = true
   try {
     await axios.post('/api/logout', {}, { withCredentials: true })
   } catch (e) {}
@@ -332,6 +343,41 @@ window.addEventListener('click', () => {
 <style scoped>
 .main-branch-admin-panel {
   width: 100%;
+}
+
+.main-branch-logout-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.main-branch-logout-box {
+  min-width: 168px;
+  padding: 12px 18px 14px;
+  border-radius: 12px;
+  background: #ffffff;
+  text-align: center;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+}
+
+.main-branch-logout-logo {
+  display: block;
+  width: 80px;
+  height: auto;
+  margin: 0 auto 8px;
+}
+
+.main-branch-logout-box p {
+  margin: 0;
+  color: #6b6b6b;
+  font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .main-branch-section-view {

@@ -770,7 +770,7 @@ async function confirmLogout() {
   try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
   setTimeout(() => {
     try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
-    try { window.location.replace('/staff-landing') } catch (e) { /* ignore */ }
+    try { window.location.replace(props.isMainBranchFinance ? '/admin-login' : '/staff-landing') } catch (e) { /* ignore */ }
   }, 600)
 }
 
