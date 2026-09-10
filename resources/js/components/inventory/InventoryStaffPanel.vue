@@ -2711,7 +2711,7 @@ ProductList[compact] { width:100% }
   .disposal-nav-button {
     width: 100%;
   }
-}
+}ch
 
 /* Inventory Summary Cards - below Attendance card */
 .inventory-summary {
