@@ -3,19 +3,27 @@
     <OwnerPanelLayout
       panelTitle="Super Admin Supplier Panel"
       panelDescription="Manage suppliers, view supplier inventory, and monitor supplier requests across branches."
+      :fullWidth="true"
       :showProfileColumn="false"
+      :singleColumnLayout="true"
+      :showAnnouncements="false"
+      :showAttendanceCard="false"
+      :showHeader="false"
     >
-      <template #headerLeft>
-        <button class="btn-secondary back-to-superadmin-btn" @click="goBackToSuperAdmin">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="back-icon">
-            <line x1="19" y1="12" x2="5" y2="12"></line>
-            <polyline points="12 19 5 12 12 5"></polyline>
-          </svg>
-          Back to Super Admin
-        </button>
-      </template>
-
       <template #main>
+        <header class="supplier-page-header">
+          <button class="btn-secondary back-to-superadmin-btn" @click="goBackToSuperAdmin">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="back-icon">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            Back to Super Admin
+          </button>
+          <div class="supplier-page-header__copy">
+            <h1>Super Admin Supplier Panel</h1>
+            <p>Manage suppliers, view supplier inventory, and monitor supplier requests across branches.</p>
+          </div>
+        </header>
         <div class="branch-selector-section" style="margin-bottom: 1rem; display: flex; align-items: center;">
           <label style="font-weight:600; color:#1e293b; margin-right:0.75rem; font-size:0.95rem;">Select Branch:</label>
           <select v-model="selectedBranchId" @change="handleBranchChange" style="padding:0.45rem 0.6rem; border:1px solid #CBD5E1; border-radius:6px; background:white; font-size:0.9rem; min-width:220px;">
@@ -28,7 +36,6 @@
           <p class="section-description">View suppliers and supplier activity for the selected branch.</p>
 
           <!-- stats grid removed as requested -->
-
           <!-- Orders table (read-only monitoring) -->
           <div class="panel-section" style="padding:0">
             <h3 style="margin:0 0 12px 0; position:relative;">
@@ -150,11 +157,9 @@ import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
-import { useTheme } from '../composables/useTheme'
 import { showToast } from './toastStore'
 
 const router = useRouter()
-const { initializeTheme } = useTheme()
 const suppliers = ref([])
 const branches = ref([])
 const selectedBranchId = ref('')
@@ -412,7 +417,6 @@ function handleResize() {
 }
 
 onMounted(async () => {
-  initializeTheme()
   try { await axios.get('/sanctum/csrf-cookie', { withCredentials: true }) } catch (e) {}
   await Promise.all([fetchBranches().catch(()=>{}), fetchSuppliers().catch(()=>{}), loadDashboardTotals().catch(()=>{}), loadOrders().catch(()=>{}), loadDeliveries().catch(()=>{}), loadProducts().catch(()=>{}), loadPanelNotifications().catch(()=>{})])
   // check overflow for tables and listen for resizes
@@ -432,6 +436,74 @@ onUnmounted(() => {
 
 <style scoped>
 /* Layout and spacing matched to SuperAdminLogisticsPanel */
+.superadmin-logistics-wrapper {
+  min-height: 100vh;
+  padding: 0;
+  box-sizing: border-box;
+  background: #e7d9cf;
+}
+
+:deep(.min-h-screen) {
+  background: transparent !important;
+}
+
+:deep(.admin-layout.no-profile-column.admin-layout--single-column),
+:deep(.admin-layout.admin-layout--wider.no-profile-column.admin-layout--single-column) {
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 100vh !important;
+  padding: 1.25rem 2rem 2rem !important;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+:deep(.admin-layout.no-profile-column.admin-layout--single-column) .admin-main {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0;
+  margin: 0;
+}
+
+:deep(.admin-main-header) {
+  padding: 0 0 1.25rem !important;
+}
+
+:deep(.admin-main-header-top) {
+  justify-content: flex-start;
+}
+
+.supplier-page-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.supplier-page-header__copy h1 {
+  margin: 0 0 0.4rem;
+  color: #42210b;
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.supplier-page-header__copy p {
+  margin: 0;
+  color: #967d6c;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 1200px) {
+  :deep(.admin-layout.no-profile-column.admin-layout--single-column) {
+    display: block !important;
+    padding: 1rem !important;
+  }
+}
+
 .back-to-superadmin-btn {
   position: relative;
   margin: 0;
@@ -467,46 +539,17 @@ onUnmounted(() => {
   transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* Dark Mode - Branch Selector */
-:global(.dark-mode) .branch-selector-section {
-  background: #2d2d2d !important;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
-}
-
-:global(.dark-mode) .branch-selector-section label {
-  color: #e5e7eb !important;
-}
-
-:global(.dark-mode) .branch-selector-section select {
-  background: #1a1a1a !important;
-  color: #e5e7eb !important;
-  border-color: #444 !important;
-}
-
-:global(.dark-mode) .branch-selector-section select option {
-  background: #1a1a1a !important;
-  color: #e5e7eb !important;
-}
-
 .panel-section { background: rgba(255,255,255,0.95); border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: background-color 0.3s ease, box-shadow 0.3s ease; }
 
 .supplier-input-review { display:flex; align-items:center; gap:8px; min-width:190px; }
 .supplier-product-image { width:44px; height:44px; object-fit:cover; border-radius:6px; border:1px solid #d1d5db; }
 
-:global(.dark-mode) .panel-section {
-  background: rgba(45,45,45,0.9);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-}
 .section-title {
   font-size: 20px;
   font-weight: 600;
   color: #4b2a06;
   margin: 0 0 8px 0;
   transition: color 0.3s ease;
-}
-
-:global(.dark-mode) .section-title {
-  color: #e5e7eb;
 }
 
 .section-description {
@@ -516,10 +559,6 @@ onUnmounted(() => {
   transition: color 0.3s ease;
 }
 
-:global(.dark-mode) .section-description {
-  color: #9ca3af;
-}
-
 .table-container { overflow-x: auto; max-height: 420px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .data-table { width: 100%; border-collapse: collapse; }
 .data-table thead th { position: sticky; top: 0; z-index: 6; background: #fff4e6; }
@@ -527,17 +566,6 @@ onUnmounted(() => {
 .data-table th { background: #fff4e6; font-weight: 600; color: #5a2c0a; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
 .data-table td { color: #333; }
 
-:global(.dark-mode) .data-table thead th {
-  background: rgba(45,45,45,0.8);
-}
-:global(.dark-mode) .data-table th {
-  background: rgba(45,45,45,0.8);
-  color: #e5e7eb;
-}
-:global(.dark-mode) .data-table td {
-  border-bottom-color: #444;
-  color: #d1d5db;
-}
 .empty-message { text-align: center; color: #999; font-style: italic; }
 .status-badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; }
 .status-ok { background: rgba(46, 204, 113, 0.15); color: #27ae60; }
@@ -548,7 +576,9 @@ onUnmounted(() => {
 @keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg);} }
 
 /* Scroll wrapper & buttons */
-.scroll-wrapper { position: relative; display: flex; align-items: center; gap: 8px; }
+.scroll-wrapper { position: relative; display: flex; align-items: center; gap: 8px; width: 100%; }
+.scroll-wrapper > .table-container { flex: 1 1 auto; min-width: 0; width: 100%; }
+.scroll-wrapper > .table-container .data-table { width: 100%; min-width: 100%; table-layout: fixed; }
 .scroll-btn { background: rgba(255,255,255,0.95); border: 1px solid var(--border-stroke); padding: 10px 12px; border-radius: 8px; cursor: pointer; box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
 .scroll-btn:active { transform: translateY(1px); }
 .scroll-btn--left { margin-left: 2px }
@@ -625,14 +655,6 @@ onUnmounted(() => {
   color: #333;
 }
 
-:global(.dark-mode) .products-table thead th {
-  background: rgba(45,45,45,0.8);
-  color: #e5e7eb;
-}
-:global(.dark-mode) .products-table td {
-  border-bottom-color: #444;
-  color: #d1d5db;
-}
 .products-table-wrapper .table-container { max-height: 480px; overflow: auto; }
 .products-table tbody tr:last-child td { border-bottom: none; }
 

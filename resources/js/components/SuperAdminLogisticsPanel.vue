@@ -325,10 +325,8 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
-import { useTheme } from '../composables/useTheme'
 import { showToast } from './toastStore'
 const router = useRouter()
-const { initializeTheme } = useTheme()
 
 // Profile (superadmin) - removed, not used in this panel
 
@@ -652,7 +650,6 @@ async function confirmLogout() {
 }
 
 onMounted(async () => {
-  initializeTheme()
   try {
     await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
   } catch (e) {
@@ -680,21 +677,39 @@ defineExpose({ fetchInventory })
 <style scoped>
 .superadmin-logistics-wrapper {
   min-height: 100vh;
-  padding-top: 64px;
+  padding: 64px 0 0;
   box-sizing: border-box;
   position: relative;
+  background: #e7d9cf;
 }
 
 :deep(.admin-layout.no-profile-column.admin-layout--single-column),
 :deep(.admin-layout.admin-layout--wider.no-profile-column.admin-layout--single-column) {
   grid-template-columns: minmax(0, 1fr) !important;
-  width: 100%;
-  gap: 20px;
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-height: calc(100vh - 64px) !important;
+  padding: 1.25rem 2rem 2rem !important;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 :deep(.admin-layout.no-profile-column.admin-layout--single-column) .admin-main {
-  grid-column: 1 / -1;
+  width: 100% !important;
+  max-width: none !important;
   min-width: 0;
+  margin: 0;
+}
+
+:deep(.admin-main-header) {
+  padding: 0 0 1.25rem !important;
+}
+
+:deep(.admin-main-header-top) {
+  justify-content: flex-start;
 }
 
 /* Keep the navigation control outside the panel container. */
@@ -765,32 +780,6 @@ defineExpose({ fetchInventory })
   box-shadow: 0 0 0 3px rgba(255,159,67,0.2);
 }
 
-/* Dark Mode Styles */
-:global(.dark-mode) .branch-selector-section {
-  background: #2d2d2d !important;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
-}
-
-:global(.dark-mode) .branch-selector-section .branch-label {
-  color: #e5e7eb !important;
-}
-
-:global(.dark-mode) .branch-selector-section .branch-select {
-  background: #1a1a1a !important;
-  color: #e5e7eb !important;
-  border-color: #ff8a50 !important;
-}
-
-:global(.dark-mode) .branch-selector-section .branch-select:focus {
-  border-color: #ffa86b !important;
-  box-shadow: 0 0 0 3px rgba(255,138,80,0.2) !important;
-}
-
-:global(.dark-mode) .branch-selector-section .branch-select option {
-  background: #1a1a1a !important;
-  color: #e5e7eb !important;
-}
-
 /* Layout adjustments for OwnerPanelLayout */
 :deep(.panel-section) {
   margin-top: 20px;
@@ -817,11 +806,6 @@ defineExpose({ fetchInventory })
 .panel-badge { position:absolute; top:-8px; right:-8px; min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:#ef4444; color:#ffffff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(239,68,68,0.35) }
 .stat-alert { border:1px solid #fecaca; box-shadow:0 0 0 2px rgba(239,68,68,0.12) }
 
-:global(.dark-mode) .panel-section {
-  background: rgba(45, 45, 45, 0.95);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
 .section-title {
   font-size: 20px;
   font-weight: 600;
@@ -830,19 +814,11 @@ defineExpose({ fetchInventory })
   transition: color 0.3s ease;
 }
 
-:global(.dark-mode) .section-title {
-  color: #e5e7eb;
-}
-
 .section-description {
   font-size: 14px;
   color: #666;
   margin: 0 0 16px 0;
   transition: color 0.3s ease;
-}
-
-:global(.dark-mode) .section-description {
-  color: #9ca3af;
 }
 
 .loading-container {
@@ -1253,10 +1229,11 @@ defineExpose({ fetchInventory })
 }
 
 @media (max-width: 1200px) {
-  :deep(.admin-layout.no-profile-column) {
-    display: grid !important;
+  :deep(.admin-layout.no-profile-column.admin-layout--single-column) {
+    display: block !important;
     grid-template-columns: 1fr !important;
     gap: 1rem !important;
+    padding: 1rem !important;
   }
 
   :deep(.admin-side) {

@@ -797,10 +797,6 @@ watch(selectedBranch, onBranchChange)
   transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-:global(.dark-mode) .panel-section {
-  background: rgba(45, 45, 45, 0.95);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-}
 .section-title {
   color: #1e293b;
   font-size: 1.3rem;
@@ -809,19 +805,11 @@ watch(selectedBranch, onBranchChange)
   transition: color 0.3s ease;
 }
 
-:global(.dark-mode) .section-title {
-  color: #e5e7eb;
-}
-
 .section-description {
   color: #64748b;
   margin-bottom: 1.5rem;
   font-size: 0.95rem;
   transition: color 0.3s ease;
-}
-
-:global(.dark-mode) .section-description {
-  color: #9ca3af;
 }
 
 /* Loading */
@@ -936,20 +924,6 @@ watch(selectedBranch, onBranchChange)
   box-shadow: 0 2px 6px rgba(0,0,0,0.04);
 }
 
-/* Dark mode overrides for requests history table (global so it applies despite scoped styles) */
-:global(.dark-mode) .requests-scroll .data-table thead th {
-  background: rgba(34,34,34,0.95) !important;
-  color: #e5e7eb !important;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.6) !important;
-}
-
-:global(.dark-mode) .requests-scroll .data-table,
-:global(.dark-mode) .requests-scroll .data-table tbody td,
-:global(.dark-mode) .requests-scroll .data-table tbody tr {
-  background: transparent !important;
-  color: #d1d5db !important;
-  border-color: rgba(255,255,255,0.04) !important;
-}
 </style>
 
 <style scoped>
@@ -999,30 +973,6 @@ watch(selectedBranch, onBranchChange)
 .branch-selector-section span {
   color: rgba(66,33,11,0.6);
   transition: color 0.3s ease;
-}
-
-/* Dark Mode - Branch Selector */
-:global(.dark-mode) .branch-selector-section {
-  background: #2d2d2d !important;
-}
-
-:global(.dark-mode) .branch-selector-section label {
-  color: #e5e7eb !important;
-}
-
-:global(.dark-mode) .branch-selector-section select {
-  background: #1a1a1a !important;
-  color: #e5e7eb !important;
-  border-color: #444 !important;
-}
-
-:global(.dark-mode) .branch-selector-section select option {
-  background: #1a1a1a !important;
-  color: #e5e7eb !important;
-}
-
-:global(.dark-mode) .branch-selector-section span {
-  color: rgba(229, 231, 235, 0.6) !important;
 }
 
 /* Reduce large empty feeling by tightening top margins */
