@@ -766,7 +766,7 @@
 }
 
 .finance-card--section-full {
-  min-height: 500px;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }
@@ -808,8 +808,20 @@
 }
 
 .finance-table-header {
-  padding: 0.8rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.8rem 1rem;
   border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.finance-table-header > div {
+  min-width: 0;
+}
+
+.finance-table-header .finance-refresh-button {
+  flex: 0 0 auto;
 }
 
 .filter-group--range {
@@ -1835,6 +1847,11 @@
   .receipt-preview-modal {
     width: 95vw;
   }
+
+  .finance-table-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
 }
 
 @media (max-width: 640px) {
@@ -1873,6 +1890,16 @@
   .kpi-card {
     min-height: 88px;
     padding: 0.95rem;
+  }
+
+  .finance-table-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+  }
+
+  .finance-table-header .finance-refresh-button {
+    width: 100%;
   }
 
   .branch-table th,

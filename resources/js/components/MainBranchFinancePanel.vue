@@ -5,40 +5,6 @@
     <div class="content-area">
       <ManagerFinancePanel :isMainBranchFinance="true" />
     </div>
-
-    <aside class="sidebar">
-      <section class="panel-block announcements-panel">
-        <div class="panel-header announcements-header">
-          <h2>Announcements</h2>
-        </div>
-        <div class="panel-body">
-          <div v-if="loadingAnnouncements" style="text-align:center; padding:12px; color:#9ca3af;">Loading...</div>
-          <div v-else-if="announcements.length === 0" style="text-align:center; padding:12px; color:#9ca3af;">No announcements</div>
-          <ul v-else class="announcement-list">
-            <li v-for="a in announcements" :key="a.id" class="announcement-item">
-              <div class="announcement-title">{{ a.title }}</div>
-              <div class="announcement-meta">{{ new Date(a.created_at).toLocaleString() }} • {{ a.target }}</div>
-              <div class="announcement-message">{{ a.message }}</div>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div v-if="!hideAttendanceCard" class="attendance-card" style="margin-top:12px;">
-        <div class="attendance-header">
-          <span class="attendance-title">Attendance</span>
-          <span :class="['attendance-status-badge', attendanceStatus.is_clocked_in ? 'status-on-duty' : 'status-off-duty']">
-            {{ attendanceStatus.is_clocked_in ? 'On Duty' : 'Off Duty' }}
-          </span>
-        </div>
-        <div class="attendance-buttons">
-          <button @click="performClockIn" :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockInGeofencing || locationLoading" class="btn-clock-in">{{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock In' }}</button>
-          <button @click="performClockOut" :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockOut || !canClockInGeofencing || locationLoading" class="btn-clock-out" :class="{ 'btn-disabled': !canClockOut && attendanceStatus.is_clocked_in }">{{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock Out' }}</button>
-        </div>
-        <div v-if="!canClockOut && attendanceStatus.is_clocked_in" class="clockout-restriction"><span class="restriction-icon">🔒</span><span>Cannot clock out before {{ scheduledTimeOut }}</span></div>
-        <div v-if="attendanceMessage" :class="['attendance-message', attendanceMessageType]">{{ attendanceMessage }}</div>
-      </div>
-    </aside>
   </div>
 </template>
 
@@ -278,84 +244,13 @@ onMounted(() => {
 
 <style scoped>
 .main-branch-finance-panel {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  gap: 20px;
+  width: 100%;
   position: relative;
 }
 
-.announcements-panel {
-  background: #fff;
-  border-radius: 8px;
-  padding: 12px;
-  box-shadow: 0 1px 2px rgba(16,24,40,0.05);
-  max-width: 380px;
-}
-
 .content-area {
-  flex: 1 1 auto;
-}
-
-.sidebar {
-  width: 320px;
-  display: block;
-}
-
-/* Position the sidebar to the right of the centered main content so it
-   appears in the gap between main content and the outer admin-side column. */
-@media (min-width: 1100px) {
-  .main-branch-finance-panel .sidebar {
-    position: absolute;
-    top: 120px; /* aligns roughly with top of KPI area — adjust if needed */
-    right: 20px;
-    /* keep it visually in the gap — reduce overlap on narrow screens */
-  }
-  .main-branch-finance-panel .announcements-panel {
-    position: relative;
-    width: 320px;
-  }
-}
-
-.announcements-header h2 {
-  margin: 0 0 8px 0;
-  font-size: 1.1rem;
-}
-
-.announcement-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.announcement-item {
-  border-bottom: 1px solid #f3f4f6;
-  padding-bottom: 8px;
-}
-
-.announcement-title {
-  font-weight: 700;
-}
-
-.announcement-meta {
-  color: #6b7280;
-  font-size: 0.85rem;
-  margin: 4px 0;
-}
-
-.announcement-message {
-  color: #374151;
-}
-
-.attendance-card {
-  background: #ffffff;
-  border-radius: 8px;
-  padding: 12px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 2px rgba(16,24,40,0.05);
+  width: 100%;
+  min-width: 0;
 }
 
 .attendance-header {
@@ -478,16 +373,4 @@ onMounted(() => {
   color: #721c24;
 }
 
-@media (max-width: 900px) {
-  .main-branch-finance-panel {
-    flex-direction: column;
-  }
-  .sidebar {
-    width: 100%;
-    justify-content: stretch;
-  }
-  .announcements-panel {
-    position: static;
-  }
-}
 </style>
