@@ -1,5 +1,6 @@
 <template>
   <OwnerPanelLayout
+    :embedded="embedded"
     :userProfile="userProfile"
     :panelTitle="'Branch Confirmations'"
     :panelDescription="'Approve or reject new branch requests after finance confirmation'"
@@ -105,6 +106,10 @@ import axios from 'axios'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import Swal from 'sweetalert2'
 import { showToast } from './toastStore'
+
+const { embedded } = defineProps({
+  embedded: { type: Boolean, default: false },
+})
 
 const router = useRouter()
 const userProfile = ref({})

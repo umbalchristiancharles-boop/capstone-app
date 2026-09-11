@@ -1,5 +1,6 @@
 <template>
   <OwnerPanelLayout
+    :embedded="embedded"
     :userProfile="userProfile"
     :panelTitle="'Price Markup Approvals'"
     :panelDescription="'Review and approve price markup percentage changes for all branches'"
@@ -188,6 +189,10 @@ import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
 import { showToast } from './toastStore'
+
+const { embedded } = defineProps({
+  embedded: { type: Boolean, default: false },
+})
 
 const router = useRouter()
 const userProfile = ref({})

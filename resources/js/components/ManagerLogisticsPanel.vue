@@ -333,7 +333,7 @@
       <!-- Pending Stock Section (moved to Logistics) -->
       </template>
 
-      <div v-if="selectedSection === 'overview' || selectedSection === 'barcodes'" id="logistics-barcodes" class="panel-section">
+      <div v-if="selectedSection === 'barcodes'" id="logistics-barcodes" class="panel-section">
         <h2 class="section-title">Product Barcodes</h2>
         <p class="section-description">Supplier barcodes are preserved. Products without one receive a temporary system barcode until their real barcode is scanned.</p>
         <div class="table-container">
@@ -357,7 +357,7 @@
         </div>
       </div>
 
-      <div v-if="selectedSection === 'overview' || selectedSection === 'pending-stock'" id="logistics-pending-stock" class="panel-section">
+      <div v-if="selectedSection === 'pending-stock'" id="logistics-pending-stock" class="panel-section">
         <h2 class="section-title">
           Pending Stock
           <span v-if="managerPendingCount > 0" class="panel-badge">{{ managerPendingCount }}</span>

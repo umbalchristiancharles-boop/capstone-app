@@ -16,7 +16,7 @@
 .manager-logistics-panel :deep(.admin-layout--owner-sidebar-layout) {
   display: block;
   min-height: 100vh;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .manager-logistics-panel :deep(.owner-panel-sidebar) {
@@ -65,14 +65,14 @@
   display: flex;
   width: auto;
   min-width: 0;
-  height: 100vh;
+  min-height: 100vh;
+  height: auto;
   margin: 0 0 0 156px;
   padding: 66px 1.3rem 1.25rem;
   box-sizing: border-box;
   flex-direction: column;
   gap: 0.75rem;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: visible;
 }
 
 .manager-logistics-panel :deep(.owner-panel-user-pill) {

@@ -99,6 +99,7 @@
                     </td>
                     <td class="col-actions">
                       <div class="table-actions">
+                        <button type="button" class="btn btn-icon" @click="$emit('edit', p)">Edit</button>
                         <button v-if="showProcurementButton(p)" class="btn btn-primary btn-small" type="button" @click="$emit('request-procurement', p)">Request Procurement</button>
                         <button v-if="props.showPublishControls && p.is_published" type="button" class="btn btn-icon" @click="$emit('toggle-publish', { id: p.id, publish: false })">Unpublish</button>
                         <button v-else-if="props.showPublishControls" type="button" class="btn btn-icon btn-primary" @click="$emit('toggle-publish', { id: p.id, publish: true })">Publish</button>
@@ -162,6 +163,7 @@
                   </td>
                   <td class="col-actions">
                     <div class="table-actions">
+                      <button type="button" class="btn btn-icon" @click="$emit('edit', p)">Edit</button>
                       <button v-if="showProcurementButton(p)" class="btn btn-primary btn-small" type="button" @click="$emit('request-procurement', p)">Request Procurement</button>
                       <button v-if="props.showPublishControls && p.is_published" type="button" class="btn btn-icon" @click="$emit('toggle-publish', { id: p.id, publish: false })">Unpublish</button>
                       <button v-else-if="props.showPublishControls" type="button" class="btn btn-icon btn-primary" @click="$emit('toggle-publish', { id: p.id, publish: true })">Publish</button>

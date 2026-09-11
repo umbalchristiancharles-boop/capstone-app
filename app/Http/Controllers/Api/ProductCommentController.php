@@ -26,34 +26,23 @@ class ProductCommentController extends Controller
      */
     public function listProducts(Request $request)
     {
-        // Exclude products that are used as dish ingredients so customers
-        // only see actual products and representative dish products.
-        $ingredientIds = DishIngredient::whereNotNull('product_id')
-            ->pluck('product_id')
-            ->filter()
-            ->unique()
-            ->values()
-            ->all();
-
-        $ingredientNames = DishIngredient::pluck('name')
-            ->filter()
-            ->map(fn($n) => trim(strtoupper((string) $n)))
-            ->unique()
-            ->values()
-            ->all();
-
         $productsQuery = Product::where('is_active', 1)
             ->where('is_published', 1)
-            ->select('id', 'name', 'branch_id')
+            ->select('id', 'name', 'branch_id', 'image_path')
             ->orderBy('name');
 
-        if (!empty($ingredientIds)) {
-            $productsQuery->whereNotIn('id', $ingredientIds);
-        }
-
-        if (!empty($ingredientNames)) {
-            $productsQuery->whereNotIn(DB::raw('TRIM(UPPER(name))'), $ingredientNames);
-        }
+        // Exclude ingredient inventory rows, including rows with labels such as
+        // "(Dish Ingredient)" appended to the ingredient name. Keep actual dish
+        // products because they are identified by their own product/dish record.
+        $productsQuery->whereNotExists(function ($query) {
+            $query->select(DB::raw(1))
+                ->from('dish_ingredients')
+                ->where(function ($ingredientQuery) {
+                    $ingredientQuery
+                        ->whereColumn('dish_ingredients.product_id', 'products.id')
+                        ->orWhereRaw('TRIM(UPPER(products.name)) LIKE CONCAT(TRIM(UPPER(dish_ingredients.name)), ?)', ['%']);
+                });
+        });
 
         // If a public branch filter is supplied, only return products for that branch
         if ($request->filled('branch_id')) {

@@ -1,5 +1,5 @@
 <template>
-  <div class="staff-management-page">
+  <div class="staff-management-page" :class="{ 'owner-section-embedded': embedded }">
     <!-- Back to Dashboard Button -->
     <button @click="router.push('/owner-panel')" class="back-to-dashboard-btn">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="back-icon">
@@ -131,6 +131,10 @@ import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import '../css/adminpanel.css'
 import OwnerStaffModal from './OwnerStaffModal.vue'
+
+const { embedded } = defineProps({
+  embedded: { type: Boolean, default: false },
+})
 
 function onStaffModalSuccess() {
   showAddStaffModal.value = false

@@ -24,11 +24,12 @@
   >
     <template #ownerSidebar>
       <nav class="owner-sidebar-nav" aria-label="Owner sections">
-        <router-link to="/owner-panel" class="owner-sidebar-link" exact-active-class="owner-sidebar-link--active">Dashboard</router-link>
-        <router-link to="/owner/dish-approval" class="owner-sidebar-link" active-class="owner-sidebar-link--active">Dish Approval</router-link>
-        <router-link to="/owner/staff-management" class="owner-sidebar-link" active-class="owner-sidebar-link--active">Staff Management</router-link>
-        <router-link to="/owner/branch-confirmations" class="owner-sidebar-link" active-class="owner-sidebar-link--active">Branch Confirmations</router-link>
-        <router-link to="/owner/price-markup-approvals" class="owner-sidebar-link" active-class="owner-sidebar-link--active">Price Markups</router-link>
+        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'dashboard' }" @click="selectSection('dashboard')">Dashboard</button>
+        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'dishApproval' }" @click="selectSection('dishApproval')">Dish Approval</button>
+        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'staffManagement' }" @click="selectSection('staffManagement')">Staff Management</button>
+        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'branchConfirmations' }" @click="selectSection('branchConfirmations')">Branch Confirmations</button>
+        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'priceMarkups' }" @click="selectSection('priceMarkups')">Price Markups</button>
+        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'announcements' }" @click="selectSection('announcements')">Announcements</button>
       </nav>
     </template>
 
@@ -44,6 +45,7 @@
     </template>
 
     <template #main>
+      <template v-if="selectedSection === 'dashboard'">
       <section class="owner-main-section">
 
         <!-- ── Welcome Hero Banner ── -->
@@ -157,6 +159,57 @@
           <div v-if="dishMessage" :class="['message', dishMessageType]">{{ dishMessage }}</div>
         </div>
       </section>
+      </template>
+
+      <section v-else-if="selectedSection === 'announcements'" class="panel-block owner-announcement-compose" aria-labelledby="owner-announcement-heading">
+        <div class="panel-header">
+          <div>
+            <p class="owner-announcement-eyebrow">Owner communications</p>
+            <h2 id="owner-announcement-heading">Send Announcement</h2>
+          </div>
+          <span class="owner-announcement-badge">Broadcast</span>
+        </div>
+        <div class="panel-body">
+          <form class="owner-announcement-form" @submit.prevent="sendAnnouncement">
+            <div class="form-row">
+              <label for="owner-announcement-title">Title</label>
+              <input id="owner-announcement-title" v-model="announcementForm.title" type="text" maxlength="255" required placeholder="e.g. Updated store hours" />
+              <span class="owner-announcement-help">Give your announcement a short, clear title.</span>
+            </div>
+
+            <div class="form-row">
+              <label for="owner-announcement-message">Message</label>
+              <textarea id="owner-announcement-message" v-model="announcementForm.message" rows="7" required placeholder="Write the details your team needs to know"></textarea>
+              <span class="owner-announcement-help">Keep the message focused and include any important dates or actions.</span>
+            </div>
+
+            <div class="form-row">
+              <label for="owner-announcement-target">Send To</label>
+              <select id="owner-announcement-target" v-model="announcementForm.target">
+                <option value="all">All Branches (Everyone)</option>
+                <option value="staff">All Staff</option>
+                <option value="managers">Managers Only</option>
+              </select>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" :disabled="isSendingAnnouncement">
+                {{ isSendingAnnouncement ? 'Sending...' : 'Send Announcement' }}
+              </button>
+            </div>
+          </form>
+          <div v-if="announcementMessage" :class="['owner-announcement-feedback', announcementMessageType]" role="status" aria-live="polite">
+            <span class="owner-announcement-feedback__icon" aria-hidden="true">{{ announcementMessageType === 'success' ? '✓' : '!' }}</span>
+            <span>{{ announcementMessage }}</span>
+          </div>
+        </div>
+      </section>
+
+      <component
+        v-else-if="selectedSection !== 'announcements'"
+        :is="sectionComponents[selectedSection]"
+        :embedded="true"
+      />
     </template>
 
     <template #profileBottom="{ announcements, loadingAnnouncements }">
@@ -178,7 +231,7 @@
 
             <!-- Dish Approval -->
             <li class="owner-quicklink-item">
-              <router-link to="/owner/dish-approval" class="owner-quicklink-row">
+              <button type="button" class="owner-quicklink-row" @click="selectSection('dishApproval')">
                 <span class="owner-quicklink-icon owner-quicklink-icon--orange">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
                 </span>
@@ -186,24 +239,24 @@
                 <span class="owner-quicklink-spacer"></span>
                 <span v-if="pendingCounts.kitchen > 0" class="owner-quicklink-badge">{{ pendingCounts.kitchen }}</span>
                 <svg class="owner-quicklink-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-              </router-link>
+              </button>
             </li>
 
             <!-- Staff Management -->
             <li class="owner-quicklink-item">
-              <router-link to="/owner/staff-management" class="owner-quicklink-row">
+              <button type="button" class="owner-quicklink-row" @click="selectSection('staffManagement')">
                 <span class="owner-quicklink-icon owner-quicklink-icon--blue">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 </span>
                 <span class="owner-quicklink-label">Staff Management</span>
                 <span class="owner-quicklink-spacer"></span>
                 <svg class="owner-quicklink-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-              </router-link>
+              </button>
             </li>
 
             <!-- Branch Confirmations -->
             <li class="owner-quicklink-item">
-              <router-link to="/owner/branch-confirmations" class="owner-quicklink-row">
+              <button type="button" class="owner-quicklink-row" @click="selectSection('branchConfirmations')">
                 <span class="owner-quicklink-icon owner-quicklink-icon--emerald">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                 </span>
@@ -211,12 +264,12 @@
                 <span class="owner-quicklink-spacer"></span>
                 <span v-if="pendingCounts.branchOwner > 0" class="owner-quicklink-badge">{{ pendingCounts.branchOwner }}</span>
                 <svg class="owner-quicklink-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-              </router-link>
+              </button>
             </li>
 
             <!-- Price Markup Approvals -->
             <li class="owner-quicklink-item">
-              <router-link to="/owner/price-markup-approvals" class="owner-quicklink-row">
+              <button type="button" class="owner-quicklink-row" @click="selectSection('priceMarkups')">
                 <span class="owner-quicklink-icon owner-quicklink-icon--rose">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                 </span>
@@ -224,7 +277,7 @@
                 <span class="owner-quicklink-spacer"></span>
                 <span v-if="pendingCounts.priceMarkup > 0" class="owner-quicklink-badge">{{ pendingCounts.priceMarkup }}</span>
                 <svg class="owner-quicklink-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-              </router-link>
+              </button>
             </li>
 
           </ul>
@@ -262,6 +315,10 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
+import OwnerDishApprovalPanel from './OwnerDishApprovalPanel.vue'
+import OwnerStaffManagement from './OwnerStaffManagement.vue'
+import OwnerBranchConfirmations from './OwnerBranchConfirmations.vue'
+import OwnerPriceMarkupPanel from './OwnerPriceMarkupPanel.vue'
 import axios from 'axios'
 import { showToast } from './toastStore'
 import Swal from 'sweetalert2'
@@ -274,6 +331,44 @@ const pendingCounts = ref({
   priceMarkup: 0,
 })
 const hasNotified = ref(false)
+const selectedSection = ref('dashboard')
+const sectionComponents = {
+  dishApproval: OwnerDishApprovalPanel,
+  staffManagement: OwnerStaffManagement,
+  branchConfirmations: OwnerBranchConfirmations,
+  priceMarkups: OwnerPriceMarkupPanel,
+}
+const announcementForm = ref({ title: '', message: '', target: 'all' })
+const isSendingAnnouncement = ref(false)
+const announcementMessage = ref('')
+const announcementMessageType = ref('')
+
+function selectSection(section) {
+  selectedSection.value = section
+}
+
+async function sendAnnouncement() {
+  announcementMessage.value = ''
+  isSendingAnnouncement.value = true
+
+  try {
+    try { await axios.get('/sanctum/csrf-cookie', { withCredentials: true }) } catch (e) {}
+
+    const response = await axios.post('/api/superadmin/announce', announcementForm.value, { withCredentials: true })
+    if (!response.data?.ok) {
+      throw new Error(response.data?.message || 'Failed to send announcement.')
+    }
+
+    announcementMessage.value = 'Announcement sent successfully!'
+    announcementMessageType.value = 'success'
+    announcementForm.value = { title: '', message: '', target: 'all' }
+  } catch (error) {
+    announcementMessage.value = error?.response?.data?.message || error?.message || 'Failed to send announcement.'
+    announcementMessageType.value = 'error'
+  } finally {
+    isSendingAnnouncement.value = false
+  }
+}
 
 onMounted(async () => {
   try {
@@ -433,6 +528,10 @@ const handleLogout = async () => {
   gap: 1rem;
 }
 
+:deep(.owner-section-embedded .back-to-dashboard-btn) {
+  display: none;
+}
+
 .owner-sidebar-nav {
   display: grid;
   gap: 0.5rem;
@@ -444,6 +543,9 @@ const handleLogout = async () => {
   display: block;
   width: 100%;
   box-sizing: border-box;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
   padding: 0.7rem 0.75rem;
   border: 1px solid transparent;
   border-radius: 0.75rem;
@@ -1115,6 +1217,7 @@ const handleLogout = async () => {
 
 .owner-quicklink-row {
   display: flex;
+  width: 100%;
   align-items: center;
   gap: 0.625rem;
   padding: 0.8rem 0.85rem;
@@ -1123,6 +1226,9 @@ const handleLogout = async () => {
   color: #374151;
   font-size: 0.875rem;
   font-weight: 500;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
   border: 1px solid transparent;
 }
@@ -1202,6 +1308,199 @@ const handleLogout = async () => {
 }
 
 /* ── Dish Creation Form ── */
+.owner-announcement-compose {
+  background: #ffffff;
+  border: 1px solid #f1f5f9;
+  border-radius: 1.125rem;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.07);
+  overflow: hidden;
+}
+
+.owner-announcement-compose .panel-header {
+  align-items: center;
+  background: linear-gradient(135deg, #fff7ed 0%, #fffbeb 100%);
+  border-bottom: 1px solid #fed7aa;
+  display: flex;
+  justify-content: space-between;
+  padding: 1.1rem 1.25rem;
+  gap: 1rem;
+}
+
+.owner-announcement-compose .panel-header h2 {
+  color: #1e293b;
+  font-size: 1.15rem;
+  font-weight: 750;
+  margin: 0;
+}
+
+.owner-announcement-eyebrow {
+  color: #c2410c;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  margin: 0 0 0.25rem;
+  text-transform: uppercase;
+}
+
+.owner-announcement-badge {
+  background: #ffffff;
+  border: 1px solid #fed7aa;
+  border-radius: 999px;
+  color: #9a3412;
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  font-weight: 750;
+  padding: 0.35rem 0.65rem;
+}
+
+.owner-announcement-compose .panel-body {
+  padding: 1.35rem 1.25rem 1.5rem;
+}
+
+.owner-announcement-form {
+  max-width: 720px;
+}
+
+.owner-announcement-form .form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1.1rem;
+}
+
+.owner-announcement-form .form-row label {
+  color: #243447;
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.owner-announcement-form input,
+.owner-announcement-form textarea,
+.owner-announcement-form select {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.65rem;
+  box-sizing: border-box;
+  color: #1e293b;
+  font: inherit;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  padding: 0.7rem 0.8rem;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+  width: 100%;
+}
+
+.owner-announcement-form textarea {
+  min-height: 10rem;
+  resize: vertical;
+}
+
+.owner-announcement-form input::placeholder,
+.owner-announcement-form textarea::placeholder {
+  color: #94a3b8;
+}
+
+.owner-announcement-form input:focus,
+.owner-announcement-form textarea:focus,
+.owner-announcement-form select:focus {
+  border-color: #f97316;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.14);
+  outline: none;
+}
+
+.owner-announcement-help {
+  color: #64748b;
+  font-size: 0.74rem;
+  line-height: 1.4;
+}
+
+.owner-announcement-form .form-actions {
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 1.35rem;
+  padding-top: 1.1rem;
+}
+
+.owner-announcement-form .form-actions button {
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  border: 0;
+  border-radius: 0.65rem;
+  box-shadow: 0 6px 14px rgba(234, 88, 12, 0.2);
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 750;
+  padding: 0.7rem 1.1rem;
+  transition: box-shadow 160ms ease, transform 160ms ease, opacity 160ms ease;
+}
+
+.owner-announcement-form .form-actions button:hover:not(:disabled) {
+  box-shadow: 0 8px 18px rgba(234, 88, 12, 0.3);
+  transform: translateY(-1px);
+}
+
+.owner-announcement-form .form-actions button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.owner-announcement-feedback {
+  align-items: center;
+  border-radius: 0.65rem;
+  display: flex;
+  font-size: 0.86rem;
+  font-weight: 650;
+  gap: 0.55rem;
+  margin-top: 1rem;
+  max-width: 720px;
+  padding: 0.75rem 0.85rem;
+}
+
+.owner-announcement-feedback__icon {
+  align-items: center;
+  border-radius: 50%;
+  display: inline-flex;
+  flex: 0 0 1.25rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  height: 1.25rem;
+  justify-content: center;
+  width: 1.25rem;
+}
+
+.owner-announcement-feedback.success {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #047857;
+}
+
+.owner-announcement-feedback.success .owner-announcement-feedback__icon {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.owner-announcement-feedback.error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+.owner-announcement-feedback.error .owner-announcement-feedback__icon {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+@media (max-width: 767px) {
+  .owner-announcement-compose .panel-header {
+    align-items: flex-start;
+  }
+
+  .owner-announcement-form .form-actions button {
+    width: 100%;
+  }
+}
+
 .owner-dish-section {
   background: #ffffff;
   border-radius: 1.125rem;

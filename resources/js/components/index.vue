@@ -1054,7 +1054,7 @@ async function loadProducts() {
     products.value = data.map(product => ({
       ...product,
       comments: [],
-      img: imageMap[product.name.toLowerCase()] || chikintayoImg // Use mapped image or fallback to logo
+      img: product.image_url || imageMap[product.name.toLowerCase()] || chikintayoImg
     }))
     
     console.debug('[PRODUCTS] Processed products:', products.value.map(p => ({ id: p.id, name: p.name })))

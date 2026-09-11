@@ -1,5 +1,6 @@
 <template>
   <OwnerPanelLayout
+    :embedded="embedded"
     :userProfile="userProfile"
     :panelTitle="'Dish Approval'"
     :panelDescription="'Review and approve new dishes from kitchen staff.'"
@@ -177,6 +178,10 @@ import { useRouter } from 'vue-router'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import axios from 'axios'
 import { showToast } from './toastStore'
+
+const { embedded } = defineProps({
+  embedded: { type: Boolean, default: false },
+})
 
 const router = useRouter()
 const userProfile = ref({})

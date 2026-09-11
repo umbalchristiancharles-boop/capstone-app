@@ -1,4 +1,5 @@
 <template>
+  <div class="supplier-panel-shell">
   <OwnerPanelLayout ref="ownerLayout"
     :userProfile="userProfile"
     :showProfileColumn="false"
@@ -8,12 +9,31 @@
     :canEditProfile="userProfile.role === 'OWNER'"
     :canChangePassword="true"
     :ownerTwoColumnLayout="true"
+    :showOwnerSidebar="true"
+    :showOwnerTopbar="true"
+    :topbarLabel="'SUPPLIER'"
     @logout="askLogout"
     @profile-updated="onProfileUpdated"
   >
+    <template #ownerSidebar>
+      <nav class="supplier-sidebar-nav" aria-label="Supplier sections">
+        <button type="button" class="supplier-sidebar-link" :class="{ 'supplier-sidebar-link--active': selectedModule === 'overview' }" @click="selectModule('overview')">Overview</button>
+        <button type="button" class="supplier-sidebar-link" :class="{ 'supplier-sidebar-link--active': selectedModule === 'orders' }" @click="selectModule('orders')">Orders</button>
+        <button type="button" class="supplier-sidebar-link" :class="{ 'supplier-sidebar-link--active': selectedModule === 'deliveries' }" @click="selectModule('deliveries')">Deliveries</button>
+        <button type="button" class="supplier-sidebar-link" :class="{ 'supplier-sidebar-link--active': selectedModule === 'products' }" @click="selectModule('products')">Products</button>
+      </nav>
+    </template>
+
+    <template #ownerSidebarFooter>
+      <div class="supplier-sidebar-actions">
+        <button type="button" class="supplier-sidebar-account" @click="ownerLayout?.openInfoModal()">Account Info</button>
+        <button type="button" class="supplier-sidebar-logout" @click="askLogout">Logout</button>
+      </div>
+    </template>
+
     <template #main>
       <div class="supplier-page">
-        <header class="supplier-hero">
+        <header v-if="selectedModule === 'overview'" class="supplier-hero">
           <div>
             <span class="supplier-hero__eyebrow">Supplier dashboard</span>
             <h2 class="supplier-hero__title">Supplier overview</h2>
@@ -25,7 +45,7 @@
         </header>
 
       <div class="panel-content">
-        <div class="hr-stats-grid">
+        <div v-if="selectedModule === 'overview'" class="hr-stats-grid">
           <div class="hr-stat-card hr-stat-card--total">
             <div class="hr-stat-icon">📦</div>
             <div class="hr-stat-content">
@@ -51,7 +71,7 @@
         </div>
 
       <!-- Orders Section (merged) -->
-      <div class="panel-section">
+      <div v-if="selectedModule === 'orders'" class="panel-section">
         <h2 class="section-title">Your Orders</h2>
         <div v-if="ordersLoading" class="loading-container">
           <div class="loading-spinner"></div>
@@ -126,9 +146,11 @@
         </div>
       </div>
 
-      <logistics-panel-content :deliveries="deliveries" :suppliers="suppliers" @product-added="onProductAdded" />
+      <div v-if="selectedModule === 'deliveries'" class="supplier-deliveries-module">
+        <logistics-panel-content :deliveries="deliveries" :suppliers="suppliers" @product-added="onProductAdded" />
+      </div>
 
-          <section class="supplier-products">
+          <section v-if="selectedModule === 'products'" class="supplier-products">
             <h2>Your Products</h2>
             <div v-if="loadingProducts">Loading products...</div>
             <div v-else-if="!products.length">No products yet.</div>
@@ -551,6 +573,7 @@
 
   <!-- FULLSCREEN LOADING OVERLAY -->
   <LoadingOverlay :show="showOverlay" :text="overlayText" :logo-src="logoImg" />
+  </div>
 </template>
 
 <script setup>
@@ -565,6 +588,7 @@ import Swal from 'sweetalert2'
 import { showToast } from './toastStore'
 
 const userProfile = ref({})
+const selectedModule = ref('overview')
 const dashboardTotals = ref({ totalSuppliers: 0, activeDeliveries: 0, pendingOrders: 0 })
 const deliveries = ref([])
 const products = ref([])
@@ -630,6 +654,10 @@ function selectEditField(fieldId) {
 // Header/profile dropdown state and owner layout ref
 const profileDropdownVisible = ref(false)
 const ownerLayout = ref(null)
+
+function selectModule(module) {
+  selectedModule.value = module
+}
 
 function toggleProfileDropdown() { profileDropdownVisible.value = !profileDropdownVisible.value }
 function closeProfileDropdown() { profileDropdownVisible.value = false }
@@ -1561,6 +1589,155 @@ function onProfileUpdated(newData) {
 
 <style scoped>
 @import '../css/adminpanel.css';
+
+.supplier-panel-shell {
+  width: 100%;
+  min-height: 100vh;
+  background: #e7d9cf;
+}
+
+.supplier-panel-shell :deep(.min-h-screen),
+.supplier-panel-shell :deep(.admin-page),
+.supplier-panel-shell :deep(.admin-layout) {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.supplier-panel-shell :deep(.min-h-screen) {
+  min-height: 100vh;
+  background: #e7d9cf !important;
+}
+
+.supplier-panel-shell :deep(.admin-layout) {
+  display: block;
+  min-height: 100vh;
+  padding: 0;
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.supplier-panel-shell :deep(.owner-panel-sidebar) {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 400;
+  width: 156px;
+  min-width: 156px;
+  min-height: 100vh;
+  padding: 1.5rem 1rem 1rem;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.3);
+  border-right: 1px solid rgba(138, 113, 95, 0.18);
+  transform: translateX(0);
+  opacity: 1;
+  transition: transform 260ms ease, opacity 180ms ease;
+}
+
+.supplier-panel-shell :deep(.owner-panel-topbar) {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 156px;
+  z-index: 300;
+  width: auto;
+  height: 66px;
+  min-height: 66px;
+  margin: 0;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.22);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+.supplier-panel-shell :deep(.owner-sidebar-collapsed .owner-panel-sidebar) {
+  transform: translateX(-100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.supplier-panel-shell :deep(.owner-sidebar-collapsed .owner-panel-topbar) {
+  left: 0;
+}
+
+.supplier-panel-shell :deep(.admin-main) {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 100vh;
+  margin: 0 0 0 156px;
+  padding: 82px 3rem 2rem;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.supplier-panel-shell :deep(.owner-sidebar-collapsed .admin-main) {
+  margin-left: 0;
+}
+
+.supplier-panel-shell :deep(.admin-layout.no-profile-column) .admin-main {
+  width: 100%;
+}
+
+.supplier-sidebar-nav,
+.supplier-sidebar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.supplier-sidebar-link,
+.supplier-sidebar-account,
+.supplier-sidebar-logout {
+  width: 100%;
+  min-height: 40px;
+  padding: 0.7rem 0.65rem;
+  border-radius: 10px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+}
+
+.supplier-sidebar-link {
+  border: 1px solid transparent;
+  background: transparent;
+  color: #3d2a1f;
+}
+
+.supplier-sidebar-link:hover,
+.supplier-sidebar-link--active {
+  background: #fffaf5;
+  border-color: #f1e5d8;
+  box-shadow: 0 8px 18px #eadfd5;
+}
+
+.supplier-sidebar-actions {
+  margin-top: 0.75rem;
+}
+
+.supplier-sidebar-account {
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #17100b;
+  text-align: center;
+}
+
+.supplier-sidebar-logout {
+  border: 1px solid #f1c7c2;
+  background: #fff1f0;
+  color: #17100b;
+  text-align: center;
+}
+
+.supplier-deliveries-module {
+  width: 100%;
+  min-width: 0;
+}
+
 /* Supplier panel product grid */
 .overview-grid { display:flex; gap:0.75rem; margin-bottom:0.75rem }
 .overview-card { background:#fff; border-radius:10px; padding:0.75rem 1rem; box-shadow:0 6px 18px rgba(15,23,42,0.04); border:1px solid #eef2f6; display:flex; gap:0.5rem; align-items:center }

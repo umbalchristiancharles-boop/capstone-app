@@ -239,6 +239,7 @@ class StaffInventoryController extends Controller
             'expires_at' => 'required|date_format:Y-m-d\\TH:i',
             'sku' => 'nullable|string|unique:products,sku',
             'requires_logistics' => 'boolean', // Whether product requires logistics approval
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ]);
 
         // Default stock to 0 if not provided
@@ -320,6 +321,11 @@ class StaffInventoryController extends Controller
             'requires_logistics' => $requiresLogistics,
         ]);
 
+        if ($request->hasFile('image')) {
+            $product->image_path = $request->file('image')->store('product-images', 'public');
+            $product->save();
+        }
+
         // Recompute persisted real_stock for the group (branch + sku/name)
         try {
             ProductModel::recomputeRealStockForGroup($product->branch_id, $product->sku, $product->name);
@@ -360,6 +366,7 @@ class StaffInventoryController extends Controller
             'expires_at' => 'sometimes|date_format:Y-m-d\\TH:i',
             // allow branch-level Admins to toggle publish state
             'is_published' => 'sometimes|boolean',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ]);
 
         // Additional protection: ensure stock is never negative
@@ -398,6 +405,11 @@ class StaffInventoryController extends Controller
         }
 
         $product->update($validated);
+
+        if ($request->hasFile('image')) {
+            $product->image_path = $request->file('image')->store('product-images', 'public');
+            $product->save();
+        }
 
         if (isset($validated['name'])) {
             $product->slug = Str::slug($validated['name']);

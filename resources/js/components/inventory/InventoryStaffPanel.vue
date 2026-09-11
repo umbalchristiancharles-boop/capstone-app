@@ -100,7 +100,7 @@
         </div>
 
         <div v-else>
-          <ProductList :fetchUrl="fetchUrl" :compact="true" :showPublishControls="(staffProfile.role || '').toUpperCase() === 'ADMIN'" ref="productListRef" @edit="handleEdit" @delete="deleteProduct" @toggle-publish="handleTogglePublish" @request-procurement="requestProcurement" @report-expired="openExpiredReportModal" />
+          <ProductList :fetchUrl="fetchUrl" :compact="true" :showPublishControls="(staffProfile.role || '').toUpperCase() === 'ADMIN'" ref="productListRef" @open-add="openAddProduct" @edit="handleEdit" @delete="deleteProduct" @toggle-publish="handleTogglePublish" @request-procurement="requestProcurement" @report-expired="openExpiredReportModal" />
         </div>
       </div>
 
@@ -250,6 +250,29 @@
     </template>
   </OwnerPanelLayout>
   </div>
+
+  <!-- PRODUCT IMAGE MODAL -->
+  <transition name="fade">
+    <div v-if="showAddModal" class="info-backdrop" @click.self="showAddModal = false">
+      <div class="info-modal" style="max-width: 600px;">
+        <h3>{{ newProduct.id ? 'Edit Product' : 'Add Product' }}</h3>
+        <p class="info-sub">Choose the image customers will see on the landing page.</p>
+        <div v-if="formError" class="info-error">{{ formError }}</div>
+        <div class="info-grid">
+          <div class="info-row"><span class="info-label">Name</span><input v-model="newProduct.name" class="info-input" type="text" required /></div>
+          <div class="info-row"><span class="info-label">Price</span><input v-model="newProduct.price" class="info-input" type="number" min="0" step="0.01" required /></div>
+          <div class="info-row"><span class="info-label">Stock</span><input v-model="newProduct.stock" class="info-input" type="number" min="0" required /></div>
+          <div class="info-row"><span class="info-label">SKU</span><input v-model="newProduct.sku" class="info-input" type="text" /></div>
+          <div class="info-row"><span class="info-label">Landing image</span><input class="info-input" type="file" accept="image/jpeg,image/png,image/gif,image/webp" @change="onProductImageSelect" /></div>
+          <div v-if="newProduct.image_url" class="info-row"><span class="info-label">Current image</span><img :src="newProduct.image_url" :alt="newProduct.name" style="width: 96px; height: 96px; object-fit: contain;" /></div>
+        </div>
+        <div class="info-actions">
+          <button class="btn-outline" type="button" @click="showAddModal = false">Cancel</button>
+          <button class="btn-primary" type="button" @click="submitAddProduct">Save product</button>
+        </div>
+      </div>
+    </div>
+  </transition>
 
   <!-- INFO MODAL -->
   <transition name="fade">
@@ -1470,7 +1493,7 @@ function openAdjustModal(prod) {
 
 function handleEdit(prod) {
   // open the Add/Edit modal prefilled for editing
-  newProduct.value = { id: prod.id, name: prod.name, price: prod.price, stock: prod.stock, sku: prod.sku }
+  newProduct.value = { id: prod.id, name: prod.name, price: prod.price, stock: prod.stock, sku: prod.sku, image_url: prod.image_url, image: null }
   formError.value = '';
   formSuccess.value = '';
   showAddModal.value = true;
@@ -1493,7 +1516,7 @@ async function submitAdjust() {
 }
 
 function openAddProduct() {
-  newProduct.value = { name: '', price: 0, stock: 0, sku: '' };
+  newProduct.value = { name: '', price: 0, stock: 0, sku: '', image_url: '', image: null };
   formError.value = '';
   formSuccess.value = '';
   showAddModal.value = true;
@@ -1510,12 +1533,18 @@ async function submitAddProduct() {
     // If user didn't provide SKU, send the preview so server and UI match
     const payload = { ...newProduct.value };
     if (!payload.sku || payload.sku.trim() === '') payload.sku = previewSku.value || makePreviewSku(payload.name || '')
+    const formData = new FormData()
+    Object.entries(payload).forEach(([key, value]) => {
+      if (!['id', 'image_url', 'image'].includes(key) && value !== null && value !== undefined) formData.append(key, value)
+    })
+    if (payload.image) formData.append('image', payload.image)
     let res
     if (payload.id) {
       // update existing product
-      res = await axios.put(endpoints.value.update(payload.id), payload, { withCredentials: true })
+      formData.append('_method', 'PUT')
+      res = await axios.post(endpoints.value.update(payload.id), formData, { withCredentials: true, headers: { 'Content-Type': 'multipart/form-data' } })
     } else {
-      res = await axios.post(endpoints.value.store, payload, { withCredentials: true });
+      res = await axios.post(endpoints.value.store, formData, { withCredentials: true, headers: { 'Content-Type': 'multipart/form-data' } });
     }
     if (res.data && (res.data.product || res.data.ok)) {
       // refresh the list so ProductList reflects the change
@@ -1526,6 +1555,10 @@ async function submitAddProduct() {
   } catch (e) {
     formError.value = (e.response && e.response.data && e.response.data.message) || 'Failed to create product.';
   }
+}
+
+function onProductImageSelect(event) {
+  newProduct.value.image = event?.target?.files?.[0] || null
 }
 
 async function deleteProduct(prod) {

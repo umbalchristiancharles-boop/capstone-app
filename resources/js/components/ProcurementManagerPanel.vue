@@ -1,4 +1,5 @@
 <template>
+  <div class="manager-procurement-panel">
   <OwnerPanelLayout ref="ownerLayout"
     :userProfile="userProfile"
     :panelTitle="'Manager Procurement Panel'"
@@ -8,269 +9,194 @@
     :canChangePassword="true"
     :showProfileColumn="false"
     :ownerTwoColumnLayout="true"
+    :showOwnerSidebar="true"
+    :showOwnerTopbar="true"
+    :topbarLabel="procurementTopbarLabel"
+    accountInfoStyle="finance"
     @logout="askLogout"
     @profile-updated="onProfileUpdated"
   >
+    <template #ownerSidebar>
+      <nav class="manager-procurement-sidebar-nav" aria-label="Procurement sections">
+        <button type="button" class="manager-procurement-sidebar-link" :class="{ 'manager-procurement-sidebar-link--active': selectedSection === 'overview' }" @click="selectSection('overview')">Overview</button>
+        <button type="button" class="manager-procurement-sidebar-link" :class="{ 'manager-procurement-sidebar-link--active': selectedSection === 'suppliers' }" @click="selectSection('suppliers')">Suppliers</button>
+        <button type="button" class="manager-procurement-sidebar-link" :class="{ 'manager-procurement-sidebar-link--active': selectedSection === 'budget-requests' }" @click="selectSection('budget-requests')">Budget Requests</button>
+        <button type="button" class="manager-procurement-sidebar-link" :class="{ 'manager-procurement-sidebar-link--active': selectedSection === 'history' }" @click="selectSection('history')">History</button>
+      </nav>
+    </template>
+
+    <template #ownerSidebarFooter>
+      <div class="manager-procurement-sidebar-actions">
+        <button type="button" class="manager-procurement-sidebar-account" @click="ownerLayout?.openInfoModal()">Account Info</button>
+        <button type="button" class="manager-procurement-sidebar-logout" @click="askLogout">Logout</button>
+      </div>
+    </template>
+
     <template #main>
-      <div class="hr-stats-grid">
-        <div class="hr-stat-card hr-stat-card--total">
-          <div class="hr-stat-icon">
-            <!-- icon reused from HR panel -->
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+      <template v-if="selectedSection === 'overview'">
+        <div id="overview" class="hr-stats-grid">
+          <div class="hr-stat-card hr-stat-card--total">
+            <div class="hr-stat-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            </div>
+            <div class="hr-stat-content">
+              <span class="hr-stat-label">Total Suppliers</span>
+              <span class="hr-stat-value">{{ dashboardTotals.totalSuppliers }}</span>
+            </div>
           </div>
-          <div class="hr-stat-content">
-            <span class="hr-stat-label">Total Suppliers</span>
-{{ dashboardTotals.totalSuppliers }}
+          <div class="hr-stat-card hr-stat-card--active">
+            <div class="hr-stat-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <div class="hr-stat-content">
+              <span class="hr-stat-label">Active Suppliers</span>
+              <span class="hr-stat-value">{{ dashboardTotals.activeSuppliers }}</span>
+            </div>
           </div>
-        </div>
-        <div class="hr-stat-card hr-stat-card--active">
-          <div class="hr-stat-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <div class="hr-stat-card hr-stat-card--leave" :class="{ 'stat-alert': procurementPendingCount > 0 }">
+            <div class="hr-stat-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            </div>
+            <div class="hr-stat-content">
+              <span class="hr-stat-label">Pending Requests</span>
+              <span class="hr-stat-value">{{ dashboardTotals.pendingRequests }}</span>
+            </div>
+            <span v-if="procurementPendingCount > 0" class="panel-badge">{{ procurementPendingCount }}</span>
           </div>
-          <div class="hr-stat-content">
-            <span class="hr-stat-label">Active Suppliers</span>
-{{ dashboardTotals.activeSuppliers }}
-          </div>
-        </div>
-        <div class="hr-stat-card hr-stat-card--leave" :class="{ 'stat-alert': procurementPendingCount > 0 }">
-          <div class="hr-stat-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-          </div>
-          <div class="hr-stat-content">
-            <span class="hr-stat-label">Pending Requests</span>
-            <span class="hr-stat-value">{{ dashboardTotals.pendingRequests }}</span>
-          </div>
-          <span v-if="procurementPendingCount > 0" class="panel-badge">{{ procurementPendingCount }}</span>
-        </div>
-      </div>
-      <section class="manual-procurement mt-1">
-        <h2>Manual Procurement</h2>
-        <p class="section-description">Create a manual procurement (attach receipt/product image and optionally request budget).</p>
-
-        <div class="mb-1">
-          <button class="btn-primary" v-if="!showProcRequestFormManager" @click="showProcRequestFormManager = true">+ Custom Procurement Request</button>
         </div>
 
-        <div v-if="showProcRequestFormManager" class="form-container" style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-            <h3 style="margin:0; font-size:16px;">Create Manual Procurement</h3>
-            <button type="button" @click="cancelProcRequestManager" style="background:none;border:none;color:#9ca3af;font-size:18px;cursor:pointer;padding:0">✕</button>
+        <section class="manual-procurement mt-1">
+          <h2>Manual Procurement</h2>
+          <p class="section-description">Create a manual procurement (attach receipt/product image and optionally request budget).</p>
+
+          <div class="mb-1">
+            <button class="btn-primary" v-if="!showProcRequestFormManager" @click="showProcRequestFormManager = true">+ Custom Procurement Request</button>
           </div>
-          <form @submit.prevent="submitProcRequestManager">
-            <div class="form-group" style="margin-bottom:12px;">
-              <label>Product *</label>
-              <select v-model="procRequestFormManager.product_id" required style="width:100%; padding:8px;">
-                <option value="">— Select product —</option>
-                <option v-for="p in products" :key="p.id" :value="p.id">{{ p.name }} (₱{{ formatPrice(p.price) }})</option>
-              </select>
+
+          <div v-if="showProcRequestFormManager" class="form-container" style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <h3 style="margin:0; font-size:16px;">Create Manual Procurement</h3>
+              <button type="button" @click="cancelProcRequestManager" style="background:none;border:none;color:#9ca3af;font-size:18px;cursor:pointer;padding:0">✕</button>
             </div>
-            <div class="form-group" style="margin-bottom:12px;">
-              <label>Quantity *</label>
-              <input type="number" v-model.number="procRequestFormManager.quantity" min="1" required style="width:100%; padding:8px;" />
-            </div>
-            <div class="form-group" style="margin-bottom:12px;">
-              <label>Unit Price (PHP)</label>
-              <input type="number" v-model.number="procRequestFormManager.price" step="0.01" min="0" placeholder="Optional - enter price per unit" style="width:100%; padding:8px;" />
-              <small style="color:#9ca3af">If provided, this price will be used to compute the total and sent to Finance.</small>
-            </div>
-            <div class="form-group" style="display:flex; gap:12px; margin-bottom:12px;">
-              <div style="flex:1">
-                <label>Receipt *</label>
-                <input type="file" accept="image/*" @change="onReceiptChangeManager" required />
+            <form @submit.prevent="submitProcRequestManager">
+              <div class="form-group" style="margin-bottom:12px;">
+                <label>Product *</label>
+                <select v-model="procRequestFormManager.product_id" required style="width:100%; padding:8px;">
+                  <option value="">— Select product —</option>
+                  <option v-for="p in products" :key="p.id" :value="p.id">{{ p.name }} (₱{{ formatPrice(p.price) }})</option>
+                </select>
               </div>
-              <div style="flex:1">
-                <label>Product image *</label>
-                <input type="file" accept="image/*" @change="onProductImageChangeManager" required />
+              <div class="form-group" style="margin-bottom:12px;">
+                <label>Quantity *</label>
+                <input type="number" v-model.number="procRequestFormManager.quantity" min="1" required style="width:100%; padding:8px;" />
               </div>
-            </div>
-            <div class="form-group" style="margin-bottom:12px;">
-              <label><input type="checkbox" v-model="procRequestFormManager.request_budget" /> Request budget from Finance</label>
-            </div>
-            <div v-if="procRequestFormManagerError" class="error-msg" style="color:#dc2626;margin-bottom:12px">{{ procRequestFormManagerError }}</div>
-            <div class="form-actions" style="display:flex; gap:10px; justify-content:flex-end;">
-              <button type="button" class="btn-secondary" @click="cancelProcRequestManager">Cancel</button>
-              <button type="submit" class="btn-primary" :disabled="procRequestSubmittingManager">{{ procRequestSubmittingManager ? 'Submitting...' : 'Submit' }}</button>
-            </div>
-          </form>
-        </div>
-      </section>
-      <div class="panel-actions mt-1">
-        <button class="btn-primary" @click="openAddSupplier">Add Supplier</button>
-      </div>
-      <section class="supplier-products mt-1">
-        <h2>Supplier Products (this branch)</h2>
-        <div v-if="loadingProducts">Loading products...</div>
-        <div v-else-if="!products.length">No products available in your branch.</div>
-        <div v-else>
-          <!-- Pending Supplier Products UI removed per request -->
-
-          <div>
-            <h3 class="section-subtitle">Published Products ({{ publishedProducts.length }})</h3>
-            <div v-for="cat in publishedProductCategories" :key="cat" class="category-section mb-1">
-              <h4 class="category-title">{{ cat || 'Uncategorized' }}</h4>
-              <div class="product-grid">
-                <div v-for="p in getPublishedProductsByCategory(cat)" :key="p.id" class="product-card">
-                  <div class="product-name">{{ p.name }}</div>
-                  <div v-if="p.per_pack_or_individual" class="product-type-badge" :class="'type-' + p.per_pack_or_individual">
-                    {{ formatPricingType(p.per_pack_or_individual) }}
-                  </div>
-                  <div class="product-meta">
-                    <div class="product-price">{{ formatPrice(p.price) }}</div>
-                    <div class="supplier-badge">{{ p.supplier_name || 'Unknown Supplier' }}</div>
-                    <div class="product-stock">Real stock: {{ p.real_stock ?? p.stock ?? 0 }}</div>
-                    <div v-if="canChangeSupplier(p)" class="mt-1">
-                      <button class="btn-small btn-warning" @click="changeSupplier(p)" :disabled="changingSupplierIds[(p.procurement_request_id || p.id)]">
-                        {{ changingSupplierIds[(p.procurement_request_id || p.id)] ? 'Opening...' : 'Change Supplier' }}
-                      </button>
-                    </div>
-                    <div v-if="p.expires_at" class="expiry-info">Expires: {{ formatDate(p.expires_at) }}</div>
-                  </div>
+              <div class="form-group" style="margin-bottom:12px;">
+                <label>Unit Price (PHP)</label>
+                <input type="number" v-model.number="procRequestFormManager.price" step="0.01" min="0" placeholder="Optional - enter price per unit" style="width:100%; padding:8px;" />
+                <small style="color:#9ca3af">If provided, this price will be used to compute the total and sent to Finance.</small>
+              </div>
+              <div class="form-group" style="display:flex; gap:12px; margin-bottom:12px;">
+                <div style="flex:1">
+                  <label>Receipt *</label>
+                  <input type="file" accept="image/*" @change="onReceiptChangeManager" required />
+                </div>
+                <div style="flex:1">
+                  <label>Product image *</label>
+                  <input type="file" accept="image/*" @change="onProductImageChangeManager" required />
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-      <section class="requests-history mt-1">
-        <h2>Requests History</h2>
-        <p class="section-description">All procurement requests for this branch (most recent first).</p>
-
-        <div v-if="procurementHistoryLoading">Loading history...</div>
-        <div v-else-if="!procurementHistory.length">No procurement requests found.</div>
-        <div v-else>
-          <div class="requests-container">
-            <div class="requests-scroll">
-              <table class="data-table">
-                <thead>
-                  <tr><th>Date</th><th>Product</th><th>Qty</th><th>Variance</th><th>Total</th><th>Status</th><th>Updated</th></tr>
-                </thead>
-                <tbody>
-                  <tr v-for="r in procurementHistory" :key="'ph-'+r.id">
-                    <td>{{ formatDate(r.created_at) }}</td>
-                    <td><div class="product-name">{{ r.product?.name || r.purpose || '(no product)' }}</div></td>
-                    <td>{{ r.quantity }}</td>
-                    <td>{{ formatVariance(r.variance_quantity) }}</td>
-                    <td class="amount">{{ formatPrice(r.total_amount || r.price || 0) }}</td>
-                    <td>
-                      <span :class="['status-badge', getProcStatusClass(r.status)]">
-                        {{ formatProcStatus(r.status, r.budget_approved) }}
-                      </span>
-                    </td>
-                    <td>{{ formatDate(r.updated_at) }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </section>
-      <section class="budget-requests mt-1">
-        <h2>Budget Requests</h2>
-        <p class="section-description">Create and view your branch budget requests.</p>
-
-        <div class="mb-1">
-          <button class="btn-primary" v-if="!showBudgetForm" @click="showBudgetForm = true">+ New Budget Request</button>
-        </div>
-
-        <div v-if="showBudgetForm" class="budget-form mt-sm">
-          <div class="form-grid">
-            <div class="form-label">Purpose</div>
-            <div class="form-field">
-              <textarea v-model="budgetForm.purpose" rows="3" placeholder="Describe the purpose of the budget" @input="clearBudgetFieldError"></textarea>
-            </div>
-
-            <div class="form-label">Requested Amount</div>
-            <div class="form-field inline-controls">
-              <div class="amount-input">
-                <span class="currency">₱</span>
-                <input v-model="budgetForm.requested_amount" type="number" step="0.01" placeholder="0.00" @input="validateAmountField" />
+              <div class="form-group" style="margin-bottom:12px;">
+                <label><input type="checkbox" v-model="procRequestFormManager.request_budget" /> Request budget from Finance</label>
               </div>
-              <div class="action-row">
-                <button class="btn-budget" @click="submitBudgetRequest" :disabled="budgetSubmitting">{{ budgetSubmitting ? 'Submitting...' : 'Submit Request' }}</button>
-                <button class="btn-outline btn-cancel-inline" @click="cancelBudgetForm" :disabled="budgetSubmitting">Cancel</button>
+              <div v-if="procRequestFormManagerError" class="error-msg" style="color:#dc2626;margin-bottom:12px">{{ procRequestFormManagerError }}</div>
+              <div class="form-actions" style="display:flex; gap:10px; justify-content:flex-end;">
+                <button type="button" class="btn-secondary" @click="cancelProcRequestManager">Cancel</button>
+                <button type="submit" class="btn-primary" :disabled="procRequestSubmittingManager">{{ procRequestSubmittingManager ? 'Submitting...' : 'Submit' }}</button>
               </div>
-              <div class="field-note">
-                <div v-if="budgetFieldError" class="error-msg">{{ budgetFieldError }}</div>
-              </div>
+            </form>
+          </div>
+        </section>
+
+        <section class="requested-products mt-1">
+          <h2>
+            Requests From Logistics
+            <span v-if="procurementPendingCount > 0" class="panel-badge">{{ procurementPendingCount }}</span>
+          </h2>
+          <p class="section-description">Inventory requests sent by Logistics Managers in your branch.</p>
+
+          <div v-if="requestedProductsLoading">Loading requests...</div>
+          <div v-else-if="!requestedProducts.length">No requests from logistics.</div>
+          <div v-else>
+            <div class="inline-row gap-sm align-center mb-1">
+              <h3 class="no-margin">Pending Logistics Requests ({{ requestedProducts.length }})</h3>
+              <button class="btn-refresh" @click="loadRequestedProducts">🔄 Refresh</button>
             </div>
-          </div>
-
-          <div v-if="budgetError" class="error-msg mt-sm">{{ budgetError }}</div>
-        </div>
-
-        <div class="mt-1">
-          <h3>My Budget Requests</h3>
-          <div v-if="budgetLoading">Loading...</div>
-          <div v-else-if="!budgetRequests.length">No budget requests.</div>
-          <table v-else class="data-table">
-            <thead>
-              <tr><th>Date</th><th>Purpose</th><th>Amount</th><th>Status</th></tr>
-            </thead>
-            <tbody>
-              <tr v-for="r in budgetRequests" :key="r.id">
-                <td>{{ formatDate(r.date_requested) }}</td>
-                <td>{{ r.purpose }}</td>
-                <td>₱{{ r.requested_amount }}</td>
-                <td>{{ r.status }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-      <section class="requested-products mt-1">
-        <h2>
-          Requests From Logistics
-          <span v-if="procurementPendingCount > 0" class="panel-badge">{{ procurementPendingCount }}</span>
-        </h2>
-        <p class="section-description">Inventory requests sent by Logistics Managers in your branch.</p>
-
-        <div v-if="requestedProductsLoading">Loading requests...</div>
-        <div v-else-if="!requestedProducts.length">No requests from logistics.</div>
-        <div v-else>
-          <div class="inline-row gap-sm align-center mb-1">
-            <h3 class="no-margin">Pending Logistics Requests ({{ requestedProducts.length }})</h3>
-            <button class="btn-refresh" @click="loadRequestedProducts">🔄 Refresh</button>
-          </div>
-          <div class="product-grid">
-            <div v-for="p in requestedProducts" :key="'req-'+p.id" class="product-card">
-              <div class="product-name">{{ p.name }}</div>
-              <div v-if="p.per_pack_or_individual" class="product-type-badge" :class="'type-' + p.per_pack_or_individual">
-                {{ formatPricingType(p.per_pack_or_individual) }}
-              </div>
-              <div class="product-meta">
-                <div class="product-price">{{ formatPrice(p.price) }}</div>
-                <div>
-                  <template v-if="p.awaiting_admin_confirmation">
-                    <button class="btn-small btn-outline" disabled>Awaiting admin confirmation</button>
-                  </template>
-                  <template v-else-if="(p.procurement_status === 'pending' || p.status === 'pending') && !p.needs_supplier && (p.acknowledge_allowed === undefined ? true : p.acknowledge_allowed)">
-                    <button class="btn-small btn-primary" @click="acknowledgeRequest(p)">Acknowledge</button>
-                  </template>
-                  <template v-else-if="(p.procurement_status === 'pending' || p.status === 'pending') && p.needs_supplier">
-                    <button class="btn-small btn-warning" @click="requestSupplier(p)" :disabled="requestingSupplierIds[(p.procurement_request_id || p.id)]">{{ requestingSupplierIds[(p.procurement_request_id || p.id)] ? 'Requesting...' : 'Request Supplier for Product' }}</button>
-                  </template>
-                  <template v-else-if="p.procurement_status === 'budget_pending' || p.status === 'budget_pending'">
-                    <button class="btn-small btn-outline" disabled>Budget to be received</button>
-                  </template>
-                  <template v-else-if="p.procurement_status === 'pending_order_to_supplier' || p.status === 'pending_order_to_supplier' || p.procurement_status === 'cash_in_transit' || p.status === 'cash_in_transit' || p.procurement_status === 'delivery_pending' || p.status === 'delivery_pending' || p.procurement_status === 'ongoing_delivery' || p.status === 'ongoing_delivery' || p.procurement_status === 'receipt_confirmed' || p.receipt_confirmed || isReceiptChecking(p)">
-                     <div v-if="isReceiptChecking(p)" class="inline-row gap-sm align-center">
-                       <button class="btn-small btn-outline" disabled>Waiting receipt confirmation</button>
-                     </div>
-                     <div v-else-if="p.existingOrder" class="inline-row gap-sm align-center">
-                       <div class="status-badge status-warning">
-                         Transaction Pending (ID: {{ p.existingOrder.id }})
+            <div class="product-grid">
+              <div v-for="p in requestedProducts" :key="'req-'+p.id" class="product-card">
+                <div class="product-name">{{ p.name }}</div>
+                <div v-if="p.per_pack_or_individual" class="product-type-badge" :class="'type-' + p.per_pack_or_individual">
+                  {{ formatPricingType(p.per_pack_or_individual) }}
+                </div>
+                <div class="product-meta">
+                  <div class="product-price">{{ formatPrice(p.price) }}</div>
+                  <div>
+                    <template v-if="p.awaiting_admin_confirmation">
+                      <button class="btn-small btn-outline" disabled>Awaiting admin confirmation</button>
+                    </template>
+                    <template v-else-if="(p.procurement_status === 'pending' || p.status === 'pending') && !p.needs_supplier && (p.acknowledge_allowed === undefined ? true : p.acknowledge_allowed)">
+                      <button class="btn-small btn-primary" @click="acknowledgeRequest(p)">Acknowledge</button>
+                    </template>
+                    <template v-else-if="(p.procurement_status === 'pending' || p.status === 'pending') && p.needs_supplier">
+                      <button class="btn-small btn-warning" @click="requestSupplier(p)" :disabled="requestingSupplierIds[(p.procurement_request_id || p.id)]">{{ requestingSupplierIds[(p.procurement_request_id || p.id)] ? 'Requesting...' : 'Request Supplier for Product' }}</button>
+                    </template>
+                    <template v-else-if="p.procurement_status === 'budget_pending' || p.status === 'budget_pending'">
+                      <button class="btn-small btn-outline" disabled>Budget to be received</button>
+                    </template>
+                    <template v-else-if="p.procurement_status === 'pending_order_to_supplier' || p.status === 'pending_order_to_supplier' || p.procurement_status === 'cash_in_transit' || p.status === 'cash_in_transit' || p.procurement_status === 'delivery_pending' || p.status === 'delivery_pending' || p.procurement_status === 'ongoing_delivery' || p.status === 'ongoing_delivery' || p.procurement_status === 'receipt_confirmed' || p.receipt_confirmed || isReceiptChecking(p)">
+                       <div v-if="isReceiptChecking(p)" class="inline-row gap-sm align-center">
+                         <button class="btn-small btn-outline" disabled>Waiting receipt confirmation</button>
                        </div>
-                       <div v-if="(p.existingOrder && (p.existingOrder.status === 'on_delivery' || p.existingOrder.status === 'ongoing_delivery' || p.existingOrder.status === 'fulfilled')) || p.procurement_status === 'delivery_pending' || p.procurement_status === 'ongoing_delivery' || p.procurement_status === 'receipt_confirmed' || p.receipt_confirmed">
-                         <template v-if="p.receipt_confirmed || p.procurement_status === 'ongoing_delivery' || p.procurement_status === 'receipt_confirmed' || (p.existingOrder && p.existingOrder.receipt_confirmed)">
-                           <button class="btn-small btn-primary" @click="markDeliveryComplete(p)" :disabled="completingDeliveryIds[(p.procurement_request_id || p.id)]">
-                             {{ completingDeliveryIds[(p.procurement_request_id || p.id)] ? 'Submitting...' : 'Complete Order' }}
+                       <div v-else-if="p.existingOrder" class="inline-row gap-sm align-center">
+                         <div class="status-badge status-warning">
+                           Transaction Pending (ID: {{ p.existingOrder.id }})
+                         </div>
+                         <div v-if="(p.existingOrder && (p.existingOrder.status === 'on_delivery' || p.existingOrder.status === 'ongoing_delivery' || p.existingOrder.status === 'fulfilled')) || p.procurement_status === 'delivery_pending' || p.procurement_status === 'ongoing_delivery' || p.procurement_status === 'receipt_confirmed' || p.receipt_confirmed">
+                           <template v-if="p.receipt_confirmed || p.procurement_status === 'ongoing_delivery' || p.procurement_status === 'receipt_confirmed' || (p.existingOrder && p.existingOrder.receipt_confirmed)">
+                             <button class="btn-small btn-primary" @click="markDeliveryComplete(p)" :disabled="completingDeliveryIds[(p.procurement_request_id || p.id)]">
+                               {{ completingDeliveryIds[(p.procurement_request_id || p.id)] ? 'Submitting...' : 'Complete Order' }}
+                             </button>
+                           </template>
+                           <template v-else>
+                             <button class="btn-small btn-primary" @click="openReceiptModal(p)" :disabled="completingDeliveryIds[(p.procurement_request_id || p.id)]">
+                               {{ completingDeliveryIds[(p.procurement_request_id || p.id)] ? 'Submitting...' : 'Upload Receipt' }}
+                             </button>
+                           </template>
+                         </div>
+                         <div v-else>
+                           <button class="btn-small btn-primary"
+                             @click="placeOrder(p)"
+                             :disabled="placingOrderIds[p.id] || orderPlacedIds[p.id] || p.waiting_for_supplier || isSupplierOrderPlaced(p)">
+                             {{ isSupplierOrderPlaced(p) || orderPlacedIds[p.id] ? 'Order placed' : (placingOrderIds[p.id] ? 'Placing...' : 'Place Order') }}
                            </button>
-                         </template>
-                         <template v-else>
-                           <button class="btn-small btn-primary" @click="openReceiptModal(p)" :disabled="completingDeliveryIds[(p.procurement_request_id || p.id)]">
-                             {{ completingDeliveryIds[(p.procurement_request_id || p.id)] ? 'Submitting...' : 'Upload Receipt' }}
-                           </button>
-                         </template>
+                           <div v-if="p.waiting_for_supplier && !isSupplierOrderPlaced(p)" class="note-warning">Waiting for supplier confirmation</div>
+                         </div>
+                         <div class="estimated-delivery-info">
+                           <span class="estimated-delivery-label">Est. Delivery:</span>
+                           <span class="estimated-delivery-value">
+                             {{ p.existingOrder?.estimated_delivery_datetime ? formatDateTime(p.existingOrder.estimated_delivery_datetime) : 'Not set yet' }}
+                           </span>
+                         </div>
+                       </div>
+                       <div v-else-if="p.procurement_status === 'ongoing_delivery' || p.status === 'ongoing_delivery' || p.procurement_status === 'receipt_confirmed' || p.receipt_confirmed">
+                         <button class="btn-small btn-primary"
+                           @click="openReceiptModal(p)"
+                           :disabled="completingDeliveryIds[(p.procurement_request_id || p.id)]">
+                           {{ completingDeliveryIds[(p.procurement_request_id || p.id)] ? 'Submitting...' : 'Upload Receipt' }}
+                         </button>
+                         <div v-if="p.existingOrder?.estimated_delivery_datetime" class="estimated-delivery-info">
+                           <span class="estimated-delivery-label">Est. Delivery:</span>
+                           <span class="estimated-delivery-value">{{ formatDateTime(p.existingOrder.estimated_delivery_datetime) }}</span>
+                         </div>
                        </div>
                        <div v-else>
                          <button class="btn-small btn-primary"
@@ -280,43 +206,149 @@
                          </button>
                          <div v-if="p.waiting_for_supplier && !isSupplierOrderPlaced(p)" class="note-warning">Waiting for supplier confirmation</div>
                        </div>
-                       <div class="estimated-delivery-info">
-                         <span class="estimated-delivery-label">Est. Delivery:</span>
-                         <span class="estimated-delivery-value">
-                           {{ p.existingOrder?.estimated_delivery_datetime ? formatDateTime(p.existingOrder.estimated_delivery_datetime) : 'Not set yet' }}
-                         </span>
-                       </div>
-                     </div>
-                       <div v-else-if="p.procurement_status === 'ongoing_delivery' || p.status === 'ongoing_delivery' || p.procurement_status === 'receipt_confirmed' || p.receipt_confirmed">
-                       <button class="btn-small btn-primary"
-                         @click="openReceiptModal(p)"
-                         :disabled="completingDeliveryIds[(p.procurement_request_id || p.id)]">
-                         {{ completingDeliveryIds[(p.procurement_request_id || p.id)] ? 'Submitting...' : 'Upload Receipt' }}
-                       </button>
-                       <div v-if="p.existingOrder?.estimated_delivery_datetime" class="estimated-delivery-info">
-                         <span class="estimated-delivery-label">Est. Delivery:</span>
-                         <span class="estimated-delivery-value">{{ formatDateTime(p.existingOrder.estimated_delivery_datetime) }}</span>
-                       </div>
-                     </div>
-                       <div v-else>
-                       <button class="btn-small btn-primary"
-                         @click="placeOrder(p)"
-                         :disabled="placingOrderIds[p.id] || orderPlacedIds[p.id] || p.waiting_for_supplier || isSupplierOrderPlaced(p)">
-                         {{ isSupplierOrderPlaced(p) || orderPlacedIds[p.id] ? 'Order placed' : (placingOrderIds[p.id] ? 'Placing...' : 'Place Order') }}
-                       </button>
-                       <div v-if="p.waiting_for_supplier && !isSupplierOrderPlaced(p)" class="note-warning">Waiting for supplier confirmation</div>
-                     </div>
-                   </template>
-                  <template v-else>
-                    <button class="btn-small btn-outline" disabled>Unavailable</button>
-                  </template>
+                    </template>
+                    <template v-else>
+                      <button class="btn-small btn-outline" disabled>Unavailable</button>
+                    </template>
+                  </div>
                 </div>
+                <div class="supplier-badge mt-sm">{{ p.supplier_name || (p.supplier?.full_name || 'Unknown Supplier') }}</div>
               </div>
-              <div class="supplier-badge mt-sm">{{ p.supplier_name || (p.supplier?.full_name || 'Unknown Supplier') }}</div>
             </div>
           </div>
+        </section>
+      </template>
+
+      <template v-else-if="selectedSection === 'suppliers'">
+        <div class="panel-actions mt-1">
+          <button class="btn-primary" @click="openAddSupplier">Add Supplier</button>
         </div>
-      </section>
+        <section id="suppliers" class="supplier-products mt-1">
+          <h2>Supplier Products (this branch)</h2>
+          <div v-if="loadingProducts">Loading products...</div>
+          <div v-else-if="!products.length">No products available in your branch.</div>
+          <div v-else>
+            <div>
+              <h3 class="section-subtitle">Published Products ({{ publishedProducts.length }})</h3>
+              <div v-for="cat in publishedProductCategories" :key="cat" class="category-section mb-1">
+                <h4 class="category-title">{{ cat || 'Uncategorized' }}</h4>
+                <div class="product-grid">
+                  <div v-for="p in getPublishedProductsByCategory(cat)" :key="p.id" class="product-card">
+                    <div class="product-name">{{ p.name }}</div>
+                    <div v-if="p.per_pack_or_individual" class="product-type-badge" :class="'type-' + p.per_pack_or_individual">
+                      {{ formatPricingType(p.per_pack_or_individual) }}
+                    </div>
+                    <div class="product-meta">
+                      <div class="product-price">{{ formatPrice(p.price) }}</div>
+                      <div class="supplier-badge">{{ p.supplier_name || 'Unknown Supplier' }}</div>
+                      <div class="product-stock">Real stock: {{ p.real_stock ?? p.stock ?? 0 }}</div>
+                      <div v-if="canChangeSupplier(p)" class="mt-1">
+                        <button class="btn-small btn-warning" @click="changeSupplier(p)" :disabled="changingSupplierIds[(p.procurement_request_id || p.id)]">
+                          {{ changingSupplierIds[(p.procurement_request_id || p.id)] ? 'Opening...' : 'Change Supplier' }}
+                        </button>
+                      </div>
+                      <div v-if="p.expires_at" class="expiry-info">Expires: {{ formatDate(p.expires_at) }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </template>
+
+      <template v-else-if="selectedSection === 'budget-requests'">
+        <section id="budget-requests" class="budget-requests mt-1">
+          <h2>Budget Requests</h2>
+          <p class="section-description">Create and view your branch budget requests.</p>
+
+          <div class="mb-1">
+            <button class="btn-primary" v-if="!showBudgetForm" @click="showBudgetForm = true">+ New Budget Request</button>
+          </div>
+
+          <div v-if="showBudgetForm" class="budget-form mt-sm">
+            <div class="form-grid">
+              <div class="form-label">Purpose</div>
+              <div class="form-field">
+                <textarea v-model="budgetForm.purpose" rows="3" placeholder="Describe the purpose of the budget" @input="clearBudgetFieldError"></textarea>
+              </div>
+
+              <div class="form-label">Requested Amount</div>
+              <div class="form-field inline-controls">
+                <div class="amount-input">
+                  <span class="currency">₱</span>
+                  <input v-model="budgetForm.requested_amount" type="number" step="0.01" placeholder="0.00" @input="validateAmountField" />
+                </div>
+                <div class="action-row">
+                  <button class="btn-budget" @click="submitBudgetRequest" :disabled="budgetSubmitting">{{ budgetSubmitting ? 'Submitting...' : 'Submit Request' }}</button>
+                  <button class="btn-outline btn-cancel-inline" @click="cancelBudgetForm" :disabled="budgetSubmitting">Cancel</button>
+                </div>
+                <div class="field-note">
+                  <div v-if="budgetFieldError" class="error-msg">{{ budgetFieldError }}</div>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="budgetError" class="error-msg mt-sm">{{ budgetError }}</div>
+          </div>
+
+          <div class="mt-1">
+            <h3>My Budget Requests</h3>
+            <div v-if="budgetLoading">Loading...</div>
+            <div v-else-if="!budgetRequests.length">No budget requests.</div>
+            <table v-else class="data-table">
+              <thead>
+                <tr><th>Date</th><th>Purpose</th><th>Amount</th><th>Status</th></tr>
+              </thead>
+              <tbody>
+                <tr v-for="r in budgetRequests" :key="r.id">
+                  <td>{{ formatDate(r.date_requested) }}</td>
+                  <td>{{ r.purpose }}</td>
+                  <td>₱{{ r.requested_amount }}</td>
+                  <td>{{ r.status }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </template>
+
+      <template v-else-if="selectedSection === 'history'">
+        <section id="history" class="requests-history mt-1">
+          <h2>Requests History</h2>
+          <p class="section-description">All procurement requests for this branch (most recent first).</p>
+
+          <div v-if="procurementHistoryLoading">Loading history...</div>
+          <div v-else-if="!procurementHistory.length">No procurement requests found.</div>
+          <div v-else>
+            <div class="requests-container">
+              <div class="requests-scroll">
+                <table class="data-table">
+                  <thead>
+                    <tr><th>Date</th><th>Product</th><th>Qty</th><th>Variance</th><th>Total</th><th>Status</th><th>Updated</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="r in procurementHistory" :key="'ph-'+r.id">
+                      <td>{{ formatDate(r.created_at) }}</td>
+                      <td><div class="product-name">{{ r.product?.name || r.purpose || '(no product)' }}</div></td>
+                      <td>{{ r.quantity }}</td>
+                      <td>{{ formatVariance(r.variance_quantity) }}</td>
+                      <td class="amount">{{ formatPrice(r.total_amount || r.price || 0) }}</td>
+                      <td>
+                        <span :class="['status-badge', getProcStatusClass(r.status)]">
+                          {{ formatProcStatus(r.status, r.budget_approved) }}
+                        </span>
+                      </td>
+                      <td>{{ formatDate(r.updated_at) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+      </template>
+
       <transition name="fade">
         <div v-if="showAddModal" class="modal-backdrop" @click.self="closeAddSupplier">
           <div class="modal">
@@ -509,6 +541,7 @@
       </div>
     </div>
   </transition>
+  </div>
 </template>
 
 <script setup>
@@ -520,9 +553,19 @@ import { showToast } from './toastStore'
 
 const router = useRouter()
 const userProfile = ref({})
+const procurementTopbarLabel = computed(() => {
+  const role = userProfile.value?.role || 'PROCUREMENT MANAGER'
+  const branchName = userProfile.value?.branch?.name || userProfile.value?.branch_name || userProfile.value?.branch || ''
+  return branchName ? `${role} - ${branchName}` : role
+})
+const selectedSection = ref('overview')
 const dashboardTotals = ref({ totalSuppliers: 0, activeSuppliers: 0, pendingRequests: 0 })
 const showLogoutConfirm = ref(false)
 const isLoggingOut = ref(false)
+
+function selectSection(section) {
+  selectedSection.value = section
+}
 
 // Budget request state
 const budgetRequests = ref([])
@@ -1845,6 +1888,91 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.manager-procurement-panel {
+  min-height: 100vh;
+  background: #e7d9cf;
+  color: #3d2a1f;
+}
+
+.manager-procurement-panel :deep(.admin-page),
+.manager-procurement-panel :deep(.admin-layout) {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.manager-procurement-panel :deep(.admin-layout--owner-sidebar-layout) {
+  display: block;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.manager-procurement-panel :deep(.owner-panel-sidebar) {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 400;
+  width: 156px;
+  min-width: 156px;
+  min-height: 100vh;
+  padding: 1.5rem 1rem 1rem;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.3);
+  border-right: 1px solid rgba(138, 113, 95, 0.18);
+  transform: translateX(0);
+  opacity: 1;
+  transition: transform 260ms ease, opacity 180ms ease;
+}
+
+.manager-procurement-panel :deep(.owner-panel-topbar) {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 156px;
+  z-index: 300;
+  width: auto;
+  height: 66px;
+  min-height: 66px;
+  margin: 0;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.22);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+.manager-procurement-panel :deep(.owner-sidebar-collapsed .owner-panel-sidebar) {
+  transform: translateX(-100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.manager-procurement-panel :deep(.owner-sidebar-collapsed .owner-panel-topbar) {
+  left: 0;
+}
+
+.manager-procurement-panel :deep(.admin-main) {
+  display: flex;
+  width: auto;
+  min-width: 0;
+  height: 100vh;
+  margin: 0 0 0 156px;
+  padding: 66px 1.3rem 1.25rem;
+  box-sizing: border-box;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.manager-procurement-panel :deep(.owner-sidebar-collapsed .admin-main) {
+  margin-left: 0;
+}
+
+.manager-procurement-panel :deep(.admin-layout.no-profile-column) {
+  display: block;
+}
+
 .panel-badge {
   position: absolute;
   top: -8px;
@@ -1867,10 +1995,83 @@ onUnmounted(() => {
   position: relative;
 }
 
+.hr-stat-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.hr-stat-label {
+  color: #8b6f59;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.hr-stat-value {
+  color: #3d2a1f;
+  font-size: 1.55rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
 .requested-products h2 {
   position: relative;
   display: inline-block;
 }
+.manager-procurement-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+}
+
+.manager-procurement-sidebar-link {
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: #334155;
+  text-align: left;
+  padding: 0.72rem 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.manager-procurement-sidebar-link:hover,
+.manager-procurement-sidebar-link--active {
+  background: rgba(255, 122, 44, 0.12);
+  border-color: rgba(255, 122, 44, 0.2);
+  color: #b45309;
+}
+
+.manager-procurement-sidebar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.manager-procurement-sidebar-account,
+.manager-procurement-sidebar-logout {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #374151;
+  padding: 0.7rem 0.8rem;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.manager-procurement-sidebar-logout {
+  background: #fff7ed;
+  border-color: rgba(251, 146, 60, 0.28);
+  color: #c2410c;
+}
+
 /* Use StaffIndex theme tokens for this panel to match color, font, and UI */
 :deep(.admin-page) {
   background: var(--bg-main) !important;

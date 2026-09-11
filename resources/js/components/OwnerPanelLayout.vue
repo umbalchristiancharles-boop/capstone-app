@@ -1,5 +1,5 @@
 ﻿<template>
-  <div class="min-h-screen owner-panel-light-mode bg-gradient-to-b from-[#FF9A4A] to-[#FF6A3D]">
+  <div class="min-h-screen owner-panel-light-mode bg-gradient-to-b from-[#FF9A4A] to-[#FF6A3D]" :class="{ 'owner-panel-layout--embedded': embedded }">
     <div class="admin-page" :class="[pageClass, { 'admin-page--wider': fullWidth }]">
       <section class="admin-layout" :class="{ 'admin-layout--wider': fullWidth, 'admin-layout--owner-two-column': ownerTwoColumnLayout, 'admin-layout--owner-sidebar-layout': showOwnerSidebar, 'owner-sidebar-collapsed': ownerSidebarCollapsed, 'admin-layout--single-column': singleColumnLayout, 'admin-layout--fit-content': fitContent, 'no-profile-column': !showProfileColumn, 'kitchen-staff-container': pageClass === 'kitchen-staff-page' }">
         <header v-if="showOwnerTopbar" class="owner-panel-topbar">
@@ -353,6 +353,7 @@ import axios from 'axios'
 import Toast from './Toast.vue'
 
 const props = defineProps({
+  embedded: { type: Boolean, default: false },
   userProfile: { type: Object, default: () => ({}) },
   panelTitle: { type: String, required: true },
   panelDescription: { type: String, required: true },
@@ -1098,6 +1099,30 @@ async function onAvatarChange(event) {
 }
 
 .admin-main-header-top-inner h1 { margin: 0 0 0.25rem 0 }
+.owner-panel-layout--embedded {
+  min-height: 0;
+  background: transparent;
+}
+
+.owner-panel-layout--embedded .admin-page,
+.owner-panel-layout--embedded .admin-layout {
+  min-height: 0;
+  background: transparent;
+}
+
+.owner-panel-layout--embedded .admin-layout {
+  display: block;
+}
+
+.owner-panel-layout--embedded .admin-main {
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+}
+
+.owner-panel-layout--embedded .back-to-dashboard-btn {
+  display: none;
+}
 .admin-main-header-top-inner p { margin: 0; color: #475569 }
 
 /* When a headerLeft slot is used, make it span full width so
@@ -1732,5 +1757,41 @@ async function onAvatarChange(event) {
   .admin-layout--owner-sidebar-layout .admin-main > * {
     flex: 0 0 auto;
   }
+}
+
+/* Embedded owner workflows must use the dashboard's existing content column. */
+.owner-panel-layout--embedded .admin-page,
+.owner-panel-layout--embedded .admin-layout,
+.owner-panel-layout--embedded .admin-main {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.owner-panel-layout--embedded .admin-layout {
+  display: block !important;
+  min-height: 0 !important;
+  height: auto !important;
+  gap: 0 !important;
+  overflow: visible !important;
+}
+
+.owner-panel-layout--embedded .admin-main {
+  display: block !important;
+  min-height: 0 !important;
+  height: auto !important;
+  overflow: visible !important;
+}
+
+:deep(.owner-panel-layout--embedded .back-to-dashboard-btn) {
+  display: none !important;
+}
+
+:deep(.owner-panel-layout--embedded .dish-approval-page) {
+  min-height: 0 !important;
+  padding: 0 !important;
+  overflow-x: hidden;
 }
 </style>

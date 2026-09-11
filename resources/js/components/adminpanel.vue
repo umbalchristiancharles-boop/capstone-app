@@ -25,6 +25,7 @@
             <button type="button" class="admin-sidebar__item" :class="{ 'admin-sidebar__item--active': activeSection === 'dashboard' }" @click="activeSection = 'dashboard'">Dashboard</button>
             <button type="button" class="admin-sidebar__item" :class="{ 'admin-sidebar__item--active': activeSection === 'orders' }" @click="activeSection = 'orders'">Orders &amp; Production</button>
             <button type="button" class="admin-sidebar__item" :class="{ 'admin-sidebar__item--active': activeSection === 'inventory' }" @click="activeSection = 'inventory'">Inventory &amp; Procurement</button>
+            <button type="button" class="admin-sidebar__item" :class="{ 'admin-sidebar__item--active': activeSection === 'landing-images' }" @click="activeSection = 'landing-images'">Landing Page Images</button>
             <button type="button" class="admin-sidebar__item" :class="{ 'admin-sidebar__item--active': activeSection === 'reports' }" @click="activeSection = 'reports'">Reports &amp; CRM</button>
             <button type="button" class="admin-sidebar__item" :class="{ 'admin-sidebar__item--active': activeSection === 'staff' }" @click="activeSection = 'staff'">Staff &amp; Attendance</button>
             <button type="button" class="admin-sidebar__item" :class="{ 'admin-sidebar__item--active': activeSection === 'announcements' }" @click="activeSection = 'announcements'">Announcements</button>
@@ -348,7 +349,7 @@
         </main>
         <!-- RIGHT: SIDE PANELS -->
         <Transition name="admin-section" mode="out-in" appear>
-        <aside v-if="activeSection === 'dashboard' || activeSection === 'staff'" class="admin-side" :key="activeSection">
+        <aside v-if="activeSection === 'dashboard' || activeSection === 'staff' || activeSection === 'landing-images'" class="admin-side" :key="activeSection">
           <!-- Top products -->
           <section v-if="activeSection === 'dashboard'" class="panel-block dashboard-white-panel">
             <div class="panel-header">
@@ -420,6 +421,32 @@
                   <div class="activity-meta">{{ act.role }} - {{ act.branch }}</div>
                 </div>
                 <span class="activity-time">{{ act.last_active }}</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Landing page product images -->
+          <section v-if="activeSection === 'landing-images'" class="panel-block dashboard-white-panel landing-images-panel">
+            <div class="panel-header">
+              <h2>Landing Page Product Images</h2>
+              <button class="panel-action" type="button" @click="loadLandingProducts">Refresh</button>
+            </div>
+            <div class="panel-body panel-body--list">
+              <p class="landing-images-help">Choose the picture customers see for each published product.</p>
+              <div v-if="landingProductsLoading" class="supplier-review-empty">Loading products...</div>
+              <div v-else-if="landingProducts.length === 0" class="supplier-review-empty">No products found.</div>
+              <div v-else class="landing-product-list">
+                <div v-for="product in landingProducts" :key="product.id" class="landing-product-item">
+                  <img v-if="product.image_url" :src="product.image_url" :alt="product.name" class="landing-product-image" />
+                  <div v-else class="landing-product-image landing-product-image--empty">{{ product.name?.charAt(0) || '?' }}</div>
+                  <div class="landing-product-details">
+                    <strong>{{ product.name }}</strong>
+                    <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" @change="selectLandingProductImage(product.id, $event)" />
+                    <button class="panel-action" type="button" :disabled="landingProductSaving === product.id || !landingProductFiles[product.id]" @click="saveLandingProductImage(product)">
+                      {{ landingProductSaving === product.id ? 'Saving...' : 'Save image' }}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </section>
@@ -750,6 +777,7 @@ const activeSectionTitle = computed(() => ({
   dashboard: panelTitle.value,
   orders: 'Orders & Production',
   inventory: 'Inventory & Procurement',
+  'landing-images': 'Landing Page Images',
   reports: 'Reports & CRM',
   staff: 'Staff & Attendance',
   announcements: 'Announcements',
@@ -805,6 +833,10 @@ const showExpiredProducts = ref(false)
 const expiredProducts = ref([])
 const expiredProductsLoading = ref(false)
 const expiredProductsError = ref('')
+const landingProducts = ref([])
+const landingProductsLoading = ref(false)
+const landingProductSaving = ref(null)
+const landingProductFiles = ref({})
 const overlayText = ref('Logging out...')
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
 
@@ -963,6 +995,53 @@ async function loadSupplierSubmissions() {
     console.error('Failed to load supplier submissions:', e)
   } finally {
     supplierSubmissionsLoading.value = false
+  }
+}
+
+async function loadLandingProducts() {
+  landingProductsLoading.value = true
+  try {
+    const res = await axios.get('/api/products-for-comments', { withCredentials: true })
+    const products = res.data?.data ?? res.data ?? []
+    landingProducts.value = Array.isArray(products) ? products : []
+  } catch (e) {
+    landingProducts.value = []
+    showToast(e.response?.data?.message || 'Failed to load products.', 'error')
+  } finally {
+    landingProductsLoading.value = false
+  }
+}
+
+function selectLandingProductImage(productId, event) {
+  landingProductFiles.value[productId] = event?.target?.files?.[0] || null
+}
+
+async function saveLandingProductImage(product) {
+  const image = landingProductFiles.value[product.id]
+  if (!image) return
+
+  const xsrf = await ensureCsrf()
+  if (!xsrf) {
+    showToast('Unable to refresh security token.', 'error')
+    return
+  }
+
+  landingProductSaving.value = product.id
+  try {
+    const formData = new FormData()
+    formData.append('_method', 'PUT')
+    formData.append('image', image)
+    await axios.post(`/api/staff/inventory/products/${product.id}`, formData, {
+      withCredentials: true,
+      headers: { 'Content-Type': 'multipart/form-data', 'X-XSRF-TOKEN': xsrf },
+    })
+    delete landingProductFiles.value[product.id]
+    showToast('Landing page image updated.', 'success')
+    await loadLandingProducts()
+  } catch (e) {
+    showToast(e.response?.data?.message || 'Failed to save product image.', 'error')
+  } finally {
+    landingProductSaving.value = null
   }
 }
 
@@ -1567,6 +1646,7 @@ function formatDate(dateString) {
 
     // load expired products for admin review
     fetchExpiredProducts()
+    loadLandingProducts()
   })
 
 </script>
@@ -1596,6 +1676,16 @@ function formatDate(dateString) {
 .supplier-review-action { flex-shrink: 0; }
 .supplier-confirm-button { color: #fff; background: #2563eb; border: 0; padding: 6px 10px; }
 .supplier-review-empty { margin-top: 10px; color: #6b7280; font-size: 13px; }
+
+.landing-images-help { margin: 0 0 12px; color: #6b7280; font-size: 13px; }
+.landing-product-list { display: flex; flex-direction: column; gap: 10px; }
+.landing-product-item { display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; }
+.landing-product-image { width: 52px; height: 52px; flex: 0 0 52px; object-fit: cover; border-radius: 6px; border: 1px solid #d1d5db; }
+.landing-product-image--empty { display: grid; place-items: center; color: #9ca3af; background: #f3f4f6; font-weight: 700; }
+.landing-product-details { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 5px; }
+.landing-product-details strong { overflow: hidden; color: #1f2937; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.landing-product-details input { width: 100%; min-width: 0; font-size: 11px; }
+.landing-product-details .panel-action { align-self: flex-start; padding: 5px 9px; font-size: 11px; }
 
 .modal-header-custom {
   display: flex;

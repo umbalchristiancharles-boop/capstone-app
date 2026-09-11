@@ -725,6 +725,7 @@ class SuperAdminController extends Controller
             'stock' => 'required|integer|min:0',
             'min_stock' => 'nullable|integer|min:0',
             'branch_id' => 'required|exists:branches,id',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ]);
 
         // Generate slug from name if not provided
@@ -759,6 +760,11 @@ class SuperAdminController extends Controller
             // until a branch Admin publishes them. Keep unpublished by default.
             'is_published' => false,
         ]);
+
+        if ($request->hasFile('image')) {
+            $product->image_path = $request->file('image')->store('product-images', 'public');
+            $product->save();
+        }
 
         return response()->json([
             'ok' => true,
@@ -795,9 +801,15 @@ class SuperAdminController extends Controller
             'stock' => 'sometimes|integer|min:0',
             'min_stock' => 'sometimes|integer|min:0',
             'branch_id' => 'sometimes|exists:branches,id',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ]);
 
         $product->update($validated);
+
+        if ($request->hasFile('image')) {
+            $product->image_path = $request->file('image')->store('product-images', 'public');
+            $product->save();
+        }
 
         return response()->json([
             'ok' => true,
