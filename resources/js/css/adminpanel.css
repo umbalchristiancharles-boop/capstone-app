@@ -2951,6 +2951,8 @@ h1, h2, h3, h4, h5, h6, .section-subtitle, .admin-name, .admin-role {
 /* Shared professional logout confirmation used by all panels. */
 .logout-confirm-dialog {
   width: min(92vw, 398px) !important;
+  max-width: 398px !important;
+  box-sizing: border-box;
   padding: 1.9rem 1.75rem 1.35rem !important;
   border: 1px solid #e5e7eb !important;
   border-radius: 4px !important;
@@ -2993,15 +2995,6 @@ h1, h2, h3, h4, h5, h6, .section-subtitle, .admin-name, .admin-role {
   color: #666666 !important;
   font-size: 0.98rem !important;
   line-height: 1.45;
-}
-
-.logout-confirm-dialog p {
-  font-size: 0 !important;
-}
-
-.logout-confirm-dialog p::after {
-  content: 'This will end your current session for Chikin Tayo Manager.';
-  font-size: 0.98rem;
 }
 
 .logout-confirm-dialog .logout-actions {

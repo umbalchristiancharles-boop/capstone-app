@@ -13,11 +13,12 @@
     :showOwnerSidebar="true"
     :showOwnerTopbar="true"
     :topbarLabel="kitchenTopbarLabel"
+    accountInfoStyle="finance"
     :showAnnouncements="true"
     :announcementsAfterAttendance="true"
     :ownerTwoColumnLayout="true"
     @profile-updated="onProfileUpdated"
-    @logout="confirmLogout"
+    @logout="requestLogout"
   >
     <template #ownerSidebar>
       <nav class="kitchen-sidebar-nav" aria-label="Kitchen sections">
@@ -30,7 +31,7 @@
     <template #ownerSidebarFooter>
       <div class="kitchen-sidebar-actions">
         <button type="button" class="kitchen-sidebar-account" @click="ownerLayout?.openInfoModal()">Account Info</button>
-        <button type="button" class="kitchen-sidebar-logout" @click="confirmLogout">Logout</button>
+        <button type="button" class="kitchen-sidebar-logout" @click="requestLogout">Logout</button>
       </div>
     </template>
 
@@ -164,6 +165,19 @@
       </div>
     </template>
   </OwnerPanelLayout>
+
+  <transition name="fade">
+    <div v-if="showLogoutConfirm" class="logout-confirm-backdrop">
+      <div class="logout-confirm-box logout-confirm-dialog">
+        <h3>Confirm logout</h3>
+        <p>This will end your current session as kitchen staff.</p>
+        <div class="logout-actions">
+          <button class="btn-cancel" type="button" @click="cancelLogout" :disabled="isLoggingOut">Cancel</button>
+          <button class="btn-confirm" type="button" @click="confirmLogout" :disabled="isLoggingOut">Yes</button>
+        </div>
+      </div>
+    </div>
+  </transition>
 </template>
 
 <script setup>
@@ -408,6 +422,7 @@ onUnmounted(() => {
 })
 
 const isLoggingOut = ref(false)
+const showLogoutConfirm = ref(false)
 const showProfileDropdown = ref(false)
 const profileWrapper = ref(null)
 
@@ -431,7 +446,15 @@ function handleInfoClick() {
 
 function handleLogoutClick() {
   closeProfileDropdown()
-  confirmLogout()
+  requestLogout()
+}
+
+function requestLogout() {
+  if (!isLoggingOut.value) showLogoutConfirm.value = true
+}
+
+function cancelLogout() {
+  if (!isLoggingOut.value) showLogoutConfirm.value = false
 }
 
 function onDocumentClick(e) {
@@ -442,13 +465,8 @@ function onDocumentClick(e) {
 
 async function confirmLogout() {
   if (isLoggingOut.value) return
-  if (!(await window.swalConfirm('Are you sure you want to logout?'))) return
-  performLogout()
-}
-
-async function performLogout() {
-  if (isLoggingOut.value) return
   isLoggingOut.value = true
+  showLogoutConfirm.value = false
   try {
     await axios.post('/api/logout', {}, { withCredentials: true })
   } catch (e) {}
@@ -1132,6 +1150,33 @@ async function performLogout() {
   padding: 1.25rem;
 }
 
+:deep(.admin-page.kitchen-staff-page) .queue-list {
+  max-height: 31rem;
+  overflow-y: auto;
+  padding: 0.1rem 0.45rem 0.35rem 0;
+  scrollbar-width: thin;
+  scrollbar-color: #d58a55 rgba(231, 217, 207, 0.55);
+}
+
+:deep(.admin-page.kitchen-staff-page) .queue-list::-webkit-scrollbar {
+  width: 9px;
+}
+
+:deep(.admin-page.kitchen-staff-page) .queue-list::-webkit-scrollbar-track {
+  background: rgba(231, 217, 207, 0.55);
+  border-radius: 999px;
+}
+
+:deep(.admin-page.kitchen-staff-page) .queue-list::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #efb47f, #c46632);
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  border-radius: 999px;
+}
+
+:deep(.admin-page.kitchen-staff-page) .queue-list::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #e89b62, #a94f25);
+}
+
 :deep(.admin-page.kitchen-staff-page) .dish-card,
 :deep(.admin-page.kitchen-staff-page) .queue-item,
 :deep(.admin-page.kitchen-staff-page) .ingredient-card {
@@ -1172,5 +1217,57 @@ async function performLogout() {
   .kitchen-staff-title {
     font-size: 1.45rem;
   }
+}
+
+.logout-confirm-dialog {
+  width: min(92vw, 398px) !important;
+  min-height: 0;
+  padding: 1.9rem 1.75rem 1.35rem !important;
+  box-sizing: border-box;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 4px !important;
+  background: #ffffff !important;
+  text-align: center;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.2) !important;
+}
+
+.logout-confirm-dialog h3 {
+  margin: 0 0 0.85rem !important;
+  color: #5b5b5b !important;
+  font-size: 1.45rem !important;
+  font-weight: 700 !important;
+}
+
+.logout-confirm-dialog h3::after,
+.logout-confirm-dialog p::after,
+.logout-confirm-dialog .btn-confirm::after {
+  content: none !important;
+}
+
+.logout-confirm-dialog p {
+  max-width: 330px;
+  margin: 0 auto 1.45rem !important;
+  color: #666666 !important;
+  font-size: 0.98rem !important;
+  line-height: 1.45;
+}
+
+.logout-confirm-dialog .logout-actions {
+  justify-content: center;
+  gap: 0.55rem;
+  margin-top: 0;
+}
+
+.logout-confirm-dialog .btn-cancel,
+.logout-confirm-dialog .btn-confirm {
+  min-width: 4.5rem;
+  min-height: 2.35rem;
+  padding: 0.55rem 0.9rem !important;
+  border-radius: 3px !important;
+  font-size: 0.82rem !important;
+}
+
+.logout-confirm-backdrop {
+  z-index: 500 !important;
 }
 </style>
