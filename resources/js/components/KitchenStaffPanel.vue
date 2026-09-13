@@ -1,33 +1,48 @@
 <template>
   <OwnerPanelLayout
+    ref="ownerLayout"
     :userProfile="userProfile"
-    :panelTitle="'Kitchen Staff Panel'"
-    :panelDescription="'Manage kitchen orders and preparation.'"
+    :panelEyebrow="'KITCHEN DASHBOARD'"
+    :panelTitle="'Kitchen overview'"
+    :panelDescription="''"
     :enableProfileUpdate="true"
     :canEditProfile="false"
     pageClass="kitchen-staff-page"
-    :showHeader="false"
+    :showHeader="true"
     :showProfileColumn="false"
+    :showOwnerSidebar="true"
+    :showOwnerTopbar="true"
+    :topbarLabel="kitchenTopbarLabel"
     :showAnnouncements="true"
     :announcementsAfterAttendance="true"
     :ownerTwoColumnLayout="true"
     @profile-updated="onProfileUpdated"
     @logout="confirmLogout"
   >
-    <template #main>
-      <header class="kitchen-staff-hero">
-        <div>
-          <span class="kitchen-staff-eyebrow">Kitchen dashboard</span>
-          <h2 class="kitchen-staff-title">Kitchen overview</h2>
-          <p class="kitchen-staff-subtitle">Manage kitchen orders and preparation for this branch.</p>
-        </div>
-        <button class="kitchen-staff-hero__action" type="button" @click="loadOrderQueue" :disabled="queueLoading">
-          {{ queueLoading ? 'Loading...' : 'Refresh Orders' }}
-        </button>
-      </header>
+    <template #ownerSidebar>
+      <nav class="kitchen-sidebar-nav" aria-label="Kitchen sections">
+        <button type="button" class="kitchen-sidebar-link" :class="{ 'kitchen-sidebar-link--active': activeKitchenSection === 'kitchen-overview' }" @click="scrollKitchenSection('kitchen-overview')">Overview</button>
+        <button type="button" class="kitchen-sidebar-link" :class="{ 'kitchen-sidebar-link--active': activeKitchenSection === 'kitchen-tasks' }" @click="scrollKitchenSection('kitchen-tasks')">Kitchen Tasks</button>
+        <button type="button" class="kitchen-sidebar-link" :class="{ 'kitchen-sidebar-link--active': activeKitchenSection === 'kitchen-orders' }" @click="scrollKitchenSection('kitchen-orders')">Orders Queue</button>
+      </nav>
+    </template>
 
-      <section class="panel-block">
-        <div class="panel-header"><h2>Kitchen Tasks</h2></div>
+    <template #ownerSidebarFooter>
+      <div class="kitchen-sidebar-actions">
+        <button type="button" class="kitchen-sidebar-account" @click="ownerLayout?.openInfoModal()">Account Info</button>
+        <button type="button" class="kitchen-sidebar-logout" @click="confirmLogout">Logout</button>
+      </div>
+    </template>
+
+    <template #headerActions>
+      <button class="kitchen-header-refresh" type="button" @click="loadOrderQueue" :disabled="queueLoading">
+        {{ queueLoading ? 'Loading...' : 'Refresh Orders' }}
+      </button>
+    </template>
+
+    <template #main>
+      <section id="kitchen-overview" class="panel-block">
+        <div id="kitchen-tasks" class="panel-header"><h2>Kitchen Tasks</h2></div>
         <div class="panel-body">
           <div class="kitchen-grid">
             <div class="kitchen-column">
@@ -73,7 +88,7 @@
             </div>
           </div>
 
-          <div class="queue-card">
+          <div id="kitchen-orders" class="queue-card">
             <div class="queue-header">
               <div>
                 <h3>
@@ -158,6 +173,12 @@ import axios from 'axios'
 import { showToast } from './toastStore'
 
 const userProfile = ref({})
+const ownerLayout = ref(null)
+const activeKitchenSection = ref('kitchen-overview')
+const kitchenTopbarLabel = computed(() => {
+  const branchName = userProfile.value?.branch?.name || userProfile.value?.branch_name || userProfile.value?.branch || ''
+  return `KITCHEN STAFF - ${(branchName || 'DASMA BRANCH').toString().toUpperCase()}`
+})
 const dishes = ref([])
 const loading = ref(false)
 const queueLoading = ref(false)
@@ -396,6 +417,11 @@ function toggleProfileDropdown() {
 
 function closeProfileDropdown() {
   showProfileDropdown.value = false
+}
+
+function scrollKitchenSection(sectionId) {
+  activeKitchenSection.value = sectionId
+  document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
 function handleInfoClick() {
@@ -794,5 +820,357 @@ async function performLogout() {
   }
 
   .kitchen-grid { grid-template-columns: 1fr; }
+}
+
+/* Finance-style shell for Kitchen Staff while preserving kitchen content. */
+:global(.owner-panel-light-mode),
+:global(.owner-panel-light-mode .admin-page),
+:global(.owner-panel-light-mode .admin-layout),
+:global(.owner-panel-light-mode .admin-main) {
+  min-height: 100vh !important;
+  height: 100% !important;
+  background: #e7d9cf !important;
+}
+
+:deep(.admin-page.kitchen-staff-page) {
+  padding: 0 !important;
+}
+
+:deep(.admin-layout--owner-sidebar-layout.kitchen-staff-container) {
+  padding: 0 !important;
+}
+
+:deep(.owner-panel-light-mode),
+:deep(.owner-panel-light-mode > .admin-page),
+:deep(.admin-page.kitchen-staff-page),
+:deep(.admin-page.kitchen-staff-page .admin-layout),
+:deep(.admin-page.kitchen-staff-page .admin-main) {
+  min-height: 100vh;
+  background: #e7d9cf !important;
+}
+
+:deep(.admin-layout--owner-sidebar-layout.kitchen-staff-container) {
+  display: block;
+  min-height: 100vh;
+  overflow: visible;
+  background: #e7d9cf;
+}
+
+:deep(.admin-layout--owner-sidebar-layout.kitchen-staff-container .owner-panel-sidebar) {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 400;
+  width: 156px;
+  min-width: 156px;
+  min-height: 100vh;
+  padding: 1.5rem 1rem 1rem;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.42) !important;
+  border-right: 1px solid rgba(115, 93, 84, 0.18) !important;
+  transform: translateX(0);
+  opacity: 1;
+  transition: transform 260ms ease, opacity 180ms ease, width 260ms ease;
+}
+
+:deep(.admin-layout--owner-sidebar-layout.kitchen-staff-container .owner-panel-topbar) {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 156px;
+  z-index: 300;
+  width: calc(100% - 156px) !important;
+  height: 66px;
+  min-height: 66px;
+  margin-left: 0 !important;
+  box-sizing: border-box;
+  background: linear-gradient(180deg, #e7d9cf 0%, #eee5df 100%) !important;
+  border-bottom: 1px solid rgba(115, 93, 84, 0.18) !important;
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.12);
+  transition: left 260ms ease;
+}
+
+:deep(.admin-layout--owner-sidebar-layout.kitchen-staff-container .admin-main) {
+  display: flex;
+  width: auto;
+  min-width: 0;
+  height: calc(100vh - 66px);
+  min-height: 0;
+  margin: 66px 0 0 156px;
+  padding: 1.2rem 1.3rem 1.25rem;
+  box-sizing: border-box;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: transparent;
+  transition: margin-left 260ms ease;
+}
+
+:deep(.admin-layout--owner-sidebar-layout.kitchen-staff-container .admin-main-header) {
+  margin: 0;
+  padding: 0 0 0.4rem;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+:deep(.admin-layout--owner-sidebar-layout.kitchen-staff-container .admin-main-header-top) {
+  width: 100%;
+  align-items: flex-start;
+}
+
+:deep(.admin-layout--owner-sidebar-layout.kitchen-staff-container .header-left-slot) {
+  display: none;
+}
+
+:deep(.admin-layout--owner-sidebar-layout.kitchen-staff-container .header-actions-top) {
+  display: flex;
+  align-items: flex-start;
+  margin-left: auto !important;
+}
+
+:deep(.admin-layout--owner-sidebar-layout.kitchen-staff-container .admin-main-header__eyebrow) {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: #c46632;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+:deep(.admin-layout--owner-sidebar-layout.kitchen-staff-container .admin-main-header h1) {
+  margin: 0 0 0.35rem;
+  color: #12304c;
+  font-size: 2rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+:deep(.admin-layout--owner-sidebar-layout.kitchen-staff-container .admin-main-header p) {
+  margin: 0;
+  color: #94735f;
+  font-size: 0.9rem;
+}
+
+:deep(.admin-layout--owner-sidebar-layout.kitchen-staff-container .admin-main-header p:empty) {
+  display: none;
+}
+
+.kitchen-header-refresh {
+  padding: 0.72rem 1rem;
+  border: 1px solid #243447;
+  border-radius: 10px;
+  background: #243447;
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(36, 52, 71, 0.15);
+  transition: background 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.kitchen-header-refresh:hover:not(:disabled) {
+  background: #172536;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(36, 52, 71, 0.2);
+}
+
+.kitchen-header-refresh:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+:deep(.owner-sidebar-collapsed.admin-layout--owner-sidebar-layout.kitchen-staff-container .owner-panel-sidebar) {
+  width: 0;
+  min-width: 0;
+  padding-left: 0;
+  padding-right: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateX(-100%);
+  pointer-events: none;
+}
+
+:deep(.owner-sidebar-collapsed.admin-layout--owner-sidebar-layout.kitchen-staff-container .owner-panel-topbar) {
+  left: 0;
+  width: 100% !important;
+  margin-left: 0 !important;
+}
+
+:deep(.owner-sidebar-collapsed.admin-layout--owner-sidebar-layout.kitchen-staff-container .admin-main) {
+  margin-left: 0;
+}
+
+.kitchen-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+}
+
+.kitchen-sidebar-link {
+  width: 100%;
+  padding: 0.72rem 0.9rem;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: #29384a;
+  text-align: left;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 180ms ease, border-color 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.kitchen-sidebar-link:hover,
+.kitchen-sidebar-link--active {
+  background: #fffaf5;
+  border-color: #efb47f;
+  color: #111827;
+  box-shadow: 0 5px 12px rgba(184, 111, 61, 0.08);
+  transform: translateX(2px);
+}
+
+.kitchen-sidebar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.kitchen-sidebar-account,
+.kitchen-sidebar-logout {
+  width: 100%;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  color: #374151;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+
+.kitchen-sidebar-account {
+  border-color: #c9d9e5;
+  background: #f7fbff;
+  color: #30445a;
+}
+
+.kitchen-sidebar-logout {
+  border-color: #e3b1a5;
+  background: #fff9f7;
+  color: #a23d32;
+}
+
+.kitchen-sidebar-account:hover,
+.kitchen-sidebar-logout:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 12px rgba(83, 57, 37, 0.1);
+}
+
+.kitchen-staff-hero,
+:deep(.admin-page.kitchen-staff-page) .panel-header,
+:deep(.admin-page.kitchen-staff-page) .kitchen-column,
+:deep(.admin-page.kitchen-staff-page) .queue-card {
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 14px;
+  box-shadow: 0 8px 20px rgba(83, 57, 37, 0.1);
+}
+
+.kitchen-staff-hero {
+  margin-bottom: 0;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, #fffaf5 0%, #ffffff 72%);
+}
+
+.kitchen-staff-title {
+  color: #12304c;
+  font-size: 1.7rem;
+  font-weight: 900;
+}
+
+.kitchen-staff-hero__action,
+:deep(.admin-page.kitchen-staff-page) .refresh-btn,
+:deep(.admin-page.kitchen-staff-page) .update-stock-btn,
+:deep(.admin-page.kitchen-staff-page) .btn-done {
+  border: 1px solid #243447;
+  border-radius: 10px;
+  background: #243447;
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(36, 52, 71, 0.15);
+  transition: background 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.kitchen-staff-hero__action:hover:not(:disabled),
+:deep(.admin-page.kitchen-staff-page) .refresh-btn:hover:not(:disabled),
+:deep(.admin-page.kitchen-staff-page) .update-stock-btn:hover:not(:disabled),
+:deep(.admin-page.kitchen-staff-page) .btn-done:hover:not(:disabled) {
+  background: #172536;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(36, 52, 71, 0.2);
+}
+
+:deep(.admin-page.kitchen-staff-page) .panel-header {
+  margin-bottom: 1rem;
+  padding: 1.25rem;
+}
+
+:deep(.admin-page.kitchen-staff-page) .panel-header h2,
+:deep(.admin-page.kitchen-staff-page) .kitchen-column h3,
+:deep(.admin-page.kitchen-staff-page) .queue-header h3 {
+  color: #3d2a1f;
+}
+
+:deep(.admin-page.kitchen-staff-page) .queue-card {
+  margin-top: 1rem;
+  padding: 1.25rem;
+}
+
+:deep(.admin-page.kitchen-staff-page) .dish-card,
+:deep(.admin-page.kitchen-staff-page) .queue-item,
+:deep(.admin-page.kitchen-staff-page) .ingredient-card {
+  border-color: #e5e7eb;
+  border-radius: 10px;
+  background: #fffaf7;
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+:deep(.admin-page.kitchen-staff-page) .dish-card:hover,
+:deep(.admin-page.kitchen-staff-page) .queue-item:hover {
+  border-color: #efb47f;
+  box-shadow: 0 6px 16px rgba(83, 57, 37, 0.08);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 767px) {
+  :deep(.admin-layout--owner-sidebar-layout.kitchen-staff-container .owner-panel-sidebar) {
+    width: 156px;
+    min-width: 156px;
+  }
+
+  :deep(.admin-layout--owner-sidebar-layout.kitchen-staff-container .owner-panel-topbar) {
+    left: 0;
+  }
+
+  :deep(.admin-layout--owner-sidebar-layout.kitchen-staff-container .admin-main) {
+    width: 100%;
+    margin: 60px 0 0;
+    height: calc(100vh - 60px);
+    padding: 0.75rem;
+  }
+
+  .kitchen-staff-hero {
+    padding: 1rem;
+  }
+
+  .kitchen-staff-title {
+    font-size: 1.45rem;
+  }
 }
 </style>
