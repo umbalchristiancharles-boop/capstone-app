@@ -1578,7 +1578,7 @@ async function confirmLogout() {
   try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
   setTimeout(() => {
     try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
-    try { window.location.replace('/staff-landing') } catch (e) { /* ignore */ }
+    try { window.location.replace('/admin-login') } catch (e) { /* ignore */ }
   }, 600)
 }
 
