@@ -1,15 +1,50 @@
 <template>
-  <div class="main-branch-page">
-    <section class="panel-layout">
+  <div class="main-branch-page" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
+    <aside class="logistics-sidebar">
+      <nav class="logistics-sidebar__nav" aria-label="Logistics navigation">
+        <a class="logistics-sidebar__item" :class="{ active: selectedSection === 'overview' }" href="#logistics-overview" @click.prevent="selectedSection = 'overview'">Logistics Overview</a>
+        <a class="logistics-sidebar__item" :class="{ active: selectedSection === 'inventory' }" href="#inventory-monitor" @click.prevent="selectedSection = 'inventory'">Inventory Monitor</a>
+        <a class="logistics-sidebar__item" :class="{ active: selectedSection === 'product-requests' }" href="#product-requests" @click.prevent="selectedSection = 'product-requests'">Product Requests</a>
+        <a class="logistics-sidebar__item" :class="{ active: selectedSection === 'suppliers' }" href="#suppliers" @click.prevent="selectedSection = 'suppliers'">Suppliers</a>
+      </nav>
+      <div class="logistics-sidebar__footer">
+        <button class="logistics-sidebar__account" type="button" @click="openProfileInfo">Account Info</button>
+        <button class="logistics-sidebar__logout" type="button" @click="askLogout">Logout</button>
+      </div>
+    </aside>
+
+    <div class="logistics-workspace">
+      <header class="logistics-topbar">
+        <button class="logistics-menu-button" type="button" :aria-label="sidebarCollapsed ? 'Show logistics menu' : 'Hide logistics menu'" :aria-expanded="(!sidebarCollapsed).toString()" @click="sidebarCollapsed = !sidebarCollapsed">☰</button>
+        <div class="logistics-topbar__spacer"></div>
+        <div class="header-profile-wrapper">
+          <div class="header-profile-btn" aria-label="Current account">
+            <div class="header-avatar">
+              <div v-if="profile.avatarUrl" class="header-avatar-img" :style="{ backgroundImage: 'url(' + profile.avatarUrl + ')' }"></div>
+              <div v-else class="header-avatar-initials">{{ (profile.full_name || profile.fullName || 'M').charAt(0) }}</div>
+            </div>
+            <div class="header-name">Logistics - {{ profile.branch_name || profile.branch || 'Main Branch' }}</div>
+          </div>
+        </div>
+      </header>
+
+      <section class="panel-layout">
       <!-- Left profile column removed for Main Branch layout -->
 
       <main class="main-col">
-        <header class="panel-header">
-          <h1>Main Branch Logistics Dashboard</h1>
-          <p>HQ inventory and fulfillment control center for Main Branch operations.</p>
+        <header id="logistics-overview" class="panel-header logistics-feature-header">
+          <div>
+            <p class="logistics-eyebrow">Logistics dashboard</p>
+            <h1>Main Branch Logistics Dashboard</h1>
+          </div>
+          <button class="logistics-refresh-button" type="button" @click="refreshDashboard" :disabled="isRefreshing">
+            {{ isRefreshing ? 'Loading...' : 'Refresh' }}
+          </button>
         </header>
 
-        <section class="overview-grid">
+        <Transition name="logistics-section" mode="out-in">
+        <div :key="selectedSection" class="logistics-section-view">
+        <section v-if="selectedSection === 'overview'" class="overview-grid">
           <article class="overview-card"><span class="k">Active Products</span><strong>{{ metrics.active_products }}</strong></article>
           <article class="overview-card"><span class="k">Low Stock</span><strong>{{ metrics.low_stock }}</strong></article>
           <article class="overview-card" :class="{ 'stat-alert': pendingDeliveriesCount > 0 }">
@@ -21,7 +56,7 @@
         </section>
 
 
-        <section class="panel-section">
+        <section v-if="selectedSection === 'overview' || selectedSection === 'inventory'" id="inventory-monitor" class="panel-section">
           <h2 class="section-title">Inventory Monitor</h2>
           <p class="section-description">Current stock levels across branches (read-only)</p>
 
@@ -74,7 +109,9 @@
               </tbody>
             </table>
           </div>
-          <section class="panel-section">
+        </section>
+
+          <section v-if="selectedSection === 'overview' || selectedSection === 'product-requests'" id="product-requests" class="panel-section">
             <h2 class="section-title">
               Product Requests (Logistics Approval)
               <span v-if="pendingProductRequestsCount > 0" class="panel-badge">{{ pendingProductRequestsCount }}</span>
@@ -121,7 +158,7 @@
             </div>
           </section>
 
-          <section class="panel-section">
+        <section v-if="selectedSection === 'overview' || selectedSection === 'suppliers'" id="suppliers" class="panel-section">
             <h2 class="section-title">Suppliers</h2>
             <p class="section-description">Suppliers available for the selected branch (read-only)</p>
 
@@ -166,65 +203,13 @@
                 </tbody>
               </table>
             </div>
-          </section>
-
         </section>
+        </div>
+        </Transition>
       </main>
 
-      <aside class="side-col">
-        <div class="header-actions-side">
-          <div class="header-profile-wrapper" style="margin:0 0 12px;">
-            <button class="header-profile-btn" type="button" @click.stop="toggleProfileDropdown">
-              <div class="header-avatar">
-                <div v-if="profile.avatarUrl" class="header-avatar-img" :style="{ backgroundImage: 'url(' + profile.avatarUrl + ')' }"></div>
-                <div v-else class="header-avatar-initials">{{ (profile.full_name || profile.fullName || 'M').charAt(0) }}</div>
-              </div>
-              <div class="header-name">{{ ((profile.branch_name || profile.branch || '') ? (profile.branch_name || profile.branch) + ' - ' : '') + ((profile.role || profile.position || 'MANAGER')).toString().toUpperCase() }}</div>
-            </button>
-            <div v-if="profileDropdownVisible" class="header-profile-dropdown" @click.stop>
-              <button class="dropdown-item" @click="openProfileInfo">Info</button>
-              <button class="dropdown-item" @click="askLogout">Logout</button>
-            </div>
-          </div>
-
-          <section class="panel-block announcements-panel">
-            <div class="panel-header announcements-header">
-              <h2>Announcements</h2>
-            </div>
-            <div class="panel-body">
-              <div v-if="loadingAnnouncements" style="text-align:center; padding:12px; color:#9ca3af;">Loading...</div>
-              <div v-else-if="announcements.length === 0" style="text-align:center; padding:12px; color:#9ca3af;">No announcements</div>
-              <ul v-else class="announcement-list">
-                <li v-for="a in announcements" :key="a.id" class="announcement-item">
-                  <div class="announcement-title">{{ a.title }}</div>
-                  <div class="announcement-meta">{{ new Date(a.created_at).toLocaleString() }} • {{ a.target || 'all' }}</div>
-                  <div class="announcement-message">{{ a.message }}</div>
-                </li>
-              </ul>
-            </div>
-          </section>
-
-          <div class="attendance-card" style="margin-top:12px; background:#ffffff;">
-            <div class="attendance-header" style="margin-top:12px;">
-              <span class="attendance-title">Attendance</span>
-              <span :class="['attendance-status-badge', attendanceStatus.is_clocked_in ? 'status-on-duty' : 'status-off-duty']">
-                {{ attendanceStatus.is_clocked_in ? 'On Duty' : 'Off Duty' }}
-              </span>
-            </div>
-            <div class="attendance-buttons">
-              <button @click="performClockIn" :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockInGeofencing || locationLoading" class="btn-clock-in">
-                {{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock In' }}
-              </button>
-              <button @click="performClockOut" :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockOut || !canClockInGeofencing || locationLoading" class="btn-clock-out" :class="{ 'btn-disabled': !canClockOut && attendanceStatus.is_clocked_in }">
-                {{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock Out' }}
-              </button>
-            </div>
-            <div v-if="!canClockOut && attendanceStatus.is_clocked_in" class="clockout-restriction"><span class="restriction-icon">🔒</span><span>Cannot clock out before {{ scheduledTimeOut }}</span></div>
-            <div v-if="attendanceMessage" :class="['attendance-message', attendanceMessageType]">{{ attendanceMessage }}</div>
-          </div>
-        </div>
-      </aside>
-    </section>
+      </section>
+    </div>
 
     <transition name="fade">
       <div v-if="showLogoutConfirm" class="logout-confirm-backdrop">
@@ -234,6 +219,30 @@
           <div class="logout-actions">
             <button class="btn-cancel" @click="cancelLogout" :disabled="isLoggingOut">Cancel</button>
             <button class="btn-confirm" @click="confirmLogout" :disabled="isLoggingOut">Yes, logout</button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <transition name="fade">
+      <div v-if="showAccountInfoModal" class="logistics-account-backdrop" @click.self="showAccountInfoModal = false">
+        <div class="logistics-account-modal">
+          <div class="logistics-account-header">
+            <h3>Account Information</h3>
+            <button class="logistics-account-close" type="button" aria-label="Close account information" @click="showAccountInfoModal = false">✕</button>
+          </div>
+          <div class="logistics-account-body">
+            <div class="logistics-account-row"><span>Name:</span><strong>{{ profile.fullName || profile.full_name || 'N/A' }}</strong></div>
+            <div class="logistics-account-row"><span>Email:</span><strong>{{ profile.email || 'N/A' }}</strong></div>
+            <div class="logistics-account-row"><span>Role:</span><strong>{{ profile.role || profile.position || 'N/A' }}</strong></div>
+            <div class="logistics-account-row"><span>Department:</span><strong>{{ profile.department || 'N/A' }}</strong></div>
+            <div class="logistics-account-row"><span>Branch:</span><strong>{{ profile.branch_name || profile.branch || 'N/A' }}</strong></div>
+            <div class="logistics-account-row"><span>Phone:</span><strong>{{ profile.phone || profile.contact || 'N/A' }}</strong></div>
+            <div class="logistics-account-row"><span>Position:</span><strong>{{ profile.position || 'N/A' }}</strong></div>
+            <div class="logistics-account-row"><span>Start Date:</span><strong>{{ formatDate(profile.hire_date || profile.created_at) || 'N/A' }}</strong></div>
+          </div>
+          <div class="logistics-account-footer">
+            <button type="button" @click="showAccountInfoModal = false">Close</button>
           </div>
         </div>
       </div>
@@ -249,6 +258,9 @@ import { showToast } from './toastStore'
 
 const router = useRouter()
 const profile = ref({})
+const selectedSection = ref('overview')
+const sidebarCollapsed = ref(false)
+const showAccountInfoModal = ref(false)
 const showLogoutConfirm = ref(false)
 const isLoggingOut = ref(false)
 const metrics = ref({ active_products: 0, low_stock: 0, pending_deliveries: 0, suppliers: 0 })
@@ -292,15 +304,14 @@ const pendingProductRequestsCount = computed(() => (pendingProductRequests.value
 const logisticsAlertCount = computed(() => Math.max(pendingDeliveriesCount.value, pendingProductRequestsCount.value, 0))
 
 // Header profile dropdown state (compact header in profile column)
-const profileDropdownVisible = ref(false)
-function toggleProfileDropdown() { profileDropdownVisible.value = !profileDropdownVisible.value }
-function openProfileInfo() { profileDropdownVisible.value = false; try { showToast('Profile info') } catch(e) {} }
+function openProfileInfo() { showAccountInfoModal.value = true }
 
 // Branch selector for Main Branch HQ users
 const branches = ref([])
 const selectedBranch = ref(null)
 const branchesLoading = ref(false)
 const branchesError = ref('')
+const isRefreshing = ref(false)
 
 function cancelLogout() {
   if (isLoggingOut.value) return
@@ -350,6 +361,21 @@ async function loadMetrics() {
       suppliers: d.total_suppliers ?? d.suppliers ?? 0,
     }
   } catch (e) {}
+}
+
+async function refreshDashboard() {
+  if (isRefreshing.value) return
+  isRefreshing.value = true
+  try {
+    await Promise.all([
+      loadMetrics(),
+      fetchInventory(),
+      fetchPendingProductRequests(),
+      fetchSuppliers()
+    ])
+  } finally {
+    isRefreshing.value = false
+  }
 }
 
 async function loadPanelNotifications() {
@@ -827,4 +853,427 @@ watch(selectedBranch, async () => {
 .status-low { background: rgba(231, 76, 60, 0.12); color: #e74c3c; }
 .status-approved { background: rgba(46, 204, 113, 0.12); color: #27ae60; }
 .status-pending { background: rgba(241, 196, 15, 0.12); color: #f39c12; }
+
+/* Finance manager visual language, scoped to this panel only. */
+.main-branch-page {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 0;
+  padding: 0;
+  background: #efe5dc;
+  color: #172a3d;
+  overflow-x: hidden;
+}
+
+.logistics-sidebar {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.5rem 1rem 1rem;
+  gap: 1.2rem;
+  background: #f2e9e1;
+  border-right: 1px solid rgba(97, 72, 51, 0.1);
+}
+
+.logistics-sidebar__nav,
+.logistics-sidebar__footer { display: grid; gap: 0.75rem; }
+.logistics-sidebar__item,
+.logistics-sidebar__account,
+.logistics-sidebar__logout {
+  display: block;
+  width: 100%;
+  padding: 10px 9px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: #29384a;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color .2s ease, border-color .2s ease, color .2s ease, transform .2s ease;
+}
+.logistics-sidebar__item:hover,
+.logistics-sidebar__account:hover,
+.logistics-sidebar__logout:hover { transform: translateX(2px); background: rgba(255, 255, 255, .72); }
+.logistics-sidebar__item.active {
+  background: #fffaf5;
+  border-color: #f1b986;
+  box-shadow: 0 5px 12px rgba(113, 77, 41, .08);
+  color: #a34f21;
+}
+.logistics-sidebar__account,
+.logistics-sidebar__logout { border-radius: 12px; text-align: center; }
+.logistics-sidebar__account { background: #f5fbff; border-color: #c9e0eb; color: #30445a; }
+.logistics-sidebar__logout { background: #fff8f5; border-color: #f1c2b2; color: #a23d32; }
+
+.logistics-workspace { min-width: 0; }
+.logistics-topbar {
+  min-height: 68px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 20px;
+  background: rgba(255, 250, 246, .92);
+  border-bottom: 1px solid rgba(111, 78, 49, .1);
+  box-shadow: 0 8px 24px rgba(83, 57, 37, .14);
+  position: relative;
+  z-index: 4;
+}
+.logistics-menu-button {
+  width: 28px;
+  height: 28px;
+  border: 1px solid #d9e0e5;
+  border-radius: 8px;
+  background: #f7fafb;
+  color: #506273;
+  cursor: pointer;
+  transition: background-color .2s ease, transform 260ms cubic-bezier(.22, 1, .36, 1), box-shadow .2s ease;
+}
+.logistics-menu-button:hover { background: #fff; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(36, 52, 71, .12); }
+.main-branch-page.sidebar-collapsed .logistics-menu-button { transform: rotate(180deg); }
+.main-branch-page.sidebar-collapsed .logistics-menu-button:hover { transform: rotate(180deg) translateY(-1px); }
+.logistics-topbar__spacer { flex: 1; }
+.header-profile-wrapper { position: relative; }
+.header-profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid #eadbd0;
+  border-radius: 999px;
+  background: #fffaf7;
+  color: #26354a;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.2;
+  box-shadow: 0 4px 12px rgba(83, 57, 37, .07);
+}
+.header-avatar { width: 26px; height: 26px; border-radius: 50%; background: #f4d8b9; display: grid; place-items: center; overflow: hidden; }
+.header-avatar-initials { color: #8d4d28; font-size: 11px; font-weight: 800; }
+.header-avatar-img { width: 100%; height: 100%; background-position: center; background-size: cover; }
+.header-name { white-space: nowrap; }
+
+.panel-layout { grid-template-columns: minmax(0, 1fr) 200px; gap: 18px; padding: 28px 20px 40px; }
+.main-col { gap: 18px; }
+.panel-header { padding: 0 2px 8px; background: transparent; border: 0; box-shadow: none; }
+.panel-header h1 { font-size: clamp(29px, 3vw, 39px); letter-spacing: -1px; color: #172a3d; animation: logistics-title-in .55s ease both; }
+.panel-header p { color: #886f60; }
+.overview-card, .panel-block, .attendance-card { border: 1px solid rgba(227, 209, 194, .8); box-shadow: 0 7px 18px rgba(97, 69, 45, .08); }
+.overview-card { background: #fffaf7; transition: transform .2s ease, box-shadow .2s ease; }
+.overview-card:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(97, 69, 45, .13); }
+.overview-card .k, .section-description { color: #987b69; }
+.overview-card strong { color: #26354a; }
+.panel-section { scroll-margin-top: 86px; }
+.main-col > .panel-section {
+  padding: 20px;
+  border: 1px solid rgba(226, 232, 240, .9);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(83, 57, 37, .1);
+}
+.main-col > .panel-section + .panel-section { margin-top: 2px; }
+.section-title { color: #172a3d; }
+.side-col { top: 86px; }
+.panel-block { background: #fffaf7; }
+.data-table th { background: #fbf1e9; color: #81502e; }
+.data-table td { border-bottom-color: rgba(141, 111, 89, .14); }
+.data-table tbody tr { transition: background-color .18s ease; }
+.data-table tbody tr:hover { background: rgba(255, 246, 238, .8); }
+.action-btn, .link-btn { background: #e8752d; box-shadow: 0 7px 16px rgba(232, 117, 45, .2); transition: transform .2s ease, filter .2s ease; }
+.action-btn:hover, .link-btn:hover { filter: brightness(1.04); transform: translateY(-1px); }
+.status-ok { background: #d9f1e6; color: #168254; }
+.status-low { background: #f8dddd; color: #d55b58; }
+.loading-container, .error-container { animation: logistics-fade-up .35s ease both; }
+.main-col > .overview-grid { animation: logistics-fade-up .45s .08s ease both; }
+.main-col > .panel-section { animation: logistics-fade-up .45s .14s ease both; }
+
+@keyframes logistics-title-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes logistics-fade-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+@media (max-width: 1100px) {
+  .main-branch-page { grid-template-columns: 92px minmax(0, 1fr); }
+  .panel-layout { grid-template-columns: 1fr; }
+  .side-col { position: static; grid-row: auto; }
+}
+@media (max-width: 620px) {
+  .main-branch-page { display: block; }
+  .logistics-sidebar { min-height: auto; padding: 10px; }
+  .logistics-sidebar__nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .logistics-sidebar__footer { display: none; }
+  .logistics-sidebar__item { text-align: center; }
+  .logistics-topbar { padding: 0 12px; }
+  .header-name { max-width: 155px; overflow: hidden; text-overflow: ellipsis; }
+  .panel-layout { padding: 22px 12px 30px; }
+  .overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Keep the navigation and its account actions anchored while the dashboard scrolls. */
+.logistics-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: 120px;
+  min-height: 0;
+  box-sizing: border-box;
+  overflow-y: auto;
+  z-index: 10;
+}
+.main-branch-page { display: block; }
+.logistics-workspace { margin-left: 120px; }
+
+@media (max-width: 1100px) {
+  .logistics-sidebar { width: 92px; }
+  .logistics-workspace { margin-left: 92px; }
+}
+@media (max-width: 620px) {
+  .logistics-sidebar {
+    position: static;
+    width: auto;
+    min-height: auto;
+    overflow: visible;
+  }
+  .logistics-workspace { margin-left: 0; }
+}
+
+/* Match the Finance Manager rail width and let logistics use the full workspace. */
+.logistics-sidebar { width: 156px; }
+.logistics-sidebar__item,
+.logistics-sidebar__account,
+.logistics-sidebar__logout {
+  padding: 0.7rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.logistics-sidebar__footer {
+  width: 100%;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(138, 113, 95, .16);
+}
+.logistics-workspace { margin-left: 156px; }
+.panel-layout { grid-template-columns: minmax(0, 1fr); }
+
+@media (max-width: 768px) {
+  .logistics-sidebar {
+    position: static;
+    width: auto;
+    min-height: auto;
+    padding: 12px;
+    overflow: visible;
+  }
+  .logistics-workspace { margin-left: 0; }
+  .logistics-sidebar__nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .logistics-sidebar__footer { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .panel-layout { padding: 22px 14px 32px; }
+  .overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 460px) {
+  .logistics-sidebar__nav,
+  .logistics-sidebar__footer,
+  .overview-grid { grid-template-columns: 1fr; }
+
+.logistics-sidebar {
+  transition: width 260ms cubic-bezier(.22, 1, .36, 1), padding 260ms cubic-bezier(.22, 1, .36, 1), border-color 260ms ease, opacity 180ms ease;
+}
+.logistics-workspace { transition: margin-left 260ms cubic-bezier(.22, 1, .36, 1); }
+.logistics-topbar { transition: left 260ms cubic-bezier(.22, 1, .36, 1); }
+.main-branch-page.sidebar-collapsed .logistics-sidebar {
+  width: 0;
+  padding-right: 0;
+  padding-left: 0;
+  border-right-color: transparent;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.main-branch-page.sidebar-collapsed .logistics-workspace { margin-left: 0; }
+.main-branch-page.sidebar-collapsed .logistics-topbar { left: 0; }
+
+.logistics-section-enter-active,
+.logistics-section-leave-active {
+  transition: opacity 220ms ease, transform 220ms cubic-bezier(.22, 1, .36, 1);
+}
+.logistics-section-enter-from { opacity: 0; transform: translateY(10px); }
+.logistics-section-leave-to { opacity: 0; transform: translateY(-6px); }
+  .logistics-topbar { min-height: 60px; padding: 0 12px; }
+  .header-name { max-width: 145px; }
+  .panel-header h1 { font-size: 29px; }
+  .data-table th, .data-table td { padding: 10px 8px; font-size: 12px; }
+}
+
+.logistics-feature-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.2rem 0.2rem 0.6rem;
+}
+.logistics-feature-header .logistics-eyebrow {
+  margin: 0 0 0.2rem;
+  color: #b66a3e;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+.logistics-feature-header h1 {
+  margin: 0;
+  color: #1f2937;
+  font-size: clamp(2rem, 2vw, 2.2rem);
+  font-weight: 800;
+  letter-spacing: 0;
+}
+.logistics-feature-header > div > p:last-child {
+  margin: 0.35rem 0 0;
+  color: #886f60;
+  max-width: 54ch;
+}
+.logistics-refresh-button {
+  border: 1px solid #243447;
+  background: #243447;
+  color: #fff;
+  border-radius: 12px;
+  padding: 0.72rem 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(36, 52, 71, .15);
+  transition: background-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+.logistics-refresh-button:hover:not(:disabled) {
+  background: #172536;
+  border-color: #172536;
+  box-shadow: 0 10px 22px rgba(36, 52, 71, .2);
+  transform: translateY(-1px);
+}
+.logistics-refresh-button:disabled { cursor: wait; opacity: .72; }
+
+@media (max-width: 460px) {
+  .logistics-feature-header { align-items: flex-start; flex-direction: column; }
+  .logistics-refresh-button { align-self: stretch; }
+}
+
+/* Match the Finance Manager canvas and keep the topbar outside page scrolling. */
+.main-branch-page { background: #e7d9cf; }
+.logistics-sidebar { background: rgba(255, 255, 255, .42); border-right-color: rgba(115, 93, 84, .18); }
+.logistics-workspace { padding-top: 68px; }
+.logistics-topbar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 156px;
+  min-height: 68px;
+  box-sizing: border-box;
+  background: linear-gradient(180deg, #e7d9cf 0%, #eee5df 100%);
+  border-bottom-color: rgba(148, 163, 184, .18);
+  box-shadow: 0 10px 18px rgba(15, 23, 42, .12);
+  z-index: 20;
+}
+
+@media (max-width: 768px) {
+  .logistics-workspace { padding-top: 60px; }
+  .logistics-topbar { left: 0; min-height: 60px; }
+}
+
+/* Keep the burger behavior active outside the mobile media query as well. */
+.logistics-sidebar {
+  transition: width 260ms cubic-bezier(.22, 1, .36, 1), padding 260ms cubic-bezier(.22, 1, .36, 1), border-color 260ms ease, opacity 180ms ease;
+}
+.logistics-workspace { transition: margin-left 260ms cubic-bezier(.22, 1, .36, 1); }
+.logistics-topbar { transition: left 260ms cubic-bezier(.22, 1, .36, 1); }
+.main-branch-page.sidebar-collapsed .logistics-sidebar {
+  width: 0;
+  padding-right: 0;
+  padding-left: 0;
+  border-right-color: transparent;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.main-branch-page.sidebar-collapsed .logistics-workspace { margin-left: 0; }
+.main-branch-page.sidebar-collapsed .logistics-topbar { left: 0; }
+
+/* The animated view wrapper sits between main-col and each selected section. */
+.logistics-section-view > .panel-section {
+  padding: 20px;
+  border: 1px solid rgba(226, 232, 240, .9);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(83, 57, 37, .1);
+}
+.logistics-section-view > .panel-section + .panel-section { margin-top: 18px; }
+
+/* Finance Manager-style animated view switch. */
+.logistics-section-enter-active,
+.logistics-section-leave-active {
+  transition: opacity 220ms ease, transform 220ms cubic-bezier(.22, 1, .36, 1);
+}
+.logistics-section-enter-from { opacity: 0; transform: translateY(10px); }
+.logistics-section-leave-to { opacity: 0; transform: translateY(-6px); }
+
+.logistics-account-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, .42);
+}
+.logistics-account-modal {
+  width: min(90vw, 520px);
+  max-height: 80vh;
+  overflow: hidden;
+  border: 1px solid rgba(219, 188, 160, .45);
+  border-radius: 20px;
+  background: linear-gradient(180deg, #ffffff 0%, #fef8f3 100%);
+  box-shadow: 0 28px 72px rgba(15, 23, 42, .18);
+}
+.logistics-account-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid rgba(219, 188, 160, .35);
+  background: linear-gradient(180deg, rgba(255, 255, 255, .6), rgba(255, 248, 241, .4));
+}
+.logistics-account-header h3 { margin: 0; color: #3d2a1f; font-size: 1.15rem; font-weight: 800; }
+.logistics-account-close {
+  border: 0;
+  background: transparent;
+  color: #a6785e;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+.logistics-account-body { flex: 1; overflow-y: auto; padding: 0.75rem 1.5rem; }
+.logistics-account-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid rgba(219, 188, 160, .24);
+  color: #977b6b;
+  font-size: 0.9rem;
+}
+.logistics-account-row strong { color: #3d2a1f; text-align: right; font-size: 0.95rem; font-weight: 700; word-break: break-word; }
+.logistics-account-footer { display: flex; justify-content: flex-end; padding: 1rem 1.5rem; border-top: 1px solid rgba(219, 188, 160, .3); }
+.logistics-account-footer button {
+  border: 1px solid rgba(100, 116, 139, .3);
+  border-radius: 999px;
+  padding: 6px 14px;
+  background: #64748b;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: none;
+  transition: background-color .16s ease, transform .16s ease;
+}
+.logistics-account-footer button:hover { background: #525c6a; transform: translateY(-1px); }
 </style>
