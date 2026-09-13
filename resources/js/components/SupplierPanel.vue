@@ -8,10 +8,11 @@
     :enableProfileUpdate="true"
     :canEditProfile="userProfile.role === 'OWNER'"
     :canChangePassword="true"
-    :ownerTwoColumnLayout="true"
+    :ownerTwoColumnLayout="false"
     :showOwnerSidebar="true"
     :showOwnerTopbar="true"
     :topbarLabel="'SUPPLIER'"
+    :accountInfoStyle="'finance'"
     @logout="askLogout"
     @profile-updated="onProfileUpdated"
   >
@@ -44,7 +45,8 @@
           </button>
         </header>
 
-      <div class="panel-content">
+      <Transition name="supplier-section" mode="out-in">
+      <div :key="selectedModule" class="panel-content supplier-module-view">
         <div v-if="selectedModule === 'overview'" class="hr-stats-grid">
           <div class="hr-stat-card hr-stat-card--total">
             <div class="hr-stat-icon">📦</div>
@@ -71,7 +73,7 @@
         </div>
 
       <!-- Orders Section (merged) -->
-      <div v-if="selectedModule === 'orders'" class="panel-section">
+      <div v-if="selectedModule === 'overview' || selectedModule === 'orders'" class="panel-section">
         <h2 class="section-title">Your Orders</h2>
         <div v-if="ordersLoading" class="loading-container">
           <div class="loading-spinner"></div>
@@ -146,11 +148,11 @@
         </div>
       </div>
 
-      <div v-if="selectedModule === 'deliveries'" class="supplier-deliveries-module">
+      <div v-if="selectedModule === 'overview' || selectedModule === 'deliveries'" class="supplier-deliveries-module">
         <logistics-panel-content :deliveries="deliveries" :suppliers="suppliers" @product-added="onProductAdded" />
       </div>
 
-          <section v-if="selectedModule === 'products'" class="supplier-products">
+          <section v-if="selectedModule === 'overview' || selectedModule === 'products'" id="supplier-products" class="supplier-products">
             <h2>Your Products</h2>
             <div v-if="loadingProducts">Loading products...</div>
             <div v-else-if="!products.length">No products yet.</div>
@@ -173,6 +175,7 @@
             </div>
               </section>
             </div>
+            </Transition>
             </div>
             </template>
 
@@ -805,9 +808,22 @@ async function loadProducts() {
       else if (Array.isArray(pres.data.data)) products.value = pres.data.data
       else products.value = []
     }
+
+    if (products.value.length === 0 && orders.value.length > 0) {
+      const uniqueProducts = new Map()
+      orders.value.forEach(order => {
+        const product = order.product
+        if (!product) return
+        const key = product.id || String(product.name || '').trim().toLowerCase()
+        if (key && !uniqueProducts.has(key)) uniqueProducts.set(key, product)
+      })
+      products.value = Array.from(uniqueProducts.values())
+    }
   } catch (e) {
     console.warn('Failed to load products', e)
-    products.value = []
+    products.value = orders.value
+      .map(order => order.product)
+      .filter(Boolean)
   } finally {
     loadingProducts.value = false
   }
@@ -1667,7 +1683,7 @@ function onProfileUpdated(newData) {
   min-width: 0;
   min-height: 100vh;
   margin: 0 0 0 156px;
-  padding: 82px 3rem 2rem;
+  padding: 82px 1.3rem 2rem;
   box-sizing: border-box;
   overflow-x: hidden;
   overflow-y: auto;
@@ -1755,6 +1771,7 @@ function onProfileUpdated(newData) {
   border-radius: 12px;
   box-shadow: 0 8px 20px rgba(16, 24, 40, 0.06);
   box-sizing: border-box;
+  scroll-margin-top: 84px;
 }
 .product-grid { display:grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap:0.75rem; margin-top:0.5rem }
 .product-card { background:#fff; border-radius:10px; padding:0.75rem; box-shadow:0 8px 24px rgba(15,23,42,0.06); border:1px solid #eef2f6 }
@@ -2238,8 +2255,8 @@ function onProfileUpdated(newData) {
 /* When profile column is hidden, lay out main + side like other manager panels */
 :deep(.admin-layout.no-profile-column) {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
-  column-gap: 24px;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: 0;
   row-gap: 0;
   align-items: start;
 }
@@ -2247,6 +2264,7 @@ function onProfileUpdated(newData) {
 :deep(.admin-layout.no-profile-column) .admin-main {
   width: 100%;
   min-width: 0;
+  margin-left: 0;
 }
 
 :deep(.admin-layout.no-profile-column) .admin-side {
@@ -2315,6 +2333,29 @@ function onProfileUpdated(newData) {
 :deep(.admin-card.admin-card--stacked .admin-card__body--stacked),
 :deep(.admin-card.admin-card--stacked .admin-card__footer--stacked) {
   display: none;
+}
+
+.supplier-module-view {
+  width: 100%;
+  min-width: 0;
+}
+.supplier-section-enter-active,
+.supplier-section-leave-active {
+  transition: opacity 220ms ease, transform 220ms cubic-bezier(.22, 1, .36, 1);
+}
+.supplier-section-enter-from { opacity: 0; transform: translateY(10px); }
+.supplier-section-leave-to { opacity: 0; transform: translateY(-6px); }
+
+@media (max-width: 900px) {
+  :deep(.admin-layout.no-profile-column) {
+    display: block;
+  }
+  :deep(.admin-layout.no-profile-column) .admin-main,
+  :deep(.admin-layout.no-profile-column) .admin-side {
+    width: 100%;
+    min-width: 0;
+  }
+  .supplier-module-view { overflow-x: hidden; }
 }
 
 /* Keep the Supplier announcements card lower in the side column. */

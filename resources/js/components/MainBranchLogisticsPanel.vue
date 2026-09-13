@@ -280,6 +280,15 @@
         </div>
       </div>
     </transition>
+
+    <transition name="fade">
+      <div v-if="showLogoutOverlay" class="logistics-loading-overlay">
+        <div class="logistics-logo-loading-box">
+          <img :src="logoImg" alt="Chikin Tayo" class="logistics-logo-loading-img" />
+          <p>Logging out...</p>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -289,6 +298,8 @@ import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { showToast } from './toastStore'
 
+const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
+
 const router = useRouter()
 const profile = ref({})
 const selectedSection = ref('overview')
@@ -296,6 +307,7 @@ const sidebarCollapsed = ref(false)
 const showAccountInfoModal = ref(false)
 const showLogoutConfirm = ref(false)
 const isLoggingOut = ref(false)
+const showLogoutOverlay = ref(false)
 const metrics = ref({ active_products: 0, low_stock: 0, pending_deliveries: 0, suppliers: 0 })
 // Inventory / procurement state (read-only on Main Branch)
 const inventory = ref([])
@@ -354,13 +366,14 @@ function cancelLogout() {
 async function confirmLogout() {
   if (isLoggingOut.value) return
   isLoggingOut.value = true
+  showLogoutOverlay.value = true
   try {
     await axios.post('/api/logout', {}, { withCredentials: true })
   } catch (e) {}
   try { localStorage.clear(); sessionStorage.clear() } catch (e) {}
   setTimeout(() => {
-    window.location.replace('/staff-landing')
-  }, 350)
+    window.location.replace('/admin-login')
+  }, 600)
 }
 
 async function askLogout() {
@@ -1339,4 +1352,36 @@ watch(selectedBranch, async () => {
   transition: background-color .16s ease, transform .16s ease;
 }
 .logistics-account-footer button:hover { background: #525c6a; transform: translateY(-1px); }
+
+.logistics-loading-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, .35);
+  backdrop-filter: blur(4px);
+  z-index: 501;
+}
+.logistics-logo-loading-box {
+  min-width: 168px;
+  display: block;
+  padding: 12px 18px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .95);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, .18);
+  text-align: center;
+}
+.logistics-logo-loading-img {
+  width: 80px;
+  height: auto;
+  display: block;
+  margin: 0 auto 8px;
+  animation: logistics-logo-bounce .8s ease-in-out infinite;
+}
+.logistics-logo-loading-box p { margin: 0; color: #6b6b6b; font-size: .9rem; font-weight: 500; }
+@keyframes logistics-logo-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
 </style>
