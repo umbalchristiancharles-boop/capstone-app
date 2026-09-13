@@ -1688,6 +1688,10 @@ function onProfileUpdated(newData) {
   overflow-x: hidden;
   overflow-y: auto;
 }
+.supplier-panel-shell :deep(.loading-overlay) {
+  z-index: 100500 !important;
+  background: rgba(0, 0, 0, .5);
+}
 
 .supplier-panel-shell :deep(.owner-sidebar-collapsed .admin-main) {
   margin-left: 0;
