@@ -2293,3 +2293,80 @@
 .manager-finance button:disabled {
   box-shadow: none;
 }
+
+.manager-finance .logout-confirm-backdrop {
+  background: rgba(15, 23, 42, 0.46);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+.manager-finance .logout-confirm-box {
+  width: min(92vw, 398px);
+  padding: 1.9rem 1.75rem 1.35rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  background: #ffffff;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.2);
+}
+
+.manager-finance .logout-confirm-icon {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 1.35rem;
+  place-items: center;
+  border: 3px solid #8bb4c7;
+  border-radius: 50%;
+  color: #3d2a1f;
+  font-size: 2.35rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.manager-finance .logout-confirm-box h3 {
+  margin: 0 0 0.85rem;
+  color: #5b5b5b;
+  font-size: 1.45rem;
+  font-weight: 700;
+}
+
+.manager-finance .logout-confirm-box p {
+  max-width: 330px;
+  margin: 0 auto 1.45rem;
+  color: #666666;
+  font-size: 0.98rem;
+  line-height: 1.45;
+}
+
+.manager-finance .logout-actions {
+  gap: 0.55rem;
+}
+
+.manager-finance .logout-actions .btn-cancel,
+.manager-finance .logout-actions .btn-confirm {
+  min-width: 4.5rem;
+  min-height: 2.35rem;
+  padding: 0.55rem 0.9rem;
+  border-radius: 3px;
+  font-size: 0.82rem;
+}
+
+.manager-finance .logout-actions .btn-cancel {
+  border: 0;
+  background: #718096;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.manager-finance .logout-actions .btn-confirm {
+  border: 0;
+  background: #ff6b45;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.manager-finance .logout-actions .btn-cancel:hover:not(:disabled),
+.manager-finance .logout-actions .btn-confirm:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 12px rgba(15, 23, 42, 0.14);
+}

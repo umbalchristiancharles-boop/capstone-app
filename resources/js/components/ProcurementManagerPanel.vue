@@ -2,8 +2,9 @@
   <div class="manager-procurement-panel">
   <OwnerPanelLayout ref="ownerLayout"
     :userProfile="userProfile"
-    :panelTitle="'Manager Procurement Panel'"
-    :panelDescription="'Manage procurement staff, view procurement reports, and monitor procurement status.'"
+    :panelEyebrow="'PROCUREMENT DASHBOARD'"
+    :panelTitle="'PROCUREMENT MANAGER PANEL'"
+    :panelDescription="''"
     :enableProfileUpdate="true"
     :canEditProfile="userProfile.role === 'OWNER'"
     :canChangePassword="true"
@@ -34,7 +35,7 @@
 
     <template #main>
       <template v-if="selectedSection === 'overview'">
-        <div id="overview" class="hr-stats-grid">
+        <div id="overview" class="hr-stats-grid procurement-overview-card">
           <div class="hr-stat-card hr-stat-card--total">
             <div class="hr-stat-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
@@ -73,48 +74,52 @@
             <button class="btn-primary" v-if="!showProcRequestFormManager" @click="showProcRequestFormManager = true">+ Custom Procurement Request</button>
           </div>
 
-          <div v-if="showProcRequestFormManager" class="form-container" style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-              <h3 style="margin:0; font-size:16px;">Create Manual Procurement</h3>
-              <button type="button" @click="cancelProcRequestManager" style="background:none;border:none;color:#9ca3af;font-size:18px;cursor:pointer;padding:0">✕</button>
+          <Teleport to="body">
+            <div v-if="showProcRequestFormManager" class="procurement-modal" role="dialog" aria-modal="true" aria-labelledby="manual-procurement-title" @click.self="cancelProcRequestManager">
+              <div class="procurement-modal__dialog">
+                <div class="procurement-modal__header">
+                  <h3 id="manual-procurement-title">Create Manual Procurement</h3>
+                  <button type="button" class="procurement-modal__close" aria-label="Close form" @click="cancelProcRequestManager">✕</button>
+                </div>
+                <form @submit.prevent="submitProcRequestManager">
+                  <div class="form-group">
+                    <label>Product *</label>
+                    <select v-model="procRequestFormManager.product_id" required>
+                      <option value="">— Select product —</option>
+                      <option v-for="p in products" :key="p.id" :value="p.id">{{ p.name }} (₱{{ formatPrice(p.price) }})</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Quantity *</label>
+                    <input type="number" v-model.number="procRequestFormManager.quantity" min="1" required />
+                  </div>
+                  <div class="form-group">
+                    <label>Unit Price (PHP)</label>
+                    <input type="number" v-model.number="procRequestFormManager.price" step="0.01" min="0" placeholder="Optional - enter price per unit" />
+                    <small>If provided, this price will be used to compute the total and sent to Finance.</small>
+                  </div>
+                  <div class="form-group procurement-modal__uploads">
+                    <div>
+                      <label>Receipt *</label>
+                      <input type="file" accept="image/*" @change="onReceiptChangeManager" required />
+                    </div>
+                    <div>
+                      <label>Product image *</label>
+                      <input type="file" accept="image/*" @change="onProductImageChangeManager" required />
+                    </div>
+                  </div>
+                  <div class="form-group procurement-modal__checkbox">
+                    <label><input type="checkbox" v-model="procRequestFormManager.request_budget" /> Request budget from Finance</label>
+                  </div>
+                  <div v-if="procRequestFormManagerError" class="error-msg">{{ procRequestFormManagerError }}</div>
+                  <div class="form-actions procurement-modal__actions">
+                    <button type="button" class="btn-secondary" @click="cancelProcRequestManager">Cancel</button>
+                    <button type="submit" class="btn-primary" :disabled="procRequestSubmittingManager">{{ procRequestSubmittingManager ? 'Submitting...' : 'Submit' }}</button>
+                  </div>
+                </form>
+              </div>
             </div>
-            <form @submit.prevent="submitProcRequestManager">
-              <div class="form-group" style="margin-bottom:12px;">
-                <label>Product *</label>
-                <select v-model="procRequestFormManager.product_id" required style="width:100%; padding:8px;">
-                  <option value="">— Select product —</option>
-                  <option v-for="p in products" :key="p.id" :value="p.id">{{ p.name }} (₱{{ formatPrice(p.price) }})</option>
-                </select>
-              </div>
-              <div class="form-group" style="margin-bottom:12px;">
-                <label>Quantity *</label>
-                <input type="number" v-model.number="procRequestFormManager.quantity" min="1" required style="width:100%; padding:8px;" />
-              </div>
-              <div class="form-group" style="margin-bottom:12px;">
-                <label>Unit Price (PHP)</label>
-                <input type="number" v-model.number="procRequestFormManager.price" step="0.01" min="0" placeholder="Optional - enter price per unit" style="width:100%; padding:8px;" />
-                <small style="color:#9ca3af">If provided, this price will be used to compute the total and sent to Finance.</small>
-              </div>
-              <div class="form-group" style="display:flex; gap:12px; margin-bottom:12px;">
-                <div style="flex:1">
-                  <label>Receipt *</label>
-                  <input type="file" accept="image/*" @change="onReceiptChangeManager" required />
-                </div>
-                <div style="flex:1">
-                  <label>Product image *</label>
-                  <input type="file" accept="image/*" @change="onProductImageChangeManager" required />
-                </div>
-              </div>
-              <div class="form-group" style="margin-bottom:12px;">
-                <label><input type="checkbox" v-model="procRequestFormManager.request_budget" /> Request budget from Finance</label>
-              </div>
-              <div v-if="procRequestFormManagerError" class="error-msg" style="color:#dc2626;margin-bottom:12px">{{ procRequestFormManagerError }}</div>
-              <div class="form-actions" style="display:flex; gap:10px; justify-content:flex-end;">
-                <button type="button" class="btn-secondary" @click="cancelProcRequestManager">Cancel</button>
-                <button type="submit" class="btn-primary" :disabled="procRequestSubmittingManager">{{ procRequestSubmittingManager ? 'Submitting...' : 'Submit' }}</button>
-              </div>
-            </form>
-          </div>
+          </Teleport>
         </section>
 
         <section class="requested-products mt-1">
@@ -448,9 +453,11 @@
 
   </OwnerPanelLayout>
 
+  <LoadingOverlay :show="isLoggingOut" text="Logging out..." />
+
   <transition name="fade">
     <div v-if="showLogoutConfirm" class="logout-confirm-backdrop">
-      <div class="logout-confirm-box">
+      <div class="logout-confirm-box logout-confirm-dialog">
         <h3>Logout from Procurement Manager Panel?</h3>
         <p>This will end your current session for Chikin Tayo Manager.</p>
         <div class="logout-actions">
@@ -548,15 +555,15 @@
 import { ref, onMounted, computed, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
+import LoadingOverlay from './LoadingOverlay.vue'
 import axios from 'axios'
 import { showToast } from './toastStore'
 
 const router = useRouter()
 const userProfile = ref({})
 const procurementTopbarLabel = computed(() => {
-  const role = userProfile.value?.role || 'PROCUREMENT MANAGER'
   const branchName = userProfile.value?.branch?.name || userProfile.value?.branch_name || userProfile.value?.branch || ''
-  return branchName ? `${role} - ${branchName}` : role
+  return `PROCUREMENT MANAGER - ${branchName || 'DASMA BRANCH'}`
 })
 const selectedSection = ref('overview')
 const dashboardTotals = ref({ totalSuppliers: 0, activeSuppliers: 0, pendingRequests: 0 })
@@ -901,11 +908,13 @@ onMounted(async () => {
 
 function cancelLogout() { showLogoutConfirm.value = false }
 async function confirmLogout() {
+  if (isLoggingOut.value) return
+  isLoggingOut.value = true
   try { await axios.post('/api/logout', {}, { withCredentials: true })
   } catch (e) {} finally {
     localStorage.clear();
     sessionStorage.clear();
-    window.location.replace('/staff-landing')
+    window.location.replace('/admin-login')
   }
 }
 
@@ -1906,7 +1915,7 @@ onUnmounted(() => {
 .manager-procurement-panel :deep(.admin-layout--owner-sidebar-layout) {
   display: block;
   min-height: 100vh;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .manager-procurement-panel :deep(.owner-panel-sidebar) {
@@ -1955,14 +1964,65 @@ onUnmounted(() => {
   display: flex;
   width: auto;
   min-width: 0;
-  height: 100vh;
-  margin: 0 0 0 156px;
-  padding: 66px 1.3rem 1.25rem;
+  height: calc(100vh - 66px);
+  min-height: 0;
+  margin: 66px 0 0 156px;
+  padding: 1.2rem 1.3rem 1.25rem;
   box-sizing: border-box;
   flex-direction: column;
   gap: 0.75rem;
   overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.manager-procurement-panel :deep(.admin-main-header) {
+  padding: 0 0 4px;
+  margin-bottom: 0;
+}
+
+.manager-procurement-panel :deep(.admin-main-header p:empty) {
+  display: none;
+}
+
+.manager-procurement-panel :deep(.admin-main-header__eyebrow) {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: #c46632;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  line-height: 1.2;
+}
+
+.manager-procurement-panel :deep(.admin-main-header h1) {
+  color: #12304c;
+}
+
+.manager-procurement-panel :deep(.admin-main-header-top) {
+  justify-content: flex-start;
+}
+
+.manager-procurement-panel :deep(.admin-main-header-top > .header-left-slot) {
+  display: none;
+}
+
+.manager-procurement-panel :deep(.admin-main-header-top > div:nth-child(2)) {
+  transform: translateX(-12px);
+}
+
+.manager-procurement-panel :deep(.admin-main-header-top > .header-actions-top) {
+  margin-left: auto;
+}
+
+.manager-procurement-panel :deep(.admin-main) {
+  padding: 1.2rem 1.75rem 1.25rem;
+  gap: 0.375rem;
+}
+
+.manager-procurement-panel .manual-procurement,
+.manager-procurement-panel .requested-products {
+  margin-top: 0;
 }
 
 .manager-procurement-panel :deep(.owner-sidebar-collapsed .admin-main) {
@@ -2014,6 +2074,161 @@ onUnmounted(() => {
   font-weight: 900;
   line-height: 1;
   letter-spacing: -0.03em;
+}
+
+.procurement-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(38, 28, 21, 0.48);
+  overflow-y: auto;
+}
+
+.procurement-modal__dialog {
+  width: min(100%, 720px);
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  padding: 1.25rem;
+  box-sizing: border-box;
+  background: #fff;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 14px;
+  box-shadow: 0 18px 45px rgba(38, 28, 21, 0.24);
+}
+
+.procurement-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.procurement-modal__header h3 {
+  margin: 0;
+  color: #4b2a06;
+  font-size: 1rem;
+}
+
+.procurement-modal__close {
+  flex: 0 0 auto;
+  padding: 0.25rem;
+  border: 0;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.procurement-modal__dialog .form-group {
+  margin-bottom: 0.85rem;
+}
+
+.procurement-modal__dialog .form-group label {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: #334155;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.procurement-modal__dialog select,
+.procurement-modal__dialog input[type="number"] {
+  width: 100%;
+  min-height: 38px;
+  padding: 0.55rem 0.65rem;
+  box-sizing: border-box;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  background: #fff;
+  color: #1e293b;
+}
+
+.procurement-modal__dialog small {
+  display: block;
+  margin-top: 0.35rem;
+  color: #94a3b8;
+  font-size: 0.75rem;
+}
+
+.procurement-modal__uploads {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.procurement-modal__uploads input[type="file"] {
+  width: 100%;
+  max-width: 100%;
+  font-size: 0.78rem;
+}
+
+.procurement-modal__checkbox label {
+  display: flex !important;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.procurement-modal__checkbox input {
+  width: auto;
+}
+
+.procurement-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.procurement-modal__actions .btn-secondary,
+.procurement-modal__actions .btn-primary {
+  min-height: 36px;
+  padding: 0.55rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.procurement-modal__actions .btn-secondary {
+  border: 1px solid #64748b;
+  background: #64748b;
+  color: #fff;
+  box-shadow: none;
+}
+
+.procurement-modal__actions .btn-secondary:hover {
+  background: #475569;
+  border-color: #475569;
+}
+
+.procurement-modal__actions .btn-primary {
+  border: 1px solid #ff6b1a;
+  background: #ff6b1a;
+  color: #fff;
+  box-shadow: 0 5px 12px rgba(255, 107, 26, 0.24);
+}
+
+.procurement-modal__actions .btn-primary:hover:not(:disabled) {
+  background: #e85a0b;
+  border-color: #e85a0b;
+}
+
+.procurement-modal__actions .btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.procurement-modal .error-msg {
+  margin-bottom: 0.75rem;
+  color: #dc2626;
+  font-size: 0.85rem;
 }
 
 .requested-products h2 {
@@ -2388,27 +2603,43 @@ onUnmounted(() => {
 .section-subtitle { margin: 0 0 8px 0; font-size: 1rem; font-weight: 700; }
 
 /* Budget form specific styles */
-.budget-form { display: block; background: transparent; padding: 8px 0; }
+.budget-form {
+  max-width: 860px;
+  margin-top: 1rem;
+  padding: 1rem 0 0;
+  border-top: 1px solid #e5e7eb;
+}
 .budget-form .form-row { display: flex; gap: 12px; align-items: end; flex-wrap:wrap }
 .budget-form .form-group.amount { width: 260px; display:flex; flex-direction:column }
 .budget-form .form-group.amount label { font-size:0.9rem }
 .budget-form .input-amount { padding:8px 10px; border-radius:8px; border:1px solid #ddd; width:100%; max-width:260px }
 .budget-form .form-actions { display:flex; align-items:center }
-.btn-budget { background: linear-gradient(180deg,#ff781a,#ff5a00); color: #fff; border: none; padding: 8px 14px; border-radius: 999px; box-shadow: 0 8px 18px rgba(255,90,0,0.18); cursor:pointer }
+.btn-budget { background: #ff6b1a; color: #fff; border: 1px solid #ff6b1a; padding: 9px 14px; border-radius: 8px; box-shadow: 0 5px 12px rgba(255,90,0,0.18); cursor:pointer; font-weight:700 }
 .btn-budget:disabled { opacity:0.6; cursor:default }
-.btn-outline { background: #f0f0f0; color: #333; border-radius: 999px; padding: 6px 10px }
+.btn-outline { background: #64748b; color: #fff; border: 1px solid #64748b; border-radius: 8px; padding: 9px 14px; font-weight:700; cursor:pointer }
 
 /* Improved budget form grid and controls */
-.budget-form .form-grid { display: grid; grid-template-columns: 140px 1fr; gap: 10px 18px; align-items: start; max-width: 760px }
-.budget-form .form-label { color: #4b1d1d; font-weight:700; padding-top:6px }
-.budget-form textarea { width:100%; min-height:68px; max-width:100%; padding:8px 10px; border-radius:8px; border:1px solid #e6e6e6; background:#fff }
-.budget-form .inline-controls { display:flex; gap:12px; align-items:center }
-.budget-form .amount-input { display:flex; align-items:center; gap:6px; background:#fff; border:1px solid #eee; padding:6px 8px; border-radius:8px }
+.budget-form .form-grid { display: grid; grid-template-columns: 145px minmax(0, 600px); gap: 16px 18px; align-items: start; max-width: 800px }
+.budget-form .form-label { color: #4b1d1d; font-weight:700; padding-top:9px }
+.budget-form textarea { width:100%; min-height:78px; max-width:100%; padding:10px 12px; border-radius:8px; border:1px solid #dbe1e8; background:#fff; color:#1f2937; font: inherit; resize: vertical; box-sizing:border-box }
+.budget-form .inline-controls { display:flex; flex-wrap:wrap; gap:12px; align-items:center }
+.budget-form .amount-input { display:flex; align-items:center; gap:6px; background:#fff; border:1px solid #dbe1e8; padding:8px 10px; border-radius:8px }
 .budget-form .amount-input .currency { color:#0b6e3a; font-weight:700 }
-.budget-form .amount-input input { border: none; outline: none; width:120px; font-weight:700 }
+.budget-form .amount-input input { border: none; outline: none; width:120px; font-weight:700; color:#334155; font: inherit }
 .budget-form .form-field { display:flex; flex-direction:column }
-.budget-form .btn-budget { padding: 8px 12px; height:40px }
-.budget-form .btn-outline { margin-bottom: 8px }
+.budget-form .btn-budget { padding: 9px 14px; height:38px }
+.budget-form .btn-outline { margin-bottom: 0 }
+.budget-form .action-row { display:flex; gap:8px; align-items:center }
+.budget-form .field-note { flex-basis:100%; }
+.budget-form .error-msg { padding-top:0; }
+
+.manager-procurement-panel .budget-requests > .mt-1 {
+  margin-top: 2rem;
+}
+
+.manager-procurement-panel .budget-requests h3 {
+  margin-bottom: 0.35rem;
+}
 
 
 /* Button variants */
@@ -2565,6 +2796,179 @@ button:focus, a:focus, input:focus, select:focus { outline: 3px solid rgba(3,37,
   gap: 1rem;
   flex-wrap: wrap;
 }
+
+/* Finance Manager visual theme for Procurement Manager. */
+.manager-procurement-panel {
+  background: #e7d9cf;
+  color: #3d2a1f;
+}
+.manager-procurement-panel :deep(.owner-panel-sidebar) {
+  background: rgba(255, 255, 255, .42);
+  border-right-color: rgba(115, 93, 84, .18);
+}
+.manager-procurement-panel :deep(.owner-panel-topbar) {
+  background: linear-gradient(180deg, #e7d9cf 0%, #eee5df 100%);
+  border-bottom-color: rgba(115, 93, 84, .18);
+  box-shadow: 0 10px 18px rgba(15, 23, 42, .12);
+}
+.manager-procurement-panel :deep(.admin-main) { background: transparent; }
+.manager-procurement-sidebar-link {
+  border-radius: 12px;
+  color: #29384a;
+  font-size: .78rem;
+  font-weight: 600;
+}
+.manager-procurement-sidebar-link:hover {
+  background: rgba(255, 255, 255, .68);
+  border-color: rgba(215, 125, 61, .22);
+  color: #9b4e21;
+}
+.manager-procurement-sidebar-link--active {
+  background: #fffaf5;
+  border-color: #efb47f;
+  color: #111827;
+  box-shadow: 0 5px 12px rgba(184, 111, 61, .08);
+}
+.manager-procurement-sidebar-account,
+.manager-procurement-sidebar-logout {
+  border-radius: 12px;
+  font-size: .78rem;
+  font-weight: 600;
+}
+.manager-procurement-sidebar-account { border-color: #c9d9e5; background: #f7fbff; color: #30445a; }
+.manager-procurement-sidebar-logout { border-color: #e3b1a5; background: #fff9f7; color: #a23d32; }
+.manager-procurement-panel .hr-stat-card,
+.manager-procurement-panel .panel-section,
+.manager-procurement-panel .supplier-products,
+.manager-procurement-panel .manual-procurement,
+.manager-procurement-panel .requested-products {
+  background: #fff;
+  border: 1px solid rgba(226, 232, 240, .9);
+  border-radius: 14px;
+  box-shadow: 0 8px 20px rgba(83, 57, 37, .1);
+}
+.manager-procurement-panel .procurement-overview-card,
+.manager-procurement-panel .manual-procurement,
+.manager-procurement-panel .requested-products,
+.manager-procurement-panel .budget-requests,
+.manager-procurement-panel .requests-history,
+.manager-procurement-panel .supplier-products {
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 1rem;
+  padding: 1.25rem;
+  background: #fff;
+  border: 1px solid rgba(226, 232, 240, .9);
+  border-radius: 14px;
+  box-shadow: 0 8px 20px rgba(83, 57, 37, .1);
+}
+.manager-procurement-panel .procurement-overview-card {
+  margin-top: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+.manager-procurement-panel .procurement-overview-card .hr-stat-card {
+  margin-top: 0;
+}
+.manager-procurement-panel .manual-procurement h2,
+.manager-procurement-panel .requested-products h2,
+.manager-procurement-panel .budget-requests h2,
+.manager-procurement-panel .requests-history h2,
+.manager-procurement-panel .supplier-products h2 {
+  margin-top: 0;
+}
+.manager-procurement-panel .hr-stat-card { min-height: 84px; }
+.manager-procurement-panel .hr-stat-label { color: #8b6f59; }
+.manager-procurement-panel .hr-stat-value { color: #3d2a1f; }
+.manager-procurement-panel .btn-primary,
+.manager-procurement-panel .btn-refresh {
+  border: 1px solid #243447;
+  border-radius: 10px;
+  background: #243447;
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(36, 52, 71, .15);
+}
+.manager-procurement-panel .btn-primary:hover,
+.manager-procurement-panel .btn-refresh:hover { background: #172536; }
+
+.manager-procurement-panel .data-table,
+.manager-procurement-panel .requests-scroll,
+.manager-procurement-panel .supplier-list-scroll {
+  max-width: 100%;
+}
+.manager-procurement-panel .requests-scroll { overflow-x: auto; }
+
+@media (max-width: 900px) {
+  .manager-procurement-panel :deep(.admin-main) {
+    margin: 66px 0 0 150px;
+    width: calc(100% - 150px);
+    padding: 1rem;
+  }
+  .manager-procurement-panel :deep(.owner-sidebar-collapsed .admin-main) {
+    margin: 66px 0 0;
+    width: 100%;
+  }
+  .manager-procurement-panel .form-group[style*="display:flex"] {
+    flex-direction: column;
+  }
+  .manager-procurement-panel .form-group[style*="display:flex"] > div { width: 100%; }
+  .manager-procurement-panel .form-actions {
+    flex-wrap: wrap;
+    justify-content: stretch;
+  }
+  .manager-procurement-panel .form-actions button { flex: 1 1 140px; }
+}
+
+@media (max-width: 767px) {
+  .manager-procurement-panel .procurement-modal__uploads {
+    grid-template-columns: 1fr;
+  }
+
+  .manager-procurement-panel :deep(.admin-layout--owner-sidebar-layout) { overflow: visible; }
+  .manager-procurement-panel :deep(.owner-panel-sidebar) {
+    width: 156px;
+    min-width: 156px;
+  }
+  .manager-procurement-panel :deep(.admin-main) {
+    width: 100%;
+    margin: 60px 0 0;
+    height: calc(100vh - 60px);
+    padding: .75rem;
+  }
+  .manager-procurement-panel .procurement-overview-card,
+  .manager-procurement-panel .manual-procurement,
+  .manager-procurement-panel .requested-products,
+  .manager-procurement-panel .budget-requests,
+  .manager-procurement-panel .requests-history,
+  .manager-procurement-panel .supplier-products { padding: 1rem; }
+  .manager-procurement-panel .budget-form .form-grid {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
+  }
+  .manager-procurement-panel .budget-form .form-label {
+    padding-top: 0;
+  }
+  .manager-procurement-panel .budget-form .inline-controls,
+  .manager-procurement-panel .budget-form .action-row {
+    width: 100%;
+  }
+  .manager-procurement-panel .budget-form .action-row button {
+    flex: 1;
+  }
+  .manager-procurement-panel .hr-stats-grid { grid-template-columns: 1fr; }
+}
+
+/* Keep the shell continuous like Finance Manager; cards provide the white surfaces. */
+.manager-procurement-panel :deep(.admin-page),
+.manager-procurement-panel :deep(.admin-layout) {
+  padding: 0 !important;
+  background: #e7d9cf !important;
+}
+.manager-procurement-panel :deep(.admin-layout--owner-sidebar-layout) {
+  gap: 0 !important;
+}
 .detail-line strong {
   color: #111827;
   font-weight: 600;
@@ -2609,21 +3013,4 @@ button:focus, a:focus, input:focus, select:focus { outline: 3px solid rgba(3,37,
    — the account ID will be visible inside the Info modal only. */
 :deep(.admin-profile-column .admin-id-block) { display: none !important }
 
-/* Info modal: procurement-specific visual refresh (colors, font, spacing) */
-:deep(.info-modal) {
-  max-width: 520px;
-  background: #ffffff;
-  color: #1f2937;
-  border-radius: 12px;
-  padding: 18px;
-  box-shadow: 0 18px 40px rgba(3,37,65,0.08);
-  font-family: 'Inter', 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
-}
-:deep(.info-modal h3) { margin:0; font-size:1.05rem; color:#111827; font-weight:700 }
-:deep(.info-modal .info-sub) { color:#6b7280; margin-bottom:12px }
-:deep(.info-modal .info-grid) { display:flex; flex-direction:column; gap:10px }
-:deep(.info-modal .info-row) { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:8px 0; border-bottom: 1px solid #f3f4f6 }
-:deep(.info-modal .info-row:last-child) { border-bottom: none }
-:deep(.info-modal .info-label) { color:#6b7280; font-size:0.9rem; font-weight:600 }
-:deep(.info-modal .info-value) { color:#111827; font-size:0.95rem; font-weight:700 }
 </style>

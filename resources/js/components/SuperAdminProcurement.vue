@@ -232,7 +232,7 @@
 
   <transition name="fade">
     <div v-if="showLogoutConfirm" class="logout-confirm-backdrop">
-      <div class="logout-confirm-box">
+      <div class="logout-confirm-box logout-confirm-dialog">
         <h3>Logout from Super Admin Procurement?</h3>
         <p>This will end your current session.</p>
         <div class="logout-actions">
@@ -352,7 +352,7 @@ async function confirmLogout() {
   try { await axios.post('/api/logout', {}, { withCredentials: true }) } catch (e) {} finally {
     localStorage.clear();
     sessionStorage.clear();
-    router.push('/super-admin')
+    router.push('/admin-login')
   }
 }
 

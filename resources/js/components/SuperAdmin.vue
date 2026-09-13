@@ -275,7 +275,7 @@
       <!-- LOGOUT CONFIRM MODAL -->
       <transition name="fade">
         <div v-if="showLogoutConfirm" class="logout-confirm-backdrop">
-          <div class="logout-confirm-box">
+          <div class="logout-confirm-box logout-confirm-dialog">
             <h3>Logout from Super Admin Panel?</h3>
             <p>This will end your current session for Chikin Tayo System.</p>
             <div class="logout-actions">
@@ -679,7 +679,7 @@ async function confirmLogout() {
   } catch (e) {
     localStorage.clear()
     sessionStorage.clear()
-    window.location.replace('/staff-landing')
+    window.location.replace('/admin-login')
   }
 }
 

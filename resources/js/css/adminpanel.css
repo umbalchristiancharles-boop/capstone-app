@@ -2948,6 +2948,109 @@ h1, h2, h3, h4, h5, h6, .section-subtitle, .admin-name, .admin-role {
   gap: 8px;
 }
 
+/* Shared professional logout confirmation used by all panels. */
+.logout-confirm-dialog {
+  width: min(92vw, 398px) !important;
+  padding: 1.9rem 1.75rem 1.35rem !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 4px !important;
+  background: #ffffff !important;
+  color: #5b5b5b !important;
+  text-align: center;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.2) !important;
+}
+
+.logout-confirm-dialog::before {
+  content: '?';
+  display: grid;
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 1.35rem;
+  place-items: center;
+  border: 3px solid #8bb4c7;
+  border-radius: 50%;
+  color: #3d2a1f;
+  font-size: 2.35rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.logout-confirm-dialog h3 {
+  margin: 0 0 0.85rem !important;
+  color: #5b5b5b !important;
+  font-size: 0 !important;
+  font-weight: 700 !important;
+}
+
+.logout-confirm-dialog h3::after {
+  content: 'Confirm logout';
+  font-size: 1.45rem;
+}
+
+.logout-confirm-dialog p {
+  max-width: 330px;
+  margin: 0 auto 1.45rem !important;
+  color: #666666 !important;
+  font-size: 0.98rem !important;
+  line-height: 1.45;
+}
+
+.logout-confirm-dialog p {
+  font-size: 0 !important;
+}
+
+.logout-confirm-dialog p::after {
+  content: 'This will end your current session for Chikin Tayo Manager.';
+  font-size: 0.98rem;
+}
+
+.logout-confirm-dialog .logout-actions {
+  justify-content: center;
+  gap: 0.55rem;
+  margin-top: 0;
+}
+
+.logout-confirm-dialog .btn-cancel,
+.logout-confirm-dialog .btn-confirm {
+  min-width: 4.5rem;
+  min-height: 2.35rem;
+  padding: 0.55rem 0.9rem !important;
+  border: 0 !important;
+  border-radius: 3px !important;
+  color: #ffffff !important;
+  font-size: 0.82rem;
+  cursor: pointer;
+  box-shadow: none !important;
+}
+
+.logout-confirm-dialog .btn-cancel {
+  background: #718096 !important;
+}
+
+.logout-confirm-dialog .btn-confirm {
+  background: #ff6b45 !important;
+}
+
+.logout-confirm-dialog .btn-confirm {
+  font-size: 0 !important;
+}
+
+.logout-confirm-dialog .btn-confirm::after {
+  content: 'Yes';
+  font-size: 0.82rem;
+}
+
+.logout-confirm-dialog .btn-cancel:hover:not(:disabled),
+.logout-confirm-dialog .btn-confirm:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 12px rgba(15, 23, 42, 0.14) !important;
+}
+
+.logout-confirm-dialog button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .btn-cancel,
 .btn-confirm {
   border-radius: 999px;

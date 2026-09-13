@@ -256,7 +256,7 @@ const confirmLogout = async () => {
     }
     localStorage.removeItem('user')
     localStorage.removeItem('token')
-    window.location.href = '/login'
+    window.location.href = '/admin-login'
   }
 }
 

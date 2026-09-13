@@ -519,7 +519,7 @@
   <!-- LOGOUT CONFIRM -->
   <transition name="fade">
     <div v-if="showLogoutConfirm" class="logout-confirm-backdrop">
-      <div class="logout-confirm-box">
+      <div class="logout-confirm-box logout-confirm-dialog">
         <h3>Logout from Logistics Manager Panel?</h3>
         <p>This will end your current session for Chikin Tayo.</p>
         <div class="logout-actions">

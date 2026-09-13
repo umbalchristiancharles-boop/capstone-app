@@ -31,6 +31,7 @@
                   <slot name="headerLeft"></slot>
               </div>
               <div>
+                <span v-if="panelEyebrow" class="admin-main-header__eyebrow">{{ panelEyebrow }}</span>
                 <h1>{{ panelTitle }}</h1>
                 <p>{{ panelDescription }}</p>
               </div>
@@ -355,6 +356,7 @@ import Toast from './Toast.vue'
 const props = defineProps({
   embedded: { type: Boolean, default: false },
   userProfile: { type: Object, default: () => ({}) },
+  panelEyebrow: { type: String, default: '' },
   panelTitle: { type: String, required: true },
   panelDescription: { type: String, required: true },
   fullWidth: { type: Boolean, default: false },

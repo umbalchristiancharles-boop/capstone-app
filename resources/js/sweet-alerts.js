@@ -78,7 +78,7 @@ export async function swalConfirmLogout({ useApi = true, message = 'You will be 
     if (useApi) {
       try { await axios.post('/api/logout', {}, { withCredentials: true }) } catch (e) { /* ignore */ }
       try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
-      try { window.location.replace('/staff-landing') } catch (e) { window.location.href = '/staff-landing' }
+      try { window.location.replace('/admin-login') } catch (e) { window.location.href = '/admin-login' }
     } else {
       try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
       try { window.location.replace('/logout') } catch (e) { window.location.href = '/logout' }

@@ -513,7 +513,7 @@ const handleLogout = async () => {
     localStorage.removeItem('user')
     localStorage.removeItem('token')
     // Redirect to login
-    window.location.href = '/login'
+    window.location.href = '/admin-login'
   }
 }
 </script>

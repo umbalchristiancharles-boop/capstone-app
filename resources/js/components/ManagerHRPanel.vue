@@ -759,7 +759,7 @@
   <transition name="fade">
 
     <div v-if="showLogoutConfirm" class="logout-confirm-backdrop">
-      <div class="logout-confirm-box">
+      <div class="logout-confirm-box logout-confirm-dialog">
         <h3>Logout from Manager Panel?</h3>
         <p>This will end your current session for Chikin Tayo Manager.</p>
         <div class="logout-actions">
@@ -1440,7 +1440,7 @@ async function confirmLogout() {
   isLoggingOut.value = true; overlayText.value = 'Logging out...'; showOverlay.value = true
   try { await axios.post('/api/logout', {}, { withCredentials: true }) } catch (e) {}
   try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
-  setTimeout(() => { try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}; try { window.location.replace('/staff-landing') } catch (e) {} }, 600)
+  setTimeout(() => { try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}; try { window.location.replace('/admin-login') } catch (e) {} }, 600)
 }
 
 async function askLogout() {

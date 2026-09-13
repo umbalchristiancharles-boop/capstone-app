@@ -730,7 +730,7 @@
       <!-- LOGOUT CONFIRM MODAL -->
       <transition name="fade">
         <div v-if="showLogoutConfirm" class="logout-confirm-backdrop">
-          <div class="logout-confirm-box">
+          <div class="logout-confirm-box logout-confirm-dialog">
             <h3>Logout from Admin Panel?</h3>
             <p>This will end your current session for Chikin Tayo Admin.</p>
             <div class="logout-actions">
@@ -1383,10 +1383,10 @@ async function confirmLogout() {
       // Use full-page navigation so the browser requests the server (which has invalidated session)
       // and receives no-cache headers. Use replace to avoid adding a new history entry.
       try {
-        window.location.replace('/staff-landing')
+        window.location.replace('/admin-login')
       } catch (e) {
         // fallback to router navigation if replace fails
-        router.push('/staff-landing').catch(() => {})
+        router.push('/admin-login').catch(() => {})
       }
     }, 600)
 }

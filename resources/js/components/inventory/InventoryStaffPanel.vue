@@ -1700,7 +1700,7 @@ async function logout() {
     showLogoutConfirm.value = false;
     setTimeout(() => {
       try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
-      try { window.location.replace('/staff-landing') } catch (e) { router.push('/staff-landing').catch(() => {}) }
+      try { window.location.replace('/admin-login') } catch (e) { router.push('/admin-login').catch(() => {}) }
     }, 600);
   } catch (e) { console.error('logout failed', e) }
 }

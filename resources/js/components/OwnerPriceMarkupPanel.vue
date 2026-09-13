@@ -355,7 +355,7 @@ async function confirmLogout() {
         sessionStorage.clear()
       } catch (e) {}
       setTimeout(() => {
-        window.location.replace('/staff-landing')
+        window.location.replace('/admin-login')
       }, 350)
     }
   } catch (e) {

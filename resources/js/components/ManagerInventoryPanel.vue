@@ -144,7 +144,7 @@
   <!-- LOGOUT CONFIRM -->
   <transition name="fade">
     <div v-if="showLogoutConfirm" class="logout-confirm-backdrop">
-      <div class="logout-confirm-box">
+      <div class="logout-confirm-box logout-confirm-dialog">
         <h3>Logout from Manager Panel?</h3>
         <p>This will end your current session for Chikin Tayo Manager.</p>
         <div class="logout-actions">
@@ -470,7 +470,7 @@ async function confirmLogout() {
   try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
     setTimeout(() => {
     try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
-    try { window.location.replace('/staff-landing') } catch (e) { /* ignore */ }
+    try { window.location.replace('/admin-login') } catch (e) { /* ignore */ }
   }, 600)
 }
 

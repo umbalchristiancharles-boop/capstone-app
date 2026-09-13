@@ -650,9 +650,9 @@ const logout = async () => {
   try { await axios.post('/api/logout', {}, { withCredentials: true }); } catch (e) {}
   try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
   try {
-    await router.replace('/staff-landing');
+    await router.replace('/admin-login');
   } catch (e) {
-    window.location.replace('/staff-landing');
+    window.location.replace('/admin-login');
   }
 }
 </script>

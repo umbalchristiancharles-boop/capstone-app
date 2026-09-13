@@ -132,7 +132,7 @@
 
     <transition name="fade">
       <div v-if="showLogoutConfirm" class="logout-confirm-backdrop">
-        <div class="logout-confirm-box">
+        <div class="logout-confirm-box logout-confirm-dialog">
           <h3>Logout from Staff Inventory Panel?</h3>
           <p>This will end your current session for Chikin Tayo Staff.</p>
           <div class="logout-actions">
@@ -415,7 +415,7 @@ async function confirmLogout() {
   showLogoutConfirm.value = false
     setTimeout(() => {
     try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
-    try { window.location.replace('/staff-landing') ; window.location.reload(); } catch (e) { router.push('/staff-landing').catch(() => {}) }
+    try { window.location.replace('/admin-login') ; window.location.reload(); } catch (e) { router.push('/admin-login').catch(() => {}) }
   }, 600)
 }
 

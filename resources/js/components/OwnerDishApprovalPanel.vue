@@ -234,7 +234,7 @@ function confirmLogout() {
   if (window.confirm('Are you sure you want to logout?')) {
     axios.post('/logout')
       .then(() => {
-        window.location.href = '/login'
+        window.location.href = '/admin-login'
       })
   }
 }

@@ -343,12 +343,12 @@
 
     <transition name="fade">
       <div v-if="showLogoutConfirm" class="logout-confirm-backdrop">
-        <div class="logout-confirm-box">
-          <h3>Logout from Finance Manager Panel?</h3>
-          <p>This will end your current session for Chikin Tayo.</p>
+        <div class="logout-confirm-box logout-confirm-dialog">
+          <h3>Confirm logout</h3>
+          <p>This will end your current session for Chikin Tayo Manager.</p>
           <div class="logout-actions">
             <button class="btn-cancel" @click="cancelLogout" :disabled="isLoggingOut">Cancel</button>
-            <button class="btn-confirm" @click="confirmLogout" :disabled="isLoggingOut">Yes, logout</button>
+            <button class="btn-confirm" @click="confirmLogout" :disabled="isLoggingOut">Yes</button>
           </div>
         </div>
       </div>
@@ -770,7 +770,7 @@ async function confirmLogout() {
   try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
   setTimeout(() => {
     try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
-    try { window.location.replace(props.isMainBranchFinance ? '/admin-login' : '/staff-landing') } catch (e) { /* ignore */ }
+    try { window.location.replace('/admin-login') } catch (e) { /* ignore */ }
   }, 600)
 }
 
