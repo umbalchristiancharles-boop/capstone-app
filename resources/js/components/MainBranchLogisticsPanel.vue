@@ -6,6 +6,7 @@
         <a class="logistics-sidebar__item" :class="{ active: selectedSection === 'inventory' }" href="#inventory-monitor" @click.prevent="selectedSection = 'inventory'">Inventory Monitor</a>
         <a class="logistics-sidebar__item" :class="{ active: selectedSection === 'product-requests' }" href="#product-requests" @click.prevent="selectedSection = 'product-requests'">Product Requests</a>
         <a class="logistics-sidebar__item" :class="{ active: selectedSection === 'suppliers' }" href="#suppliers" @click.prevent="selectedSection = 'suppliers'">Suppliers</a>
+        <a class="logistics-sidebar__item" :class="{ active: selectedSection === 'attendance' }" href="#attendance" @click.prevent="selectedSection = 'attendance'">Attendance</a>
       </nav>
       <div class="logistics-sidebar__footer">
         <button class="logistics-sidebar__account" type="button" @click="openProfileInfo">Account Info</button>
@@ -44,6 +45,38 @@
 
         <Transition name="logistics-section" mode="out-in">
         <div :key="selectedSection" class="logistics-section-view">
+        <div v-if="selectedSection === 'attendance'" class="logistics-attendance-view">
+          <section id="attendance" class="attendance-card logistics-attendance-card">
+            <div class="attendance-header">
+              <span class="attendance-title">Attendance</span>
+              <span :class="['attendance-status-badge', attendanceStatus.is_clocked_in ? 'status-on-duty' : 'status-off-duty']">
+                {{ attendanceStatus.is_clocked_in ? 'On Duty' : 'Off Duty' }}
+              </span>
+            </div>
+
+            <div class="attendance-times" v-if="attendanceStatus.clock_in_time || attendanceStatus.clock_out_time">
+              <div class="time-row"><span class="time-label">Clock In:</span><span class="time-value">{{ attendanceStatus.clock_in_time || '-' }}</span></div>
+              <div class="time-row"><span class="time-label">Clock Out:</span><span class="time-value">{{ attendanceStatus.clock_out_time || '-' }}</span></div>
+              <div class="time-row" v-if="attendanceStatus.hours_worked > 0"><span class="time-label">Hours:</span><span class="time-value">{{ attendanceStatus.hours_worked }} hrs</span></div>
+            </div>
+
+            <div class="attendance-buttons">
+              <button @click="performClockIn" :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockInGeofencing || locationLoading" class="btn-clock-in">
+                {{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock In' }}
+              </button>
+              <button @click="performClockOut" :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockOut || !canClockInGeofencing || locationLoading" class="btn-clock-out" :class="{ 'btn-disabled': !canClockOut && attendanceStatus.is_clocked_in }">
+                {{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock Out' }}
+              </button>
+            </div>
+
+            <div v-if="locationError" class="geofencing-status geofencing-error"><span class="status-icon">!</span><span>{{ locationError }}</span></div>
+            <div v-else-if="userLocation && canClockInGeofencing" class="geofencing-status geofencing-success"><span class="status-icon">✓</span><span>Location verified</span></div>
+            <div v-else-if="!canClockInGeofencing && geofencingMessage" class="geofencing-status geofencing-error"><span class="status-icon">LOCK</span><span>{{ geofencingMessage }}</span></div>
+
+            <div v-if="!canClockOut && attendanceStatus.is_clocked_in" class="clockout-restriction"><span class="restriction-icon">LOCK</span><span>Cannot clock out before {{ scheduledTimeOut }}</span></div>
+            <div v-if="attendanceMessage" :class="['attendance-message', attendanceMessageType]">{{ attendanceMessage }}</div>
+          </section>
+        </div>
         <section v-if="selectedSection === 'overview'" class="overview-grid">
           <article class="overview-card"><span class="k">Active Products</span><strong>{{ metrics.active_products }}</strong></article>
           <article class="overview-card"><span class="k">Low Stock</span><strong>{{ metrics.low_stock }}</strong></article>
@@ -770,7 +803,6 @@ watch(selectedBranch, async () => {
   min-height: 100vh;
   padding: 28px;
   background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
   color: rgba(17,24,39,0.95);
   font-size: 15px;
 }
@@ -891,7 +923,6 @@ watch(selectedBranch, async () => {
   font-family: inherit;
   font-size: 0.78rem;
   font-weight: 600;
-  line-height: 1.25;
   text-align: left;
   text-decoration: none;
   cursor: pointer;
@@ -904,7 +935,7 @@ watch(selectedBranch, async () => {
   background: #fffaf5;
   border-color: #f1b986;
   box-shadow: 0 5px 12px rgba(113, 77, 41, .08);
-  color: #a34f21;
+  color: #111827;
 }
 .logistics-sidebar__account,
 .logistics-sidebar__logout { border-radius: 12px; text-align: center; }
@@ -1207,6 +1238,38 @@ watch(selectedBranch, async () => {
   box-shadow: 0 8px 20px rgba(83, 57, 37, .1);
 }
 .logistics-section-view > .panel-section + .panel-section { margin-top: 18px; }
+
+.logistics-attendance-view { width: min(100%, 760px); margin: 0 auto 1.25rem; }
+.logistics-attendance-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid rgba(219, 188, 160, .45);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .98), rgba(255, 249, 242, .95));
+  box-shadow: 0 14px 34px rgba(16, 24, 40, .06);
+}
+.logistics-attendance-card .attendance-header { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.logistics-attendance-card .attendance-title { color: #3d2a1f; font-size: .98rem; font-weight: 800; }
+.logistics-attendance-card .attendance-status-badge { display: inline-flex; align-items: center; justify-content: center; padding: .35rem .75rem; border-radius: 999px; font-size: .72rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+.logistics-attendance-card .status-on-duty { background: rgba(34, 197, 94, .14); color: #15803d; }
+.logistics-attendance-card .status-off-duty { background: rgba(239, 68, 68, .12); color: #b91c1c; }
+.logistics-attendance-card .attendance-times { display: grid; gap: .45rem; font-size: .88rem; }
+.logistics-attendance-card .time-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.logistics-attendance-card .time-label { color: #7c6758; }
+.logistics-attendance-card .time-value { color: #3d2a1f; font-weight: 700; }
+.logistics-attendance-card .attendance-buttons { display: flex; gap: .6rem; flex-wrap: wrap; }
+.logistics-attendance-card .btn-clock-in,
+.logistics-attendance-card .btn-clock-out { flex: 1 1 8rem; padding: .65rem .85rem; border: 1px solid #243447; border-radius: 10px; color: #fff; font-weight: 700; cursor: pointer; }
+.logistics-attendance-card .btn-clock-in { background: #243447; }
+.logistics-attendance-card .btn-clock-out { border-color: #b96b63; background: #b96b63; }
+.logistics-attendance-card .btn-clock-in:disabled,
+.logistics-attendance-card .btn-clock-out:disabled { opacity: .7; cursor: not-allowed; }
+.logistics-attendance-card .geofencing-status { display: flex; align-items: center; justify-content: center; gap: .5rem; padding: .72rem .85rem; border-radius: 8px; font-size: .8rem; }
+.logistics-attendance-card .geofencing-success { border: 1px solid rgba(34, 197, 94, .3); background: rgba(34, 197, 94, .12); color: #15803d; }
+.logistics-attendance-card .geofencing-error { border: 1px solid rgba(239, 68, 68, .3); background: rgba(239, 68, 68, .12); color: #b91c1c; }
 
 /* Finance Manager-style animated view switch. */
 .logistics-section-enter-active,
