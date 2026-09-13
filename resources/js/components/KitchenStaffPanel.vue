@@ -42,9 +42,12 @@
     </template>
 
     <template #main>
-      <section id="kitchen-overview" class="panel-block">
-        <div id="kitchen-tasks" class="panel-header"><h2>Kitchen Tasks</h2></div>
-        <div class="panel-body">
+      <Transition name="kitchen-section" mode="out-in">
+      <section id="kitchen-overview" :key="activeKitchenSection" class="panel-block">
+        <Transition name="kitchen-section" mode="out-in">
+          <div v-if="activeKitchenSection !== 'kitchen-orders'" key="kitchen-tasks" class="kitchen-view-section">
+            <div id="kitchen-tasks" class="panel-header"><h2>Kitchen Tasks</h2></div>
+            <div class="panel-body">
           <div class="kitchen-grid">
             <div class="kitchen-column">
               <h3>My Dishes</h3>
@@ -88,8 +91,12 @@
               </div>
             </div>
           </div>
+            </div>
+          </div>
+        </Transition>
 
-          <div id="kitchen-orders" class="queue-card">
+        <Transition name="kitchen-section" mode="out-in">
+          <div v-if="activeKitchenSection !== 'kitchen-tasks'" id="kitchen-orders" key="kitchen-orders" class="queue-card">
             <div class="queue-header">
               <div>
                 <h3>
@@ -127,8 +134,9 @@
               </div>
             </div>
           </div>
-        </div>
+        </Transition>
       </section>
+      </Transition>
     </template>
     <template #sideTop>
       <div ref="profileWrapper" class="kitchen-header-actions" style="margin-bottom: 12px;">
@@ -166,6 +174,8 @@
     </template>
   </OwnerPanelLayout>
 
+  <LoadingOverlay :show="isLoggingOut" text="Logging out..." />
+
   <transition name="fade">
     <div v-if="showLogoutConfirm" class="logout-confirm-backdrop">
       <div class="logout-confirm-box logout-confirm-dialog">
@@ -183,6 +193,7 @@
 <script setup>
 import { ref, reactive, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
+import LoadingOverlay from './LoadingOverlay.vue'
 import axios from 'axios'
 import { showToast } from './toastStore'
 
@@ -434,9 +445,15 @@ function closeProfileDropdown() {
   showProfileDropdown.value = false
 }
 
-function scrollKitchenSection(sectionId) {
+async function scrollKitchenSection(sectionId) {
   activeKitchenSection.value = sectionId
-  document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  await nextTick()
+  const mainPanel = document.querySelector('.kitchen-staff-container .admin-main') || document.querySelector('.admin-layout--owner-sidebar-layout .admin-main')
+  if (mainPanel) {
+    mainPanel.scrollTop = 0
+    mainPanel.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 function handleInfoClick() {
@@ -917,7 +934,7 @@ async function confirmLogout() {
   padding: 1.2rem 1.3rem 1.25rem;
   box-sizing: border-box;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.25rem;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -927,7 +944,7 @@ async function confirmLogout() {
 
 :deep(.admin-layout--owner-sidebar-layout.kitchen-staff-container .admin-main-header) {
   margin: 0;
-  padding: 0 0 0.4rem;
+  padding: 0;
   background: transparent;
   border: 0;
   box-shadow: none;
@@ -999,6 +1016,21 @@ async function confirmLogout() {
 .kitchen-header-refresh:disabled {
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+.kitchen-section-enter-active,
+.kitchen-section-leave-active {
+  transition: opacity 220ms ease, transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.kitchen-section-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.kitchen-section-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
 }
 
 :deep(.owner-sidebar-collapsed.admin-layout--owner-sidebar-layout.kitchen-staff-container .owner-panel-sidebar) {
@@ -1216,6 +1248,21 @@ async function confirmLogout() {
 
   .kitchen-staff-title {
     font-size: 1.45rem;
+  }
+
+  :deep(.admin-page.kitchen-staff-page) .queue-item {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  :deep(.admin-page.kitchen-staff-page) .queue-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  :deep(.admin-page.kitchen-staff-page) .queue-list {
+    max-height: 28rem;
   }
 }
 
