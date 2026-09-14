@@ -539,6 +539,7 @@ const showAccountInfoModal = ref(false)
   const isAttendanceProcessing = ref(false)
   const attendanceMessage = ref('')
   const attendanceMessageType = ref('')
+  const autoClockoutPrompted = ref(false)
   const attendanceSettings = ref({
     early_clockout_override: false,
     scheduled_time_out: '17:00:00'
@@ -932,9 +933,35 @@ async function loadAttendanceStatus() {
         clock_out_time: res.data.time_out || res.data.status?.clock_out_time || null,
         hours_worked: res.data.status?.hours_worked || 0
       }
+
+      if (res.data.auto_clockout_due && attendanceStatus.value.is_clocked_in && !autoClockoutPrompted.value) {
+        await promptAutomaticClockout(res.data.scheduled_time_out)
+      }
+      if (!attendanceStatus.value.is_clocked_in) autoClockoutPrompted.value = false
     }
   } catch (e) {
     console.error('Failed to load attendance status:', e)
+  }
+}
+
+async function promptAutomaticClockout(scheduledTime) {
+  autoClockoutPrompted.value = true
+  const confirmed = window.Swal
+    ? await window.Swal.fire({
+        title: 'Automatic clock-out time',
+        text: `It is time to clock out (${scheduledTime || scheduledTimeOut.value}). Would you like to clock out now?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Clock me out',
+        cancelButtonText: 'Not now',
+        confirmButtonColor: '#FF6A3D',
+        cancelButtonColor: '#6B7280',
+        reverseButtons: true
+      })
+    : { isConfirmed: window.confirm('It is time to clock out. Would you like to clock out now?') }
+
+  if (confirmed.isConfirmed) {
+    await performClockOut()
   }
 }
 
@@ -1223,6 +1250,7 @@ onMounted(() => {
   refreshInterval.value = setInterval(async () => {
     try {
       await refreshDashboard()
+      await loadAttendanceStatus()
     } catch (e) {
       console.warn('Auto-refresh failed:', e)
     }

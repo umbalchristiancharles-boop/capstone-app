@@ -26,6 +26,8 @@ class PayrollController extends Controller
         $payrollType = $request->query('payroll_type', 'all');
         $period = $request->query('period', 'current_month');
 
+        $this->ensureAutomaticPayroll($branchId);
+
         $query = Payroll::with(['user:id,full_name,username', 'confirmedBy:id,full_name']);
 
         if (in_array($userRole, ['HR', 'BRANCH_MANAGER', 'MANAGER_HR', 'MANAGER'])) {
@@ -45,6 +47,11 @@ class PayrollController extends Controller
                 Carbon::now()->startOfMonth(),
                 Carbon::now()->endOfMonth()
             ]);
+        } elseif ($period === 'current_cycle') {
+            [$cycleStart, $cycleEnd, $cycleType] = $this->payrollCycleForDate(Carbon::now());
+            $query->whereDate('pay_period_start', $cycleStart)
+                ->whereDate('pay_period_end', $cycleEnd)
+                ->where('payroll_type', $cycleType);
         } elseif ($period === 'last_month') {
             $query->whereBetween('pay_period_start', [
                 Carbon::now()->subMonth()->startOfMonth(),
@@ -108,10 +115,7 @@ class PayrollController extends Controller
             ? $payPeriodStart->copy()->day(15) 
             : $payPeriodEnd->copy()->endOfMonth();
 
-        $staff = User::where('branch_id', $branchId)
-            ->where('is_active', true)
-            ->whereIn('role', ['STAFF', 'BRANCH_MANAGER', 'HR'])
-            ->get();
+        $staff = $this->payrollEligibleUsers($branchId)->get();
 
         if ($staff->isEmpty()) {
             return response()->json(['ok' => false, 'message' => 'No active staff found in this branch'], 404);
@@ -122,55 +126,7 @@ class PayrollController extends Controller
 
         try {
             foreach ($staff as $staffMember) {
-                $attendances = Attendance::where('user_id', $staffMember->id)
-                    ->whereBetween('date', [$payPeriodStart, $payPeriodEnd])
-                    ->get();
-
-                $daysWorked = $attendances->whereNotNull('time_in')->count();
-                $daysLate = $attendances->where('status', 'late')->count();
-                $totalHoursWorked = $attendances->sum('hours_worked');
-
-                $overtimeHours = 0;
-                foreach ($attendances as $attendance) {
-                    if ($attendance->hours_worked > 8) {
-                        $overtimeHours += ($attendance->hours_worked - 8);
-                    }
-                }
-
-                $dailyRate = $this->getDailyRate($staffMember->role);
-                $hourlyRate = $dailyRate / 8;
-
-                $baseSalary = $daysWorked * $dailyRate;
-                $lateDeductions = $daysLate * ($dailyRate * 0.1);
-                $overtimePay = $overtimeHours * ($hourlyRate * 1.25);
-                $grossSalary = $baseSalary + $overtimePay;
-                $netSalary = $grossSalary - $lateDeductions;
-
-                $payroll = Payroll::updateOrCreate(
-                    [
-                        'user_id' => $staffMember->id,
-                        'pay_period_start' => $payPeriodStart,
-                        'pay_period_end' => $payPeriodEnd,
-                    ],
-                    [
-                        'branch_id' => $branchId,
-                        'payroll_type' => $payrollType,
-                        'pay_date' => $payDate,
-                        'days_worked' => $daysWorked,
-                        'days_late' => $daysLate,
-                        'days_overtime' => $attendances->where('hours_worked', '>', 8)->count(),
-                        'total_hours_worked' => $totalHoursWorked,
-                        'total_overtime_hours' => $overtimeHours,
-                        'daily_rate' => $dailyRate,
-                        'hourly_rate' => $hourlyRate,
-                        'base_salary' => $baseSalary,
-                        'late_deductions' => $lateDeductions,
-                        'overtime_pay' => $overtimePay,
-                        'gross_salary' => $grossSalary,
-                        'net_salary' => $netSalary,
-                        'status' => 'pending',
-                    ]
-                );
+                $payroll = $this->recalculatePayroll($staffMember, $payPeriodStart, $payPeriodEnd, $payrollType, $payDate);
 
                 $generatedPayrolls[] = $payroll;
             }
@@ -189,6 +145,64 @@ class PayrollController extends Controller
                 'message' => 'Failed to generate payroll: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    public function syncAttendance(Attendance $attendance): void
+    {
+        $staffMember = $attendance->user;
+        if (!$staffMember || !$staffMember->branch_id || !$this->payrollEligibleUsers($staffMember->branch_id)->whereKey($staffMember->id)->exists()) {
+            return;
+        }
+
+        [$periodStart, $periodEnd, $payrollType, $payDate] = $this->payrollCycleForDate(
+            Carbon::parse($attendance->getRawOriginal('date') ?: $attendance->date)
+        );
+        $this->recalculatePayroll($staffMember, $periodStart, $periodEnd, $payrollType, $payDate);
+    }
+
+    private function recalculatePayroll(User $staffMember, Carbon $payPeriodStart, Carbon $payPeriodEnd, string $payrollType, Carbon $payDate): Payroll
+    {
+        $attendances = Attendance::where('user_id', $staffMember->id)
+            ->whereBetween('date', [$payPeriodStart, $payPeriodEnd])
+            ->get();
+        $daysWorked = $attendances->whereNotNull('time_in')->count();
+        $daysLate = $attendances->where('status', 'late')->count();
+        $totalHoursWorked = $attendances->sum('hours_worked');
+        $overtimeHours = $attendances->sum(function ($attendance) {
+            return max(0, (((float) $attendance->hours_worked) - 480) / 60);
+        });
+        $dailyRate = $this->getDailyRate($staffMember->role, $staffMember->department);
+        $hourlyRate = $dailyRate / 8;
+        $workedHours = max(0, (float) $totalHoursWorked / 60);
+        $regularHours = max(0, $workedHours - $overtimeHours);
+        $baseSalary = $regularHours * $hourlyRate;
+        $lateDeductions = 0;
+        $overtimePay = $overtimeHours * ($hourlyRate * 1.25);
+
+        return Payroll::updateOrCreate(
+            [
+                'user_id' => $staffMember->id,
+                'pay_period_start' => $payPeriodStart,
+                'pay_period_end' => $payPeriodEnd,
+            ],
+            [
+                'branch_id' => $staffMember->branch_id,
+                'payroll_type' => $payrollType,
+                'pay_date' => $payDate,
+                'days_worked' => $daysWorked,
+                'days_late' => $daysLate,
+                'days_overtime' => $attendances->where('hours_worked', '>', 480)->count(),
+                'total_hours_worked' => $workedHours,
+                'total_overtime_hours' => $overtimeHours,
+                'daily_rate' => $dailyRate,
+                'hourly_rate' => $hourlyRate,
+                'base_salary' => $baseSalary,
+                'late_deductions' => $lateDeductions,
+                'overtime_pay' => $overtimePay,
+                'gross_salary' => $baseSalary + $overtimePay,
+                'net_salary' => $baseSalary + $overtimePay - $lateDeductions,
+            ]
+        );
     }
 
     public function approve(Request $request, $id)
@@ -313,12 +327,13 @@ class PayrollController extends Controller
         ]);
     }
 
-    private function getDailyRate(string $role): float
+    private function getDailyRate(string $role, ?string $department = null): float
     {
         $rates = [
             'STAFF' => 600.00,
             'BRANCH_MANAGER' => 800.00,
             'HR' => 750.00,
+            'MANAGER_FINANCE' => 750.00,
             'FINANCE' => 750.00,
             'LOGISTICS' => 700.00,
             'INVENTORY' => 650.00,
@@ -326,6 +341,80 @@ class PayrollController extends Controller
             'CASHIER' => 600.00,
         ];
 
-        return $rates[strtoupper($role)] ?? 600.00;
+        $role = strtoupper($role);
+        $department = strtoupper((string) $department);
+
+        return $rates[$role] ?? $rates[$department] ?? 600.00;
+    }
+
+    private function payrollEligibleUsers($branchId)
+    {
+        return User::where('branch_id', $branchId)
+            ->where('is_active', true)
+            ->where(function ($query) {
+                $query->whereIn('role', [
+                    'ADMIN', 'HR', 'MANAGER_HR', 'BRANCH_MANAGER',
+                    'MANAGER_FINANCE', 'MANAGER_PROCUREMENT', 'MANAGER_LOGISTICS',
+                    'MANAGER_INVENTORY', 'MANAGER_CASHIER', 'MANAGER_KITCHEN',
+                    'STAFF_INVENTORY', 'STAFF_CASHIER', 'STAFF_KITCHEN', 'STAFF'
+                ])->orWhere(function ($departmentQuery) {
+                    $departmentQuery->whereIn('role', ['MANAGER', 'STAFF'])
+                        ->whereIn('department', [
+                            'HR', 'FINANCE', 'PROCUREMENT', 'LOGISTICS',
+                            'INVENTORY', 'CASHIER', 'KITCHEN'
+                        ]);
+                });
+            });
+    }
+
+    private function ensureAutomaticPayroll($branchId): void
+    {
+        if (!$branchId) {
+            return;
+        }
+
+        [$periodStart, $periodEnd, $payrollType, $payDate] = $this->payrollCycleForDate(Carbon::now());
+        $eligibleIds = $this->payrollEligibleUsers($branchId)->pluck('id');
+
+        $existingIds = Payroll::where('branch_id', $branchId)
+            ->whereDate('pay_period_start', $periodStart)
+            ->whereDate('pay_period_end', $periodEnd)
+            ->where('payroll_type', $payrollType)
+            ->whereIn('user_id', $eligibleIds)
+            ->pluck('user_id');
+
+        if ($eligibleIds->diff($existingIds)->isEmpty()) {
+            $eligibleUsers = $this->payrollEligibleUsers($branchId)->get();
+            foreach ($eligibleUsers as $staffMember) {
+                $this->recalculatePayroll($staffMember, $periodStart, $periodEnd, $payrollType, $payDate);
+            }
+            return;
+        }
+
+        $this->generate(new Request([
+            'pay_period_start' => $periodStart->toDateString(),
+            'pay_period_end' => $periodEnd->toDateString(),
+            'payroll_type' => $payrollType,
+            'branch_id' => $branchId,
+        ]));
+    }
+
+    private function payrollCycleForDate(Carbon $date): array
+    {
+        $date = $date->copy();
+
+        if ($date->day <= 15) {
+            $periodStart = $date->copy()->startOfMonth();
+            $periodEnd = $date->copy()->day(15)->startOfDay();
+            $payrollType = 'mid_month';
+            $payDate = $date->copy()->day(15)->startOfDay();
+        } else {
+            $periodStart = $date->copy()->day(16)->startOfDay();
+            $periodEnd = $date->copy()->endOfMonth()->startOfDay();
+            $payrollType = 'end_month';
+            $payDate = $periodEnd->copy();
+        }
+
+        return [$periodStart, $periodEnd, $payrollType, $payDate];
     }
 }

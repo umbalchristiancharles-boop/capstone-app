@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Attendance;
+use App\Models\AttendanceSettings;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Carbon\Carbon;
@@ -21,25 +22,18 @@ class AutoClockOut extends Command
      *
      * @var string
      */
-    protected $description = 'Automatically clock out staff who forgot to clock out after 10 PM';
+    protected $description = 'Automatically clock out staff who forgot to clock out at their branch schedule';
 
     /**
      * Execute the console command.
      */
     public function handle()
     {
-        $today = Carbon::now()->toDateString();
-        $currentTime = Carbon::now();
-        
-        // Only run if current time is 22:00 (10 PM) or later
-        if ($currentTime->hour < 22) {
-            $this->info('Auto clock-out will only run at or after 10 PM (22:00).');
-            return 0;
-        }
+        $now = Carbon::now();
+        $today = $now->toDateString();
 
         $this->info('Running auto clock-out for staff who forgot to clock out...');
 
-        // Find all attendance records for today where time_in is set but time_out is null
         $attendances = Attendance::where('date', $today)
             ->whereNotNull('time_in')
             ->whereNull('time_out')
@@ -53,21 +47,31 @@ class AutoClockOut extends Command
 
         $count = 0;
         foreach ($attendances as $attendance) {
-            // Set time_out to 10:00 PM (22:00:00)
-            $timeOut = Carbon::createFromFormat('Y-m-d H:i:s', $today . ' 22:00:00');
+            $scheduledTime = AttendanceSettings::getForBranch($attendance->user->branch_id ?? 1)->auto_clockout_time
+                ?: config('attendance.default_auto_clockout_time', '22:00:00');
+            $timeOut = Carbon::createFromFormat('Y-m-d H:i', $today . ' ' . substr((string) $scheduledTime, 0, 5));
+
+            $timeIn = Carbon::parse($attendance->time_in);
+            $timeoutTarget = $timeIn->greaterThan($timeOut) ? $timeIn : $timeOut;
+            $automaticTimeOut = $timeoutTarget->copy()->addMinutes((int) config('attendance.auto_clockout_grace_minutes', 5));
+            if ($now->lt($automaticTimeOut)) {
+                continue;
+            }
             
             // Calculate hours worked
-            $minutesWorked = $timeOut->diffInMinutes($attendance->time_in);
+            $actualTimeOut = $timeIn->greaterThan($timeOut) ? $now : $timeOut;
+            $minutesWorked = $actualTimeOut->diffInMinutes($timeIn, true);
             
-            $attendance->time_out = $timeOut;
+            $attendance->time_out = $actualTimeOut;
             $attendance->hours_worked = $minutesWorked;
             $attendance->save();
+            app(\App\Http\Controllers\Api\PayrollController::class)->syncAttendance($attendance);
 
             $count++;
             $this->line("Auto clocked out: {$attendance->user->full_name} (ID: {$attendance->user_id}) - Hours: " . round($minutesWorked / 60, 2));
         }
 
-        $this->info("Successfully auto clocked out {$count} staff member(s) at 10:00 PM.");
+        $this->info("Successfully auto clocked out {$count} staff member(s) at their branch schedule.");
         return 0;
     }
 }

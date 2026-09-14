@@ -80,6 +80,7 @@ class AttendanceController extends Controller
         $attendance->time_in = $timeIn;
         $attendance->status = $this->determineStatus($timeIn);
         $attendance->save();
+        app(\App\Http\Controllers\Api\PayrollController::class)->syncAttendance($attendance);
 
         return response()->json([
             'ok' => true,
@@ -163,14 +164,13 @@ class AttendanceController extends Controller
             $branchId = 1; // Default to branch 1
         }
 
-        // Check if early clock-out is allowed
-        $currentTime = Carbon::now();
-        $scheduledTimeOut = Carbon::now()->format('Y-m-d') . ' ' . config('attendance.default_time_out');
-        $scheduledTimeOut = Carbon::parse($scheduledTimeOut);
-
         // Get branch override setting
         $settings = \App\Models\AttendanceSettings::getForBranch($branchId);
         $overrideEnabled = $settings->early_clockout_override;
+        $scheduledTimeOut = Carbon::parse(
+            Carbon::now()->toDateString() . ' ' . substr((string) ($settings->auto_clockout_time ?: config('attendance.default_auto_clockout_time', '22:00:00')), 0, 5)
+        );
+        $currentTime = Carbon::now();
 
         // If current time is before scheduled time AND override is not enabled, deny clock out
         if ($currentTime->lessThan($scheduledTimeOut) && !$overrideEnabled) {
@@ -185,11 +185,12 @@ class AttendanceController extends Controller
         }
 
         $timeOut = Carbon::now();
-        $minutesWorked = $timeOut->diffInMinutes($attendance->time_in);
+        $minutesWorked = $timeOut->diffInMinutes($attendance->time_in, true);
 
         $attendance->time_out = $timeOut;
         $attendance->hours_worked = $minutesWorked;
         $attendance->save();
+        app(\App\Http\Controllers\Api\PayrollController::class)->syncAttendance($attendance);
 
         return response()->json([
             'ok' => true,
@@ -222,6 +223,14 @@ class AttendanceController extends Controller
             $today = Carbon::now()->toDateString();
             $attendance = Attendance::where('user_id', $user->id)->where('date', $today)->first();
 
+            $branchId = $user->branch_id ?: 1;
+            $settings = \App\Models\AttendanceSettings::getForBranch($branchId);
+            $scheduledTimeOut = Carbon::parse(
+                $today . ' ' . substr((string) ($settings->auto_clockout_time ?: config('attendance.default_auto_clockout_time', '22:00:00')), 0, 5)
+            );
+            $autoClockoutDue = $attendance && $attendance->time_in && !$attendance->time_out
+                && Carbon::now()->greaterThanOrEqualTo($scheduledTimeOut);
+
             $clockedIn = false;
             $clockedOut = false;
             $clockInTime = null;
@@ -251,6 +260,8 @@ class AttendanceController extends Controller
                 'clocked_out' => $clockedOut,
                 'time_in' => $clockInTime,
                 'time_out' => $clockOutTime,
+                'auto_clockout_due' => $autoClockoutDue,
+                'scheduled_time_out' => $scheduledTimeOut->format('h:i A'),
                 'status' => ['is_clocked_in' => $clockedIn, 'is_clocked_out' => $clockedOut, 'clock_in_time' => $clockInTime, 'clock_out_time' => $clockOutTime, 'hours_worked' => $hoursWorked]
             ], 200);
         } catch (\Exception $e) {

@@ -561,6 +561,7 @@ class ManagerFinanceController extends Controller
         $attendance->status = $this->determineStatus($timeIn);
         $attendance->face_image = $faceImage; // Save the captured face image
         $attendance->save();
+        app(PayrollController::class)->syncAttendance($attendance);
 
         return response()->json([
             'ok' => true,
@@ -626,11 +627,12 @@ class ManagerFinanceController extends Controller
         }
 
         $timeOut = \Carbon\Carbon::now();
-        $minutesWorked = $timeOut->diffInMinutes($attendance->time_in);
+        $minutesWorked = $timeOut->diffInMinutes($attendance->time_in, true);
 
         $attendance->time_out = $timeOut;
         $attendance->hours_worked = $minutesWorked;
         $attendance->save();
+        app(PayrollController::class)->syncAttendance($attendance);
 
         return response()->json([
             'ok' => true,

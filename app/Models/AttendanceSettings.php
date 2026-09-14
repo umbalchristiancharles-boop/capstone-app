@@ -13,10 +13,12 @@ class AttendanceSettings extends Model
     protected $fillable = [
         'branch_id',
         'early_clockout_override',
+        'auto_clockout_time',
     ];
 
     protected $casts = [
         'early_clockout_override' => 'boolean',
+        'auto_clockout_time' => 'string',
     ];
 
     /**
@@ -38,6 +40,7 @@ class AttendanceSettings extends Model
             $instance = new self();
             $instance->branch_id = $branchId;
             $instance->early_clockout_override = false;
+            $instance->auto_clockout_time = config('attendance.default_auto_clockout_time', '22:00:00');
             return $instance;
         }
 
@@ -47,6 +50,7 @@ class AttendanceSettings extends Model
             $settings = self::create([
                 'branch_id' => $branchId,
                 'early_clockout_override' => false,
+                'auto_clockout_time' => config('attendance.default_auto_clockout_time', '22:00:00'),
             ]);
         }
 

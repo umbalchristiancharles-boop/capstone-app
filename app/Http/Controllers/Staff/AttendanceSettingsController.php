@@ -28,6 +28,9 @@ class AttendanceSettingsController extends Controller
         }
 
         $settings = AttendanceSettings::getForBranch($branchId);
+        $autoClockoutTime = $settings->auto_clockout_time
+            ? substr((string) $settings->auto_clockout_time, 0, 5)
+            : config('attendance.default_auto_clockout_time', '22:00:00');
 
         return response()->json([
             'ok' => true,
@@ -35,7 +38,8 @@ class AttendanceSettingsController extends Controller
             'data' => [
                 'branch_id' => $branchId,
                 'early_clockout_override' => $settings->early_clockout_override,
-                'scheduled_time_out' => config('attendance.default_time_out'),
+                'scheduled_time_out' => $autoClockoutTime,
+                'auto_clockout_time' => $autoClockoutTime,
             ]
         ]);
     }
@@ -52,11 +56,11 @@ class AttendanceSettingsController extends Controller
         }
 
         // Check if user is OWNER or HR
-        if (!in_array($user->role, ['OWNER', 'HR'])) {
+        if (!in_array(strtoupper((string) $user->role), ['OWNER', 'HR', 'ADMIN'])) {
             return response()->json([
                 'ok' => false,
                 'success' => false,
-                'message' => 'Unauthorized. Only Owner and HR can toggle this setting.'
+                'message' => 'Unauthorized. Only Admin, Owner, and HR can toggle this setting.'
             ], 403);
         }
 
@@ -97,11 +101,11 @@ class AttendanceSettingsController extends Controller
         }
 
         // Check if user is OWNER or HR
-        if (!in_array($user->role, ['OWNER', 'HR'])) {
+        if (!in_array(strtoupper((string) $user->role), ['OWNER', 'HR', 'ADMIN'])) {
             return response()->json([
                 'ok' => false,
                 'success' => false,
-                'message' => 'Unauthorized. Only Owner and HR can update settings.'
+                'message' => 'Unauthorized. Only Admin, Owner, and HR can update settings.'
             ], 403);
         }
 
@@ -117,8 +121,18 @@ class AttendanceSettingsController extends Controller
         // Update override if provided
         if ($request->has('early_clockout_override')) {
             $settings->early_clockout_override = $request->boolean('early_clockout_override');
-            $settings->save();
         }
+
+        if ($request->has('auto_clockout_time')) {
+            $validated = $request->validate([
+                'auto_clockout_time' => ['nullable', 'date_format:H:i'],
+            ]);
+            $settings->auto_clockout_time = $validated['auto_clockout_time']
+                ? $validated['auto_clockout_time'] . ':00'
+                : config('attendance.default_auto_clockout_time', '22:00:00');
+        }
+
+        $settings->save();
 
         return response()->json([
             'ok' => true,
@@ -127,6 +141,9 @@ class AttendanceSettingsController extends Controller
             'data' => [
                 'branch_id' => $branchId,
                 'early_clockout_override' => $settings->early_clockout_override,
+                'auto_clockout_time' => $settings->auto_clockout_time
+                    ? substr((string) $settings->auto_clockout_time, 0, 5)
+                    : config('attendance.default_auto_clockout_time', '22:00:00'),
             ]
         ]);
     }

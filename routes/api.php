@@ -450,6 +450,7 @@ Route::prefix('manager')->middleware('auth:sanctum,web')->group(function () {
         // Finance Manager Attendance - Clock In/Out with geofencing
         Route::post('/clock-in', [\App\Http\Controllers\Api\ManagerFinanceController::class, 'clockIn']);
         Route::post('/clock-out', [\App\Http\Controllers\Api\ManagerFinanceController::class, 'clockOut']);
+        Route::get('/attendance/status', [AttendanceController::class, 'status']);
 
         Route::get('/inventory/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'invProfile']);
         Route::put('/inventory/profile', [\App\Http\Controllers\Api\ManagerProfileController::class, 'updateInvProfile']);

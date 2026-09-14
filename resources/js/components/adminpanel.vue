@@ -425,6 +425,24 @@
             </div>
           </section>
 
+          <!-- Automatic clock-out settings -->
+          <section v-if="activeSection === 'staff' && ['OWNER', 'HR', 'ADMIN'].includes((ownerProfile.role || '').toUpperCase())" class="panel-block dashboard-white-panel auto-clockout-panel">
+            <div class="panel-header">
+              <h2>Automatic Clock-Out</h2>
+            </div>
+            <div class="panel-body panel-body--list">
+              <p class="auto-clockout-help">Staff still clocked in after this time will be clocked out automatically for this branch.</p>
+              <label class="auto-clockout-field">
+                <span>Clock out time</span>
+                <input v-model="autoClockoutTime" type="time" :disabled="isSavingAutoClockout" />
+              </label>
+              <button class="panel-action auto-clockout-save" type="button" :disabled="isSavingAutoClockout" @click="saveAutoClockoutTime">
+                {{ isSavingAutoClockout ? 'Saving...' : 'Save time' }}
+              </button>
+              <span v-if="autoClockoutMessage" class="auto-clockout-message">{{ autoClockoutMessage }}</span>
+            </div>
+          </section>
+
           <!-- Landing page product images -->
           <section v-if="activeSection === 'landing-images'" class="panel-block dashboard-white-panel landing-images-panel">
             <div class="panel-header">
@@ -857,15 +875,40 @@ const isEditingInfo = ref(false)
 // Early clock-out override toggle
 const earlyClockoutOverride = ref(false)
 const isTogglingOverride = ref(false)
+const autoClockoutTime = ref('22:00')
+const isSavingAutoClockout = ref(false)
+const autoClockoutMessage = ref('')
 
 async function loadAttendanceSettings() {
   try {
     const res = await axios.get('/api/attendance/settings', { withCredentials: true })
     if (res.data && res.data.ok && res.data.data) {
       earlyClockoutOverride.value = res.data.data.early_clockout_override || false
+      autoClockoutTime.value = res.data.data.auto_clockout_time || '22:00'
     }
   } catch (e) {
     console.error('Failed to load attendance settings:', e)
+  }
+}
+
+async function saveAutoClockoutTime() {
+  isSavingAutoClockout.value = true
+  autoClockoutMessage.value = ''
+  try {
+    await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
+    const res = await axios.put('/api/attendance/settings', {
+      auto_clockout_time: autoClockoutTime.value
+    }, { withCredentials: true })
+    if (res.data?.ok) {
+      autoClockoutTime.value = res.data.data.auto_clockout_time || autoClockoutTime.value
+      autoClockoutMessage.value = 'Saved successfully.'
+    } else {
+      autoClockoutMessage.value = res.data?.message || 'Unable to save setting.'
+    }
+  } catch (e) {
+    autoClockoutMessage.value = e.response?.data?.message || 'Unable to save setting.'
+  } finally {
+    isSavingAutoClockout.value = false
   }
 }
 
@@ -1678,6 +1721,12 @@ function formatDate(dateString) {
 .supplier-review-empty { margin-top: 10px; color: #6b7280; font-size: 13px; }
 
 .landing-images-help { margin: 0 0 12px; color: #6b7280; font-size: 13px; }
+.auto-clockout-help { margin: 0 0 14px; color: #6b7280; font-size: 13px; line-height: 1.45; }
+.auto-clockout-field { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #374151; font-size: 13px; font-weight: 600; }
+.auto-clockout-field input { min-width: 120px; padding: 7px 8px; border: 1px solid #d1d5db; border-radius: 6px; color: #111827; background: #fff; }
+.auto-clockout-save { width: 100%; margin-top: 12px; }
+.auto-clockout-save:disabled { cursor: wait; opacity: .65; }
+.auto-clockout-message { display: block; margin-top: 8px; color: #15803d; font-size: 12px; }
 .landing-product-list { display: flex; flex-direction: column; gap: 10px; }
 .landing-product-item { display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; }
 .landing-product-image { width: 52px; height: 52px; flex: 0 0 52px; object-fit: cover; border-radius: 6px; border: 1px solid #d1d5db; }

@@ -638,9 +638,6 @@
         <div class="panel-header hr-payroll-header">
           <h2>Payroll Management</h2>
           <div class="hr-payroll-actions">
-            <button class="panel-action panel-action--primary" @click="openPayrollModal">
-              Generate Payroll
-            </button>
             <button class="panel-action" @click="loadPayrolls">Refresh</button>
           </div>
         </div>
@@ -663,7 +660,7 @@
           </div>
 
           <div v-else-if="payrolls.length === 0" class="table-row">
-            <span colspan="9">No payroll records found. Click "Generate Payroll" to create payroll for this period.</span>
+            <span colspan="9">No payroll records found yet. Payroll is registered automatically when an eligible account clocks in.</span>
           </div>
 
           <div v-else v-for="payroll in payrolls" :key="payroll.id" class="table-row">
@@ -1261,7 +1258,7 @@ async function loadPayrolls() {
   isLoadingPayroll.value = true
   try {
     const res = await axios.get('/api/payroll', {
-      params: { period: 'all' },
+      params: { period: 'current_cycle' },
       withCredentials: true
     })
     if (res.data && res.data.ok) {

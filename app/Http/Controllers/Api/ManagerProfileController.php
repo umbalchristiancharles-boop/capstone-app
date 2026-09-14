@@ -1019,6 +1019,7 @@ class ManagerProfileController extends Controller
         $attendance->confirmed_by = $user->id;
         $attendance->confirmed_at = Carbon::now();
         $attendance->save();
+        app(PayrollController::class)->syncAttendance($attendance);
 
         return response()->json([
             'ok' => true,
