@@ -4,6 +4,7 @@ import App from './app.vue'
 import CustomerIndex from './components/CustomerIndex.vue'
 import StaffIndex from './components/StaffIndex.vue'
 import AdminPanel from './components/AdminPanel.vue'
+import BranchManagerPanel from './components/BranchManagerPanel.vue'
 import adminlogin from './components/adminlogin.vue'
 import StaffList from './components/StaffList.vue'
 import OwnerStaffManagement from './components/OwnerStaffManagement.vue'
@@ -171,6 +172,7 @@ const router = createRouter({
     { path: '/login', component: adminlogin },
     { path: '/admin-login', component: adminlogin },
     { path: '/admin-panel', component: AdminPanel },
+    { path: '/manager-panel', component: BranchManagerPanel, meta: { requiresAuth: true } },
     { path: '/super-admin-panel', component: SuperAdmin, meta: { requiresAuth: true } },
     { path: '/super-admin/dashboard', redirect: '/super-admin-panel' },
 { path: '/super-admin/hr', component: () => import('./components/HRStaffManagement.vue'), meta: { requiresAuth: true } },
@@ -189,7 +191,6 @@ const router = createRouter({
     { path: '/main-branch/branches', component: () => import('./components/OwnerAddBranches.vue'), meta: { requiresAuth: true } },
     // Accessible by Super Admin as a dedicated route (reuses OwnerAddBranches component)
     { path: '/super-admin/branches', component: () => import('./components/OwnerAddBranches.vue'), meta: { requiresAuth: true } },
-    { path: '/manager-panel', component: AdminPanel, meta: { requiresAuth: true } },
     { path: '/manager/finance', component: ManagerFinancePanel, meta: { requiresAuth: true } },
     { path: '/manager/logistics', component: ManagerLogisticsPanel, meta: { requiresAuth: true } },
     { path: '/manager/logistics/suppliers', component: SupplierPanel, meta: { requiresAuth: true } },

@@ -675,14 +675,8 @@
               <span class="badge" :class="getPayrollStatusClass(payroll.status)">{{ formatPayrollStatus(payroll.status) }}</span>
             </span>
             <span>
-              <button v-if="payroll.status === 'pending'" class="btn-sm btn-success" @click="approvePayroll(payroll.id)">
-                Approve
-              </button>
-              <button v-if="payroll.status === 'approved'" class="btn-sm btn-primary" @click="markAsPaid(payroll.id)">
+              <button v-if="payroll.status === 'pending' || payroll.status === 'approved'" class="btn-sm btn-primary" @click="markAsPaid(payroll.id)">
                 Mark Paid
-              </button>
-              <button v-if="payroll.status === 'pending'" class="btn-sm btn-danger" @click="rejectPayroll(payroll.id)">
-                Reject
               </button>
               <span v-if="payroll.confirmed_by" class="text-muted" style="font-size: 0.75rem;">
                 by {{ payroll.confirmedBy?.full_name }}
@@ -1258,7 +1252,7 @@ async function loadPayrolls() {
   isLoadingPayroll.value = true
   try {
     const res = await axios.get('/api/payroll', {
-      params: { period: 'current_cycle' },
+      params: { period: 'active_cycles' },
       withCredentials: true
     })
     if (res.data && res.data.ok) {
@@ -1308,20 +1302,6 @@ async function generatePayroll() {
   }
 }
 
-async function approvePayroll(id) {
-  try {
-    const res = await axios.post(`/api/payroll/${id}/approve`, {}, { withCredentials: true })
-    if (res.data && res.data.ok) {
-      alert('Payroll approved successfully')
-      loadPayrolls()
-    } else {
-      alert(res.data.message || 'Failed to approve payroll')
-    }
-  } catch (e) {
-    alert(e.response?.data?.message || 'Failed to approve payroll')
-  }
-}
-
 async function markAsPaid(id) {
   try {
     const res = await axios.post(`/api/payroll/${id}/mark-paid`, {}, { withCredentials: true })
@@ -1333,22 +1313,6 @@ async function markAsPaid(id) {
     }
   } catch (e) {
     alert(e.response?.data?.message || 'Failed to mark payroll as paid')
-  }
-}
-
-async function rejectPayroll(id) {
-  if (!confirm('Are you sure you want to reject this payroll?')) return
-
-  try {
-    const res = await axios.post(`/api/payroll/${id}/reject`, {}, { withCredentials: true })
-    if (res.data && res.data.ok) {
-      alert('Payroll rejected')
-      loadPayrolls()
-    } else {
-      alert(res.data.message || 'Failed to reject payroll')
-    }
-  } catch (e) {
-    alert(e.response?.data?.message || 'Failed to reject payroll')
   }
 }
 

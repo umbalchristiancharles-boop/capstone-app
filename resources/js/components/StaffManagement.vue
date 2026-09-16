@@ -1,7 +1,7 @@
 <template>
   <div class="staff-management-page">
     <!-- Back to Dashboard Button -->
-    <button @click="backToDashboard()" class="btn-secondary back-to-dashboard-btn">
+    <button v-if="!embedded" @click="backToDashboard()" class="btn-secondary back-to-dashboard-btn">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="back-icon">
         <line x1="19" y1="12" x2="5" y2="12"></line>
         <polyline points="12 19 5 12 12 5"></polyline>
@@ -33,6 +33,10 @@
           <option value="">All Departments</option>
           <option v-for="d in availableDepartments" :key="d" :value="d">{{ d }}</option>
         </select>
+        <label class="toggle-inline">
+          <input v-model="includeInactive" type="checkbox" @change="refreshStaff" />
+          <span>Show inactive</span>
+        </label>
         <button @click="refreshStaff" class="btn-primary">Refresh</button>
       </div>
     </div>
@@ -121,17 +125,11 @@
                       v-if="canEdit"
                       @click="editStaff(member)"
                       class="btn-sm btn-info"
-                      title="Edit"
+                      title="View account"
                     >
-                      Edit
+                      View
                     </button>
-                  <button
-                    @click="toggleStatus(member)"
-                    :class="['btn-sm', member.is_active ? 'btn-danger' : 'btn-success']"
-                    :title="member.is_active ? 'Deactivate' : 'Activate'"
-                  >
-                    {{ member.is_active ? 'Deactivate' : 'Activate' }}
-                  </button>
+                  <span class="read-only-note">View only</span>
                 </td>
               </tr>
             </tbody>
@@ -162,11 +160,20 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, defineProps, defineEmits } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import '../css/adminpanel.css'
 import OwnerStaffModal from './OwnerStaffModal.vue'
+
+const props = defineProps({
+  embedded: {
+    type: Boolean,
+    default: false,
+  },
+})
+
+const emit = defineEmits(['back-to-dashboard'])
 
 async function onStaffModalSuccess(payload) {
   showAddStaffModal.value = false
@@ -195,6 +202,11 @@ const router = useRouter()
 const currentRoute = useRoute()
 
 const backToDashboard = () => {
+  if (props.embedded) {
+    emit('back-to-dashboard')
+    return
+  }
+
   try {
     const user = JSON.parse(localStorage.getItem('user') || 'null')
     if (user) {
@@ -259,6 +271,7 @@ const branches = ref([])
 const branchFilter = ref('')
 const roleFilter = ref('')
 const departmentFilter = ref('')
+const includeInactive = ref(true)
 
 // Form State
 const showAddStaffModal = ref(false)
@@ -443,8 +456,10 @@ async function loadStaff() {
 
   try {
     const url = isBranchManager.value ? '/api/manager/staff' : '/api/admin/staff'
+    const params = isBranchManager.value ? {} : { include_inactive: includeInactive.value ? 1 : 0 }
     const res = await axios.get(url, {
-      withCredentials: true
+      withCredentials: true,
+      params,
     })
 
     if (res.data.success) {
@@ -522,46 +537,29 @@ function resetForm() {
 }
 
 function editStaff(member) {
-  // If user cannot edit, open modal in view-only mode
-  if (!canEdit.value) {
-    isEditingStaff.value = true
-    editingStaffId.value = member.id
-    editingStaffBranchName.value = member.branch_name || ''
-    editingStaffBranchDefaultPassword.value = branchData.value[member.branch_name]?.defaultPassword || ''
-    isViewOnly.value = true
-
-    // Fetch password if not available, then open modal
-    if (!editingStaffBranchDefaultPassword.value && member.branch_id) {
-      fetchBranchPassword(member.branch_id, () => {
-        showAddStaffModal.value = true
-      })
-    } else {
-      showAddStaffModal.value = true
-    }
-    return
-  }
-
   isEditingStaff.value = true
   editingStaffId.value = member.id
   editingStaffBranchName.value = member.branch_name || ''
   editingStaffBranchDefaultPassword.value = branchData.value[member.branch_name]?.defaultPassword || ''
-  isViewOnly.value = false
-  newStaff.value = {
-    username: member.username,
-    email: member.email,
-    full_name: member.full_name,
-    phone_number: member.phone_number,
-    password: '',
-    department: member.department || '',
-  }
+  isViewOnly.value = true
 
-  // Fetch password if not available, then open modal
-  if (!editingStaffBranchDefaultPassword.value && member.branch_id) {
-    fetchBranchPassword(member.branch_id, () => {
+  axios.get(`/api/admin/staff/${member.id}`, { withCredentials: true })
+    .then((res) => {
+      if (res.data?.success && res.data.data) {
+        staff.value = staff.value.map((item) => item.id === member.id ? { ...item, ...res.data.data } : item)
+      }
+    })
+    .catch((error) => {
+      console.warn('Could not load complete staff profile:', error)
+    })
+    .finally(() => {
+      const selectedStaff = staff.value.find((item) => item.id === member.id) || member
+      editingStaffBranchName.value = selectedStaff.branch_name || editingStaffBranchName.value
       showAddStaffModal.value = true
     })
-  } else {
-    showAddStaffModal.value = true
+
+  if (!editingStaffBranchDefaultPassword.value && member.branch_id) {
+    fetchBranchPassword(member.branch_id)
   }
 }
 

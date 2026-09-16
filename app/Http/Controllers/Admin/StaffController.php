@@ -135,6 +135,8 @@ class StaffController extends Controller
         ]);
 
         try {
+            $includeInactive = filter_var($request->query('include_inactive', false), FILTER_VALIDATE_BOOLEAN);
+
             $branchesQuery = DB::table('branches')
                 ->where('is_active', 1);
 
@@ -158,7 +160,7 @@ class StaffController extends Controller
                 $managers = DB::table('users')
                     ->where('branch_id', $branch->id)
                     ->whereIn('role', ['BRANCH_MANAGER', 'MANAGER'])
-                    ->where('is_active', 1)
+                    ->when(!$includeInactive, fn ($query) => $query->where('is_active', 1))
                     ->whereNull('deleted_at') // Exclude soft deleted
                     ->get();
 
@@ -169,7 +171,7 @@ class StaffController extends Controller
                 $staff = DB::table('users')
                     ->where('branch_id', $branch->id)
                     ->whereIn('role', ['STAFF', 'CUSTOM'])
-                    ->where('is_active', 1)
+                    ->when(!$includeInactive, fn ($query) => $query->where('is_active', 1))
                     ->whereNull('deleted_at') // Exclude soft deleted
                     ->get();
 
@@ -177,7 +179,7 @@ class StaffController extends Controller
                 $hrUsers = DB::table('users')
                     ->where('branch_id', $branch->id)
                     ->where('role', 'HR')
-                    ->where('is_active', 1)
+                    ->when(!$includeInactive, fn ($query) => $query->where('is_active', 1))
                     ->whereNull('deleted_at')
                     ->get();
 
@@ -293,7 +295,7 @@ class StaffController extends Controller
                 if (in_array($user->role, ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN'])) {
                     $owners = DB::table('users')
                         ->where('role', 'OWNER')
-                        ->where('is_active', 1)
+                        ->when(!$includeInactive, fn ($query) => $query->where('is_active', 1))
                         ->whereNull('deleted_at')
                         ->get();
 

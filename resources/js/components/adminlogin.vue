@@ -8,8 +8,8 @@
             <div class="login-brand">
                 <div class="brand-logo">CT</div>
                 <div class="brand-text">
-                    <h1>Chikin Tayo Admin</h1>
-                    <p>Secure access to your store dashboard.</p>
+                    <h1>Chikin Tayo Branch Manager</h1>
+                    <p>Secure access to your branch dashboard.</p>
                 </div>
             </div>
 
@@ -52,7 +52,7 @@
                 </div>
 
                 <button class="login-btn" type="submit" :disabled="isLoading">
-                    <span v-if="!isLoading">Login to Admin Panel</span>
+                    <span v-if="!isLoading">Login to Branch Manager Panel</span>
                     <span v-else class="loading-inline">
                         <span class="dot"></span>
                         <span class="dot"></span>
@@ -112,13 +112,13 @@ const password = ref("");
 const showPassword = ref(false)
 const isLoading = ref(false);
 const showOverlay = ref(false);
-const overlayText = ref("Loading Admin Panel...");
+const overlayText = ref("Loading Branch Manager Panel...");
 const errorMsg = ref("");
 const showForceModal = ref(false);
 const showAccountSetupModal = ref(false);
 const accountSetupMissingFields = ref([]);
 const accountSetupType = ref('full');
-const pendingRedirectPath = ref("/admin-panel");
+const pendingRedirectPath = ref("/manager-panel");
 const loggedInUsername = ref("");
 const defaultPassword = ref("");
 

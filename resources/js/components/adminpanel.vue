@@ -33,7 +33,8 @@
               v-if="(ownerProfile.role || '').toString().toUpperCase() !== 'STAFF'"
               type="button"
               class="admin-sidebar__item"
-              @click="goToStaffManagement"
+              :class="{ 'admin-sidebar__item--active': activeSection === 'staff-management' }"
+              @click="activeSection = 'staff-management'"
             >
               Staff Management
             </button>
@@ -68,58 +69,62 @@
 
           <section class="admin-feature-header">
             <div>
-              <p class="admin-eyebrow">Admin dashboard</p>
+              <p class="admin-eyebrow">Branch Manager dashboard</p>
               <h1 class="admin-feature-title">{{ activeSectionTitle }}</h1>
             </div>
           </section>
 
-          <Transition name="admin-section" mode="out-in" appear>
-          <div :key="activeSection" class="admin-section-view">
-          <!-- Date range tabs (moved out of header) -->
-          <div v-if="activeSection === 'dashboard'" class="range-tabs">
-            <button
-              class="range-tab"
-              :class="{ 'range-tab--active': activeRange === 'today' }"
-              @click="changeRange('today')"
-            >
-              Today
-            </button>
-            <button
-              class="range-tab"
-              :class="{ 'range-tab--active': activeRange === 'yesterday' }"
-              @click="changeRange('yesterday')"
-            >
-              Yesterday
-            </button>
-            <button
-              class="range-tab"
-              :class="{ 'range-tab--active': activeRange === 'thisWeek' }"
-              @click="changeRange('thisWeek')"
-            >
-              This Week
-            </button>
-            <button
-              class="range-tab"
-              :class="{ 'range-tab--active': activeRange === 'lastWeek' }"
-              @click="changeRange('lastWeek')"
-            >
-              Last Week
-            </button>
-            <button
-              class="range-tab"
-              :class="{ 'range-tab--active': activeRange === 'thisMonth' }"
-              @click="changeRange('thisMonth')"
-            >
-              This Month
-            </button>
-            <button
-              class="range-tab"
-              :class="{ 'range-tab--active': activeRange === 'lastMonth' }"
-              @click="changeRange('lastMonth')"
-            >
-              Last Month
-            </button>
+          <div v-if="activeSection === 'staff-management'" class="admin-staff-management-embedded">
+            <StaffManagement :embedded="true" @back-to-dashboard="activeSection = 'dashboard'" />
           </div>
+
+          <Transition v-else name="admin-section" mode="out-in" appear>
+            <div :key="activeSection" class="admin-section-view">
+              <!-- Date range tabs (moved out of header) -->
+              <div v-if="activeSection === 'dashboard'" class="range-tabs">
+                <button
+                  class="range-tab"
+                  :class="{ 'range-tab--active': activeRange === 'today' }"
+                  @click="changeRange('today')"
+                >
+                  Today
+                </button>
+                <button
+                  class="range-tab"
+                  :class="{ 'range-tab--active': activeRange === 'yesterday' }"
+                  @click="changeRange('yesterday')"
+                >
+                  Yesterday
+                </button>
+                <button
+                  class="range-tab"
+                  :class="{ 'range-tab--active': activeRange === 'thisWeek' }"
+                  @click="changeRange('thisWeek')"
+                >
+                  This Week
+                </button>
+                <button
+                  class="range-tab"
+                  :class="{ 'range-tab--active': activeRange === 'lastWeek' }"
+                  @click="changeRange('lastWeek')"
+                >
+                  Last Week
+                </button>
+                <button
+                  class="range-tab"
+                  :class="{ 'range-tab--active': activeRange === 'thisMonth' }"
+                  @click="changeRange('thisMonth')"
+                >
+                  This Month
+                </button>
+                <button
+                  class="range-tab"
+                  :class="{ 'range-tab--active': activeRange === 'lastMonth' }"
+                  @click="changeRange('lastMonth')"
+                >
+                  Last Month
+                </button>
+              </div>
 
           <!-- Overview cards - Operational Metrics -->
           <section v-if="activeSection === 'dashboard'" id="admin-dashboard" class="overview-grid">
@@ -151,7 +156,7 @@
             </div>
           </section>
 
-          <!-- Request New Product (Admin) -->
+          <!-- Request New Product (Branch Manager) -->
           <section v-if="activeSection === 'inventory'" id="admin-inventory-procurement" class="panel-block">
             <div class="panel-header">
               <h2>Request New Product</h2>
@@ -471,7 +476,7 @@
 
 
 
-            <!-- Attendance Monitoring (Admin) -->
+            <!-- Attendance Monitoring (Branch Manager) -->
             <section v-if="activeSection === 'staff'" id="admin-attendance" class="panel-block dashboard-white-panel">
               <div class="panel-header" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
                 <h2>Attendance Monitoring</h2>
@@ -749,8 +754,8 @@
       <transition name="fade">
         <div v-if="showLogoutConfirm" class="logout-confirm-backdrop">
           <div class="logout-confirm-box logout-confirm-dialog">
-            <h3>Logout from Admin Panel?</h3>
-            <p>This will end your current session for Chikin Tayo Admin.</p>
+            <h3>Logout from Branch Manager Panel?</h3>
+            <p>This will end your current session for Chikin Tayo Branch Manager.</p>
             <div class="logout-actions">
               <button
                 class="btn-cancel"
@@ -783,6 +788,7 @@ import { useRouter } from 'vue-router'
 import axios from 'axios'
 import LoadingOverlay from './LoadingOverlay.vue'
 import AdminCustomerReports from './AdminCustomerReports.vue'
+import StaffManagement from './StaffManagement.vue'
 
 import { showToast } from './toastStore'
 
@@ -798,6 +804,7 @@ const activeSectionTitle = computed(() => ({
   'landing-images': 'Landing Page Images',
   reports: 'Reports & CRM',
   staff: 'Staff & Attendance',
+  'staff-management': 'Staff Management',
   announcements: 'Announcements',
 }[activeSection.value] || panelTitle.value))
 
@@ -934,18 +941,10 @@ async function toggleEarlyClockout() {
 }
 
 const brandTitle = computed(() => 'Chikin Tayo')
-const panelText = computed(() => {
-  const role = ownerProfile.value.role || 'OWNER'
-  if (role === 'BRANCH_MANAGER') return 'Branch Manager Panel'
-  return 'Admin Panel'
-})
+const panelText = computed(() => 'Branch Manager Panel')
 const panelTitle = computed(() => `${brandTitle.value} ${panelText.value}`)
 
-const panelDescription = computed(() => {
-  const role = ownerProfile.value.role || 'OWNER'
-  if (role === 'BRANCH_MANAGER') return 'Monitor your branch orders, staff, and activity.'
-  return 'Monitor branches, orders, and staff activity from a single dashboard.'
-})
+const panelDescription = computed(() => 'Monitor your branch operations, orders, staff, and activity from a single dashboard.')
 
 function normalizeUser(u) {
   if (!u) return { fullName: '', role: '', email: '', contact: '', branch: '', accountId: '', avatarUrl: '' }
@@ -1349,7 +1348,7 @@ async function onAvatarChange(event) {
   }
 }
 
-// Auto-upload pending avatar after reload (admin panel)
+// Auto-upload pending avatar after reload (branch manager panel)
 onMounted(async () => {
   // Mark initial mount complete first (before loading dashboard)
   isInitialMount.value = false
@@ -1441,7 +1440,7 @@ function cancelLogout() {
 
 async function askLogout() {
   try {
-    const ok = await (window.swalConfirm ? window.swalConfirm('This will end your current session for Chikin Tayo Admin.', 'Confirm logout') : Promise.resolve(false))
+    const ok = await (window.swalConfirm ? window.swalConfirm('This will end your current session for Chikin Tayo Branch Manager.', 'Confirm logout') : Promise.resolve(false))
     if (ok) await confirmLogout()
   } catch (e) { console.error('askLogout failed', e) }
 }
@@ -1531,24 +1530,6 @@ async function sendAnnouncement() {
     announcementError.value = e?.response?.data?.message || e?.message || 'Failed to send announcement.'
   } finally {
     isSendingAnnouncement.value = false
-  }
-}
-
-// Only define goToStaffManagement for non-STAFF roles
-function goToStaffManagement() {
-  if (ownerProfile.value.role === 'STAFF') return
-  try {
-    if (!mountTemporaryOverlay('Opening Staff Management...')) return
-    try { if (window.pageBlur && typeof window.pageBlur.show === 'function') window.pageBlur.show() } catch (e) {}
-    setTimeout(() => {
-      try {
-        window.location.href = '/staff-management'
-      } catch (e) {
-        try { router.push('/staff-management') } catch (err) {}
-      }
-    }, 220)
-  } catch (e) {
-    try { router.push('/staff-management') } catch (err) {}
   }
 }
 
@@ -2015,7 +1996,7 @@ h1, h2 {
   margin-bottom: 8px;
 }
 
-/* Default: left-align the main header and its tabs for Admin Panel */
+/* Default: left-align the main header and its tabs for the Branch Manager Panel */
 .admin-main-header {
   padding: 18px 24px;
   position: relative;
@@ -2503,7 +2484,7 @@ h1, h2 {
   }
 }
 
-/* Finance-style KPI cards for the admin dashboard overview. */
+/* Finance-style KPI cards for the branch manager dashboard overview. */
 .admin-main > .overview-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

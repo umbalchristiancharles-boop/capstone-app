@@ -52,6 +52,29 @@ class PayrollController extends Controller
             $query->whereDate('pay_period_start', $cycleStart)
                 ->whereDate('pay_period_end', $cycleEnd)
                 ->where('payroll_type', $cycleType);
+        } elseif ($period === 'active_cycles') {
+            [$cycleStart, $cycleEnd, $cycleType] = $this->payrollCycleForDate(Carbon::now());
+            $previousCycleDate = $cycleStart->copy()->subDay();
+            [$previousStart, $previousEnd, $previousType] = $this->payrollCycleForDate($previousCycleDate);
+
+            $query->where(function ($cycleQuery) use (
+                $cycleStart,
+                $cycleEnd,
+                $cycleType,
+                $previousStart,
+                $previousEnd,
+                $previousType
+            ) {
+                $cycleQuery->where(function ($currentQuery) use ($cycleStart, $cycleEnd, $cycleType) {
+                    $currentQuery->whereDate('pay_period_start', $cycleStart)
+                        ->whereDate('pay_period_end', $cycleEnd)
+                        ->where('payroll_type', $cycleType);
+                })->orWhere(function ($previousQuery) use ($previousStart, $previousEnd, $previousType) {
+                    $previousQuery->whereDate('pay_period_start', $previousStart)
+                        ->whereDate('pay_period_end', $previousEnd)
+                        ->where('payroll_type', $previousType);
+                });
+            });
         } elseif ($period === 'last_month') {
             $query->whereBetween('pay_period_start', [
                 Carbon::now()->subMonth()->startOfMonth(),
@@ -176,7 +199,8 @@ class PayrollController extends Controller
         $workedHours = max(0, (float) $totalHoursWorked / 60);
         $regularHours = max(0, $workedHours - $overtimeHours);
         $baseSalary = $regularHours * $hourlyRate;
-        $lateDeductions = 0;
+        $lateOccurrences = max(0, (int) $daysLate);
+        $lateDeductions = $lateOccurrences * ($hourlyRate * 0.10);
         $overtimePay = $overtimeHours * ($hourlyRate * 1.25);
 
         return Payroll::updateOrCreate(
@@ -250,8 +274,8 @@ class PayrollController extends Controller
             return response()->json(['ok' => false, 'message' => 'Payroll not found'], 404);
         }
 
-        if ($payroll->status !== 'approved') {
-            return response()->json(['ok' => false, 'message' => 'Payroll must be approved before marking as paid'], 400);
+        if (!in_array($payroll->status, ['pending', 'approved'], true)) {
+            return response()->json(['ok' => false, 'message' => 'Payroll is not eligible to be marked as paid'], 400);
         }
 
         $payroll->status = 'paid';

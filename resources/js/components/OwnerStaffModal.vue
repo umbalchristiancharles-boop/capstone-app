@@ -8,7 +8,23 @@
             <button type="button" @click="closeModal" class="close-button">×</button>
           </div>
 
-          <div class="form-grid">
+          <div v-if="isViewOnly" class="profile-grid">
+            <div class="profile-field"><span class="form-label">Full name</span><span>{{ staff?.full_name || '-' }}</span></div>
+            <div class="profile-field"><span class="form-label">Username</span><span>{{ staff?.username || '-' }}</span></div>
+            <div class="profile-field"><span class="form-label">Email</span><span>{{ staff?.email || '-' }}</span></div>
+            <div class="profile-field"><span class="form-label">Phone number</span><span>{{ staff?.phone_number || '-' }}</span></div>
+            <div class="profile-field"><span class="form-label">Role</span><span>{{ staff?.role || '-' }}</span></div>
+            <div class="profile-field"><span class="form-label">Department</span><span>{{ staff?.department || '-' }}</span></div>
+            <div class="profile-field"><span class="form-label">Branch</span><span>{{ staff?.branch_name || branchName || '-' }}</span></div>
+            <div class="profile-field"><span class="form-label">Branch ID</span><span>{{ staff?.branch_id || '-' }}</span></div>
+            <div class="profile-field"><span class="form-label">Account status</span><span>{{ staff?.is_active ? 'Active' : 'Deactivated' }}</span></div>
+            <div class="profile-field"><span class="form-label">Online status</span><span>{{ staff?.is_online ? 'Online' : 'Offline' }}</span></div>
+            <div class="profile-field profile-field--wide"><span class="form-label">Address</span><span>{{ staff?.address || '-' }}</span></div>
+            <div v-if="staff?.created_at" class="profile-field"><span class="form-label">Created</span><span>{{ staff.created_at }}</span></div>
+            <div v-if="staff?.updated_at" class="profile-field"><span class="form-label">Last updated</span><span>{{ staff.updated_at }}</span></div>
+          </div>
+
+          <div v-else class="form-grid">
             <div class="form-group">
               <label class="form-label">Create custom account?</label>
               <div>
@@ -66,19 +82,25 @@
             </div>
           </div>
 
-          <!-- Debug: Show password info -->
-          <div style="background: #f0f0f0; padding: 0.5rem; margin-bottom: 1rem; font-size: 0.75rem; border-radius: 4px; font-family: monospace;">
-            isEdit: {{ isEdit }} | defaultPassword: {{ defaultPassword ? '✓ SET' : '✗ EMPTY' }} | branchName: {{ branchName }}
-          </div>
+          <section v-if="isViewOnly" class="documents-section">
+            <h3>Documents</h3>
+            <div v-if="documentEntries.length" class="documents-grid">
+              <a v-for="document in documentEntries" :key="document.key" :href="document.url" target="_blank" rel="noopener" class="document-link">
+                <span>{{ document.label }}</span>
+                <small>View document</small>
+              </a>
+            </div>
+            <p v-else class="empty-documents">No documents uploaded.</p>
+          </section>
 
           <!-- Default Password Section (Outside form-grid) -->
-          <div v-if="isEdit && defaultPassword" class="default-password-section-wrapper">
+          <div v-if="isEdit" class="default-password-section-wrapper">
             <div class="default-password-section">
               <label class="form-label">Default Branch Password</label>
               <div class="default-password-display">
                 <div class="password-info">
                   <span class="password-label">Branch: <strong>{{ branchName }}</strong></span>
-                  <span class="password-value">{{ defaultPassword }}</span>
+                  <span class="password-value">{{ defaultPassword || 'Managed by branch settings' }}</span>
                 </div>
                 <button 
                   type="button"
@@ -120,6 +142,32 @@ export default {
     editingStaffId: { type: [String, Number], default: null },
   },
   emits: ['close', 'success', 'resetPassword'],
+  computed: {
+    documentEntries() {
+      const labels = {
+        resume: 'Resume',
+        government_id: 'Government ID',
+        psa_birth_certificate: 'PSA Birth Certificate',
+        nbi_clearance: 'NBI Clearance',
+        police_clearance: 'Police Clearance',
+        medical_certificate: 'Medical Certificate',
+        drug_test_result: 'Drug Test Result',
+        sss_id: 'SSS ID',
+        philhealth_id: 'PhilHealth ID',
+        pagibig_mdf: 'Pag-IBIG MDF',
+        tin_id: 'TIN ID',
+        diploma_transcript: 'Diploma / Transcript',
+      }
+
+      return Object.entries(this.staff?.documents || {})
+        .filter(([, document]) => document?.url)
+        .map(([key, document]) => ({
+          key,
+          label: labels[key] || key,
+          url: document.url,
+        }))
+    },
+  },
   data() {
     return {
       form: {
@@ -260,10 +308,26 @@ export default {
 .form-label { font-size:0.85rem; font-weight:700; margin-bottom:0.5rem }
 .form-input { padding:0.75rem; border:1px solid #e5e7eb; border-radius:8px }
 
+.profile-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:1rem 1.5rem; padding:1.5rem }
+.profile-field { display:flex; flex-direction:column; gap:0.35rem; min-width:0; padding:0.75rem; background:#f8fafc; border:1px solid #e5e7eb; border-radius:8px; color:#374151; overflow-wrap:anywhere }
+.profile-field--wide { grid-column:1 / -1 }
+.documents-section { padding:0 1.5rem 1.25rem }
+.documents-section h3 { margin:0 0 0.75rem; font-size:1rem }
+.documents-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:0.75rem }
+.document-link { display:flex; flex-direction:column; gap:0.25rem; padding:0.8rem; border:1px solid #dbe3ef; border-radius:8px; color:#1d4ed8; text-decoration:none; background:#f8fbff }
+.document-link:hover { border-color:#2563eb; background:#eff6ff }
+.document-link small { color:#64748b }
+.empty-documents { margin:0; color:#64748b }
+
 .modal-footer { display:flex; justify-content:flex-end; gap:0.75rem; padding:1rem 1.25rem; border-top:1px solid #eee }
 .btn { padding:0.6rem 1rem; border-radius:8px; font-weight:600 }
 .btn-primary { background:#ff7e5f; color:#fff; border:none }
 .btn-secondary { background:#fff; border:1px solid #e5e7eb }
+
+@media (max-width: 760px) {
+  .profile-grid, .documents-grid { grid-template-columns:1fr }
+  .profile-field--wide { grid-column:auto }
+}
 
 /* Default Password Section */
 .default-password-section-wrapper {

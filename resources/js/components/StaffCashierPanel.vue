@@ -3,7 +3,6 @@
         <aside class="staff-cashier-sidebar" :aria-hidden="cashierSidebarCollapsed">
           <nav class="staff-cashier-sidebar__nav" aria-label="Cashier sections">
             <button class="staff-cashier-sidebar__item" :class="{ 'staff-cashier-sidebar__item--active': activeCashierSection === 'cashier' }" type="button" @click="selectCashierSection('cashier')">Cashier</button>
-            <button class="staff-cashier-sidebar__item" :class="{ 'staff-cashier-sidebar__item--active': activeCashierSection === 'products' }" type="button" @click="selectCashierSection('products')">Products</button>
             <button class="staff-cashier-sidebar__item" :class="{ 'staff-cashier-sidebar__item--active': activeCashierSection === 'transactions' }" type="button" @click="selectCashierSection('transactions')">Transactions</button>
             <button class="staff-cashier-sidebar__item" :class="{ 'staff-cashier-sidebar__item--active': activeCashierSection === 'attendance' }" type="button" @click="selectCashierSection('attendance')">Attendance</button>
             <button class="staff-cashier-sidebar__item" :class="{ 'staff-cashier-sidebar__item--active': activeCashierSection === 'announcements' }" type="button" @click="selectCashierSection('announcements')">Announcements</button>
@@ -38,10 +37,8 @@
           <Transition name="staff-cashier-section" mode="out-in">
           <div :key="activeCashierSection" class="staff-cashier-section-view">
       <div v-if="!branchId" class="loading-text">Loading branch information...</div>
-        <div v-else class="cashier-body" :class="{ 'staff-cashier-body--hidden': !['cashier', 'products'].includes(activeCashierSection) }">
-        <!-- LEFT: Product catalogue -->
-        <section v-if="activeCashierSection === 'cashier' || activeCashierSection === 'products'" class="product-catalogue">
-          <h2>Products</h2>
+        <div v-else class="cashier-body" :class="{ 'staff-cashier-body--hidden': activeCashierSection !== 'cashier' }">
+        <section v-if="activeCashierSection === 'cashier'" class="product-lookup-section">
           <div class="search-bar product-lookup-bar">
             <input
               v-model.trim="productSearch"
@@ -50,31 +47,6 @@
               @keyup.enter="findProductByLookup"
             />
             <button class="scan-btn" type="button" @click="openBarcodeScanner">Scan</button>
-          </div>
-          <div v-if="isLoadingProducts" class="loading-text">Loading products...</div>
-          <div v-else-if="filteredProducts.length === 0" class="empty-text">No products available</div>
-          <div v-else>
-            <div v-for="cat in productCategories" :key="cat" class="category-section">
-              <h3 class="category-header">{{ cat || 'Uncategorized' }}</h3>
-              <div class="product-grid">
-                <div
-                  v-for="p in getProductsByCategory(cat)"
-                  :key="p.id"
-                  class="product-card"
-                  :class="{ 'out-of-stock': p.stock <= 0 }"
-                  @click="p.stock > 0 && addToCart(p)"
-                >
-                  <div class="product-name">{{ p.name }}</div>
-                  <div v-if="p.per_pack_or_individual" class="product-type" :class="'type-' + p.per_pack_or_individual">
-                    {{ formatPricingType(p.per_pack_or_individual) }}
-                  </div>
-                  <div class="product-price">₱{{ fmt(displayPrice(p)) }}</div>
-                  <div class="product-stock" :class="{ 'stock-zero': p.stock <= 0 }">
-                    {{ p.stock > 0 ? 'Stock: ' + p.stock : 'Out of stock' }}
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </section>
 
