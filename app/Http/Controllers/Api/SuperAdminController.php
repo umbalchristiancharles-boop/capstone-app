@@ -57,7 +57,7 @@ class SuperAdminController extends Controller
      * Create a default branch-role position record that can be applied to by candidates.
      * This mirrors the HR flow where accounts are created only after a successful application.
      */
-    private function createApprovedBranchPositionRequest(Branch $branch, string $roleKey, int $requestedByUserId): array
+    private function createApprovedBranchPositionRequest(Branch $branch, string $roleKey, int $requestedByUserId, ?array $accountConfig = null): array
     {
         $positionMap = [
             'admin' => ['name' => 'Admin', 'department' => 'ADMIN', 'description' => 'Branch administrator role'],
@@ -65,6 +65,7 @@ class SuperAdminController extends Controller
             'finance' => ['name' => 'Finance Manager', 'department' => 'FINANCE', 'description' => 'Oversees financial operations and budgets'],
             'procurement' => ['name' => 'Procurement Manager', 'department' => 'PROCUREMENT', 'description' => 'Handles purchasing and supplier relations'],
             'logistics' => ['name' => 'Logistics Manager', 'department' => 'LOGISTICS', 'description' => 'Manages deliveries and logistics operations'],
+            'custom' => ['name' => 'Custom Account', 'department' => 'CUSTOM', 'description' => 'Custom account with assigned module access'],
         ];
 
         $config = $positionMap[$roleKey] ?? ['name' => ucfirst($roleKey), 'department' => strtoupper($roleKey), 'description' => 'Branch role'];
@@ -84,6 +85,8 @@ class SuperAdminController extends Controller
             'requested_by_user_id' => $requestedByUserId,
             'quantity' => 1,
             'notes' => 'Automatically broadcast during branch creation for ' . $branch->name . '.',
+            'account_type' => $roleKey === 'custom' ? 'custom' : 'standard',
+            'account_config' => $roleKey === 'custom' ? $accountConfig : null,
             'status' => 'Approved',
             'approved_by_user_id' => $requestedByUserId,
             'approved_at' => now(),
@@ -1004,7 +1007,7 @@ class SuperAdminController extends Controller
             $isMainBranchAdmin = (bool) ($b && ($b->is_main_branch ?? false));
         }
         $isMainBranchFinance = false;
-        if ($roleUpper === 'MANAGER' && strtoupper($user->department ?? '') === 'FINANCE') {
+        if (in_array($roleUpper, ['MANAGER', 'MANAGER_FINANCE'], true) && strtoupper($user->department ?? '') === 'FINANCE') {
             $b = Branch::find($user->branch_id);
             $isMainBranchFinance = (bool) ($b && ($b->is_main_branch ?? false));
         }
@@ -1167,7 +1170,7 @@ class SuperAdminController extends Controller
                 }
             }
 
-            // Optionally create a custom account with granular module/function access
+            // Broadcast custom accounts too; the user is created only after the applicant passes.
             $customAccountInput = $request->input('custom_account', null);
             if (is_array($customAccountInput)) {
                 $rawModules = array_filter($customAccountInput['modules'] ?? [], fn ($m) => in_array(strtolower($m), $allowedModules, true));
@@ -1179,33 +1182,14 @@ class SuperAdminController extends Controller
                 // Only create if there is at least one permission selected
                 if (!empty($modules) || !empty($functions)) {
                     $customUsername = trim($customAccountInput['username'] ?? '');
-                    if (empty($customUsername)) {
-                        $customUsername = 'custom_' . $codeSlug;
-                        if (User::where('username', $customUsername)->exists()) {
-                            $customUsername = 'custom_' . $codeSlug . '_' . $branch->id;
-                        }
-                    }
-
-                    $customPassword = trim($customAccountInput['password'] ?? '') ?: $defaultPassword;
                     $customFullName = trim($customAccountInput['full_name'] ?? '') ?: ('Custom Account - ' . $name);
-
-                    User::create([
+                    $broadcast = $this->createApprovedBranchPositionRequest($branch, 'custom', (int) $user->id, [
                         'username' => $customUsername,
-                        'email' => null,
-                        'password' => $customPassword, // Mutator hashes
                         'full_name' => $customFullName,
-                        'role' => 'CUSTOM',
-                        'department' => null,
-                        'branch_id' => $branch->id,
-                        'is_active' => $accountIsActive,
-                        'must_change_password' => 1,
-                        'permissions' => [
-                            'modules' => $modules,
-                            'functions' => $functions,
-                        ],
+                        'modules' => $modules,
+                        'functions' => $functions,
                     ]);
-
-                    $createdRoles[] = 'Custom Account';
+                    $createdRoles[] = $broadcast['position_name'];
                 }
             }
 
@@ -1390,7 +1374,7 @@ class SuperAdminController extends Controller
 
         $roleUpper = strtoupper($user->role ?? '');
         $isMainBranchFinance = false;
-        if ($roleUpper === 'MANAGER' && strtoupper($user->department ?? '') === 'FINANCE') {
+        if (in_array($roleUpper, ['MANAGER', 'MANAGER_FINANCE'], true) && strtoupper($user->department ?? '') === 'FINANCE') {
             $b = Branch::find($user->branch_id);
             $isMainBranchFinance = (bool) ($b && ($b->is_main_branch ?? false));
         }
@@ -1439,7 +1423,7 @@ class SuperAdminController extends Controller
 
         $roleUpper = strtoupper($user->role ?? '');
         $isMainBranchFinance = false;
-        if ($roleUpper === 'MANAGER' && strtoupper($user->department ?? '') === 'FINANCE') {
+        if (in_array($roleUpper, ['MANAGER', 'MANAGER_FINANCE'], true) && strtoupper($user->department ?? '') === 'FINANCE') {
             $b = Branch::find($user->branch_id);
             $isMainBranchFinance = (bool) ($b && ($b->is_main_branch ?? false));
         }

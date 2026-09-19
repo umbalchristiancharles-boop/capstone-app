@@ -21,6 +21,10 @@ class PositionApplicationController extends Controller
         $jobTitle = strtolower($jobTitle ?? '');
         $department = strtolower($department ?? '');
 
+        if (str_contains($jobTitle, 'custom') || $department === 'custom') {
+            return 'CUSTOM';
+        }
+
         if (str_contains($jobTitle, 'admin') || $department === 'admin') {
             return 'ADMIN';
         }
@@ -327,6 +331,19 @@ class PositionApplicationController extends Controller
             
             // Map department string to valid enum value
             $departmentEnum = $this->mapDepartmentToEnum($application->department);
+
+            $accountConfig = $application->positionOpenRequest?->account_config ?? [];
+            $isCustomAccount = ($application->positionOpenRequest?->account_type ?? 'standard') === 'custom';
+            if ($isCustomAccount) {
+                $username = trim((string) ($accountConfig['username'] ?? '')) ?: $username;
+                $originalUsername = $username;
+                $counter = 1;
+                while (\App\Models\User::where('username', $username)->exists()) {
+                    $username = $originalUsername . $counter;
+                    $counter++;
+                }
+                $departmentEnum = null;
+            }
             
             // Create the staff user
             $staff = \App\Models\User::create([
@@ -341,6 +358,10 @@ class PositionApplicationController extends Controller
                 'branch_id' => $application->branch_id,
                 'is_active' => 1,
                 'must_change_password' => 1,
+                'permissions' => $isCustomAccount ? [
+                    'modules' => $accountConfig['modules'] ?? [],
+                    'functions' => $accountConfig['functions'] ?? [],
+                ] : null,
             ]);
 
             // Send email notification to applicant with credentials

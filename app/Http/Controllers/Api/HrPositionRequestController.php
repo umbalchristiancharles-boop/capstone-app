@@ -142,12 +142,24 @@ class HrPositionRequestController extends Controller
         return response()->json([
             'ok' => true,
             'approved_positions' => $requests->map(function ($r) {
+                $customModules = $r->account_type === 'custom'
+                    ? ($r->account_config['modules'] ?? [])
+                    : [];
+                $moduleLabels = collect($customModules)->map(function ($module) {
+                    return ucfirst(str_replace(['_', '-'], ' ', $module));
+                })->values()->all();
+                $isCustom = $r->account_type === 'custom';
+
                 return [
                     'id' => $r->id,
                     'position_id' => $r->position_id,
-                    'position_name' => optional($r->position)->name,
-                    'department' => optional($r->position)->department,
-                    'description' => optional($r->position)->description,
+                    'position_name' => $isCustom && !empty($moduleLabels)
+                        ? implode(' / ', $moduleLabels)
+                        : optional($r->position)->name,
+                    'department' => $isCustom ? null : optional($r->position)->department,
+                    'description' => $isCustom
+                        ? 'Role access: ' . implode(', ', $moduleLabels)
+                        : optional($r->position)->description,
                     'branch_id' => $r->branch_id,
                     'branch_name' => optional($r->branch)->name,
                     'quantity' => $r->quantity,

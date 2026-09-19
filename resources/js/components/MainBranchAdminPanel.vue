@@ -26,6 +26,7 @@
           <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': activeSection === 'transactions' }" @click="showFinanceSection('recent-transactions')">Recent Transactions</button>
           <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': activeSection === 'crm' }" @click="activeSection = 'crm'">CRM</button>
           <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': activeSection === 'branches' }" @click="activeSection = 'branches'">Add Branch</button>
+          <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': activeSection === 'applications' }" @click="activeSection = 'applications'">Account Applications</button>
         </nav>
       </template>
 
@@ -98,6 +99,7 @@
 
         <MainBranchCRMPanel v-else-if="activeSection === 'crm'" />
         <OwnerAddBranches v-else-if="activeSection === 'branches'" />
+        <MainBranchAccountApplications v-else-if="activeSection === 'applications'" />
         </div>
         </Transition>
       </template>
@@ -136,6 +138,7 @@ import axios from 'axios'
 import FinancePanelContent from './finance/FinancePanelContent.vue'
 import MainBranchCRMPanel from './MainBranchCRMPanel.vue'
 import OwnerAddBranches from './OwnerAddBranches.vue'
+import MainBranchAccountApplications from './MainBranchAccountApplications.vue'
 
 const userProfile = ref({})
 const ownerLayout = ref(null)

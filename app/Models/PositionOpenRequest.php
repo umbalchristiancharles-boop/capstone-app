@@ -14,10 +14,16 @@ class PositionOpenRequest extends Model
         'requested_by_user_id',
         'quantity',
         'notes',
+        'account_type',
+        'account_config',
         'status',
         'approved_by_user_id',
         'approved_at',
         'rejection_reason',
+    ];
+
+    protected $casts = [
+        'account_config' => 'array',
     ];
 
     public function approvedBy()

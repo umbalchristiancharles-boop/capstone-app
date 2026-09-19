@@ -174,8 +174,8 @@
             <div class="custom-account-card">
               <div class="custom-account-header">
                 <div>
-                  <h3>Custom Account (role: CUSTOM)</h3>
-                  <p class="info-sub">Select which panels this account can access. A CUSTOM account is created only if at least one panel is selected.</p>
+                  <h3>Custom Position Account (role: CUSTOM)</h3>
+                  <p class="info-sub">Select which panels the hired applicant can access. The CUSTOM account is created after the application is passed.</p>
                 </div>
                 <label class="toggle">
                   <input type="checkbox" v-model="branchForm.customAccount.enabled" />
@@ -194,8 +194,8 @@
                     <input v-model="branchForm.customAccount.fullName" class="form-input" :placeholder="`Custom Account - ${branchForm.name || branchForm.code}`" />
                   </div>
                   <div class="form-group">
-                    <label class="form-label">Password</label>
-                    <input v-model="branchForm.customAccount.password" class="form-input" :placeholder="defaultPassword" />
+                    <label class="form-label">Credentials</label>
+                    <span class="form-helper">Generated and emailed after the applicant is hired.</span>
                   </div>
                 </div>
 
@@ -920,11 +920,9 @@ async function submitBranch() {
       if (selectedModules.length > 0) {
         const username = (branchForm.value.customAccount.username || '').trim() || `custom_${codeSlugPreview.value}`
         const fullName = (branchForm.value.customAccount.fullName || '').trim() || `Custom Account - ${branchForm.value.name || branchForm.value.code}`
-        const password = (branchForm.value.customAccount.password || '').trim() || defaultPassword.value
         customAccountPayload = {
           username,
           full_name: fullName,
-          password,
           modules: selectedModules,
         }
       }

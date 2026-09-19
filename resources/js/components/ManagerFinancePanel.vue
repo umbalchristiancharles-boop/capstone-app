@@ -228,6 +228,7 @@
 
         <!-- BUDGET APPROVALS SECTION -->
         <template v-if="selectedSection === 'approvals'">
+          <MainBranchFinanceBranchConfirmations v-if="props.isMainBranchFinance || isMainBranchFinanceManager" />
           <section class="finance-card finance-card--section-full">
             <div class="finance-table-header">
               <h3>Budget Request Approvals</h3>
