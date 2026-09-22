@@ -107,7 +107,13 @@ class SupplierOrderController extends Controller
 
         try {
             DB::beginTransaction();
-            $imagePath = $request->file('product_image')->store('product-images', 'public');
+            $imagesDirectory = public_path('product-images');
+            if (!is_dir($imagesDirectory)) {
+                mkdir($imagesDirectory, 0755, true);
+            }
+            $imageName = $request->file('product_image')->hashName();
+            $request->file('product_image')->move($imagesDirectory, $imageName);
+            $imagePath = 'product-images/' . $imageName;
 
             Log::info('submitProduct: validated data', [
                 'name' => $validated['name'],

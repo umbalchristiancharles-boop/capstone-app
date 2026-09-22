@@ -32,13 +32,20 @@ class AttendanceController extends Controller
             }
         });
 
-        if ($range === 'today') {
-            $query->where('date', Carbon::now()->toDateString());
-        } elseif ($range === 'thisWeek') {
-            $query->whereBetween('date', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
-        } elseif ($range === 'thisMonth') {
-            $query->whereBetween('date', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()]);
-        }
+        $now = Carbon::now();
+        $dateRange = match ($range) {
+            'yesterday' => [$now->copy()->subDay(), $now->copy()->subDay()],
+            'thisWeek' => [$now->copy()->startOfWeek(), $now->copy()->endOfWeek()],
+            'lastWeek' => [$now->copy()->subWeek()->startOfWeek(), $now->copy()->subWeek()->endOfWeek()],
+            'thisMonth' => [$now->copy()->startOfMonth(), $now->copy()->endOfMonth()],
+            'lastMonth' => [$now->copy()->subMonth()->startOfMonth(), $now->copy()->subMonth()->endOfMonth()],
+            default => [$now->copy(), $now->copy()],
+        };
+
+        $query->whereBetween('date', array_map(
+            static fn (Carbon $date) => $date->toDateString(),
+            $dateRange
+        ));
 
         $records = $query->orderBy('date', 'desc')->orderBy('time_in', 'desc')->get()->map(function ($att) {
             return [

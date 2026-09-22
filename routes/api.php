@@ -315,6 +315,7 @@ Route::middleware('auth:sanctum,web')->group(function () {
 
     // Product Request Workflow (Logistics requests new products for approval by Owner)
     Route::apiResource('product-requests', \App\Http\Controllers\Api\ProductRequestController::class)->except(['show', 'update', 'destroy']);
+    Route::post('owner/products', [\App\Http\Controllers\Api\ProductRequestController::class, 'ownerCreate']);
     Route::get('product-requests/pending', [\App\Http\Controllers\Api\ProductRequestController::class, 'getPendingRequests']);
     Route::post('product-requests/{id}/approve', [\App\Http\Controllers\Api\ProductRequestController::class, 'approveRequest']);
     Route::post('product-requests/{id}/reject', [\App\Http\Controllers\Api\ProductRequestController::class, 'rejectRequest']);

@@ -7,6 +7,26 @@ use App\Http\Controllers\Auth\AdminPasswordResetController;
 use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Admin\DeletedStaffController;
 use App\Http\Controllers\HRMessageController;
+use Illuminate\Support\Facades\Storage;
+
+Route::get('/product-image/{path}', function (string $path) {
+    $path = 'product-images/' . ltrim($path, '/');
+
+    if (str_contains($path, '..')) {
+        abort(404);
+    }
+
+    $publicPath = public_path($path);
+    if (is_file($publicPath)) {
+        return response()->file($publicPath);
+    }
+
+    if (Storage::disk('public')->exists($path)) {
+        return response()->file(Storage::disk('public')->path($path));
+    }
+
+    abort(404);
+})->where('path', '.*');
 
 // ==========================================
 // AUTHENTICATION ROUTES (Login/Logout)

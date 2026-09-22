@@ -39,6 +39,18 @@
       <div v-if="!branchId" class="loading-text">Loading branch information...</div>
         <div v-else class="cashier-body" :class="{ 'staff-cashier-body--hidden': activeCashierSection !== 'cashier' }">
         <section v-if="activeCashierSection === 'cashier'" class="product-lookup-section">
+          <div v-if="scannerOpen" class="cashier-inline-scanner">
+            <div class="cashier-inline-scanner__header">
+              <h2>Scan Product Barcode</h2>
+              <button type="button" class="cashier-inline-scanner__stop" @click="openBarcodeScanner">Stop Scan</button>
+            </div>
+            <div class="cashier-inline-scanner__video-wrap">
+              <video ref="scannerVideo" autoplay muted playsinline></video>
+              <div class="cashier-inline-scanner__guide" aria-hidden="true"></div>
+            </div>
+            <p v-if="!scannerError" class="cashier-inline-scanner__hint">Center the barcode in the camera view.</p>
+            <p v-if="scannerError" class="cashier-inline-scanner__error">{{ scannerError }}</p>
+          </div>
           <div class="search-bar product-lookup-bar">
             <input
               v-model.trim="productSearch"
@@ -46,7 +58,7 @@
               placeholder="Scan or enter barcode / search product"
               @keyup.enter="findProductByLookup"
             />
-            <button class="scan-btn" type="button" @click="openBarcodeScanner">Scan</button>
+            <button class="scan-btn" type="button" @click="openBarcodeScanner">{{ scannerOpen ? 'Stop Scan' : 'Scan' }}</button>
           </div>
         </section>
 
@@ -183,7 +195,7 @@
           <div v-for="(item, idx) in cart" :key="item.cart_key" class="cart-item">
             <div class="cart-item-info">
               <span class="cart-item-name">{{ item.name }}</span>
-                <span class="cart-item-price">{{ item.sale_mode === 'per_pack' ? 'Per pack' : 'Per piece' }}: ₱{{ fmt(item.unit_price) }}</span>
+                <span class="cart-item-price">Per piece: ₱{{ fmt(item.unit_price) }}</span>
             </div>
             <div class="cart-item-controls">
               <button class="qty-btn" @click="decrementQty(idx)">−</button>
@@ -307,23 +319,6 @@
     </section>
   </div>
 
-  <div v-if="scannerOpen" style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); display: flex; align-items: center; justify-content: center; z-index: 2000;" @click.self="closeBarcodeScanner">
-    <div style="width: min(92vw, 560px); background: #fff; border-radius: 18px; padding: 18px; box-shadow: 0 20px 50px rgba(0,0,0,.25);">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-        <h3 style="margin: 0; color: #1f2937;">Scan Product Barcode</h3>
-        <button type="button" @click="closeBarcodeScanner" style="border: 0; background: transparent; font-size: 24px; cursor: pointer; color: #475569;">×</button>
-      </div>
-      <div style="position: relative; width: 100%; aspect-ratio: 4 / 3; background: #0f172a; border-radius: 12px; overflow: hidden;">
-        <video ref="scannerVideo" autoplay muted playsinline style="width: 100%; height: 100%; object-fit: cover; display: block;"></video>
-        <div style="position: absolute; inset: 16px; border: 3px solid rgba(45, 212, 191, 0.95); border-radius: 12px; box-shadow: inset 0 0 0 9999px rgba(15, 23, 42, 0.18);"></div>
-      </div>
-      <p v-if="!scannerError" style="margin: 12px 0 0; color: #475569; text-align: center;">Center the barcode in the camera view.</p>
-      <p v-if="scannerError" style="margin: 12px 0 0; color: #b91c1c; text-align: center;">{{ scannerError }}</p>
-      <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
-        <button type="button" @click="closeBarcodeScanner" style="padding: 10px 18px; border-radius: 10px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer; color: #334155;">Close</button>
-      </div>
-    </div>
-  </div>
 </template>
 
 <script setup>
@@ -368,8 +363,23 @@ const scannerOpen = ref(false)
 const scannerVideo = ref(null)
 const scannerError = ref('')
 let scannerControls = null
+let scannerStream = null
+let lastScannedBarcode = ''
+let lastScannedAt = 0
 
-const cart = ref([])
+const cartStorageKey = 'staff-cashier-cart-v2'
+const scannerStorageKey = 'staff-cashier-scanner-open'
+
+function getStoredCart() {
+  try {
+    const stored = JSON.parse(sessionStorage.getItem(cartStorageKey) || '[]')
+    return Array.isArray(stored) ? stored : []
+  } catch (e) {
+    return []
+  }
+}
+
+const cart = ref(getStoredCart())
 const amountPaid = ref(null)
 const isProcessing = ref(false)
 const pendingOrderCode = ref(null)
@@ -379,6 +389,12 @@ const transactions = ref([])
 const hasNotified = ref(false)
 // track refunding state per transaction
 // we will set `tx.isRefunding = true` temporarily when refund is in progress
+
+watch(cart, (value) => {
+  try {
+    sessionStorage.setItem(cartStorageKey, JSON.stringify(value))
+  } catch (e) {}
+}, { deep: true })
 
 // Announcements
 const announcements = ref([])
@@ -445,33 +461,7 @@ function formatPricingType(type) {
 }
 
 async function pricingMode(product) {
-  const type = product.per_pack_or_individual || 'individual'
-  const packQty = Number(product.pack_quantity) || 0
-  if (packQty <= 0 || type === 'individual') return 'individual'
-
-  const result = await Swal.fire({
-    title: `Sell ${product.name}`,
-    text: 'Choose how this item will be sold.',
-    input: 'radio',
-    inputOptions: {
-      per_pack: `Per pack — ₱${fmt(product.price)} for ${packQty} pieces`,
-      individual: `Individual — ₱${fmt(piecePrice(product))} each`
-    },
-    inputValue: 'per_pack',
-    showCancelButton: true,
-    confirmButtonText: 'Select',
-    cancelButtonText: 'Cancel',
-    showCloseButton: true,
-    allowOutsideClick: false,
-    inputValidator: (value) => {
-      if (!value) {
-        return 'Please choose a sale mode.'
-      }
-    }
-  })
-
-  if (!result.isConfirmed) return null
-  return result.value === 'individual' ? 'individual' : 'per_pack'
+  return 'individual'
 }
 
 function piecePrice(product) {
@@ -481,7 +471,7 @@ function piecePrice(product) {
 }
 
 function displayPrice(product) {
-  return product.per_pack_or_individual === 'individual' ? piecePrice(product) : Number(product.price) || 0
+  return piecePrice(product)
 }
 
 const filteredProducts = computed(() => {
@@ -524,8 +514,14 @@ function findProductByLookup() {
 }
 
 async function openBarcodeScanner() {
+  if (scannerOpen.value) {
+    closeBarcodeScanner()
+    return
+  }
+
   scannerError.value = ''
   scannerOpen.value = true
+  try { sessionStorage.setItem(scannerStorageKey, '1') } catch (e) {}
   await nextTick()
 
   if (!scannerVideo.value) {
@@ -551,22 +547,29 @@ async function openBarcodeScanner() {
       [DecodeHintType.TRY_HARDER, true],
     ])
     const reader = new BrowserMultiFormatReader(hints)
-    scannerControls = await reader.decodeFromConstraints(
-      {
-        video: {
-          facingMode: { ideal: 'environment' },
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-          focusMode: { ideal: 'continuous' },
-        },
-        audio: false,
+    if (!navigator.mediaDevices?.getUserMedia) {
+      throw new Error('Camera access is not supported by this browser.')
+    }
+
+    scannerStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: 'environment' },
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
       },
-      scannerVideo.value,
-      (result, error) => {
+      audio: false,
+    })
+    scannerVideo.value.srcObject = scannerStream
+    await scannerVideo.value.play()
+
+    scannerControls = await reader.decodeFromStream(scannerStream, scannerVideo.value, (result, error) => {
         if (result?.getText()) {
           const scanned = result.getText().trim()
+          const now = Date.now()
+          if (scanned === lastScannedBarcode && now - lastScannedAt < 600) return
+          lastScannedBarcode = scanned
+          lastScannedAt = now
           productSearch.value = scanned
-          closeBarcodeScanner()
           const matched = products.value.find(p => {
             const barcode = (p.barcode || '').trim().toLowerCase()
             return barcode && barcode === scanned.toLowerCase()
@@ -576,18 +579,26 @@ async function openBarcodeScanner() {
             productSearch.value = ''
           }
         }
-      }
-    )
+      })
   } catch (error) {
+    if (scannerStream) {
+      scannerStream.getTracks().forEach(track => track.stop())
+      scannerStream = null
+    }
     scannerError.value = 'Camera access was denied or is unavailable. Check browser permissions and try again.'
   }
 }
 
 function closeBarcodeScanner() {
   scannerOpen.value = false
+  try { sessionStorage.removeItem(scannerStorageKey) } catch (e) {}
   if (scannerControls) {
     scannerControls.stop()
     scannerControls = null
+  }
+  if (scannerStream) {
+    scannerStream.getTracks().forEach(track => track.stop())
+    scannerStream = null
   }
 }
 
@@ -1079,9 +1090,9 @@ async function addToCart(product) {
   const saleMode = await pricingMode(chosen)
   if (!saleMode) return
   const packQty = Number(chosen.pack_quantity) || 1
-  const piecesPerSale = saleMode === 'per_pack' ? packQty : 1
-  const unitPrice = saleMode === 'per_pack' ? Number(chosen.price) || 0 : piecePrice(chosen)
-  const availablePieces = chosen.is_kitchen_dish ? chosen.stock : (chosen.real_stock ?? chosen.stock) * (saleMode === 'per_pack' ? packQty : 1)
+  const piecesPerSale = 1
+  const unitPrice = piecePrice(chosen)
+  const availablePieces = chosen.is_kitchen_dish ? chosen.stock : (chosen.real_stock ?? chosen.stock) * packQty
   const maxSaleQuantity = Math.floor(availablePieces / piecesPerSale)
   const existing = cart.value.find(i => i.cart_key === `${chosen.id}:${saleMode}`)
   if (existing) {
@@ -1201,13 +1212,14 @@ async function processCheckout() {
     } else {
       checkoutSuccess.value = `${res.data.message} Order: ${order.order_code || ''} | Change: ₱${fmt(res.data.change)}`
       pendingOrderCode.value = null
-      // clear cart on completed orders
-      cart.value = []
     }
 
+    cart.value = []
+    productSearch.value = ''
     amountPaid.value = null
     discountType.value = 'none'
     discountPercent.value = 0
+    closeBarcodeScanner()
 
     await loadTransactions()
   } catch (e) {
@@ -1222,6 +1234,9 @@ async function processCheckout() {
 onMounted(async () => {
   console.log('[StaffCashierPanel] mounted - localStorage user:', localStorage.getItem('user'))
   await loadStaffProfile()
+  try {
+    if (sessionStorage.getItem(scannerStorageKey) === '1') openBarcodeScanner()
+  } catch (e) {}
   fetchAnnouncements()
   if (!hideAttendanceCard.value) {
     loadAttendanceStatus()

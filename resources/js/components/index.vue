@@ -125,7 +125,7 @@
         <div class="products-grid">
           <div class="product-card" v-for="product in products" :key="product.id">
             <div class="product-box">
-              <img :src="product.img" :alt="product.name" />
+              <img :src="product.img" :alt="product.name" @error="handleProductImageError($event, product)" />
             </div>
             <div class="product-comments-section">
               <div class="comments-header">
@@ -881,6 +881,25 @@ const ramenImg      = new URL('../assets/ramens.png', import.meta.url).href
 const icecreamImg   = new URL('../assets/icecream.png', import.meta.url).href
 const pastriesImg   = new URL('../assets/pastries.png', import.meta.url).href
 
+const productFallbackImages = {
+  yangyeom: yangyeomImg,
+  'snow cheese': snowcheeseImg,
+  corndog: corndogImg,
+  hotdog: corndogImg,
+  ramen: ramenImg,
+  samyang: ramenImg,
+  'samyang red': ramenImg,
+  'ice cream': icecreamImg,
+  pastries: pastriesImg,
+}
+
+function handleProductImageError(event, product) {
+  if (event.target.dataset.fallbackApplied === 'true') return
+
+  event.target.dataset.fallbackApplied = 'true'
+  event.target.src = productFallbackImages[String(product.name || '').trim().toLowerCase()] || chikintayoImg
+}
+
 const activeEmojiPicker = ref(null)
 const activeReplyCommentId = ref(null)
 const replyData = ref({ author: '', text: '' })
@@ -1041,20 +1060,10 @@ async function loadProducts() {
       return
     }
     
-    // Map product names to images (case-insensitive)
-    const imageMap = {
-      'yangyeom': yangyeomImg,
-      'snow cheese': snowcheeseImg,
-      'corndog': corndogImg,
-      'pastries': pastriesImg,
-      'ramen': ramenImg,
-      'ice cream': icecreamImg,
-    }
-    
     products.value = data.map(product => ({
       ...product,
       comments: [],
-      img: product.image_url || imageMap[product.name.toLowerCase()] || chikintayoImg
+      img: product.image_url || productFallbackImages[String(product.name || '').trim().toLowerCase()] || chikintayoImg
     }))
     
     console.debug('[PRODUCTS] Processed products:', products.value.map(p => ({ id: p.id, name: p.name })))

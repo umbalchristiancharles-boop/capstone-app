@@ -8,10 +8,84 @@ use App\Models\ProductRequest;
 use App\Models\Product;
 use App\Models\Branch;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ProductRequestController extends Controller
 {
+    /**
+     * Owner creates a product directly for every active branch.
+     */
+    public function ownerCreate(Request $request)
+    {
+        $user = $request->user();
+        $role = strtoupper(trim($user->role ?? ''));
+
+        if (!in_array($role, ['OWNER', 'ADMIN', 'SUPER_ADMIN', 'SUPERADMIN'])) {
+            return response()->json(['error' => 'Only owners and admins can create products directly'], 403);
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'category' => 'required|string|max:100',
+            'brand' => 'nullable|string|max:255',
+            'description' => 'nullable|string|max:500',
+            'unit' => 'nullable|string|max:50',
+        ]);
+
+        $branches = Branch::where('is_active', true)->get();
+        if ($branches->isEmpty()) {
+            return response()->json(['error' => 'No active branches found'], 400);
+        }
+
+        try {
+            $products = DB::transaction(function () use ($validated, $branches, $user) {
+                $created = [];
+
+                foreach ($branches as $branch) {
+                    $created[] = Product::create([
+                        'name' => $validated['name'],
+                        'slug' => Str::slug($validated['name'] . '-' . $branch->id . '-' . time()),
+                        'category' => $validated['category'],
+                        'brand' => $validated['brand'] ?? null,
+                        'description' => $validated['description'] ?? null,
+                        'unit' => $validated['unit'] ?? null,
+                        'price' => 0,
+                        'cost_price' => 0,
+                        'stock' => 0,
+                        'min_stock' => 0,
+                        'branch_id' => $branch->id,
+                        'supplier_name' => 'OWNER',
+                        'supplier_id' => null,
+                        'is_published' => true,
+                        'is_active' => true,
+                        'is_kitchen_dish' => false,
+                        'has_been_ordered' => false,
+                        'logistics_request_available' => true,
+                        'status' => 'approved',
+                        'approved_by_owner' => $user->id,
+                        'approved_at' => now(),
+                    ]);
+                }
+
+                return $created;
+            });
+
+            return response()->json([
+                'ok' => true,
+                'message' => 'Product created successfully and applied to all ' . count($products) . ' branches!',
+                'data' => $products,
+            ], 201);
+        } catch (\Exception $e) {
+            Log::error('Failed to create owner product', [
+                'error' => $e->getMessage(),
+                'user_id' => $user->id,
+            ]);
+
+            return response()->json(['error' => 'Failed to create product: ' . $e->getMessage()], 500);
+        }
+    }
+
     /**
      * Get all product requests for the authenticated user
      */

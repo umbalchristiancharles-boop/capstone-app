@@ -159,6 +159,69 @@
           <div v-if="dishMessage" :class="['message', dishMessageType]">{{ dishMessage }}</div>
         </div>
       </section>
+
+      <!-- Create New Product Section -->
+      <section class="panel-block owner-product-section">
+        <div class="panel-header">
+          <h2>Create New Product</h2>
+        </div>
+        <div class="panel-body">
+          <form @submit.prevent="submitProduct" data-no-overlay="1">
+            <div class="form-row">
+              <label>Product Name</label>
+              <input v-model="productForm.name" type="text" required placeholder="Enter product name" />
+            </div>
+
+            <div class="form-row">
+              <label>Category</label>
+              <select v-model="productForm.category" required>
+                <option value="">Select a category</option>
+                <option value="Beverage">Beverage</option>
+                <option value="Meat">Meat</option>
+                <option value="Vegetable">Vegetable</option>
+                <option value="Grain">Grain</option>
+                <option value="Condiment">Condiment</option>
+                <option value="Dairy">Dairy</option>
+                <option value="Egg">Egg</option>
+                <option value="Spice">Spice</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <label>Brand</label>
+              <input v-model="productForm.brand" type="text" placeholder="Brand (optional)" />
+            </div>
+
+            <div class="form-row">
+              <label>Unit</label>
+              <select v-model="productForm.unit">
+                <option value="">Select unit (optional)</option>
+                <option value="pcs">pcs</option>
+                <option value="g">g</option>
+                <option value="kg">kg</option>
+                <option value="ml">ml</option>
+                <option value="l">l</option>
+                <option value="pack">pack</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <label>Description</label>
+              <textarea v-model="productForm.description" rows="3" placeholder="Description (optional)"></textarea>
+            </div>
+
+            <p class="owner-product-note">This product will be created immediately for all active branches. No approval is required.</p>
+
+            <div class="form-actions">
+              <button type="submit" :disabled="productSubmitting">
+                {{ productSubmitting ? 'Creating Product...' : 'Create Product (All Branches)' }}
+              </button>
+            </div>
+          </form>
+          <div v-if="productMessage" :class="['message', productMessageType]">{{ productMessage }}</div>
+        </div>
+      </section>
       </template>
 
       <section v-else-if="selectedSection === 'announcements'" class="panel-block owner-announcement-compose" aria-labelledby="owner-announcement-heading">
@@ -420,6 +483,10 @@ const products = ref([])
 const dishSubmitting = ref(false)
 const dishMessage = ref('')
 const dishMessageType = ref('')
+const productForm = ref({ name: '', category: '', brand: '', description: '', unit: '' })
+const productSubmitting = ref(false)
+const productMessage = ref('')
+const productMessageType = ref('')
 
 // Load products for dish creation form
 onMounted(() => {
@@ -488,6 +555,23 @@ async function submitDish() {
     dishMessageType.value = 'error'
   } finally {
     dishSubmitting.value = false
+  }
+}
+
+async function submitProduct() {
+  productMessage.value = ''
+  productSubmitting.value = true
+  try {
+    const res = await axios.post('/api/owner/products', productForm.value, { withCredentials: true })
+    productMessage.value = res.data?.message || 'Product created successfully and applied to all branches!'
+    productMessageType.value = 'success'
+    productForm.value = { name: '', category: '', brand: '', description: '', unit: '' }
+  } catch (e) {
+    console.error('Failed to create product', e)
+    productMessage.value = e?.response?.data?.message || e?.response?.data?.error || 'Failed to create product'
+    productMessageType.value = 'error'
+  } finally {
+    productSubmitting.value = false
   }
 }
 
@@ -1651,6 +1735,143 @@ const handleLogout = async () => {
   border: 1px solid #fecaca;
 }
 
+.owner-product-section {
+  background: #ffffff;
+  border-radius: 1.125rem;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.07);
+  overflow: hidden;
+}
+
+.owner-product-section .panel-header {
+  padding: 1.1rem 1.125rem;
+  background: linear-gradient(135deg, #fff7ed 0%, #fffbeb 100%);
+  border-bottom: 1px solid #fed7aa;
+}
+
+.owner-product-section .panel-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.owner-product-section .panel-body {
+  padding: 1.25rem;
+}
+
+.owner-product-section form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 1rem;
+}
+
+.owner-product-section .form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.owner-product-section .form-row label {
+  font-weight: 600;
+  color: #111827;
+  font-size: 0.9rem;
+}
+
+.owner-product-section .form-row input,
+.owner-product-section .form-row select,
+.owner-product-section .form-row textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #1f2937;
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.owner-product-section .form-row textarea {
+  min-height: 5rem;
+  resize: vertical;
+}
+
+.owner-product-section .form-row input:focus,
+.owner-product-section .form-row select:focus,
+.owner-product-section .form-row textarea:focus {
+  outline: none;
+  border-color: #ff6a3d;
+  box-shadow: 0 0 0 3px rgba(255, 106, 61, 0.1);
+}
+
+.owner-product-section .form-row:last-of-type,
+.owner-product-section .owner-product-note,
+.owner-product-section .form-actions {
+  grid-column: 1 / -1;
+}
+
+.owner-product-note {
+  margin: 0.25rem 0 0;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.owner-product-section .form-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.owner-product-section .form-actions button[type="submit"] {
+  padding: 0.65rem 1.25rem;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #ff6a3d, #ff8c42);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(255, 106, 61, 0.25);
+}
+
+.owner-product-section .form-actions button[type="submit"]:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(255, 106, 61, 0.35);
+}
+
+.owner-product-section .form-actions button[type="submit"]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.owner-product-section .message {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.owner-product-section .message.success {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+.owner-product-section .message.error {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
 @media (max-width: 900px) {
   .owner-dish-section .ingredient-row {
     grid-template-columns: 1fr 1fr;
@@ -1659,6 +1880,22 @@ const handleLogout = async () => {
 
   .owner-dish-section .ingredient-row button {
     grid-column: span 2;
+  }
+
+  .owner-product-section form {
+    grid-template-columns: 1fr;
+  }
+
+  .owner-product-section .form-row:last-of-type,
+  .owner-product-section .owner-product-note,
+  .owner-product-section .form-actions {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 767px) {
+  .owner-product-section .form-actions button[type="submit"] {
+    width: 100%;
   }
 }
 

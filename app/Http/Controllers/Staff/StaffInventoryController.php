@@ -179,6 +179,8 @@ class StaffInventoryController extends Controller
                 if (isset($earliestExpiryByProduct[$p->id])) {
                     $p->expires_at = $earliestExpiryByProduct[$p->id];
                 }
+
+                $p->stock = (int) ($p->real_stock ?? $p->stock ?? 0);
                 
                 if (!isset($map[$key])) {
                     $map[$key] = $p;
@@ -322,7 +324,13 @@ class StaffInventoryController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
-            $product->image_path = $request->file('image')->store('product-images', 'public');
+            $imagesDirectory = public_path('product-images');
+            if (!is_dir($imagesDirectory)) {
+                mkdir($imagesDirectory, 0755, true);
+            }
+            $imageName = $request->file('image')->hashName();
+            $request->file('image')->move($imagesDirectory, $imageName);
+            $product->image_path = 'product-images/' . $imageName;
             $product->save();
         }
 
@@ -407,7 +415,13 @@ class StaffInventoryController extends Controller
         $product->update($validated);
 
         if ($request->hasFile('image')) {
-            $product->image_path = $request->file('image')->store('product-images', 'public');
+            $imagesDirectory = public_path('product-images');
+            if (!is_dir($imagesDirectory)) {
+                mkdir($imagesDirectory, 0755, true);
+            }
+            $imageName = $request->file('image')->hashName();
+            $request->file('image')->move($imagesDirectory, $imageName);
+            $product->image_path = 'product-images/' . $imageName;
             $product->save();
         }
 

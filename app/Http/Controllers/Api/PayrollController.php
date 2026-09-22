@@ -200,8 +200,9 @@ class PayrollController extends Controller
         $regularHours = max(0, $workedHours - $overtimeHours);
         $baseSalary = $regularHours * $hourlyRate;
         $lateOccurrences = max(0, (int) $daysLate);
-        $lateDeductions = $lateOccurrences * ($hourlyRate * 0.10);
         $overtimePay = $overtimeHours * ($hourlyRate * 1.25);
+        $grossSalary = $baseSalary + $overtimePay;
+        $lateDeductions = min($lateOccurrences * ($hourlyRate * 0.10), $grossSalary);
 
         return Payroll::updateOrCreate(
             [
@@ -223,8 +224,8 @@ class PayrollController extends Controller
                 'base_salary' => $baseSalary,
                 'late_deductions' => $lateDeductions,
                 'overtime_pay' => $overtimePay,
-                'gross_salary' => $baseSalary + $overtimePay,
-                'net_salary' => $baseSalary + $overtimePay - $lateDeductions,
+                'gross_salary' => $grossSalary,
+                'net_salary' => max(0, $grossSalary - $lateDeductions),
             ]
         );
     }

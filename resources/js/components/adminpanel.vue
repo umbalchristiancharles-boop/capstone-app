@@ -516,7 +516,17 @@
                   <span>Status</span>
                 </div>
 
-                <div v-if="adminAttendance.length === 0" class="table-row">
+                <div v-if="adminAttendanceLoading" class="table-row">
+                  <span>Loading attendance records...</span>
+                  <span></span><span></span><span></span><span></span><span></span>
+                </div>
+
+                <div v-else-if="adminAttendanceError" class="table-row">
+                  <span>{{ adminAttendanceError }}</span>
+                  <span></span><span></span><span></span><span></span><span></span>
+                </div>
+
+                <div v-else-if="adminAttendance.length === 0" class="table-row">
                   <span>No attendance records for this range.</span>
                   <span></span><span></span><span></span><span></span><span></span>
                 </div>
@@ -830,6 +840,8 @@ const loadingAnnouncements = ref(false)
 const branches = ref([])
 const selectedBranchId = ref(null)
 const adminAttendance = ref([])
+const adminAttendanceLoading = ref(false)
+const adminAttendanceError = ref('')
 const recentOrders = ref([])
 const showAllOrders = ref(false)
 
@@ -1106,6 +1118,8 @@ function cancelProductRequest() {
 }
 
 async function loadAdminAttendance(range = 'today') {
+  adminAttendanceLoading.value = true
+  adminAttendanceError.value = ''
   try {
     const params = { range }
     if (selectedBranchId.value) params.branch_id = selectedBranchId.value
@@ -1118,6 +1132,9 @@ async function loadAdminAttendance(range = 'today') {
   } catch (e) {
     console.error('Error loading admin attendance:', e)
     adminAttendance.value = []
+    adminAttendanceError.value = e.response?.data?.message || 'Unable to load attendance records.'
+  } finally {
+    adminAttendanceLoading.value = false
   }
 }
 

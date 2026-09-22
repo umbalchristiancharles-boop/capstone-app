@@ -87,7 +87,21 @@ class Product extends Model
 
     public function getImageUrlAttribute(): ?string
     {
-        return $this->image_path ? asset('storage/' . ltrim($this->image_path, '/')) : null;
+        if (!$this->image_path) {
+            return null;
+        }
+
+        $path = ltrim($this->image_path, '/');
+
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+
+        if (str_starts_with($path, 'product-images/')) {
+            return asset('product-image/' . substr($path, strlen('product-images/')));
+        }
+
+        return asset('storage/' . $path);
     }
 
     /**

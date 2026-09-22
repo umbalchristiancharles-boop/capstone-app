@@ -425,8 +425,11 @@
               </div>
             </div>
             <div class="form-group">
-              <label>Unit Price (PHP)</label>
+              <label>{{ submitForm.per_pack_or_individual === 'per_pack' ? 'Price per Pack (PHP)' : 'Unit Price (PHP)' }}</label>
               <input v-model.number="submitForm.price" type="number" min="0.01" step="0.01" placeholder="0.00" />
+              <div v-if="submitForm.per_pack_or_individual === 'per_pack' && submitForm.pack_quantity > 0" class="muted small-text">
+                Equivalent to ₱{{ formatPrice(Number(submitForm.price || 0) / Number(submitForm.pack_quantity)) }} per {{ submitForm.pack_unit || 'piece' }}.
+              </div>
             </div>
             <div class="form-group">
               <label>Date Product Made</label>

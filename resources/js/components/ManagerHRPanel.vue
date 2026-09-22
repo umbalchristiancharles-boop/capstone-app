@@ -600,10 +600,11 @@
           </div>
         </div>
 
-        <div class="panel-body panel-body--table">
+        <div class="panel-body panel-body--table hr-attendance-table">
           <div class="table-header">
             <span>Staff Name</span>
             <span>Branch</span>
+            <span>Date</span>
             <span>Time In</span>
             <span>Time Out</span>
             <span>Hours</span>
@@ -612,17 +613,18 @@
 
           <div v-if="isLoadingAttendance" class="table-row">
             <span>Loading attendance...</span>
-            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span><span></span>
           </div>
 
           <div v-else-if="hrAttendance.length === 0" class="table-row">
             <span>No attendance records for this range.</span>
-            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span><span></span>
           </div>
 
           <div v-else v-for="att in hrAttendance" :key="att.id" class="table-row">
             <span>{{ att.user_name }}</span>
             <span>{{ att.branch_name || '-' }}</span>
+            <span>{{ att.date || '-' }}</span>
             <span>{{ att.time_in || '-' }}</span>
             <span>{{ att.time_out || '-' }}</span>
             <span>{{ att.hours_worked || '-' }}</span>
@@ -1852,6 +1854,7 @@ defineExpose({ refreshAllData, onProfileUpdated })
 .panel-action:hover { background: #5a6268; }
 .panel-body--table { padding-top: 0.75rem; display: flex; flex-direction: column; gap: 0.35rem; }
 .table-header, .table-row { display: grid; grid-template-columns: 1.5fr 1fr 0.9fr 0.9fr 0.7fr 0.8fr; gap: 0.75rem; align-items: center; }
+.hr-attendance-table .table-header, .hr-attendance-table .table-row { grid-template-columns: 1.5fr 1fr 0.9fr 0.9fr 0.9fr 0.7fr 0.8fr; }
 .table-header { font-weight: 600; color: #333; font-size: 0.85rem; }
 .table-row { background: #fafafa; padding: 0.5rem 0.75rem; border-radius: 6px; color: #333; font-size: 0.85rem; }
 .badge--success { background: #d4edda; color: #155724; padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }

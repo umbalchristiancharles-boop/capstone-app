@@ -755,6 +755,7 @@ class SuperAdminController extends Controller
             'sku' => $sku,
             'price' => $validated['price'],
             'stock' => $validated['stock'],
+            'real_stock' => $validated['stock'],
             'min_stock' => $validated['min_stock'] ?? 10,
             'branch_id' => $validated['branch_id'],
             'is_active' => true,
@@ -765,7 +766,13 @@ class SuperAdminController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
-            $product->image_path = $request->file('image')->store('product-images', 'public');
+            $imagesDirectory = public_path('product-images');
+            if (!is_dir($imagesDirectory)) {
+                mkdir($imagesDirectory, 0755, true);
+            }
+            $imageName = $request->file('image')->hashName();
+            $request->file('image')->move($imagesDirectory, $imageName);
+            $product->image_path = 'product-images/' . $imageName;
             $product->save();
         }
 
@@ -809,8 +816,20 @@ class SuperAdminController extends Controller
 
         $product->update($validated);
 
+        \App\Models\Product::recomputeRealStockForGroup(
+            (int) $product->branch_id,
+            $product->sku,
+            $product->name
+        );
+
         if ($request->hasFile('image')) {
-            $product->image_path = $request->file('image')->store('product-images', 'public');
+            $imagesDirectory = public_path('product-images');
+            if (!is_dir($imagesDirectory)) {
+                mkdir($imagesDirectory, 0755, true);
+            }
+            $imageName = $request->file('image')->hashName();
+            $request->file('image')->move($imagesDirectory, $imageName);
+            $product->image_path = 'product-images/' . $imageName;
             $product->save();
         }
 
