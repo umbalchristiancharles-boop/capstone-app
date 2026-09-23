@@ -42,7 +42,7 @@ function goToAdminLogin() {
   min-height: 100vh;
   background:
     linear-gradient(rgba(251, 247, 244, 0.72), rgba(247, 244, 240, 0.78)),
-    url('/staff-landing/Gemini_Generated_Image_ka602dka602dka60.jpg') center / cover no-repeat;
+    url('/staff-landing/Screenshot%202026-09-23%20235928.png') center / cover no-repeat;
 }
 
   #staff-hero {
