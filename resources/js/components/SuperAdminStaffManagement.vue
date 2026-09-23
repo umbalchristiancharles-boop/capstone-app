@@ -384,12 +384,12 @@ onMounted(async () => {
 }
 
 .btn-primary {
-  background: #1f2937 !important;
-  color: white !important;
+  background: #fff7ed !important;
+  color: #42210b !important;
 }
 
 .btn-primary:hover {
-  background: #374151 !important;
+  background: #ffedd5 !important;
 }
 
 .btn-secondary, .btn-outline {
@@ -454,12 +454,12 @@ onMounted(async () => {
 }
 
 .btn-primary {
-  background: #1f2937;
-  color: white;
+  background: #fff7ed;
+  color: #42210b;
 }
 
 .btn-primary:hover {
-  background: #374151;
+  background: #ffedd5;
 }
 
 .btn-success {
@@ -481,15 +481,15 @@ onMounted(async () => {
 }
 
 .btn-info {
-  background: #1f2937;
-  color: white;
+  background: #e0f2fe;
+  color: #075985;
   padding: 0.35rem 0.7rem;
   font-size: 0.8rem;
   border-radius: 6px;
 }
 
 .btn-info:hover {
-  background: #374151;
+  background: #bae6fd;
 }
 
 .btn-danger {
@@ -751,7 +751,7 @@ onMounted(async () => {
 }
 
 .password-card {
-  background: #334155;
+  background: #fff7ed;
   border-radius: 8px;
   padding: 0.75rem 1.25rem;
   box-shadow: 0 4px 15px #cfc2b8;
@@ -761,7 +761,7 @@ onMounted(async () => {
 }
 
 .password-label {
-  color: #f8fafc;
+  color: #7c2d12;
   font-size: 0.8rem;
   font-weight: 500;
   text-transform: uppercase;
@@ -775,8 +775,8 @@ onMounted(async () => {
 }
 
 .password-text {
-  background: #475569;
-  color: #ffffff;
+  background: #ffffff;
+  color: #42210b;
   padding: 0.5rem 0.75rem;
   border-radius: 4px;
   font-family: 'Courier New', monospace;
@@ -787,9 +787,9 @@ onMounted(async () => {
 }
 
 .btn-copy {
-  background: #64748b;
+  background: #fed7aa;
   border: none;
-  color: #ffffff;
+  color: #7c2d12;
   padding: 0.35rem 0.6rem;
   border-radius: 4px;
   cursor: pointer;
@@ -798,7 +798,7 @@ onMounted(async () => {
 }
 
 .btn-copy:hover {
-  background: #94a3b8;
+  background: #fdba74;
   transform: scale(1.05);
 }
 

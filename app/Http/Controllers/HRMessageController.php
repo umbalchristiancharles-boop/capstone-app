@@ -191,6 +191,19 @@ class HRMessageController extends Controller
         if (in_array($meRole, $adminRoles) || $isMainBranchUser) {
             $users = User::where('id', '!=', $user->id)
                 ->selectRaw("id, COALESCE(full_name, username, CONCAT('User #', id)) as name, role, department, branch_id")
+                ->addSelect(['latest_message_at' => Message::select('created_at')
+                    ->where(function ($query) use ($user) {
+                        $query->where(function ($query) use ($user) {
+                            $query->whereColumn('messages.from_user_id', 'users.id')
+                                ->where('messages.to_user_id', $user->id);
+                        })->orWhere(function ($query) use ($user) {
+                            $query->where('messages.from_user_id', $user->id)
+                                ->whereColumn('messages.to_user_id', 'users.id');
+                        });
+                    })
+                    ->latest('created_at')
+                    ->limit(1)])
+                ->orderByDesc('latest_message_at')
                 ->orderBy('name')
                 ->get();
             return $users;
@@ -201,6 +214,19 @@ class HRMessageController extends Controller
             $users = User::where('id', '!=', $user->id)
                 ->where('branch_id', $meBranch)
                 ->selectRaw("id, COALESCE(full_name, username, CONCAT('User #', id)) as name, role, department, branch_id")
+                ->addSelect(['latest_message_at' => Message::select('created_at')
+                    ->where(function ($query) use ($user) {
+                        $query->where(function ($query) use ($user) {
+                            $query->whereColumn('messages.from_user_id', 'users.id')
+                                ->where('messages.to_user_id', $user->id);
+                        })->orWhere(function ($query) use ($user) {
+                            $query->where('messages.from_user_id', $user->id)
+                                ->whereColumn('messages.to_user_id', 'users.id');
+                        });
+                    })
+                    ->latest('created_at')
+                    ->limit(1)])
+                ->orderByDesc('latest_message_at')
                 ->orderBy('name')
                 ->get();
             return $users;

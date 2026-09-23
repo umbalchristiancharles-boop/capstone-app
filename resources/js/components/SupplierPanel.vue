@@ -11,6 +11,7 @@
     :ownerTwoColumnLayout="false"
     :showOwnerSidebar="true"
     :showOwnerTopbar="true"
+    :enableDarkMode="false"
     :topbarLabel="'SUPPLIER'"
     :accountInfoStyle="'finance'"
     @logout="askLogout"

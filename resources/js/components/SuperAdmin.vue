@@ -1,16 +1,16 @@
 <template>
-  <div class="super-admin-shell" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
-    <aside class="super-admin-sidebar" :aria-hidden="sidebarCollapsed">
+  <div class="super-admin-shell" :class="{ 'sidebar-collapsed': sidebarCollapsed, 'super-admin-sidebar-resizing': sidebarResizing }" :style="{ '--super-admin-sidebar-width': `${sidebarWidth}px` }">
+    <aside class="super-admin-sidebar" :aria-hidden="sidebarCollapsed" :style="{ width: `${sidebarWidth}px` }">
       <nav class="super-admin-sidebar__nav" aria-label="Super Admin modules">
-        <button class="super-admin-sidebar__item" :class="{ active: isDashboardSection('staff') }" @click="goToSuperAdminStaff">Staff Management</button>
-        <button class="super-admin-sidebar__item" :class="{ active: isDashboardSection('hr') }" @click="openModule('hr')">HR Staff Management</button>
-        <button class="super-admin-sidebar__item" @click="openModule('kitchen')">Kitchen Staff Monitoring</button>
-        <button class="super-admin-sidebar__item" @click="openModule('finance')">Finance <span v-if="pendingCounts.finance > 0" class="panel-badge">{{ pendingCounts.finance }}</span></button>
-        <button class="super-admin-sidebar__item" @click="openModule('cashier')">Cashier <span v-if="pendingCounts.cashier > 0" class="panel-badge">{{ pendingCounts.cashier }}</span></button>
-        <button class="super-admin-sidebar__item" @click="openModule('logistics')">Logistics <span v-if="pendingCounts.logistics > 0" class="panel-badge">{{ pendingCounts.logistics }}</span></button>
-        <button class="super-admin-sidebar__item" @click="openModule('supplier')">Supplier Management <span v-if="pendingCounts.supplier > 0" class="panel-badge">{{ pendingCounts.supplier }}</span></button>
-        <button class="super-admin-sidebar__item" @click="openModule('procurement')">Procurement <span v-if="pendingCounts.procurement > 0" class="panel-badge">{{ pendingCounts.procurement }}</span></button>
-        <button class="super-admin-sidebar__item" @click="ownerAddBranches">Owner Add Branches</button>
+        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'staff' }" @click="openModule('staff')">Staff Management</button>
+        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'hr' }" @click="openModule('hr')">HR Staff Management</button>
+        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'kitchen' }" @click="openModule('kitchen')">Kitchen Staff Monitoring</button>
+        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'finance' }" @click="openModule('finance')">Finance</button>
+        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'cashier' }" @click="openModule('cashier')">Cashier</button>
+        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'logistics' }" @click="openModule('logistics')">Logistics</button>
+        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'supplier' }" @click="openModule('supplier')">Supplier Management</button>
+        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'procurement' }" @click="openModule('procurement')">Procurement</button>
+        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'branches' }" @click="openModule('branches')">Owner Add Branches</button>
       </nav>
 
       <div class="super-admin-sidebar__footer">
@@ -19,6 +19,13 @@
         <button class="super-admin-sidebar__action" @click="showTerms = true">Update Terms</button>
         <button class="super-admin-sidebar__logout" @click.prevent="askLogout">Logout</button>
       </div>
+      <button
+        class="super-admin-sidebar__resize-handle"
+        type="button"
+        aria-label="Resize sidebar"
+        title="Resize sidebar"
+        @pointerdown="startSidebarResize"
+      ></button>
     </aside>
 
     <div class="super-admin-main-panel">
@@ -32,7 +39,7 @@
       </header>
 
       <div class="admin-page">
-      <section class="admin-layout">
+      <section v-if="activeModule === 'dashboard'" class="admin-layout">
           <div class="page-header-top">
             <div>
               <h1>{{ panelTitle }}</h1>
@@ -120,6 +127,11 @@
           </section>
         </main>
 
+      </section>
+
+      <section v-else class="super-admin-module-view">
+        <button type="button" class="super-admin-module-back" @click="activeModule = 'dashboard'">Back to Dashboard</button>
+        <component :is="activeModuleComponent" />
       </section>
 
       <!-- ANNOUNCEMENT MODAL -->
@@ -291,7 +303,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, defineAsyncComponent } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import '../css/adminpanel.css'
@@ -323,6 +335,46 @@ const showAnnouncement = ref(false)
 const showTerms = ref(false)
 const isLoggingOut = ref(false)
 const sidebarCollapsed = ref(false)
+const sidebarWidth = ref(156)
+const sidebarResizing = ref(false)
+const activeModule = ref('dashboard')
+
+const moduleComponents = {
+  staff: defineAsyncComponent(() => import('./SuperAdminStaffManagement.vue')),
+  hr: defineAsyncComponent(() => import('./HRStaffManagement.vue')),
+  kitchen: defineAsyncComponent(() => import('./SuperAdminKitchenStaff.vue')),
+  finance: defineAsyncComponent(() => import('./SuperAdminFinance.vue')),
+  cashier: defineAsyncComponent(() => import('./Cashier.vue')),
+  logistics: defineAsyncComponent(() => import('./SuperAdminLogisticsPanel.vue')),
+  supplier: defineAsyncComponent(() => import('./SuperAdminSupplier.vue')),
+  procurement: defineAsyncComponent(() => import('./SuperAdminProcurement.vue')),
+  branches: defineAsyncComponent(() => import('./OwnerAddBranches.vue')),
+}
+
+const activeModuleComponent = computed(() => moduleComponents[activeModule.value] || null)
+let lightModeObserver = null
+
+function startSidebarResize(event) {
+  if (sidebarCollapsed.value) return
+
+  event.preventDefault()
+  sidebarResizing.value = true
+  const startX = event.clientX
+  const startWidth = sidebarWidth.value
+
+  const resize = (moveEvent) => {
+    sidebarWidth.value = Math.min(320, Math.max(120, startWidth + moveEvent.clientX - startX))
+  }
+
+  const stopResize = () => {
+    sidebarResizing.value = false
+    document.removeEventListener('pointermove', resize)
+    document.removeEventListener('pointerup', stopResize)
+  }
+
+  document.addEventListener('pointermove', resize)
+  document.addEventListener('pointerup', stopResize)
+}
 
 // Announcement
 const announcementTitle = ref('')
@@ -374,6 +426,28 @@ const hasNotified = ref(false)
 const panelTitle = computed(() => 'Chikin Tayo Super Admin Panel')
 const panelDescription = computed(() => 'Full system access - manage all modules, branches, and system settings.')
 const userInitial = computed(() => (superAdminProfile.value.fullName || superAdminProfile.value.role || 'S').charAt(0).toUpperCase())
+
+function enforceSuperAdminLightMode() {
+  try {
+    document.documentElement.classList.remove('dark-mode')
+    document.body.classList.remove('dark-mode')
+    document.documentElement.classList.add('light-mode')
+    document.body.classList.add('light-mode')
+    document.documentElement.removeAttribute('data-superadmin-theme')
+    document.body.removeAttribute('data-superadmin-theme')
+  } catch (e) {}
+}
+
+function startLightModeGuard() {
+  enforceSuperAdminLightMode()
+  lightModeObserver = new MutationObserver(() => {
+    if (document.documentElement.classList.contains('dark-mode') || document.body.classList.contains('dark-mode')) {
+      enforceSuperAdminLightMode()
+    }
+  })
+  lightModeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-superadmin-theme'] })
+  lightModeObserver.observe(document.body, { attributes: true, attributeFilter: ['class', 'data-superadmin-theme'] })
+}
 
 function isDashboardSection(section) {
   if (section === 'staff') return route.path.includes('/staff-management')
@@ -576,38 +650,15 @@ async function onAvatarChange(event) {
 }
 
 function openModule(name) {
-  switch (name) {
-    case 'hr':
-      sessionStorage.setItem('forceHrReload', '1')
-      window.location.href = '/super-admin/hr'
-      return
-    case 'kitchen':
-      return router.push('/super-admin/kitchen-staff')
-    case 'finance': return router.push('/super-admin/finance')
-    case 'cashier': return router.push('/super-admin/cashier')
-    case 'logistics': return router.push('/super-admin/logistics')
-    case 'supplier': return router.push('/super-admin/supplier')
-    case 'procurement': return router.push('/super-admin/procurement')
-    default: return
-  }
+  if (moduleComponents[name]) activeModule.value = name
 }
 
 function ownerAddBranches() {
-  // Navigate to the owner add branches page (route should exist or be implemented separately)
-  // Navigate to the main-branch branches page but include a query marker
-  // so the branches page can return to the Super Admin panel when needed.
-  // Use dedicated super-admin route so the branches page can detect Super Admin
-  router.push({ path: '/super-admin/branches', query: { from: 'superadmin' } })
+  activeModule.value = 'branches'
 }
 
 function goToSuperAdminStaff() {
-  try {
-    // open dedicated Super Admin staff management route
-    sessionStorage.setItem('forceHrReload', '1')
-    router.push('/super-admin/staff-management')
-  } catch (e) {
-    console.error('Navigation to Super Admin Staff failed', e)
-  }
+  activeModule.value = 'staff'
 }
 
 async function sendAnnouncement() {
@@ -696,11 +747,17 @@ async function askLogout() {
 }
 
 onMounted(async () => {
+  startLightModeGuard()
   isInitialMount.value = false
   superAdminProfile.value = { fullName: '', role: 'SUPER_ADMIN', email: '', contact: '', accountId: '', avatarUrl: '' }
   await loadProfile()
   await loadDashboard(activeRange.value)
   await loadPanelNotifications()
+})
+
+onBeforeUnmount(() => {
+  lightModeObserver?.disconnect()
+  lightModeObserver = null
 })
 
 // Reload dashboard whenever we navigate to this route so external changes (like added branches)
@@ -716,6 +773,10 @@ watch(() => route.path, (p) => {
 
 <style scoped>
 .super-admin-shell {
+  --super-admin-sidebar-width: 156px;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
   min-height: 100vh;
   background: #f1e5dc;
   color: #42210b;
@@ -726,8 +787,10 @@ watch(() => route.path, (p) => {
   inset: 0 auto 0 0;
   z-index: 400;
   display: flex;
-  width: 156px;
+  width: var(--super-admin-sidebar-width);
   min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding: 1.5rem 1rem 1rem;
   box-sizing: border-box;
   flex-direction: column;
@@ -736,9 +799,50 @@ watch(() => route.path, (p) => {
   transition: transform 220ms ease, opacity 220ms ease;
 }
 
+.super-admin-sidebar__resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  width: 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: col-resize;
+}
+
+.super-admin-sidebar__resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 4px;
+  width: 2px;
+  height: 42px;
+  border-radius: 999px;
+  background: rgba(143, 79, 47, 0.38);
+  transform: translateY(-50%);
+  transition: height 160ms ease, background-color 160ms ease;
+}
+
+.super-admin-sidebar__resize-handle:hover::after,
+.super-admin-sidebar__resize-handle:focus-visible::after {
+  height: 64px;
+  background: #8f4f2f;
+}
+
+.super-admin-sidebar-resizing .super-admin-sidebar,
+.super-admin-sidebar-resizing .super-admin-main-panel,
+.super-admin-sidebar-resizing .super-admin-topbar {
+  transition: none !important;
+}
+
 .super-admin-sidebar__nav,
 .super-admin-sidebar__footer {
   display: flex;
+  width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
   flex-direction: column;
   gap: 0.75rem;
 }
@@ -759,6 +863,8 @@ watch(() => route.path, (p) => {
 .super-admin-sidebar__logout {
   position: relative;
   width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
   min-height: 40px;
   padding: 0.65rem 0.55rem;
   border-radius: 10px;
@@ -806,14 +912,14 @@ watch(() => route.path, (p) => {
 
 .super-admin-main-panel {
   min-height: 100vh;
-  margin-left: 156px;
+  margin-left: var(--super-admin-sidebar-width);
 }
 
 .super-admin-topbar {
   position: fixed;
   top: 0;
   right: 0;
-  left: 156px;
+  left: var(--super-admin-sidebar-width);
   z-index: 300;
   display: flex;
   min-height: 66px;
@@ -866,22 +972,72 @@ watch(() => route.path, (p) => {
 }
 
 .super-admin-main-panel > .admin-page {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
   min-height: 100vh;
   padding-top: 66px;
   box-sizing: border-box;
 }
 
+.super-admin-module-view {
+  width: 100%;
+  min-width: 0;
+  min-height: calc(100vh - 66px);
+  padding: 1rem;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  background: #f1e5dc;
+}
+
+.super-admin-module-view > :deep(*) {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.super-admin-module-back {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid #cbd5df;
+  border-radius: 8px;
+  color: #334155;
+  background: #ffffff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.super-admin-module-back:hover {
+  background: #f8fafc;
+}
+
 .super-admin-main-panel :deep(.admin-layout) {
   display: block;
   width: 100%;
+  max-width: none !important;
   min-height: calc(100vh - 66px);
   padding: 1rem;
   box-sizing: border-box;
 }
 
+.super-admin-main-panel :deep(.admin-layout > .admin-main),
+.super-admin-main-panel :deep(.admin-layout > .admin-side),
+.super-admin-main-panel :deep(.admin-layout > .admin-left),
+.super-admin-main-panel :deep(.admin-layout > .page-header-top) {
+  grid-column: auto !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0;
+}
+
 .super-admin-main-panel :deep(.admin-main) {
   width: 100%;
+  max-width: none !important;
+  min-width: 0;
   margin: 0;
+  overflow-x: hidden !important;
 }
 
 .super-admin-main-panel .page-header-top {
@@ -895,6 +1051,8 @@ watch(() => route.path, (p) => {
 
 .super-admin-dashboard-side {
   display: grid;
+  width: 100%;
+  min-width: 0;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
   margin-bottom: 1rem;
@@ -908,22 +1066,29 @@ watch(() => route.path, (p) => {
   pointer-events: none;
 }
 
+.sidebar-collapsed .super-admin-sidebar__resize-handle { display: none; }
+
 .sidebar-collapsed .super-admin-main-panel { margin-left: 0; }
 
 .sidebar-collapsed .super-admin-topbar { left: 0; }
 
 @media (max-width: 900px) {
-  .super-admin-sidebar { width: 190px; }
-  .super-admin-main-panel { margin-left: 190px; }
-  .super-admin-topbar { left: 190px; }
-  .super-admin-dashboard-side { grid-template-columns: 1fr; }
+  .super-admin-shell { --super-admin-sidebar-width: 156px; }
+  .super-admin-sidebar { width: var(--super-admin-sidebar-width); }
+  .super-admin-main-panel { margin-left: var(--super-admin-sidebar-width); }
+  .super-admin-topbar { left: var(--super-admin-sidebar-width); }
+  .super-admin-dashboard-side { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 640px) {
-  .super-admin-sidebar { width: 230px; }
+  .super-admin-shell { --super-admin-sidebar-width: 156px; }
+  .super-admin-sidebar { width: var(--super-admin-sidebar-width); }
   .super-admin-main-panel { margin-left: 0; }
   .super-admin-topbar { left: 0; }
   .super-admin-shell:not(.sidebar-collapsed) .super-admin-sidebar { transform: translateX(0); }
+  .super-admin-main-panel > .admin-page { padding-top: 66px; }
+  .super-admin-main-panel :deep(.admin-layout) { padding: 0.75rem; }
+  .super-admin-dashboard-side { grid-template-columns: 1fr; }
 }
 
 .primary-action-btn {

@@ -17,6 +17,7 @@
       :singleColumnLayout="true"
       :showAnnouncements="false"
       :showAttendanceCard="false"
+      :enableDarkMode="false"
     >
       <template #main>
         <!-- Branch Selector (matches procurement UI placement) -->
@@ -650,6 +651,13 @@ async function confirmLogout() {
 }
 
 onMounted(async () => {
+  try {
+    document.documentElement.classList.remove('dark-mode')
+    document.body.classList.remove('dark-mode')
+    document.documentElement.classList.add('light-mode')
+    document.body.classList.add('light-mode')
+  } catch (e) {}
+
   try {
     await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
   } catch (e) {

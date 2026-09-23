@@ -8,15 +8,17 @@
       </transition>
     </router-view>
     <div id="page-blur" aria-hidden="true" inert></div>
+    <resizable-sidebar-manager />
     <message-widget />
   </div>
 </template>
 
 <script>
 import MessageWidget from './components/MessageWidget.vue'
+import ResizableSidebarManager from './components/ResizableSidebarManager.vue'
 export default {
   name: 'App',
-  components: { MessageWidget },
+  components: { MessageWidget, ResizableSidebarManager },
   data() {
     return {
       transitionName: 'route-fade'

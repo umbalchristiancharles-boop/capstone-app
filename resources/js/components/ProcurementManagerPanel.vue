@@ -12,6 +12,7 @@
     :ownerTwoColumnLayout="true"
     :showOwnerSidebar="true"
     :showOwnerTopbar="true"
+    :enableDarkMode="false"
     :topbarLabel="procurementTopbarLabel"
     accountInfoStyle="finance"
     @logout="askLogout"

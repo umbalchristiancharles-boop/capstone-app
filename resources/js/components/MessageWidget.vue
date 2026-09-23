@@ -14,7 +14,7 @@
               <div class="msg-user-avatar" v-if="u.avatar"><img :src="u.avatar" alt="" /></div>
               <div class="msg-user-avatar" v-else><span>{{ (u.name||'').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase() }}</span></div>
               <div class="msg-user-meta">
-                <div class="msg-user-name">{{ u.name }}</div>
+                <div :class="['msg-user-name', u.unread_count > 0 ? 'unread' : '']">{{ u.name }}</div>
                 <div class="msg-user-role">{{ roleLabel(u.role) }}</div>
               </div>
               <span v-if="u.unread_count > 0" class="msg-user-unread">{{ u.unread_count > 99 ? '99+' : u.unread_count }}</span>
@@ -155,29 +155,24 @@ export default {
         if (!user || !user.role) return false
 
         const role = String(user.role).toUpperCase()
-        const allowedRoles = ['STAFF', 'MANAGER', 'HR', 'BRANCH_MANAGER', 'BRANCH MANAGER', 'BRANCH-MANAGER']
-        let isAllowedRole = allowedRoles.includes(role) || role.includes('STAFF') || role.includes('HR')
+        const isSuperAdmin = role === 'SUPER_ADMIN' || role === 'SUPERADMIN'
+        const isPanelPath = [
+          '/admin-panel',
+          '/admin/',
+          '/manager-panel',
+          '/manager/',
+          '/staff-panel',
+          '/staff/',
+          '/inventory',
+          '/hr-panel',
+          '/custom-panel',
+          '/supplier-panel',
+          '/owner-panel',
+          '/owner/',
+          '/main-branch/',
+        ].some(prefix => p === prefix.slice(0, -1) || p.startsWith(prefix))
 
-        // CUSTOM accounts: check if they have 'hr' module permission
-        if (role === 'CUSTOM' && !isAllowedRole) {
-          try {
-            const modules = Array.isArray(user.permissions?.modules) ? user.permissions.modules.map(m => (m || '').toLowerCase()) : []
-            isAllowedRole = modules.includes('hr')
-          } catch (e) {
-            isAllowedRole = false
-          }
-        }
-
-        const isPanelPath = p.startsWith('/staff') ||
-          p.startsWith('/inventory') ||
-          p.startsWith('/manager') ||
-          p.startsWith('/hr') ||
-          p.startsWith('/custom-panel') ||
-          p.includes('staff-panel') ||
-          p.includes('manager-panel') ||
-          p.includes('hr-panel') ||
-          p.includes('custom-panel')
-        return isAllowedRole && isPanelPath && this.hasSession
+        return !isSuperAdmin && !p.startsWith('/super-admin') && isPanelPath && this.hasSession
       } catch (e) {
         return false
       }
@@ -444,6 +439,7 @@ export default {
 .msg-user-avatar img{width:100%;height:100%;object-fit:cover}
 .msg-user-meta{flex:1;min-width:0}
 .msg-user-name{font-weight:500;color:#0f172a}
+.msg-user-name.unread{font-weight:800}
 .msg-user-role{font-size:12px;color:#64748b;margin-top:4px}
 .msg-right{flex:1;display:flex;flex-direction:column;background:transparent}
 .msg-right-header{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid rgba(15,23,42,0.04)}

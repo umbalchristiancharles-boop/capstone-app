@@ -17,12 +17,18 @@
     :showAnnouncements="false"
     :showAttendanceCard="false"
     :showBackButton="false"
+    :showHeader="false"
     :singleColumnLayout="true"
     @back="() => router.back()"
     @logout="askLogout"
     @profile-updated="onProfileUpdated"
   >
     <template #main>
+
+      <header class="procurement-page-header">
+        <h1>Super Admin Procurement Panel</h1>
+        <p>Monitor and manage procurement across all branches. Select a branch to view scoped data.</p>
+      </header>
 
       <div class="branch-selector-section">
         <label class="branch-label">Select Branch:</label>
@@ -249,11 +255,9 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import axios from 'axios'
-import { useTheme } from '../composables/useTheme'
 import { showToast } from './toastStore'
 
 const router = useRouter()
-const { initializeTheme } = useTheme()
 const userProfile = ref({})
 const dashboardTotals = ref({ totalSuppliers: 0, activeSuppliers: 0, pendingRequests: 0 })
 const showLogoutConfirm = ref(false)
@@ -568,7 +572,6 @@ async function markDeliveryComplete(product) {
 }
 
 onMounted(async () => {
-  initializeTheme()
   try {
     await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
   } catch (e) {}
@@ -1014,10 +1017,98 @@ watch(selectedBranch, onBranchChange)
 
 <style scoped>
 .superadmin-procurement-wrapper {
+  width: 100%;
+  max-width: 100vw;
   min-height: 100vh;
   padding-top: 64px;
   box-sizing: border-box;
   position: relative;
+  overflow-x: hidden;
+  background: #f1e5dc;
+  color: #42210b;
+}
+
+.superadmin-procurement-wrapper :deep(.admin-page),
+.superadmin-procurement-wrapper :deep(.admin-layout),
+.superadmin-procurement-wrapper :deep(.admin-main) {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box;
+  transform: none !important;
+}
+
+.superadmin-procurement-wrapper :deep(.admin-layout) {
+  display: block !important;
+  padding: 1rem !important;
+  overflow-x: hidden;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.superadmin-procurement-wrapper :deep(.admin-main) {
+  grid-column: auto !important;
+  padding: 1rem 1.25rem 2rem !important;
+  overflow-x: hidden !important;
+  overflow-y: visible !important;
+}
+
+.superadmin-procurement-wrapper :deep(.admin-main-header),
+.superadmin-procurement-wrapper :deep(.admin-main-header-top) {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+}
+
+.procurement-page-header {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 0 1.25rem;
+}
+
+.procurement-page-header h1 {
+  margin: 0;
+  color: #42210b;
+  font-size: clamp(1.6rem, 2.5vw, 2.25rem);
+  line-height: 1.15;
+}
+
+.procurement-page-header p {
+  margin: 0.55rem 0 0;
+  color: rgba(66, 33, 11, 0.72);
+  font-size: 0.95rem;
+}
+
+.superadmin-procurement-wrapper :deep(.admin-main-header h1),
+.superadmin-procurement-wrapper :deep(.admin-main-header p),
+.superadmin-procurement-wrapper h1,
+.superadmin-procurement-wrapper h2,
+.superadmin-procurement-wrapper h3,
+.superadmin-procurement-wrapper p {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.superadmin-procurement-wrapper .product-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+}
+
+.superadmin-procurement-wrapper .data-table {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.superadmin-procurement-wrapper .branch-selector-section {
+  max-width: 720px;
+}
+
+.superadmin-procurement-wrapper .requests-scroll {
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+  overflow-x: auto;
 }
 
 .branch-selector-section {
@@ -1049,6 +1140,11 @@ watch(selectedBranch, onBranchChange)
 @media (max-width: 768px) {
   .superadmin-procurement-wrapper { padding-top: 56px; }
   .back-to-dashboard-btn { top:12px; left:12px; }
+  .superadmin-procurement-wrapper :deep(.admin-layout) { padding: 0.5rem !important; }
+  .superadmin-procurement-wrapper :deep(.admin-main) { padding: 0.75rem !important; }
+  .superadmin-procurement-wrapper .branch-selector-section { flex-wrap: wrap; }
+  .superadmin-procurement-wrapper .branch-select { width: 100%; min-width: 0; }
+  .procurement-page-header h1 { font-size: 1.45rem; }
 }
 </style>
 

@@ -1,6 +1,6 @@
 <template>
-  <div class="staff-cashier-panel" :class="{ 'staff-cashier-sidebar-collapsed': cashierSidebarCollapsed }">
-        <aside class="staff-cashier-sidebar" :aria-hidden="cashierSidebarCollapsed">
+  <div class="staff-cashier-panel" :class="{ 'staff-cashier-sidebar-collapsed': cashierSidebarCollapsed, 'staff-cashier-sidebar-resizing': isResizingSidebar }">
+        <aside class="staff-cashier-sidebar" :aria-hidden="cashierSidebarCollapsed" :style="{ width: `${cashierSidebarWidth}px`, flexBasis: `${cashierSidebarWidth}px` }">
           <nav class="staff-cashier-sidebar__nav" aria-label="Cashier sections">
             <button class="staff-cashier-sidebar__item" :class="{ 'staff-cashier-sidebar__item--active': activeCashierSection === 'cashier' }" type="button" @click="selectCashierSection('cashier')">Cashier</button>
             <button class="staff-cashier-sidebar__item" :class="{ 'staff-cashier-sidebar__item--active': activeCashierSection === 'transactions' }" type="button" @click="selectCashierSection('transactions')">Transactions</button>
@@ -11,6 +11,13 @@
             <button class="staff-cashier-sidebar__account-info" type="button" @click="showAccountInfoModal = true">Account Info</button>
             <button class="staff-cashier-sidebar__logout" type="button" @click="confirmLogout">Logout</button>
           </div>
+          <button
+            class="staff-cashier-sidebar__resize-handle"
+            type="button"
+            aria-label="Resize sidebar"
+            title="Resize sidebar"
+            @pointerdown="startSidebarResize"
+          ></button>
         </aside>
         <div class="staff-cashier-main">
           <header class="staff-cashier-header">
@@ -333,6 +340,8 @@ import './StaffCashierPanel.css'
 
 const router = useRouter()
 const cashierSidebarCollapsed = ref(false)
+const cashierSidebarWidth = ref(156)
+const isResizingSidebar = ref(false)
 const activeCashierSection = ref('cashier')
 
 const cashierSectionTitle = computed(() => {
@@ -349,6 +358,29 @@ const cashierSectionTitle = computed(() => {
 
 function selectCashierSection(section) {
   activeCashierSection.value = section
+}
+
+function startSidebarResize(event) {
+  if (cashierSidebarCollapsed.value) return
+
+  event.preventDefault()
+  isResizingSidebar.value = true
+  const startX = event.clientX
+  const startWidth = cashierSidebarWidth.value
+
+  const resize = (moveEvent) => {
+    const nextWidth = startWidth + moveEvent.clientX - startX
+    cashierSidebarWidth.value = Math.min(320, Math.max(120, nextWidth))
+  }
+
+  const stopResize = () => {
+    isResizingSidebar.value = false
+    document.removeEventListener('pointermove', resize)
+    document.removeEventListener('pointerup', stopResize)
+  }
+
+  document.addEventListener('pointermove', resize)
+  document.addEventListener('pointerup', stopResize)
 }
 
 // State

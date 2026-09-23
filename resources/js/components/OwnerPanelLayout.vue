@@ -1,7 +1,7 @@
 ﻿<template>
   <div class="min-h-screen owner-panel-light-mode bg-gradient-to-b from-[#FF9A4A] to-[#FF6A3D]" :class="{ 'owner-panel-layout--embedded': embedded }">
     <div class="admin-page" :class="[pageClass, { 'admin-page--wider': fullWidth }]">
-      <section class="admin-layout" :class="{ 'admin-layout--wider': fullWidth, 'admin-layout--owner-two-column': ownerTwoColumnLayout, 'admin-layout--owner-sidebar-layout': showOwnerSidebar, 'owner-sidebar-collapsed': ownerSidebarCollapsed, 'admin-layout--single-column': singleColumnLayout, 'admin-layout--fit-content': fitContent, 'no-profile-column': !showProfileColumn, 'kitchen-staff-container': pageClass === 'kitchen-staff-page' }">
+      <section class="admin-layout" :class="{ 'admin-layout--wider': fullWidth, 'admin-layout--owner-two-column': ownerTwoColumnLayout, 'admin-layout--owner-sidebar-layout': showOwnerSidebar, 'owner-sidebar-collapsed': ownerSidebarCollapsed, 'owner-sidebar-resizing': ownerSidebarResizing, 'admin-layout--single-column': singleColumnLayout, 'admin-layout--fit-content': fitContent, 'no-profile-column': !showProfileColumn, 'kitchen-staff-container': pageClass === 'kitchen-staff-page' }" :style="{ '--owner-sidebar-width': `${ownerSidebarWidth}px` }">
         <header v-if="showOwnerTopbar" class="owner-panel-topbar">
           <button
             type="button"
@@ -21,6 +21,13 @@
           <div class="owner-sidebar-footer">
             <slot name="ownerSidebarFooter"></slot>
           </div>
+          <button
+            class="owner-panel-sidebar__resize-handle"
+            type="button"
+            aria-label="Resize sidebar"
+            title="Resize sidebar"
+            @pointerdown="startOwnerSidebarResize"
+          ></button>
         </aside>
         <!-- MIDDLE: MAIN DASHBOARD -->
         <main class="admin-main">
@@ -395,6 +402,8 @@ const emit = defineEmits(['logout', 'profile-updated', 'back'])
 const route = useRoute()
 const router = useRouter()
 const ownerSidebarCollapsed = ref(false)
+const ownerSidebarWidth = ref(156)
+const ownerSidebarResizing = ref(false)
 
 const ownerUserLabel = computed(() => {
   if (props.topbarLabel) return props.topbarLabel
@@ -405,6 +414,29 @@ const ownerUserLabel = computed(() => {
 
 function toggleOwnerSidebar() {
   ownerSidebarCollapsed.value = !ownerSidebarCollapsed.value
+}
+
+function startOwnerSidebarResize(event) {
+  if (ownerSidebarCollapsed.value) return
+
+  event.preventDefault()
+  ownerSidebarResizing.value = true
+  const startX = event.clientX
+  const startWidth = ownerSidebarWidth.value
+
+  const resize = (moveEvent) => {
+    const nextWidth = startWidth + moveEvent.clientX - startX
+    ownerSidebarWidth.value = Math.min(320, Math.max(120, nextWidth))
+  }
+
+  const stopResize = () => {
+    ownerSidebarResizing.value = false
+    document.removeEventListener('pointermove', resize)
+    document.removeEventListener('pointerup', stopResize)
+  }
+
+  document.addEventListener('pointermove', resize)
+  document.addEventListener('pointerup', stopResize)
 }
 
 const isCustomAccount = computed(() => {
@@ -776,6 +808,10 @@ watch(() => props.userProfile, (newVal) => {
 }, { immediate: true })
 
 onMounted(() => {
+  if (window.matchMedia('(max-width: 1023px)').matches) {
+    ownerSidebarCollapsed.value = true
+  }
+
   try {
     loadThemeMode()
     ;(async () => {
@@ -1153,13 +1189,14 @@ async function onAvatarChange(event) {
 }
 
 .admin-layout--owner-sidebar-layout {
+  --owner-sidebar-width: 156px;
   width: 100%;
   min-height: 100vh;
   margin: 0;
   padding: 0;
   border-radius: 0;
   border: 0;
-  grid-template-columns: 156px minmax(0, 1fr);
+  grid-template-columns: var(--owner-sidebar-width) minmax(0, 1fr);
   grid-template-rows: auto 1fr;
   gap: 0;
 }
@@ -1343,9 +1380,10 @@ async function onAvatarChange(event) {
 }
 
 .admin-layout--owner-sidebar-layout .owner-panel-sidebar {
+  position: relative;
   grid-column: 1;
   grid-row: 1 / -1;
-  width: 156px;
+  width: var(--owner-sidebar-width);
   min-height: 100vh;
   padding: 1.5rem 1rem 1rem;
   box-sizing: border-box;
@@ -1356,12 +1394,75 @@ async function onAvatarChange(event) {
 }
 
 .admin-layout--owner-sidebar-layout:not(.owner-sidebar-collapsed) .owner-panel-sidebar {
-  width: 156px;
-  min-width: 156px;
+  width: var(--owner-sidebar-width);
+  min-width: var(--owner-sidebar-width);
   padding-left: 1rem;
   padding-right: 1rem;
   opacity: 1;
   pointer-events: auto;
+}
+
+.owner-panel-sidebar__resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  width: 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: col-resize;
+}
+
+.owner-panel-sidebar__resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 4px;
+  width: 2px;
+  height: 42px;
+  border-radius: 999px;
+  background: rgba(143, 79, 47, 0.38);
+  transform: translateY(-50%);
+  transition: height 160ms ease, background-color 160ms ease;
+}
+
+.owner-panel-sidebar__resize-handle:hover::after,
+.owner-panel-sidebar__resize-handle:focus-visible::after {
+  height: 64px;
+  background: #8f4f2f;
+}
+
+.owner-sidebar-resizing .owner-panel-sidebar,
+.owner-sidebar-resizing .owner-panel-topbar,
+.owner-sidebar-resizing .admin-main {
+  transition: none !important;
+}
+
+.owner-sidebar-collapsed .owner-panel-sidebar__resize-handle { display: none; }
+
+.admin-layout--owner-sidebar-layout .owner-panel-sidebar,
+.admin-layout--owner-sidebar-layout .owner-panel-sidebar * {
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.admin-layout--owner-sidebar-layout .owner-panel-sidebar {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.admin-layout--owner-sidebar-layout .owner-sidebar-nav,
+.admin-layout--owner-sidebar-layout .owner-sidebar-actions,
+.admin-layout--owner-sidebar-layout .owner-sidebar-link,
+.admin-layout--owner-sidebar-layout .owner-sidebar-account,
+.admin-layout--owner-sidebar-layout .owner-sidebar-logout {
+  max-width: 100%;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .owner-panel-light-mode .owner-panel-sidebar {
@@ -1477,7 +1578,7 @@ async function onAvatarChange(event) {
 
 /* Keep the owner shell two-column when its profile column is disabled. */
 :deep(.admin-layout--owner-sidebar-layout.no-profile-column) {
-  grid-template-columns: 156px minmax(0, 1fr) !important;
+  grid-template-columns: var(--owner-sidebar-width) minmax(0, 1fr) !important;
   gap: 0 !important;
 }
 
@@ -1516,7 +1617,7 @@ async function onAvatarChange(event) {
 
 @media (max-width: 900px) {
   .admin-layout--owner-sidebar-layout {
-    grid-template-columns: 150px minmax(0, 1fr);
+    grid-template-columns: var(--owner-sidebar-width) minmax(0, 1fr);
   }
 
   .owner-sidebar-collapsed.admin-layout--owner-sidebar-layout {
@@ -1524,7 +1625,7 @@ async function onAvatarChange(event) {
   }
 
   .admin-layout--owner-sidebar-layout .owner-panel-sidebar {
-    width: 150px;
+    width: var(--owner-sidebar-width);
   }
 
   .admin-layout--owner-sidebar-layout .admin-main {
@@ -1628,15 +1729,15 @@ async function onAvatarChange(event) {
     position: absolute;
     inset: 66px auto 0 0;
     z-index: 200;
-    width: 156px;
+    width: var(--owner-sidebar-width);
     min-height: 100%;
     transform: translateX(0);
     transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease;
   }
 
   .admin-layout--owner-sidebar-layout:not(.owner-sidebar-collapsed) .owner-panel-sidebar {
-    width: 156px;
-    min-width: 156px;
+    width: var(--owner-sidebar-width);
+    min-width: var(--owner-sidebar-width);
     padding-left: 1rem;
     padding-right: 1rem;
     transform: translateX(0);
@@ -1645,10 +1746,17 @@ async function onAvatarChange(event) {
   }
 
   .owner-sidebar-collapsed.admin-layout--owner-sidebar-layout .owner-panel-sidebar {
-    width: 156px;
+    width: var(--owner-sidebar-width);
     transform: translateX(-100%);
     opacity: 0;
     pointer-events: none;
+  }
+
+  .admin-layout--owner-sidebar-layout .owner-sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    grid-template-columns: none;
+    gap: 0.5rem;
   }
 
   .admin-layout--owner-sidebar-layout .admin-main {
@@ -1701,16 +1809,16 @@ async function onAvatarChange(event) {
     position: fixed;
     inset: 0 auto 0 0;
     z-index: 400;
-    width: 156px;
-    min-width: 156px;
+    width: var(--owner-sidebar-width);
+    min-width: var(--owner-sidebar-width);
     min-height: 100vh;
     transform: translateX(0);
     transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease;
   }
 
   .owner-sidebar-collapsed.admin-layout--owner-sidebar-layout .owner-panel-sidebar {
-    width: 156px;
-    min-width: 156px;
+    width: var(--owner-sidebar-width);
+    min-width: var(--owner-sidebar-width);
     transform: translateX(-100%);
     opacity: 0;
     pointer-events: none;
@@ -1718,8 +1826,8 @@ async function onAvatarChange(event) {
 
   .admin-layout--owner-sidebar-layout .owner-panel-topbar,
   .admin-layout--owner-sidebar-layout .admin-main {
-    width: calc(100% - 156px);
-    margin-left: 156px;
+    width: calc(100% - var(--owner-sidebar-width));
+    margin-left: var(--owner-sidebar-width);
     transition: width 260ms cubic-bezier(0.22, 1, 0.36, 1), margin-left 260ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
@@ -1758,6 +1866,69 @@ async function onAvatarChange(event) {
 
   .admin-layout--owner-sidebar-layout .admin-main > * {
     flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 1023px) {
+  .admin-layout--owner-sidebar-layout {
+    display: block;
+    position: relative;
+    width: 100% !important;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .admin-layout--owner-sidebar-layout .owner-panel-topbar,
+  .admin-layout--owner-sidebar-layout .admin-main {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  .admin-layout--owner-sidebar-layout .owner-panel-topbar {
+    position: relative;
+    left: auto;
+    z-index: 300;
+  }
+
+  .admin-layout--owner-sidebar-layout .owner-panel-sidebar {
+    position: absolute;
+    inset: 66px auto 0 0;
+    z-index: 400;
+    width: var(--owner-sidebar-width);
+    min-width: var(--owner-sidebar-width);
+    min-height: calc(100vh - 66px);
+    transform: translateX(0);
+    transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease;
+  }
+
+  .owner-sidebar-collapsed.admin-layout--owner-sidebar-layout .owner-panel-sidebar {
+    transform: translateX(-100%);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .admin-layout--owner-sidebar-layout .admin-main {
+    height: auto;
+    max-height: none;
+    padding: 1rem;
+    overflow-x: hidden;
+    overflow-y: visible;
+  }
+
+  .admin-layout--owner-sidebar-layout .admin-main > *,
+  .admin-layout--owner-sidebar-layout .admin-main > * * {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .admin-layout--owner-sidebar-layout input,
+  .admin-layout--owner-sidebar-layout select,
+  .admin-layout--owner-sidebar-layout textarea,
+  .admin-layout--owner-sidebar-layout button {
+    max-width: 100%;
   }
 }
 

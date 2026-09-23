@@ -27,7 +27,8 @@
 }
 
 .inventory-staff-panel-shell :deep(.admin-layout) {
-  width: min(100%, 1500px);
+  width: 100%;
+  max-width: none;
   min-height: calc(100vh - 0px);
   margin: 0 auto;
   padding: 0;
@@ -277,13 +278,57 @@
 }
 
 .inventory-staff-panel-shell :deep(.admin-main) {
+  width: 100%;
+  max-width: none;
   min-width: 0;
+  box-sizing: border-box;
   height: auto;
   min-height: calc(100vh - 66px);
   display: block;
   padding: 1rem 1.6rem 2rem;
   background: transparent;
   overflow: visible;
+}
+
+.inventory-staff-panel-shell :deep(.admin-main > *) {
+  width: 100%;
+  max-width: none;
+}
+
+.inventory-staff-panel-shell :deep(.inventory-section-view),
+.inventory-staff-panel-shell :deep(.panel-section),
+.inventory-staff-panel-shell :deep(.product-list-shell) {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+}
+
+.inventory-staff-panel-shell :deep(.product-list-shell) {
+  box-sizing: border-box;
+}
+
+.inventory-staff-panel-shell :deep(.pl-root),
+.inventory-staff-panel-shell :deep(.pl-right-column),
+.inventory-staff-panel-shell :deep(.pl-main),
+.inventory-staff-panel-shell :deep(.pl-table-wrap) {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.inventory-staff-panel-shell :deep(.procurement-request-btn) {
+  background: #16a34a !important;
+  background-image: none !important;
+  border-color: #15803d !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 14px rgba(22, 163, 74, 0.2) !important;
+}
+
+.inventory-staff-panel-shell :deep(.procurement-request-btn:hover) {
+  background: #15803d !important;
+  background-image: none !important;
+  border-color: #166534 !important;
 }
 
 .inventory-staff-panel-shell :deep(.admin-main-header) {

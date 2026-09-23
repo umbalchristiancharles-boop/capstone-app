@@ -366,7 +366,6 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import '../css/adminpanel.css'
-import { useTheme } from '../composables/useTheme'
 import AddressCascaderWithMap from './AddressCascaderWithMap.vue'
 
 const router = useRouter()
@@ -980,11 +979,7 @@ function enforceLightMode() {
 }
 
 onMounted(async () => {
-  if (isFromSuperAdmin.value) {
-    try { const { initializeTheme } = useTheme(); initializeTheme() } catch (e) {}
-  } else {
-    enforceLightMode()
-  }
+  enforceLightMode()
   await Promise.all([loadBranches(), loadDefaultPassword()])
 })
 
@@ -1204,11 +1199,80 @@ textarea.form-input { resize: vertical; }
   background: linear-gradient(180deg, rgba(255,154,74,0.08) 0%, rgba(255,106,61,0.06) 100%);
   font-family: 'Inter', 'Poppins', sans-serif;
 }
+.staff-management-page.from-superadmin {
+  width: 100%;
+  max-width: 100vw;
+  min-height: 100vh;
+  padding: 1rem;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  background: #f1e5dc;
+  color: #42210b;
+}
+.staff-management-page.from-superadmin .staff-header,
+.staff-management-page.from-superadmin .summary-card,
+.staff-management-page.from-superadmin .branch-group,
+.staff-management-page.from-superadmin .empty-state,
+.staff-management-page.from-superadmin .loading-state,
+.staff-management-page.from-superadmin .alert {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+.staff-management-page.from-superadmin .staff-header {
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.staff-management-page.from-superadmin .owner-staff-title {
+  color: #42210b;
+  margin: 0;
+  padding: 0;
+}
+.staff-management-page.from-superadmin .staff-table-wrapper {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  box-sizing: border-box;
+  background: #ffffff;
+}
+.staff-management-page.from-superadmin .staff-table {
+  min-width: 1120px;
+}
+.staff-management-page.from-superadmin .staff-table th,
+.staff-management-page.from-superadmin .staff-table td {
+  color: #42210b;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 
 .staff-management-page.main-branch-theme {
   min-height: 0;
   padding: 0;
   background: transparent;
+}
+@media (max-width: 768px) {
+  .staff-management-page.from-superadmin {
+    padding: 0.75rem;
+  }
+
+  .staff-management-page.from-superadmin .staff-header {
+    padding: 1rem;
+  }
+
+  .staff-management-page.from-superadmin .owner-staff-title {
+    font-size: 1.5rem;
+  }
+
+  .staff-management-page.from-superadmin .header-actions {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .staff-management-page.from-superadmin .header-actions button {
+    flex: 1 1 140px;
+  }
 }
 
 .staff-management-page.main-branch-theme .staff-header {
