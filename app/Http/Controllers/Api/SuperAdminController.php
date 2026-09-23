@@ -458,6 +458,13 @@ class SuperAdminController extends Controller
             return response()->json(['ok' => false, 'message' => 'Supplier has not submitted complete product details yet.'], 422);
         }
 
+        $productRequest = $order->procurementRequest
+            ? \App\Models\ProductRequest::where('product_id', $order->procurementRequest->product_id)->first()
+            : null;
+        if ($productRequest && $productRequest->status !== 'pending_supplier') {
+            return response()->json(['ok' => false, 'message' => 'A supplier has already been selected or this request is no longer awaiting supplier pricing.'], 409);
+        }
+
         $order->update([
             'admin_confirmed' => true,
             'admin_confirmed_by' => $user->id,
@@ -466,13 +473,18 @@ class SuperAdminController extends Controller
 
         if ($order->procurementRequest) {
             $order->procurementRequest->update([
+                'supplier_id' => $order->supplier_id,
                 'supplier_confirmed' => true,
                 'price' => $order->product?->price ?? $order->procurementRequest->price,
                 'total_amount' => ($order->product?->price ?? $order->procurementRequest->price) * max(1, $order->quantity),
             ]);
+
+            if ($productRequest && $productRequest->status === 'pending_supplier') {
+                $productRequest->update(['status' => 'pending_logistics']);
+            }
         }
 
-        return response()->json(['ok' => true, 'message' => 'Supplier product confirmed.', 'order' => $order->fresh()->load(['product', 'supplier', 'procurementRequest'])]);
+        return response()->json(['ok' => true, 'message' => 'Supplier selected and request sent to Main Branch Logistics.', 'order' => $order->fresh()->load(['product', 'supplier', 'procurementRequest'])]);
     }
 
     /**

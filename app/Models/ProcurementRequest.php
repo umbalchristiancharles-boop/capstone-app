@@ -62,6 +62,11 @@ class ProcurementRequest extends Model
         return $this->belongsTo(User::class, 'procurement_user_id');
     }
 
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'supplier_id');
+    }
+
     public function financeUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'finance_user_id');

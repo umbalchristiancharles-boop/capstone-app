@@ -15,6 +15,7 @@ use App\Models\Product;
 use App\Models\Order;
 use App\Models\BudgetRequest;
 use App\Models\ProcurementRequest;
+use App\Models\ProductRequest;
 use App\Models\SupplierOrder;
 use App\Models\Branch;
 use App\Models\Attendance;
@@ -1661,6 +1662,15 @@ public function logisticsProducts(Request $request)
             $procReqForSupplierCheck = ProcurementRequest::where('product_id', $product->id)
                 ->where('branch_id', $branchId)
                 ->first();
+        }
+
+        $productRequest = ProductRequest::where('product_id', $product->id)->first();
+        if ($productRequest && $productRequest->status !== 'approved') {
+            return response()->json([
+                'ok' => false,
+                'message' => 'The new product request must finish logistics and owner approval before ordering.',
+                'product_request_status' => $productRequest->status,
+            ], 409);
         }
 
         // Use supplier_id from request, or fall back to stored supplier_id on ProcurementRequest

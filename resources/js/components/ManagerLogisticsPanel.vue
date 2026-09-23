@@ -252,12 +252,47 @@
               />
             </div>
             <div class="form-group">
-              <label>Description</label>
+              <label>Category*</label>
+              <select v-model="productRequestForm.category" required>
+                <option value="">Select a category</option>
+                <option value="Beverage">Beverage</option>
+                <option value="Meat">Meat</option>
+                <option value="Vegetable">Vegetable</option>
+                <option value="Grain">Grain</option>
+                <option value="Condiment">Condiment</option>
+                <option value="Dairy">Dairy</option>
+                <option value="Egg">Egg</option>
+                <option value="Spice">Spice</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Description*</label>
               <textarea
                 v-model="productRequestForm.description"
-                placeholder="Optional details about the product (specifications, notes, etc.)"
+                placeholder="Describe the product"
                 rows="3"
+                required
               ></textarea>
+            </div>
+            <div class="form-group">
+              <label>Reason*</label>
+              <textarea v-model="productRequestForm.reason" placeholder="Why is this product needed?" rows="2" required></textarea>
+            </div>
+            <div class="form-group">
+              <label>Target Audience*</label>
+              <input v-model="productRequestForm.target_audience" type="text" placeholder="Who will use or consume this product?" required />
+            </div>
+            <div class="form-group">
+              <label>Storage Requirements*</label>
+              <textarea v-model="productRequestForm.storage_requirements" placeholder="e.g., Keep frozen at -18 C" rows="2" required></textarea>
+            </div>
+            <div class="form-group">
+              <label>Product Type*</label>
+              <select v-model="productRequestForm.is_perishable" required>
+                <option :value="false">Non-perishable</option>
+                <option :value="true">Perishable</option>
+              </select>
             </div>
             <div class="form-group">
               <label>Unit of Measurement</label>
@@ -625,7 +660,7 @@ const barcodeStatusClass = computed(() => barcodeStatus.value.includes('does not
 // Product Request state
 const productRequests = ref([])
 const productRequestsLoading = ref(false)
-const productRequestForm = ref({ name: '', description: '', unit: '' })
+const productRequestForm = ref({ name: '', category: '', description: '', reason: '', target_audience: '', storage_requirements: '', is_perishable: false, unit: '' })
 const productRequestSubmitting = ref(false)
 const showProductRequestForm = ref(false)
 
@@ -1358,13 +1393,18 @@ async function submitProductRequest() {
   try {
     const payload = {
       name: productRequestForm.value.name,
-      description: productRequestForm.value.description || null,
+      category: productRequestForm.value.category,
+      description: productRequestForm.value.description,
+      reason: productRequestForm.value.reason,
+      target_audience: productRequestForm.value.target_audience,
+      storage_requirements: productRequestForm.value.storage_requirements,
+      is_perishable: productRequestForm.value.is_perishable,
       unit: productRequestForm.value.unit || null
     }
     await requestWithFallbackPost('/api/product-requests', payload, { withCredentials: true })
     showToast('Product request submitted for approval', 'success')
     showProductRequestForm.value = false
-    productRequestForm.value = { name: '', description: '', unit: '' }
+    productRequestForm.value = { name: '', category: '', description: '', reason: '', target_audience: '', storage_requirements: '', is_perishable: false, unit: '' }
     try {
       await fetchProductRequests()
     } catch (fetchErr) {
@@ -1380,7 +1420,7 @@ async function submitProductRequest() {
 
 function cancelProductRequest() {
   showProductRequestForm.value = false
-  productRequestForm.value = { name: '', description: '', unit: '' }
+  productRequestForm.value = { name: '', category: '', description: '', reason: '', target_audience: '', storage_requirements: '', is_perishable: false, unit: '' }
 }
 
 function getProductReqStatusClass(status) {

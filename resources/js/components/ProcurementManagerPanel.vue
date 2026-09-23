@@ -143,9 +143,20 @@
                   {{ formatPricingType(p.per_pack_or_individual) }}
                 </div>
                 <div class="product-meta">
-                  <div class="product-price">{{ formatPrice(p.price) }}</div>
+                  <div class="product-price">
+                    {{ formatPrice(p.supplier_quote_price ?? p.price) }}
+                    <small v-if="p.supplier_quote_price" class="supplier-quote-label">
+                      Supplier quote{{ p.supplier_quote_supplier ? ` from ${p.supplier_quote_supplier}` : '' }}
+                    </small>
+                    <small v-if="p.estimated_profit !== undefined" class="supplier-quote-label">
+                      Est. profit: {{ formatPrice(p.estimated_profit) }} ({{ p.target_markup_percentage }}% markup)
+                    </small>
+                  </div>
                   <div>
-                    <template v-if="p.awaiting_admin_confirmation">
+                    <template v-if="p.product_request_status && p.product_request_status !== 'approved'">
+                      <button class="btn-small btn-outline" disabled>Waiting for product approval</button>
+                    </template>
+                    <template v-else-if="p.awaiting_admin_confirmation">
                       <button class="btn-small btn-outline" disabled>Awaiting admin confirmation</button>
                     </template>
                     <template v-else-if="(p.procurement_status === 'pending' || p.status === 'pending') && !p.needs_supplier && (p.acknowledge_allowed === undefined ? true : p.acknowledge_allowed)">

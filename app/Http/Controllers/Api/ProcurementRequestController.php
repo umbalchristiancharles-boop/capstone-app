@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\ProcurementRequest;
+use App\Models\ProductRequest;
 use App\Models\SupplierOrder;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\Branch;
 use App\Models\BudgetRequest;
+use App\Models\PriceMarkupPercentage;
 use App\Services\LogisticsService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -639,6 +641,10 @@ public function requestedProducts(Request $request)
         Log::info('Querying pending requests', ['branch_id' => $branchId]);
 
         try {
+            $markupPercentage = (float) (PriceMarkupPercentage::where('branch_id', $branchId)
+                ->where('is_active', true)
+                ->value('percentage') ?? 20);
+
             $requests = ProcurementRequest::with(['product:id,name,price,sku,branch_id,supplier_id,logistics_request_available'])
                 ->where('branch_id', $branchId)
                     ->whereIn('status', ['pending', 'budget_pending', 'pending_order_to_supplier', 'delivery_pending', 'ongoing_delivery'])
@@ -664,6 +670,8 @@ public function requestedProducts(Request $request)
             // Attach the procurement request id to each product so the frontend
             // can reference the correct procurement_request when acting on it.
             $requestsByProduct = $requests->keyBy('product_id');
+            $productRequestStatuses = ProductRequest::whereIn('product_id', $productIds)
+                ->pluck('status', 'product_id');
 
             // Precompute which procurement requests were broadcast to suppliers
             $broadcastedProcReqIds = \App\Models\SupplierOrder::whereIn('procurement_request_id', $requests->pluck('id')->toArray())
@@ -691,7 +699,7 @@ public function requestedProducts(Request $request)
             // Prefer the order that already has a delivery schedule, so the UI shows the supplier-confirmed timestamp.
             $existingOrders = \App\Models\SupplierOrder::whereIn('procurement_request_id', $requests->pluck('id')->toArray())
                 ->whereNotNull('product_id')
-                ->with(['product', 'procurementRequest'])
+                ->with(['product', 'supplier', 'procurementRequest'])
                 ->orderByRaw('CASE WHEN is_broadcast = 0 THEN 0 ELSE 1 END')
                 ->orderByRaw('CASE WHEN estimated_delivery_datetime IS NULL THEN 1 ELSE 0 END')
                 ->orderByDesc('estimated_delivery_datetime')
@@ -702,9 +710,10 @@ public function requestedProducts(Request $request)
                     return $orders->first();
                 });
 
-            $products = $products->map(function ($p) use ($requestsByProduct, $broadcastedProcReqIds, $confirmedSupplierProcReqIds, $unconfirmedSupplierProcReqIds, $existingOrders) {
+            $products = $products->map(function ($p) use ($requestsByProduct, $productRequestStatuses, $broadcastedProcReqIds, $confirmedSupplierProcReqIds, $unconfirmedSupplierProcReqIds, $existingOrders, $markupPercentage) {
                 $req = $requestsByProduct->get($p->id);
                 $p->procurement_request_id = $req ? $req->id : null;
+                $p->product_request_status = $productRequestStatuses->get($p->id);
                 $p->procurement_status = $req ? $req->status : null;
                 $p->procurement_budget_approved = $req ? (bool)$req->budget_approved : false;
 
@@ -745,6 +754,17 @@ public function requestedProducts(Request $request)
                 // Attach existing order data (including estimated_delivery_datetime) if available
                 if ($req && isset($existingOrders[$req->id])) {
                     $p->existingOrder = $existingOrders[$req->id];
+                    $p->supplier_quote_price = $p->existingOrder->product?->price;
+                    $p->supplier_quote_total = $p->supplier_quote_price !== null
+                        ? (float) $p->supplier_quote_price * max(1, (int) $p->existingOrder->quantity)
+                        : null;
+                    $p->supplier_quote_supplier = $p->existingOrder->supplier?->full_name
+                        ?? $p->existingOrder->supplier?->username;
+                    if ($p->supplier_quote_price !== null) {
+                        $p->target_markup_percentage = $markupPercentage;
+                        $p->estimated_selling_price = round((float) $p->supplier_quote_price * (1 + ($markupPercentage / 100)), 2);
+                        $p->estimated_profit = round($p->estimated_selling_price - (float) $p->supplier_quote_price, 2);
+                    }
                 }
 
                 return $p;

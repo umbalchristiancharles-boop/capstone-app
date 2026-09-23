@@ -15,6 +15,10 @@ class ProductRequest extends Model
         'category',
         'brand',
         'description',
+        'reason',
+        'target_audience',
+        'storage_requirements',
+        'is_perishable',
         'unit',
         'requested_by',
         'branch_id',
@@ -32,6 +36,7 @@ class ProductRequest extends Model
     ];
 
     protected $casts = [
+        'is_perishable' => 'boolean',
         'approved_at' => 'datetime',
         'rejected_at' => 'datetime',
     ];
@@ -54,6 +59,11 @@ class ProductRequest extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function procurementRequest(): BelongsTo
+    {
+        return $this->belongsTo(ProcurementRequest::class, 'product_id', 'product_id');
     }
 
     public function logisticsApprover(): BelongsTo

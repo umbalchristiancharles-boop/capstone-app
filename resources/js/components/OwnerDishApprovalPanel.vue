@@ -71,6 +71,20 @@
                   <p class="unit-text">{{ prodReq.unit }}</p>
                 </div>
 
+                <div class="product-request-information">
+                  <div class="request-information-item"><strong>Category</strong><span>{{ prodReq.category || 'Not provided' }}</span></div>
+                  <div class="request-information-item"><strong>Brand</strong><span>{{ prodReq.brand || 'Not provided' }}</span></div>
+                  <div class="request-information-item request-information-item--wide"><strong>Reason</strong><span>{{ prodReq.reason || 'Not provided' }}</span></div>
+                  <div class="request-information-item"><strong>Target audience</strong><span>{{ prodReq.target_audience || 'Not provided' }}</span></div>
+                  <div class="request-information-item"><strong>Storage requirements</strong><span>{{ prodReq.storage_requirements || 'Not provided' }}</span></div>
+                  <div class="request-information-item"><strong>Product type</strong><span>{{ prodReq.is_perishable ? 'Perishable' : 'Non-perishable' }}</span></div>
+                  <div class="request-information-item"><strong>Selected supplier</strong><span>{{ prodReq.procurement_request?.supplier?.full_name || prodReq.procurement_request?.supplier?.username || 'Not selected' }}</span></div>
+                  <div class="request-information-item"><strong>Supplier price</strong><span>{{ prodReq.supplier_price ? formatPrice(prodReq.supplier_price) : 'Pending supplier quote' }}</span></div>
+                  <div class="request-information-item"><strong>Branch markup</strong><span>{{ prodReq.markup_percentage }}%</span></div>
+                  <div class="request-information-item"><strong>Expected selling price</strong><span>{{ prodReq.expected_selling_price ? formatPrice(prodReq.expected_selling_price) : 'Pending supplier quote' }}</span></div>
+                  <div class="request-information-item"><strong>Expected profit</strong><span>{{ prodReq.expected_profit ? formatPrice(prodReq.expected_profit) : 'Pending supplier quote' }}</span></div>
+                </div>
+
                 <div class="approval-section">
                   <div class="approval-form">
                     <textarea
@@ -209,6 +223,12 @@ function formatDate(dateStr) {
     hour: '2-digit',
     minute: '2-digit'
   })
+}
+
+function formatPrice(value) {
+  const amount = Number(value)
+  if (!Number.isFinite(amount)) return 'N/A'
+  return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount)
 }
 
 function loadUserProfile() {
@@ -687,6 +707,50 @@ onMounted(() => {
   color: #334155;
   line-height: 1.55;
   font-size: 0.94rem;
+}
+
+.product-request-information {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  padding: 0.9rem;
+  border: 1px solid rgba(255, 106, 61, 0.12);
+  border-radius: 12px;
+  background: #fffaf4;
+}
+
+.request-information-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.request-information-item strong {
+  color: #f97316;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.request-information-item span {
+  color: #334155;
+  overflow-wrap: anywhere;
+}
+
+.request-information-item--wide {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 700px) {
+  .product-request-information {
+    grid-template-columns: 1fr;
+  }
+
+  .request-information-item--wide {
+    grid-column: auto;
+  }
 }
 
 .approval-section {

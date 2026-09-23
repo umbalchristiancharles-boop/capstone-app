@@ -160,10 +160,28 @@
           <section v-if="activeSection === 'inventory'" id="admin-inventory-procurement" class="panel-block">
             <div class="panel-header">
               <h2>Request New Product</h2>
-              <button class="panel-action" @click="showProductRequestForm = true">+ Request New Product</button>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <button class="panel-action" @click="loadProductRequests">Refresh</button>
+                <button class="panel-action" @click="showProductRequestForm = true">+ Request New Product</button>
+              </div>
             </div>
             <div class="panel-body panel-body--list">
               <p>Request new products to be added to inventory. Requests will require owner/main branch logistics approval.</p>
+              <div v-if="productRequestsLoading" class="supplier-review-empty">Loading product requests...</div>
+              <div v-else-if="productRequests.length === 0" class="supplier-review-empty">No product requests yet.</div>
+              <div v-else class="product-request-list">
+                <div v-for="request in productRequests" :key="request.id" class="product-request-item">
+                  <div>
+                    <strong>{{ request.name }}</strong>
+                    <span class="product-request-meta">{{ request.category }} · {{ request.requester?.full_name || 'You' }}</span>
+                    <span v-if="request.status === 'pending_supplier'" class="product-request-meta">Waiting for supplier selection and pricing</span>
+                    <span v-else-if="request.product" class="product-request-meta">Supplier selected · Sent to Main Branch Logistics</span>
+                  </div>
+                  <span class="status-badge" :class="productRequestStatusClass(request.status)">
+                    {{ formatProductRequestStatus(request.status) }}
+                  </span>
+                </div>
+              </div>
             </div>
           </section>
 
@@ -173,7 +191,7 @@
               <button class="panel-action" @click="loadSupplierSubmissions">Refresh</button>
             </div>
             <div class="panel-body panel-body--list">
-              <p>Review supplier product details before Procurement acknowledges the request.</p>
+              <p>Select a supplier after they submit pricing. The selected request will then be sent to Main Branch Logistics.</p>
               <div v-if="supplierSubmissionsLoading" class="supplier-review-empty">Loading supplier submissions...</div>
               <div v-else-if="supplierSubmissions.length === 0" class="supplier-review-empty">No supplier submissions to review.</div>
               <div v-else class="supplier-review-list">
@@ -187,7 +205,7 @@
                   </div>
                   <div class="supplier-review-action">
                     <span v-if="submission.admin_confirmed" class="status-badge status-approved">Confirmed</span>
-                    <button v-else class="panel-action supplier-confirm-button" @click="confirmSupplierSubmission(submission)">Confirm Product</button>
+                    <button v-else class="panel-action supplier-confirm-button" @click="confirmSupplierSubmission(submission)">Select Supplier &amp; Send to Logistics</button>
                   </div>
                 </div>
               </div>
@@ -735,8 +753,27 @@
                 <input v-model="productRequestForm.brand" type="text" placeholder="e.g., Magnolia" />
               </div>
               <div class="form-group">
-                <label>Description</label>
-                <textarea v-model="productRequestForm.description" rows="3" placeholder="Optional details"></textarea>
+                <label>Description*</label>
+                <textarea v-model="productRequestForm.description" rows="3" placeholder="Describe the product" required></textarea>
+              </div>
+              <div class="form-group">
+                <label>Reason*</label>
+                <textarea v-model="productRequestForm.reason" rows="2" placeholder="Why is this product needed?" required></textarea>
+              </div>
+              <div class="form-group">
+                <label>Target Audience*</label>
+                <input v-model="productRequestForm.target_audience" type="text" placeholder="Who will use or consume this product?" required />
+              </div>
+              <div class="form-group">
+                <label>Storage Requirements*</label>
+                <textarea v-model="productRequestForm.storage_requirements" rows="2" placeholder="e.g., Keep frozen at -18 C" required></textarea>
+              </div>
+              <div class="form-group">
+                <label>Product Type*</label>
+                <select v-model="productRequestForm.is_perishable" required>
+                  <option :value="false">Non-perishable</option>
+                  <option :value="true">Perishable</option>
+                </select>
               </div>
               <div class="form-group">
                 <label>Unit of Measurement</label>
@@ -861,8 +898,10 @@ const isLoggingOut = ref(false)
 const showOverlay = ref(false)
 // Product request modal state (Admin)
 const showProductRequestForm = ref(false)
-const productRequestForm = ref({ name: '', category: '', brand: '', description: '', unit: '' })
+const productRequestForm = ref({ name: '', category: '', brand: '', description: '', reason: '', target_audience: '', storage_requirements: '', is_perishable: false, unit: '' })
 const productRequestSubmitting = ref(false)
+const productRequests = ref([])
+const productRequestsLoading = ref(false)
 const supplierSubmissions = ref([])
 const supplierSubmissionsLoading = ref(false)
 const showCustomerReports = ref(false)
@@ -1016,7 +1055,11 @@ async function submitProductRequest() {
       name: productRequestForm.value.name,
       category: productRequestForm.value.category,
       brand: productRequestForm.value.brand || null,
-      description: productRequestForm.value.description || null,
+      description: productRequestForm.value.description,
+      reason: productRequestForm.value.reason,
+      target_audience: productRequestForm.value.target_audience,
+      storage_requirements: productRequestForm.value.storage_requirements,
+      is_perishable: productRequestForm.value.is_perishable,
       unit: productRequestForm.value.unit || null,
     }
 
@@ -1027,13 +1070,39 @@ async function submitProductRequest() {
 
     showToast('Product request submitted for approval', 'success')
     showProductRequestForm.value = false
-    productRequestForm.value = { name: '', category: '', brand: '', description: '', unit: '' }
+    productRequestForm.value = { name: '', category: '', brand: '', description: '', reason: '', target_audience: '', storage_requirements: '', is_perishable: false, unit: '' }
+    await loadProductRequests()
   } catch (e) {
     const msg = e.response?.data?.error || e.response?.data?.message || e.message || 'Failed to submit product request'
     showToast(msg, 'error')
   } finally {
     productRequestSubmitting.value = false
   }
+}
+
+async function loadProductRequests() {
+  productRequestsLoading.value = true
+  try {
+    const res = await axios.get('/api/product-requests', { withCredentials: true })
+    const requests = res.data?.data ?? res.data ?? []
+    productRequests.value = Array.isArray(requests) ? requests : []
+  } catch (e) {
+    productRequests.value = []
+    console.error('Failed to load product requests:', e)
+  } finally {
+    productRequestsLoading.value = false
+  }
+}
+
+function formatProductRequestStatus(status) {
+  return String(status || 'pending').replaceAll('_', ' ').replace(/\b\w/g, character => character.toUpperCase())
+}
+
+function productRequestStatusClass(status) {
+  const normalized = String(status || '').toLowerCase()
+  if (normalized === 'approved') return 'status-approved'
+  if (normalized === 'rejected') return 'status-rejected'
+  return 'status-pending'
 }
 
 async function loadSupplierSubmissions() {
@@ -1114,7 +1183,7 @@ async function confirmSupplierSubmission(submission) {
 
 function cancelProductRequest() {
   showProductRequestForm.value = false
-  productRequestForm.value = { name: '', category: '', brand: '', description: '', unit: '' }
+  productRequestForm.value = { name: '', category: '', brand: '', description: '', reason: '', target_audience: '', storage_requirements: '', is_perishable: false, unit: '' }
 }
 
 async function loadAdminAttendance(range = 'today') {
@@ -1688,11 +1757,36 @@ function formatDate(dateString) {
     // load expired products for admin review
     fetchExpiredProducts()
     loadLandingProducts()
+    loadProductRequests()
   })
 
 </script>
 
 <style scoped>
+.product-request-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.product-request-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.product-request-meta {
+  display: block;
+  margin-top: 3px;
+  color: #6b7280;
+  font-size: 12px;
+}
+
 .primary-action-btn {
   background: linear-gradient(135deg, #2b8aef, #1a6ed8);
   color: white;

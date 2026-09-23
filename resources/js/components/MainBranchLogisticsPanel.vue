@@ -179,10 +179,34 @@
                     <td>{{ r.branch?.name || '(branch)' }}</td>
                     <td>{{ formatDate(r.created_at) }}</td>
                     <td>
+                      <button class="link-btn" @click="toggleProductRequestDetails(r.id)">
+                        {{ expandedProductRequestId === r.id ? 'Hide details' : 'View details' }}
+                      </button>
                       <button class="action-btn" @click="approvePendingRequest(r.id)">Approve</button>
                       <button class="link-btn" style="margin-left:8px;background:#ef4444" @click="rejectPendingRequest(r.id)">Reject</button>
                     </td>
                   </tr>
+                  <template v-for="r in pendingProductRequests" :key="`${r.id}-details`">
+                    <tr v-if="expandedProductRequestId === r.id" class="product-request-details-row">
+                      <td colspan="5">
+                        <div class="product-request-details">
+                          <div class="product-request-detail"><strong>Category</strong><span>{{ r.category || 'Not provided' }}</span></div>
+                          <div class="product-request-detail"><strong>Brand</strong><span>{{ r.brand || 'Not provided' }}</span></div>
+                          <div class="product-request-detail product-request-detail--wide"><strong>Description</strong><span>{{ r.description || 'Not provided' }}</span></div>
+                          <div class="product-request-detail product-request-detail--wide"><strong>Reason</strong><span>{{ r.reason || 'Not provided' }}</span></div>
+                          <div class="product-request-detail"><strong>Target audience</strong><span>{{ r.target_audience || 'Not provided' }}</span></div>
+                          <div class="product-request-detail"><strong>Storage requirements</strong><span>{{ r.storage_requirements || 'Not provided' }}</span></div>
+                          <div class="product-request-detail"><strong>Product type</strong><span>{{ r.is_perishable ? 'Perishable' : 'Non-perishable' }}</span></div>
+                          <div class="product-request-detail"><strong>Unit</strong><span>{{ r.unit || 'Not provided' }}</span></div>
+                          <div class="product-request-detail"><strong>Selected supplier</strong><span>{{ r.procurement_request?.supplier?.full_name || r.procurement_request?.supplier?.username || 'Not selected' }}</span></div>
+                          <div class="product-request-detail"><strong>Supplier price</strong><span>{{ r.supplier_price ? formatPrice(r.supplier_price) : 'Pending supplier quote' }}</span></div>
+                          <div class="product-request-detail"><strong>Branch markup</strong><span>{{ r.markup_percentage }}%</span></div>
+                          <div class="product-request-detail"><strong>Expected selling price</strong><span>{{ r.expected_selling_price ? formatPrice(r.expected_selling_price) : 'Pending supplier quote' }}</span></div>
+                          <div class="product-request-detail"><strong>Expected profit</strong><span>{{ r.expected_profit ? formatPrice(r.expected_profit) : 'Pending supplier quote' }}</span></div>
+                        </div>
+                      </td>
+                    </tr>
+                  </template>
                   <tr v-if="pendingProductRequests.length === 0">
                     <td colspan="5" class="empty-message">No product requests awaiting logistics approval.</td>
                   </tr>
@@ -319,6 +343,7 @@ const procRequestsLoading = ref(false)
 
 // Product requests pending logistics approval
 const pendingProductRequests = ref([])
+const expandedProductRequestId = ref(null)
 const prLoading = ref(false)
 const prError = ref('')
 
@@ -347,6 +372,10 @@ const pendingDeliveriesCount = computed(() => {
 })
 const pendingProductRequestsCount = computed(() => (pendingProductRequests.value || []).length)
 const logisticsAlertCount = computed(() => Math.max(pendingDeliveriesCount.value, pendingProductRequestsCount.value, 0))
+
+function toggleProductRequestDetails(id) {
+  expandedProductRequestId.value = expandedProductRequestId.value === id ? null : id
+}
 
 // Header profile dropdown state (compact header in profile column)
 function openProfileInfo() { showAccountInfoModal.value = true }
@@ -892,12 +921,23 @@ watch(selectedBranch, async () => {
 .data-table td.amount { text-align: right; white-space: nowrap; font-weight: 600; }
 .product-name { white-space: normal; word-break: break-word; max-width: 420px; }
 .empty-message { text-align: center; color: #999; font-style: italic; }
+.product-request-details-row td { background: rgba(255, 248, 240, 0.72); }
+.product-request-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 20px; padding: 6px 4px; }
+.product-request-detail { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.product-request-detail strong { color: #5a2c0a; font-size: 12px; text-transform: uppercase; letter-spacing: .3px; }
+.product-request-detail span { color: #3f3f46; overflow-wrap: anywhere; }
+.product-request-detail--wide { grid-column: 1 / -1; }
 
 .status-badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; }
 .status-ok { background: rgba(46, 204, 113, 0.12); color: #27ae60; }
 .status-low { background: rgba(231, 76, 60, 0.12); color: #e74c3c; }
 .status-approved { background: rgba(46, 204, 113, 0.12); color: #27ae60; }
 .status-pending { background: rgba(241, 196, 15, 0.12); color: #f39c12; }
+
+@media (max-width: 700px) {
+  .product-request-details { grid-template-columns: 1fr; }
+  .product-request-detail--wide { grid-column: auto; }
+}
 
 /* Finance manager visual language, scoped to this panel only. */
 .main-branch-page {

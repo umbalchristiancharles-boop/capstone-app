@@ -7,9 +7,14 @@ use Illuminate\Http\Request;
 use App\Models\ProductRequest;
 use App\Models\Product;
 use App\Models\Branch;
+use App\Models\ProcurementRequest;
+use App\Models\SupplierOrder;
+use App\Models\User;
+use App\Models\PriceMarkupPercentage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Services\LogisticsService;
 
 class ProductRequestController extends Controller
 {
@@ -130,7 +135,7 @@ class ProductRequestController extends Controller
 
     /**
      * Create a new product request (Inventory Staff)
-     * New multi-level workflow: sets status = 'pending_logistics'
+    * New multi-level workflow: broadcasts to suppliers and sets status = 'pending_supplier'
      */
     public function store(Request $request)
     {
@@ -160,7 +165,11 @@ class ProductRequestController extends Controller
             'name' => 'required|string|max:255',
             'category' => 'required|string|max:100',
             'brand' => 'nullable|string|max:255',
-            'description' => 'nullable|string|max:500',
+            'description' => 'required|string|max:500',
+            'reason' => 'required|string|max:1000',
+            'target_audience' => 'required|string|max:255',
+            'storage_requirements' => 'required|string|max:500',
+            'is_perishable' => 'required|boolean',
             'unit' => 'nullable|string|max:50',
         ]);
 
@@ -171,17 +180,97 @@ class ProductRequestController extends Controller
                 'branch_id' => $user->branch_id ?? 1,
             ]);
 
-            $productRequest = ProductRequest::create([
-                'name' => $validated['name'],
-                'category' => $validated['category'],
-                'brand' => $validated['brand'] ?? null,
-                'description' => $validated['description'] ?? null,
-                'unit' => $validated['unit'] ?? null,
-                'requested_by' => $user->id,
-                'branch_id' => $user->branch_id ?? 1,
-                'approval_status' => 'pending_approval',
-                'status' => 'pending_logistics',  // Multi-level workflow
-            ]);
+            $productRequest = DB::transaction(function () use ($validated, $user) {
+                $branchId = $user->branch_id ?? 1;
+                $productRequest = ProductRequest::create([
+                    'name' => $validated['name'],
+                    'category' => $validated['category'],
+                    'brand' => $validated['brand'] ?? null,
+                    'description' => $validated['description'],
+                    'reason' => $validated['reason'],
+                    'target_audience' => $validated['target_audience'],
+                    'storage_requirements' => $validated['storage_requirements'],
+                    'is_perishable' => $validated['is_perishable'],
+                    'unit' => $validated['unit'] ?? null,
+                    'requested_by' => $user->id,
+                    'branch_id' => $branchId,
+                    'approval_status' => 'pending_approval',
+                    'status' => 'pending_supplier',
+                ]);
+
+                // Create an unpublished catalog record now so supplier quotes can
+                // be collected before the logistics and owner approvals finish.
+                $product = Product::create([
+                    'name' => $productRequest->name,
+                    'slug' => Str::slug($productRequest->name . '-' . $productRequest->id . '-' . time()),
+                    'category' => $productRequest->category,
+                    'brand' => $productRequest->brand,
+                    'description' => $productRequest->description,
+                    'storage_requirements' => $productRequest->storage_requirements,
+                    'is_perishable' => $productRequest->is_perishable,
+                    'unit' => $productRequest->unit,
+                    'price' => 0,
+                    'cost_price' => 0,
+                    'stock' => 0,
+                    'min_stock' => 0,
+                    'branch_id' => $branchId,
+                    'supplier_name' => 'TO BE ASSIGNED',
+                    'supplier_id' => null,
+                    'is_published' => false,
+                    'is_active' => true,
+                    'is_kitchen_dish' => false,
+                    'has_been_ordered' => false,
+                    'logistics_request_available' => true,
+                ]);
+
+                $productRequest->update(['product_id' => $product->id]);
+
+                $procurementRequest = ProcurementRequest::create([
+                    'product_id' => $product->id,
+                    'logistics_user_id' => $user->id,
+                    'quantity' => 10,
+                    'price' => 0,
+                    'total_amount' => 0,
+                    'status' => 'pending',
+                    'budget_approved' => false,
+                    'branch_id' => $branchId,
+                ]);
+
+                $suppliers = User::whereRaw('UPPER(COALESCE(role, "")) IN (?, ?)', ['SUPPLIER', 'SUPPLIER_MANAGER'])
+                    ->where(function ($query) use ($branchId) {
+                        $query->whereNull('branch_id')->orWhere('branch_id', $branchId);
+                    })
+                    ->get();
+
+                foreach ($suppliers as $supplier) {
+                    SupplierOrder::create([
+                        'procurement_request_id' => $procurementRequest->id,
+                        'product_id' => $product->id,
+                        'supplier_id' => $supplier->id,
+                        'quantity' => $procurementRequest->quantity,
+                        'status' => 'pending',
+                        'is_broadcast' => true,
+                        'branch_id' => $branchId,
+                    ]);
+                }
+
+                try {
+                    (new LogisticsService())->createProcurementTransaction($procurementRequest, 'procurement', $user->id);
+                } catch (\Throwable $e) {
+                    Log::warning('Failed to create logistics transaction for product request', [
+                        'product_request_id' => $productRequest->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+
+                Log::info('[ProductRequest] Supplier broadcast created', [
+                    'product_request_id' => $productRequest->id,
+                    'procurement_request_id' => $procurementRequest->id,
+                    'supplier_count' => $suppliers->count(),
+                ]);
+
+                return $productRequest;
+            });
 
             Log::info('[ProductRequest] Created successfully', [
                 'product_request_id' => $productRequest->id,
@@ -266,12 +355,16 @@ class ProductRequestController extends Controller
             // Create the product
             try {
                 $slug = Str::slug($productRequest->name . '-' . $productRequest->id . '-' . time());
-                $product = Product::create([
+                $product = $productRequest->product_id
+                    ? Product::findOrFail($productRequest->product_id)
+                    : Product::create([
                     'name' => $productRequest->name,
                     'slug' => $slug,
                     'category' => $productRequest->category,
                     'brand' => $productRequest->brand,
                     'description' => $productRequest->description,
+                    'storage_requirements' => $productRequest->storage_requirements,
+                    'is_perishable' => $productRequest->is_perishable,
                     'unit' => $productRequest->unit,
                     'price' => 0,
                     'cost_price' => 0,
@@ -286,6 +379,13 @@ class ProductRequestController extends Controller
                     'is_kitchen_dish' => false,
                     'has_been_ordered' => false,
                     'logistics_request_available' => true,
+                ]);
+
+                $product->update([
+                    'is_published' => true,
+                    'is_active' => true,
+                    'storage_requirements' => $productRequest->storage_requirements,
+                    'is_perishable' => $productRequest->is_perishable,
                 ]);
 
                 // Update product request with approval info
@@ -357,9 +457,31 @@ class ProductRequestController extends Controller
         }
 
         $requests = ProductRequest::where('status', 'pending_logistics')
-            ->with('requester', 'branch', 'product')
+            ->with('requester', 'branch', 'product', 'procurementRequest.supplier')
             ->orderBy('created_at', 'asc')
             ->paginate(20);
+
+        $branchMarkups = PriceMarkupPercentage::whereIn(
+                'branch_id',
+                $requests->getCollection()->pluck('branch_id')->filter()->unique()
+            )
+            ->where('is_active', true)
+            ->pluck('percentage', 'branch_id');
+
+        $requests->getCollection()->transform(function ($productRequest) use ($branchMarkups) {
+            $supplierPrice = (float) ($productRequest->procurementRequest?->price ?? 0);
+            $markupPercentage = (float) ($branchMarkups->get($productRequest->branch_id) ?? 20);
+            $productRequest->supplier_price = $supplierPrice > 0 ? $supplierPrice : null;
+            $productRequest->markup_percentage = $markupPercentage;
+            $productRequest->expected_selling_price = $supplierPrice > 0
+                ? round($supplierPrice * (1 + ($markupPercentage / 100)), 2)
+                : null;
+            $productRequest->expected_profit = $supplierPrice > 0
+                ? round($supplierPrice * ($markupPercentage / 100), 2)
+                : null;
+
+            return $productRequest;
+        });
 
         return response()->json($requests);
     }
@@ -378,7 +500,7 @@ class ProductRequestController extends Controller
         }
 
         $query = ProductRequest::where('status', 'pending_owner')
-            ->with('requester', 'logisticsApprover', 'branch', 'product')
+            ->with('requester', 'logisticsApprover', 'branch', 'product', 'procurementRequest.supplier')
             ->orderBy('created_at', 'asc');
 
         // Owner sees requests from their branch
@@ -387,6 +509,27 @@ class ProductRequestController extends Controller
         }
 
         $requests = $query->paginate(20);
+        $branchMarkups = PriceMarkupPercentage::whereIn(
+                'branch_id',
+                $requests->getCollection()->pluck('branch_id')->filter()->unique()
+            )
+            ->where('is_active', true)
+            ->pluck('percentage', 'branch_id');
+
+        $requests->getCollection()->transform(function ($productRequest) use ($branchMarkups) {
+            $supplierPrice = (float) ($productRequest->procurementRequest?->price ?? 0);
+            $markupPercentage = (float) ($branchMarkups->get($productRequest->branch_id) ?? 20);
+            $productRequest->supplier_price = $supplierPrice > 0 ? $supplierPrice : null;
+            $productRequest->markup_percentage = $markupPercentage;
+            $productRequest->expected_selling_price = $supplierPrice > 0
+                ? round($supplierPrice * (1 + ($markupPercentage / 100)), 2)
+                : null;
+            $productRequest->expected_profit = $supplierPrice > 0
+                ? round($supplierPrice * ($markupPercentage / 100), 2)
+                : null;
+
+            return $productRequest;
+        });
         return response()->json($requests);
     }
 
@@ -586,12 +729,16 @@ class ProductRequestController extends Controller
             // Create the product
             try {
                 $slug = Str::slug($productRequest->name . '-' . $productRequest->id . '-' . time());
-                $product = Product::create([
+                $product = $productRequest->product_id
+                    ? Product::findOrFail($productRequest->product_id)
+                    : Product::create([
                     'name' => $productRequest->name,
                     'slug' => $slug,
                     'category' => $productRequest->category,
                     'brand' => $productRequest->brand,
                     'description' => $productRequest->description,
+                    'storage_requirements' => $productRequest->storage_requirements,
+                    'is_perishable' => $productRequest->is_perishable,
                     'unit' => $productRequest->unit,
                     'price' => 0,
                     'cost_price' => 0,
@@ -606,6 +753,13 @@ class ProductRequestController extends Controller
                     'is_kitchen_dish' => false,
                     'has_been_ordered' => false,
                     'logistics_request_available' => true,
+                ]);
+
+                $product->update([
+                    'is_published' => true,
+                    'is_active' => true,
+                    'storage_requirements' => $productRequest->storage_requirements,
+                    'is_perishable' => $productRequest->is_perishable,
                 ]);
 
                 // Mark request as approved with owner info
