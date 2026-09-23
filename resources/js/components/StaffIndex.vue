@@ -41,9 +41,8 @@ function goToAdminLogin() {
   --staff-orange: #ff9f43;
   min-height: 100vh;
   background:
-    radial-gradient(circle at top left, rgba(255, 159, 67, 0.12), transparent 28%),
-    radial-gradient(circle at bottom right, rgba(34, 197, 94, 0.08), transparent 30%),
-    linear-gradient(180deg, rgba(251, 247, 244, 0.98), rgba(247, 244, 240, 1));
+    linear-gradient(rgba(251, 247, 244, 0.72), rgba(247, 244, 240, 0.78)),
+    url('/staff-landing/Gemini_Generated_Image_ka602dka602dka60.jpg') center / cover no-repeat;
 }
 
   #staff-hero {

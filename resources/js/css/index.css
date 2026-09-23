@@ -16,17 +16,16 @@
   left: 0;
   right: 0;
   z-index: 1000;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255, 107, 28, 0.1);
+  background: #F49B35;
+  border-bottom: 1px solid #F49B35;
   transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .navbar.navbar-scrolled {
-  background: rgba(255, 255, 255, 0.98);
+  background: #F49B35;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  border-bottom: 1px solid rgba(255, 107, 28, 0.2);
+  border-bottom: 1px solid #F49B35;
 }
 
 .navbar-container {
@@ -44,7 +43,7 @@
   align-items: center;
   gap: 12px;
   text-decoration: none;
-  color: var(--text-dark);
+  color: #ffffff;
   font-weight: 800;
   font-size: 1.25rem;
   letter-spacing: -0.02em;
@@ -58,10 +57,7 @@
 }
 
 .navbar-brand-text {
-  background: linear-gradient(135deg, var(--orange) 0%, #ff8a3d 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #ffffff;
   font-weight: 900;
   letter-spacing: -0.02em;
 }
@@ -85,7 +81,7 @@
   display: block;
   width: 24px;
   height: 2px;
-  background: var(--text-dark);
+  background: #ffffff;
   border-radius: 2px;
   transition: all 0.3s ease;
   transform-origin: center;
@@ -117,7 +113,7 @@
   display: inline-flex;
   align-items: center;
   padding: 8px 16px;
-  color: var(--text-dark);
+  color: #ffffff;
   text-decoration: none;
   font-weight: 600;
   font-size: 0.95rem;
@@ -128,8 +124,8 @@
 }
 
 .navbar-link:hover {
-  background: rgba(255, 107, 28, 0.08);
-  color: var(--orange);
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
   transform: translateY(-1px);
 }
 
@@ -148,8 +144,7 @@
     top: 72px;
     left: 0;
     right: 0;
-    background: rgba(255, 255, 255, 0.98);
-    backdrop-filter: blur(10px);
+    background: #F49B35;
     flex-direction: column;
     align-items: stretch;
     padding: 24px;
@@ -453,14 +448,22 @@ h1 span {
   font-size: 0.8em;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--accent-yellow);
+  color: #EC7313;
+}
+
+.hero-left h1 > span:not(.highlight-korean) {
+  color: #FFD66B;
 }
 
 .subheading {
   font-size: 1.2rem;
   max-width: 440px;
-  color: rgba(66, 33, 11, 0.9);
+  color: #F49A33;
   padding-bottom: 12px;
+}
+
+.subheading b {
+  color: #EC7313;
 }
 
 .admin-tagline {
