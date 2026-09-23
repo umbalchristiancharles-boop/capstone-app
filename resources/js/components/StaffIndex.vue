@@ -16,9 +16,6 @@
             </button>
           </div>
         </div>
-        <div class="hero-right">
-          <img :src="chikintayoImg" alt="Chikintayo" />
-        </div>
       </div>
     </section>
   </main>
@@ -27,7 +24,6 @@
 <script setup>
 import { useRouter } from 'vue-router'
 const router = useRouter()
-const chikintayoImg = new URL('../assets/chikintayo.jpg', import.meta.url).href
 function goToAdminLogin() {
   router.push('/admin-login')
 }
@@ -41,7 +37,7 @@ function goToAdminLogin() {
   --staff-orange: #f49b35;
   min-height: 100vh;
   background:
-    linear-gradient(rgba(251, 247, 244, 0.43), rgba(247, 244, 240, 0.5)),
+    linear-gradient(rgba(251, 247, 244, 0.5), rgba(247, 244, 240, 0.58)),
     url('/staff-landing/Screenshot%202026-09-23%20235928.png') center / cover no-repeat;
 }
 
@@ -121,20 +117,14 @@ function goToAdminLogin() {
   gap: 24px;
   justify-content: center;
   max-width: 500px;
-  padding: clamp(1.5rem, 3vw, 2.5rem);
-  border-radius: 18px;
-  background: rgba(255, 250, 245, 0.68);
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  box-shadow: 0 18px 45px rgba(66, 33, 11, 0.12);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  padding: clamp(1rem, 2vw, 1.5rem) 0;
 }
 
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  background: var(--dirty-white, #fff4e6);
+  background: rgba(255, 255, 255, 0.9);
   color: var(--staff-ink);
   padding: 6px 16px;
   border-radius: 999px;
@@ -178,6 +168,9 @@ p {
   align-items: center;
   gap: 10px;
   border: none;
+  background: var(--staff-orange);
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(244, 155, 53, 0.35);
   transition: all 0.15s ease;
   position: relative;
 }
@@ -191,21 +184,15 @@ p {
   align-items: center;
   justify-content: center;
   position: relative;
-  padding: clamp(1.25rem, 3vw, 2.5rem);
-  border-radius: 22px;
-  background: rgba(255, 250, 245, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.76);
-  box-shadow: 0 20px 50px rgba(66, 33, 11, 0.16);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  padding: clamp(1.5rem, 4vw, 3rem);
 }
 
 .hero-right img {
   max-width: 100%;
   width: min(420px, 100%);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  box-shadow: 0 12px 28px rgba(66, 33, 11, 0.14);
+  border-radius: 8px;
+  border: 0;
+  box-shadow: none;
 }
 
 /* Responsive */

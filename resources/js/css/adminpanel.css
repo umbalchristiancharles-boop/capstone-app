@@ -695,6 +695,39 @@ html.dark .admin-page,
   background: #f9e9e7;
 }
 
+/* Keep logout actions consistent across every panel. */
+:is(
+  .admin-sidebar__logout,
+  .owner-sidebar-logout,
+  .owner-panel-logout,
+  .logout-btn:not(.theme-toggle-btn),
+  .logout-btn--center:not(.theme-toggle-btn),
+  .nav-logout,
+  .btn-signout,
+  [class*="sidebar__logout"],
+  [class*="sidebar-logout"]
+) {
+  border-color: #dc2626 !important;
+  background: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+:is(
+  .admin-sidebar__logout,
+  .owner-sidebar-logout,
+  .owner-panel-logout,
+  .logout-btn:not(.theme-toggle-btn),
+  .logout-btn--center:not(.theme-toggle-btn),
+  .nav-logout,
+  .btn-signout,
+  [class*="sidebar__logout"],
+  [class*="sidebar-logout"]
+):hover:not(:disabled) {
+  border-color: #b91c1c !important;
+  background: #b91c1c !important;
+  color: #ffffff !important;
+}
+
 .admin-page .header-name {
   color: #1f2937;
   font-weight: 600;

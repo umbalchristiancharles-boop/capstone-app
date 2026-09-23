@@ -101,7 +101,16 @@
               <div>
                 <h3>
                   Orders Queue
-                  <span v-if="pendingKitchenCount > 0" class="panel-badge">{{ pendingKitchenCount }}</span>
+                  <button
+                    v-if="pendingKitchenCount > 0"
+                    type="button"
+                    class="panel-badge"
+                    :aria-label="`${pendingKitchenCount} pending kitchen orders`"
+                    title="Open pending kitchen orders"
+                    @click="activeKitchenSection = 'kitchen-orders'"
+                  >
+                    {{ pendingKitchenCount }}
+                  </button>
                 </h3>
                 <p class="sub">Pending / In Kitchen orders for this branch</p>
               </div>
@@ -216,6 +225,10 @@ const hasNotified = ref(false)
 const pendingKitchenCount = computed(() => (orderQueue.value || []).length)
 
 watch(pendingKitchenCount, (count) => {
+  if (count === 0) {
+    hasNotified.value = false
+    return
+  }
   if (!hasNotified.value && count > 0) {
     showToast('You have pending kitchen orders.', 'info')
     hasNotified.value = true
@@ -263,7 +276,8 @@ async function markOrderDone(orderId) {
   markingDoneId.value = orderId
   try {
     await axios.patch(`/api/orders/${orderId}/mark-completed`)
-    await loadOrderQueue()
+    orderQueue.value = orderQueue.value.filter(order => String(order.id) !== String(orderId))
+    showToast('Order marked as done.', 'success')
   } catch (e) {
     console.error('Failed to mark order as done', e)
     alert(e?.response?.data?.message || 'Failed to mark order as done')
@@ -617,6 +631,8 @@ async function confirmLogout() {
 .btn-done:disabled { background: #d1d5db; cursor: not-allowed; }
 
 .panel-badge {
+  appearance: none;
+  border: 0;
   position: absolute;
   top: -8px;
   right: -16px;
@@ -632,6 +648,16 @@ async function confirmLogout() {
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 10px rgba(239, 68, 68, 0.35);
+  cursor: pointer;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.panel-badge:hover,
+.panel-badge:focus-visible {
+  transform: scale(1.08);
+  box-shadow: 0 5px 12px rgba(239, 68, 68, 0.45);
+  outline: 2px solid rgba(239, 68, 68, 0.35);
+  outline-offset: 2px;
 }
 
 :deep(.admin-main-header) {
