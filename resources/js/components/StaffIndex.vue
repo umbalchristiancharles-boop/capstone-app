@@ -37,11 +37,11 @@ function goToAdminLogin() {
 <style scoped>
 .staff-landing {
   --staff-ink: #3d2a1f;
-  --staff-muted: #64748b;
-  --staff-orange: #ff9f43;
+  --staff-muted: #6b4328;
+  --staff-orange: #f49b35;
   min-height: 100vh;
   background:
-    linear-gradient(rgba(251, 247, 244, 0.72), rgba(247, 244, 240, 0.78)),
+    linear-gradient(rgba(251, 247, 244, 0.43), rgba(247, 244, 240, 0.5)),
     url('/staff-landing/Screenshot%202026-09-23%20235928.png') center / cover no-repeat;
 }
 
@@ -59,7 +59,7 @@ function goToAdminLogin() {
 
 .hero-content {
   width: 100%;
-  max-width: 1080px;
+  max-width: 1120px;
   display: grid;
   grid-template-columns: minmax(0, 0.9fr) minmax(300px, 1.1fr);
   gap: clamp(2rem, 7vw, 5rem);
@@ -120,6 +120,14 @@ function goToAdminLogin() {
   flex-direction: column;
   gap: 24px;
   justify-content: center;
+  max-width: 500px;
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+  border-radius: 18px;
+  background: rgba(255, 250, 245, 0.68);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 18px 45px rgba(66, 33, 11, 0.12);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
 
 .badge {
@@ -183,14 +191,21 @@ p {
   align-items: center;
   justify-content: center;
   position: relative;
+  padding: clamp(1.25rem, 3vw, 2.5rem);
+  border-radius: 22px;
+  background: rgba(255, 250, 245, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.76);
+  box-shadow: 0 20px 50px rgba(66, 33, 11, 0.16);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
 
 .hero-right img {
   max-width: 100%;
   width: min(420px, 100%);
-  border-radius: 16px;
-  border: 1px solid #f1e5d8;
-  box-shadow: 0 20px 40px rgba(66, 33, 11, 0.12);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 12px 28px rgba(66, 33, 11, 0.14);
 }
 
 /* Responsive */
