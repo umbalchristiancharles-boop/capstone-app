@@ -188,7 +188,7 @@
         </div>
 
         <div class="checkout-actions">
-  <button class="btn-cancel" @click="clearCart" :disabled="isProcessing || !!pendingOrderCode">
+  <button class="btn-cancel clear-cart-btn" @click="clearCart" :disabled="isProcessing || !!pendingOrderCode">
     {{ pendingOrderCode ? 'Cancel Pending' : 'Clear' }}
   </button>
           <button
@@ -748,6 +748,22 @@ button:hover { background: #374151; }
 }
 .btn-confirm:disabled { opacity: 0.55; cursor: not-allowed; }
 
+.clear-cart-btn {
+  background: #dc2626;
+  color: #ffffff;
+  border: 1px solid #dc2626;
+}
+
+.clear-cart-btn:hover:not(:disabled) {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.clear-cart-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 /* Inputs / selects */
 input,
 select,
@@ -1006,6 +1022,13 @@ textarea:focus {
 .cashier-page.dark-mode .btn-secondary:hover,
 .cashier-page.dark-mode .btn-cancel:hover {
   background: #5a6278;
+}
+
+.cashier-page.dark-mode .clear-cart-btn,
+.cashier-page.dark-mode .clear-cart-btn:hover:not(:disabled) {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
 }
 
 .cashier-page.dark-mode .btn-confirm {

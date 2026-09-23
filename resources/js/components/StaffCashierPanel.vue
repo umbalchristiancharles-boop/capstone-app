@@ -278,7 +278,7 @@
         <div v-if="checkoutSuccess" class="success-msg">{{ checkoutSuccess }}</div>
 
         <div class="checkout-actions">
-          <button class="btn-cancel" @click="clearCart" :disabled="isProcessing || !!pendingOrderCode">
+          <button class="btn-cancel clear-cart-btn" @click="clearCart" :disabled="isProcessing || !!pendingOrderCode">
             {{ pendingOrderCode ? 'Cancel Pending' : 'Clear' }}
           </button>
           <button
@@ -1689,7 +1689,7 @@ async function performLogout() {
   padding: 10px 24px;
   border: none;
   border-radius: 6px;
-  background: linear-gradient(180deg, #ff7a18, #ff6a3d);
+  background: linear-gradient(180deg, #22c55e, #16a34a);
   color: white;
   cursor: pointer;
   font-weight: 600;
@@ -1701,7 +1701,7 @@ async function performLogout() {
   cursor: not-allowed;
 }
 .btn-confirm:not(:disabled):hover {
-  filter: brightness(1.1);
+  background: linear-gradient(180deg, #16a34a, #15803d);
 }
 
 /* Transactions Section */

@@ -28,6 +28,19 @@ Route::get('/product-image/{path}', function (string $path) {
     abort(404);
 })->where('path', '.*');
 
+Route::get('/message-attachment/{path}', function (string $path) {
+    if (str_contains($path, '..')) {
+        abort(404);
+    }
+
+    $path = ltrim($path, '/');
+    if (! str_starts_with($path, 'message-attachments/') || ! Storage::disk('public')->exists($path)) {
+        abort(404);
+    }
+
+    return response()->file(Storage::disk('public')->path($path));
+})->where('path', '.*')->middleware(['web', 'auth'])->name('message-attachment');
+
 // ==========================================
 // AUTHENTICATION ROUTES (Login/Logout)
 // ==========================================
@@ -35,6 +48,10 @@ Route::get('/product-image/{path}', function (string $path) {
 Route::get('/login', function () {
     return no_cache_view('dashboard'); // Vue SPA entry for admin login
 })->name('login')->middleware('web');
+
+Route::get('/admin-login', function () {
+    return no_cache_view('dashboard'); // Vue SPA entry for admin login
+})->name('admin.login.page')->middleware('web');
 
 // Explicit admin login route for password reset redirect
 Route::get('/admin/login', function () {

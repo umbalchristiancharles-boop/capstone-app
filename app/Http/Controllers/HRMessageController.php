@@ -48,7 +48,7 @@ class HRMessageController extends Controller
             return [
                 'id' => $m->id,
                 'body' => $m->body,
-                'attachment_url' => $m->attachment_path ? Storage::disk('public')->url($m->attachment_path) : null,
+                'attachment_url' => $m->attachment_path ? route('message-attachment', ['path' => $m->attachment_path]) : null,
                 'attachment_name' => $m->attachment_name,
                 'attachment_mime' => $m->attachment_mime,
                 'from_user_id' => $m->from_user_id,

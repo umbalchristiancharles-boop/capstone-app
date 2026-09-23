@@ -65,7 +65,10 @@
                   </div>
                 </div>
                 <div v-else :class="['msg-bubble', m.from_user_id === meId ? 'mine' : 'theirs']">
-                  <div v-if="m.from_user && m.from_user.name && m.from_user_id !== meId" class="msg-sender">{{ m.from_user.name }} <span class="msg-sender-role">({{ roleLabel(m.from_user.role) }})</span></div>
+                  <div v-if="m.from_user?.name || m.from_user_id === meId" class="msg-sender">
+                    <strong class="msg-sender-name">{{ m.from_user_id === meId ? currentUserName : m.from_user.name }}</strong>
+                    <span v-if="m.from_user_id !== meId" class="msg-sender-role">({{ roleLabel(m.from_user.role) }})</span>
+                  </div>
                   <div v-if="m.body" class="msg-body" v-html="escapeHtml(m.body)"></div>
                   <img v-if="isImageAttachment(m)" class="msg-attachment-image" :src="m.attachment_url" :alt="m.attachment_name" @click="openAttachment(m)" />
                   <a v-else-if="m.attachment_url" class="msg-attachment-link" :href="m.attachment_url" target="_blank" rel="noopener">View {{ m.attachment_name }}</a>
@@ -87,11 +90,18 @@
           </div>
 
           <div class="msg-composer">
-            <textarea v-model="body" placeholder="Write a message..."></textarea>
+            <div class="msg-compose-input">
+              <div v-if="attachment" class="attachment-preview">
+                <img v-if="attachmentPreviewUrl" :src="attachmentPreviewUrl" :alt="attachment.name" class="attachment-preview-image" />
+                <span v-else class="attachment-preview-file">FILE</span>
+                <span class="attachment-preview-name" :title="attachment.name">{{ attachment.name }}</span>
+                <button type="button" class="attachment-remove" @click="clearAttachment" aria-label="Remove attachment">×</button>
+              </div>
+              <textarea v-model="body" placeholder="Write a message..."></textarea>
+            </div>
             <div class="composer-actions">
               <input ref="attachmentInput" class="attachment-input" type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" @change="selectAttachment" />
               <button class="attach-btn" @click="$refs.attachmentInput.click()" title="Attach a document or picture">Attach</button>
-              <span v-if="attachment" class="attachment-selected">{{ attachment.name }}</span>
               <button @click="send" :disabled="!selected || sending || (!body.trim() && !attachment)">Send</button>
             </div>
           </div>
@@ -115,6 +125,7 @@ export default {
       messages: [],
       body: '',
       attachment: null,
+      attachmentPreviewUrl: '',
       sending: false,
       reportOpen: false,
       reportBody: '',
@@ -293,7 +304,16 @@ export default {
     escapeHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') },
     formatDate(s){ try { return new Date(s).toLocaleString() } catch(e){ return s } },
     selectAttachment(event){
-      this.attachment = event.target.files[0] || null
+      const file = event.target.files[0] || null
+      this.clearAttachment()
+      this.attachment = file
+      this.attachmentPreviewUrl = file && file.type.startsWith('image/') ? URL.createObjectURL(file) : ''
+    },
+    clearAttachment(){
+      if (this.attachmentPreviewUrl) URL.revokeObjectURL(this.attachmentPreviewUrl)
+      this.attachment = null
+      this.attachmentPreviewUrl = ''
+      if (this.$refs.attachmentInput) this.$refs.attachmentInput.value = ''
     },
     isImageAttachment(message){
       return !!message.attachment_url && String(message.attachment_mime || '').startsWith('image/')
@@ -370,8 +390,7 @@ export default {
       if (this.attachment) form.append('attachment', this.attachment)
       axios.post('/api/hr/messages/send', form).then(resp => {
         this.body = ''
-        this.attachment = null
-        if (this.$refs.attachmentInput) this.$refs.attachmentInput.value = ''
+        this.clearAttachment()
         // append and reload conversation
         this.loadConversation(this.selected.id)
       }).catch(err => {
@@ -409,7 +428,7 @@ export default {
 
 <style scoped>
 /* Improve message widget layout and contrast for logistics panel */
-.msg-fab{position:fixed;right:18px;bottom:18px;z-index:10010;width:56px;height:56px;border-radius:999px;background:#0f766e;color:#fff;border:none;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 28px rgba(15,118,110,0.3);cursor:pointer}
+.msg-fab{position:fixed;right:18px;bottom:18px;z-index:10010;width:56px;height:56px;border-radius:999px;background:#FF853B;color:#fff;border:none;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 28px rgba(255,133,59,0.3);cursor:pointer}
 .msg-unread-badge{position:absolute;top:-4px;right:-4px;min-width:21px;height:21px;padding:0 5px;border:2px solid #fff;border-radius:999px;background:#dc2626;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;line-height:1;box-sizing:border-box}
 .msg-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:10000}
 .msg-modal{width:980px;max-width:98%;height:78vh;background:linear-gradient(180deg,rgba(255,255,255,0.98),rgba(250,250,250,1));border-radius:12px;display:flex;overflow:hidden;box-shadow:0 18px 60px rgba(2,6,23,0.18)}
@@ -424,7 +443,7 @@ export default {
 .msg-user-avatar{width:44px;height:44px;border-radius:10px;overflow:hidden;flex:0 0 44px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#ff6a3d,#f59e0b);color:#fff;font-weight:700}
 .msg-user-avatar img{width:100%;height:100%;object-fit:cover}
 .msg-user-meta{flex:1;min-width:0}
-.msg-user-name{font-weight:800;color:#0f172a}
+.msg-user-name{font-weight:500;color:#0f172a}
 .msg-user-role{font-size:12px;color:#64748b;margin-top:4px}
 .msg-right{flex:1;display:flex;flex-direction:column;background:transparent}
 .msg-right-header{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid rgba(15,23,42,0.04)}
@@ -448,12 +467,20 @@ export default {
 .msg-bubble.mine .msg-body{color:#fff}
 .msg-bubble.theirs{background:#f8fafc;color:#0f172a;align-self:flex-start;margin-right:auto}
 .msg-sender{font-size:12px;color:#0f172a;font-weight:700;margin-bottom:6px}
+.msg-sender-name{font-weight:800}
 .msg-sender-role{font-weight:600;color:#6b7280;font-size:11px;margin-left:6px}
 .msg-ts{font-size:11px;color:rgba(15,23,42,0.45);margin-top:8px;text-align:right}
 .msg-status{font-size:10px;color:rgba(15,23,42,0.55);margin-top:3px;text-align:right}
 .msg-bubble.mine .msg-ts,.msg-bubble.mine .msg-status{color:rgba(255,255,255,0.9)}
 .msg-composer{padding:12px;border-top:1px solid rgba(15,23,42,0.04);background:linear-gradient(180deg,#fff,#fbfdff);display:flex;gap:12px;align-items:flex-end}
-.msg-composer textarea{flex:1;min-height:48px;max-height:160px;padding:10px;border:1px solid rgba(15,23,42,0.04);border-radius:12px;resize:vertical}
+.msg-compose-input{flex:1;min-width:0;padding:8px;border:1px solid rgba(15,23,42,0.08);border-radius:12px;background:#fff}
+.msg-composer textarea{display:block;width:100%;min-height:32px;max-height:160px;padding:4px 2px;border:0;border-radius:8px;resize:vertical;outline:none;box-sizing:border-box}
+.attachment-preview{display:flex;align-items:center;gap:8px;margin-bottom:6px;padding:5px 7px;border-radius:8px;background:#f8fafc;min-width:0}
+.attachment-preview-image{width:42px;height:42px;flex:0 0 42px;border-radius:6px;object-fit:cover}
+.attachment-preview-file{display:grid;width:42px;height:42px;flex:0 0 42px;place-items:center;border-radius:6px;background:#ff853b;color:#fff;font-size:10px;font-weight:800}
+.attachment-preview-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:#475569}
+.attachment-remove{margin-left:auto;padding:2px 6px;border:0;border-radius:6px;background:transparent;color:#64748b;font-size:18px;line-height:1;cursor:pointer}
+.attachment-remove:hover{background:#fee2e2;color:#b91c1c}
 .composer-actions{display:flex;gap:8px;align-items:center}
 .composer-actions button{background:linear-gradient(90deg,#ff6a3d,#f59e0b);color:#fff;border:none;padding:10px 16px;border-radius:10px;box-shadow:0 8px 20px rgba(255,106,61,0.12)}
 .msg-empty{color:#6b7280;padding:20px}
@@ -485,7 +512,6 @@ export default {
 .msg-body{white-space:pre-wrap;word-wrap:break-word;overflow-wrap:break-word}
 .attachment-input{display:none}
 .attach-btn{background:#0f766e!important;color:#fff;border:none;padding:10px 12px;border-radius:10px;cursor:pointer}
-.attachment-selected{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:#475569}
 .msg-attachment-image{display:block;max-width:220px;max-height:180px;margin-top:8px;border-radius:8px;object-fit:cover;cursor:pointer}
 .msg-attachment-link{display:block;margin-top:8px;color:#0f766e;font-weight:700;word-break:break-word}
 
