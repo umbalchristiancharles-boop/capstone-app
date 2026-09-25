@@ -638,10 +638,38 @@
       <!-- Payroll Tracking Section -->
       <section v-if="selectedHrSection === 'payroll'" class="panel-block hr-payroll-panel">
         <div class="panel-header hr-payroll-header">
-          <h2>Payroll Management</h2>
+            <div>
+              <h2>{{ showPayrollHistory ? 'Salary History' : 'Payroll Management' }}</h2>
+              <p v-if="showPayrollHistory" class="muted">Review every payroll cycle, salary adjustment, and payment confirmation.</p>
+            </div>
           <div class="hr-payroll-actions">
+              <button class="panel-action" @click="togglePayrollHistory">{{ showPayrollHistory ? 'Current Cycles' : 'Salary History' }}</button>
             <button class="panel-action" @click="loadPayrolls">Refresh</button>
           </div>
+        </div>
+
+        <div v-if="showPayrollHistory" class="payroll-history-tools">
+          <div class="payroll-history-stat">
+            <span>Total Records</span>
+            <strong>{{ payrollHistorySummary.records }}</strong>
+          </div>
+          <div class="payroll-history-stat">
+            <span>Total Net Salary</span>
+            <strong>₱{{ formatNumber(payrollHistorySummary.totalNet) }}</strong>
+          </div>
+          <div class="payroll-history-stat">
+            <span>Paid Records</span>
+            <strong>{{ payrollHistorySummary.paid }}</strong>
+          </div>
+          <select class="field-input payroll-history-filter" v-model="payrollHistoryFilters.userId">
+            <option value="">All Staff</option>
+            <option v-for="user in payrollHistoryUsers" :key="user.id" :value="String(user.id)">{{ user.name }}</option>
+          </select>
+          <select class="field-input payroll-history-filter" v-model="payrollHistoryFilters.status">
+            <option value="">All Statuses</option>
+            <option value="paid">Paid</option>
+            <option value="pending">Pending</option>
+          </select>
         </div>
 
         <div class="panel-body panel-body--table">
@@ -661,11 +689,11 @@
             <span colspan="9">Loading payroll...</span>
           </div>
 
-          <div v-else-if="payrolls.length === 0" class="table-row">
+          <div v-else-if="filteredPayrolls.length === 0" class="table-row">
             <span colspan="9">No payroll records found yet. Payroll is registered automatically when an eligible account clocks in.</span>
           </div>
 
-          <div v-else v-for="payroll in payrolls" :key="payroll.id" class="table-row">
+          <div v-else v-for="payroll in filteredPayrolls" :key="payroll.id" class="table-row">
             <span>{{ payroll.user?.full_name || '-' }}</span>
             <span>{{ formatPayPeriod(payroll.pay_period_start, payroll.pay_period_end) }}</span>
             <span>{{ payroll.payroll_type === 'mid_month' ? 'Mid-Month' : 'End of Month' }}</span>
@@ -677,9 +705,11 @@
               <span class="badge" :class="getPayrollStatusClass(payroll.status)">{{ formatPayrollStatus(payroll.status) }}</span>
             </span>
             <span>
-              <button v-if="payroll.status === 'pending' || payroll.status === 'approved'" class="btn-sm btn-primary" @click="markAsPaid(payroll.id)">
+              <button v-if="payroll.status === 'pending'" class="btn-sm btn-primary" @click="openMarkPaidModal(payroll)">
                 Mark Paid
               </button>
+              <a v-if="payroll.payment_proof_url" class="text-muted" :href="payroll.payment_proof_url" target="_blank" rel="noopener">View proof</a>
+              <button class="btn-sm btn-secondary" @click="openPayrollDetails(payroll)">Details</button>
               <span v-if="payroll.confirmed_by" class="text-muted" style="font-size: 0.75rem;">
                 by {{ payroll.confirmedBy?.full_name }}
               </span>
@@ -687,6 +717,75 @@
           </div>
         </div>
       </section>
+
+      <transition name="fade">
+        <div v-if="showPayrollDetailsModal && selectedPayrollDetails" class="positions-modal-backdrop" @click.self="closePayrollDetails">
+          <div class="positions-modal payroll-details-modal">
+            <div class="positions-modal__header">
+              <div>
+                <h3>{{ selectedPayrollDetails.user?.full_name || 'Payroll Details' }}</h3>
+                <p class="muted">{{ formatPayPeriod(selectedPayrollDetails.pay_period_start, selectedPayrollDetails.pay_period_end) }} · {{ selectedPayrollDetails.payroll_type === 'mid_month' ? 'Mid-Month' : 'End of Month' }}</p>
+              </div>
+              <button class="modal-close" @click="closePayrollDetails" aria-label="Close">✕</button>
+            </div>
+            <div class="positions-modal__body payroll-details-grid">
+              <div class="payroll-detail-group">
+                <h4>Attendance</h4>
+                <p><span>Days worked</span><strong>{{ selectedPayrollDetails.days_worked }}</strong></p>
+                <p><span>Late days</span><strong>{{ selectedPayrollDetails.days_late }}</strong></p>
+                <p><span>Overtime</span><strong>{{ selectedPayrollDetails.days_overtime }} days / {{ selectedPayrollDetails.total_overtime_hours }} hrs</strong></p>
+                <p><span>Total hours</span><strong>{{ selectedPayrollDetails.total_hours_worked }}</strong></p>
+              </div>
+              <div class="payroll-detail-group">
+                <h4>Salary Breakdown</h4>
+                <p><span>Daily rate</span><strong>₱{{ formatNumber(selectedPayrollDetails.daily_rate) }}</strong></p>
+                <p><span>Base salary</span><strong>₱{{ formatNumber(selectedPayrollDetails.base_salary) }}</strong></p>
+                <p><span>Overtime pay</span><strong>₱{{ formatNumber(selectedPayrollDetails.overtime_pay) }}</strong></p>
+                <p><span>Late deductions</span><strong>- ₱{{ formatNumber(selectedPayrollDetails.late_deductions) }}</strong></p>
+                <p class="payroll-detail-total"><span>Net salary</span><strong>₱{{ formatNumber(selectedPayrollDetails.net_salary) }}</strong></p>
+              </div>
+              <div class="payroll-detail-group payroll-detail-group--full">
+                <h4>Payment Record</h4>
+                <p><span>Status</span><strong>{{ formatPayrollStatus(selectedPayrollDetails.status) }}</strong></p>
+                <p><span>Pay date</span><strong>{{ formatDate(selectedPayrollDetails.pay_date) }}</strong></p>
+                <p><span>Confirmed at</span><strong>{{ selectedPayrollDetails.confirmed_at ? formatDate(selectedPayrollDetails.confirmed_at) : 'Not yet paid' }}</strong></p>
+                <p><span>Confirmed by</span><strong>{{ selectedPayrollDetails.confirmedBy?.full_name || 'Not yet paid' }}</strong></p>
+                <p><span>Proof</span><a v-if="selectedPayrollDetails.payment_proof_url" :href="selectedPayrollDetails.payment_proof_url" target="_blank" rel="noopener">Open payment proof</a><strong v-else>Not attached</strong></p>
+              </div>
+            </div>
+            <div class="positions-modal__footer">
+              <button class="btn-secondary" @click="closePayrollDetails">Close</button>
+            </div>
+          </div>
+        </div>
+      </transition>
+
+      <transition name="fade">
+        <div v-if="showMarkPaidModal" class="positions-modal-backdrop" @click.self="closeMarkPaidModal">
+          <div class="positions-modal">
+            <div class="positions-modal__header">
+              <div>
+                <h3>Mark Payroll as Paid</h3>
+                <p class="muted">Attach an image of the payment receipt or transfer confirmation.</p>
+              </div>
+              <button class="modal-close" @click="closeMarkPaidModal" aria-label="Close">✕</button>
+            </div>
+            <div class="positions-modal__body">
+              <div class="form-group">
+                <label class="field-label" for="payment-proof">Payment Proof</label>
+                <input id="payment-proof" class="field-input" type="file" accept="image/jpeg,image/png,image/webp" @change="handleProofChange" />
+                <small class="muted">Image files only, up to 5 MB.</small>
+              </div>
+            </div>
+            <div class="positions-modal__footer">
+              <button class="btn-secondary" @click="closeMarkPaidModal">Cancel</button>
+              <button class="btn-primary" @click="markAsPaid" :disabled="isMarkingPaid">
+                {{ isMarkingPaid ? 'Saving...' : 'Confirm Payment' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
 
       <!-- Payroll Generation Modal -->
       <transition name="fade">
@@ -1232,6 +1331,14 @@ const payrolls = ref([])
 const isLoadingPayroll = ref(false)
 const showPayrollModal = ref(false)
 const isGeneratingPayroll = ref(false)
+const showPayrollHistory = ref(false)
+const showMarkPaidModal = ref(false)
+const isMarkingPaid = ref(false)
+const selectedPayroll = ref(null)
+const paymentProof = ref(null)
+const showPayrollDetailsModal = ref(false)
+const selectedPayrollDetails = ref(null)
+const payrollHistoryFilters = ref({ userId: '', status: '' })
 const payrollForm = ref({
   period_start: '',
   period_end: '',
@@ -1250,11 +1357,31 @@ const userBranchName = computed(() => {
   return branch ? branch.name : 'Your Branch'
 })
 
+const filteredPayrolls = computed(() => payrolls.value.filter((payroll) => {
+  const matchesUser = !payrollHistoryFilters.value.userId || String(payroll.user_id) === payrollHistoryFilters.value.userId
+  const matchesStatus = !payrollHistoryFilters.value.status || payroll.status === payrollHistoryFilters.value.status
+  return matchesUser && matchesStatus
+}))
+
+const payrollHistoryUsers = computed(() => {
+  const users = new Map()
+  payrolls.value.forEach((payroll) => {
+    if (payroll.user_id && payroll.user?.full_name) users.set(payroll.user_id, payroll.user.full_name)
+  })
+  return Array.from(users, ([id, name]) => ({ id, name })).sort((first, second) => first.name.localeCompare(second.name))
+})
+
+const payrollHistorySummary = computed(() => ({
+  records: filteredPayrolls.value.length,
+  totalNet: filteredPayrolls.value.reduce((total, payroll) => total + Number(payroll.net_salary || 0), 0),
+  paid: filteredPayrolls.value.filter((payroll) => payroll.status === 'paid').length
+}))
+
 async function loadPayrolls() {
   isLoadingPayroll.value = true
   try {
     const res = await axios.get('/api/payroll', {
-      params: { period: 'active_cycles' },
+      params: { period: showPayrollHistory.value ? 'all' : 'active_cycles' },
       withCredentials: true
     })
     if (res.data && res.data.ok) {
@@ -1304,17 +1431,62 @@ async function generatePayroll() {
   }
 }
 
-async function markAsPaid(id) {
+function togglePayrollHistory() {
+  showPayrollHistory.value = !showPayrollHistory.value
+  loadPayrolls()
+}
+
+function openPayrollDetails(payroll) {
+  selectedPayrollDetails.value = payroll
+  showPayrollDetailsModal.value = true
+}
+
+function closePayrollDetails() {
+  showPayrollDetailsModal.value = false
+  selectedPayrollDetails.value = null
+}
+
+function openMarkPaidModal(payroll) {
+  selectedPayroll.value = payroll
+  paymentProof.value = null
+  showMarkPaidModal.value = true
+}
+
+function closeMarkPaidModal() {
+  showMarkPaidModal.value = false
+  selectedPayroll.value = null
+  paymentProof.value = null
+}
+
+function handleProofChange(event) {
+  paymentProof.value = event.target.files?.[0] || null
+}
+
+async function markAsPaid() {
+  if (!selectedPayroll.value || !paymentProof.value) {
+    alert('Please attach an image as payment proof')
+    return
+  }
+
+  const formData = new FormData()
+  formData.append('payment_proof', paymentProof.value)
+  isMarkingPaid.value = true
   try {
-    const res = await axios.post(`/api/payroll/${id}/mark-paid`, {}, { withCredentials: true })
+    const res = await axios.post(`/api/payroll/${selectedPayroll.value.id}/mark-paid`, formData, {
+      withCredentials: true,
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
     if (res.data && res.data.ok) {
       alert('Payroll marked as paid successfully')
+      closeMarkPaidModal()
       loadPayrolls()
     } else {
       alert(res.data.message || 'Failed to mark payroll as paid')
     }
   } catch (e) {
     alert(e.response?.data?.message || 'Failed to mark payroll as paid')
+  } finally {
+    isMarkingPaid.value = false
   }
 }
 
@@ -1358,7 +1530,6 @@ function formatPayPeriod(start, end) {
 function formatPayrollStatus(status) {
   const statusMap = {
     'pending': 'Pending',
-    'approved': 'Approved',
     'paid': 'Paid',
     'rejected': 'Rejected'
   }
@@ -1368,7 +1539,6 @@ function formatPayrollStatus(status) {
 function getPayrollStatusClass(status) {
   const classMap = {
     'pending': 'badge--warning',
-    'approved': 'badge--info',
     'paid': 'badge--success',
     'rejected': 'badge--danger'
   }
@@ -2024,6 +2194,104 @@ defineExpose({ refreshAllData, onProfileUpdated })
 
 .hr-payroll-actions .panel-action--primary:hover {
   background: #218838;
+}
+
+.payroll-history-tools {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(150px, 1.2fr) minmax(150px, 1.2fr);
+  gap: 0.75rem;
+  align-items: stretch;
+  margin-bottom: 1rem;
+}
+
+.payroll-history-stat {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.75rem 1rem;
+  background: #fffaf5;
+  border: 1px solid #f0e1d5;
+  border-radius: 8px;
+}
+
+.payroll-history-stat span {
+  color: #7a6b63;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.payroll-history-stat strong {
+  color: #333;
+  font-size: 1.05rem;
+}
+
+.payroll-history-filter {
+  align-self: center;
+  min-width: 0;
+}
+
+.payroll-details-modal {
+  max-width: 760px;
+}
+
+.payroll-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.payroll-detail-group {
+  padding: 1rem;
+  background: #fffaf5;
+  border: 1px solid #f0e1d5;
+  border-radius: 8px;
+}
+
+.payroll-detail-group--full {
+  grid-column: 1 / -1;
+}
+
+.payroll-detail-group h4 {
+  margin: 0 0 0.75rem;
+  color: #333;
+  font-size: 0.9rem;
+}
+
+.payroll-detail-group p {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0.5rem 0;
+  color: #6c757d;
+  font-size: 0.85rem;
+}
+
+.payroll-detail-group p strong,
+.payroll-detail-group p a {
+  color: #333;
+  text-align: right;
+}
+
+.payroll-detail-total {
+  padding-top: 0.6rem;
+  border-top: 1px solid #eadbd0;
+  font-size: 0.95rem !important;
+}
+
+@media (max-width: 900px) {
+  .payroll-history-tools {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .payroll-details-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .payroll-detail-group--full {
+    grid-column: auto;
+  }
 }
 
 .text-muted {

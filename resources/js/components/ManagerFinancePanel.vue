@@ -50,6 +50,55 @@
         </div>
       </header>
 
+      <section v-if="showFinanceNotifications" class="finance-notification-bar" aria-label="Panel notifications">
+        <div class="finance-notification-bar__title">
+          <span class="finance-notification-bar__bell" aria-hidden="true">!</span>
+          <strong>Notifications</strong>
+        </div>
+        <button
+          v-for="item in financeNotificationItems"
+          :key="item.key"
+          type="button"
+          class="finance-notification-chip"
+          @click="handleFinanceNotificationClick(item.key)"
+        >
+          <span>{{ item.label }}</span>
+          <strong>{{ item.count }}</strong>
+        </button>
+        <span v-if="financeNotificationItems.length === 0" class="finance-notification-bar__clear">All clear</span>
+        <button type="button" class="finance-notification-hide" @click="hideFinanceNotifications" aria-label="Hide notifications">
+          Hide
+        </button>
+      </section>
+      <button v-else type="button" class="finance-notification-show" @click="showFinanceNotifications = true" aria-label="Show notifications">
+        <span aria-hidden="true">!</span> Show notifications
+      </button>
+
+      <section v-if="activeNotificationPanel" class="finance-notification-drawer" aria-live="polite">
+        <div class="finance-notification-drawer__header">
+          <div>
+            <strong>{{ activeNotificationPanel === 'announcements' ? 'Announcements' : 'Updates' }}</strong>
+            <span>{{ activeNotificationPanel === 'announcements' ? 'Latest notices for your account' : 'Items that may need your attention' }}</span>
+          </div>
+          <button type="button" class="finance-notification-drawer__close" @click="activeNotificationPanel = ''" aria-label="Close notification details">Close</button>
+        </div>
+        <div v-if="activeNotificationPanel === 'announcements'" class="finance-notification-drawer__body">
+          <div v-if="announcementsLoading" class="finance-notification-drawer__empty">Loading announcements...</div>
+          <div v-else-if="announcements.length === 0" class="finance-notification-drawer__empty">No announcements found.</div>
+          <article v-for="announcement in announcements" :key="announcement.id" class="finance-notification-entry">
+            <strong>{{ announcement.title }}</strong>
+            <small>{{ formatNotificationDate(announcement.created_at) }}</small>
+            <p>{{ announcement.message }}</p>
+          </article>
+        </div>
+        <div v-else class="finance-notification-drawer__body finance-notification-drawer__updates">
+          <div v-for="update in financeUpdateItems" :key="update.label" class="finance-notification-entry finance-notification-entry--update">
+            <strong>{{ update.label }}</strong>
+            <span>{{ update.count }} pending</span>
+          </div>
+        </div>
+      </section>
+
       <main class="finance-dashboard-body">
         <section class="finance-feature-header">
           <div>
@@ -520,8 +569,37 @@ ChartJS.register(
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
 
 const refreshInterval = ref(null)
-const notificationCounts = ref({ finance: 0 })
+const notificationCounts = ref({
+  finance: 0,
+  admin: 0,
+  inventory: 0,
+  logistics: 0,
+  procurement: 0,
+})
+const financeNotificationSummary = ref({ approvals: 0, messages: 0, announcements: 0, updates: 0 })
+const showFinanceNotifications = ref(true)
+const activeNotificationPanel = ref('')
+const announcements = ref([])
+const announcementsLoading = ref(false)
 const hasNotified = ref(false)
+
+const financeNotificationItems = computed(() => [
+  { key: 'approvals', label: 'Pending approvals', count: financeNotificationSummary.value.approvals },
+  { key: 'messages', label: 'Messages', count: financeNotificationSummary.value.messages },
+  { key: 'announcements', label: 'Announcements', count: financeNotificationSummary.value.announcements },
+  { key: 'updates', label: 'Updates', count: financeNotificationSummary.value.updates },
+].filter(item => item.count > 0))
+
+const financeUpdateItems = computed(() => [
+  { label: 'Orders', count: Number(notificationCounts.value.admin || 0) },
+  { label: 'Inventory confirmations', count: Number(notificationCounts.value.inventory || 0) },
+  { label: 'Logistics', count: Number(notificationCounts.value.logistics || 0) },
+  { label: 'Procurement', count: Number(notificationCounts.value.procurement || 0) },
+].filter(item => item.count > 0))
+
+try {
+  showFinanceNotifications.value = localStorage.getItem('finance_notifications_hidden') !== 'true'
+} catch (e) {}
 
 // Logout state
 const showLogoutConfirm = ref(false)
@@ -744,11 +822,64 @@ async function loadPanelNotifications() {
   try {
     const res = await axios.get('/api/panel-notifications', { withCredentials: true })
     if (res.data && res.data.ok) {
-      notificationCounts.value = { finance: Number(res.data.counts?.finance || 0) }
+      notificationCounts.value = {
+        finance: Number(res.data.counts?.finance || 0),
+        admin: Number(res.data.counts?.admin || 0),
+        inventory: Number(res.data.counts?.inventory || 0),
+        logistics: Number(res.data.counts?.logistics || 0),
+        procurement: Number(res.data.counts?.procurement || 0),
+      }
+      financeNotificationSummary.value = {
+        approvals: Number(res.data.summary?.approvals || 0),
+        messages: Number(res.data.summary?.messages || 0),
+        announcements: Number(res.data.summary?.announcements || 0),
+        updates: Number(res.data.summary?.updates || 0),
+      }
     }
   } catch (e) {
-    notificationCounts.value = { finance: 0 }
+    notificationCounts.value = { finance: 0, admin: 0, inventory: 0, logistics: 0, procurement: 0 }
   }
+}
+
+function handleFinanceNotificationClick(key) {
+  if (key === 'approvals') {
+    selectedSection.value = 'approvals'
+    return
+  }
+  if (key === 'updates') {
+    activeNotificationPanel.value = 'updates'
+    return
+  }
+  if (key === 'messages') {
+    window.dispatchEvent(new CustomEvent('open-message-widget'))
+    return
+  }
+  if (key === 'announcements') {
+    activeNotificationPanel.value = 'announcements'
+    loadFinanceAnnouncements()
+  }
+}
+
+async function loadFinanceAnnouncements() {
+  announcementsLoading.value = true
+  try {
+    const res = await axios.get('/api/announcements', { withCredentials: true })
+    announcements.value = res.data?.announcements || []
+  } catch (e) {
+    announcements.value = []
+  } finally {
+    announcementsLoading.value = false
+  }
+}
+
+function formatNotificationDate(value) {
+  if (!value) return ''
+  return new Date(value).toLocaleString()
+}
+
+function hideFinanceNotifications() {
+  showFinanceNotifications.value = false
+  try { localStorage.setItem('finance_notifications_hidden', 'true') } catch (e) {}
 }
 
 // Handle profile update from layout
@@ -1252,6 +1383,7 @@ onMounted(() => {
     try {
       await refreshDashboard()
       await loadAttendanceStatus()
+      await loadPanelNotifications()
     } catch (e) {
       console.warn('Auto-refresh failed:', e)
     }

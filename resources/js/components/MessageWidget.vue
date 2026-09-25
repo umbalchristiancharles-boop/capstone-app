@@ -193,14 +193,20 @@ export default {
       await this.bootstrapAuthState()
       window.addEventListener('storage', this.onStorageChange)
       window.addEventListener('focus', this.onWindowFocus)
+      window.addEventListener('open-message-widget', this.openFromNotification)
   },
   beforeUnmount() {
       this.stopPolling()
       window.removeEventListener('storage', this.onStorageChange)
       window.removeEventListener('focus', this.onWindowFocus)
+      window.removeEventListener('open-message-widget', this.openFromNotification)
     },
 
   methods: {
+    openFromNotification() {
+      if (!this.visible) return
+      this.open = true
+    },
     async bootstrapAuthState(){
       let user = null
       try {

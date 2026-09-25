@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
 class PayrollController extends Controller
@@ -232,34 +233,10 @@ class PayrollController extends Controller
 
     public function approve(Request $request, $id)
     {
-        $user = Auth::user();
-        $userRole = strtoupper($user->role ?? '');
-        if (!$user || !in_array($userRole, ['HR', 'BRANCH_MANAGER', 'OWNER', 'ADMIN', 'SUPER_ADMIN', 'MANAGER_HR', 'MANAGER'])) {
-            return response()->json(['ok' => false, 'message' => 'Forbidden'], 403);
-        }
-
-        $payroll = Payroll::find($id);
-        if (!$payroll) {
-            return response()->json(['ok' => false, 'message' => 'Payroll not found'], 404);
-        }
-
-        if (in_array($userRole, ['HR', 'BRANCH_MANAGER', 'MANAGER_HR', 'MANAGER']) && $payroll->branch_id !== $user->branch_id) {
-            return response()->json(['ok' => false, 'message' => 'Forbidden'], 403);
-        }
-
-        if ($payroll->status !== 'pending') {
-            return response()->json(['ok' => false, 'message' => 'Payroll is not in pending status'], 400);
-        }
-
-        $payroll->status = 'approved';
-        $payroll->notes = $request->input('notes', $payroll->notes);
-        $payroll->save();
-
         return response()->json([
-            'ok' => true,
-            'message' => 'Payroll approved successfully',
-            'data' => $payroll
-        ]);
+            'ok' => false,
+            'message' => 'Payroll approval is no longer used. Attach payment proof to mark it as paid.'
+        ], 410);
     }
 
     public function markAsPaid(Request $request, $id)
@@ -275,14 +252,20 @@ class PayrollController extends Controller
             return response()->json(['ok' => false, 'message' => 'Payroll not found'], 404);
         }
 
-        if (!in_array($payroll->status, ['pending', 'approved'], true)) {
+        if ($payroll->status !== 'pending') {
             return response()->json(['ok' => false, 'message' => 'Payroll is not eligible to be marked as paid'], 400);
         }
+
+        $request->validate([
+            'payment_proof' => 'required|image|mimes:jpeg,png,jpg,webp|max:5120',
+            'finance_notes' => 'nullable|string|max:2000',
+        ]);
 
         $payroll->status = 'paid';
         $payroll->confirmed_by = $user->id;
         $payroll->confirmed_at = Carbon::now();
         $payroll->finance_notes = $request->input('finance_notes', $payroll->finance_notes);
+        $payroll->payment_proof_path = $request->file('payment_proof')->store('payroll-proofs', 'public');
         $payroll->save();
 
         return response()->json([
@@ -336,7 +319,6 @@ class PayrollController extends Controller
 
         $totalPayroll = $query->sum('net_salary');
         $pendingCount = $query->where('status', 'pending')->count();
-        $approvedCount = $query->where('status', 'approved')->count();
         $paidCount = $query->where('status', 'paid')->count();
         $totalStaff = $query->distinct('user_id')->count();
 
@@ -345,7 +327,6 @@ class PayrollController extends Controller
             'data' => [
                 'total_payroll' => $totalPayroll,
                 'pending_count' => $pendingCount,
-                'approved_count' => $approvedCount,
                 'paid_count' => $paidCount,
                 'total_staff' => $totalStaff,
             ]

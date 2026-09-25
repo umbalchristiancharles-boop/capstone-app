@@ -36,6 +36,7 @@ class Payroll extends Model
         'confirmed_by',
         'confirmed_at',
         'finance_notes',
+        'payment_proof_path',
     ];
 
     protected $casts = [
@@ -53,6 +54,15 @@ class Payroll extends Model
         'total_hours_worked' => 'decimal:2',
         'total_overtime_hours' => 'decimal:2',
     ];
+
+    protected $appends = ['payment_proof_url'];
+
+    public function getPaymentProofUrlAttribute(): ?string
+    {
+        return $this->payment_proof_path
+            ? asset('storage/' . $this->payment_proof_path)
+            : null;
+    }
 
     /**
      * Relationship: Payroll belongs to a User
@@ -82,14 +92,6 @@ class Payroll extends Model
     public function scopePending($query)
     {
         return $query->where('status', 'pending');
-    }
-
-    /**
-     * Scope for approved payrolls
-     */
-    public function scopeApproved($query)
-    {
-        return $query->where('status', 'approved');
     }
 
     /**
@@ -123,7 +125,6 @@ class Payroll extends Model
     {
         return match($this->status) {
             'pending' => 'badge--warning',
-            'approved' => 'badge--info',
             'paid' => 'badge--success',
             'rejected' => 'badge--danger',
             default => 'badge--info',

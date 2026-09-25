@@ -68,6 +68,25 @@
               </div>
             </div>
           </header>
+          <section class="panel-notification-bar" aria-label="Panel notifications">
+            <div class="panel-notification-bar__intro">
+              <span class="panel-notification-bar__dot" aria-hidden="true"></span>
+              <span>Notifications</span>
+            </div>
+            <button
+              v-for="item in notificationItems"
+              :key="item.key"
+              type="button"
+              class="panel-notification-item"
+              :class="`panel-notification-item--${item.tone}`"
+              @click="handleNotificationClick(item.key)"
+            >
+              <span class="panel-notification-item__icon" aria-hidden="true">{{ item.icon }}</span>
+              <span>{{ item.label }}</span>
+              <strong>{{ item.count }}</strong>
+            </button>
+            <span v-if="notificationItems.length === 0" class="panel-notification-bar__clear">All clear</span>
+          </section>
           <slot name="main"></slot>
         </main>
         <!-- RIGHT: SIDE PANELS -->
@@ -771,6 +790,38 @@ const isSavingProfile = ref(false)
 const profileError = ref('')
 const profileSuccess = ref('')
 
+const notificationSummary = ref({ approvals: 0, messages: 0, announcements: 0, updates: 0 })
+let notificationTimer = null
+
+const notificationItems = computed(() => [
+  { key: 'approvals', label: 'Pending approvals', icon: '!', tone: 'warning', count: notificationSummary.value.approvals },
+  { key: 'messages', label: 'Messages', icon: 'M', tone: 'info', count: notificationSummary.value.messages },
+  { key: 'announcements', label: 'Announcements', icon: 'A', tone: 'purple', count: notificationSummary.value.announcements },
+  { key: 'updates', label: 'Updates', icon: 'U', tone: 'success', count: notificationSummary.value.updates },
+].filter(item => item.count > 0))
+
+async function loadNotificationSummary() {
+  try {
+    const res = await axios.get('/api/panel-notifications', { withCredentials: true })
+    if (res.data?.ok && res.data.summary) {
+      notificationSummary.value = { ...notificationSummary.value, ...res.data.summary }
+    }
+  } catch (e) {
+    // Notifications are non-critical and should not interrupt the panel.
+  }
+}
+
+function handleNotificationClick(key) {
+  if (key === 'messages') {
+    window.dispatchEvent(new CustomEvent('open-message-widget'))
+    return
+  }
+
+  if (key === 'announcements') {
+    document.querySelector('.announcements-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+}
+
 // Announcements for the current user
 const announcements = ref([])
 const loadingAnnouncements = ref(false)
@@ -823,6 +874,8 @@ onMounted(() => {
     })()
 
     Promise.resolve(loadAnnouncements()).catch(() => {})
+    Promise.resolve(loadNotificationSummary()).catch(() => {})
+    notificationTimer = window.setInterval(loadNotificationSummary, 60000)
     // Load attendance status/settings for default side attendance card
     if (!hideAttendanceCard.value) {
       Promise.resolve(loadAttendanceStatus()).catch(() => {})
@@ -858,6 +911,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  if (notificationTimer) window.clearInterval(notificationTimer)
   try { window.removeEventListener('open-owner-edit-profile', openEditProfile) } catch (e) {}
   try { window.removeEventListener('open-owner-info', openInfoModal) } catch (e) {}
 })
@@ -1162,6 +1216,106 @@ async function onAvatarChange(event) {
   display: none;
 }
 .admin-main-header-top-inner p { margin: 0; color: #475569 }
+
+.panel-notification-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 48px;
+  margin: 0 0 1rem;
+  padding: 0.45rem 0.65rem;
+  overflow-x: auto;
+  border: 1px solid rgba(218, 190, 168, 0.48);
+  border-radius: 12px;
+  background: rgba(255, 252, 249, 0.92);
+  box-shadow: 0 5px 18px rgba(91, 59, 39, 0.06);
+  scrollbar-width: thin;
+}
+
+.panel-notification-bar__intro,
+.panel-notification-bar__clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 0 0 auto;
+  padding: 0 0.5rem;
+  color: #5b4637;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.panel-notification-bar__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ef7d32;
+  box-shadow: 0 0 0 3px rgba(239, 125, 50, 0.14);
+}
+
+.panel-notification-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 0 0 auto;
+  min-height: 30px;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #49372b;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.76rem;
+  font-weight: 650;
+  white-space: nowrap;
+  transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+.panel-notification-item:hover,
+.panel-notification-item:focus-visible {
+  border-color: rgba(239, 125, 50, 0.5);
+  outline: none;
+  box-shadow: 0 3px 10px rgba(91, 59, 39, 0.1);
+  transform: translateY(-1px);
+}
+
+.panel-notification-item strong {
+  min-width: 1.25rem;
+  padding: 0.08rem 0.3rem;
+  border-radius: 999px;
+  color: #fff;
+  background: #5b4637;
+  text-align: center;
+  font-size: 0.7rem;
+}
+
+.panel-notification-item__icon {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border-radius: 6px;
+  color: #fff;
+  background: #e58a46;
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.panel-notification-item--info .panel-notification-item__icon { background: #4d86a8; }
+.panel-notification-item--purple .panel-notification-item__icon { background: #8170a8; }
+.panel-notification-item--success .panel-notification-item__icon { background: #4f9270; }
+
+@media (max-width: 767px) {
+  .panel-notification-bar {
+    margin-bottom: 0.75rem;
+    border-radius: 10px;
+  }
+
+  .panel-notification-bar__intro {
+    padding-left: 0.25rem;
+  }
+}
 
 /* When a headerLeft slot is used, make it span full width so
   the title sits below the left content (e.g., back button). */
