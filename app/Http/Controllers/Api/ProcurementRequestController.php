@@ -793,7 +793,7 @@ public function requestedProducts(Request $request)
         $role = strtoupper($user->role ?? '');
         $dept = strtoupper($user->department ?? '');
         $allowed = false;
-        if (in_array($role, ['FINANCE_MANAGER', 'MANAGER_FINANCE']) || ($role === 'MANAGER' && $dept === 'FINANCE')) {
+        if (in_array($role, ['FINANCE_MANAGER', 'MANAGER_FINANCE', 'SUPER_ADMIN', 'SUPERADMIN']) || ($role === 'MANAGER' && $dept === 'FINANCE')) {
             $allowed = true;
         }
         // Allow CUSTOM accounts with finance module permission
@@ -820,8 +820,10 @@ public function requestedProducts(Request $request)
                 ->where('receipt_confirmed', false)
                 ->orderBy('receipt_uploaded_at', 'desc');
 
-            // Finance managers may want to filter by branch
-            if ($role !== 'SUPER_ADMIN' && $user->branch_id) {
+            // Finance managers use their assigned branch; Super Admin may select one.
+            if (in_array($role, ['SUPER_ADMIN', 'SUPERADMIN']) && $request->filled('branch_id')) {
+                $query->where('branch_id', $request->integer('branch_id'));
+            } elseif (!in_array($role, ['SUPER_ADMIN', 'SUPERADMIN']) && $user->branch_id) {
                 $query->where('branch_id', $user->branch_id);
             }
 

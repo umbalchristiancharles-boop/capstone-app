@@ -275,12 +275,18 @@ class ManagerFinanceController extends Controller
         }
 
         $branchId = $user->branch_id;
+        $userRole = strtoupper($user->role ?? '');
+        $requestedBranchId = $request->query('branch_id');
         $userBranch = $user->branch;
         $isMainBranchUser = $userBranch && strtoupper($userBranch->name ?? '') === 'MAIN BRANCH';
         
         // Main Branch user defaults to viewing ALL branches (no filter)
         if ($isMainBranchUser) {
             $branchId = null;
+        }
+
+        if ($requestedBranchId && in_array($userRole, ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN'])) {
+            $branchId = $requestedBranchId;
         }
 
         $transactionsQuery = Order::with(['items.product', 'branch', 'cashier'])

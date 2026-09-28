@@ -143,6 +143,8 @@ class StaffController extends Controller
             // If branch manager, HR, or ADMIN, only show their branch
             if (in_array($user->role, ['BRANCH_MANAGER', 'MANAGER', 'HR', 'ADMIN'])) {
                 $branchesQuery->where('branches.id', $user->branch_id);
+            } elseif (in_array(strtoupper($user->role ?? ''), ['SUPER_ADMIN', 'SUPERADMIN']) && $request->filled('branch_id')) {
+                $branchesQuery->where('branches.id', $request->integer('branch_id'));
             }
 
             $branches = $branchesQuery

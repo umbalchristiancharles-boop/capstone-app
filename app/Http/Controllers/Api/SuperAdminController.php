@@ -650,6 +650,7 @@ class SuperAdminController extends Controller
         $staff = User::where('role', '!=', 'SUPER_ADMIN')
             ->where('role', '!=', 'SUPERADMIN')
             ->whereNull('deleted_at')
+            ->when($request->filled('branch_id'), fn ($query) => $query->where('branch_id', $request->integer('branch_id')))
             ->with('branch')
             ->orderBy('full_name', 'asc')
             ->get()

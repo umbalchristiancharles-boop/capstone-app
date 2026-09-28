@@ -104,20 +104,21 @@ class BudgetRequestController extends Controller
     public function getMyRequests(Request $request)
     {
         $user = Auth::user();
+        $isSuperAdmin = $user && $user->is_active && in_array(strtoupper($user->role ?? ''), ['SUPER_ADMIN', 'SUPERADMIN']);
 
         // Allow Logistics and Procurement managers to create budget requests
         $dept = strtoupper($user->department ?? '');
-        if (!in_array($dept, ['LOGISTICS', 'PROCUREMENT']) || !$user->is_active || !in_array(strtoupper($user->role ?? ''), ['MANAGER','MANAGER_HR','BRANCH_MANAGER'])) {
+        if (!$isSuperAdmin && (!in_array($dept, ['LOGISTICS', 'PROCUREMENT']) || !$user->is_active || !in_array(strtoupper($user->role ?? ''), ['MANAGER','MANAGER_HR','BRANCH_MANAGER']))) {
             return response()->json([
                 'ok' => false,
                 'message' => 'Unauthorized'
             ], 401);
         }
 
-        $branchId = $user->branch_id;
+        $branchId = $isSuperAdmin ? $request->query('branch_id') : $user->branch_id;
 
         $requests = BudgetRequest::where('branch_id', $branchId)
-            ->where('user_id', $user->id)
+            ->when(!$isSuperAdmin, fn ($query) => $query->where('user_id', $user->id))
             ->with(['processor:id,full_name'])
             ->orderBy('created_at', 'desc')
             ->get()
@@ -216,8 +217,9 @@ class BudgetRequestController extends Controller
     public function getAllRequests(Request $request)
     {
         $user = Auth::user();
+        $isSuperAdmin = $user && $user->is_active && in_array(strtoupper($user->role ?? ''), ['SUPER_ADMIN', 'SUPERADMIN']);
 
-        if (!$this->isAuthorizedUser($user, 'finance')) {
+        if (!$this->isAuthorizedUser($user, 'finance') && !$isSuperAdmin) {
             return response()->json([
                 'ok' => false,
                 'message' => 'Unauthorized'
@@ -226,7 +228,14 @@ class BudgetRequestController extends Controller
 
         $branchId = $user->branch_id;
 
-        $requests = BudgetRequest::where('branch_id', $branchId)
+        $requestsQuery = BudgetRequest::query();
+        if ($isSuperAdmin && $request->filled('branch_id')) {
+            $requestsQuery->where('branch_id', $request->integer('branch_id'));
+        } elseif (!$isSuperAdmin) {
+            $requestsQuery->where('branch_id', $branchId);
+        }
+
+        $requests = $requestsQuery
             ->with(['user:id,full_name', 'processor:id,full_name'])
             ->orderBy('created_at', 'desc')
             ->get();

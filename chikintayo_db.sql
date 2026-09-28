@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Sep 25, 2026 at 07:08 PM
+-- Generation Time: Sep 28, 2026 at 09:39 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -143,9 +143,9 @@ CREATE TABLE `branches` (
 --
 
 INSERT INTO `branches` (`id`, `code`, `name`, `address`, `latitude`, `longitude`, `is_active`, `is_main_branch`, `approval_status`, `requested_by`, `finance_confirmed_by`, `finance_confirmed_at`, `approved_by`, `approved_at`, `rejected_at`, `budget`, `square_meters`, `geofencing_radius`, `permit_bills`, `construction_costs`, `equipment_costs`, `total_investment`, `default_password`, `default_password_updated_at`, `created_at`, `updated_at`) VALUES
-(31, 'BR743957', 'Dasma Branch', 'Dasma', NULL, NULL, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 35885, NULL, NULL, NULL, NULL, NULL, NULL, 'BDP20260926AA99D8', '2026-09-25 16:16:27', '2026-03-22 10:19:21', '2026-09-25 17:04:13'),
-(32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 404000, NULL, NULL, NULL, NULL, NULL, NULL, 'BDP20260926E889B5', '2026-09-25 16:16:27', '2026-03-25 06:56:11', '2026-09-25 16:16:27'),
-(54, 'BR981671', 'Kabankalan Branch', NULL, 9.93097681, 122.87109375, 0, 0, 'pending_owner', 159, 161, '2026-09-19 03:14:51', NULL, NULL, NULL, 100000, 50.00, 3.99, '[{\"type\":\"asd\",\"amount\":99996}]', '[{\"category\":\"asd\",\"amount\":100000}]', '[{\"name\":\"asd\",\"type\":\"asd\",\"quantity\":60,\"unit_cost\":99999}]', 6199936.00, 'BDP20260926C6122B', '2026-09-25 16:16:55', '2026-09-19 03:04:08', '2026-09-25 16:16:55');
+(31, 'BR743957', 'Dasma Branch', 'Dasma', NULL, NULL, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 35885, NULL, NULL, NULL, NULL, NULL, NULL, 'BDP20260928EB4B30', '2026-09-28 06:14:40', '2026-03-22 10:19:21', '2026-09-28 06:14:40'),
+(32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 404000, NULL, NULL, NULL, NULL, NULL, NULL, 'BDP20260928667598', '2026-09-28 06:14:40', '2026-03-25 06:56:11', '2026-09-28 06:14:40'),
+(54, 'BR981671', 'Kabankalan Branch', NULL, 9.93097681, 122.87109375, 0, 0, 'pending_owner', 159, 161, '2026-09-19 03:14:51', NULL, NULL, NULL, 100000, 50.00, 3.99, '[{\"type\":\"asd\",\"amount\":99996}]', '[{\"category\":\"asd\",\"amount\":100000}]', '[{\"name\":\"asd\",\"type\":\"asd\",\"quantity\":60,\"unit_cost\":99999}]', 6199936.00, 'BDP202609282E8065', '2026-09-28 06:14:40', '2026-09-19 03:04:08', '2026-09-28 06:14:40');
 
 -- --------------------------------------------------------
 
@@ -2317,7 +2317,9 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (3198, 'App\\Models\\User', 31, 'auth-token', 'a3a13c556aa937030a2f6c8e8d0ae4d0519a1695f8441a0ae478259013e29afe', '[\"*\"]', NULL, NULL, '2026-09-23 08:55:35', '2026-09-23 08:55:35'),
 (3206, 'App\\Models\\User', 151, 'auth-token', '9dd0f145b46465d5a30f69e6eaff561f6afff9898a46b023db8bcbc1f8bc3cb6', '[\"*\"]', NULL, NULL, '2026-09-23 08:59:10', '2026-09-23 08:59:10'),
 (3208, 'App\\Models\\User', 28, 'auth-token', '5efa285ca313cc7820ba0c6b77a22b6710f105c8db7ebd1866feec6928b86694', '[\"*\"]', NULL, NULL, '2026-09-25 16:16:22', '2026-09-25 16:16:22'),
-(3211, 'App\\Models\\User', 157, 'auth-token', '9d23a84fa8f7e32ff7187ce786ef44cc901f164d7906465b63bb2b276f966e53', '[\"*\"]', NULL, NULL, '2026-09-25 17:03:56', '2026-09-25 17:03:56');
+(3212, 'App\\Models\\User', 149, 'auth-token', '93a7cebddcd869fddaa6bac7d22bc1f392a9e0a8460a1913a804da37587b109f', '[\"*\"]', NULL, NULL, '2026-09-25 17:12:13', '2026-09-25 17:12:13'),
+(3213, 'App\\Models\\User', 28, 'auth-token', 'bbb8070299be5885bf843e1c2307888949b2463985d227ae8dc832bcb5d5835b', '[\"*\"]', NULL, NULL, '2026-09-28 06:14:33', '2026-09-28 06:14:33'),
+(3214, 'App\\Models\\User', 28, 'auth-token', '15ded002d36e15462652dc270805574a553e3a144aee264ee542128c86d182ad', '[\"*\"]', NULL, NULL, '2026-09-28 06:30:51', '2026-09-28 06:30:51');
 
 -- --------------------------------------------------------
 
@@ -2784,7 +2786,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('qmjcfGBSWEJ2cRmMQyN6P3VKYO8X6pMKqkj6BqOt', 157, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiOHgzdTNncXYxZmN0OTF2WkFra3lGUldYeDZYTDd3S2RzNE1ObGFybSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzM6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hZG1pbi1sb2dpbiI7czo1OiJyb3V0ZSI7czoxNjoiYWRtaW4ubG9naW4ucGFnZSI7fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE1NztzOjc6InVzZXJfaWQiO2k6MTU3O3M6OToidXNlcl9yb2xlIjtzOjU6IlNUQUZGIjtzOjk6InVzZXJfbmFtZSI7czoxNToiY2hyaXN0aWFuIFVtYmFsIjtzOjEzOiJyZWRpcmVjdF9wYXRoIjtzOjE0OiIvc3RhZmYva2l0Y2hlbiI7fQ==', 1790356098);
+('sgScJn5THrmjptiXPwooqF69e9YyaVHJ6UkZJQei', 28, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiblpUdXZNNXZEeEJuNElsSGJiQktIaWdMYU9QQWNOdzF2anhnN1dpMSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjI4O3M6NzoidXNlcl9pZCI7aToyODtzOjk6InVzZXJfcm9sZSI7czoxMToiU1VQRVJfQURNSU4iO3M6OToidXNlcl9uYW1lIjtzOjIwOiJTdXBlciBBZG1pbmlzdHJhdG9ycyI7czoxMzoicmVkaXJlY3RfcGF0aCI7czoyMjoiL3N1cGVyLWFkbWluL2Rhc2hib2FyZCI7fQ==', 1790581194),
+('uqijgY93KMVsVbf5unFhdckD5AwhjNddN4jpfRay', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.139.1 Chrome/150.0.7871.250 Electron/43.6.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoibXlpb00wa0NYbnZZUW1RMnRpTUt1VDJUaUxNblNFT3JrdUNFQm84OCI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czozOToiaHR0cDovL2xvY2FsaG9zdDo4MDAwL3N1cGVyLWFkbWluLXBhbmVsIjt9czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9sb2dpbiI7czo1OiJyb3V0ZSI7czo1OiJsb2dpbiI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1790580948);
 
 -- --------------------------------------------------------
 
@@ -3548,7 +3551,7 @@ ALTER TABLE `payrolls`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3212;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3215;
 
 --
 -- AUTO_INCREMENT for table `positions`

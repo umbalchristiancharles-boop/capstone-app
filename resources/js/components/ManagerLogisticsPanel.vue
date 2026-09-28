@@ -594,7 +594,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, watch, computed, nextTick } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, computed, nextTick, inject } from 'vue'
 import axios from 'axios'
 import { BrowserMultiFormatReader } from '@zxing/browser'
 import { BarcodeFormat, DecodeHintType } from '@zxing/library'
@@ -603,6 +603,8 @@ import { showToast } from './toastStore'
 
 // basic state
 const userProfile = ref({})
+const superAdminBranchId = inject('superAdminBranchId', null)
+const superAdminBranchScoped = inject('superAdminBranchScoped', false)
 const selectedSection = ref('overview')
 const dashboardTotals = ref({ totalProducts: 0, lowStock: 0, pendingRequests: 0 })
 const logisticsTopbarLabel = computed(() => {
@@ -618,7 +620,7 @@ const canRequestProcurement = ref(true)
 
 // Branch selector state (main-branch users can select branch)
 const branches = ref([])
-const selectedBranch = ref(null)
+const selectedBranch = ref(superAdminBranchScoped?.value ? (superAdminBranchId?.value || null) : null)
 const branchesLoading = ref(false)
 const branchesError = ref('')
 // announcements removed
@@ -973,7 +975,7 @@ async function fetchBranches() {
       // try to set from userProfile if available
       if (userProfile.value && userProfile.value.branch_id) {
         selectedBranch.value = userProfile.value.branch_id
-      } else if (branches.value.length > 0) {
+      } else if (!superAdminBranchScoped?.value && branches.value.length > 0) {
         selectedBranch.value = branches.value[0].id
       }
     }

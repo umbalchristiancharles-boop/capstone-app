@@ -18,8 +18,8 @@ class AttendanceController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-        // Allow OWNER, ADMIN, HR, or CUSTOM accounts with HR permissions/functions
-        if (! Permission::allowed($user, ['OWNER', 'ADMIN', 'HR'], ['hr'], ['hr.attendance'])) {
+        // Allow privileged users and HR-permissioned accounts to read attendance.
+        if (! Permission::allowed($user, ['OWNER', 'ADMIN', 'HR', 'SUPER_ADMIN', 'SUPERADMIN'], ['hr'], ['hr.attendance'])) {
             return response()->json(['ok' => false, 'message' => 'Forbidden'], 403);
         }
 

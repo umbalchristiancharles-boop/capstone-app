@@ -95,7 +95,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import Chart from 'chart.js/auto'
 
 const props = defineProps({
@@ -246,6 +246,7 @@ function renderChart() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      animation: false,
       interaction: {
         mode: 'index',
         intersect: false
@@ -308,10 +309,11 @@ onMounted(() => {
   renderChart()
 })
 
-onUnmounted(() => {
+onBeforeUnmount(() => {
   isDestroying = true
   if (chartInstance.value) {
     try {
+      chartInstance.value.stop()
       chartInstance.value.destroy()
     } catch (e) {
       // Ignore errors during cleanup

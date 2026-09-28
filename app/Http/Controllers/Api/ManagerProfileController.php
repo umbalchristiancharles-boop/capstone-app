@@ -344,14 +344,19 @@ class ManagerProfileController extends Controller
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
-        $isMainBranchHr = $this->isMainBranchHrManager($user);
-        $branchId = $user->branch_id;
+        $isSuperAdmin = in_array(strtoupper($user->role ?? ''), ['SUPER_ADMIN', 'SUPERADMIN']);
+        $isMainBranchHr = $this->isMainBranchHrManager($user) || $isSuperAdmin;
+        $branchId = $isSuperAdmin ? $request->query('branch_id') : $user->branch_id;
 
         if ($isMainBranchHr) {
-            $branches = Branch::orderBy('name', 'asc')->get(['id', 'name']);
+            $branches = Branch::query()
+                ->when($branchId, fn ($query) => $query->where('id', $branchId))
+                ->orderBy('name', 'asc')
+                ->get(['id', 'name']);
 
             $counts = User::whereNotIn('role', ['OWNER', 'SUPER_ADMIN'])
                 ->whereNull('deleted_at')
+                ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
                 ->select(
                     'branch_id',
                     DB::raw('COUNT(*) as total_staff'),
@@ -411,7 +416,8 @@ class ManagerProfileController extends Controller
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
-        $isMainBranchHr = $this->isMainBranchHrManager($user);
+        $isSuperAdmin = in_array(strtoupper($user->role ?? ''), ['SUPER_ADMIN', 'SUPERADMIN']);
+        $isMainBranchHr = $this->isMainBranchHrManager($user) || $isSuperAdmin;
         $range = $request->query('range', 'today');
 
         if ($isMainBranchHr) {
@@ -463,8 +469,9 @@ class ManagerProfileController extends Controller
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
-        $isMainBranchHr = $this->isMainBranchHrManager($user);
-        $branchId = $user->branch_id;
+        $isSuperAdmin = in_array(strtoupper($user->role ?? ''), ['SUPER_ADMIN', 'SUPERADMIN']);
+        $isMainBranchHr = $this->isMainBranchHrManager($user) || $isSuperAdmin;
+        $branchId = $isSuperAdmin ? $request->query('branch_id') : $user->branch_id;
 
         $branchNames = Branch::pluck('name', 'id');
 
@@ -472,7 +479,7 @@ class ManagerProfileController extends Controller
             ->whereNull('deleted_at')
             ->orderBy('full_name', 'asc');
 
-        if (!$isMainBranchHr) {
+        if (!$isMainBranchHr || $branchId) {
             $staffQuery->where('branch_id', $branchId);
         }
 
@@ -944,13 +951,16 @@ class ManagerProfileController extends Controller
                 return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
             }
 
-            $isMainBranchHr = $this->isMainBranchHrManager($user);
-            $branchId = $user->branch_id;
+            $isSuperAdmin = in_array(strtoupper($user->role ?? ''), ['SUPER_ADMIN', 'SUPERADMIN']);
+            $isMainBranchHr = $this->isMainBranchHrManager($user) || $isSuperAdmin;
+            $branchId = $isSuperAdmin
+                ? $request->query('branch_id')
+                : ($isMainBranchHr ? null : $user->branch_id);
 
             // Build query for attendance records with face images that need confirmation
             $query = Attendance::with(['user.branch', 'confirmedBy'])
                 ->whereHas('user', function ($q) use ($branchId, $isMainBranchHr) {
-                    if ($branchId && !$isMainBranchHr) {
+                    if ($branchId) {
                         $q->where('branch_id', $branchId);
                     }
                 })
@@ -1181,7 +1191,7 @@ public function logisticsBranches(Request $request)
         }
         Log::info('logisticsBranches PASSED auth check');
 
-        if ($this->isMainBranchLogisticsManager($user)) {
+        if ($this->isMainBranchLogisticsManager($user) || in_array(strtoupper($user->role ?? ''), ['SUPER_ADMIN', 'SUPERADMIN'])) {
             $branches = Branch::orderBy('name', 'asc')->get(['id', 'name']);
             return response()->json(['ok' => true, 'data' => $branches]);
         }
@@ -1261,9 +1271,12 @@ public function logisticsBranches(Request $request)
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
-        $branchId = $user->branch_id;
-        // Allow main-branch logistics manager to view suppliers for a selected branch
-        if ($this->isMainBranchLogisticsManager($user) && $request->filled('branch_id')) {
+        $isSuperAdmin = in_array(strtoupper($user->role ?? ''), ['SUPER_ADMIN', 'SUPERADMIN']);
+        $branchId = $isSuperAdmin && $request->filled('branch_id')
+            ? (int) $request->input('branch_id')
+            : $user->branch_id;
+        // Allow main-branch logistics managers to view suppliers for a selected branch.
+        if (!$isSuperAdmin && $this->isMainBranchLogisticsManager($user) && $request->filled('branch_id')) {
             $branchId = (int) $request->input('branch_id');
         }
         // Match supplier roles case-insensitively and include suppliers assigned to this branch
@@ -1309,8 +1322,11 @@ public function logisticsProducts(Request $request)
         }
         Log::info('logisticsProducts PASSED auth check');
 
+        $isSuperAdmin = in_array(strtoupper($user->role ?? ''), ['SUPER_ADMIN', 'SUPERADMIN']);
         $branchId = $user->branch_id;
-        if ($this->isMainBranchLogisticsManager($user) && $request->filled('branch_id')) {
+        if ($isSuperAdmin) {
+            $branchId = $request->filled('branch_id') ? (int) $request->input('branch_id') : null;
+        } elseif ($this->isMainBranchLogisticsManager($user) && $request->filled('branch_id')) {
             $branchId = (int) $request->input('branch_id');
         }
 
@@ -1318,11 +1334,12 @@ public function logisticsProducts(Request $request)
             return response()->json(['ok' => false, 'message' => 'Branch not found'], 404);
         }
 
-        if (!$branchId) {
+        if (!$branchId && !$isSuperAdmin) {
             return response()->json(['ok' => false, 'message' => 'Manager has no branch assigned'], 400);
         }
 
-        $products = Product::where('branch_id', $branchId)
+        $products = Product::query()
+            ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
             ->where('is_active', 1)
             ->with(['dishIngredients.dish'])
             ->select('id', 'name', 'slug', 'price', 'stock', 'sku', 'barcode', 'barcode_is_generated', 'branch_id', 'supplier_name', 'is_published', 'created_at', 'updated_at', 'is_kitchen_dish')
@@ -1432,7 +1449,7 @@ public function logisticsProducts(Request $request)
         $role = strtoupper($user->role ?? '');
 
         // Allow Super Admin to query any branch by passing `branch_id` param.
-        if ($role === 'SUPER_ADMIN') {
+        if (in_array($role, ['SUPER_ADMIN', 'SUPERADMIN'])) {
             $branchId = $request->query('branch_id') ?? 1;
         } else {
             if (!$this->allowManagerDept($user, 'procurement')) {
@@ -1472,7 +1489,10 @@ public function logisticsProducts(Request $request)
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
         }
 
-        $branchId = $user->branch_id;
+        $isSuperAdmin = in_array(strtoupper($user->role ?? ''), ['SUPER_ADMIN', 'SUPERADMIN']);
+        $branchId = $isSuperAdmin
+            ? $request->query('branch_id')
+            : $user->branch_id;
 
         Log::info('procurementProducts DEBUG', [
             'user_id' => $user->id,
@@ -2179,8 +2199,11 @@ public function logisticsInventory(Request $request)
     }
     Log::info('logisticsInventory PASSED auth check');
 
+    $isSuperAdmin = in_array(strtoupper($user->role ?? ''), ['SUPER_ADMIN', 'SUPERADMIN']);
     $branchId = $user->branch_id;
-    if ($this->isMainBranchLogisticsManager($user) && $request->filled('branch_id')) {
+    if ($isSuperAdmin) {
+        $branchId = $request->filled('branch_id') ? (int) $request->input('branch_id') : null;
+    } elseif ($this->isMainBranchLogisticsManager($user) && $request->filled('branch_id')) {
         $branchId = (int) $request->input('branch_id');
     }
 
@@ -2188,11 +2211,12 @@ public function logisticsInventory(Request $request)
         return response()->json(['ok' => false, 'message' => 'Branch not found'], 404);
     }
 
-    if (!$branchId) {
+    if (!$branchId && !$isSuperAdmin) {
         return response()->json(['ok' => false, 'message' => 'No branch assigned'], 400);
     }
 
-    $allProducts = Product::where('branch_id', $branchId)
+    $allProducts = Product::query()
+        ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
         ->where('is_active', 1)
         ->with(['dishIngredients.dish'])
         ->select('id', 'name', 'category', 'price', 'stock', 'min_stock', 'expires_at', 'sku', 'barcode', 'barcode_is_generated', 'branch_id', 'is_kitchen_dish')

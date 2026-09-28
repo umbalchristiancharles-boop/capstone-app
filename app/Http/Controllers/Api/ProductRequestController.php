@@ -432,24 +432,27 @@ class ProductRequestController extends Controller
         $role = strtoupper($user->role ?? '');
         $dept = strtoupper($user->department ?? '');
 
-        // Only logistics managers from main branch can approve
+        // Logistics managers and Super Admin can view pending logistics requests.
         $isLogistics = in_array($role, ['LOGISTICS_MANAGER', 'MANAGER_LOGISTICS']) || ($role === 'MANAGER' && $dept === 'LOGISTICS');
-        if (!$isLogistics) {
+        $isSuperAdmin = in_array($role, ['SUPER_ADMIN', 'SUPERADMIN']);
+        if (!$isLogistics && !$isSuperAdmin) {
             return response()->json(['error' => 'Unauthorized - logistics manager required'], 403);
         }
 
         // Check if user is from main branch
-        $isMainBranch = false;
-        try {
-            if ($user->branch_id) {
-                $branch = Branch::find($user->branch_id);
-                if ($branch) {
-                    $branchName = strtoupper(trim((string) ($branch->name ?? '')));
-                    $isMainBranch = ((int) $branch->id === 1) || str_contains($branchName, 'MAIN') || $branch->is_main_branch;
+        $isMainBranch = $isSuperAdmin;
+        if (!$isSuperAdmin) {
+            try {
+                if ($user->branch_id) {
+                    $branch = Branch::find($user->branch_id);
+                    if ($branch) {
+                        $branchName = strtoupper(trim((string) ($branch->name ?? '')));
+                        $isMainBranch = ((int) $branch->id === 1) || str_contains($branchName, 'MAIN') || $branch->is_main_branch;
+                    }
                 }
+            } catch (\Exception $e) {
+                $isMainBranch = false;
             }
-        } catch (\Exception $e) {
-            $isMainBranch = false;
         }
 
         if (!$isMainBranch) {
@@ -459,6 +462,7 @@ class ProductRequestController extends Controller
         $requests = ProductRequest::where('status', 'pending_logistics')
             ->with('requester', 'branch', 'product', 'procurementRequest.supplier')
             ->orderBy('created_at', 'asc')
+            ->when($isSuperAdmin && $request->filled('branch_id'), fn ($query) => $query->where('branch_id', $request->integer('branch_id')))
             ->paginate(20);
 
         $branchMarkups = PriceMarkupPercentage::whereIn(

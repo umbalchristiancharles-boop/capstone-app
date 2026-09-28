@@ -1,5 +1,5 @@
 ﻿<template>
-  <div class="min-h-screen owner-panel-light-mode bg-gradient-to-b from-[#FF9A4A] to-[#FF6A3D]" :class="{ 'owner-panel-layout--embedded': embedded }">
+  <div class="min-h-screen owner-panel-light-mode bg-gradient-to-b from-[#FF9A4A] to-[#FF6A3D]" :class="{ 'owner-panel-layout--embedded': isEmbedded }">
     <div class="admin-page" :class="[pageClass, { 'admin-page--wider': fullWidth }]">
       <section class="admin-layout" :class="{ 'admin-layout--wider': fullWidth, 'admin-layout--owner-two-column': ownerTwoColumnLayout, 'admin-layout--owner-sidebar-layout': showOwnerSidebar, 'owner-sidebar-collapsed': ownerSidebarCollapsed, 'owner-sidebar-resizing': ownerSidebarResizing, 'admin-layout--single-column': singleColumnLayout, 'admin-layout--fit-content': fitContent, 'no-profile-column': !showProfileColumn, 'kitchen-staff-container': pageClass === 'kitchen-staff-page' }" :style="{ '--owner-sidebar-width': `${ownerSidebarWidth}px` }">
         <header v-if="showOwnerTopbar" class="owner-panel-topbar">
@@ -374,7 +374,7 @@
 </template>
 
 <script setup>
-import { ref, watch, computed, onMounted, onUnmounted, useSlots } from 'vue'
+import { ref, watch, computed, onMounted, onUnmounted, useSlots, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import Toast from './Toast.vue'
@@ -383,8 +383,8 @@ const props = defineProps({
   embedded: { type: Boolean, default: false },
   userProfile: { type: Object, default: () => ({}) },
   panelEyebrow: { type: String, default: '' },
-  panelTitle: { type: String, required: true },
-  panelDescription: { type: String, required: true },
+  panelTitle: { type: String, default: '' },
+  panelDescription: { type: String, default: '' },
   fullWidth: { type: Boolean, default: false },
   ownerTwoColumnLayout: { type: Boolean, default: false },
   singleColumnLayout: { type: Boolean, default: false },
@@ -416,6 +416,9 @@ const props = defineProps({
   topbarLabel: { type: String, default: '' },
   accountInfoStyle: { type: String, default: 'default' }
 })
+
+const superAdminEmbedded = inject('superAdminEmbedded', false)
+const isEmbedded = computed(() => props.embedded || superAdminEmbedded)
 
 const emit = defineEmits(['logout', 'profile-updated', 'back'])
 const route = useRoute()
@@ -734,7 +737,7 @@ const persistThemeMode = () => {
 
 const loadThemeMode = () => {
   try {
-    if (!props.enableDarkMode) {
+    if (isEmbedded.value || !props.enableDarkMode) {
       theme.value = 'light'
       applyThemeMode()
       return
@@ -2098,18 +2101,47 @@ async function onAvatarChange(event) {
 }
 
 .owner-panel-layout--embedded .admin-layout {
-  display: block !important;
+  display: grid !important;
+  grid-template-columns: minmax(120px, 156px) minmax(0, 1fr) !important;
+  grid-template-rows: minmax(0, 1fr) !important;
+  align-items: start;
   min-height: 0 !important;
   height: auto !important;
   gap: 0 !important;
   overflow: visible !important;
 }
 
+.owner-panel-layout--embedded .admin-layout--owner-sidebar-layout {
+  grid-template-columns: minmax(120px, 156px) minmax(0, 1fr) !important;
+}
+
 .owner-panel-layout--embedded .admin-main {
   display: block !important;
+  grid-column: 2 !important;
+  grid-row: 1 !important;
   min-height: 0 !important;
   height: auto !important;
   overflow: visible !important;
+}
+
+.owner-panel-layout--embedded .owner-panel-sidebar {
+  position: relative !important;
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  display: flex !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: calc(100vh - 100px) !important;
+  height: auto !important;
+  padding: 1rem 0.6rem !important;
+  transform: none !important;
+  opacity: 1 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+
+.owner-panel-layout--embedded .owner-panel-topbar {
+  display: none !important;
 }
 
 :deep(.owner-panel-layout--embedded .back-to-dashboard-btn) {

@@ -1,16 +1,21 @@
 <template>
   <div class="super-admin-shell" :class="{ 'sidebar-collapsed': sidebarCollapsed, 'super-admin-sidebar-resizing': sidebarResizing }" :style="{ '--super-admin-sidebar-width': `${sidebarWidth}px` }">
     <aside class="super-admin-sidebar" :aria-hidden="sidebarCollapsed" :style="{ width: `${sidebarWidth}px` }">
-      <nav class="super-admin-sidebar__nav" aria-label="Super Admin modules">
-        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'staff' }" @click="openModule('staff')">Staff Management</button>
-        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'hr' }" @click="openModule('hr')">HR Staff Management</button>
-        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'kitchen' }" @click="openModule('kitchen')">Kitchen Staff Monitoring</button>
-        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'finance' }" @click="openModule('finance')">Finance</button>
-        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'cashier' }" @click="openModule('cashier')">Cashier</button>
-        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'logistics' }" @click="openModule('logistics')">Logistics</button>
-        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'supplier' }" @click="openModule('supplier')">Supplier Management</button>
-        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'procurement' }" @click="openModule('procurement')">Procurement</button>
-        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'branches' }" @click="openModule('branches')">Owner Add Branches</button>
+      <nav class="super-admin-sidebar__nav" aria-label="Website panels">
+        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'mainBranchAdmin' }" @click="openModule('mainBranchAdmin')">Admin Main Branch</button>
+        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'mainBranchLogistics' }" @click="openModule('mainBranchLogistics')">Logistics Main Branch</button>
+        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'mainBranchHr' }" @click="openModule('mainBranchHr')">HR Main Branch</button>
+        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'mainBranchFinance' }" @click="openModule('mainBranchFinance')">Finance Manager Main Branch</button>
+        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'owner' }" @click="openModule('owner')">Owner Panel</button>
+        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'admin' }" @click="openModule('admin')">Admin Panel</button>
+        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'logisticsManager' }" @click="openModule('logisticsManager')">Logistics Manager</button>
+        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'procurementManager' }" @click="openModule('procurementManager')">Procurement Manager</button>
+        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'hrManager' }" @click="openModule('hrManager')">HR Manager</button>
+        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'financeManager' }" @click="openModule('financeManager')">Finance Manager</button>
+        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'kitchenStaff' }" @click="openModule('kitchenStaff')">Kitchen Staff</button>
+        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'cashierStaff' }" @click="openModule('cashierStaff')">Cashier Staff</button>
+        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'inventoryStaff' }" @click="openModule('inventoryStaff')">Inventory Staff</button>
+        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'supplier' }" @click="openModule('supplier')">Supplier Panel</button>
       </nav>
 
       <div class="super-admin-sidebar__footer">
@@ -32,6 +37,13 @@
       <header class="super-admin-topbar">
         <button class="super-admin-hamburger" :aria-label="sidebarCollapsed ? 'Show menu' : 'Hide menu'" @click="sidebarCollapsed = !sidebarCollapsed">☰</button>
         <div class="super-admin-topbar__spacer"></div>
+        <label v-if="showBranchSelector" class="super-admin-branch-filter">
+          <span>Branch</span>
+          <select v-model="selectedBranchId" aria-label="Filter panel by branch">
+            <option v-if="availableBranches.length === 0" value="" disabled>Loading branches...</option>
+            <option v-for="branch in availableBranches" :key="branch.id" :value="String(branch.id)">{{ branch.name }}</option>
+          </select>
+        </label>
         <div class="super-admin-user-pill">
           <span class="super-admin-user-pill__avatar">{{ userInitial }}</span>
           <span>{{ superAdminProfile.fullName || 'Super Admin' }}</span>
@@ -130,8 +142,11 @@
       </section>
 
       <section v-else class="super-admin-module-view">
-        <button type="button" class="super-admin-module-back" @click="activeModule = 'dashboard'">Back to Dashboard</button>
-        <component :is="activeModuleComponent" />
+        <component
+          :is="activeModuleComponent"
+          :is-super-admin="activeModule === 'inventoryStaff'"
+          :key="`${activeModule}:${selectedBranchId}`"
+        />
       </section>
 
       <!-- ANNOUNCEMENT MODAL -->
@@ -303,7 +318,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, watch, defineAsyncComponent } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, defineAsyncComponent, provide } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import '../css/adminpanel.css'
@@ -335,20 +350,42 @@ const showAnnouncement = ref(false)
 const showTerms = ref(false)
 const isLoggingOut = ref(false)
 const sidebarCollapsed = ref(false)
-const sidebarWidth = ref(156)
+const sidebarWidth = ref(220)
 const sidebarResizing = ref(false)
 const activeModule = ref('dashboard')
+const selectedBranchId = ref('')
+const availableBranches = ref([])
+const branchScopedModules = new Set(['admin', 'logisticsManager', 'procurementManager', 'hrManager', 'financeManager', 'kitchenStaff', 'cashierStaff', 'inventoryStaff', 'supplier'])
+const showBranchSelector = computed(() => branchScopedModules.has(activeModule.value))
+provide('superAdminEmbedded', true)
+provide('superAdminBranchId', selectedBranchId)
+provide('superAdminBranchScoped', showBranchSelector)
+
+const branchRequestInterceptor = axios.interceptors.request.use((config) => {
+  const method = String(config.method || 'get').toLowerCase()
+  if (!showBranchSelector.value || method !== 'get' || !selectedBranchId.value || !String(config.url || '').startsWith('/api/')) {
+    return config
+  }
+
+  config.params = { ...(config.params || {}), branch_id: selectedBranchId.value }
+  return config
+})
 
 const moduleComponents = {
-  staff: defineAsyncComponent(() => import('./SuperAdminStaffManagement.vue')),
-  hr: defineAsyncComponent(() => import('./HRStaffManagement.vue')),
-  kitchen: defineAsyncComponent(() => import('./SuperAdminKitchenStaff.vue')),
-  finance: defineAsyncComponent(() => import('./SuperAdminFinance.vue')),
-  cashier: defineAsyncComponent(() => import('./Cashier.vue')),
-  logistics: defineAsyncComponent(() => import('./SuperAdminLogisticsPanel.vue')),
+  mainBranchAdmin: defineAsyncComponent(() => import('./MainBranchAdminPanel.vue')),
+  mainBranchLogistics: defineAsyncComponent(() => import('./MainBranchLogisticsPanel.vue')),
+  mainBranchHr: defineAsyncComponent(() => import('./MainBranchHrPanel.vue')),
+  mainBranchFinance: defineAsyncComponent(() => import('./MainBranchFinancePanel.vue')),
+  owner: defineAsyncComponent(() => import('./OwnerPanel.vue')),
+  admin: defineAsyncComponent(() => import('./adminpanel.vue')),
+  logisticsManager: defineAsyncComponent(() => import('./ManagerLogisticsPanel.vue')),
+  procurementManager: defineAsyncComponent(() => import('./ProcurementManagerPanel.vue')),
+  hrManager: defineAsyncComponent(() => import('./ManagerHRPanel.vue')),
+  financeManager: defineAsyncComponent(() => import('./ManagerFinancePanel.vue')),
+  kitchenStaff: defineAsyncComponent(() => import('./SuperAdminKitchenStaff.vue')),
+  cashierStaff: defineAsyncComponent(() => import('./Cashier.vue')),
+  inventoryStaff: defineAsyncComponent(() => import('./inventory/InventoryStaffPanel.vue')),
   supplier: defineAsyncComponent(() => import('./SuperAdminSupplier.vue')),
-  procurement: defineAsyncComponent(() => import('./SuperAdminProcurement.vue')),
-  branches: defineAsyncComponent(() => import('./OwnerAddBranches.vue')),
 }
 
 const activeModuleComponent = computed(() => moduleComponents[activeModule.value] || null)
@@ -363,7 +400,7 @@ function startSidebarResize(event) {
   const startWidth = sidebarWidth.value
 
   const resize = (moveEvent) => {
-    sidebarWidth.value = Math.min(320, Math.max(120, startWidth + moveEvent.clientX - startX))
+    sidebarWidth.value = Math.min(360, Math.max(200, startWidth + moveEvent.clientX - startX))
   }
 
   const stopResize = () => {
@@ -750,15 +787,29 @@ onMounted(async () => {
   startLightModeGuard()
   isInitialMount.value = false
   superAdminProfile.value = { fullName: '', role: 'SUPER_ADMIN', email: '', contact: '', accountId: '', avatarUrl: '' }
-  await loadProfile()
+  await Promise.all([loadProfile(), loadAvailableBranches()])
   await loadDashboard(activeRange.value)
   await loadPanelNotifications()
 })
 
 onBeforeUnmount(() => {
+  axios.interceptors.request.eject(branchRequestInterceptor)
   lightModeObserver?.disconnect()
   lightModeObserver = null
 })
+
+async function loadAvailableBranches() {
+  try {
+    const response = await axios.get('/api/superadmin/branches', { withCredentials: true })
+    availableBranches.value = response.data?.branches || response.data?.data || response.data || []
+    if (!selectedBranchId.value && availableBranches.value.length) {
+      selectedBranchId.value = String(availableBranches.value[0].id)
+    }
+  } catch (error) {
+    console.error('Failed to load branch selector options:', error)
+    availableBranches.value = []
+  }
+}
 
 // Reload dashboard whenever we navigate to this route so external changes (like added branches)
 // are reflected immediately without requiring a manual refresh.
@@ -866,11 +917,14 @@ watch(() => route.path, (p) => {
   box-sizing: border-box;
   min-width: 0;
   min-height: 40px;
+  flex: 0 0 auto;
   padding: 0.65rem 0.55rem;
   border-radius: 10px;
   font-size: 0.76rem;
   font-weight: 700;
   line-height: 1.25;
+  white-space: normal;
+  overflow-wrap: anywhere;
   cursor: pointer;
 }
 
@@ -946,6 +1000,27 @@ watch(() => route.path, (p) => {
 
 .super-admin-topbar__spacer { flex: 1; }
 
+.super-admin-branch-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #5b4638;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.super-admin-branch-filter select {
+  width: min(220px, 30vw);
+  min-width: 150px;
+  height: 36px;
+  padding: 0 0.6rem;
+  border: 1px solid #d8c8bc;
+  border-radius: 8px;
+  background: #fffaf6;
+  color: #3d2a1f;
+  font: inherit;
+}
+
 .super-admin-user-pill {
   display: inline-flex;
   align-items: center;
@@ -988,6 +1063,122 @@ watch(() => route.path, (p) => {
   box-sizing: border-box;
   overflow-x: hidden;
   background: #f1e5dc;
+}
+
+.super-admin-module-view :deep(.logistics-topbar),
+.super-admin-module-view :deep(.admin-topbar) {
+  display: none !important;
+}
+
+.super-admin-module-view :deep(.admin-layout--owner-sidebar-layout) {
+  display: grid !important;
+  grid-template-columns: minmax(120px, 156px) minmax(0, 1fr) !important;
+  grid-template-rows: minmax(0, 1fr) !important;
+  align-items: start;
+  min-height: 0 !important;
+  padding: 0 !important;
+}
+
+.super-admin-module-view :deep(.owner-panel-layout--embedded .owner-panel-sidebar) {
+  position: relative !important;
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  display: flex !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: calc(100vh - 100px) !important;
+  height: auto !important;
+  transform: none !important;
+  opacity: 1 !important;
+}
+
+.super-admin-module-view :deep(.owner-panel-layout--embedded .admin-main) {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 1rem !important;
+}
+
+.super-admin-module-view :deep(.main-branch-page) {
+  display: grid !important;
+  grid-template-columns: minmax(120px, 156px) minmax(0, 1fr) !important;
+  gap: 0 !important;
+  min-height: calc(100vh - 100px) !important;
+  padding: 0 !important;
+}
+
+.super-admin-module-view :deep(.main-branch-page .logistics-sidebar) {
+  position: relative !important;
+  inset: auto !important;
+  display: flex !important;
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  width: 100% !important;
+  min-height: calc(100vh - 100px) !important;
+  transform: none !important;
+  opacity: 1 !important;
+}
+
+.super-admin-module-view :deep(.main-branch-page .logistics-workspace) {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  width: 100% !important;
+  margin-left: 0 !important;
+  padding-top: 0 !important;
+}
+
+.super-admin-module-view :deep(.admin-panel-shell .admin-layout) {
+  display: grid !important;
+  grid-template-columns: 156px minmax(0, 1fr) !important;
+  grid-template-rows: auto auto !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+}
+
+.super-admin-module-view :deep(.admin-panel-shell .admin-sidebar) {
+  position: relative !important;
+  grid-column: 1 !important;
+  grid-row: 1 / -1 !important;
+  display: flex !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: calc(100vh - 100px) !important;
+  max-height: none !important;
+}
+
+.super-admin-module-view :deep(.admin-panel-shell .admin-main) {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 1rem !important;
+}
+
+.super-admin-module-view :deep(.admin-panel-shell .admin-side) {
+  grid-column: 2 !important;
+  grid-row: 2 !important;
+  display: block !important;
+  width: 100% !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+}
+
+.super-admin-module-view :deep(.manager-procurement-panel .admin-main-header-top > div:nth-child(2)) {
+  transform: none !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .admin-main) {
+  margin-top: 0 !important;
+}
+
+.super-admin-module-view :deep(.manager-finance .filter-bar .filter-group:first-child),
+.super-admin-module-view :deep(.cashier-page .branch-filter),
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .branch-selector-section),
+.super-admin-module-view :deep(.staff-management-page .filter-select),
+.super-admin-module-view :deep(.admin-panel-shell #admin-attendance .panel-header select) {
+  display: none !important;
 }
 
 .super-admin-module-view > :deep(*) {
@@ -1073,7 +1264,7 @@ watch(() => route.path, (p) => {
 .sidebar-collapsed .super-admin-topbar { left: 0; }
 
 @media (max-width: 900px) {
-  .super-admin-shell { --super-admin-sidebar-width: 156px; }
+  .super-admin-shell { --super-admin-sidebar-width: 200px; }
   .super-admin-sidebar { width: var(--super-admin-sidebar-width); }
   .super-admin-main-panel { margin-left: var(--super-admin-sidebar-width); }
   .super-admin-topbar { left: var(--super-admin-sidebar-width); }
@@ -1081,7 +1272,7 @@ watch(() => route.path, (p) => {
 }
 
 @media (max-width: 640px) {
-  .super-admin-shell { --super-admin-sidebar-width: 156px; }
+  .super-admin-shell { --super-admin-sidebar-width: 200px; }
   .super-admin-sidebar { width: var(--super-admin-sidebar-width); }
   .super-admin-main-panel { margin-left: 0; }
   .super-admin-topbar { left: 0; }
@@ -1089,6 +1280,9 @@ watch(() => route.path, (p) => {
   .super-admin-main-panel > .admin-page { padding-top: 66px; }
   .super-admin-main-panel :deep(.admin-layout) { padding: 0.75rem; }
   .super-admin-dashboard-side { grid-template-columns: 1fr; }
+  .super-admin-branch-filter { gap: 0.25rem; }
+  .super-admin-branch-filter span { display: none; }
+  .super-admin-branch-filter select { width: min(180px, 42vw); min-width: 120px; }
 }
 
 .primary-action-btn {

@@ -111,6 +111,10 @@ class StaffInventoryController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
         $branchId = $user->branch_id;
+        $roleUpper = strtoupper($user->role ?? '');
+        if (in_array($roleUpper, ['SUPER_ADMIN', 'SUPERADMIN']) && $request->filled('branch_id')) {
+            $branchId = (int) $request->input('branch_id');
+        }
 
         $query = Product::where('branch_id', $branchId)
             ->where('is_active', 1)
@@ -123,7 +127,6 @@ class StaffInventoryController extends Controller
         // Allow callers to request unpublished products as well (useful for internal staff views)
         // Branch ADMIN/OWNER/SUPER_ADMIN should be able to see unpublished products by default
         $includeUnpublished = $request->boolean('include_unpublished', false);
-        $roleUpper = strtoupper($user->role ?? '');
         if (in_array($roleUpper, ['ADMIN', 'OWNER', 'SUPER_ADMIN', 'SUPERADMIN'])) {
             $includeUnpublished = true;
         }

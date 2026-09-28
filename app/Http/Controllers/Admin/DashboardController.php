@@ -80,9 +80,14 @@ class DashboardController extends Controller
     {
         $range = $request->get('range', 'today');
         $dates = $this->getDateRange($range);
+        $user = $request->user();
+        $isSuperAdmin = in_array(strtoupper($user->role ?? ''), ['SUPER_ADMIN', 'SUPERADMIN']);
+        $branchId = $isSuperAdmin && $request->filled('branch_id') ? (int) $request->query('branch_id') : null;
 
         // Count branches (active only)
-        $branchesCount = Branch::where('is_active', 1)->count();
+        $branchesCount = Branch::where('is_active', 1)
+            ->when($branchId, fn ($query) => $query->where('id', $branchId))
+            ->count();
 
         // Get all branches for reference
         $branches = Branch::where('is_active', 1)->get(['id', 'name', 'code']);
@@ -91,10 +96,12 @@ class DashboardController extends Controller
         $employeeRoles = ['STAFF', 'BRANCH_MANAGER', 'HR'];
         $staffCount = User::whereIn('role', $employeeRoles)
             ->where('is_active', 1)
+            ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
             ->count();
 
         // Orders with date range filter
-        $ordersQuery = Order::whereBetween('ordered_at', [$dates['start'], $dates['end']]);
+        $ordersQuery = Order::whereBetween('ordered_at', [$dates['start'], $dates['end']])
+            ->when($branchId, fn ($query) => $query->where('branch_id', $branchId));
         $ordersCount = $ordersQuery->count();
 
         // Completed orders
@@ -130,6 +137,7 @@ class DashboardController extends Controller
         // Production Queue
         $productionQueue = Order::whereIn('status', ['pending', 'in_kitchen', 'ready'])
             ->whereBetween('ordered_at', [$dates['start'], $dates['end']])
+            ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
             ->orderBy('ordered_at', 'asc')
             ->limit(10)
             ->get()
@@ -150,7 +158,9 @@ class DashboardController extends Controller
             });
 
         // Top Products
-        $topProducts = Product::orderBy('stock', 'asc')
+        $topProducts = Product::query()
+            ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
+            ->orderBy('stock', 'asc')
             ->limit(5)
             ->get(['id', 'name', 'stock', 'branch_id'])
             ->map(function ($product, $index) {
@@ -165,6 +175,7 @@ class DashboardController extends Controller
         // Low Stock Items
         $lowStockItems = Product::where('stock', '<', 10)
             ->where('stock', '>', 0)
+            ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
             ->limit(10)
             ->get(['id', 'name', 'stock', 'branch_id'])
             ->map(function ($product) use ($branches) {
@@ -180,6 +191,7 @@ class DashboardController extends Controller
         // Staff Activity
         $recentActivity = User::whereIn('role', $employeeRoles)
             ->where('is_active', 1)
+            ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
             ->latest('updated_at')
             ->limit(10)
             ->get(['id', 'full_name', 'role', 'updated_at', 'branch_id'])

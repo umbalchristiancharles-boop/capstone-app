@@ -527,7 +527,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, onUnmounted, watch } from 'vue'
+import { ref, onMounted, computed, onUnmounted, watch, inject } from 'vue'
 import FinancePanelContent from './finance/FinancePanelContent.vue'
 import PriceMarkupManagerPanel from './finance/PriceMarkupManagerPanel.vue'
 import MainBranchFinanceBranchConfirmations from './MainBranchFinanceBranchConfirmations.vue'
@@ -780,7 +780,9 @@ const getSectionTitle = computed(() => {
 
 // UI filter state (used by new layout controls)
 const selectedRange = ref('all')
-const selectedBranchId = ref('')
+const superAdminBranchId = inject('superAdminBranchId', null)
+const superAdminBranchScoped = inject('superAdminBranchScoped', false)
+const selectedBranchId = ref(superAdminBranchScoped?.value ? String(superAdminBranchId?.value || '') : '')
 const customStartDate = ref('')
 const customEndDate = ref('')
 const today = computed(() => {

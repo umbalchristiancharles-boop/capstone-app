@@ -35,6 +35,26 @@
           <h2 class="section-title">Supplier Management</h2>
           <p class="section-description">View suppliers and supplier activity for the selected branch.</p>
 
+          <section class="supplier-directory-section">
+            <h3>Suppliers</h3>
+            <div v-if="suppliers.length === 0" class="empty-message">No suppliers found for this branch.</div>
+            <div v-else class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr><th>Supplier</th><th>Username</th><th>Contact</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                  <tr v-for="supplier in suppliers" :key="supplier.id">
+                    <td>{{ supplier.name || supplier.full_name || '-' }}</td>
+                    <td>{{ supplier.username || '-' }}</td>
+                    <td>{{ supplier.email || supplier.phone || supplier.phone_number || '-' }}</td>
+                    <td>{{ supplier.data_status || (supplier.is_active ? 'Active' : 'Inactive') }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
           <!-- stats grid removed as requested -->
           <!-- Orders table (read-only monitoring) -->
           <div class="panel-section" style="padding:0">

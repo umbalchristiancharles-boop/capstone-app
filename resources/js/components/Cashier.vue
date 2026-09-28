@@ -241,17 +241,19 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 
 const router = useRouter()
+const superAdminBranchId = inject('superAdminBranchId', null)
+const superAdminBranchScoped = inject('superAdminBranchScoped', false)
 const cashierSidebarCollapsed = ref(false)
 const activeCashierSection = ref('products')
 
 // State
 const branches = ref([])
-const selectedBranch = ref('')
+const selectedBranch = ref(superAdminBranchScoped?.value ? String(superAdminBranchId?.value || '') : '')
 const products = ref([])
 const productSearch = ref('')
 const isLoadingProducts = ref(false)
@@ -407,6 +409,8 @@ async function loadBranches() {
     if (!selectedBranch.value && branches.value.length > 0) {
       selectedBranch.value = String(branches.value[0].id)
       // trigger initial load for products/transactions
+      await loadProducts()
+    } else if (selectedBranch.value) {
       await loadProducts()
     }
   } catch (e) {

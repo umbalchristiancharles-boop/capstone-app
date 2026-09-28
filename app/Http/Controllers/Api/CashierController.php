@@ -252,11 +252,12 @@ class CashierController extends Controller
     public function products(Request $request)
     {
         $user = $request->user();
+        $role = strtoupper($user->role ?? '');
 
         // Determine branch_id - use authenticated user's branch, or allow OWNER/SUPER_ADMIN to view all
         $branchId = null;
 
-        if ($user && in_array($user->role, ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN'])) {
+        if ($user && in_array($role, ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN'])) {
             // Owners and super admins can view all branches if they specify one
             $branchId = $request->filled('branch_id') ? $request->branch_id : null;
         } elseif ($user && $user->branch_id) {
@@ -809,7 +810,7 @@ class CashierController extends Controller
             }
 
             // Allow OWNER / SUPER_ADMIN to refund any order; otherwise only the cashier who created it
-            if (!in_array($user->role, ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN']) && $order->cashier_id !== $user->id) {
+            if (!in_array(strtoupper($user->role ?? ''), ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN']) && $order->cashier_id !== $user->id) {
                 return response()->json(['error' => 'Not authorized to refund this order.'], 403);
             }
 
@@ -844,11 +845,12 @@ class CashierController extends Controller
     public function transactions(Request $request)
     {
         $user = $request->user();
+        $role = strtoupper($user->role ?? '');
 
         // Determine branch_id - use authenticated user's branch, or allow OWNER/SUPER_ADMIN to view all
         $branchId = null;
 
-        if ($user && in_array($user->role, ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN'])) {
+        if ($user && in_array($role, ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN'])) {
             // Owners and super admins can view all branches if they specify one
             $branchId = $request->filled('branch_id') ? $request->branch_id : null;
         } elseif ($user && $user->branch_id) {
