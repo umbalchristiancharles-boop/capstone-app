@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class ProcurementRequest extends Model
 {
@@ -23,6 +24,7 @@ class ProcurementRequest extends Model
         'status',
         'budget_approved',
         'supplier_confirmed',
+        'supplier_invoice_path',
         'budget_amount',
         'branch_id',
         'receipt_path',
@@ -51,6 +53,15 @@ class ProcurementRequest extends Model
         'variance_quantity' => 'integer',
         'variance_reported_at' => 'datetime',
     ];
+
+    protected $appends = ['supplier_invoice_url'];
+
+    public function getSupplierInvoiceUrlAttribute(): ?string
+    {
+        return $this->supplier_invoice_path
+            ? Storage::disk('public')->url($this->supplier_invoice_path)
+            : null;
+    }
 
     public function logisticsUser(): BelongsTo
     {

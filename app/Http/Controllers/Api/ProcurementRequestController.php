@@ -645,7 +645,7 @@ public function requestedProducts(Request $request)
                 ->where('is_active', true)
                 ->value('percentage') ?? 20);
 
-            $requests = ProcurementRequest::with(['product:id,name,price,sku,branch_id,supplier_id,logistics_request_available'])
+            $requests = ProcurementRequest::with(['product:id,name,price,sku,branch_id,supplier_id,logistics_request_available,status'])
                 ->where('branch_id', $branchId)
                     ->whereIn('status', ['pending', 'budget_pending', 'pending_order_to_supplier', 'delivery_pending', 'ongoing_delivery'])
                 ->get(['id', 'product_id', 'branch_id', 'status', 'budget_approved', 'supplier_confirmed', 'receipt_confirmed', 'receipt_path']);
@@ -662,7 +662,7 @@ public function requestedProducts(Request $request)
             $products = Product::whereIn('id', $productIds)
                 ->where('branch_id', $branchId)
                 ->with(['supplier:id,username,full_name'])
-                ->get(['id', 'name', 'price', 'sku', 'branch_id', 'supplier_id', 'logistics_request_available']);
+                ->get(['id', 'name', 'price', 'sku', 'branch_id', 'supplier_id', 'logistics_request_available', 'status']);
 
             Log::info('Products fetched', ['count' => $products->count()]);
             Log::info('=== REQUESTED PRODUCTS SUCCESS ===');
@@ -714,6 +714,9 @@ public function requestedProducts(Request $request)
                 $req = $requestsByProduct->get($p->id);
                 $p->procurement_request_id = $req ? $req->id : null;
                 $p->product_request_status = $productRequestStatuses->get($p->id);
+                $p->request_origin = $p->product_request_status
+                    ? 'admin_product_request'
+                    : ($p->status === 'pending_owner' ? 'owner_direct' : 'logistics');
                 $p->procurement_status = $req ? $req->status : null;
                 $p->procurement_budget_approved = $req ? (bool)$req->budget_approved : false;
 

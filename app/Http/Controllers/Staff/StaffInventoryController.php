@@ -184,14 +184,26 @@ class StaffInventoryController extends Controller
                 }
 
                 $p->stock = (int) ($p->real_stock ?? $p->stock ?? 0);
+                $existingPrice = (float) ($p->price ?? 0);
                 
                 if (!isset($map[$key])) {
                     $map[$key] = $p;
                     continue;
                 }
                 $existing = $map[$key];
+                $existingPrice = (float) ($existing->price ?? 0);
+                $currentPrice = (float) ($p->price ?? 0);
                 $existingStock = (int) ($existing->real_stock ?? $existing->stock ?? 0);
                 $currentStock = (int) ($p->real_stock ?? $p->stock ?? 0);
+
+                if ($currentPrice > 0 && $existingPrice <= 0) {
+                    $map[$key] = $p;
+                    continue;
+                }
+                if ($currentPrice > 0 && $existingPrice > 0 && $currentPrice > $existingPrice) {
+                    $map[$key] = $p;
+                    continue;
+                }
                 if ($currentStock > $existingStock) {
                     $map[$key] = $p;
                     continue;

@@ -87,6 +87,32 @@
             </button>
             <span v-if="notificationItems.length === 0" class="panel-notification-bar__clear">All clear</span>
           </section>
+          <section v-if="activeNotificationPanel" class="panel-notification-details" aria-live="polite">
+            <header class="panel-notification-details__header">
+              <h2>{{ activeNotificationPanel === 'announcements' ? 'Announcements' : notificationItems.find(item => item.key === activeNotificationPanel)?.label || 'Notification details' }}</h2>
+              <button type="button" @click="activeNotificationPanel = ''" aria-label="Close notification details">Close</button>
+            </header>
+            <template v-if="activeNotificationPanel === 'announcements'">
+              <p v-if="loadingAnnouncements">Loading announcements...</p>
+              <p v-else-if="announcements.length === 0">No announcements found.</p>
+              <ul v-else class="panel-notification-details__list">
+                <li v-for="announcement in announcements" :key="announcement.id">
+                  <strong>{{ announcement.title }}</strong>
+                  <small>{{ new Date(announcement.created_at).toLocaleString() }}</small>
+                  <p>{{ announcement.message }}</p>
+                </li>
+              </ul>
+            </template>
+            <template v-else>
+              <p v-if="notificationDetailItems.length === 0">No items need attention.</p>
+              <ul v-else class="panel-notification-details__list panel-notification-details__counts">
+                <li v-for="item in notificationDetailItems" :key="item.key">
+                  <span>{{ item.label }}</span>
+                  <strong>{{ item.count }}</strong>
+                </li>
+              </ul>
+            </template>
+          </section>
           <slot name="main"></slot>
         </main>
         <!-- RIGHT: SIDE PANELS -->
@@ -794,20 +820,68 @@ const profileError = ref('')
 const profileSuccess = ref('')
 
 const notificationSummary = ref({ approvals: 0, messages: 0, announcements: 0, updates: 0 })
+const notificationBreakdown = ref({ counts: {}, extras: {} })
+const activeNotificationPanel = ref('')
 let notificationTimer = null
 
+const moduleNotificationDefinitions = [
+  { key: 'admin', label: 'Orders', tone: 'warning' },
+  { key: 'finance', label: 'Finance approvals', tone: 'warning' },
+  { key: 'inventory', label: 'Inventory confirmations', tone: 'success' },
+  { key: 'logistics', label: 'Logistics', tone: 'success' },
+  { key: 'procurement', label: 'Procurement', tone: 'success' },
+  { key: 'kitchen', label: 'Kitchen approvals', tone: 'warning' },
+  { key: 'supplier', label: 'Supplier orders', tone: 'success' },
+  { key: 'cashier', label: 'Cashier orders', tone: 'warning' },
+  { key: 'hr', label: 'HR', tone: 'info' },
+  { key: 'branchPendingOwner', label: 'Branch approvals', tone: 'warning' },
+  { key: 'branchPendingFinance', label: 'Finance branch approvals', tone: 'warning' },
+  { key: 'priceMarkupPending', label: 'Price markup approvals', tone: 'warning' },
+  { key: 'ownerProductRequests', label: 'Product requests', tone: 'warning' },
+]
+
+const currentPanelModuleKeys = computed(() => {
+  const title = String(props.panelTitle || '').toLowerCase()
+  if (title.includes('owner panel')) return moduleNotificationDefinitions.map(item => item.key)
+  if (title.includes('price markup')) return ['priceMarkupPending']
+  if (title.includes('branch confirmation')) return ['branchPendingOwner', 'branchPendingFinance']
+  if (title.includes('logistics')) return ['logistics']
+  if (title.includes('procurement')) return ['procurement']
+  if (title.includes('inventory')) return ['inventory']
+  if (title.includes('supplier')) return ['supplier']
+  if (title.includes('finance')) return ['finance']
+  if (title.includes('kitchen') || title.includes('dish approval')) return ['kitchen']
+  if (title.includes('admin') || title.includes('administration')) return ['admin', 'cashier']
+  if (title.includes('hr')) return ['hr']
+  return []
+})
+
+function moduleNotificationCount(key) {
+  return Number(notificationBreakdown.value.counts[key] ?? notificationBreakdown.value.extras[key] ?? 0)
+}
+
 const notificationItems = computed(() => [
-  { key: 'approvals', label: 'Pending approvals', icon: '!', tone: 'warning', count: notificationSummary.value.approvals },
   { key: 'messages', label: 'Messages', icon: 'M', tone: 'info', count: notificationSummary.value.messages },
   { key: 'announcements', label: 'Announcements', icon: 'A', tone: 'purple', count: notificationSummary.value.announcements },
-  { key: 'updates', label: 'Updates', icon: 'U', tone: 'success', count: notificationSummary.value.updates },
+  ...moduleNotificationDefinitions
+    .filter(item => currentPanelModuleKeys.value.includes(item.key))
+    .map(item => ({ ...item, icon: '!', count: moduleNotificationCount(item.key) })),
 ].filter(item => item.count > 0))
+
+const notificationDetailItems = computed(() => {
+  const item = moduleNotificationDefinitions.find(definition => definition.key === activeNotificationPanel.value)
+  return item ? [{ ...item, count: moduleNotificationCount(item.key) }] : []
+})
 
 async function loadNotificationSummary() {
   try {
     const res = await axios.get('/api/panel-notifications', { withCredentials: true })
     if (res.data?.ok && res.data.summary) {
       notificationSummary.value = { ...notificationSummary.value, ...res.data.summary }
+      notificationBreakdown.value = {
+        counts: res.data.counts || {},
+        extras: res.data.extras || {},
+      }
     }
   } catch (e) {
     // Notifications are non-critical and should not interrupt the panel.
@@ -820,8 +894,9 @@ function handleNotificationClick(key) {
     return
   }
 
+  activeNotificationPanel.value = key
   if (key === 'announcements') {
-    document.querySelector('.announcements-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    Promise.resolve(loadAnnouncements()).catch(() => {})
   }
 }
 
@@ -1308,6 +1383,67 @@ async function onAvatarChange(event) {
 .panel-notification-item--info .panel-notification-item__icon { background: #4d86a8; }
 .panel-notification-item--purple .panel-notification-item__icon { background: #8170a8; }
 .panel-notification-item--success .panel-notification-item__icon { background: #4f9270; }
+
+.panel-notification-details {
+  margin: 0 0 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(218, 190, 168, 0.55);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 5px 18px rgba(91, 59, 39, 0.06);
+}
+
+.panel-notification-details__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.7rem;
+}
+
+.panel-notification-details__header h2 {
+  margin: 0;
+  color: #3d2a1f;
+  font-size: 1.05rem;
+}
+
+.panel-notification-details__header button {
+  padding: 0.4rem 0.65rem;
+  border: 1px solid #e7d9cf;
+  border-radius: 7px;
+  background: #fffaf5;
+  color: #49372b;
+  cursor: pointer;
+}
+
+.panel-notification-details__list {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.panel-notification-details__list li {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid #f0e8e1;
+}
+
+.panel-notification-details__list small {
+  color: #806e62;
+  font-size: 0.8rem;
+}
+
+.panel-notification-details__list p {
+  margin: 0;
+}
+
+.panel-notification-details__counts li {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
 
 @media (max-width: 767px) {
   .panel-notification-bar {

@@ -80,6 +80,8 @@
                   <div class="request-information-item"><strong>Product type</strong><span>{{ prodReq.is_perishable ? 'Perishable' : 'Non-perishable' }}</span></div>
                   <div class="request-information-item"><strong>Selected supplier</strong><span>{{ prodReq.procurement_request?.supplier?.full_name || prodReq.procurement_request?.supplier?.username || 'Not selected' }}</span></div>
                   <div class="request-information-item"><strong>Supplier price</strong><span>{{ prodReq.supplier_price ? formatPrice(prodReq.supplier_price) : 'Pending supplier quote' }}</span></div>
+                  <div class="request-information-item"><strong>Order quantity</strong><span>{{ prodReq.procurement_request?.quantity ?? 'Not set' }}</span></div>
+                  <div class="request-information-item"><strong>Supplier total</strong><span>{{ prodReq.supplier_price && prodReq.procurement_request?.quantity ? formatPrice(prodReq.supplier_price * prodReq.procurement_request.quantity) : 'Pending supplier quote' }}</span></div>
                   <div class="request-information-item"><strong>Branch markup</strong><span>{{ prodReq.markup_percentage }}%</span></div>
                   <div class="request-information-item"><strong>Expected selling price</strong><span>{{ prodReq.expected_selling_price ? formatPrice(prodReq.expected_selling_price) : 'Pending supplier quote' }}</span></div>
                   <div class="request-information-item"><strong>Expected profit</strong><span>{{ prodReq.expected_profit ? formatPrice(prodReq.expected_profit) : 'Pending supplier quote' }}</span></div>

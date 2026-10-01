@@ -200,6 +200,8 @@
                           <div class="product-request-detail"><strong>Unit</strong><span>{{ r.unit || 'Not provided' }}</span></div>
                           <div class="product-request-detail"><strong>Selected supplier</strong><span>{{ r.procurement_request?.supplier?.full_name || r.procurement_request?.supplier?.username || 'Not selected' }}</span></div>
                           <div class="product-request-detail"><strong>Supplier price</strong><span>{{ r.supplier_price ? formatPrice(r.supplier_price) : 'Pending supplier quote' }}</span></div>
+                          <div class="product-request-detail"><strong>Order quantity</strong><span>{{ r.procurement_request?.quantity ?? 'Not set' }}</span></div>
+                          <div class="product-request-detail"><strong>Supplier total</strong><span>{{ r.supplier_price && r.procurement_request?.quantity ? formatPrice(r.supplier_price * r.procurement_request.quantity) : 'Pending supplier quote' }}</span></div>
                           <div class="product-request-detail"><strong>Branch markup</strong><span>{{ r.markup_percentage }}%</span></div>
                           <div class="product-request-detail"><strong>Expected selling price</strong><span>{{ r.expected_selling_price ? formatPrice(r.expected_selling_price) : 'Pending supplier quote' }}</span></div>
                           <div class="product-request-detail"><strong>Expected profit</strong><span>{{ r.expected_profit ? formatPrice(r.expected_profit) : 'Pending supplier quote' }}</span></div>

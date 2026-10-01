@@ -570,7 +570,8 @@ function formatDate(dateString) {
 }
 
 function formatPrice(price) {
-  if (!price) return '0.00'
+  const numeric = Number(price)
+  if (price == null || Number.isNaN(numeric) || numeric <= 0) return '—'
   return parseFloat(price).toFixed(2)
 }
 

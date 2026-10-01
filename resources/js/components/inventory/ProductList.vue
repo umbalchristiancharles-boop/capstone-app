@@ -472,8 +472,9 @@ function exportCsv() {
 
 // Utilities
 function formatCurrency(v) {
-  if (v == null) return '—'
-  return Number(v).toLocaleString(undefined, { style: 'currency', currency: 'PHP' })
+  const numeric = Number(v)
+  if (v == null || Number.isNaN(numeric) || numeric <= 0) return '—'
+  return numeric.toLocaleString(undefined, { style: 'currency', currency: 'PHP' })
 }
 function stockClass(n) {
   if (n == null) return 'stock-null'

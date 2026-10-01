@@ -84,13 +84,17 @@
                           <td>{{ order.product?.name }}</td>
                           <td>{{ order.branch?.name || order.branch_id }}</td>
                           <td>{{ order.quantity }}</td>
-                          <td>{{ formatPrice(order.product?.price * order.quantity) }}</td>
+                          <td>{{ formatPrice(order.supplier_total ?? order.product?.price * order.quantity) }}</td>
                           <td>
                             <div v-if="order.product_id" class="supplier-input-review">
                               <img v-if="order.product?.image_url" :src="order.product.image_url" alt="Supplier product" class="supplier-product-image" />
                               <div>
                                 <div>{{ order.supplier?.full_name || order.supplier?.username || 'Supplier' }}</div>
-                                <button v-if="!order.admin_confirmed" class="btn-small btn-primary" @click="confirmSupplierOrder(order)">Confirm Product</button>
+                                <div>Unit price: {{ formatPrice(order.supplier_price) }} · Markup: {{ order.markup_percentage }}%</div>
+                                <div>Expected selling price: {{ formatPrice(order.expected_selling_price) }} · Profit: {{ formatPrice(order.expected_profit) }}</div>
+                                <button v-if="!order.admin_confirmed" class="btn-small btn-primary" :disabled="confirmingOrderId === order.id" @click="confirmSupplierOrder(order)">
+                                  {{ confirmingOrderId === order.id ? 'Sending...' : 'Confirm Product' }}
+                                </button>
                                 <span v-else class="status-badge status-approved">Admin confirmed</span>
                               </div>
                             </div>
@@ -190,6 +194,7 @@ const hasNotified = ref(false)
 
 // orders referenced by computed properties — declare early to avoid TDZ
 const orders = ref([])
+const confirmingOrderId = ref(null)
 
 function handleBranchChange() {
   fetchSuppliers()
@@ -320,8 +325,9 @@ async function loadOrders() {
 }
 
 async function confirmSupplierOrder(order) {
-  if (!order?.id || order.admin_confirmed) return
+  if (!order?.id || order.admin_confirmed || confirmingOrderId.value) return
   if (!(await window.swalConfirm(`Confirm the product submitted by ${order.supplier?.full_name || order.supplier?.username || 'this supplier'}?`))) return
+  confirmingOrderId.value = order.id
   try {
     await axios.post(`/api/superadmin/logistics/supplier-orders/${order.id}/confirm`, {}, { withCredentials: true })
     showToast('Supplier product confirmed. Procurement can now acknowledge it.', 'success')
@@ -329,6 +335,8 @@ async function confirmSupplierOrder(order) {
     await loadPanelNotifications()
   } catch (e) {
     showToast(e.response?.data?.message || 'Failed to confirm supplier product.', 'error')
+  } finally {
+    confirmingOrderId.value = null
   }
 }
 

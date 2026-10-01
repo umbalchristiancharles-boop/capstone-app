@@ -125,21 +125,22 @@
 
         <section class="requested-products mt-1">
           <h2>
-            Requests From Logistics
+            Procurement Requests
             <span v-if="procurementPendingCount > 0" class="panel-badge">{{ procurementPendingCount }}</span>
           </h2>
-          <p class="section-description">Inventory requests sent by Logistics Managers in your branch.</p>
+          <p class="section-description">Logistics requests and confirmed supplier quotes for your branch.</p>
 
           <div v-if="requestedProductsLoading">Loading requests...</div>
-          <div v-else-if="!requestedProducts.length">No requests from logistics.</div>
+          <div v-else-if="!requestedProducts.length">No procurement requests awaiting action.</div>
           <div v-else>
             <div class="inline-row gap-sm align-center mb-1">
-              <h3 class="no-margin">Pending Logistics Requests ({{ requestedProducts.length }})</h3>
+              <h3 class="no-margin">Pending Procurement Requests ({{ requestedProducts.length }})</h3>
               <button class="btn-refresh" @click="loadRequestedProducts">🔄 Refresh</button>
             </div>
             <div class="product-grid">
               <div v-for="p in requestedProducts" :key="'req-'+p.id" class="product-card">
                 <div class="product-name">{{ p.name }}</div>
+                <span v-if="p.request_origin === 'owner_direct'" class="product-type-badge">Owner-created product</span>
                 <div v-if="p.per_pack_or_individual" class="product-type-badge" :class="'type-' + p.per_pack_or_individual">
                   {{ formatPricingType(p.per_pack_or_individual) }}
                 </div>

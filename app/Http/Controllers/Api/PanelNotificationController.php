@@ -15,6 +15,7 @@ use App\Models\PriceMarkupRequest;
 use App\Models\Message;
 use App\Models\Announcement;
 use App\Models\ProductRequest;
+use App\Models\Attendance;
 
 class PanelNotificationController extends Controller
 {
@@ -172,6 +173,27 @@ class PanelNotificationController extends Controller
         }
         if ($hasModule('kitchen')) {
             $counts['kitchen'] = (int) $kitchenPendingQuery->count();
+        }
+
+        if ($hasModule('hr')) {
+            $hrBranchId = $branchId;
+            if ($role === 'MANAGER' && $dept === 'HR' && $branchId) {
+                $hrBranch = Branch::find($branchId);
+                if ($hrBranch && ($hrBranch->is_main_branch ?? false)) {
+                    $hrBranchId = null;
+                }
+            }
+
+            $hrPendingQuery = Attendance::whereNotNull('face_image')
+                ->where('face_image', '!=', '')
+                ->where('date', now()->toDateString())
+                ->where('confirmed', false)
+                ->whereHas('user', function ($query) use ($hrBranchId) {
+                    if ($hrBranchId) {
+                        $query->where('branch_id', $hrBranchId);
+                    }
+                });
+            $counts['hr'] = (int) $hrPendingQuery->count();
         }
 
         // Owner + main branch finance approvals

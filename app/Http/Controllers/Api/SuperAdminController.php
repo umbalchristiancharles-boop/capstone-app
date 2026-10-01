@@ -15,6 +15,7 @@ use App\Models\Order;
 use App\Models\Position;
 use App\Models\PositionOpenRequest;
 use App\Models\StaffDocument;
+use App\Models\PriceMarkupPercentage;
 use Illuminate\Support\Facades\Schema;
 use App\Support\Permission;
 use App\Services\BranchPasswordService;
@@ -421,7 +422,7 @@ class SuperAdminController extends Controller
         try {
             $branchId = $request->query('branch_id');
 
-            $query = \App\Models\SupplierOrder::with(['product', 'procurementRequest.logisticsUser', 'branch', 'supplier'])
+            $query = \App\Models\SupplierOrder::with(['product', 'procurementRequest.logisticsUser', 'procurementRequest.product', 'branch', 'supplier'])
                 ->whereNotNull('supplier_id')
                 ->whereHas('product', function ($productQuery) {
                     $productQuery->whereNotNull('image_path')
@@ -438,6 +439,34 @@ class SuperAdminController extends Controller
 
             $perPage = intval($request->query('per_page', 50));
             $orders = $query->paginate($perPage);
+            $procurementProductIds = $orders->getCollection()
+                ->pluck('procurementRequest.product_id')
+                ->filter()
+                ->unique();
+            $adminRequestProductIds = \App\Models\ProductRequest::whereIn('product_id', $procurementProductIds)
+                ->pluck('product_id')
+                ->flip();
+
+            $branchMarkups = PriceMarkupPercentage::whereIn('branch_id', $orders->getCollection()->pluck('branch_id')->filter()->unique())
+                ->where('is_active', true)
+                ->pluck('percentage', 'branch_id');
+            $orders->getCollection()->transform(function ($order) use ($branchMarkups, $adminRequestProductIds) {
+                $supplierPrice = (float) ($order->product?->price ?? $order->procurementRequest?->price ?? 0);
+                $markupPercentage = (float) ($branchMarkups->get($order->branch_id) ?? 20);
+                $procurementProduct = $order->procurementRequest?->product;
+                $isAdminProductRequest = $procurementProduct
+                    && $adminRequestProductIds->has($procurementProduct->id);
+                $order->supplier_price = $supplierPrice;
+                $order->supplier_total = round($supplierPrice * max(1, (int) $order->quantity), 2);
+                $order->markup_percentage = $markupPercentage;
+                $order->expected_selling_price = round($supplierPrice * (1 + ($markupPercentage / 100)), 2);
+                $order->expected_profit = round($supplierPrice * ($markupPercentage / 100), 2);
+                $order->is_admin_product_request = (bool) $isAdminProductRequest;
+                $order->is_owner_direct_product = !$isAdminProductRequest
+                    && (bool) ($procurementProduct?->approved_by_owner || $order->product?->status === 'pending_owner');
+
+                return $order;
+            });
 
             return response()->json($orders);
         } catch (\Exception $e) {
@@ -461,30 +490,64 @@ class SuperAdminController extends Controller
         $productRequest = $order->procurementRequest
             ? \App\Models\ProductRequest::where('product_id', $order->procurementRequest->product_id)->first()
             : null;
+        $isOwnerDirectProduct = !$productRequest && (bool) (
+            $order->procurementRequest?->product?->approved_by_owner
+            || $order->product?->status === 'pending_owner'
+        );
         if ($productRequest && $productRequest->status !== 'pending_supplier') {
             return response()->json(['ok' => false, 'message' => 'A supplier has already been selected or this request is no longer awaiting supplier pricing.'], 409);
         }
+        $procurementRequest = DB::transaction(function () use ($order, $productRequest, $isOwnerDirectProduct, $user) {
+            $procurementRequest = $order->procurementRequest;
+            $price = (float) ($order->product?->price ?? $procurementRequest?->price ?? 0);
+            $quantity = max(1, (int) $order->quantity);
 
-        $order->update([
-            'admin_confirmed' => true,
-            'admin_confirmed_by' => $user->id,
-            'admin_confirmed_at' => now(),
-        ]);
+            if (!$procurementRequest && $isOwnerDirectProduct) {
+                $procurementRequest = \App\Models\ProcurementRequest::create([
+                    'logistics_user_id' => $user->id,
+                    'supplier_id' => $order->supplier_id,
+                    'product_id' => $order->product_id,
+                    'quantity' => $quantity,
+                    'price' => $price,
+                    'total_amount' => $price * $quantity,
+                    'status' => 'pending',
+                    'budget_approved' => false,
+                    'supplier_confirmed' => true,
+                    'branch_id' => $order->branch_id,
+                ]);
+                $order->procurement_request_id = $procurementRequest->id;
+            }
 
-        if ($order->procurementRequest) {
-            $order->procurementRequest->update([
-                'supplier_id' => $order->supplier_id,
-                'supplier_confirmed' => true,
-                'price' => $order->product?->price ?? $order->procurementRequest->price,
-                'total_amount' => ($order->product?->price ?? $order->procurementRequest->price) * max(1, $order->quantity),
+            $order->update([
+                'admin_confirmed' => true,
+                'admin_confirmed_by' => $user->id,
+                'admin_confirmed_at' => now(),
+                'procurement_request_id' => $procurementRequest?->id ?? $order->procurement_request_id,
             ]);
+
+            if ($procurementRequest) {
+                $procurementRequest->update([
+                    'supplier_id' => $order->supplier_id,
+                    'supplier_confirmed' => true,
+                    'price' => $price,
+                    'total_amount' => $price * $quantity,
+                ]);
+            }
 
             if ($productRequest && $productRequest->status === 'pending_supplier') {
                 $productRequest->update(['status' => 'pending_logistics']);
             }
-        }
 
-        return response()->json(['ok' => true, 'message' => 'Supplier selected and request sent to Main Branch Logistics.', 'order' => $order->fresh()->load(['product', 'supplier', 'procurementRequest'])]);
+            return $procurementRequest;
+        });
+
+        $message = $productRequest
+            ? 'Supplier selected and request sent to Main Branch Logistics.'
+            : ($isOwnerDirectProduct
+                ? 'Supplier confirmed for the owner-created product.'
+                : 'Supplier confirmed.');
+
+        return response()->json(['ok' => true, 'message' => $message, 'order' => $order->fresh()->load(['product', 'supplier', 'procurementRequest'])]);
     }
 
     /**

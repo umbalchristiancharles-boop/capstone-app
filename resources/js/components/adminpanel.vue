@@ -191,7 +191,7 @@
               <button class="panel-action" @click="loadSupplierSubmissions">Refresh</button>
             </div>
             <div class="panel-body panel-body--list">
-              <p>Select a supplier after they submit pricing. The selected request will then be sent to Main Branch Logistics.</p>
+              <p>Review the supplier quote before confirming. Admin product requests continue to Main Branch Logistics; owner-created products keep their direct-owner flow.</p>
               <div v-if="supplierSubmissionsLoading" class="supplier-review-empty">Loading supplier submissions...</div>
               <div v-else-if="supplierSubmissions.length === 0" class="supplier-review-empty">No supplier submissions to review.</div>
               <div v-else class="supplier-review-list">
@@ -202,10 +202,15 @@
                     <span>Supplier: {{ submission.supplier?.full_name || submission.supplier?.username || 'Unknown' }}</span>
                     <span>Barcode: {{ submission.product?.barcode || 'Not provided' }}</span>
                     <span>SKU: {{ submission.product?.sku || 'Not provided' }}</span>
+                    <span>Supplier price: {{ formatSupplierQuotePrice(submission.supplier_price) }} per unit · Quantity: {{ submission.quantity || 0 }}</span>
+                    <span>Order total: {{ formatSupplierQuotePrice(submission.supplier_total) }}</span>
+                    <span>Markup: {{ submission.markup_percentage }}% · Expected selling price: {{ formatSupplierQuotePrice(submission.expected_selling_price) }} · Profit per unit: {{ formatSupplierQuotePrice(submission.expected_profit) }}</span>
                   </div>
                   <div class="supplier-review-action">
                     <span v-if="submission.admin_confirmed" class="status-badge status-approved">Confirmed</span>
-                    <button v-else class="panel-action supplier-confirm-button" @click="confirmSupplierSubmission(submission)">Select Supplier &amp; Send to Logistics</button>
+                    <button v-else class="panel-action supplier-confirm-button" :disabled="confirmingSupplierSubmissionId === submission.id" @click="confirmSupplierSubmission(submission)">
+                      {{ confirmingSupplierSubmissionId === submission.id ? 'Confirming...' : (submission.is_admin_product_request ? 'Select Supplier & Send to Logistics' : 'Confirm Supplier') }}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -904,6 +909,7 @@ const productRequests = ref([])
 const productRequestsLoading = ref(false)
 const supplierSubmissions = ref([])
 const supplierSubmissionsLoading = ref(false)
+const confirmingSupplierSubmissionId = ref(null)
 const showCustomerReports = ref(false)
 const showExpiredProducts = ref(false)
 const expiredProducts = ref([])
@@ -1105,6 +1111,12 @@ function productRequestStatusClass(status) {
   return 'status-pending'
 }
 
+function formatSupplierQuotePrice(value) {
+  const amount = Number(value)
+  if (!Number.isFinite(amount)) return '—'
+  return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount)
+}
+
 async function loadSupplierSubmissions() {
   supplierSubmissionsLoading.value = true
   try {
@@ -1169,14 +1181,18 @@ async function saveLandingProductImage(product) {
 }
 
 async function confirmSupplierSubmission(submission) {
-  if (!submission?.id || submission.admin_confirmed) return
-  if (window.swalConfirm && !(await window.swalConfirm(`Confirm the product submitted by ${submission.supplier?.full_name || submission.supplier?.username || 'this supplier'}?`))) return
+  if (!submission?.id || submission.admin_confirmed || confirmingSupplierSubmissionId.value) return
+  const nextStep = submission.is_admin_product_request ? 'send the request to Main Branch Logistics' : 'confirm the supplier for this owner-created product'
+  if (window.swalConfirm && !(await window.swalConfirm(`Select ${submission.supplier?.full_name || submission.supplier?.username || 'this supplier'} at ${formatSupplierQuotePrice(submission.supplier_price)} per unit, ${submission.quantity} units, total ${formatSupplierQuotePrice(submission.supplier_total)}, and ${nextStep}?`))) return
+  confirmingSupplierSubmissionId.value = submission.id
   try {
     await axios.post(`/api/superadmin/logistics/supplier-orders/${submission.id}/confirm`, {}, { withCredentials: true })
-    showToast('Supplier product confirmed.', 'success')
+    showToast(submission.is_admin_product_request ? 'Supplier selected and request sent to Main Branch Logistics.' : 'Supplier confirmed.', 'success')
     await loadSupplierSubmissions()
   } catch (e) {
     showToast(e.response?.data?.message || 'Failed to confirm supplier product.', 'error')
+  } finally {
+    confirmingSupplierSubmissionId.value = null
   }
 }
 
@@ -1809,7 +1825,9 @@ function formatDate(dateString) {
 .supplier-review-details { display: flex; flex: 1; flex-direction: column; gap: 2px; font-size: 12px; color: #6b7280; }
 .supplier-review-details strong { color: #1f2937; font-size: 14px; }
 .supplier-review-action { flex-shrink: 0; }
+.supplier-review-action { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 .supplier-confirm-button { color: #fff; background: #2563eb; border: 0; padding: 6px 10px; }
+.supplier-confirm-button:disabled { cursor: not-allowed; opacity: .6; }
 .supplier-review-empty { margin-top: 10px; color: #6b7280; font-size: 13px; }
 
 .landing-images-help { margin: 0 0 12px; color: #6b7280; font-size: 13px; }
