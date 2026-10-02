@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 01, 2026 at 02:53 PM
+-- Generation Time: Oct 02, 2026 at 10:58 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -143,9 +143,9 @@ CREATE TABLE `branches` (
 --
 
 INSERT INTO `branches` (`id`, `code`, `name`, `address`, `latitude`, `longitude`, `is_active`, `is_main_branch`, `approval_status`, `requested_by`, `finance_confirmed_by`, `finance_confirmed_at`, `approved_by`, `approved_at`, `rejected_at`, `budget`, `square_meters`, `geofencing_radius`, `permit_bills`, `construction_costs`, `equipment_costs`, `total_investment`, `default_password`, `default_password_updated_at`, `created_at`, `updated_at`) VALUES
-(31, 'BR743957', 'Dasma Branch', 'Dasma', NULL, NULL, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 32885, NULL, NULL, NULL, NULL, NULL, NULL, 'BDP20261001A777F2', '2026-10-01 10:47:10', '2026-03-22 10:19:21', '2026-10-01 12:50:20'),
-(32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 404000, NULL, NULL, NULL, NULL, NULL, NULL, 'BDP20261001858A21', '2026-10-01 10:47:10', '2026-03-25 06:56:11', '2026-10-01 10:47:10'),
-(54, 'BR981671', 'Kabankalan Branch', NULL, 9.93097681, 122.87109375, 0, 0, 'pending_owner', 159, 161, '2026-09-19 03:14:51', NULL, NULL, NULL, 100000, 50.00, 3.99, '[{\"type\":\"asd\",\"amount\":99996}]', '[{\"category\":\"asd\",\"amount\":100000}]', '[{\"name\":\"asd\",\"type\":\"asd\",\"quantity\":60,\"unit_cost\":99999}]', 6199936.00, 'BDP20261001CB6BD0', '2026-10-01 10:47:10', '2026-09-19 03:04:08', '2026-10-01 10:47:10');
+(31, 'BR743957', 'Dasma Branch', 'Dasma', NULL, NULL, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 33255, NULL, NULL, NULL, NULL, NULL, NULL, 'BDP202610023271CA', '2026-10-02 07:25:57', '2026-03-22 10:19:21', '2026-10-02 08:55:32'),
+(32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 404000, NULL, NULL, NULL, NULL, NULL, NULL, 'BDP202610028F0BD8', '2026-10-02 07:33:20', '2026-03-25 06:56:11', '2026-10-02 07:33:20'),
+(54, 'BR981671', 'Kabankalan Branch', NULL, 9.93097681, 122.87109375, 0, 0, 'pending_owner', 159, 161, '2026-09-19 03:14:51', NULL, NULL, NULL, 100000, 50.00, 3.99, '[{\"type\":\"asd\",\"amount\":99996}]', '[{\"category\":\"asd\",\"amount\":100000}]', '[{\"name\":\"asd\",\"type\":\"asd\",\"quantity\":60,\"unit_cost\":99999}]', 6199936.00, 'BDP20261002C69E1A', '2026-10-02 07:33:20', '2026-09-19 03:04:08', '2026-10-02 07:33:20');
 
 -- --------------------------------------------------------
 
@@ -896,7 +896,8 @@ INSERT INTO `orders` (`id`, `order_code`, `owner_id`, `cashier_id`, `branch_id`,
 (145, 'CT-0017', 153, 153, 31, 'Walk-in', 'in_kitchen', 0, NULL, NULL, NULL, '2026-09-11 06:50:39', 181.44, 200.00, 18.56, 'none', 0.00, 0.00, 12.00, 19.44, 162.00, '2026-09-11 06:50:39', '2026-09-11 06:50:39', '2026-09-11 06:50:39', 153, NULL, NULL),
 (146, 'CT-0018', 153, 153, 31, 'Walk-in', 'completed', 0, NULL, NULL, NULL, '2026-09-22 10:09:02', 112.00, 500.00, 388.00, 'none', 0.00, 0.00, 12.00, 12.00, 100.00, '2026-09-22 10:09:02', '2026-09-22 10:09:02', '2026-09-22 10:09:02', 153, NULL, NULL),
 (147, 'CT-0019', 153, 153, 31, 'Walk-in', 'completed', 0, NULL, NULL, NULL, '2026-09-22 10:09:29', 112.00, 500.00, 388.00, 'none', 0.00, 0.00, 12.00, 12.00, 100.00, '2026-09-22 10:09:29', '2026-09-22 10:09:29', '2026-09-22 10:09:29', 153, NULL, NULL),
-(148, 'CT-0020', 153, 153, 31, 'Walk-in', 'completed', 0, NULL, NULL, NULL, '2026-09-22 10:34:35', 11.20, 20.00, 8.80, 'none', 0.00, 0.00, 12.00, 1.20, 10.00, '2026-09-22 10:34:35', '2026-09-22 10:34:35', '2026-09-22 10:34:35', 153, NULL, NULL);
+(148, 'CT-0020', 153, 153, 31, 'Walk-in', 'completed', 0, NULL, NULL, NULL, '2026-09-22 10:34:35', 11.20, 20.00, 8.80, 'none', 0.00, 0.00, 12.00, 1.20, 10.00, '2026-09-22 10:34:35', '2026-09-22 10:34:35', '2026-09-22 10:34:35', 153, NULL, NULL),
+(149, 'CT-0021', 153, 153, 31, 'Walk-in', 'completed', 0, NULL, NULL, NULL, '2026-10-02 08:55:32', 369.60, 500.00, 130.40, 'none', 0.00, 0.00, 12.00, 39.60, 330.00, '2026-10-02 08:55:32', '2026-10-02 08:55:32', '2026-10-02 08:55:32', 153, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -915,6 +916,13 @@ CREATE TABLE `order_items` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `order_items`
+--
+
+INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `product_name`, `unit_price`, `quantity`, `subtotal`, `created_at`, `updated_at`) VALUES
+(100, 149, 265, 'water', 33.00, 10, 330.00, '2026-10-02 08:55:32', '2026-10-02 08:55:32');
 
 -- --------------------------------------------------------
 
@@ -2287,7 +2295,10 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (3254, 'App\\Models\\User', 147, 'auth-token', '532ce0dc83debd5a2bac658e5d989273d5dc7c443b5b13b7e50f7606f0970741', '[\"*\"]', NULL, NULL, '2026-10-01 12:44:40', '2026-10-01 12:44:40'),
 (3258, 'App\\Models\\User', 147, 'auth-token', '42706b1dab1924d93b7f1adfcb63f5ee022ee578bac3052ac5d2e82318789970', '[\"*\"]', NULL, NULL, '2026-10-01 12:47:19', '2026-10-01 12:47:19'),
 (3261, 'App\\Models\\User', 31, 'auth-token', '6c8b4023900408f0885cb21c0880aae7de2de93e4b3aa46a1eab8dac0bae36c3', '[\"*\"]', NULL, NULL, '2026-10-01 12:48:36', '2026-10-01 12:48:36'),
-(3270, 'App\\Models\\User', 154, 'auth-token', '48f0899c9d4347f64f158d5dec274fe338c3ab7427691101de8d6beb0559fd75', '[\"*\"]', NULL, NULL, '2026-10-01 12:53:02', '2026-10-01 12:53:02');
+(3270, 'App\\Models\\User', 154, 'auth-token', '48f0899c9d4347f64f158d5dec274fe338c3ab7427691101de8d6beb0559fd75', '[\"*\"]', NULL, NULL, '2026-10-01 12:53:02', '2026-10-01 12:53:02'),
+(3271, 'App\\Models\\User', 147, 'auth-token', '7391e447bde5f34f26b50d2925e8f1bf1d19ac859a7b765831cb7554807c2f6c', '[\"*\"]', NULL, NULL, '2026-10-02 07:17:16', '2026-10-02 07:17:16'),
+(3272, 'App\\Models\\User', 28, 'auth-token', 'a4b4e556d40a3bb90527424d625fd79602877775458307396743f56bb79c45f1', '[\"*\"]', NULL, NULL, '2026-10-02 07:33:18', '2026-10-02 07:33:18'),
+(3274, 'App\\Models\\User', 153, 'auth-token', 'd66243c7ace10f2944ef79c1dd79db589f500596408e73156d334fafe9234470', '[\"*\"]', NULL, NULL, '2026-10-02 08:30:07', '2026-10-02 08:30:07');
 
 -- --------------------------------------------------------
 
@@ -2598,7 +2609,7 @@ CREATE TABLE `products` (
 
 INSERT INTO `products` (`id`, `dish_id`, `name`, `category`, `brand`, `description`, `storage_requirements`, `is_perishable`, `unit`, `image_path`, `per_pack_or_individual`, `pack_quantity`, `pack_unit`, `slug`, `created_at`, `updated_at`, `price`, `cost_price`, `stock`, `real_stock`, `open_pack_used`, `expires_at`, `date_made`, `min_stock`, `sku`, `barcode`, `barcode_is_generated`, `branch_id`, `published_by`, `published_at`, `is_published`, `has_been_ordered`, `is_active`, `is_kitchen_dish`, `is_dish_product`, `supplier_name`, `supplier_id`, `logistics_request_available`, `status`, `requires_logistics`, `approved_by_logistics_main`, `approved_by_owner`, `rejection_reason`, `approved_at`) VALUES
 (264, NULL, 'water', 'Beverage', 'Summit', 'asd', 'asd', 1, 'pcs', NULL, 'individual', NULL, NULL, 'water-40-1790858704', '2026-10-01 12:45:04', '2026-10-01 12:52:36', 0.00, 0.00, 0, 10, 0.0000, NULL, NULL, 0, NULL, NULL, 0, 31, NULL, NULL, 1, 0, 1, 0, 0, 'TO BE ASSIGNED', NULL, 1, 'pending_owner', 0, NULL, NULL, NULL, NULL),
-(265, NULL, 'water', NULL, NULL, NULL, NULL, NULL, NULL, 'product-images/UF9J3TKfdm3EM3SqOxtBN2IMjpJrfFgUuQoeW8aQ.jpg', 'per_pack', 5.00, 'pcs', 'water', '2026-10-01 12:46:47', '2026-10-01 12:52:36', 165.00, 150.00, 10, 10, 0.0000, NULL, '2026-09-29', 10, NULL, '4800014141081', 0, 31, NULL, NULL, 1, 1, 1, 0, 0, 'Umberto Batumbakal', 152, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL);
+(265, NULL, 'water', NULL, NULL, NULL, NULL, NULL, NULL, 'product-images/UF9J3TKfdm3EM3SqOxtBN2IMjpJrfFgUuQoeW8aQ.jpg', 'per_pack', 5.00, 'pcs', 'water', '2026-10-01 12:46:47', '2026-10-02 08:55:32', 165.00, 150.00, 8, 10, 0.0000, NULL, '2026-09-29', 10, NULL, '4800014141081', 0, 31, NULL, NULL, 1, 1, 1, 0, 0, 'Umberto Batumbakal', 152, 0, 'pending_owner', 0, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -2739,7 +2750,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('nX8ucbCqsjN041YfO3NPSJJqH0qPyosB4Vh07zbf', 154, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiUUZ0bzB6RHJtb2pXOEgxSUpFTnFEajVJS3dha1dNaGltOXlLdmd6SCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvc3RhZmYvaW52ZW50b3J5L3Byb2R1Y3RzP2luY2x1ZGVfdW5wdWJsaXNoZWQ9MSI7czo1OiJyb3V0ZSI7Tjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTU0O3M6NzoidXNlcl9pZCI7aToxNTQ7czo5OiJ1c2VyX3JvbGUiO3M6NToiU1RBRkYiO3M6OToidXNlcl9uYW1lIjtzOjE5OiJWaW5jZSBIYW5uaWJhbCBCaWRvIjtzOjEzOiJyZWRpcmVjdF9wYXRoIjtzOjEwOiIvaW52ZW50b3J5Ijt9', 1790859205);
+('DUX3mUedCAI1T0GjplBgLPq5Biu0LR2dBuWZVl9E', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.139.1 Chrome/150.0.7871.250 Electron/43.6.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiRXJqYTVweTZ4ZHlFQXBzM0lCcWFtZDhDenUxczluWmJ1VzR6ZVlrNCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi9jYXNoaWVyIjtzOjU6InJvdXRlIjtOO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19', 1790931199),
+('QxNCOb5M1JYd6ifRebsLkiEzv8wx0TEh59U1gjOF', 153, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiZDFRbHFTZFY3VVR3cmVVemV4VGhmQk4yNld5UzNBVlZaR0l0VENJNiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6ODM6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9jdXN0b21lci1kaXNwbGF5P3Nlc3Npb249OWUzYjVmZGEtZWFjOS00ZWZlLTkzYzEtNmIwOGMyMWY2ZWVmIjtzOjU6InJvdXRlIjtOO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxNTM7czo3OiJ1c2VyX2lkIjtpOjE1MztzOjk6InVzZXJfcm9sZSI7czo1OiJTVEFGRiI7czo5OiJ1c2VyX25hbWUiO3M6MTU6Ikphbm5lIERlIEd1em1hbiI7czoxMzoicmVkaXJlY3RfcGF0aCI7czoxNDoiL3N0YWZmL2Nhc2hpZXIiO30=', 1790931497);
 
 -- --------------------------------------------------------
 
@@ -3495,13 +3507,13 @@ ALTER TABLE `migrations`
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=149;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=150;
 
 --
 -- AUTO_INCREMENT for table `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=100;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=101;
 
 --
 -- AUTO_INCREMENT for table `payrolls`
@@ -3513,7 +3525,7 @@ ALTER TABLE `payrolls`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3271;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3275;
 
 --
 -- AUTO_INCREMENT for table `positions`

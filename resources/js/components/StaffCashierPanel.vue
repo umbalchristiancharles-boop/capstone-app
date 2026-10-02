@@ -28,6 +28,9 @@
               :aria-expanded="(!cashierSidebarCollapsed).toString()"
               @click="cashierSidebarCollapsed = !cashierSidebarCollapsed"
             >☰</button>
+            <button class="staff-cashier-display-button" type="button" @click="openCustomerDisplay">
+              {{ customerDisplayBlocked ? 'Open Customer Display' : 'Customer Display' }}
+            </button>
             <div class="staff-cashier-user-pill">
               <span class="staff-cashier-user-pill__avatar">{{ (userProfile.full_name || userProfile.username || 'C').charAt(0).toUpperCase() }}</span>
               <span>Cashier - {{ branchName || 'Branch' }}</span>
@@ -328,8 +331,21 @@
 
 </template>
 
+<style scoped>
+.staff-cashier-display-button {
+  border: 1px solid #e5b78b;
+  border-radius: 6px;
+  padding: 9px 13px;
+  background: #fffaf5;
+  color: #713918;
+  font-weight: 700;
+  cursor: pointer;
+}
+.staff-cashier-display-button:hover { background: #fff0e2; }
+</style>
+
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import Swal from 'sweetalert2'
@@ -398,9 +414,69 @@ let scannerControls = null
 let scannerStream = null
 let lastScannedBarcode = ''
 let lastScannedAt = 0
+let scannerAudioContext = null
+let scannerBeepBuffer = null
+let scannerBeepBufferPromise = null
+
+function prepareScannerAudio() {
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext
+    if (!AudioContextClass) return
+    if (!scannerAudioContext) scannerAudioContext = new AudioContextClass()
+    if (scannerAudioContext.state === 'suspended') scannerAudioContext.resume().catch(() => {})
+    if (!scannerBeepBuffer && !scannerBeepBufferPromise) {
+      scannerBeepBufferPromise = fetch('/audio/scanner%20beep%20Sound%20Effect.mp3')
+        .then(response => {
+          if (!response.ok) throw new Error('Scanner beep audio could not be loaded.')
+          return response.arrayBuffer()
+        })
+        .then(buffer => scannerAudioContext.decodeAudioData(buffer))
+        .then(buffer => { scannerBeepBuffer = buffer })
+        .catch(() => { scannerBeepBufferPromise = null })
+    }
+  } catch (e) {}
+}
+
+function playScannerBeep() {
+  try {
+    if (scannerAudioContext?.state === 'running' && scannerBeepBuffer) {
+      const source = scannerAudioContext.createBufferSource()
+      source.buffer = scannerBeepBuffer
+      source.connect(scannerAudioContext.destination)
+      source.start(0, 5.58, 0.18)
+      return
+    }
+  } catch (e) {}
+
+  playFallbackScannerBeep()
+}
+
+function playFallbackScannerBeep() {
+  try {
+    if (!scannerAudioContext || scannerAudioContext.state !== 'running') return
+    const oscillator = scannerAudioContext.createOscillator()
+    const gain = scannerAudioContext.createGain()
+    const startAt = scannerAudioContext.currentTime
+    oscillator.type = 'square'
+    oscillator.frequency.setValueAtTime(1250, startAt)
+    gain.gain.setValueAtTime(0.0001, startAt)
+    gain.gain.exponentialRampToValueAtTime(0.045, startAt + 0.003)
+    gain.gain.setValueAtTime(0.045, startAt + 0.045)
+    gain.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.075)
+    oscillator.connect(gain)
+    gain.connect(scannerAudioContext.destination)
+    oscillator.start(startAt)
+    oscillator.stop(startAt + 0.08)
+  } catch (e) {}
+}
 
 const cartStorageKey = 'staff-cashier-cart-v2'
 const scannerStorageKey = 'staff-cashier-scanner-open'
+const customerDisplaySessionId = typeof crypto !== 'undefined' && crypto.randomUUID
+  ? crypto.randomUUID()
+  : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+const customerDisplayStorageKey = `staff-cashier-display-v1:${customerDisplaySessionId}`
+const customerDisplayBlocked = ref(false)
 
 function getStoredCart() {
   try {
@@ -551,6 +627,7 @@ async function openBarcodeScanner() {
     return
   }
 
+  prepareScannerAudio()
   scannerError.value = ''
   scannerOpen.value = true
   try { sessionStorage.setItem(scannerStorageKey, '1') } catch (e) {}
@@ -607,6 +684,7 @@ async function openBarcodeScanner() {
             return barcode && barcode === scanned.toLowerCase()
           })
           if (matched) {
+            playScannerBeep()
             addToCart(matched)
             productSearch.value = ''
           }
@@ -721,6 +799,47 @@ const taxable = computed(() => Math.max(0, subtotal.value - discountAmount.value
 const vatPercent = FRONTEND_VAT
 const vatAmount = computed(() => taxable.value * vatPercent)
 const grandTotal = computed(() => Number((taxable.value + vatAmount.value).toFixed(2)))
+
+function publishCustomerDisplay(active = true) {
+  const snapshot = {
+    active,
+    branch_name: branchName.value || 'Branch',
+    items: cart.value.map(item => ({
+      name: item.name,
+      quantity: item.quantity,
+      unit_price: item.unit_price,
+      subtotal: item.subtotal,
+    })),
+    total_items: totalItems.value,
+    subtotal: subtotal.value,
+    discount_label: discountType.value === 'discount'
+      ? `Discount (${Number(discountPercent.value) || 0}%)`
+      : discountType.value === 'pwd' ? 'PWD' : discountType.value === 'senior' ? 'Senior' : 'None',
+    discount: discountAmount.value,
+    taxable: taxable.value,
+    vat_percent: vatPercent * 100,
+    vat: vatAmount.value,
+    grand_total: grandTotal.value,
+    updated_at: Date.now(),
+  }
+
+  try {
+    localStorage.setItem(customerDisplayStorageKey, JSON.stringify(snapshot))
+  } catch (e) {}
+}
+
+function openCustomerDisplay() {
+  const url = `/customer-display?session=${encodeURIComponent(customerDisplaySessionId)}`
+  const displayWindow = window.open(url, 'cashier-customer-display')
+  customerDisplayBlocked.value = !displayWindow
+  if (displayWindow) displayWindow.focus()
+}
+
+watch(
+  [cart, branchName, discountType, discountPercent],
+  () => publishCustomerDisplay(),
+  { deep: true, immediate: true }
+)
 
 const canCheckout = computed(() =>
   cart.value.length > 0 && amountPaid.value >= grandTotal.value && grandTotal.value > 0
@@ -1264,6 +1383,8 @@ async function processCheckout() {
 
 // Initialize on mount
 onMounted(async () => {
+  publishCustomerDisplay()
+  openCustomerDisplay()
   console.log('[StaffCashierPanel] mounted - localStorage user:', localStorage.getItem('user'))
   await loadStaffProfile()
   try {
@@ -1275,6 +1396,8 @@ onMounted(async () => {
     loadAttendanceSettings()
   }
 })
+
+onBeforeUnmount(() => publishCustomerDisplay(false))
 
 // Logout functions
 async function confirmLogout() {

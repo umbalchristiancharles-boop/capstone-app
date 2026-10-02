@@ -199,6 +199,7 @@ const router = createRouter({
     { path: '/manager/hr/staff-management', component: ManagerHRStaffManagement, meta: { requiresAuth: true } },
     { path: '/staff-panel', component: StaffList },
     { path: '/staff/cashier', component: StaffCashierPanel, meta: { requiresAuth: true } },
+    { path: '/customer-display', component: () => import('./components/CashierCustomerDisplay.vue') },
     { path: '/staff/finance', component: () => import('./components/StaffFinancePanel.vue'), meta: { requiresAuth: true } },
     { path: '/staff/inventory', component: () => import('./components/inventory/InventoryStaffPanel.vue'), meta: { requiresAuth: true } },
     { path: '/inventory', component: () => import('./components/inventory/InventoryStaffPanel.vue'), meta: { requiresAuth: true } },
