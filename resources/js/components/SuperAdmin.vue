@@ -144,7 +144,7 @@
       <section v-else class="super-admin-module-view">
         <component
           :is="activeModuleComponent"
-          :is-super-admin="activeModule === 'inventoryStaff'"
+          v-bind="activeModule === 'inventoryStaff' ? { isSuperAdmin: true } : {}"
           :key="`${activeModule}:${selectedBranchId}`"
         />
       </section>

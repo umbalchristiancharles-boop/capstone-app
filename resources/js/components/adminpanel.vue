@@ -67,6 +67,30 @@
         <!-- MIDDLE: MAIN DASHBOARD -->
         <main class="admin-main">
 
+          <section class="admin-notification-bar" aria-label="Admin notifications">
+            <div class="admin-notification-bar__title">
+              <span class="admin-notification-bar__icon" aria-hidden="true">!</span>
+              <strong>Notifications</strong>
+            </div>
+            <button type="button" class="admin-notification-chip" @click="openAdminNotifications('orders')">
+              <span>Pending orders</span>
+              <strong>{{ adminNotificationCounts.orders }}</strong>
+            </button>
+            <button type="button" class="admin-notification-chip" @click="openAdminNotifications('inventory')">
+              <span>Inventory confirmations</span>
+              <strong>{{ adminNotificationCounts.inventory }}</strong>
+            </button>
+            <button type="button" class="admin-notification-chip" @click="openAdminNotifications('messages')">
+              <span>Unread messages</span>
+              <strong>{{ adminNotificationCounts.messages }}</strong>
+            </button>
+            <button type="button" class="admin-notification-chip" @click="openAdminNotifications('announcements')">
+              <span>Announcements</span>
+              <strong>{{ adminNotificationCounts.announcements }}</strong>
+            </button>
+            <span v-if="!hasAdminNotifications" class="admin-notification-bar__clear">All clear</span>
+          </section>
+
           <section class="admin-feature-header">
             <div>
               <p class="admin-eyebrow">Branch Manager dashboard</p>
@@ -848,6 +872,8 @@ const router = useRouter()
 const activeRange = ref('today')
 const activeSection = ref('dashboard')
 const adminSidebarCollapsed = ref(false)
+const adminNotificationCounts = ref({ orders: 0, inventory: 0, messages: 0, announcements: 0 })
+const hasAdminNotifications = computed(() => Object.values(adminNotificationCounts.value).some(count => count > 0))
 
 const activeSectionTitle = computed(() => ({
   dashboard: panelTitle.value,
@@ -1039,6 +1065,32 @@ async function fetchAnnouncements() {
   } finally {
     loadingAnnouncements.value = false
   }
+}
+
+async function loadAdminNotifications() {
+  try {
+    const res = await axios.get('/api/panel-notifications', { withCredentials: true })
+    if (res.data?.ok) {
+      adminNotificationCounts.value = {
+        orders: Number(res.data.counts?.admin || 0),
+        inventory: Number(res.data.counts?.inventory || 0),
+        messages: Number(res.data.summary?.messages || 0),
+        announcements: Number(res.data.summary?.announcements || 0),
+      }
+    }
+  } catch (e) {
+    console.error('Error loading admin notifications:', e)
+  }
+}
+
+function openAdminNotifications(type) {
+  if (type === 'orders') activeSection.value = 'orders'
+  if (type === 'inventory') activeSection.value = 'inventory'
+  if (type === 'announcements') {
+    activeSection.value = 'announcements'
+    fetchAnnouncements()
+  }
+  if (type === 'messages') window.dispatchEvent(new CustomEvent('open-message-widget'))
 }
 
 // Ensure a fresh CSRF cookie/header is present before mutating requests
@@ -1452,6 +1504,8 @@ async function onAvatarChange(event) {
 
 // Auto-upload pending avatar after reload (branch manager panel)
 onMounted(async () => {
+  loadAdminNotifications()
+
   // Mark initial mount complete first (before loading dashboard)
   isInitialMount.value = false
 
@@ -1779,6 +1833,87 @@ function formatDate(dateString) {
 </script>
 
 <style scoped>
+.admin-notification-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 56px;
+  margin: 0 0 16px;
+  padding: 8px 10px;
+  border: 1px solid #f0c4a3;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #fff4e9 0%, #ffffff 100%);
+  box-shadow: 0 4px 14px rgba(255, 106, 61, 0.12);
+}
+
+.admin-notification-bar__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  padding: 0 8px 0 2px;
+  color: #172b46;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.admin-notification-bar__icon {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: #f04444;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.admin-notification-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid #f0c4a3;
+  border-radius: 8px;
+  color: #172b46;
+  background: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.admin-notification-chip:hover,
+.admin-notification-chip:focus-visible {
+  border-color: #f04444;
+  outline: none;
+  box-shadow: 0 3px 10px rgba(240, 68, 68, 0.15);
+}
+
+.admin-notification-chip > strong {
+  display: grid;
+  min-width: 22px;
+  height: 22px;
+  place-items: center;
+  padding: 0 4px;
+  border-radius: 999px;
+  color: #fff;
+  background: #f04444;
+  font-size: 11px;
+}
+
+.admin-notification-bar__clear {
+  margin-left: auto;
+  color: #26734d;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .product-request-list {
   display: grid;
   gap: 8px;
