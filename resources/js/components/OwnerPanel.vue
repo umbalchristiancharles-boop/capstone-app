@@ -28,6 +28,7 @@
         <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'dishApproval' }" @click="selectSection('dishApproval')">Dish Approval</button>
         <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'staffManagement' }" @click="selectSection('staffManagement')">Staff Management</button>
         <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'branchConfirmations' }" @click="selectSection('branchConfirmations')">Branch Confirmations</button>
+        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'branchAnalytics' }" @click="selectSection('branchAnalytics')">Branch Analytics</button>
         <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'priceMarkups' }" @click="selectSection('priceMarkups')">Price Markups</button>
         <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'announcements' }" @click="selectSection('announcements')">Announcements</button>
       </nav>
@@ -381,6 +382,7 @@ import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import OwnerDishApprovalPanel from './OwnerDishApprovalPanel.vue'
 import OwnerStaffManagement from './OwnerStaffManagement.vue'
 import OwnerBranchConfirmations from './OwnerBranchConfirmations.vue'
+import OwnerBranchAnalytics from './OwnerBranchAnalytics.vue'
 import OwnerPriceMarkupPanel from './OwnerPriceMarkupPanel.vue'
 import axios from 'axios'
 import { showToast } from './toastStore'
@@ -399,6 +401,7 @@ const sectionComponents = {
   dishApproval: OwnerDishApprovalPanel,
   staffManagement: OwnerStaffManagement,
   branchConfirmations: OwnerBranchConfirmations,
+  branchAnalytics: OwnerBranchAnalytics,
   priceMarkups: OwnerPriceMarkupPanel,
 }
 const announcementForm = ref({ title: '', message: '', target: 'all' })

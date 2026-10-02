@@ -335,6 +335,7 @@ class PositionApplicationController extends Controller
             $accountConfig = $application->positionOpenRequest?->account_config ?? [];
             $isCustomAccount = ($application->positionOpenRequest?->account_type ?? 'standard') === 'custom';
             if ($isCustomAccount) {
+                $role = 'CUSTOM';
                 $username = trim((string) ($accountConfig['username'] ?? '')) ?: $username;
                 $originalUsername = $username;
                 $counter = 1;

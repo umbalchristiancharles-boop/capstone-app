@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\Dish;
 use App\Models\DishIngredient;
 use App\Models\PriceMarkupPercentage;
+use App\Services\DishIngredientInventory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -39,202 +40,11 @@ class CashierController extends Controller
      * candidate ingredient products in the branch (handles SKU/name duplicates
      * and pack-aware quantities).
      *
-     * @param \App\Models\Dish $dish
-     * @param int $branchId
      * @return array [int $maxServings, float $costSum]
      */
-    private function computeDishAvailability($dish, $branchId)
+    private function computeDishAvailability($dish, $branchId): array
     {
-        $costSum = 0.0;
-        $maxServings = null;
-
-        foreach ($dish->ingredients as $ing) {
-            $perServing = (float) ($ing->per_serving ?? 1);
-            if ($perServing <= 0) $perServing = 1;
-
-            $nameRaw = trim((string) $ing->name);
-            $nameUpper = strtoupper($nameRaw);
-            $normalized = preg_replace('/[^A-Z0-9]+/', '', $nameUpper);
-            $skuKey = $ing->product?->sku ?? null;
-
-            $candidateQuery = Product::where('branch_id', $branchId)->where('is_active', 1)
-                ->where(function ($q) use ($skuKey, $nameRaw) {
-                    if ($skuKey) $q->orWhere('sku', $skuKey);
-                    $q->orWhere('name', 'like', '%' . str_replace(' ', '%', $nameRaw) . '%');
-                });
-
-            $candidateProducts = $candidateQuery->get();
-
-            if ($candidateProducts->isEmpty()) {
-                // missing ingredient -> zero availability
-                return [0, 0.0];
-            }
-
-            $filtered = $candidateProducts->filter(function ($p) use ($normalized) {
-                $pn = strtoupper($p->name ?? '');
-                $pnNorm = preg_replace('/[^A-Z0-9]+/', '', $pn);
-                if ($pnNorm === $normalized) return true;
-                if (soundex($pn) === soundex($normalized)) return true;
-                return false;
-            });
-
-            if ($filtered->isNotEmpty()) {
-                $candidateProducts = $filtered;
-            }
-
-            $totalPiecesAvailable = 0;
-            $totalCost = 0.0;
-            $isCondiment = false;
-            $isWeightBased = false;
-
-            // Check if ingredient uses weight-based unit (g, kg, ml, l)
-            $ingUnit = strtolower(trim($ing->unit ?? ''));
-            $weightUnits = ['g', 'gram', 'grams', 'kg', 'kilogram', 'kilograms', 'ml', 'milliliter', 'milliliters', 'l', 'liter', 'liters'];
-            $isWeightBased = in_array($ingUnit, $weightUnits);
-
-            $costPerServing = 0.0;
-
-            foreach ($candidateProducts as $cp) {
-                $cat = strtolower(trim($cp->category ?? ''));
-                if ($cat === 'condiment') {
-                    $isCondiment = true;
-                }
-
-                $perPackModeCp = in_array($cp->per_pack_or_individual, ['per_pack', 'both']);
-                $packQtyCp = (float) ($cp->pack_quantity ?? 0);
-                if ($perPackModeCp && $packQtyCp > 0) {
-                    $openUsedCp = (float) ($cp->open_pack_used ?? 0);
-                    $totalPiecesAvailable += (($cp->stock ?? 0) * $packQtyCp) - $openUsedCp;
-                } else {
-                    $totalPiecesAvailable += (float) ($cp->stock ?? 0);
-                }
-
-                // Get cost for ONE unit of the ingredient (not total stock)
-                // If per pack, divide cost by pack_quantity to get cost per piece
-                $unitCost = (float) ($cp->cost_price ?? $cp->price ?? 0);
-                if ($perPackModeCp && $packQtyCp > 0) {
-                    $unitCost = $unitCost / $packQtyCp;
-                }
-                $costPerServing += $unitCost;
-            }
-
-            if ($isCondiment && $totalPiecesAvailable <= 0) {
-                $costSum += $costPerServing;
-                continue;
-            }
-
-            if ($isWeightBased) {
-                // For weight-based ingredients, the per_serving is already the weight (e.g., 100g)
-                // so we calculate servings based on total weight available
-                $possibleByIng = (int) floor($totalPiecesAvailable / max(1, $perServing));
-                $maxServings = is_null($maxServings) ? $possibleByIng : min($maxServings, $possibleByIng);
-            } else {
-                // For piece-based ingredients
-                $possibleByIng = (int) floor($totalPiecesAvailable / max(1, $perServing));
-                $maxServings = is_null($maxServings) ? $possibleByIng : min($maxServings, $possibleByIng);
-            }
-            // Multiply cost per serving by the required amount per serving
-            $costSum += ($costPerServing * $perServing);
-        }
-
-        return [(int) ($maxServings ?? 0), (float) $costSum];
-    }
-
-    /**
-     * Consume required pieces for an ingredient across candidate products in a branch.
-     * Returns true if consumption succeeded fully, false if insufficient.
-     * This handles per-pack products (updates stock + open_pack_used) and individual units.
-     *
-     * Pack logic: When pack_quantity is set (e.g., 5 per pack), each purchase of 5 units
-     * consumes 1 from stock. Partial packs remaining in open_pack_used don't reduce stock
-     * until enough are used to equal a full pack.
-     */
-    private function consumeIngredientProducts($ing, $branchId, float $requiredPieces): bool
-    {
-        if ($requiredPieces <= 0) return true;
-
-        $nameRaw = trim((string) $ing->name);
-        $nameUpper = strtoupper($nameRaw);
-        $normalized = preg_replace('/[^A-Z0-9]+/', '', $nameUpper);
-        $skuKey = $ing->product?->sku ?? null;
-
-        // Check if ingredient uses weight-based unit (g, kg, ml, l) - treat like condiments
-        $ingUnit = strtolower(trim($ing->unit ?? ''));
-        $weightUnits = ['g', 'gram', 'grams', 'kg', 'kilogram', 'kilograms', 'ml', 'milliliter', 'milliliters', 'l', 'liter', 'liters'];
-        $isWeightBased = in_array($ingUnit, $weightUnits);
-
-        $candidateQuery = Product::where('branch_id', $branchId)->where('is_active', 1)
-            ->where(function ($q) use ($skuKey, $nameRaw) {
-                if ($skuKey) $q->orWhere('sku', $skuKey);
-                $q->orWhere('name', 'like', '%' . str_replace(' ', '%', $nameRaw) . '%');
-            });
-
-        $candidates = $candidateQuery->lockForUpdate()->get();
-        if ($candidates->isEmpty()) return false;
-
-        // prefer exact normalized matches, then soundex, then others
-        $sorted = $candidates->sortBy(function ($p) use ($normalized) {
-            $pn = strtoupper($p->name ?? '');
-            $pnNorm = preg_replace('/[^A-Z0-9]+/', '', $pn);
-            if ($pnNorm === $normalized) return 0;
-            if (soundex($pn) === soundex($normalized)) return 1;
-            return 2;
-        });
-
-        $needed = $requiredPieces;
-        foreach ($sorted as $cp) {
-            $cat = strtolower(trim($cp->category ?? ''));
-            if ($cat === 'condiment' || $isWeightBased) {
-                // do not consume condiments or weight-based ingredients automatically
-                // They should be flagged for manual logistics replenishment
-                continue;
-            }
-
-            $perPackMode = in_array($cp->per_pack_or_individual, ['per_pack', 'both']);
-            $packQty = (float) ($cp->pack_quantity ?? 0);
-
-            $openUsed = (float) ($cp->open_pack_used ?? 0);
-            $piecesAvailable = $perPackMode && $packQty > 0
-                ? (($cp->stock ?? 0) * $packQty) - $openUsed
-                : (float) ($cp->stock ?? 0);
-
-            if ($piecesAvailable <= 0) continue;
-
-            $toTake = min($needed, $piecesAvailable);
-
-            if ($perPackMode && $packQty > 0) {
-                // For pack-based: accumulate used items; only decrement stock when open_pack_used reaches pack_quantity
-                $totalAfter = $openUsed + $toTake;
-                $packsToConsume = (int) floor($totalAfter / $packQty);
-                $remainingOpenUsed = $totalAfter - ($packsToConsume * $packQty);
-
-                if ($packsToConsume > 0) {
-                    $dec = min($packsToConsume, $cp->stock);
-                    $cp->decrement('stock', $dec);
-                }
-
-                $cp->open_pack_used = $remainingOpenUsed;
-                $cp->save();
-            } else {
-                // individual units - consume directly
-                $dec = min((float) $cp->stock, $toTake);
-                $cp->decrement('stock', (int) $dec);
-            }
-
-            $needed -= $toTake;
-            if ($needed <= 0) return true;
-        }
-
-        // not enough pieces across candidates — flag logistics for those products
-        foreach ($candidates as $c) {
-            try {
-                $c->update(['logistics_request_available' => true]);
-            } catch (\Exception $e) {
-                // ignore
-            }
-        }
-
-        return false;
+        return app(DishIngredientInventory::class)->calculate($dish, (int) $branchId);
     }
 
     /**
@@ -614,11 +424,11 @@ class CashierController extends Controller
                     // decrement each ingredient according to per_serving * quantity
                     $dish = Dish::whereRaw('TRIM(UPPER(name)) = ?', [trim(strtoupper($prod->name))])
                         ->where('branch_id', $request->branch_id)
-                        ->with('ingredients')
+                        ->with('ingredients.product')
                         ->first();
 
                     if (!$dish) {
-                        $possible = Dish::where('branch_id', $request->branch_id)->with('ingredients')->get();
+                        $possible = Dish::where('branch_id', $request->branch_id)->with('ingredients.product')->get();
                         $pn = trim(strtoupper($prod->name));
                         foreach ($possible as $pd) {
                             $dn = trim(strtoupper($pd->name));
@@ -629,33 +439,8 @@ class CashierController extends Controller
                         }
                     }
 
-                        if ($dish) {
-                                foreach ($dish->ingredients as $ing) {
-                                    $required = (float) ($ing->per_serving ?? 1);
-                                    if ($required <= 0) $required = 1;
-                                    $required = $required * $it->quantity;
-
-                                    $consumed = $this->consumeIngredientProducts($ing, $request->branch_id, $required);
-
-                                    if (! $consumed) {
-                                        // Flag logistics for representative product if present, otherwise flag candidates
-                                        if ($ing->product_id) {
-                                            try {
-                                                Product::where('id', $ing->product_id)
-                                                    ->where('branch_id', $request->branch_id)
-                                                    ->update(['logistics_request_available' => true]);
-                                            } catch (\Exception $e) {
-                                                // ignore
-                                            }
-                                        } else {
-                                            // best-effort: flag products that match the ingredient name
-                                            $nameRaw = trim((string) $ing->name);
-                                            Product::where('branch_id', $request->branch_id)
-                                                ->where('name', 'like', '%' . str_replace(' ', '%', $nameRaw) . '%')
-                                                ->update(['logistics_request_available' => true]);
-                                        }
-                                    }
-                                }
+                        if (!$dish || !app(DishIngredientInventory::class)->consume($dish, (int) $request->branch_id, (int) $it->quantity)) {
+                            abort(422, "Insufficient ingredients/stock for {$prod->name}.");
                         }
 
                     // Optionally decrement the dish product stock if tracked (pack-aware)

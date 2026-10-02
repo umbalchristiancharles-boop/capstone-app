@@ -1221,6 +1221,63 @@ public function requestedProducts(Request $request)
     /**
      * Finance confirms uploaded receipt and moves status to on_delivery.
      */
+    public function rejectReceipt(Request $request, $id)
+    {
+        $user = $request->user();
+        if (!$user) return response()->json(['error' => 'Unauthenticated'], 401);
+
+        $role = strtoupper($user->role ?? '');
+        $dept = strtoupper($user->department ?? '');
+        $allowed = in_array($role, ['FINANCE_MANAGER', 'MANAGER_FINANCE', 'SUPER_ADMIN', 'SUPERADMIN'])
+            || ($role === 'MANAGER' && $dept === 'FINANCE');
+        if (!$allowed && $role === 'CUSTOM') {
+            try {
+                $perms = $user->permissions ?? [];
+                if (is_string($perms)) $perms = json_decode($perms, true) ?: [];
+                $modules = is_array($perms) && isset($perms['modules']) && is_array($perms['modules'])
+                    ? $perms['modules']
+                    : (is_array($perms) ? $perms : []);
+                foreach ($modules as $module) {
+                    if (strtoupper(trim((string) $module)) === 'FINANCE') {
+                        $allowed = true;
+                        break;
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Ignore malformed custom permissions.
+            }
+        }
+        if (!$allowed) return response()->json(['error' => 'Unauthorized'], 401);
+
+        $procRequest = ProcurementRequest::findOrFail($id);
+        if ($user->branch_id && $procRequest->branch_id != $user->branch_id
+            && !in_array($role, ['SUPER_ADMIN', 'SUPERADMIN'])) {
+            return response()->json(['error' => 'Not your branch'], 403);
+        }
+        if (empty($procRequest->receipt_path) || $procRequest->receipt_confirmed) {
+            return response()->json(['error' => 'Only pending receipt submissions can be rejected'], 400);
+        }
+
+        DB::table('procurement_requests')
+            ->where('id', $procRequest->id)
+            ->update([
+                'receipt_path' => null,
+                'receipt_uploaded_by' => null,
+                'receipt_uploaded_at' => null,
+                'receipt_confirmed' => false,
+                'receipt_confirmed_by' => null,
+                'receipt_confirmed_at' => null,
+                'status' => 'delivery_pending',
+                'updated_at' => now(),
+            ]);
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'Receipt rejected. Procurement can upload a replacement receipt.',
+            'request' => $procRequest->fresh(),
+        ]);
+    }
+
     public function confirmReceipt(Request $request, $id)
     {
         $user = $request->user();

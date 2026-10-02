@@ -6,9 +6,74 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Models\Branch;
+use App\Models\Order;
+use App\Models\Expense;
 
 class OwnerDashboardController extends Controller
 {
+    public function branchAnalytics(Request $request)
+    {
+        $range = $request->query('range', 'thisMonth');
+        $now = now();
+        $dateRange = match ($range) {
+            'today' => [$now->copy()->startOfDay(), $now->copy()->endOfDay()],
+            'yesterday' => [$now->copy()->subDay()->startOfDay(), $now->copy()->subDay()->endOfDay()],
+            'thisWeek' => [$now->copy()->startOfWeek(), $now->copy()->endOfWeek()],
+            'lastMonth' => [$now->copy()->subMonth()->startOfMonth(), $now->copy()->subMonth()->endOfMonth()],
+            'all' => [null, null],
+            default => [$now->copy()->startOfMonth(), $now->copy()->endOfMonth()],
+        };
+        $range = in_array($range, ['today', 'yesterday', 'thisWeek', 'thisMonth', 'lastMonth', 'all'], true)
+            ? $range
+            : 'thisMonth';
+
+        $branches = Branch::query()
+            ->where(function ($query) {
+                $query->where('is_main_branch', false)->orWhereNull('is_main_branch');
+            })
+            ->orderBy('name')
+            ->get()
+            ->map(function (Branch $branch) use ($dateRange, $range) {
+                $orders = Order::where('branch_id', $branch->id);
+                $expenses = Expense::where('branch_id', $branch->id);
+
+                if ($range !== 'all' && $dateRange[0] && $dateRange[1]) {
+                    $orders->whereBetween('created_at', $dateRange);
+                    $expenses->whereBetween('created_at', $dateRange);
+                }
+
+                $sales = (float) (clone $orders)->where('status', 'completed')->sum('grand_total');
+                $orderCount = (int) (clone $orders)->where('status', 'completed')->count();
+                $refunds = (float) (clone $orders)->where('status', 'cancelled')->sum('grand_total');
+                $totalExpenses = (float) (clone $expenses)->where('status', 'approved')->sum('amount');
+
+                return [
+                    'branch_id' => $branch->id,
+                    'branch_name' => $branch->name,
+                    'branch_code' => $branch->code,
+                    'is_active' => (bool) $branch->is_active,
+                    'total_sales' => $sales,
+                    'total_orders' => $orderCount,
+                    'total_expenses' => $totalExpenses,
+                    'total_refunds' => $refunds,
+                    'net_profit' => $sales - $totalExpenses - $refunds,
+                ];
+            });
+
+        return response()->json([
+            'ok' => true,
+            'branches' => $branches,
+            'totals' => [
+                'total_sales' => $branches->sum('total_sales'),
+                'total_orders' => $branches->sum('total_orders'),
+                'total_expenses' => $branches->sum('total_expenses'),
+                'total_refunds' => $branches->sum('total_refunds'),
+                'net_profit' => $branches->sum('net_profit'),
+            ],
+            'filters' => ['range' => $range],
+        ]);
+    }
+
     public function index(Request $request)
     {
         if (!Auth::check()) {

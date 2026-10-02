@@ -426,6 +426,19 @@
               </div>
             </div>
             <div class="form-group">
+              <label>Inventory Unit</label>
+              <select v-model="submitForm.unit">
+                <option value="" disabled>Select unit</option>
+                <option value="pcs">pcs</option>
+                <option value="g">g</option>
+                <option value="kg">kg</option>
+                <option value="ml">ml</option>
+                <option value="l">l</option>
+                <option value="pack">pack</option>
+                <option value="box">box</option>
+              </select>
+            </div>
+            <div class="form-group">
               <label>{{ submitForm.per_pack_or_individual === 'per_pack' ? 'Price per Pack (PHP)' : 'Unit Price (PHP)' }}</label>
               <input v-model.number="submitForm.price" type="number" min="0.01" step="0.01" placeholder="0.00" />
               <div v-if="submitForm.per_pack_or_individual === 'per_pack' && submitForm.pack_quantity > 0" class="muted small-text">
@@ -629,7 +642,7 @@ const savingEstimatedDelivery = ref(false)
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
 // Supplier submit modal state
 const supplierSubmitModalVisible = ref(false)
-const submitForm = ref({ name: '', price: null, per_pack_or_individual: '', date_made: '', pack_quantity: null, pack_unit: '', barcode: '', sku: '', product_image: null })
+const submitForm = ref({ name: '', price: null, unit: '', per_pack_or_individual: '', date_made: '', pack_quantity: null, pack_unit: '', barcode: '', sku: '', product_image: null })
 const submitIsKitchenIngredient = ref(false)
 const todayDate = new Date().toLocaleDateString('en-CA')
 const submitSubmitting = ref(false)
@@ -909,12 +922,19 @@ async function fulfillOrder(id) {
 async function completeTransaction(id) {
   try {
     // Ask supplier to provide expiry at transaction complete (required)
+    const toLocalDateValue = (date = new Date()) => {
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
+    }
+    const minimumExpiryDate = toLocalDateValue()
     const result = await Swal.fire({
       title: 'Complete Transaction?',
       html: `
         <div style="text-align:left; margin-top:10px;">
           <div style="font-weight:700; margin-bottom:6px;">Expiration date (required)</div>
-          <input id="supplier-expiry-input" type="datetime-local" style="width:100%; padding:10px; border-radius:8px; border:1px solid #d1d5db;" />
+          <input id="supplier-expiry-input" type="date" min="${minimumExpiryDate}" style="width:100%; padding:10px; border-radius:8px; border:1px solid #d1d5db;" />
           <div style="color:#6b7280; font-size:12px; margin-top:6px;">This expiry is stored per supplier order, not per product.</div>
         </div>
       `,
@@ -925,21 +945,24 @@ async function completeTransaction(id) {
       confirmButtonColor: '#28a745',
       cancelButtonColor: '#6c757d',
       preConfirm: () => {
-        const el = document.getElementById('supplier-expiry-input')
-        const v = el ? el.value : ''
-        if (!v) {
+        const expiryInput = document.getElementById('supplier-expiry-input')
+        const expiryDate = expiryInput ? expiryInput.value : ''
+        if (!expiryDate) {
           Swal.showValidationMessage('Expiry date is required')
           return false
         }
-        // Convert datetime-local value (YYYY-MM-DDTHH:mm) to what backend expects
-        return v
+        if (expiryDate < toLocalDateValue()) {
+          Swal.showValidationMessage('Expiry date cannot be before today')
+          return false
+        }
+        return expiryDate
       }
     })
 
     if (!result.isConfirmed) return
 
     // Mark the supplier order as on_delivery and store expiry
-    const expiresAt = result.value
+    const expiresAt = `${result.value}T23:59`
     const res = await axios.put(
       `/api/supplier-orders/${id}/status`,
       { status: 'on_delivery', expires_at: expiresAt },
@@ -968,7 +991,7 @@ async function completeTransaction(id) {
 function openSupplierSubmitModal(order) {
   // Prefill product name if procurement request provides it
   submitError.value = ''
-  submitForm.value = { name: '', price: null, per_pack_or_individual: '', date_made: '', pack_quantity: null, pack_unit: '', barcode: '', sku: '', product_image: null }
+  submitForm.value = { name: '', price: null, unit: '', per_pack_or_individual: '', date_made: '', pack_quantity: null, pack_unit: '', barcode: '', sku: '', product_image: null }
   currentSubmitOrderId.value = null
   submitIsKitchenIngredient.value = false
   if (!order) return
@@ -977,6 +1000,7 @@ function openSupplierSubmitModal(order) {
   // Try to prefill from procurementRequest or product name
   const suggested = order.procurementRequest?.product?.name || order.product?.name || ''
   submitForm.value.name = suggested
+  submitForm.value.unit = order.procurementRequest?.product?.unit || order.product?.unit || ''
   supplierSubmitModalVisible.value = true
   nextTick(() => supplierBarcodeInput.value?.focus())
 }
@@ -986,7 +1010,7 @@ function closeSupplierSubmitModal() {
   supplierSubmitModalVisible.value = false
   submitError.value = ''
   closeSupplierBarcodeScanner()
-  submitForm.value = { name: '', price: null, per_pack_or_individual: '', date_made: '', pack_quantity: null, pack_unit: '', barcode: '', sku: '', product_image: null }
+  submitForm.value = { name: '', price: null, unit: '', per_pack_or_individual: '', date_made: '', pack_quantity: null, pack_unit: '', barcode: '', sku: '', product_image: null }
   currentSubmitOrderId.value = null
   submitIsKitchenIngredient.value = false
 }
@@ -1092,6 +1116,7 @@ async function saveProductChanges() {
 async function submitProductForm() {
   if (!currentSubmitOrderId.value) return
   if (!submitForm.value.name) { await Swal.fire({ icon: 'error', title: 'Validation', text: 'Product name is required' }); return }
+  if (!submitForm.value.unit) { await Swal.fire({ icon: 'error', title: 'Validation', text: 'Inventory unit is required' }); return }
   if (!submitForm.value.per_pack_or_individual) { await Swal.fire({ icon: 'error', title: 'Validation', text: 'Pricing type is required' }); return }
   // If per-pack, require pack quantity and unit
   if (submitForm.value.per_pack_or_individual === 'per_pack') {
@@ -1109,6 +1134,7 @@ async function submitProductForm() {
     const payload = new FormData()
     payload.append('name', submitForm.value.name)
     payload.append('price', submitForm.value.price)
+    payload.append('unit', submitForm.value.unit)
     payload.append('per_pack_or_individual', submitForm.value.per_pack_or_individual)
     if (submitForm.value.pack_quantity !== null) payload.append('pack_quantity', submitForm.value.pack_quantity)
     if (submitForm.value.pack_unit) payload.append('pack_unit', submitForm.value.pack_unit)

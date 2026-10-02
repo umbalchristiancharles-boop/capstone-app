@@ -801,6 +801,7 @@ function isReceiptChecking(item) {
   const status = (item?.procurement_status || item?.status || '').toLowerCase()
   const orderStatus = (item?.existingOrder?.status || '').toLowerCase()
   if (receiptPendingIds.value?.[item?.id]) return true
+  if (item?.receipt_path && !item?.receipt_confirmed) return true
   return status === 'receipt_submitted' || status === 'pending_receipt_check' || status === 'pending_receipt' || orderStatus === 'receipt_submitted' || orderStatus === 'pending_receipt_check' || orderStatus === 'pending_receipt'
 }
 

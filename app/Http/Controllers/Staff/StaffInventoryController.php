@@ -632,6 +632,10 @@ class StaffInventoryController extends Controller
                     'product_id' => $r->product_id,
                     'product_name' => $r->product?->name,
                     'quantity' => $r->quantity,
+                    'confirmed_quantity' => $r->confirmed_quantity ?? $r->quantity,
+                    'variance_quantity' => $r->variance_quantity,
+                    'variance_reason' => $r->variance_reason,
+                    'proof_image_path' => $r->delivery_proof_path,
                     'confirmed_by' => $r->procurementUser?->full_name ?? $r->procurementUser?->username ?? null,
                     'confirmed_at' => $r->updated_at,
                 ];
@@ -680,7 +684,7 @@ class StaffInventoryController extends Controller
             'counted_stock' => 'required|integer|min:0',
             'proof_image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'barcode' => 'nullable|string|max:64',
-            'notes' => 'nullable|string|max:1000'
+            'notes' => 'nullable|string|max:255'
         ]);
 
         $proc = ProcurementRequest::with('product')->find($id);
@@ -744,12 +748,10 @@ class StaffInventoryController extends Controller
                 }
 
                 $variance = $incrementBy - (int) $proc->quantity;
-                $varianceReason = null;
-                if ($variance !== 0) {
-                    $varianceReason = !empty($validated['notes'])
-                        ? $validated['notes']
-                        : 'Variance: ' . $variance . ' units';
-                }
+                $notes = trim((string) ($validated['notes'] ?? ''));
+                $varianceReason = $notes !== ''
+                    ? $notes
+                    : ($variance !== 0 ? 'Variance: ' . $variance . ' units' : null);
 
                 if ($prod) {
                 // Increment product stock by the counted delivered quantity

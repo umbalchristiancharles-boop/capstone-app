@@ -471,6 +471,13 @@ router.beforeEach((to, from, next) => {
 })
 
 router.afterEach(() => {
+  try {
+    if (window.__chikin_temp_overlay) {
+      window.__chikin_temp_overlay.remove()
+      window.__chikin_temp_overlay = null
+    }
+  } catch (e) {}
+
   const waitForRequests = (timeoutMs = 2500) => new Promise(resolve => {
     if (pendingRequests === 0) return resolve()
     requestWaiters.push(resolve)

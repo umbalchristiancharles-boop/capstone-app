@@ -166,6 +166,7 @@ Route::middleware('web')->group(function () {
     Route::patch('/superadmin/branches/{id}/reactivate', [\App\Http\Controllers\Api\SuperAdminController::class, 'reactivateBranch'])->middleware(['auth', 'permission:admin,admin.branches']);
 
     // Owner Branch Approval
+    Route::get('/owner/branch-analytics', [OwnerDashboardController::class, 'branchAnalytics'])->middleware(\App\Http\Middleware\OwnerOnly::class);
     Route::get('/owner/branch-requests', [\App\Http\Controllers\Api\SuperAdminController::class, 'pendingBranchRequests'])->middleware(['auth']);
     Route::post('/owner/branch-requests/{id}/approve', [\App\Http\Controllers\Api\SuperAdminController::class, 'approveBranchRequest'])->middleware(['auth']);
     Route::post('/owner/branch-requests/{id}/reject', [\App\Http\Controllers\Api\SuperAdminController::class, 'rejectBranchRequest'])->middleware(['auth']);
@@ -310,6 +311,7 @@ Route::middleware('auth:sanctum,web')->group(function () {
     Route::post('procurement-requests/{id}/status', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'updateStatus']);
     Route::post('procurement-requests/{id}/complete', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'completeOrder']);
     Route::post('procurement-requests/{id}/confirm-receipt', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'confirmReceipt']);
+    Route::post('procurement-requests/{id}/reject-receipt', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'rejectReceipt']);
     Route::post('procurement-requests/{id}/change-supplier', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'changeSupplier']);
     Route::post('procurement-requests/{id}/broadcast', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'broadcastToSuppliers']);
 

@@ -340,22 +340,25 @@ export default {
     },
     showAlert(message, type) { this.alertMessage = message; this.alertType = type; setTimeout(() => { this.alertMessage = '' }, 5000) },
     goToAdminPanel() {
-      try {
-        if (window.__chikin_temp_overlay) return
-        const overlay = document.createElement('div')
-        overlay.className = 'loading-overlay __chikin_temp_overlay'
-        overlay.style.zIndex = '9999'
-        overlay.style.backdropFilter = 'blur(8px)'
-        const logo = new URL('../assets/chikinlogo.png', import.meta.url).href
-        overlay.innerHTML = '<div class="logo-loading-box"><img src="' + logo + '" alt="Chikin Tayo" class="logo-loading-img" /><p>Loading dashboard...</p></div>'
-        document.body.appendChild(overlay)
-        window.__chikin_temp_overlay = overlay
-        const dashboardRoute = this.currentUserRole === 'HR' ? '/hr-panel' : (this.currentUserRole === 'BRANCH_MANAGER' ? '/manager-panel' : '/admin-panel')
-        this.$router.push(dashboardRoute).catch(() => { try { if (window.__chikin_temp_overlay) { window.__chikin_temp_overlay.remove(); window.__chikin_temp_overlay = null } } catch (e) {} })
-      } catch (e) {
-        const dashboardRoute = this.currentUserRole === 'HR' ? '/hr-panel' : (this.currentUserRole === 'BRANCH_MANAGER' ? '/manager-panel' : '/admin-panel')
-        this.$router.push(dashboardRoute)
-      }
+      let localUser = null
+      try { localUser = JSON.parse(localStorage.getItem('user') || 'null') } catch (e) {}
+
+      const role = String(this.currentUserRole || localUser?.role || '').toUpperCase()
+      const department = String(localUser?.department || '').toLowerCase()
+      let dashboardRoute = '/staff-landing'
+
+      if (role === 'CUSTOM') dashboardRoute = '/custom-panel'
+      else if (role === 'OWNER') dashboardRoute = '/owner-panel'
+      else if (role === 'SUPER_ADMIN' || role === 'SUPERADMIN') dashboardRoute = '/super-admin-panel'
+      else if (role === 'ADMIN') dashboardRoute = '/admin-panel'
+      else if (role === 'HR') dashboardRoute = '/hr-panel'
+      else if (role === 'BRANCH_MANAGER' || role === 'MANAGER') dashboardRoute = '/manager-panel'
+      else if (role === 'STAFF' && department === 'CASHIER') dashboardRoute = '/staff/cashier'
+      else if (role === 'STAFF' && department === 'FINANCE') dashboardRoute = '/staff/finance'
+      else if (role === 'STAFF' && department === 'INVENTORY') dashboardRoute = '/staff/inventory'
+      else if (role === 'STAFF' && department === 'KITCHEN') dashboardRoute = '/staff/kitchen'
+
+      this.$router.push(dashboardRoute)
     },
     displayRole(r) {
       const role = (r || '').toString().toUpperCase()

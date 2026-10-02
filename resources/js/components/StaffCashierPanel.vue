@@ -45,7 +45,7 @@
             </div>
           </section>
           <Transition name="staff-cashier-section" mode="out-in">
-          <div :key="activeCashierSection" class="staff-cashier-section-view">
+          <div :key="activeCashierSection" class="staff-cashier-section-view" :class="{ 'staff-cashier-section-view--cashier': activeCashierSection === 'cashier' }">
       <div v-if="!branchId" class="loading-text">Loading branch information...</div>
         <div v-else class="cashier-body" :class="{ 'staff-cashier-body--hidden': activeCashierSection !== 'cashier' }">
         <section v-if="activeCashierSection === 'cashier'" class="product-lookup-section">
@@ -70,6 +70,35 @@
             />
             <button class="scan-btn" type="button" @click="openBarcodeScanner">{{ scannerOpen ? 'Stop Scan' : 'Scan' }}</button>
           </div>
+          <section class="staff-cashier-catalogue" aria-label="Dishes and products">
+            <div class="staff-cashier-catalogue__header">
+              <h2>Dishes</h2>
+              <span>{{ filteredProducts.length }} available</span>
+            </div>
+            <div v-if="isLoadingProducts" class="loading-text">Loading dishes and products...</div>
+            <div v-else-if="filteredProducts.length === 0" class="empty-text">
+              {{ products.some(product => product.is_kitchen_dish) ? 'No matching dishes.' : 'No dishes available for this branch.' }}
+            </div>
+            <div v-else class="staff-cashier-catalogue__grid">
+              <button
+                v-for="product in filteredProducts"
+                :key="product.id"
+                type="button"
+                class="staff-cashier-dish-card"
+                :disabled="cashierStock(product) <= 0"
+                @click="addToCart(product)"
+              >
+                <img v-if="product.image_url" class="staff-cashier-dish-card__image" :src="product.image_url" :alt="product.name" loading="lazy" />
+                <div v-else class="staff-cashier-dish-card__image staff-cashier-dish-card__image--empty" aria-hidden="true">{{ (product.name || '?').charAt(0).toUpperCase() }}</div>
+                <span class="staff-cashier-dish-card__type">{{ product.is_kitchen_dish ? 'Dish' : 'Product' }}</span>
+                <span class="staff-cashier-dish-card__name">{{ product.name }}</span>
+                <span class="staff-cashier-dish-card__price">₱{{ fmt(displayPrice(product)) }}</span>
+                <span class="staff-cashier-dish-card__stock">
+                  {{ cashierStock(product) > 0 ? `${cashierStock(product)} in stock` : 'Out of stock' }}
+                </span>
+              </button>
+            </div>
+          </section>
         </section>
 
         <!-- Cart moved to side slot -->
@@ -584,15 +613,20 @@ function displayPrice(product) {
 
 const filteredProducts = computed(() => {
   const q = (productSearch.value || '').trim().toLowerCase()
-  if (!q) return products.value
+  const dishes = products.value.filter(product => product.is_kitchen_dish)
+  if (!q) return dishes
 
-  return products.value.filter(p => {
+  return dishes.filter(p => {
     const name = (p.name || '').toLowerCase()
     const sku = (p.sku || '').toLowerCase()
     const barcode = (p.barcode || '').toLowerCase()
     return name.includes(q) || sku.includes(q) || barcode.includes(q)
   })
 })
+
+function cashierStock(product) {
+  return Number(product?.is_kitchen_dish ? product.stock : (product?.real_stock ?? product?.stock)) || 0
+}
 
 function findProductByLookup() {
   const q = (productSearch.value || '').trim()

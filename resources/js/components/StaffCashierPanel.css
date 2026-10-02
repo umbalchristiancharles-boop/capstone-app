@@ -181,6 +181,23 @@
 .staff-cashier-content--attendance { align-content: start; }
 .staff-cashier-content--attendance .staff-cashier-order-rail { width: min(100%, 590px); justify-self: center; }
 .staff-cashier-section-view { min-height: 1px; }
+.staff-cashier-section-view--cashier { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(340px, 0.85fr); align-items: start; gap: 1rem; }
+.staff-cashier-section-view--cashier .staff-cashier-order-rail { min-width: 0; }
+.staff-cashier-catalogue { margin-top: 0.85rem; padding: 1rem; border: 1px solid rgba(219, 188, 160, 0.42); border-radius: 12px; background: #fffaf5; }
+.staff-cashier-catalogue__header { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.8rem; }
+.staff-cashier-catalogue__header h2 { margin: 0; color: var(--cashier-ink); font-size: 1rem; }
+.staff-cashier-catalogue__header span { color: #6f5a4a; font-size: 0.76rem; }
+.staff-cashier-catalogue__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(138px, 1fr)); align-content: start; gap: 0.7rem; height: clamp(180px, 26vh, 220px); overflow-y: auto; padding: 1px 2px 2px 1px; }
+.staff-cashier-dish-card { display: flex; min-width: 0; flex-direction: column; align-items: stretch; gap: 0.25rem; padding: 0.55rem; border: 1px solid #ead8c7; border-radius: 9px; color: var(--cashier-ink); background: #fff; text-align: left; cursor: pointer; transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease; }
+.staff-cashier-dish-card:hover:not(:disabled) { transform: translateY(-2px); border-color: #c25a12; box-shadow: 0 8px 18px rgba(143, 79, 47, 0.12); }
+.staff-cashier-dish-card:focus-visible { outline: 3px solid rgba(194, 90, 18, 0.4); outline-offset: 2px; }
+.staff-cashier-dish-card:disabled { cursor: not-allowed; opacity: 0.62; }
+.staff-cashier-dish-card__image { display: grid; width: 100%; aspect-ratio: 4 / 3; place-items: center; border-radius: 6px; object-fit: cover; background: #f2e6da; }
+.staff-cashier-dish-card__image--empty { color: #7c3e1d; font-size: 1.5rem; font-weight: 800; }
+.staff-cashier-dish-card__type { color: #795138; font-size: 0.67rem; font-weight: 700; text-transform: uppercase; }
+.staff-cashier-dish-card__name { overflow: hidden; color: #3d2a1f; font-size: 0.84rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.staff-cashier-dish-card__price { color: #b45309; font-size: 0.82rem; font-weight: 800; }
+.staff-cashier-dish-card__stock { color: #6f5a4a; font-size: 0.72rem; }
 .staff-cashier-section-enter-active,
 .staff-cashier-section-leave-active { transition: opacity 220ms ease, transform 220ms cubic-bezier(0.22, 1, 0.36, 1); }
 .staff-cashier-section-enter-from { opacity: 0; transform: translateY(10px); }
@@ -293,6 +310,7 @@
 
 @media (max-width: 960px) {
   .staff-cashier-content { grid-template-columns: minmax(0, 1fr); }
+  .staff-cashier-section-view--cashier { grid-template-columns: minmax(0, 1fr); }
   .staff-cashier-order-rail { display: flex; }
   .staff-cashier-panel .cart-section { position: static; }
 }

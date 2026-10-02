@@ -366,9 +366,14 @@
                       <button class="btn-secondary btn-small" @click="openReceiptPreview(receipt)">View Receipt</button>
                     </td>
                     <td>
-                      <button class="btn-approve" @click="confirmReceipt(receipt.id)" :disabled="confirmingId === receipt.id">
-                        {{ confirmingId === receipt.id ? 'Processing...' : 'Confirm Receipt' }}
-                      </button>
+                      <div class="action-buttons">
+                        <button class="btn-approve" @click="confirmReceipt(receipt.id)" :disabled="confirmingId === receipt.id">
+                          {{ confirmingId === receipt.id ? 'Processing...' : 'Confirm Receipt' }}
+                        </button>
+                        <button class="btn-reject" @click="rejectReceipt(receipt.id)" :disabled="confirmingId === receipt.id">
+                          {{ confirmingId === receipt.id ? 'Processing...' : 'Reject' }}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                   <tr v-if="receiptSubmissions.length === 0">
@@ -585,6 +590,7 @@ const hasNotified = ref(false)
 
 const financeNotificationItems = computed(() => [
   { key: 'approvals', label: 'Pending approvals', count: financeNotificationSummary.value.approvals },
+  { key: 'receipt-approvals', label: 'Receipt approvals', count: receiptSubmissions.value.length },
   { key: 'messages', label: 'Messages', count: financeNotificationSummary.value.messages },
   { key: 'announcements', label: 'Announcements', count: financeNotificationSummary.value.announcements },
   { key: 'updates', label: 'Updates', count: financeNotificationSummary.value.updates },
@@ -846,6 +852,10 @@ async function loadPanelNotifications() {
 function handleFinanceNotificationClick(key) {
   if (key === 'approvals') {
     selectedSection.value = 'approvals'
+    return
+  }
+  if (key === 'receipt-approvals') {
+    selectedSection.value = 'receipt-approvals'
     return
   }
   if (key === 'updates') {
@@ -1488,6 +1498,22 @@ async function confirmReceipt(id) {
   }
 }
 
+async function rejectReceipt(id) {
+  if (!await window.swalConfirm('Reject this receipt? Procurement will need to upload a replacement.')) return
+
+  confirmingId.value = id
+  try {
+    const res = await axios.post(`/api/procurement-requests/${id}/reject-receipt`, {}, { withCredentials: true })
+    alert(res.data?.message || 'Receipt rejected. Procurement can upload a replacement receipt.')
+    await refreshDashboard()
+  } catch (e) {
+    console.error('Reject receipt failed', e)
+    alert(e.response?.data?.message || e.response?.data?.error || 'Failed to reject receipt')
+  } finally {
+    confirmingId.value = null
+  }
+}
+
 function openReceiptPreview(r) {
   if (!r) return
   receiptModalRequest.value = r
@@ -1525,7 +1551,8 @@ async function refreshDashboard() {
       axios.get('/api/manager/finance/transactions', { withCredentials: true }),
       axios.get('/api/manager/finance/reports', { params, withCredentials: true }),
       fetchBudgetRequests(),
-      fetchBranches()
+      fetchBranches(),
+      loadReceiptSubmissions()
     ])
 
     dashboardTotals.value = {

@@ -34,6 +34,10 @@ const goToDashboard = () => {
   // Redirect based on user role
   if (user) {
     const userRole = (user.role || '').toLowerCase();
+    if (userRole === 'custom') {
+      router.push('/custom-panel');
+      return;
+    }
     if (userRole === 'owner') {
       router.push('/owner-panel');
       return;

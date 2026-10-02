@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Dish;
 use App\Models\DishIngredient;
 use App\Models\Product;
+use App\Services\DishIngredientInventory;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
@@ -97,7 +98,7 @@ class DishApprovalController extends Controller
             $role = strtoupper($user->role ?? '') ;
             $canPublish = in_array($role, ['ADMIN', 'SUPER_ADMIN']);
             $autoPublishOnOwner = ($role === 'OWNER');
-            \DB::beginTransaction();
+            DB::beginTransaction();
 
             // Mark dish as approved
             $dish->update([
@@ -217,58 +218,8 @@ class DishApprovalController extends Controller
             $publishRequested = ($canPublish && !empty($validated['publish_products'])) ? true : false;
 
             try {
-                $costSum = 0.0;
-                $maxServings = null;
-                foreach ($dish->ingredients as $ing) {
-                        // Aggregate across all products for this ingredient (by SKU or normalized name)
-                        $perServing = (float) ($ing->per_serving ?? 1);
-                        if ($perServing <= 0) $perServing = 1;
-
-                        $nameKey = trim(strtoupper($ing->name ?? ''));
-                        $skuKey = $ing->product?->sku ?? null;
-
-                        $candidateQuery = Product::where('branch_id', $dish->branch_id ?? null)->where('is_active', 1);
-                        $candidateQuery->where(function ($q) use ($nameKey, $skuKey) {
-                            if ($skuKey) {
-                                $q->orWhere('sku', $skuKey);
-                            }
-                            $q->orWhereRaw('TRIM(UPPER(name)) = ?', [$nameKey]);
-                        });
-
-                        $candidateProducts = $candidateQuery->get();
-                        if ($candidateProducts->isEmpty()) {
-                            $maxServings = 0;
-                            break;
-                        }
-
-                        $totalPieces = 0;
-                        $totalCost = 0.0;
-                        $isCondiment = false;
-                        foreach ($candidateProducts as $cp) {
-                            $cat = strtolower(trim($cp->category ?? ''));
-                            if ($cat === 'condiment') $isCondiment = true;
-
-                            $perPackModeCp = in_array($cp->per_pack_or_individual, ['per_pack', 'both']);
-                            $packQtyCp = (float) ($cp->pack_quantity ?? 0);
-                            if ($perPackModeCp && $packQtyCp > 0) {
-                                $openUsedCp = (float) ($cp->open_pack_used ?? 0);
-                                $totalPieces += (($cp->stock ?? 0) * $packQtyCp) - $openUsedCp;
-                            } else {
-                                $totalPieces += (float) ($cp->stock ?? 0);
-                            }
-
-                            $totalCost += ((float) ($cp->cost_price ?? $cp->price ?? 0));
-                        }
-
-                        if ($isCondiment && $totalPieces <= 0) {
-                            $costSum += ($totalCost * $perServing);
-                            continue;
-                        }
-
-                        $possibleByIng = (int) floor($totalPieces / max(1, $perServing));
-                        $maxServings = is_null($maxServings) ? $possibleByIng : min($maxServings, $possibleByIng);
-                        $costSum += ($totalCost * $perServing);
-                }
+                [$maxServings, $costSum] = app(DishIngredientInventory::class)
+                    ->calculate($dish->load('ingredients.product'), (int) $dish->branch_id);
 
                 $maxServings = (int) ($maxServings ?? 0);
                 // Compute selling price if possible; otherwise default to 0
@@ -342,7 +293,7 @@ class DishApprovalController extends Controller
                 ]);
             }
 
-            \DB::commit();
+            DB::commit();
 
             return response()->json([
                 'ok' => true,
@@ -350,7 +301,7 @@ class DishApprovalController extends Controller
                 'data' => Dish::with('ingredients.product', 'approver')->find($dish->id),
             ]);
         } catch (\Exception $e) {
-            \DB::rollBack();
+            DB::rollBack();
             Log::error('Failed to approve dish', [
                 'dish_id' => $id,
                 'error' => $e->getMessage(),
@@ -393,7 +344,7 @@ class DishApprovalController extends Controller
         }
 
         try {
-            \DB::beginTransaction();
+            DB::beginTransaction();
 
             // Mark dish as rejected
             $dish->update([
@@ -404,7 +355,7 @@ class DishApprovalController extends Controller
                 'approval_notes' => 'REJECTED: ' . $validated['reason'],
             ]);
 
-            \DB::commit();
+            DB::commit();
 
             return response()->json([
                 'ok' => true,
@@ -412,7 +363,7 @@ class DishApprovalController extends Controller
                 'data' => $dish,
             ]);
         } catch (\Exception $e) {
-            \DB::rollBack();
+            DB::rollBack();
             Log::error('Failed to reject dish', [
                 'dish_id' => $id,
                 'error' => $e->getMessage(),
@@ -494,7 +445,7 @@ class DishApprovalController extends Controller
         }
 
         try {
-            \DB::beginTransaction();
+            DB::beginTransaction();
 
             // Create the dish for the owner's branch (or first branch if owner has no branch)
             $ownerBranchId = $user->branch_id ?? $branches->first()->id;
@@ -553,7 +504,7 @@ class DishApprovalController extends Controller
                             'pack_quantity' => null,
                             'pack_unit' => null,
                         ]);
-                        
+
                         $productId = $product->id;
                         
                         Log::info('Created placeholder ingredient product', [
@@ -591,7 +542,7 @@ class DishApprovalController extends Controller
                     'name' => $ing['name'],
                     'brand' => $ing['brand'] ?? null,
                     'unit' => $ing['unit'] ?? null,
-                    'per_serving' => $ing['per_serving'] ?? null,
+                          'per_serving' => $ing['per_serving'] ?? null,
                 ]);
             }
             
@@ -692,7 +643,7 @@ class DishApprovalController extends Controller
                 $this->createDishProductForBranch($dish, $branch->id, $user, $ingredientProductIds[$branch->id] ?? []);
             }
 
-            \DB::commit();
+            DB::commit();
 
             return response()->json([
                 'ok' => true,
@@ -701,7 +652,7 @@ class DishApprovalController extends Controller
                 'branches_affected' => $branches->count(),
             ]);
         } catch (\Exception $e) {
-            \DB::rollBack();
+            DB::rollBack();
             Log::error('Failed to create dish for all branches', [
                 'dish_name' => $validated['name'] ?? 'unknown',
                 'error' => $e->getMessage(),
@@ -721,89 +672,8 @@ class DishApprovalController extends Controller
     {
         try {
             // Calculate max servings and cost based on available ingredient stock
-            $costSum = 0.0;
-            $maxServings = 0; // Start with 0 since ingredients likely have no stock
-
-            foreach ($dish->ingredients as $index => $ing) {
-                $perServing = (float) ($ing->per_serving ?? 1);
-                if ($perServing <= 0) $perServing = 1;
-
-                // CRITICAL: Use the exact product ID that was created for this dish ingredient
-                // This ensures we only count stock from the dish's own ingredients (which start at 0)
-                // and NOT from existing products in the database
-                $candidateProducts = collect();
-                
-                if (isset($ingredientProductIds[$index])) {
-                    // Get the EXACT product by ID - no searching, no matching by name
-                    $product = Product::where('branch_id', $branchId)
-                        ->where('id', $ingredientProductIds[$index])
-                        ->where('is_active', 1)
-                        ->first();
-                    
-                    if ($product) {
-                        $candidateProducts = collect([$product]);
-                        Log::info('Found ingredient product for dish stock calculation', [
-                            'dish_id' => $dish->id,
-                            'branch_id' => $branchId,
-                            'ingredient_index' => $index,
-                            'product_id' => $product->id,
-                            'product_name' => $product->name,
-                            'product_stock' => $product->stock,
-                        ]);
-                    } else {
-                        Log::warning('Ingredient product NOT FOUND for dish stock calculation', [
-                            'dish_id' => $dish->id,
-                            'branch_id' => $branchId,
-                            'ingredient_index' => $index,
-                            'expected_product_id' => $ingredientProductIds[$index],
-                        ]);
-                    }
-                }
-                
-                // If still no product found, dish can't be made
-                if ($candidateProducts->isEmpty()) {
-                    $maxServings = 0;
-                    break;
-                }
-
-                $totalPieces = 0;
-                $totalCost = 0.0;
-                $isCondiment = false;
-                
-                foreach ($candidateProducts as $cp) {
-                    $cat = strtolower(trim($cp->category ?? ''));
-                    if ($cat === 'condiment') $isCondiment = true;
-
-                    $perPackModeCp = in_array($cp->per_pack_or_individual, ['per_pack', 'both']);
-                    $packQtyCp = (float) ($cp->pack_quantity ?? 0);
-                    if ($perPackModeCp && $packQtyCp > 0) {
-                        $openUsedCp = (float) ($cp->open_pack_used ?? 0);
-                        $totalPieces += (($cp->stock ?? 0) * $packQtyCp) - $openUsedCp;
-                    } else {
-                        $totalPieces += (float) ($cp->stock ?? 0);
-                    }
-
-                    $totalCost += ((float) ($cp->cost_price ?? $cp->price ?? 0));
-                }
-
-                // If it's a condiment with no stock, still allow it but don't count for servings
-                if ($isCondiment && $totalPieces <= 0) {
-                    $costSum += ($totalCost * $perServing);
-                    continue;
-                }
-
-                // Calculate how many servings this ingredient can make
-                $possibleByIng = (int) floor($totalPieces / max(1, $perServing));
-                
-                // If any ingredient has 0 possible servings, the dish has 0 stock
-                if ($possibleByIng == 0) {
-                    $maxServings = 0;
-                    break;
-                }
-                
-                $maxServings = is_null($maxServings) ? $possibleByIng : min($maxServings, $possibleByIng);
-                $costSum += ($totalCost * $perServing);
-            }
+            [$maxServings, $costSum] = app(DishIngredientInventory::class)
+                ->calculate($dish->load('ingredients.product'), (int) $branchId, $ingredientProductIds);
 
             $maxServings = (int) ($maxServings ?? 0);
             $sellingPrice = 0;

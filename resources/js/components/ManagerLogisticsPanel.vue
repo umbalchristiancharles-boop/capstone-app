@@ -21,6 +21,7 @@
         <button type="button" class="manager-logistics-sidebar-link" :class="{ 'manager-logistics-sidebar-link--active': selectedSection === 'overview' }" @click="selectedSection = 'overview'">Overview</button>
         <button type="button" class="manager-logistics-sidebar-link" :class="{ 'manager-logistics-sidebar-link--active': selectedSection === 'barcodes' }" @click="selectedSection = 'barcodes'">Product Barcodes</button>
         <button type="button" class="manager-logistics-sidebar-link" :class="{ 'manager-logistics-sidebar-link--active': selectedSection === 'pending-stock' }" @click="selectedSection = 'pending-stock'">Pending Stock</button>
+        <button type="button" class="manager-logistics-sidebar-link" :class="{ 'manager-logistics-sidebar-link--active': selectedSection === 'confirmation-history' }" @click="selectedSection = 'confirmation-history'">Confirmation History</button>
       </nav>
     </template>
 
@@ -496,7 +497,7 @@
 
                 <div class="form-group">
                   <label>Notes (optional)</label>
-                  <textarea v-model="confirmForm.notes" rows="3" placeholder="Add variance notes if needed"></textarea>
+                  <textarea v-model="confirmForm.notes" rows="3" maxlength="255" placeholder="Add variance notes if needed"></textarea>
                 </div>
 
                 <div v-if="confirmError" class="error-message">{{ confirmError }}</div>
@@ -530,6 +531,59 @@
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div v-if="selectedSection === 'confirmation-history'" id="logistics-confirmation-history" class="panel-section">
+        <div class="inline-row gap-sm align-center">
+          <h2 class="section-title">Stock Confirmation History</h2>
+          <button class="btn-secondary" type="button" @click="fetchConfirmedStockHistory" :disabled="confirmedStockHistoryLoading">
+            {{ confirmedStockHistoryLoading ? 'Refreshing...' : 'Refresh' }}
+          </button>
+        </div>
+        <p class="section-description">Completed stock confirmations for this branch.</p>
+
+        <div v-if="confirmedStockHistoryLoading" class="loading-container">
+          <div class="loading-spinner"></div>
+          <p>Loading confirmation history...</p>
+        </div>
+        <div v-else-if="confirmedStockHistoryError" class="error-container">
+          <p class="error-message">{{ confirmedStockHistoryError }}</p>
+          <button class="btn-retry" @click="fetchConfirmedStockHistory">Retry</button>
+        </div>
+        <div v-else class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Confirmed At</th>
+                <th>Product</th>
+                <th>Requested</th>
+                <th>Counted</th>
+                <th>Variance</th>
+                <th>Confirmed By</th>
+                <th>Notes</th>
+                <th>Proof</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="entry in confirmedStockHistory" :key="entry.id">
+                <td>{{ formatDate(entry.confirmed_at) }}</td>
+                <td>{{ entry.product_name || '(no product)' }}</td>
+                <td>{{ entry.quantity }}</td>
+                <td>{{ entry.confirmed_quantity }}</td>
+                <td>{{ entry.variance_quantity ?? 0 }}</td>
+                <td>{{ entry.confirmed_by || 'Unknown' }}</td>
+                <td>{{ entry.variance_reason || '—' }}</td>
+                <td>
+                  <a v-if="entry.proof_image_path" class="alert-link" :href="storageUrl(entry.proof_image_path)" target="_blank" rel="noopener">View proof</a>
+                  <span v-else>—</span>
+                </td>
+              </tr>
+              <tr v-if="confirmedStockHistory.length === 0">
+                <td colspan="8" class="empty-message">No stock confirmations recorded yet.</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -636,6 +690,9 @@ const showProcRequestForm = ref(false)
 const pendingStock = ref([])
 const pendingStockLoading = ref(false)
 const pendingStockError = ref('')
+const confirmedStockHistory = ref([])
+const confirmedStockHistoryLoading = ref(false)
+const confirmedStockHistoryError = ref('')
 const confirmingPending = ref({})
 const selectedPending = ref(null)
 const confirmForm = ref({ counted_stock: 0, notes: '', proof_image: null, barcode: '' })
@@ -935,6 +992,22 @@ async function fetchPendingStock() {
   }
 }
 
+async function fetchConfirmedStockHistory() {
+  confirmedStockHistoryLoading.value = true
+  confirmedStockHistoryError.value = ''
+  try {
+    const res = await requestWithFallback('get', '/api/staff/inventory/confirmed-procurements', { withCredentials: true })
+    const data = res.data?.data ?? res.data ?? []
+    confirmedStockHistory.value = Array.isArray(data) ? data : []
+  } catch (e) {
+    console.error('fetchConfirmedStockHistory error', e)
+    confirmedStockHistory.value = []
+    confirmedStockHistoryError.value = 'Failed to load confirmation history: ' + (e.response?.data?.message || e.message)
+  } finally {
+    confirmedStockHistoryLoading.value = false
+  }
+}
+
 async function fetchVarianceAlerts() {
   varianceLoading.value = true
   varianceError.value = ''
@@ -1124,11 +1197,11 @@ onMounted(async () => {
   // React to branch changes to reload tables
   watch(selectedBranch, async (newVal, oldVal) => {
     // fetch updated data for the selected branch
-    await Promise.all([fetchInventory(), loadProducts(), fetchProcRequests(), fetchProductRequests(), fetchPendingStock(), fetchVarianceAlerts()])
+    await Promise.all([fetchInventory(), loadProducts(), fetchProcRequests(), fetchProductRequests(), fetchPendingStock(), fetchVarianceAlerts(), fetchConfirmedStockHistory()])
   })
 
   // initial load
-  await Promise.all([fetchInventory(), loadProducts(), fetchProcRequests(), fetchProductRequests(), fetchPendingStock(), fetchVarianceAlerts()])
+  await Promise.all([fetchInventory(), loadProducts(), fetchProcRequests(), fetchProductRequests(), fetchPendingStock(), fetchVarianceAlerts(), fetchConfirmedStockHistory()])
 })
 
 function selectPending(item) {
@@ -1260,7 +1333,7 @@ async function submitPendingConfirmation() {
     await requestWithFallbackPost(`/api/manager/logistics/procurements/${id}/confirm-stock`, formData, { withCredentials: true })
     showToast('Stock confirmed', 'success')
     clearSelectedPending()
-    await Promise.all([fetchPendingStock(), fetchInventory(), fetchProcRequests(), fetchVarianceAlerts()])
+    await Promise.all([fetchPendingStock(), fetchInventory(), fetchProcRequests(), fetchVarianceAlerts(), fetchConfirmedStockHistory()])
   } catch (e) {
     console.error('submitPendingConfirmation error', e)
     confirmError.value = e.response?.data?.message || 'Failed to confirm stock'

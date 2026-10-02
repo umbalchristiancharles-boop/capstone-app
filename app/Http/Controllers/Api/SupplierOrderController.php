@@ -65,6 +65,7 @@ class SupplierOrderController extends Controller
             'name' => 'required|string|max:255',
             // price must be a positive number greater than zero
             'price' => 'required|numeric|min:0.01',
+            'unit' => 'nullable|string|max:50',
             'per_pack_or_individual' => 'required|in:individual,per_pack,both',
             // If front-end always sends the field, allow null when not per_pack by using nullable.
             // Keep required_if to force presence when per_pack is selected.
@@ -157,6 +158,8 @@ class SupplierOrderController extends Controller
                     ->first();
             }
 
+            $inventoryUnit = $validated['unit'] ?? $order->procurementRequest?->product?->unit ?? $existingProduct?->unit;
+
             if ($existingProduct) {
                 // Update existing product fields (but NOT expiry date - that's now at order level)
                 Log::info('submitProduct: updating existing product', ['product_id' => $existingProduct->id]);
@@ -166,6 +169,7 @@ class SupplierOrderController extends Controller
                     'per_pack_or_individual' => $validated['per_pack_or_individual'],
                     'pack_quantity' => $validated['pack_quantity'] ?? null,
                     'pack_unit' => $validated['pack_unit'] ?? null,
+                    'unit' => $inventoryUnit,
                     'price' => $validated['price'],
                     'cost_price' => $validated['price'],
                     'stock' => $validated['stock'] ?? $existingProduct->stock ?? 0,
@@ -194,6 +198,7 @@ class SupplierOrderController extends Controller
                     'per_pack_or_individual' => $validated['per_pack_or_individual'],
                     'pack_quantity' => $validated['pack_quantity'] ?? null,
                     'pack_unit' => $validated['pack_unit'] ?? null,
+                    'unit' => $inventoryUnit,
                     'price' => $validated['price'],
                     'cost_price' => $validated['price'],
                     'stock' => $validated['stock'] ?? 0,
