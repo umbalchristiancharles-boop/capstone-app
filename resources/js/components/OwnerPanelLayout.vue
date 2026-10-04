@@ -11,21 +11,9 @@
             @click.prevent.stop="toggleOwnerSidebar"
           >☰</button>
           <div class="owner-panel-topbar-spacer"></div>
-          <button
+          <OwnerMessageMenu
             v-if="ownerMessagesButton"
-            type="button"
-            class="owner-panel-message-button"
-            :aria-label="notificationSummary.messages ? `Messages, ${notificationSummary.messages} unread` : 'Messages'"
-            title="Messages"
-            @click="openOwnerMessages"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5z"></path>
-            </svg>
-            <span v-if="notificationSummary.messages > 0" class="owner-panel-message-button__badge">
-              {{ notificationSummary.messages > 99 ? '99+' : notificationSummary.messages }}
-            </span>
-          </button>
+          />
           <PanelNotificationMenu
             :notification-items="panelNotificationMenuItems"
             :notification-count="panelNotificationMenuCount"
@@ -456,6 +444,7 @@ import axios from 'axios'
 import Toast from './Toast.vue'
 import { showToast } from './toastStore'
 import PanelNotificationMenu from './PanelNotificationMenu.vue'
+import OwnerMessageMenu from './OwnerMessageMenu.vue'
 
 const props = defineProps({
   embedded: { type: Boolean, default: false },
@@ -975,17 +964,6 @@ async function markNotificationRead(key) {
   }
 }
 
-function openOwnerMessages() {
-  window.dispatchEvent(new CustomEvent('open-message-widget', { detail: { ownerPanel: true } }))
-}
-
-function updateOwnerUnreadMessageCount(event) {
-  const count = Number(event.detail?.count)
-  if (Number.isFinite(count) && count >= 0) {
-    notificationSummary.value.messages = count
-  }
-}
-
 function handleNotificationClick(key) {
   if (key === 'messages') {
     window.dispatchEvent(new CustomEvent('open-message-widget'))
@@ -1047,7 +1025,6 @@ watch(() => props.userProfile, (newVal) => {
 }, { immediate: true })
 
 onMounted(() => {
-  window.addEventListener('owner-message-unread-count', updateOwnerUnreadMessageCount)
   if (window.matchMedia('(max-width: 1023px)').matches) {
     ownerSidebarCollapsed.value = true
   }
@@ -1100,7 +1077,6 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  window.removeEventListener('owner-message-unread-count', updateOwnerUnreadMessageCount)
   if (notificationTimer) window.clearInterval(notificationTimer)
   try { window.removeEventListener('open-owner-edit-profile', openEditProfile) } catch (e) {}
   try { window.removeEventListener('open-owner-info', openInfoModal) } catch (e) {}
@@ -1625,46 +1601,6 @@ async function onAvatarChange(event) {
   background: rgba(255, 255, 255, 0.58);
   font-size: 0.82rem;
   font-weight: 600;
-}
-
-.owner-panel-message-button {
-  position: relative;
-  display: grid;
-  width: 38px;
-  height: 38px;
-  flex: 0 0 38px;
-  place-items: center;
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  border-radius: 50%;
-  color: #334155;
-  background: rgba(255, 255, 255, 0.7);
-  cursor: pointer;
-  transition: background-color 160ms ease, box-shadow 160ms ease;
-}
-
-.owner-panel-message-button:hover,
-.owner-panel-message-button:focus-visible {
-  background: #fff;
-  box-shadow: 0 4px 12px rgba(36, 52, 71, 0.12);
-  outline: none;
-}
-
-.owner-panel-message-button__badge {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  display: grid;
-  min-width: 19px;
-  height: 19px;
-  place-items: center;
-  padding: 0 4px;
-  border: 2px solid #f4ebe4;
-  border-radius: 999px;
-  color: #fff;
-  background: #ef4444;
-  font-size: 0.65rem;
-  font-weight: 800;
-  line-height: 1;
 }
 
 .owner-panel-user-pill__avatar {

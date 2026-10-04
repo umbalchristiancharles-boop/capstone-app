@@ -169,6 +169,7 @@ export default {
         fetchUsersInProgress: false,
         stoppedUnauthenticated: false,
       pollTimer: null,
+        pendingOwnerUserId: null,
     }
   },
   computed: {
@@ -250,7 +251,9 @@ export default {
     openFromNotification(event) {
       if (!this.visible) return
       this.ownerMode = event?.detail?.ownerPanel === true
+      this.pendingOwnerUserId = event?.detail?.userId || null
       this.open = true
+      this.fetchUsers()
     },
     closeWidget() {
       this.open = false
@@ -383,9 +386,15 @@ export default {
       axios.get('/api/hr/messages/users').then(resp => {
         this.users = resp.data.users || []
         this.unreadCount = Number(resp.data.unread_count || 0)
-        window.dispatchEvent(new CustomEvent('owner-message-unread-count', { detail: { count: this.unreadCount } }))
+        if (this.isOwnerRoute) {
+          window.dispatchEvent(new CustomEvent('owner-message-users-updated', { detail: { users: this.users } }))
+        }
 
-        if (this.selected && this.users.length) {
+        if (this.pendingOwnerUserId) {
+          const pendingUser = this.users.find(user => String(user.id) === String(this.pendingOwnerUserId))
+          this.pendingOwnerUserId = null
+          if (pendingUser) this.selectUser(pendingUser)
+        } else if (this.selected && this.users.length) {
           const nextSelected = this.users.find(u => String(u.id) === String(this.selected.id)) || null
           this.selected = nextSelected
         }
