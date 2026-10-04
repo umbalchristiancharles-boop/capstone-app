@@ -121,42 +121,6 @@
         </div>
       </template>
 
-      <template #ownerTopbarActions="{ notificationItems, notificationCount, onNotificationClick }">
-        <div v-if="!monitoringOnly" class="main-branch-notification-menu" @click.stop>
-          <button
-            type="button"
-            class="main-branch-notification-button"
-            :aria-label="notificationCount ? `Notifications, ${notificationCount} unread` : 'Notifications'"
-            :aria-expanded="notificationMenuOpen"
-            aria-haspopup="true"
-            title="Notifications"
-            @click="notificationMenuOpen = !notificationMenuOpen"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
-              <path d="M10 21h4"></path>
-            </svg>
-            <span v-if="notificationCount > 0" class="main-branch-notification-badge">
-              {{ notificationCount > 99 ? '99+' : notificationCount }}
-            </span>
-          </button>
-          <div v-if="notificationMenuOpen" class="main-branch-notification-dropdown" role="menu" aria-label="Notifications">
-            <p class="main-branch-notification-dropdown__heading">Notifications</p>
-            <button
-              v-for="item in notificationItems"
-              :key="item.key"
-              type="button"
-              class="main-branch-notification-entry"
-              role="menuitem"
-              @click="openNotification(item.key, onNotificationClick)"
-            >
-              <span>{{ item.label }}</span>
-              <strong>{{ item.count }}</strong>
-            </button>
-            <p v-if="notificationItems.length === 0" class="main-branch-notification-dropdown__empty">You're all caught up.</p>
-          </div>
-        </div>
-      </template>
     </OwnerPanelLayout>
 
     <div v-if="showLogoutOverlay" class="main-branch-logout-overlay">
@@ -187,7 +151,6 @@ const userProfile = ref({})
 const ownerLayout = ref(null)
 const activeSection = ref('finance-overview')
 const profileDropdownVisible = ref(false)
-const notificationMenuOpen = ref(false)
 const showLogoutOverlay = ref(false)
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
 const router = useRouter()
@@ -210,14 +173,8 @@ function closeProfileDropdown() {
   profileDropdownVisible.value = false
 }
 
-function openNotification(key, onNotificationClick) {
-  notificationMenuOpen.value = false
-  onNotificationClick(key)
-}
-
 function handleWindowClick() {
   closeProfileDropdown()
-  notificationMenuOpen.value = false
 }
 
 function openInfoFromHeader() {
@@ -397,115 +354,6 @@ onUnmounted(() => {
 <style scoped>
 .main-branch-admin-panel {
   width: 100%;
-}
-
-.main-branch-notification-menu {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.main-branch-notification-button {
-  position: relative;
-  display: grid;
-  width: 38px;
-  height: 38px;
-  place-items: center;
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  border-radius: 50%;
-  color: #334155;
-  background: rgba(255, 255, 255, 0.7);
-  cursor: pointer;
-  transition: background-color 160ms ease, box-shadow 160ms ease;
-}
-
-.main-branch-notification-button:hover,
-.main-branch-notification-button:focus-visible {
-  background: #fff;
-  box-shadow: 0 4px 12px rgba(36, 52, 71, 0.12);
-  outline: none;
-}
-
-.main-branch-notification-badge,
-.main-branch-notification-entry strong {
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
-  color: #fff;
-  background: #ef4444;
-  font-weight: 800;
-}
-
-.main-branch-notification-badge {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  min-width: 19px;
-  height: 19px;
-  padding: 0 4px;
-  border: 2px solid #f4ebe4;
-  font-size: 0.65rem;
-  line-height: 1;
-}
-
-.main-branch-notification-dropdown {
-  position: absolute;
-  top: calc(100% + 10px);
-  right: 0;
-  z-index: 500;
-  width: min(300px, calc(100vw - 24px));
-  max-height: min(360px, calc(100vh - 90px));
-  padding: 0.5rem;
-  overflow-y: auto;
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  border-radius: 14px;
-  background: #fff;
-  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.18);
-}
-
-.main-branch-notification-dropdown__heading {
-  margin: 0;
-  padding: 0.55rem 0.65rem;
-  color: #334155;
-  font-size: 0.8rem;
-  font-weight: 800;
-}
-
-.main-branch-notification-entry {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.65rem;
-  border: 0;
-  border-radius: 9px;
-  color: #334155;
-  background: transparent;
-  font: inherit;
-  font-size: 0.78rem;
-  text-align: left;
-  cursor: pointer;
-}
-
-.main-branch-notification-entry:hover,
-.main-branch-notification-entry:focus-visible {
-  background: #fff7ed;
-  outline: none;
-}
-
-.main-branch-notification-entry strong {
-  min-width: 1.5rem;
-  height: 1.5rem;
-  padding: 0 0.35rem;
-  font-size: 0.7rem;
-}
-
-.main-branch-notification-dropdown__empty {
-  margin: 0;
-  padding: 0.65rem;
-  color: #64748b;
-  font-size: 0.78rem;
 }
 
 .main-branch-logout-overlay {

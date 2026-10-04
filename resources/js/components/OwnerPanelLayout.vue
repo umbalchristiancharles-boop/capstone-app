@@ -11,12 +11,11 @@
             @click.prevent.stop="toggleOwnerSidebar"
           >☰</button>
           <div class="owner-panel-topbar-spacer"></div>
-          <slot
-            name="ownerTopbarActions"
+          <PanelNotificationMenu
             :notification-items="notificationItems"
             :notification-count="unreadNotificationCount"
-            :on-notification-click="handleNotificationClick"
-          ></slot>
+            @select="handleNotificationClick"
+          />
           <div class="owner-panel-user-pill" aria-label="Current account">
             <span class="owner-panel-user-pill__avatar">{{ (userProfile.fullName || userProfile.full_name || userProfile.role || 'O').charAt(0).toUpperCase() }}</span>
             <span>{{ ownerUserLabel }}</span>
@@ -49,6 +48,12 @@
                 <p>{{ panelDescription }}</p>
               </div>
               <div class="header-actions-top">
+                <PanelNotificationMenu
+                  v-if="!showOwnerTopbar"
+                  :notification-items="notificationItems"
+                  :notification-count="unreadNotificationCount"
+                  @select="handleNotificationClick"
+                />
                 <template v-if="!isRightColumnHeaderRoute()">
                   <slot name="headerActions"></slot>
                 </template>
@@ -74,25 +79,13 @@
               </div>
             </div>
           </header>
-          <section class="panel-notification-bar" aria-label="Panel notifications">
-            <div class="panel-notification-bar__intro">
-              <span class="panel-notification-bar__dot" aria-hidden="true"></span>
-              <span>Notifications</span>
-            </div>
-            <button
-              v-for="item in notificationItems"
-              :key="item.key"
-              type="button"
-              class="panel-notification-item"
-              :class="`panel-notification-item--${item.tone}`"
-              @click="handleNotificationClick(item.key)"
-            >
-              <span class="panel-notification-item__icon" aria-hidden="true">{{ item.icon }}</span>
-              <span>{{ item.label }}</span>
-              <strong>{{ item.count }}</strong>
-            </button>
-            <span v-if="notificationItems.length === 0" class="panel-notification-bar__clear">All clear</span>
-          </section>
+          <div v-if="!showHeader && !showOwnerTopbar" class="panel-notification-toolbar">
+            <PanelNotificationMenu
+              :notification-items="notificationItems"
+              :notification-count="unreadNotificationCount"
+              @select="handleNotificationClick"
+            />
+          </div>
           <section v-if="activeNotificationPanel && !isNotificationModalOpen" class="panel-notification-details" aria-live="polite">
             <header class="panel-notification-details__header">
               <h2>{{ activeNotificationPanel === 'announcements' ? 'Announcements' : notificationItems.find(item => item.key === activeNotificationPanel)?.label || 'Notification details' }}</h2>
@@ -447,6 +440,7 @@ import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import Toast from './Toast.vue'
 import { showToast } from './toastStore'
+import PanelNotificationMenu from './PanelNotificationMenu.vue'
 
 const props = defineProps({
   embedded: { type: Boolean, default: false },
@@ -1377,94 +1371,11 @@ async function onAvatarChange(event) {
 }
 .admin-main-header-top-inner p { margin: 0; color: #475569 }
 
-.panel-notification-bar {
+.panel-notification-toolbar {
   display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  min-height: 48px;
+  justify-content: flex-end;
   margin: 0 0 1rem;
-  padding: 0.45rem 0.65rem;
-  overflow-x: auto;
-  border: 1px solid rgba(218, 190, 168, 0.48);
-  border-radius: 12px;
-  background: rgba(255, 252, 249, 0.92);
-  box-shadow: 0 5px 18px rgba(91, 59, 39, 0.06);
-  scrollbar-width: thin;
 }
-
-.panel-notification-bar__intro,
-.panel-notification-bar__clear {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  flex: 0 0 auto;
-  padding: 0 0.5rem;
-  color: #5b4637;
-  font-size: 0.76rem;
-  font-weight: 800;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
-}
-
-.panel-notification-bar__dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #ef7d32;
-  box-shadow: 0 0 0 3px rgba(239, 125, 50, 0.14);
-}
-
-.panel-notification-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  flex: 0 0 auto;
-  min-height: 30px;
-  padding: 0.35rem 0.65rem;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  color: #49372b;
-  background: #fff;
-  cursor: pointer;
-  font-size: 0.76rem;
-  font-weight: 650;
-  white-space: nowrap;
-  transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
-}
-
-.panel-notification-item:hover,
-.panel-notification-item:focus-visible {
-  border-color: rgba(239, 125, 50, 0.5);
-  outline: none;
-  box-shadow: 0 3px 10px rgba(91, 59, 39, 0.1);
-  transform: translateY(-1px);
-}
-
-.panel-notification-item strong {
-  min-width: 1.25rem;
-  padding: 0.08rem 0.3rem;
-  border-radius: 999px;
-  color: #fff;
-  background: #5b4637;
-  text-align: center;
-  font-size: 0.7rem;
-}
-
-.panel-notification-item__icon {
-  display: grid;
-  width: 20px;
-  height: 20px;
-  place-items: center;
-  border-radius: 6px;
-  color: #fff;
-  background: #e58a46;
-  font-size: 0.7rem;
-  font-weight: 900;
-}
-
-.panel-notification-item--info .panel-notification-item__icon { background: #4d86a8; }
-.panel-notification-item--purple .panel-notification-item__icon { background: #8170a8; }
-.panel-notification-item--success .panel-notification-item__icon { background: #4f9270; }
 
 .panel-notification-details {
   margin: 0 0 1rem;
@@ -1583,14 +1494,6 @@ async function onAvatarChange(event) {
 }
 
 @media (max-width: 767px) {
-  .panel-notification-bar {
-    margin-bottom: 0.75rem;
-    border-radius: 10px;
-  }
-
-  .panel-notification-bar__intro {
-    padding-left: 0.25rem;
-  }
 }
 
 /* When a headerLeft slot is used, make it span full width so

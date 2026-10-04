@@ -12,6 +12,11 @@
           >☰</button>
           <div class="admin-header__spacer"></div>
           <div class="admin-header__actions">
+            <PanelNotificationMenu
+              :notification-items="adminNotificationItems"
+              :notification-count="adminNotificationCount"
+              @select="openAdminNotifications"
+            />
             <div class="header-profile-wrapper">
               <div class="admin-user-pill" aria-label="Current account">
                 <div class="admin-user-pill__avatar">{{ (ownerProfile.fullName || ownerProfile.role || 'A').charAt(0).toUpperCase() }}</div>
@@ -66,31 +71,6 @@
 
         <!-- MIDDLE: MAIN DASHBOARD -->
         <main class="admin-main">
-
-          <section class="admin-notification-bar" aria-label="Admin notifications">
-            <div class="admin-notification-bar__title">
-              <span class="admin-notification-bar__icon" aria-hidden="true">!</span>
-              <strong>Notifications</strong>
-            </div>
-            <button type="button" class="admin-notification-chip" @click="openAdminNotifications('orders')">
-              <span>Pending orders</span>
-              <strong>{{ adminNotificationCounts.orders }}</strong>
-            </button>
-            <button type="button" class="admin-notification-chip" @click="openAdminNotifications('inventory')">
-              <span>Inventory confirmations</span>
-              <strong>{{ adminNotificationCounts.inventory }}</strong>
-            </button>
-            <button type="button" class="admin-notification-chip" @click="openAdminNotifications('messages')">
-              <span>Unread messages</span>
-              <strong>{{ adminNotificationCounts.messages }}</strong>
-            </button>
-            <button type="button" class="admin-notification-chip" @click="openAdminNotifications('announcements')">
-              <span>Announcements</span>
-              <strong>{{ adminNotificationCounts.announcements }}</strong>
-            </button>
-            <span v-if="!hasAdminNotifications" class="admin-notification-bar__clear">All clear</span>
-          </section>
-
           <section class="admin-feature-header">
             <div>
               <p class="admin-eyebrow">Branch Manager dashboard</p>
@@ -865,6 +845,7 @@ import axios from 'axios'
 import LoadingOverlay from './LoadingOverlay.vue'
 import AdminCustomerReports from './AdminCustomerReports.vue'
 import StaffManagement from './StaffManagement.vue'
+import PanelNotificationMenu from './PanelNotificationMenu.vue'
 
 import { showToast } from './toastStore'
 
@@ -873,7 +854,13 @@ const activeRange = ref('today')
 const activeSection = ref('dashboard')
 const adminSidebarCollapsed = ref(false)
 const adminNotificationCounts = ref({ orders: 0, inventory: 0, messages: 0, announcements: 0 })
-const hasAdminNotifications = computed(() => Object.values(adminNotificationCounts.value).some(count => count > 0))
+const adminNotificationItems = computed(() => [
+  { key: 'orders', label: 'Pending orders', count: adminNotificationCounts.value.orders },
+  { key: 'inventory', label: 'Inventory confirmations', count: adminNotificationCounts.value.inventory },
+  { key: 'messages', label: 'Unread messages', count: adminNotificationCounts.value.messages },
+  { key: 'announcements', label: 'Announcements', count: adminNotificationCounts.value.announcements },
+].filter(item => item.count > 0))
+const adminNotificationCount = computed(() => adminNotificationItems.value.reduce((total, item) => total + item.count, 0))
 
 const activeSectionTitle = computed(() => ({
   dashboard: panelTitle.value,
@@ -1833,87 +1820,6 @@ function formatDate(dateString) {
 </script>
 
 <style scoped>
-.admin-notification-bar {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  min-height: 56px;
-  margin: 0 0 16px;
-  padding: 8px 10px;
-  border: 1px solid #f0c4a3;
-  border-radius: 10px;
-  background: linear-gradient(90deg, #fff4e9 0%, #ffffff 100%);
-  box-shadow: 0 4px 14px rgba(255, 106, 61, 0.12);
-}
-
-.admin-notification-bar__title {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  flex: 0 0 auto;
-  padding: 0 8px 0 2px;
-  color: #172b46;
-  font-size: 14px;
-  white-space: nowrap;
-}
-
-.admin-notification-bar__icon {
-  display: grid;
-  width: 28px;
-  height: 28px;
-  place-items: center;
-  border-radius: 50%;
-  color: #fff;
-  background: #f04444;
-  font-size: 17px;
-  font-weight: 900;
-}
-
-.admin-notification-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  flex: 0 0 auto;
-  min-height: 36px;
-  padding: 6px 10px;
-  border: 1px solid #f0c4a3;
-  border-radius: 8px;
-  color: #172b46;
-  background: #fff;
-  cursor: pointer;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.admin-notification-chip:hover,
-.admin-notification-chip:focus-visible {
-  border-color: #f04444;
-  outline: none;
-  box-shadow: 0 3px 10px rgba(240, 68, 68, 0.15);
-}
-
-.admin-notification-chip > strong {
-  display: grid;
-  min-width: 22px;
-  height: 22px;
-  place-items: center;
-  padding: 0 4px;
-  border-radius: 999px;
-  color: #fff;
-  background: #f04444;
-  font-size: 11px;
-}
-
-.admin-notification-bar__clear {
-  margin-left: auto;
-  color: #26734d;
-  font-size: 12px;
-  font-weight: 700;
-}
-
 .product-request-list {
   display: grid;
   gap: 8px;

@@ -43,36 +43,17 @@
         >☰</button>
         <div class="finance-header__spacer"></div>
         <div class="finance-header__actions">
+          <PanelNotificationMenu
+            :notification-items="financeNotificationItems"
+            :notification-count="financeNotificationCount"
+            @select="handleFinanceNotificationClick"
+          />
           <div class="finance-user-pill" @click.stop>
             <div class="finance-user-pill__avatar">{{ userInitial }}</div>
             <span>{{ userProfile?.fullName || userProfile?.full_name || 'Manager' }}</span>
           </div>
         </div>
       </header>
-
-      <section v-if="showFinanceNotifications" class="finance-notification-bar" aria-label="Panel notifications">
-        <div class="finance-notification-bar__title">
-          <span class="finance-notification-bar__bell" aria-hidden="true">!</span>
-          <strong>Notifications</strong>
-        </div>
-        <button
-          v-for="item in financeNotificationItems"
-          :key="item.key"
-          type="button"
-          class="finance-notification-chip"
-          @click="handleFinanceNotificationClick(item.key)"
-        >
-          <span>{{ item.label }}</span>
-          <strong>{{ item.count }}</strong>
-        </button>
-        <span v-if="financeNotificationItems.length === 0" class="finance-notification-bar__clear">All clear</span>
-        <button type="button" class="finance-notification-hide" @click="hideFinanceNotifications" aria-label="Hide notifications">
-          Hide
-        </button>
-      </section>
-      <button v-else type="button" class="finance-notification-show" @click="showFinanceNotifications = true" aria-label="Show notifications">
-        <span aria-hidden="true">!</span> Show notifications
-      </button>
 
       <section v-if="activeNotificationPanel" class="finance-notification-drawer" aria-live="polite">
         <div class="finance-notification-drawer__header">
@@ -536,6 +517,7 @@ import { ref, onMounted, computed, onUnmounted, watch, inject } from 'vue'
 import FinancePanelContent from './finance/FinancePanelContent.vue'
 import PriceMarkupManagerPanel from './finance/PriceMarkupManagerPanel.vue'
 import MainBranchFinanceBranchConfirmations from './MainBranchFinanceBranchConfirmations.vue'
+import PanelNotificationMenu from './PanelNotificationMenu.vue'
 import axios from 'axios'
 import { Chart } from 'vue-chartjs'
 import { showToast } from './toastStore'
@@ -582,7 +564,6 @@ const notificationCounts = ref({
   procurement: 0,
 })
 const financeNotificationSummary = ref({ approvals: 0, messages: 0, announcements: 0, updates: 0 })
-const showFinanceNotifications = ref(true)
 const activeNotificationPanel = ref('')
 const announcements = ref([])
 const announcementsLoading = ref(false)
@@ -595,6 +576,7 @@ const financeNotificationItems = computed(() => [
   { key: 'announcements', label: 'Announcements', count: financeNotificationSummary.value.announcements },
   { key: 'updates', label: 'Updates', count: financeNotificationSummary.value.updates },
 ].filter(item => item.count > 0))
+const financeNotificationCount = computed(() => financeNotificationItems.value.reduce((total, item) => total + item.count, 0))
 
 const financeUpdateItems = computed(() => [
   { label: 'Orders', count: Number(notificationCounts.value.admin || 0) },
@@ -602,10 +584,6 @@ const financeUpdateItems = computed(() => [
   { label: 'Logistics', count: Number(notificationCounts.value.logistics || 0) },
   { label: 'Procurement', count: Number(notificationCounts.value.procurement || 0) },
 ].filter(item => item.count > 0))
-
-try {
-  showFinanceNotifications.value = localStorage.getItem('finance_notifications_hidden') !== 'true'
-} catch (e) {}
 
 // Logout state
 const showLogoutConfirm = ref(false)
@@ -887,11 +865,6 @@ async function loadFinanceAnnouncements() {
 function formatNotificationDate(value) {
   if (!value) return ''
   return new Date(value).toLocaleString()
-}
-
-function hideFinanceNotifications() {
-  showFinanceNotifications.value = false
-  try { localStorage.setItem('finance_notifications_hidden', 'true') } catch (e) {}
 }
 
 // Handle profile update from layout
@@ -1629,4 +1602,3 @@ async function markBudgetGiven(id) {
 </script>
 
 <style scoped src="./ManagerFinancePanel.css"></style>
-
