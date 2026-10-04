@@ -11,6 +11,12 @@
             @click.prevent.stop="toggleOwnerSidebar"
           >☰</button>
           <div class="owner-panel-topbar-spacer"></div>
+          <slot
+            name="ownerTopbarActions"
+            :notification-items="notificationItems"
+            :notification-count="unreadNotificationCount"
+            :on-notification-click="handleNotificationClick"
+          ></slot>
           <div class="owner-panel-user-pill" aria-label="Current account">
             <span class="owner-panel-user-pill__avatar">{{ (userProfile.fullName || userProfile.full_name || userProfile.role || 'O').charAt(0).toUpperCase() }}</span>
             <span>{{ ownerUserLabel }}</span>
@@ -87,7 +93,7 @@
             </button>
             <span v-if="notificationItems.length === 0" class="panel-notification-bar__clear">All clear</span>
           </section>
-          <section v-if="activeNotificationPanel" class="panel-notification-details" aria-live="polite">
+          <section v-if="activeNotificationPanel && !(announcementsInModal && activeNotificationPanel === 'announcements')" class="panel-notification-details" aria-live="polite">
             <header class="panel-notification-details__header">
               <h2>{{ activeNotificationPanel === 'announcements' ? 'Announcements' : notificationItems.find(item => item.key === activeNotificationPanel)?.label || 'Notification details' }}</h2>
               <button type="button" @click="activeNotificationPanel = ''" aria-label="Close notification details">Close</button>
@@ -113,6 +119,31 @@
               </ul>
             </template>
           </section>
+          <transition name="fade">
+            <div
+              v-if="showAnnouncementModal"
+              class="info-backdrop info-backdrop--finance-style owner-announcement-backdrop"
+              @click.self="closeAnnouncementModal"
+            >
+              <section class="info-modal info-modal--finance-style owner-announcement-modal" role="dialog" aria-modal="true" aria-labelledby="owner-announcement-title">
+                <button type="button" class="info-modal-close" aria-label="Close announcements" @click="closeAnnouncementModal">✕</button>
+                <h3 id="owner-announcement-title">Announcements</h3>
+                <p class="info-sub">Latest updates for your account.</p>
+                <div class="info-grid owner-announcement-list">
+                  <p v-if="loadingAnnouncements" class="owner-announcement-state">Loading announcements...</p>
+                  <p v-else-if="announcements.length === 0" class="owner-announcement-state">No announcements found.</p>
+                  <article v-for="announcement in announcements" :key="announcement.id" class="owner-announcement-entry">
+                    <strong>{{ announcement.title }}</strong>
+                    <small>{{ new Date(announcement.created_at).toLocaleString() }}<span v-if="announcement.target"> · {{ announcement.target }}</span></small>
+                    <p>{{ announcement.message }}</p>
+                  </article>
+                </div>
+                <div class="info-actions">
+                  <button type="button" class="btn-outline" @click="closeAnnouncementModal">Close</button>
+                </div>
+              </section>
+            </div>
+          </transition>
           <slot name="main"></slot>
         </main>
         <!-- RIGHT: SIDE PANELS -->
@@ -439,6 +470,7 @@ const props = defineProps({
   ,
   showOwnerSidebar: { type: Boolean, default: false },
   showOwnerTopbar: { type: Boolean, default: false },
+  announcementsInModal: { type: Boolean, default: false },
   topbarLabel: { type: String, default: '' },
   accountInfoStyle: { type: String, default: 'default' }
 })
@@ -822,6 +854,7 @@ const profileSuccess = ref('')
 const notificationSummary = ref({ approvals: 0, messages: 0, announcements: 0, updates: 0 })
 const notificationBreakdown = ref({ counts: {}, extras: {} })
 const activeNotificationPanel = ref('')
+const showAnnouncementModal = ref(false)
 let notificationTimer = null
 
 const moduleNotificationDefinitions = [
@@ -845,6 +878,7 @@ const currentPanelModuleKeys = computed(() => {
   if (title.includes('owner panel')) return moduleNotificationDefinitions.map(item => item.key)
   if (title.includes('price markup')) return ['priceMarkupPending']
   if (title.includes('branch confirmation')) return ['branchPendingOwner', 'branchPendingFinance']
+  if (title.includes('main branch administration')) return ['admin', 'logistics', 'supplier', 'branchPendingOwner']
   if (title.includes('logistics')) return ['logistics']
   if (title.includes('procurement')) return ['procurement']
   if (title.includes('inventory')) return ['inventory']
@@ -867,6 +901,7 @@ const notificationItems = computed(() => [
     .filter(item => currentPanelModuleKeys.value.includes(item.key))
     .map(item => ({ ...item, icon: '!', count: moduleNotificationCount(item.key) })),
 ].filter(item => item.count > 0))
+const unreadNotificationCount = computed(() => notificationItems.value.reduce((total, item) => total + item.count, 0))
 
 const notificationDetailItems = computed(() => {
   const item = moduleNotificationDefinitions.find(definition => definition.key === activeNotificationPanel.value)
@@ -894,10 +929,21 @@ function handleNotificationClick(key) {
     return
   }
 
+  if (key === 'announcements' && props.announcementsInModal) {
+    activeNotificationPanel.value = ''
+    showAnnouncementModal.value = true
+    Promise.resolve(loadAnnouncements()).catch(() => {})
+    return
+  }
+
   activeNotificationPanel.value = key
   if (key === 'announcements') {
     Promise.resolve(loadAnnouncements()).catch(() => {})
   }
+}
+
+function closeAnnouncementModal() {
+  showAnnouncementModal.value = false
 }
 
 // Announcements for the current user
@@ -1443,6 +1489,61 @@ async function onAvatarChange(event) {
 .panel-notification-details__counts li {
   grid-template-columns: 1fr auto;
   align-items: center;
+}
+
+.owner-announcement-backdrop {
+  z-index: 600;
+  background: rgba(15, 23, 42, 0.28);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+.owner-announcement-modal {
+  width: min(90vw, 640px);
+}
+
+.owner-announcement-modal .owner-announcement-list {
+  display: block;
+  max-height: min(55vh, 480px);
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.owner-announcement-entry {
+  padding: 0.85rem 0;
+  border-bottom: 1px solid rgba(219, 188, 160, 0.3);
+}
+
+.owner-announcement-entry:last-child {
+  border-bottom: 0;
+}
+
+.owner-announcement-entry strong {
+  display: block;
+  color: #3d2a1f;
+  font-size: 0.92rem;
+}
+
+.owner-announcement-entry small {
+  display: block;
+  margin-top: 0.25rem;
+  color: #94735f;
+  font-size: 0.75rem;
+}
+
+.owner-announcement-entry p {
+  margin: 0.45rem 0 0;
+  color: #5f4b3e;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.owner-announcement-state {
+  margin: 0;
+  padding: 0.75rem 0;
+  color: #64748b;
+  font-size: 0.86rem;
 }
 
 @media (max-width: 767px) {

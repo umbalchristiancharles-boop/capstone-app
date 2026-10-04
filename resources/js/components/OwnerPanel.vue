@@ -16,6 +16,7 @@
     :canChangePassword="true"
     :showAnnouncements="false"
     :showAttendanceCard="false"
+    :announcementsInModal="true"
     accountInfoStyle="finance"
     profileEndpoint="/api/profile"
     updateEndpoint="/api/profile/update"
@@ -42,6 +43,43 @@
         <button type="button" class="owner-sidebar-logout" @click="handleLogout">
           Logout
         </button>
+      </div>
+    </template>
+
+    <template #ownerTopbarActions="{ notificationItems, notificationCount, onNotificationClick }">
+      <div class="owner-notification-menu">
+        <button
+          type="button"
+          class="owner-notification-button"
+          :aria-label="notificationCount ? `Notifications, ${notificationCount} unread` : 'Notifications'"
+          :aria-expanded="ownerNotificationMenuOpen"
+          aria-haspopup="true"
+          title="Notifications"
+          @click="ownerNotificationMenuOpen = !ownerNotificationMenuOpen"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+            <path d="M10 21h4"></path>
+          </svg>
+          <span v-if="notificationCount > 0" class="owner-notification-badge">
+            {{ notificationCount > 99 ? '99+' : notificationCount }}
+          </span>
+        </button>
+        <div v-if="ownerNotificationMenuOpen" class="owner-notification-dropdown" role="menu" aria-label="Notifications">
+          <p class="owner-notification-dropdown__heading">Notifications</p>
+          <button
+            v-for="item in notificationItems"
+            :key="item.key"
+            type="button"
+            class="owner-notification-entry"
+            role="menuitem"
+            @click="openOwnerNotification(item.key, onNotificationClick)"
+          >
+            <span>{{ item.label }}</span>
+            <strong>{{ item.count }}</strong>
+          </button>
+          <p v-if="notificationItems.length === 0" class="owner-notification-dropdown__empty">You're all caught up.</p>
+        </div>
       </div>
     </template>
 
@@ -397,6 +435,7 @@ const pendingCounts = ref({
 })
 const hasNotified = ref(false)
 const selectedSection = ref('dashboard')
+const ownerNotificationMenuOpen = ref(false)
 const sectionComponents = {
   dishApproval: OwnerDishApprovalPanel,
   staffManagement: OwnerStaffManagement,
@@ -411,6 +450,11 @@ const announcementMessageType = ref('')
 
 function selectSection(section) {
   selectedSection.value = section
+}
+
+function openOwnerNotification(key, onNotificationClick) {
+  ownerNotificationMenuOpen.value = false
+  onNotificationClick(key)
 }
 
 async function sendAnnouncement() {
@@ -613,6 +657,116 @@ const handleLogout = async () => {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+.owner-notification-menu {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.owner-notification-button {
+  position: relative;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 50%;
+  color: #334155;
+  background: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.owner-notification-button:hover,
+.owner-notification-button:focus-visible {
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(36, 52, 71, 0.12);
+  outline: none;
+}
+
+.owner-notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: grid;
+  min-width: 19px;
+  height: 19px;
+  place-items: center;
+  padding: 0 4px;
+  border: 2px solid #f4ebe4;
+  border-radius: 999px;
+  color: #fff;
+  background: #ef4444;
+  font-size: 0.65rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.owner-notification-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 500;
+  width: min(300px, calc(100vw - 24px));
+  max-height: min(360px, calc(100vh - 90px));
+  padding: 0.5rem;
+  overflow-y: auto;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.18);
+}
+
+.owner-notification-dropdown__heading {
+  margin: 0;
+  padding: 0.55rem 0.65rem;
+  color: #334155;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.owner-notification-entry {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem;
+  border: 0;
+  border-radius: 9px;
+  color: #334155;
+  background: transparent;
+  font: inherit;
+  font-size: 0.78rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.owner-notification-entry:hover,
+.owner-notification-entry:focus-visible {
+  background: #fff7ed;
+  outline: none;
+}
+
+.owner-notification-entry strong {
+  display: grid;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  place-items: center;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  color: #fff;
+  background: #ef4444;
+  font-size: 0.7rem;
+}
+
+.owner-notification-dropdown__empty {
+  margin: 0;
+  padding: 0.65rem;
+  color: #64748b;
+  font-size: 0.78rem;
 }
 
 :deep(.owner-section-embedded .back-to-dashboard-btn) {
