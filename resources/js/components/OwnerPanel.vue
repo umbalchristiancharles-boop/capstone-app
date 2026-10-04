@@ -17,6 +17,7 @@
     :showAnnouncements="false"
     :showAttendanceCard="false"
     :announcementsInModal="true"
+    :notificationDetailsInModal="true"
     accountInfoStyle="finance"
     profileEndpoint="/api/profile"
     updateEndpoint="/api/profile/update"

@@ -16,7 +16,7 @@
       :showOwnerTopbar="!monitoringOnly"
       topbarLabel="ADMIN - Main Branch"
       :showAttendanceCard="false"
-      :announcementsInModal="true"
+      :notificationDetailsInModal="true"
       accountInfoStyle="finance"
       @logout="askLogout"
       @profile-updated="onProfileUpdated"

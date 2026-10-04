@@ -108,6 +108,7 @@ Route::middleware('web')->group(function () {
     Route::get('/me',               [AuthController::class, 'me'])->middleware('auth:sanctum,web');
     Route::get('/panel-descriptions', [ConfigController::class, 'panelDescriptions'])->middleware('auth');
     Route::get('/panel-notifications', [PanelNotificationController::class, 'index'])->middleware('auth');
+    Route::post('/panel-notifications/read', [PanelNotificationController::class, 'markRead'])->middleware('auth');
     Route::get('/owner-profile',    [AuthController::class, 'ownerProfile'])->middleware('auth');
     Route::put('/owner-profile',    [AuthController::class, 'updateOwnerProfile'])->middleware('auth');
     Route::post('/upload-avatar',   [AuthController::class, 'uploadAvatar'])->middleware('auth');

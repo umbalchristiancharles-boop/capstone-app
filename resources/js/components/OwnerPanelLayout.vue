@@ -93,7 +93,7 @@
             </button>
             <span v-if="notificationItems.length === 0" class="panel-notification-bar__clear">All clear</span>
           </section>
-          <section v-if="activeNotificationPanel && !(announcementsInModal && activeNotificationPanel === 'announcements')" class="panel-notification-details" aria-live="polite">
+          <section v-if="activeNotificationPanel && !isNotificationModalOpen" class="panel-notification-details" aria-live="polite">
             <header class="panel-notification-details__header">
               <h2>{{ activeNotificationPanel === 'announcements' ? 'Announcements' : notificationItems.find(item => item.key === activeNotificationPanel)?.label || 'Notification details' }}</h2>
               <button type="button" @click="activeNotificationPanel = ''" aria-label="Close notification details">Close</button>
@@ -121,25 +121,36 @@
           </section>
           <transition name="fade">
             <div
-              v-if="showAnnouncementModal"
+              v-if="isNotificationModalOpen"
               class="info-backdrop info-backdrop--finance-style owner-announcement-backdrop"
-              @click.self="closeAnnouncementModal"
+              @click.self="closeNotificationModal"
             >
               <section class="info-modal info-modal--finance-style owner-announcement-modal" role="dialog" aria-modal="true" aria-labelledby="owner-announcement-title">
-                <button type="button" class="info-modal-close" aria-label="Close announcements" @click="closeAnnouncementModal">✕</button>
-                <h3 id="owner-announcement-title">Announcements</h3>
-                <p class="info-sub">Latest updates for your account.</p>
+                <button type="button" class="info-modal-close" aria-label="Close notifications" @click="closeNotificationModal">✕</button>
+                <h3 id="owner-announcement-title">{{ activeNotificationLabel }}</h3>
+                <p class="info-sub">{{ activeNotificationPanel === 'announcements' ? 'Latest updates for your account.' : 'Items that need your attention.' }}</p>
                 <div class="info-grid owner-announcement-list">
-                  <p v-if="loadingAnnouncements" class="owner-announcement-state">Loading announcements...</p>
-                  <p v-else-if="announcements.length === 0" class="owner-announcement-state">No announcements found.</p>
-                  <article v-for="announcement in announcements" :key="announcement.id" class="owner-announcement-entry">
-                    <strong>{{ announcement.title }}</strong>
-                    <small>{{ new Date(announcement.created_at).toLocaleString() }}<span v-if="announcement.target"> · {{ announcement.target }}</span></small>
-                    <p>{{ announcement.message }}</p>
-                  </article>
+                  <template v-if="activeNotificationPanel === 'announcements'">
+                    <p v-if="loadingAnnouncements" class="owner-announcement-state">Loading announcements...</p>
+                    <p v-else-if="announcements.length === 0" class="owner-announcement-state">No announcements found.</p>
+                    <article v-for="announcement in announcements" :key="announcement.id" class="owner-announcement-entry">
+                      <strong>{{ announcement.title }}</strong>
+                      <small>{{ new Date(announcement.created_at).toLocaleString() }}<span v-if="announcement.target"> · {{ announcement.target }}</span></small>
+                      <p>{{ announcement.message }}</p>
+                    </article>
+                  </template>
+                  <template v-else>
+                    <p v-if="notificationDetailItems.length === 0" class="owner-announcement-state">No items need attention.</p>
+                    <ul v-else class="panel-notification-details__list panel-notification-details__counts owner-notification-modal-counts">
+                      <li v-for="item in notificationDetailItems" :key="item.key">
+                        <span>{{ item.label }}</span>
+                        <strong>{{ item.count }}</strong>
+                      </li>
+                    </ul>
+                  </template>
                 </div>
                 <div class="info-actions">
-                  <button type="button" class="btn-outline" @click="closeAnnouncementModal">Close</button>
+                  <button type="button" class="btn-outline" @click="closeNotificationModal">Close</button>
                 </div>
               </section>
             </div>
@@ -435,6 +446,7 @@ import { ref, watch, computed, onMounted, onUnmounted, useSlots, inject } from '
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import Toast from './Toast.vue'
+import { showToast } from './toastStore'
 
 const props = defineProps({
   embedded: { type: Boolean, default: false },
@@ -471,6 +483,7 @@ const props = defineProps({
   showOwnerSidebar: { type: Boolean, default: false },
   showOwnerTopbar: { type: Boolean, default: false },
   announcementsInModal: { type: Boolean, default: false },
+  notificationDetailsInModal: { type: Boolean, default: false },
   topbarLabel: { type: String, default: '' },
   accountInfoStyle: { type: String, default: 'default' }
 })
@@ -854,8 +867,8 @@ const profileSuccess = ref('')
 const notificationSummary = ref({ approvals: 0, messages: 0, announcements: 0, updates: 0 })
 const notificationBreakdown = ref({ counts: {}, extras: {} })
 const activeNotificationPanel = ref('')
-const showAnnouncementModal = ref(false)
 let notificationTimer = null
+let notificationSummaryRequestId = 0
 
 const moduleNotificationDefinitions = [
   { key: 'admin', label: 'Orders', tone: 'warning' },
@@ -907,11 +920,19 @@ const notificationDetailItems = computed(() => {
   const item = moduleNotificationDefinitions.find(definition => definition.key === activeNotificationPanel.value)
   return item ? [{ ...item, count: moduleNotificationCount(item.key) }] : []
 })
+const isNotificationModalOpen = computed(() => (
+  props.notificationDetailsInModal ||
+  (props.announcementsInModal && activeNotificationPanel.value === 'announcements')
+) && Boolean(activeNotificationPanel.value))
+const activeNotificationLabel = computed(() => (
+  notificationItems.value.find(item => item.key === activeNotificationPanel.value)?.label || 'Notifications'
+))
 
 async function loadNotificationSummary() {
+  const requestId = ++notificationSummaryRequestId
   try {
     const res = await axios.get('/api/panel-notifications', { withCredentials: true })
-    if (res.data?.ok && res.data.summary) {
+    if (requestId === notificationSummaryRequestId && res.data?.ok && res.data.summary) {
       notificationSummary.value = { ...notificationSummary.value, ...res.data.summary }
       notificationBreakdown.value = {
         counts: res.data.counts || {},
@@ -923,27 +944,42 @@ async function loadNotificationSummary() {
   }
 }
 
+async function markNotificationRead(key) {
+  if (!props.notificationDetailsInModal) return
+
+  const readableCategories = ['announcements', 'logistics', 'supplier', 'branchPendingOwner']
+  if (!readableCategories.includes(key)) return
+
+  try {
+    await axios.post('/api/panel-notifications/read', { category: key }, { withCredentials: true })
+    await loadNotificationSummary()
+  } catch (e) {
+    showToast(e.response?.data?.message || 'Unable to update notification read status.', 'error')
+  }
+}
+
 function handleNotificationClick(key) {
   if (key === 'messages') {
     window.dispatchEvent(new CustomEvent('open-message-widget'))
     return
   }
 
-  if (key === 'announcements' && props.announcementsInModal) {
-    activeNotificationPanel.value = ''
-    showAnnouncementModal.value = true
-    Promise.resolve(loadAnnouncements()).catch(() => {})
+  activeNotificationPanel.value = key
+  if (props.notificationDetailsInModal) {
+    Promise.resolve(markNotificationRead(key)).catch(() => {})
+  }
+  if ((key === 'announcements' && props.announcementsInModal) || props.notificationDetailsInModal) {
+    if (key === 'announcements') Promise.resolve(loadAnnouncements()).catch(() => {})
     return
   }
 
-  activeNotificationPanel.value = key
   if (key === 'announcements') {
     Promise.resolve(loadAnnouncements()).catch(() => {})
   }
 }
 
-function closeAnnouncementModal() {
-  showAnnouncementModal.value = false
+function closeNotificationModal() {
+  activeNotificationPanel.value = ''
 }
 
 // Announcements for the current user

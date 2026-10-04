@@ -16,6 +16,8 @@ use App\Models\Message;
 use App\Models\Announcement;
 use App\Models\ProductRequest;
 use App\Models\Attendance;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class PanelNotificationController extends Controller
 {
@@ -29,6 +31,10 @@ class PanelNotificationController extends Controller
         $role = strtoupper($user->role ?? '');
         $dept = strtoupper($user->department ?? '');
         $branchId = $user->branch_id;
+        $readAt = fn (string $category) => DB::table('panel_notification_reads')
+            ->where('user_id', $user->id)
+            ->where('category', $category)
+            ->value('read_at');
 
         $isGlobalRole = in_array($role, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER'], true);
         if ($isGlobalRole) {
@@ -152,6 +158,9 @@ class PanelNotificationController extends Controller
             });
         }
         if ($hasModule('logistics')) {
+            if ($logisticsReadAt = $readAt('logistics')) {
+                $logisticsPendingQuery->where('updated_at', '>', $logisticsReadAt);
+            }
             $counts['logistics'] = (int) $logisticsPendingQuery->count();
         }
 
@@ -163,6 +172,9 @@ class PanelNotificationController extends Controller
             $supplierPendingQuery->where('branch_id', $branchId);
         }
         if ($hasModule('supplier')) {
+            if ($supplierReadAt = $readAt('supplier')) {
+                $supplierPendingQuery->where('updated_at', '>', $supplierReadAt);
+            }
             $counts['supplier'] = (int) $supplierPendingQuery->count();
         }
 
@@ -198,7 +210,11 @@ class PanelNotificationController extends Controller
 
         // Owner + main branch finance approvals
         if ($role === 'OWNER' || $role === 'SUPER_ADMIN' || $role === 'SUPERADMIN') {
-            $extras['branchPendingOwner'] = (int) Branch::where('approval_status', 'pending_owner')->count();
+            $branchApprovalQuery = Branch::where('approval_status', 'pending_owner');
+            if ($branchApprovalReadAt = $readAt('branchPendingOwner')) {
+                $branchApprovalQuery->where('updated_at', '>', $branchApprovalReadAt);
+            }
+            $extras['branchPendingOwner'] = (int) $branchApprovalQuery->count();
 
             $ownerProductRequestsQuery = ProductRequest::where('status', 'pending_owner');
             if ($branchId) {
@@ -227,7 +243,11 @@ class PanelNotificationController extends Controller
         $extras['unreadMessages'] = (int) Message::where('to_user_id', $user->id)
             ->whereNull('read_at')
             ->count();
-        $extras['announcements'] = (int) Announcement::visibleTo($user)->count();
+        $announcementQuery = Announcement::visibleTo($user);
+        if ($announcementReadAt = $readAt('announcements')) {
+            $announcementQuery->where('updated_at', '>', $announcementReadAt);
+        }
+        $extras['announcements'] = (int) $announcementQuery->count();
 
         $approvalCount = $counts['finance']
             + $counts['kitchen']
@@ -253,5 +273,27 @@ class PanelNotificationController extends Controller
                 'announcements' => $extras['announcements'],
             ],
         ]);
+    }
+
+    public function markRead(Request $request)
+    {
+        $validated = $request->validate([
+            'category' => ['required', Rule::in(['announcements', 'logistics', 'supplier', 'branchPendingOwner'])],
+        ]);
+
+        $now = now();
+        DB::table('panel_notification_reads')->upsert(
+            [[
+                'user_id' => $request->user()->id,
+                'category' => $validated['category'],
+                'read_at' => $now,
+                'updated_at' => $now,
+                'created_at' => $now,
+            ]],
+            ['user_id', 'category'],
+            ['read_at', 'updated_at']
+        );
+
+        return response()->json(['ok' => true]);
     }
 }
