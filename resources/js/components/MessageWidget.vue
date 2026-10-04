@@ -48,7 +48,11 @@
             </div>
             <div class="msg-header-actions">
               <button v-if="canSubmitEmployeeReport && isHrManager(selected)" class="report-btn" @click="reportOpen = !reportOpen">Employee report</button>
-              <button class="close-btn" aria-label="Close messages" @click="closeWidget">Close</button>
+              <button class="close-btn" aria-label="Close messages" title="Close" @click="closeWidget">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                  <path d="m18 6-12 12M6 6l12 12"></path>
+                </svg>
+              </button>
             </div>
           </div>
 
@@ -66,7 +70,13 @@
             </div>
             <div v-else-if="messages.length === 0" class="msg-thread"></div>
             <div v-else class="msg-thread">
-              <div v-for="m in messages" :key="m.id" :class="['msg-row', m.from_user_id === meId ? 'row-mine' : 'row-theirs']">
+              <template v-for="(m, index) in messages" :key="m.id">
+              <div
+                v-if="ownerMode && (index === 0 || messageDateKey(messages[index - 1].created_at) !== messageDateKey(m.created_at))"
+                class="msg-date-divider"
+                role="separator"
+              >{{ formatMessageDivider(m.created_at) }}</div>
+              <div :class="['msg-row', m.from_user_id === meId ? 'row-mine' : 'row-theirs']">
                 <div v-if="m.from_user_id !== meId" class="msg-avatar-small">
                   <img v-if="m.from_user && m.from_user.avatar" :src="m.from_user.avatar" />
                   <div v-else class="avatar-initial">{{ (m.from_user?.name||'').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase() }}</div>
@@ -90,10 +100,10 @@
                   </div>
                   <div class="employee-report-footer">
                     <span>Submitted by {{ m.from_user?.name || 'User' }}</span>
-                    <span>{{ formatDate(m.created_at) }}<br v-if="m.from_user_id === meId"><em v-if="m.from_user_id === meId">{{ messageStatus(m) }}</em></span>
+                    <span><template v-if="!ownerMode">{{ formatDate(m.created_at) }}<br></template><em v-if="m.from_user_id === meId">{{ messageStatus(m) }}</em></span>
                   </div>
                 </div>
-                <div v-else :class="['msg-bubble', m.from_user_id === meId ? 'mine' : 'theirs']">
+                <div v-else :class="['msg-bubble', m.from_user_id === meId ? 'mine' : 'theirs', { 'msg-bubble--image': ownerMode && isImageAttachment(m) }]">
                   <div v-if="m.from_user?.name || m.from_user_id === meId" class="msg-sender">
                     <strong class="msg-sender-name">{{ m.from_user_id === meId ? currentUserName : m.from_user.name }}</strong>
                     <span v-if="m.from_user_id !== meId" class="msg-sender-role">({{ roleLabel(m.from_user.role) }})</span>
@@ -101,10 +111,11 @@
                   <div v-if="m.body" class="msg-body" v-html="escapeHtml(m.body)"></div>
                   <img v-if="isImageAttachment(m)" class="msg-attachment-image" :src="m.attachment_url" :alt="m.attachment_name" @click="openAttachment(m)" />
                   <a v-else-if="m.attachment_url" class="msg-attachment-link" :href="m.attachment_url" target="_blank" rel="noopener">View {{ m.attachment_name }}</a>
-                  <div class="msg-ts">{{ formatDate(m.created_at) }}</div>
+                  <div v-if="!ownerMode" class="msg-ts">{{ formatDate(m.created_at) }}</div>
                   <div v-if="m.from_user_id === meId" class="msg-status">{{ messageStatus(m) }}</div>
                 </div>
               </div>
+              </template>
             </div>
           </div>
 
@@ -118,7 +129,44 @@
             </div>
           </div>
 
-          <div class="msg-composer">
+          <div v-if="ownerMode" class="msg-composer msg-composer--owner">
+            <input ref="attachmentInput" class="attachment-input" type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" @change="selectAttachment" />
+            <button type="button" class="owner-composer-attach" :disabled="!selected || sending" title="Attach a picture or file" aria-label="Attach a picture or file" @click="$refs.attachmentInput.click()">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="3"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="m21 15-5-5L5 21"></path>
+              </svg>
+            </button>
+            <div class="msg-compose-input">
+              <div v-if="attachment" class="attachment-preview">
+                <img v-if="attachmentPreviewUrl" :src="attachmentPreviewUrl" :alt="attachment.name" class="attachment-preview-image" />
+                <span v-else class="attachment-preview-file">FILE</span>
+                <span class="attachment-preview-name" :title="attachment.name">{{ attachment.name }}</span>
+                <button type="button" class="attachment-remove" @click="clearAttachment" aria-label="Remove attachment">×</button>
+              </div>
+              <textarea
+                v-model="body"
+                placeholder="Aa"
+                aria-label="Write a message"
+                :disabled="!selected || sending"
+                @keydown.enter.exact.prevent="send"
+              ></textarea>
+            </div>
+            <button
+              type="button"
+              class="owner-composer-send"
+              :disabled="!selected || sending || (!body.trim() && !attachment)"
+              :aria-label="sending ? 'Sending message' : 'Send message'"
+              :title="sending ? 'Sending...' : 'Send message'"
+              @click="send"
+            >
+              <svg v-if="!sending" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m22 2-7 20-4-9-9-4Z"></path><path d="M22 2 11 13"></path>
+              </svg>
+              <span v-else class="owner-composer-send__spinner" aria-hidden="true"></span>
+            </button>
+          </div>
+
+          <div v-else class="msg-composer">
             <div class="msg-compose-input">
               <div v-if="attachment" class="attachment-preview">
                 <img v-if="attachmentPreviewUrl" :src="attachmentPreviewUrl" :alt="attachment.name" class="attachment-preview-image" />
@@ -135,6 +183,38 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+    <div v-if="ownerMode && viewingImage" class="image-viewer" role="dialog" aria-modal="true" aria-label="Image preview" @click.self="closeImageViewer">
+      <div class="image-viewer__actions">
+        <button type="button" class="image-viewer__action" :disabled="imageDownloadBusy" aria-label="Download image" title="Download image" @click="downloadViewedImage">
+          <svg v-if="!imageDownloadBusy" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 17v3h14v-3" /></svg>
+          <span v-else class="image-viewer__spinner" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="image-viewer__action" aria-label="Forward image" title="Forward image" @click="forwardPickerOpen = !forwardPickerOpen">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 9V5l7 7-7 7v-4c-5 0-8 1.5-11 5 1-6 4-11 11-11Z" /></svg>
+        </button>
+        <button type="button" class="image-viewer__action" aria-label="Close image viewer" title="Close" @click="closeImageViewer">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m18 6-12 12M6 6l12 12" /></svg>
+        </button>
+      </div>
+      <img class="image-viewer__image" :src="viewingImage.attachment_url" :alt="viewingImage.attachment_name || 'Sent image'" />
+      <div v-if="forwardPickerOpen" class="image-forward-picker" role="dialog" aria-label="Forward image to">
+        <div class="image-forward-picker__title">Forward image to</div>
+        <div class="image-forward-picker__users">
+          <button
+            v-for="user in users.filter(user => String(user.id) !== String(meId))"
+            :key="user.id"
+            type="button"
+            :disabled="forwardingImage"
+            @click="forwardImageTo(user)"
+          >
+            <span>{{ user.name }}</span>
+            <span class="image-forward-picker__role">{{ roleLabel(user.role) }}</span>
+          </button>
+          <div v-if="users.length === 0" class="image-forward-picker__empty">No available recipients.</div>
+        </div>
+        <div v-if="forwardingImage" class="image-forward-picker__progress">Forwarding image...</div>
       </div>
     </div>
   </div>
@@ -162,6 +242,10 @@ export default {
       reportOpen: false,
       reportBody: '',
       reportSending: false,
+      viewingImage: null,
+      forwardPickerOpen: false,
+      forwardingImage: false,
+      imageDownloadBusy: false,
       meId: null,
       clientHasUser: false,
       hasSession: false,
@@ -239,12 +323,14 @@ export default {
       window.addEventListener('storage', this.onStorageChange)
       window.addEventListener('focus', this.onWindowFocus)
       window.addEventListener('open-message-widget', this.openFromNotification)
+      window.addEventListener('keydown', this.onImageViewerKeydown)
   },
   beforeUnmount() {
       this.stopPolling()
       window.removeEventListener('storage', this.onStorageChange)
       window.removeEventListener('focus', this.onWindowFocus)
       window.removeEventListener('open-message-widget', this.openFromNotification)
+      window.removeEventListener('keydown', this.onImageViewerKeydown)
     },
 
   methods: {
@@ -256,6 +342,7 @@ export default {
       this.fetchUsers()
     },
     closeWidget() {
+      this.closeImageViewer()
       this.open = false
       this.ownerMode = false
       this.userSearch = ''
@@ -357,6 +444,16 @@ export default {
     },
     escapeHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') },
     formatDate(s){ try { return new Date(s).toLocaleString() } catch(e){ return s } },
+    messageDateKey(value){
+      const date = new Date(value)
+      if (Number.isNaN(date.getTime())) return ''
+      return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
+    },
+    formatMessageDivider(value){
+      const date = new Date(value)
+      if (Number.isNaN(date.getTime())) return ''
+      return date.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })
+    },
     selectAttachment(event){
       const file = event.target.files[0] || null
       this.clearAttachment()
@@ -373,7 +470,67 @@ export default {
       return !!message.attachment_url && String(message.attachment_mime || '').startsWith('image/')
     },
     openAttachment(message){
+      if (this.ownerMode && this.isImageAttachment(message)) {
+        this.viewingImage = message
+        this.forwardPickerOpen = false
+        return
+      }
       window.open(message.attachment_url, '_blank', 'noopener')
+    },
+    closeImageViewer(){
+      this.viewingImage = null
+      this.forwardPickerOpen = false
+    },
+    onImageViewerKeydown(event){
+      if (event.key === 'Escape' && this.viewingImage) {
+        if (this.forwardPickerOpen) this.forwardPickerOpen = false
+        else this.closeImageViewer()
+      }
+    },
+    async downloadViewedImage(){
+      if (!this.viewingImage || this.imageDownloadBusy) return
+      this.imageDownloadBusy = true
+      try {
+        const response = await axios.get(this.viewingImage.attachment_url, { responseType: 'blob' })
+        const url = URL.createObjectURL(response.data)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = this.viewingImage.attachment_name || 'image'
+        document.body.appendChild(link)
+        link.click()
+        link.remove()
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+      } catch (error) {
+        console.error('Could not download message image', error)
+        alert('Could not download this image. Please try again.')
+      } finally {
+        this.imageDownloadBusy = false
+      }
+    },
+    async forwardImageTo(user){
+      if (!this.viewingImage || !user || this.forwardingImage) return
+      this.forwardingImage = true
+      try {
+        const response = await axios.get(this.viewingImage.attachment_url, { responseType: 'blob' })
+        const file = new File(
+          [response.data],
+          this.viewingImage.attachment_name || 'forwarded-image',
+          { type: this.viewingImage.attachment_mime || response.data.type || 'application/octet-stream' }
+        )
+        const form = new FormData()
+        form.append('to_user_id', user.id)
+        form.append('body', '')
+        form.append('attachment', file)
+        await axios.post('/api/hr/messages/send', form)
+        this.closeImageViewer()
+        this.selectUser(user)
+      } catch (error) {
+        console.error('Could not forward message image', error)
+        const message = error?.response?.data?.error || 'Could not forward this image. Please try again.'
+        alert(message)
+      } finally {
+        this.forwardingImage = false
+      }
     },
     messageStatus(message){
       return message.read_at ? 'Read' : 'Delivered'
@@ -457,7 +614,6 @@ export default {
       axios.post('/api/hr/messages/send', form).then(resp => {
         this.body = ''
         this.clearAttachment()
-        // append and reload conversation
         this.loadConversation(this.selected.id)
       }).catch(err => {
         const status = err && err.response && err.response.status
@@ -552,37 +708,76 @@ export default {
 .composer-actions{display:flex;gap:8px;align-items:center}
 .composer-actions button{background:linear-gradient(90deg,#ff6a3d,#f59e0b);color:#fff;border:none;padding:10px 16px;border-radius:10px;box-shadow:0 8px 20px rgba(255,106,61,0.12)}
 .msg-empty{color:#6b7280;padding:20px}
-.msg-modal--owner{width:min(1040px,calc(100vw - 40px));height:min(760px,84vh);border:1px solid rgba(219,188,160,.55);border-radius:20px;background:#fffaf6;box-shadow:0 28px 80px rgba(38,26,18,.26)}
-.msg-overlay--owner{background:rgba(36,27,22,.35);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px)}
-.msg-modal--owner .msg-left{width:320px;min-width:280px;background:linear-gradient(180deg,#fffaf5,#fff)}
-.msg-modal--owner .msg-left-header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:20px 18px 14px;border-color:#f1e5da}
-.msg-modal--owner .msg-left-header strong,.msg-modal--owner .msg-left-header span{display:block}
-.msg-modal--owner .msg-left-header strong{color:#3d2a1f;font-size:1.05rem}
-.msg-modal--owner .msg-left-header div span{margin-top:4px;color:#94735f;font-size:.75rem;font-weight:500}
-.msg-total-unread{padding:5px 8px;border-radius:999px;background:#fff0e5;color:#bd4a13;font-size:.68rem;font-weight:800;white-space:nowrap}
-.msg-search{display:flex;align-items:center;gap:9px;margin:12px 14px;padding:0 11px;border:1px solid #eaded4;border-radius:10px;background:#fff;color:#94735f}
-.msg-search input{width:100%;height:38px;border:0;outline:none;background:transparent;color:#3d2a1f;font:inherit;font-size:.82rem}
-.msg-modal--owner .msg-users{gap:5px;padding:6px 10px 12px}
-.msg-modal--owner .msg-user{width:100%;margin:0;text-align:left;background:transparent}
-.msg-modal--owner .msg-user.active{background:#fff1e5;border-color:#f4c49e}
-.msg-modal--owner .msg-user.has-unread{background:#fff8ef;border-color:#f1d0af}
-.msg-list-state{padding:18px 12px;color:#8c796d;font-size:.82rem;text-align:center}
-.msg-modal--owner .msg-right{background:#fff}
-.msg-modal--owner .msg-right-header{min-height:76px;padding:12px 18px;border-color:#f1e5da}
-.msg-modal--owner .msg-right-title{min-width:0}
-.msg-modal--owner .msg-right-text{display:grid;gap:4px;min-width:0}
-.msg-modal--owner .msg-right-text strong{overflow:hidden;color:#3d2a1f;text-overflow:ellipsis;white-space:nowrap}
-.msg-modal--owner .msg-right-text span{color:#94735f;font-size:.75rem;font-weight:500}
-.msg-modal--owner .close-btn{padding:8px 12px;border-radius:9px;background:#fff;color:#694a38;border:1px solid #ead8ca;cursor:pointer}
-.msg-modal--owner .msg-messages{background:radial-gradient(circle at 10% 10%,rgba(255,242,228,.62),transparent 35%),#fffdfa}
+.msg-overlay--owner{align-items:flex-end;justify-content:flex-end;padding:0 24px 24px;background:transparent;pointer-events:none}
+.msg-modal--owner{display:flex;width:min(360px,calc(100vw - 24px));max-width:none;height:min(560px,calc(100dvh - 32px));flex-direction:column;border:1px solid rgba(219,188,160,.62);border-radius:16px;background:#fffdfa;box-shadow:0 12px 36px rgba(52,34,22,.24);pointer-events:auto}
+.msg-modal--owner .msg-left{display:none}
+.msg-modal--owner .msg-right{min-width:0;background:#fffdfa}
+.msg-modal--owner .msg-right-header{min-height:62px;padding:9px 12px;border-color:#f1e5da;background:#fffaf5}
+.msg-modal--owner .msg-right-title{min-width:0;gap:9px}
+.msg-modal--owner .msg-right-avatar{width:36px;height:36px;flex:0 0 36px;background:#f8d4b4;color:#8e431d}
+.msg-modal--owner .msg-right-text{display:grid;gap:3px;min-width:0}
+.msg-modal--owner .msg-right-text strong{overflow:hidden;color:#3d2a1f;font-size:.82rem;text-overflow:ellipsis;white-space:nowrap}
+.msg-modal--owner .msg-right-text span{color:#94735f;font-size:.67rem;font-weight:500}
+.msg-modal--owner .msg-header-actions{gap:5px}
+.msg-modal--owner .close-btn{display:grid;width:30px;height:30px;place-items:center;padding:0;border:1px solid #ead8ca;border-radius:50%;color:#694a38;background:#fff;font-size:17px;cursor:pointer}
+.msg-modal--owner .msg-messages{min-height:0;padding:14px 12px;background:linear-gradient(180deg,#fffdfa,#fff8f1)}
+.msg-modal--owner .msg-thread{gap:10px}
+.msg-date-divider{align-self:center;margin:8px 0 2px;color:#967d6d;font-size:.68rem;font-weight:600;line-height:1.2;text-align:center}
+.msg-modal--owner .msg-date-divider + .msg-row{margin-top:0}
+.msg-modal--owner .msg-row{align-items:flex-end;gap:7px}
+.msg-modal--owner .msg-avatar-small{width:27px;height:27px;flex-basis:27px;border-radius:50%;font-size:10px}
+.msg-modal--owner .msg-bubble{max-width:82%;padding:9px 11px;border-radius:15px;box-shadow:none;font-size:.82rem}
+.msg-modal--owner .msg-bubble.mine{border-bottom-right-radius:5px;background:#e87432;color:#fff}
+.msg-modal--owner .msg-bubble.theirs{border:1px solid #efe3d8;border-bottom-left-radius:5px;background:#f5eee8;color:#3d2a1f}
+.msg-modal--owner .msg-bubble--image{max-width:82%;padding:0;border:0;border-radius:0;background:transparent!important;box-shadow:none;color:inherit}
+.msg-modal--owner .msg-bubble--image .msg-sender{margin:0 0 5px 2px}
+.msg-modal--owner .msg-bubble--image .msg-attachment-image{width:auto;max-width:min(260px,100%);max-height:320px;margin:0;border-radius:12px;object-fit:contain;background:#f5eee8}
+.msg-modal--owner .msg-bubble--image .msg-status{margin:3px 3px 0;color:#94735f}
+.msg-modal--owner .msg-sender{margin-bottom:4px;font-size:10px}
+.msg-modal--owner .msg-ts{margin-top:5px;font-size:9px}
+.msg-modal--owner .msg-status{font-size:9px}
+.image-viewer{position:fixed;z-index:10000;inset:0;display:flex;align-items:center;justify-content:center;padding:56px 24px 24px;background:rgba(25,25,25,.82);backdrop-filter:blur(10px)}
+.image-viewer__image{display:block;max-width:min(100%,1200px);max-height:calc(100dvh - 100px);object-fit:contain;box-shadow:0 12px 50px rgba(0,0,0,.28)}
+.image-viewer__actions{position:absolute;z-index:2;top:14px;right:18px;display:flex;gap:10px}
+.image-viewer__action{display:grid;width:46px;height:46px;place-items:center;padding:0;border:1px solid rgba(255,255,255,.8);border-radius:50%;background:#252525;color:#fff;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.45)}
+.image-viewer__action:hover:not(:disabled){background:#000}
+.image-viewer__action:disabled{opacity:.65;cursor:wait}
+.image-viewer__action svg{display:block;width:23px;height:23px;fill:none;stroke:#fff;stroke-width:2.25;stroke-linecap:round;stroke-linejoin:round}
+.image-viewer__spinner{width:17px;height:17px;border:2px solid rgba(255,255,255,.45);border-top-color:#fff;border-radius:50%;animation:owner-send-spin .7s linear infinite}
+.image-forward-picker{position:absolute;top:68px;right:18px;width:min(300px,calc(100vw - 36px));max-height:min(420px,calc(100dvh - 100px));overflow:hidden;border:1px solid #ead8ca;border-radius:12px;background:#fffdfa;color:#3d2a1f;box-shadow:0 12px 36px rgba(0,0,0,.28)}
+.image-forward-picker__title{padding:13px 15px;border-bottom:1px solid #f1e5da;font-size:.9rem;font-weight:700}
+.image-forward-picker__users{max-height:320px;overflow:auto}
+.image-forward-picker__users button{display:flex;width:100%;flex-direction:column;gap:3px;padding:11px 15px;border:0;border-bottom:1px solid #f5eee8;background:transparent;color:inherit;text-align:left;cursor:pointer}
+.image-forward-picker__users button:hover:not(:disabled){background:#fff0e5}
+.image-forward-picker__users button:disabled{opacity:.6;cursor:wait}
+.image-forward-picker__role{color:#94735f;font-size:.72rem}
+.image-forward-picker__empty,.image-forward-picker__progress{padding:12px 15px;color:#94735f;font-size:.8rem}
+@media(max-width:600px){.image-viewer{padding:58px 12px 16px}.image-viewer__actions{top:10px;right:10px;gap:7px}.image-viewer__action{width:40px;height:40px}.image-viewer__action svg{width:21px;height:21px}.image-viewer__image{max-height:calc(100dvh - 84px)}}
 .msg-modal--owner .msg-empty{display:grid;place-items:center;align-content:center;gap:8px;height:100%;color:#8c796d;text-align:center}
-.msg-empty__icon{display:grid;width:52px;height:52px;place-items:center;margin-bottom:6px;border-radius:50%;background:#fff0e5;color:#c25a12;font-size:1.5rem}
-.msg-modal--owner .msg-empty strong{color:#523a2b;font-size:1rem}
-.msg-modal--owner .msg-empty span:last-child{font-size:.82rem}
-.msg-modal--owner .msg-composer{border-color:#f1e5da;background:#fff}
-.msg-modal--owner .msg-compose-input{border-color:#eaded4}
-.msg-modal--owner .composer-actions button{cursor:pointer}
-@media (max-width:700px){.msg-modal--owner{width:calc(100vw - 20px);height:calc(100dvh - 24px);max-width:none;border-radius:14px}.msg-modal--owner .msg-left{width:42%;min-width:150px}.msg-modal--owner .msg-left-header{align-items:flex-start;flex-direction:column;padding:14px 12px 10px}.msg-search{margin:8px;padding:0 8px}.msg-modal--owner .msg-user{gap:7px;padding:8px}.msg-modal--owner .msg-user-avatar{width:36px;height:36px;flex-basis:36px}.msg-modal--owner .msg-user-role{font-size:10px}.msg-modal--owner .msg-right-header{align-items:flex-start;padding:10px}.msg-modal--owner .msg-header-actions{gap:5px}.msg-modal--owner .report-btn,.msg-modal--owner .close-btn{padding:6px 8px;font-size:11px}.msg-modal--owner .msg-messages{padding:10px}.msg-modal--owner .msg-composer{align-items:stretch;flex-direction:column}.msg-modal--owner .composer-actions{justify-content:flex-end}}
+.msg-empty__icon{display:grid;width:44px;height:44px;place-items:center;margin-bottom:3px;border-radius:50%;background:#fff0e5;color:#c25a12;font-size:1.3rem}
+.msg-modal--owner .msg-empty strong{color:#523a2b;font-size:.92rem}
+.msg-modal--owner .msg-empty span:last-child{font-size:.76rem}
+.msg-modal--owner .msg-composer{align-items:flex-end;gap:7px;padding:9px;border-color:#f1e5da;background:#fff}
+.msg-modal--owner .msg-compose-input{padding:7px 9px;border-color:#eaded4;border-radius:14px;background:#fffaf5}
+.msg-modal--owner .msg-composer textarea{min-height:34px;max-height:100px;font-size:.8rem}
+.msg-modal--owner .composer-actions{gap:5px}
+.msg-modal--owner .composer-actions button{padding:9px 11px;border-radius:10px;cursor:pointer}
+.msg-modal--owner .composer-actions .attach-btn{padding:8px;border:1px solid #eaded4;background:#fff;color:#8e431d;box-shadow:none}
+.msg-composer--owner{align-items:center;gap:7px;padding:9px 10px}
+.msg-composer--owner .msg-compose-input{display:flex;align-items:center;min-height:40px;padding:2px 11px;border-radius:999px}
+.msg-composer--owner .msg-compose-input textarea{min-height:32px;max-height:90px;resize:none;padding:7px 2px;font-size:.82rem;line-height:1.25}
+.msg-composer--owner .owner-composer-attach,
+.msg-composer--owner .owner-composer-send{display:grid;width:36px;height:36px;flex:0 0 36px;place-items:center;padding:0;border:0;border-radius:50%;cursor:pointer}
+.msg-composer--owner .owner-composer-attach{color:#bd5a24;background:transparent}
+.msg-composer--owner .owner-composer-attach:hover:not(:disabled){background:#fff0e5}
+.msg-composer--owner .owner-composer-send{color:#fff;background:#e87432;box-shadow:0 4px 10px rgba(232,116,50,.2)}
+.msg-composer--owner .owner-composer-send:hover:not(:disabled){background:#d86325}
+.msg-composer--owner .owner-composer-attach:disabled,
+.msg-composer--owner .owner-composer-send:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+.owner-composer-send__spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.45);border-top-color:#fff;border-radius:50%;animation:owner-send-spin .7s linear infinite}
+@keyframes owner-send-spin{to{transform:rotate(360deg)}}
+@media (max-width:700px){.msg-overlay--owner{padding:0 10px 10px}.msg-modal--owner{width:min(360px,calc(100vw - 20px));height:min(560px,calc(100dvh - 20px));border-radius:14px}.msg-modal--owner .msg-right-header{padding:8px 10px}.msg-modal--owner .msg-messages{padding:10px}.msg-modal--owner .msg-composer{align-items:stretch;flex-direction:column}.msg-modal--owner .composer-actions{justify-content:flex-end}}
+@media (max-width:700px){.msg-modal--owner .msg-composer--owner{align-items:center;flex-direction:row;gap:5px;padding:8px}.msg-composer--owner .msg-compose-input{min-width:0}.msg-composer--owner .owner-composer-attach,.msg-composer--owner .owner-composer-send{width:32px;height:32px;flex-basis:32px}}
 .employee-report-card{width:min(92%,520px);padding:16px 18px;background:#fff;border:1px solid #fdba74;border-left:5px solid #ea580c;border-radius:4px;box-shadow:0 8px 22px rgba(124,45,18,.1);color:#431407}
 .row-mine .employee-report-card{margin-left:auto}
 .row-theirs .employee-report-card{margin-right:auto}
