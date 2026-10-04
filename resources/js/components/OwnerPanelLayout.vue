@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="min-h-screen owner-panel-light-mode bg-gradient-to-b from-[#FF9A4A] to-[#FF6A3D]" :class="{ 'owner-panel-layout--embedded': isEmbedded }">
     <div class="admin-page" :class="[pageClass, { 'admin-page--wider': fullWidth }]">
       <section class="admin-layout" :class="{ 'admin-layout--wider': fullWidth, 'admin-layout--owner-two-column': ownerTwoColumnLayout, 'admin-layout--owner-sidebar-layout': showOwnerSidebar, 'owner-sidebar-collapsed': ownerSidebarCollapsed, 'owner-sidebar-resizing': ownerSidebarResizing, 'admin-layout--single-column': singleColumnLayout, 'admin-layout--fit-content': fitContent, 'no-profile-column': !showProfileColumn, 'kitchen-staff-container': pageClass === 'kitchen-staff-page' }" :style="{ '--owner-sidebar-width': `${ownerSidebarWidth}px` }">
@@ -11,9 +11,7 @@
             @click.prevent.stop="toggleOwnerSidebar"
           >☰</button>
           <div class="owner-panel-topbar-spacer"></div>
-          <OwnerMessageMenu
-            v-if="ownerMessagesButton"
-          />
+          <OwnerMessageMenu />
           <PanelNotificationMenu
             :notification-items="panelNotificationMenuItems"
             :notification-count="panelNotificationMenuCount"
@@ -51,6 +49,7 @@
                 <p>{{ panelDescription }}</p>
               </div>
               <div class="header-actions-top">
+                <OwnerMessageMenu v-if="!showOwnerTopbar" />
                 <PanelNotificationMenu
                   v-if="!showOwnerTopbar"
                   :notification-items="panelNotificationMenuItems"
@@ -83,6 +82,7 @@
             </div>
           </header>
           <div v-if="!showHeader && !showOwnerTopbar" class="panel-notification-toolbar">
+            <OwnerMessageMenu />
             <PanelNotificationMenu
               :notification-items="panelNotificationMenuItems"
               :notification-count="panelNotificationMenuCount"
@@ -480,7 +480,6 @@ const props = defineProps({
   ,
   showOwnerSidebar: { type: Boolean, default: false },
   showOwnerTopbar: { type: Boolean, default: false },
-  ownerMessagesButton: { type: Boolean, default: false },
   announcementsInModal: { type: Boolean, default: false },
   notificationDetailsInModal: { type: Boolean, default: false },
   topbarLabel: { type: String, default: '' },
@@ -863,7 +862,7 @@ const isSavingProfile = ref(false)
 const profileError = ref('')
 const profileSuccess = ref('')
 
-const notificationSummary = ref({ approvals: 0, messages: 0, announcements: 0, updates: 0 })
+const notificationSummary = ref({ approvals: 0, announcements: 0, updates: 0 })
 const notificationBreakdown = ref({ counts: {}, extras: {} })
 const activeNotificationPanel = ref('')
 let notificationTimer = null
@@ -907,17 +906,12 @@ function moduleNotificationCount(key) {
 }
 
 const notificationItems = computed(() => [
-  { key: 'messages', label: 'Messages', icon: 'M', tone: 'info', count: notificationSummary.value.messages },
   { key: 'announcements', label: 'Announcements', icon: 'A', tone: 'purple', count: notificationSummary.value.announcements },
   ...moduleNotificationDefinitions
     .filter(item => currentPanelModuleKeys.value.includes(item.key))
     .map(item => ({ ...item, icon: '!', count: moduleNotificationCount(item.key) })),
 ].filter(item => item.count > 0))
-const panelNotificationMenuItems = computed(() => (
-  props.ownerMessagesButton
-    ? notificationItems.value.filter(item => item.key !== 'messages')
-    : notificationItems.value
-))
+const panelNotificationMenuItems = notificationItems
 const panelNotificationMenuCount = computed(() => (
   panelNotificationMenuItems.value.reduce((total, item) => total + item.count, 0)
 ))
@@ -965,10 +959,6 @@ async function markNotificationRead(key) {
 }
 
 function handleNotificationClick(key) {
-  if (key === 'messages') {
-    window.dispatchEvent(new CustomEvent('open-message-widget'))
-    return
-  }
 
   activeNotificationPanel.value = key
   if (props.notificationDetailsInModal) {
@@ -1385,6 +1375,7 @@ async function onAvatarChange(event) {
 
 .panel-notification-toolbar {
   display: flex;
+  gap: 8px;
   justify-content: flex-end;
   margin: 0 0 1rem;
 }

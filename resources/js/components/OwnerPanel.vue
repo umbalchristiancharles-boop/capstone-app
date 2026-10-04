@@ -8,7 +8,6 @@
     :ownerTwoColumnLayout="true"
     :showOwnerSidebar="true"
     :showOwnerTopbar="true"
-    :ownerMessagesButton="true"
     :showProfileColumn="false"
     :enableDarkMode="false"
     :fitContent="true"

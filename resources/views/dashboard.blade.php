@@ -19,22 +19,8 @@
     </script>
 
     @vite('resources/js/app.js')
-    <style>
-        #__chikin_msg_btn {
-            z-index: 10000 !important;
-            position: fixed !important;
-            right: 18px !important;
-            bottom: 18px !important;
-        }
-        #__chikin_msg_modal {
-            z-index: 10001 !important;
-        }
-    </style>
 </head>
 <body>
-    {{-- Messaging button placed BEFORE Vue app so it won't be covered --}}
-    @include('partials.messaging_button')
-    
     <div id="app"></div>
 </body>
 </html>

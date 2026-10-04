@@ -43,6 +43,7 @@
         >☰</button>
         <div class="finance-header__spacer"></div>
         <div class="finance-header__actions">
+          <OwnerMessageMenu />
           <PanelNotificationMenu
             :notification-items="financeNotificationItems"
             :notification-count="financeNotificationCount"
@@ -518,6 +519,7 @@ import FinancePanelContent from './finance/FinancePanelContent.vue'
 import PriceMarkupManagerPanel from './finance/PriceMarkupManagerPanel.vue'
 import MainBranchFinanceBranchConfirmations from './MainBranchFinanceBranchConfirmations.vue'
 import PanelNotificationMenu from './PanelNotificationMenu.vue'
+import OwnerMessageMenu from './OwnerMessageMenu.vue'
 import axios from 'axios'
 import { Chart } from 'vue-chartjs'
 import { showToast } from './toastStore'
@@ -563,7 +565,7 @@ const notificationCounts = ref({
   logistics: 0,
   procurement: 0,
 })
-const financeNotificationSummary = ref({ approvals: 0, messages: 0, announcements: 0, updates: 0 })
+const financeNotificationSummary = ref({ approvals: 0, announcements: 0, updates: 0 })
 const activeNotificationPanel = ref('')
 const announcements = ref([])
 const announcementsLoading = ref(false)
@@ -572,7 +574,6 @@ const hasNotified = ref(false)
 const financeNotificationItems = computed(() => [
   { key: 'approvals', label: 'Pending approvals', count: financeNotificationSummary.value.approvals },
   { key: 'receipt-approvals', label: 'Receipt approvals', count: receiptSubmissions.value.length },
-  { key: 'messages', label: 'Messages', count: financeNotificationSummary.value.messages },
   { key: 'announcements', label: 'Announcements', count: financeNotificationSummary.value.announcements },
   { key: 'updates', label: 'Updates', count: financeNotificationSummary.value.updates },
 ].filter(item => item.count > 0))
@@ -817,7 +818,6 @@ async function loadPanelNotifications() {
       }
       financeNotificationSummary.value = {
         approvals: Number(res.data.summary?.approvals || 0),
-        messages: Number(res.data.summary?.messages || 0),
         announcements: Number(res.data.summary?.announcements || 0),
         updates: Number(res.data.summary?.updates || 0),
       }
@@ -838,10 +838,6 @@ function handleFinanceNotificationClick(key) {
   }
   if (key === 'updates') {
     activeNotificationPanel.value = 'updates'
-    return
-  }
-  if (key === 'messages') {
-    window.dispatchEvent(new CustomEvent('open-message-widget'))
     return
   }
   if (key === 'announcements') {

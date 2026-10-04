@@ -12,6 +12,7 @@
           >☰</button>
           <div class="admin-header__spacer"></div>
           <div class="admin-header__actions">
+            <OwnerMessageMenu />
             <PanelNotificationMenu
               :notification-items="adminNotificationItems"
               :notification-count="adminNotificationCount"
@@ -846,6 +847,7 @@ import LoadingOverlay from './LoadingOverlay.vue'
 import AdminCustomerReports from './AdminCustomerReports.vue'
 import StaffManagement from './StaffManagement.vue'
 import PanelNotificationMenu from './PanelNotificationMenu.vue'
+import OwnerMessageMenu from './OwnerMessageMenu.vue'
 
 import { showToast } from './toastStore'
 
@@ -853,11 +855,10 @@ const router = useRouter()
 const activeRange = ref('today')
 const activeSection = ref('dashboard')
 const adminSidebarCollapsed = ref(false)
-const adminNotificationCounts = ref({ orders: 0, inventory: 0, messages: 0, announcements: 0 })
+const adminNotificationCounts = ref({ orders: 0, inventory: 0, announcements: 0 })
 const adminNotificationItems = computed(() => [
   { key: 'orders', label: 'Pending orders', count: adminNotificationCounts.value.orders },
   { key: 'inventory', label: 'Inventory confirmations', count: adminNotificationCounts.value.inventory },
-  { key: 'messages', label: 'Unread messages', count: adminNotificationCounts.value.messages },
   { key: 'announcements', label: 'Announcements', count: adminNotificationCounts.value.announcements },
 ].filter(item => item.count > 0))
 const adminNotificationCount = computed(() => adminNotificationItems.value.reduce((total, item) => total + item.count, 0))
@@ -1061,7 +1062,6 @@ async function loadAdminNotifications() {
       adminNotificationCounts.value = {
         orders: Number(res.data.counts?.admin || 0),
         inventory: Number(res.data.counts?.inventory || 0),
-        messages: Number(res.data.summary?.messages || 0),
         announcements: Number(res.data.summary?.announcements || 0),
       }
     }
@@ -1077,7 +1077,6 @@ function openAdminNotifications(type) {
     activeSection.value = 'announcements'
     fetchAnnouncements()
   }
-  if (type === 'messages') window.dispatchEvent(new CustomEvent('open-message-widget'))
 }
 
 // Ensure a fresh CSRF cookie/header is present before mutating requests

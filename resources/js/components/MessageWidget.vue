@@ -1,10 +1,5 @@
 <template>
   <div v-if="visible">
-    <button v-if="!open && !isOwnerRoute" @click="open = true" class="msg-fab" aria-label="Messages">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4-.9L3 20l1.1-3.3A7.972 7.972 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-      <span v-if="unreadCount > 0" class="msg-unread-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
-    </button>
-
     <div v-if="open" class="msg-overlay" :class="{ 'msg-overlay--owner': ownerMode }" @click.self="closeWidget">
       <div class="msg-modal" :class="{ 'msg-modal--owner': ownerMode }" role="dialog" aria-modal="true" aria-label="Messages">
         <div class="msg-left">
@@ -272,26 +267,21 @@ export default {
         `${user.name || ''} ${user.role || ''} ${user.department || ''}`.toLowerCase().includes(query)
       )
     },
-    isOwnerRoute() {
-      const path = this.$route?.path || window.location.pathname || ''
-      return path === '/owner' || path.startsWith('/owner/') ||
-        path === '/owner-panel' || path.startsWith('/owner-panel/')
-    },
     visible() {
       try {
         const p = this.$route?.path || window.location.pathname || '/'
         const user = JSON.parse(localStorage.getItem('user') || 'null')
         if (!user || !user.role) return false
 
-        const role = String(user.role).toUpperCase()
-        const isSuperAdmin = role === 'SUPER_ADMIN' || role === 'SUPERADMIN'
         const isPanelPath = [
           '/admin-panel',
           '/admin/',
+          '/admin/deleted-staff',
           '/manager-panel',
           '/manager/',
           '/staff-panel',
           '/staff/',
+          '/staff-management',
           '/inventory',
           '/hr-panel',
           '/custom-panel',
@@ -299,9 +289,11 @@ export default {
           '/owner-panel',
           '/owner/',
           '/main-branch/',
+          '/super-admin-panel',
+          '/super-admin/',
         ].some(prefix => p === prefix.slice(0, -1) || p.startsWith(prefix))
 
-        return !isSuperAdmin && !p.startsWith('/super-admin') && isPanelPath && this.hasSession
+        return isPanelPath && this.hasSession
       } catch (e) {
         return false
       }
@@ -543,9 +535,7 @@ export default {
       axios.get('/api/hr/messages/users').then(resp => {
         this.users = resp.data.users || []
         this.unreadCount = Number(resp.data.unread_count || 0)
-        if (this.isOwnerRoute) {
-          window.dispatchEvent(new CustomEvent('owner-message-users-updated', { detail: { users: this.users } }))
-        }
+        window.dispatchEvent(new CustomEvent('owner-message-users-updated', { detail: { users: this.users } }))
 
         if (this.pendingOwnerUserId) {
           const pendingUser = this.users.find(user => String(user.id) === String(this.pendingOwnerUserId))
@@ -649,9 +639,6 @@ export default {
 </script>
 
 <style scoped>
-/* Improve message widget layout and contrast for logistics panel */
-.msg-fab{position:fixed;right:18px;bottom:18px;z-index:10010;width:56px;height:56px;border-radius:999px;background:#FF853B;color:#fff;border:none;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 28px rgba(255,133,59,0.3);cursor:pointer}
-.msg-unread-badge{position:absolute;top:-4px;right:-4px;min-width:21px;height:21px;padding:0 5px;border:2px solid #fff;border-radius:999px;background:#dc2626;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;line-height:1;box-sizing:border-box}
 .msg-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:10000}
 .msg-modal{width:980px;max-width:98%;height:78vh;background:linear-gradient(180deg,rgba(255,255,255,0.98),rgba(250,250,250,1));border-radius:12px;display:flex;overflow:hidden;box-shadow:0 18px 60px rgba(2,6,23,0.18)}
 .msg-left{width:300px;min-width:240px;border-right:1px solid rgba(15,23,42,0.04);display:flex;flex-direction:column;background:linear-gradient(180deg, #fbfeff, #fff)}

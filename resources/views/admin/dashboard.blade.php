@@ -15,13 +15,8 @@
         };
     </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <style>
-        #__chikin_msg_btn { z-index: 10000 !important; }
-        #__chikin_msg_modal { z-index: 10001 !important; }
-    </style>
 </head>
 <body class="bg-gray-100">
-    @include('partials.messaging_button')
     <div class="min-h-screen">
         <!-- Header -->
         <nav class="bg-white shadow-lg">
@@ -75,7 +70,6 @@
                 </div>
             </div>
         </div>
-    @include('partials.messaging_button')
     </div>
 </body>
 </html>
