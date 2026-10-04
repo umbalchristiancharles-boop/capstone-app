@@ -144,7 +144,10 @@
       <section v-else class="super-admin-module-view">
         <component
           :is="activeModuleComponent"
-          v-bind="activeModule === 'inventoryStaff' ? { isSuperAdmin: true } : {}"
+          v-bind="{
+            ...(activeModule === 'inventoryStaff' ? { isSuperAdmin: true } : {}),
+            ...(activeModule === 'mainBranchAdmin' ? { monitoringOnly: true } : {}),
+          }"
           :key="`${activeModule}:${selectedBranchId}`"
         />
       </section>
@@ -1426,4 +1429,3 @@ textarea.info-input {
   }
 }
 </style>
-

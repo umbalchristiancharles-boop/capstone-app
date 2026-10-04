@@ -6,14 +6,14 @@
       :panelTitle="'Main Branch Administration'"
       :panelDescription="'Main Branch management and configuration'"
       :fullWidth="true"
-      :enableProfileUpdate="true"
+      :enableProfileUpdate="!monitoringOnly"
       :canEditProfile="false"
       :canChangePassword="true"
       :showHeader="false"
       :showProfileColumn="false"
       :showAnnouncements="false"
       :showOwnerSidebar="true"
-      :showOwnerTopbar="true"
+      :showOwnerTopbar="!monitoringOnly"
       topbarLabel="ADMIN - Main Branch"
       :showAttendanceCard="false"
       accountInfoStyle="finance"
@@ -31,7 +31,7 @@
       </template>
 
       <template #ownerSidebarFooter>
-        <div class="owner-sidebar-actions">
+        <div v-if="!monitoringOnly" class="owner-sidebar-actions">
           <button type="button" class="owner-sidebar-account" @click="ownerLayout?.openInfoModal()">Account Info</button>
           <button type="button" class="owner-sidebar-logout" @click="askLogout">Logout</button>
         </div>
@@ -105,7 +105,7 @@
       </template>
 
       <template #headerActions>
-        <div class="header-profile-wrapper" @click.stop>
+        <div v-if="!monitoringOnly" class="header-profile-wrapper" @click.stop>
           <button class="header-profile-btn" @click="toggleProfileDropdown">
             <div class="header-avatar">
               <div v-if="userProfile.avatarUrl" class="header-avatar-img" :style="{ backgroundImage: 'url('+userProfile.avatarUrl+')' }"></div>
@@ -140,6 +140,11 @@ import MainBranchCRMPanel from './MainBranchCRMPanel.vue'
 import OwnerAddBranches from './OwnerAddBranches.vue'
 import MainBranchAccountApplications from './MainBranchAccountApplications.vue'
 
+const props = defineProps({
+  monitoringOnly: { type: Boolean, default: false },
+})
+
+const monitoringOnly = props.monitoringOnly
 const userProfile = ref({})
 const ownerLayout = ref(null)
 const activeSection = ref('finance-overview')
@@ -403,28 +408,105 @@ window.addEventListener('click', () => {
 }
 
 .main-branch-admin-panel :deep(.admin-layout--owner-sidebar-layout) {
+  display: grid !important;
+  grid-template-columns: var(--owner-sidebar-width, 156px) minmax(0, 1fr) !important;
+  grid-template-rows: minmax(0, 1fr) !important;
+  align-items: start;
+  min-height: calc(100vh - 100px) !important;
+  gap: 0 !important;
   padding: 0;
+}
+
+.main-branch-admin-panel :deep(.owner-sidebar-collapsed.admin-layout--owner-sidebar-layout) {
+  grid-template-columns: 0 minmax(0, 1fr) !important;
+}
+
+.main-branch-admin-panel :deep(.admin-layout--owner-sidebar-layout.no-profile-column.admin-layout--wider) {
+  grid-template-columns: var(--owner-sidebar-width, 156px) minmax(0, 1fr) !important;
+}
+
+.main-branch-admin-panel :deep(.owner-panel-sidebar) {
+  position: fixed !important;
+  left: 0 !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  z-index: 200 !important;
+  display: flex !important;
+  width: var(--owner-sidebar-width, 156px) !important;
+  min-width: var(--owner-sidebar-width, 156px) !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  padding: 1.5rem 1rem 1rem !important;
+  background: #f2e9e1 !important;
+  border-right: 1px solid rgba(97, 72, 51, 0.1) !important;
+  transform: none !important;
+  opacity: 1 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  transition: width 260ms cubic-bezier(0.22, 1, 0.36, 1), transform 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease !important;
+}
+
+.main-branch-admin-panel :deep(.owner-sidebar-collapsed .owner-panel-sidebar) {
+  width: 0 !important;
+  min-width: 0 !important;
+  padding-right: 0 !important;
+  padding-left: 0 !important;
+  border-right-color: transparent !important;
+  opacity: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+
+.main-branch-admin-panel :deep(.owner-sidebar-footer) {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.main-branch-admin-panel :deep(.admin-main) {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
 }
 
 .main-branch-admin-panel :deep(.owner-panel-topbar) {
   position: fixed;
   top: 0;
+  left: var(--owner-sidebar-width, 156px);
   right: 0;
+  width: auto !important;
+  height: 59px;
+  min-height: 59px;
+  box-sizing: border-box;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
   padding: 0.75rem 1.25rem;
   background: linear-gradient(180deg, #e7d9cf 0%, #eee5df 100%) !important;
   border-bottom-color: rgba(115, 93, 84, 0.18);
   box-shadow: 0 10px 18px rgba(15, 23, 42, 0.12);
+  transition: left 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.main-branch-admin-panel :deep(.owner-sidebar-collapsed .owner-panel-topbar) {
+  left: 0;
+}
+
+.main-branch-admin-panel :deep(.owner-sidebar-resizing .owner-panel-sidebar),
+.main-branch-admin-panel :deep(.owner-sidebar-resizing .owner-panel-topbar) {
+  transition: none !important;
 }
 
 .main-branch-admin-panel :deep(.admin-main) {
-  margin-top: 66px !important;
+  margin-top: 59px !important;
 }
 
 @media (max-width: 767px) {
   .main-branch-admin-panel :deep(.owner-panel-topbar) {
     left: 0;
-    width: 100%;
-    margin-left: 0;
+    width: 100% !important;
+    margin-left: 0 !important;
   }
 }
 
@@ -437,11 +519,11 @@ window.addEventListener('click', () => {
 
 .main-branch-admin-panel :deep(.owner-sidebar-link) {
   width: 100%;
-  padding: 0.7rem 0.75rem;
+  padding: 10px 9px;
   border: 1px solid transparent;
-  border-radius: 12px;
+  border-radius: 9px;
   background: transparent;
-  color: #1f2937;
+  color: #29384a;
   font-size: 0.78rem;
   font-weight: 600;
   line-height: 1.25;
@@ -452,10 +534,14 @@ window.addEventListener('click', () => {
 
 .main-branch-admin-panel :deep(.owner-sidebar-link:hover),
 .main-branch-admin-panel :deep(.owner-sidebar-link--active) {
-  background: rgba(255, 255, 255, 0.85);
-  border-color: rgba(148, 163, 184, 0.3);
+  background: #fffaf5;
+  border-color: #f1b986;
   color: #111827;
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 5px 12px rgba(113, 77, 41, 0.08);
+}
+
+.main-branch-admin-panel :deep(.owner-sidebar-link:hover) {
+  transform: translateX(2px);
 }
 
 .main-branch-admin-panel :deep(.owner-sidebar-actions) {
@@ -484,6 +570,50 @@ window.addEventListener('click', () => {
   border: 1px solid rgba(138, 113, 95, 0.25);
   background: rgba(255, 159, 67, 0.12);
   color: #a23d32;
+}
+
+@media (max-width: 767px) {
+  .main-branch-admin-panel :deep(.admin-layout--owner-sidebar-layout),
+  .main-branch-admin-panel :deep(.admin-layout--owner-sidebar-layout.no-profile-column.admin-layout--wider) {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: auto minmax(0, 1fr) !important;
+  }
+
+  .main-branch-admin-panel :deep(.owner-panel-sidebar) {
+    position: relative !important;
+    inset: auto !important;
+    z-index: auto !important;
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    top: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: auto !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .main-branch-admin-panel :deep(.owner-sidebar-collapsed.admin-layout--owner-sidebar-layout) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .main-branch-admin-panel :deep(.owner-sidebar-collapsed .owner-panel-sidebar) {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 1.5rem 0.75rem 1rem !important;
+    border-right-color: rgba(97, 72, 51, 0.1) !important;
+    opacity: 1 !important;
+    overflow: visible !important;
+    pointer-events: auto !important;
+  }
+
+  .main-branch-admin-panel :deep(.admin-main) {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+  }
 }
 
 .main-branch-admin-hero {
