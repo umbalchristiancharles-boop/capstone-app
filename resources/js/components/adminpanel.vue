@@ -2778,4 +2778,98 @@ h1, h2 {
     grid-template-columns: 1fr;
   }
 }
+
+@media (min-width: 768px) {
+  .admin-panel-shell {
+    overflow-x: clip !important;
+    overflow-y: visible !important;
+  }
+
+  .admin-panel-shell .admin-layout {
+    grid-template-columns: minmax(156px, auto) minmax(0, 1fr) !important;
+    overflow-x: clip !important;
+    overflow-y: visible !important;
+  }
+
+  .admin-panel-shell .admin-layout.admin-sidebar-collapsed {
+    grid-template-columns: 0 minmax(0, 1fr) !important;
+  }
+
+  .admin-panel-shell .admin-sidebar {
+    position: sticky !important;
+    top: 0 !important;
+    grid-column: 1 !important;
+    grid-row: 1 / -1 !important;
+    align-self: start !important;
+    height: 100vh !important;
+    min-height: 100vh !important;
+    max-height: 100vh !important;
+  }
+
+  .admin-panel-shell .admin-sidebar-collapsed > .admin-sidebar {
+    min-width: 0 !important;
+  }
+
+  .admin-panel-shell .admin-topbar {
+    position: sticky !important;
+    top: 0 !important;
+    left: auto !important;
+    right: auto !important;
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+  }
+
+  .admin-panel-shell .admin-sidebar-collapsed > .admin-topbar {
+    grid-column: 2 !important;
+  }
+
+  .admin-panel-shell .admin-main,
+  .admin-panel-shell .admin-left,
+  .admin-panel-shell .admin-side {
+    grid-column: 2 !important;
+    min-width: 0 !important;
+  }
+
+  .admin-panel-shell .admin-layout:has(> .admin-sidebar.panel-sidebar-resizing) {
+    transition: none !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .admin-panel-shell .admin-layout.admin-sidebar-collapsed {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .admin-panel-shell .admin-layout > .admin-sidebar {
+    position: static !important;
+    grid-column: 1 !important;
+    grid-row: auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+  }
+
+  .admin-panel-shell .admin-layout.admin-sidebar-collapsed > .admin-sidebar {
+    display: none !important;
+  }
+
+  .admin-panel-shell .admin-layout > .admin-topbar,
+  .admin-panel-shell .admin-layout > .admin-main,
+  .admin-panel-shell .admin-layout > .admin-left,
+  .admin-panel-shell .admin-layout > .admin-side {
+    grid-column: 1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .admin-panel-shell :deep(.panel-sidebar-resize-handle) {
+    display: none !important;
+  }
+}
 </style>
