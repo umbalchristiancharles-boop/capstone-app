@@ -11,9 +11,24 @@
             @click.prevent.stop="toggleOwnerSidebar"
           >☰</button>
           <div class="owner-panel-topbar-spacer"></div>
+          <button
+            v-if="ownerMessagesButton"
+            type="button"
+            class="owner-panel-message-button"
+            :aria-label="notificationSummary.messages ? `Messages, ${notificationSummary.messages} unread` : 'Messages'"
+            title="Messages"
+            @click="openOwnerMessages"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5z"></path>
+            </svg>
+            <span v-if="notificationSummary.messages > 0" class="owner-panel-message-button__badge">
+              {{ notificationSummary.messages > 99 ? '99+' : notificationSummary.messages }}
+            </span>
+          </button>
           <PanelNotificationMenu
-            :notification-items="notificationItems"
-            :notification-count="unreadNotificationCount"
+            :notification-items="panelNotificationMenuItems"
+            :notification-count="panelNotificationMenuCount"
             @select="handleNotificationClick"
           />
           <div class="owner-panel-user-pill" aria-label="Current account">
@@ -50,8 +65,8 @@
               <div class="header-actions-top">
                 <PanelNotificationMenu
                   v-if="!showOwnerTopbar"
-                  :notification-items="notificationItems"
-                  :notification-count="unreadNotificationCount"
+                  :notification-items="panelNotificationMenuItems"
+                  :notification-count="panelNotificationMenuCount"
                   @select="handleNotificationClick"
                 />
                 <template v-if="!isRightColumnHeaderRoute()">
@@ -81,8 +96,8 @@
           </header>
           <div v-if="!showHeader && !showOwnerTopbar" class="panel-notification-toolbar">
             <PanelNotificationMenu
-              :notification-items="notificationItems"
-              :notification-count="unreadNotificationCount"
+              :notification-items="panelNotificationMenuItems"
+              :notification-count="panelNotificationMenuCount"
               @select="handleNotificationClick"
             />
           </div>
@@ -476,6 +491,7 @@ const props = defineProps({
   ,
   showOwnerSidebar: { type: Boolean, default: false },
   showOwnerTopbar: { type: Boolean, default: false },
+  ownerMessagesButton: { type: Boolean, default: false },
   announcementsInModal: { type: Boolean, default: false },
   notificationDetailsInModal: { type: Boolean, default: false },
   topbarLabel: { type: String, default: '' },
@@ -908,7 +924,14 @@ const notificationItems = computed(() => [
     .filter(item => currentPanelModuleKeys.value.includes(item.key))
     .map(item => ({ ...item, icon: '!', count: moduleNotificationCount(item.key) })),
 ].filter(item => item.count > 0))
-const unreadNotificationCount = computed(() => notificationItems.value.reduce((total, item) => total + item.count, 0))
+const panelNotificationMenuItems = computed(() => (
+  props.ownerMessagesButton
+    ? notificationItems.value.filter(item => item.key !== 'messages')
+    : notificationItems.value
+))
+const panelNotificationMenuCount = computed(() => (
+  panelNotificationMenuItems.value.reduce((total, item) => total + item.count, 0)
+))
 
 const notificationDetailItems = computed(() => {
   const item = moduleNotificationDefinitions.find(definition => definition.key === activeNotificationPanel.value)
@@ -949,6 +972,17 @@ async function markNotificationRead(key) {
     await loadNotificationSummary()
   } catch (e) {
     showToast(e.response?.data?.message || 'Unable to update notification read status.', 'error')
+  }
+}
+
+function openOwnerMessages() {
+  window.dispatchEvent(new CustomEvent('open-message-widget', { detail: { ownerPanel: true } }))
+}
+
+function updateOwnerUnreadMessageCount(event) {
+  const count = Number(event.detail?.count)
+  if (Number.isFinite(count) && count >= 0) {
+    notificationSummary.value.messages = count
   }
 }
 
@@ -1013,6 +1047,7 @@ watch(() => props.userProfile, (newVal) => {
 }, { immediate: true })
 
 onMounted(() => {
+  window.addEventListener('owner-message-unread-count', updateOwnerUnreadMessageCount)
   if (window.matchMedia('(max-width: 1023px)').matches) {
     ownerSidebarCollapsed.value = true
   }
@@ -1065,6 +1100,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  window.removeEventListener('owner-message-unread-count', updateOwnerUnreadMessageCount)
   if (notificationTimer) window.clearInterval(notificationTimer)
   try { window.removeEventListener('open-owner-edit-profile', openEditProfile) } catch (e) {}
   try { window.removeEventListener('open-owner-info', openInfoModal) } catch (e) {}
@@ -1589,6 +1625,46 @@ async function onAvatarChange(event) {
   background: rgba(255, 255, 255, 0.58);
   font-size: 0.82rem;
   font-weight: 600;
+}
+
+.owner-panel-message-button {
+  position: relative;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  place-items: center;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 50%;
+  color: #334155;
+  background: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.owner-panel-message-button:hover,
+.owner-panel-message-button:focus-visible {
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(36, 52, 71, 0.12);
+  outline: none;
+}
+
+.owner-panel-message-button__badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: grid;
+  min-width: 19px;
+  height: 19px;
+  place-items: center;
+  padding: 0 4px;
+  border: 2px solid #f4ebe4;
+  border-radius: 999px;
+  color: #fff;
+  background: #ef4444;
+  font-size: 0.65rem;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .owner-panel-user-pill__avatar {

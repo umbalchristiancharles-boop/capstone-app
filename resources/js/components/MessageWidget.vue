@@ -1,16 +1,27 @@
 <template>
   <div v-if="visible">
-    <button v-if="!open" @click="open = true" class="msg-fab" aria-label="Messages">
+    <button v-if="!open && !isOwnerRoute" @click="open = true" class="msg-fab" aria-label="Messages">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4-.9L3 20l1.1-3.3A7.972 7.972 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
       <span v-if="unreadCount > 0" class="msg-unread-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
     </button>
 
-    <div v-if="open" class="msg-overlay" @click.self="open = false">
-      <div class="msg-modal">
+    <div v-if="open" class="msg-overlay" :class="{ 'msg-overlay--owner': ownerMode }" @click.self="closeWidget">
+      <div class="msg-modal" :class="{ 'msg-modal--owner': ownerMode }" role="dialog" aria-modal="true" aria-label="Messages">
         <div class="msg-left">
-          <div class="msg-left-header">Branch Users</div>
+          <div v-if="ownerMode" class="msg-left-header">
+            <div>
+              <strong>Messages</strong>
+              <span>Conversations with your team</span>
+            </div>
+            <span v-if="unreadCount > 0" class="msg-total-unread">{{ unreadCount > 99 ? '99+' : unreadCount }} unread</span>
+          </div>
+          <div v-else class="msg-left-header">Branch Users</div>
+          <label v-if="ownerMode" class="msg-search">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+            <input v-model="userSearch" type="search" placeholder="Search people" aria-label="Search conversations" />
+          </label>
           <div class="msg-users">
-            <div v-for="u in users" :key="u.id" :class="['msg-user', selected && selected.id === u.id ? 'active' : '', u.unread_count > 0 ? 'has-unread' : '']" @click="selectUser(u)">
+            <button v-for="u in filteredUsers" :key="u.id" type="button" :class="['msg-user', selected && selected.id === u.id ? 'active' : '', u.unread_count > 0 ? 'has-unread' : '']" @click="selectUser(u)">
               <div class="msg-user-avatar" v-if="u.avatar"><img :src="u.avatar" alt="" /></div>
               <div class="msg-user-avatar" v-else><span>{{ (u.name||'').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase() }}</span></div>
               <div class="msg-user-meta">
@@ -18,7 +29,10 @@
                 <div class="msg-user-role">{{ roleLabel(u.role) }}</div>
               </div>
               <span v-if="u.unread_count > 0" class="msg-user-unread">{{ u.unread_count > 99 ? '99+' : u.unread_count }}</span>
-            </div>
+            </button>
+            <div v-if="usersLoading" class="msg-list-state">Loading conversations...</div>
+            <div v-else-if="users.length === 0" class="msg-list-state">No conversations available yet.</div>
+            <div v-else-if="filteredUsers.length === 0" class="msg-list-state">No matching conversations.</div>
           </div>
         </div>
         <div class="msg-right">
@@ -26,16 +40,31 @@
             <div class="msg-right-title">
               <div class="msg-right-avatar" v-if="selected && selected.avatar"><img :src="selected.avatar" alt="" /></div>
               <div class="msg-right-avatar" v-else-if="selected"><span>{{ (selected.name||'').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase() }}</span></div>
-              <div class="msg-right-text">{{ selected ? ('Conversation with ' + selected.name + ' (' + roleLabel(selected.role) + ')') : 'Select a user' }}</div>
+              <div v-if="ownerMode" class="msg-right-text">
+                <strong>{{ selected ? selected.name : 'Your inbox' }}</strong>
+                <span>{{ selected ? roleLabel(selected.role) : 'Select a conversation to read and reply' }}</span>
+              </div>
+              <div v-else class="msg-right-text">{{ selected ? ('Conversation with ' + selected.name + ' (' + roleLabel(selected.role) + ')') : 'Select a user' }}</div>
             </div>
             <div class="msg-header-actions">
               <button v-if="canSubmitEmployeeReport && isHrManager(selected)" class="report-btn" @click="reportOpen = !reportOpen">Employee report</button>
-              <button class="close-btn" @click="open = false">Close</button>
+              <button class="close-btn" aria-label="Close messages" @click="closeWidget">Close</button>
             </div>
           </div>
 
           <div class="msg-messages" ref="messagesPane">
-            <div v-if="!selected" class="msg-empty">Choose a user to start</div>
+            <div v-if="!selected && ownerMode" class="msg-empty">
+              <span class="msg-empty__icon" aria-hidden="true">✉</span>
+              <strong>Select a conversation</strong>
+              <span>Choose someone from the list to view your messages.</span>
+            </div>
+            <div v-else-if="!selected" class="msg-empty">Choose a user to start</div>
+            <div v-else-if="messages.length === 0 && ownerMode" class="msg-empty">
+              <span class="msg-empty__icon" aria-hidden="true">✉</span>
+              <strong>Start the conversation</strong>
+              <span>Send a message to {{ selected.name }} below.</span>
+            </div>
+            <div v-else-if="messages.length === 0" class="msg-thread"></div>
             <div v-else class="msg-thread">
               <div v-for="m in messages" :key="m.id" :class="['msg-row', m.from_user_id === meId ? 'row-mine' : 'row-theirs']">
                 <div v-if="m.from_user_id !== meId" class="msg-avatar-small">
@@ -121,6 +150,9 @@ export default {
       open: false,
       users: [],
       unreadCount: 0,
+      usersLoading: false,
+      userSearch: '',
+      ownerMode: false,
       selected: null,
       messages: [],
       body: '',
@@ -147,6 +179,18 @@ export default {
       } catch (e) {
         return 'Current user'
       }
+    },
+    filteredUsers() {
+      const query = this.userSearch.trim().toLowerCase()
+      if (!query) return this.users
+      return this.users.filter(user =>
+        `${user.name || ''} ${user.role || ''} ${user.department || ''}`.toLowerCase().includes(query)
+      )
+    },
+    isOwnerRoute() {
+      const path = this.$route?.path || window.location.pathname || ''
+      return path === '/owner' || path.startsWith('/owner/') ||
+        path === '/owner-panel' || path.startsWith('/owner-panel/')
     },
     visible() {
       try {
@@ -203,9 +247,15 @@ export default {
     },
 
   methods: {
-    openFromNotification() {
+    openFromNotification(event) {
       if (!this.visible) return
+      this.ownerMode = event?.detail?.ownerPanel === true
       this.open = true
+    },
+    closeWidget() {
+      this.open = false
+      this.ownerMode = false
+      this.userSearch = ''
     },
     async bootstrapAuthState(){
       let user = null
@@ -328,10 +378,12 @@ export default {
     fetchUsers(){
       if (this.fetchUsersInProgress || this.stoppedUnauthenticated) return
       this.fetchUsersInProgress = true
+      this.usersLoading = this.users.length === 0
 
       axios.get('/api/hr/messages/users').then(resp => {
         this.users = resp.data.users || []
         this.unreadCount = Number(resp.data.unread_count || 0)
+        window.dispatchEvent(new CustomEvent('owner-message-unread-count', { detail: { count: this.unreadCount } }))
 
         if (this.selected && this.users.length) {
           const nextSelected = this.users.find(u => String(u.id) === String(this.selected.id)) || null
@@ -350,7 +402,10 @@ export default {
           this.users = []
           return
         }
-      }).finally(() => { this.fetchUsersInProgress = false })
+      }).finally(() => {
+        this.fetchUsersInProgress = false
+        this.usersLoading = false
+      })
     },
     selectUser(u){
       this.selected = u
@@ -364,6 +419,7 @@ export default {
     loadConversation(userId){
       axios.get(`/api/hr/messages/conversation/${userId}`).then(resp => {
         this.messages = resp.data.messages || []
+        this.fetchUsers()
         this.$nextTick(() => {
           try { this.$refs.messagesPane.scrollTop = this.$refs.messagesPane.scrollHeight } catch(e) {}
         })
@@ -437,6 +493,7 @@ export default {
 .msg-left-header{padding:16px;font-weight:800;border-bottom:1px solid rgba(15,23,42,0.04);color:#0f172a}
 .msg-users{overflow:auto;padding:10px;display:flex;flex-direction:column}
 .msg-user{display:flex;gap:10px;align-items:center;padding:10px;border-radius:10px;margin-bottom:8px;cursor:pointer;border:1px solid transparent;transition:background .12s, transform .08s}
+.msg-user{font:inherit;text-align:left;background:transparent}
 .msg-user:hover{transform:translateY(-1px)}
 .msg-user.active{background:linear-gradient(90deg, rgba(255,106,61,0.08), rgba(251,191,36,0.04));border-color:rgba(255,170,120,0.08)}
 .msg-user.has-unread{background:#ecfeff;border-color:#67e8f9;font-weight:800}
@@ -486,6 +543,37 @@ export default {
 .composer-actions{display:flex;gap:8px;align-items:center}
 .composer-actions button{background:linear-gradient(90deg,#ff6a3d,#f59e0b);color:#fff;border:none;padding:10px 16px;border-radius:10px;box-shadow:0 8px 20px rgba(255,106,61,0.12)}
 .msg-empty{color:#6b7280;padding:20px}
+.msg-modal--owner{width:min(1040px,calc(100vw - 40px));height:min(760px,84vh);border:1px solid rgba(219,188,160,.55);border-radius:20px;background:#fffaf6;box-shadow:0 28px 80px rgba(38,26,18,.26)}
+.msg-overlay--owner{background:rgba(36,27,22,.35);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px)}
+.msg-modal--owner .msg-left{width:320px;min-width:280px;background:linear-gradient(180deg,#fffaf5,#fff)}
+.msg-modal--owner .msg-left-header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:20px 18px 14px;border-color:#f1e5da}
+.msg-modal--owner .msg-left-header strong,.msg-modal--owner .msg-left-header span{display:block}
+.msg-modal--owner .msg-left-header strong{color:#3d2a1f;font-size:1.05rem}
+.msg-modal--owner .msg-left-header div span{margin-top:4px;color:#94735f;font-size:.75rem;font-weight:500}
+.msg-total-unread{padding:5px 8px;border-radius:999px;background:#fff0e5;color:#bd4a13;font-size:.68rem;font-weight:800;white-space:nowrap}
+.msg-search{display:flex;align-items:center;gap:9px;margin:12px 14px;padding:0 11px;border:1px solid #eaded4;border-radius:10px;background:#fff;color:#94735f}
+.msg-search input{width:100%;height:38px;border:0;outline:none;background:transparent;color:#3d2a1f;font:inherit;font-size:.82rem}
+.msg-modal--owner .msg-users{gap:5px;padding:6px 10px 12px}
+.msg-modal--owner .msg-user{width:100%;margin:0;text-align:left;background:transparent}
+.msg-modal--owner .msg-user.active{background:#fff1e5;border-color:#f4c49e}
+.msg-modal--owner .msg-user.has-unread{background:#fff8ef;border-color:#f1d0af}
+.msg-list-state{padding:18px 12px;color:#8c796d;font-size:.82rem;text-align:center}
+.msg-modal--owner .msg-right{background:#fff}
+.msg-modal--owner .msg-right-header{min-height:76px;padding:12px 18px;border-color:#f1e5da}
+.msg-modal--owner .msg-right-title{min-width:0}
+.msg-modal--owner .msg-right-text{display:grid;gap:4px;min-width:0}
+.msg-modal--owner .msg-right-text strong{overflow:hidden;color:#3d2a1f;text-overflow:ellipsis;white-space:nowrap}
+.msg-modal--owner .msg-right-text span{color:#94735f;font-size:.75rem;font-weight:500}
+.msg-modal--owner .close-btn{padding:8px 12px;border-radius:9px;background:#fff;color:#694a38;border:1px solid #ead8ca;cursor:pointer}
+.msg-modal--owner .msg-messages{background:radial-gradient(circle at 10% 10%,rgba(255,242,228,.62),transparent 35%),#fffdfa}
+.msg-modal--owner .msg-empty{display:grid;place-items:center;align-content:center;gap:8px;height:100%;color:#8c796d;text-align:center}
+.msg-empty__icon{display:grid;width:52px;height:52px;place-items:center;margin-bottom:6px;border-radius:50%;background:#fff0e5;color:#c25a12;font-size:1.5rem}
+.msg-modal--owner .msg-empty strong{color:#523a2b;font-size:1rem}
+.msg-modal--owner .msg-empty span:last-child{font-size:.82rem}
+.msg-modal--owner .msg-composer{border-color:#f1e5da;background:#fff}
+.msg-modal--owner .msg-compose-input{border-color:#eaded4}
+.msg-modal--owner .composer-actions button{cursor:pointer}
+@media (max-width:700px){.msg-modal--owner{width:calc(100vw - 20px);height:calc(100dvh - 24px);max-width:none;border-radius:14px}.msg-modal--owner .msg-left{width:42%;min-width:150px}.msg-modal--owner .msg-left-header{align-items:flex-start;flex-direction:column;padding:14px 12px 10px}.msg-search{margin:8px;padding:0 8px}.msg-modal--owner .msg-user{gap:7px;padding:8px}.msg-modal--owner .msg-user-avatar{width:36px;height:36px;flex-basis:36px}.msg-modal--owner .msg-user-role{font-size:10px}.msg-modal--owner .msg-right-header{align-items:flex-start;padding:10px}.msg-modal--owner .msg-header-actions{gap:5px}.msg-modal--owner .report-btn,.msg-modal--owner .close-btn{padding:6px 8px;font-size:11px}.msg-modal--owner .msg-messages{padding:10px}.msg-modal--owner .msg-composer{align-items:stretch;flex-direction:column}.msg-modal--owner .composer-actions{justify-content:flex-end}}
 .employee-report-card{width:min(92%,520px);padding:16px 18px;background:#fff;border:1px solid #fdba74;border-left:5px solid #ea580c;border-radius:4px;box-shadow:0 8px 22px rgba(124,45,18,.1);color:#431407}
 .row-mine .employee-report-card{margin-left:auto}
 .row-theirs .employee-report-card{margin-right:auto}
