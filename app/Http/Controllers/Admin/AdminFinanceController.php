@@ -214,7 +214,7 @@ class AdminFinanceController extends Controller
         Log::info('Transactions query', ['branch_id' => $branchId, 'user_id' => $user->id, 'user_role' => $user->role]);
 
         $transactionsQuery = Order::with(['items.product', 'branch', 'cashier'])
-            ->whereIn('status', ['pending', 'in_kitchen', 'approved', 'completed', 'cancelled'])
+            ->whereIn('status', ['pending', 'in_kitchen', 'preparing', 'ready', 'approved', 'completed', 'cancelled'])
             ->orderBy('created_at', 'desc')
             ->limit(20);
 
@@ -265,58 +265,53 @@ class AdminFinanceController extends Controller
 
         [$branchId] = $this->resolveBranchScope($request, $user);
         $now = now()->startOfDay();
+        $rangeStart = $now->copy()->startOfMonth()->subMonths(11);
+        $rangeEnd = $now->copy()->endOfMonth();
         $months = [];
         $incomeData = [];
         $expensesData = [];
         $netData = [];
 
-        // Generate past 12 months starting from current month going backwards
+        $incomeByMonth = Order::whereIn('status', ['completed', 'approved'])
+            ->whereBetween('created_at', [$rangeStart, $rangeEnd])
+            ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
+            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month_key, SUM(grand_total) as total")
+            ->groupBy('month_key')
+            ->pluck('total', 'month_key');
+
+        $supplierExpenseByMonth = SupplierOrder::whereIn('status', ['fulfilled', 'on_delivery', 'confirmed'])
+            ->whereBetween('created_at', [$rangeStart, $rangeEnd])
+            ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
+            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month_key, SUM(price * quantity) as total")
+            ->groupBy('month_key')
+            ->pluck('total', 'month_key');
+
+        $procurementExpenseByMonth = ProcurementRequest::where('status', 'completed')
+            ->whereBetween('created_at', [$rangeStart, $rangeEnd])
+            ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
+            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month_key, SUM(total_amount) as total")
+            ->groupBy('month_key')
+            ->pluck('total', 'month_key');
+
+        $budgetExpenseByMonth = BudgetRequest::whereIn('status', ['Approved', 'Budget Given'])
+            ->whereBetween('created_at', [$rangeStart, $rangeEnd])
+            ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
+            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month_key, SUM(requested_amount) as total")
+            ->groupBy('month_key')
+            ->pluck('total', 'month_key');
+
         for ($i = 11; $i >= 0; $i--) {
-            // Start from first day of current month, then subtract months
             $monthStart = $now->copy()->startOfMonth()->subMonths($i);
-            $monthEnd = $monthStart->copy()->endOfMonth();
-            $monthLabel = $monthStart->format('M Y');
+            $monthKey = $monthStart->format('Y-m');
+            $income = (float) ($incomeByMonth[$monthKey] ?? 0);
+            $expenses = (float) ($supplierExpenseByMonth[$monthKey] ?? 0)
+                + (float) ($procurementExpenseByMonth[$monthKey] ?? 0)
+                + (float) ($budgetExpenseByMonth[$monthKey] ?? 0);
 
-            // Income: completed orders
-            $incomeQuery = Order::whereIn('status', ['completed', 'approved'])
-                ->whereBetween('created_at', [$monthStart, $monthEnd]);
-            if ($branchId) {
-                $incomeQuery->where('branch_id', $branchId);
-            }
-            $income = (float) $incomeQuery->sum('grand_total');
-
-            // Expenses: supplier orders + procurement requests + budget requests
-            $supplierOrdersQuery = SupplierOrder::whereIn('status', ['fulfilled', 'on_delivery', 'confirmed'])
-                ->whereBetween('created_at', [$monthStart, $monthEnd]);
-            if ($branchId) {
-                $supplierOrdersQuery->where('branch_id', $branchId);
-            }
-            $supplierExpense = (float) $supplierOrdersQuery
-                ->selectRaw('SUM(price * quantity) as total')
-                ->value('total') ?? 0;
-
-            $procurementQuery = ProcurementRequest::where('status', 'completed')
-                ->whereBetween('created_at', [$monthStart, $monthEnd]);
-            if ($branchId) {
-                $procurementQuery->where('branch_id', $branchId);
-            }
-            $procurementExpense = (float) $procurementQuery->sum('total_amount');
-
-            $budgetQuery = BudgetRequest::whereIn('status', ['Approved', 'Budget Given'])
-                ->whereBetween('created_at', [$monthStart, $monthEnd]);
-            if ($branchId) {
-                $budgetQuery->where('branch_id', $branchId);
-            }
-            $budgetExpense = (float) $budgetQuery->sum('requested_amount');
-
-            $expenses = (float) ($supplierExpense + $procurementExpense + $budgetExpense);
-
-            $net = $income - $expenses;
-
-            $months[] = $monthLabel;
+            $months[] = $monthStart->format('M Y');
             $incomeData[] = $income;
             $expensesData[] = $expenses;
-            $netData[] = $net;
+            $netData[] = $income - $expenses;
         }
 
         $reports = [[

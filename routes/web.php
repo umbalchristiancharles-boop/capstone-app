@@ -7,7 +7,15 @@ use App\Http\Controllers\Auth\AdminPasswordResetController;
 use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Admin\DeletedStaffController;
 use App\Http\Controllers\HRMessageController;
+use App\Http\Controllers\SuperAdminSandboxFileController;
 use Illuminate\Support\Facades\Storage;
+
+Route::get('/superadmin-public/{path}', [SuperAdminSandboxFileController::class, 'showSandboxPublicStorage'])
+    ->where('path', '.*');
+
+Route::get('/{directory}/{path}', [SuperAdminSandboxFileController::class, 'show'])
+    ->where('directory', 'avatars|product-images|receipts')
+    ->where('path', '.*');
 
 Route::get('/product-image/{path}', function (string $path) {
     $path = 'product-images/' . ltrim($path, '/');

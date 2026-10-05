@@ -646,8 +646,8 @@ class CashierController extends Controller
             return response()->json([]);
         }
 
-        $query = Order::with('items', 'branch')
-            ->whereIn('status', ['pending', 'in_kitchen', 'approved', 'completed', 'cancelled'])
+        $query = Order::with(['items.product:id,is_kitchen_dish', 'branch'])
+            ->whereIn('status', ['pending', 'in_kitchen', 'preparing', 'ready', 'approved', 'completed', 'cancelled'])
             ->orderByDesc('ordered_at');
 
         if ($branchId) {

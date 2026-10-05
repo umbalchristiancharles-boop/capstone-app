@@ -66,6 +66,7 @@ class DashboardController extends Controller
         return match($status) {
             'pending' => 'Pending',
             'in_kitchen' => 'In Kitchen',
+            'preparing' => 'Preparing',
             'ready' => 'Ready',
             'completed' => 'Completed',
             'cancelled' => 'Cancelled',
@@ -108,7 +109,7 @@ class DashboardController extends Controller
         $completedCount = (clone $ordersQuery)->where('status', 'completed')->count();
 
         // Pending orders
-        $pendingStatuses = ['pending', 'in_kitchen', 'ready'];
+        $pendingStatuses = ['pending', 'in_kitchen', 'preparing', 'ready'];
         $pendingCount = (clone $ordersQuery)->whereIn('status', $pendingStatuses)->count();
 
         // Total sales
@@ -135,7 +136,7 @@ class DashboardController extends Controller
             });
 
         // Production Queue
-        $productionQueue = Order::whereIn('status', ['pending', 'in_kitchen', 'ready'])
+        $productionQueue = Order::whereIn('status', ['pending', 'in_kitchen', 'preparing', 'ready'])
             ->whereBetween('ordered_at', [$dates['start'], $dates['end']])
             ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
             ->orderBy('ordered_at', 'asc')
@@ -144,7 +145,7 @@ class DashboardController extends Controller
             ->map(function ($order) {
                 $badgeClass = match($order->status) {
                     'completed' => 'badge--success',
-                    'in_kitchen' => 'badge--warning',
+                    'in_kitchen', 'preparing' => 'badge--warning',
                     'ready' => 'badge--info',
                     default => 'badge--info'
                 };

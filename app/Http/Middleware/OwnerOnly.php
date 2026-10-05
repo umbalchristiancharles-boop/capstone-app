@@ -15,13 +15,13 @@ class OwnerOnly
         $userId = Session::get('user_id');
         $userRole = Session::get('user_role');
 
-        if ($userId && strtoupper($userRole) === 'OWNER') {
+        if ($userId && in_array(strtoupper((string) $userRole), ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN'], true)) {
             return $next($request);
         }
 
         // Fallback: Check Laravel's Auth facade
         $user = Auth::user();
-        if ($user && $user->role === 'OWNER') {
+        if ($user && in_array(strtoupper($user->role ?? ''), ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN'], true)) {
             return $next($request);
         }
 

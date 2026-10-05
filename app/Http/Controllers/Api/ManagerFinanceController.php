@@ -180,8 +180,8 @@ class ManagerFinanceController extends Controller
         }
 
         // Orders/Expenses queries - if user has no branch_id (owner/admin), get ALL branches
-        // Include in_kitchen orders as they are paid at checkout (dishes are queued for kitchen)
-        $completedQuery = Order::whereIn('status', ['completed', 'approved', 'in_kitchen']);
+        // Include kitchen orders as they are paid at checkout, regardless of preparation state.
+        $completedQuery = Order::whereIn('status', ['completed', 'approved', 'in_kitchen', 'preparing', 'ready']);
         $cancelledQuery = Order::whereIn('status', ['cancelled']);
         $ordersQuery = Order::query();
 
@@ -370,8 +370,8 @@ class ManagerFinanceController extends Controller
             $monthEnd = $monthStart->copy()->endOfMonth();
             $monthLabel = $monthStart->format('M Y');
 
-            // Income: include completed, approved, and in_kitchen orders (dishes are paid at checkout)
-            $incomeQuery = Order::whereIn('status', ['completed', 'approved', 'in_kitchen'])
+            // Income includes kitchen orders because they are paid at checkout.
+            $incomeQuery = Order::whereIn('status', ['completed', 'approved', 'in_kitchen', 'preparing', 'ready'])
                 ->whereBetween('created_at', [$monthStart, $monthEnd]);
             if ($branchId) {
                 $incomeQuery->where('branch_id', $branchId);
@@ -734,4 +734,3 @@ class ManagerFinanceController extends Controller
         return $distance;
     }
 }
-

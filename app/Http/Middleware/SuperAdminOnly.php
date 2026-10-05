@@ -18,13 +18,14 @@ class SuperAdminOnly
         $userId = Session::get('user_id');
         $userRole = Session::get('user_role');
 
-        if ($userId && strtoupper($userRole) === 'SUPER_ADMIN') {
+        if ($userId && in_array(strtoupper((string) $userRole), ['SUPER_ADMIN', 'SUPERADMIN'], true)) {
             return $next($request);
         }
 
         // Fallback to Auth user
         $user = \Illuminate\Support\Facades\Auth::user();
-        if ($user && (isset($user->role) && strtoupper($user->role) === 'SUPER_ADMIN')) {
+        if ($user && isset($user->role)
+            && in_array(strtoupper($user->role), ['SUPER_ADMIN', 'SUPERADMIN'], true)) {
             return $next($request);
         }
 

@@ -16,6 +16,7 @@
             <PanelNotificationMenu
               :notification-items="adminNotificationItems"
               :notification-count="adminNotificationCount"
+              :announcements="announcements"
               @select="openAdminNotifications"
             />
             <div class="header-profile-wrapper">
@@ -267,8 +268,8 @@
                     class="badge"
                     :class="{
                       'badge--success': order.status === 'completed',
-                      'badge--warning': order.status === 'in_kitchen',
-                      'badge--info': order.status === 'pending'
+                      'badge--warning': ['in_kitchen', 'preparing'].includes(order.status),
+                      'badge--info': ['pending', 'ready'].includes(order.status)
                     }"
                   >
                     {{ order.statusLabel }}

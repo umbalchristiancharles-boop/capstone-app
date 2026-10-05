@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\User;
+use Illuminate\Support\Facades\Session;
 
 class Permission
 {
@@ -70,6 +71,11 @@ class Permission
     public static function allowed(?User $user, array $roles = [], array $modules = [], array $functions = []): bool
     {
         if (!$user) return false;
+        if (in_array(strtoupper($user->role ?? ''), ['SUPER_ADMIN', 'SUPERADMIN'], true)
+            || ((int) Session::get('user_id') === (int) $user->id
+                && in_array(strtoupper((string) Session::get('user_role')), ['SUPER_ADMIN', 'SUPERADMIN'], true))) {
+            return true;
+        }
         if ($roles && self::hasRole($user, $roles)) return true;
         if (strtoupper($user->role ?? '') === 'CUSTOM') {
             return self::customHas($modules, $functions, $user);

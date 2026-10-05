@@ -17,13 +17,14 @@ class EnsureAdmin
         $userId = session('user_id');
         $userRole = session('user_role');
 
-        if ($userId && strtoupper($userRole) === 'ADMIN') {
+        if ($userId && in_array(strtoupper((string) $userRole), ['ADMIN', 'SUPER_ADMIN', 'SUPERADMIN'], true)) {
             return $next($request);
         }
 
         // Fallback: Check Laravel's Auth facade
         $user = \Illuminate\Support\Facades\Auth::user();
-        if ($user && (isset($user->role) && strtoupper($user->role) === 'ADMIN' || isset($user->is_admin) && $user->is_admin)) {
+        if ($user && (isset($user->role) && in_array(strtoupper($user->role), ['ADMIN', 'SUPER_ADMIN', 'SUPERADMIN'], true)
+            || isset($user->is_admin) && $user->is_admin)) {
             return $next($request);
         }
 

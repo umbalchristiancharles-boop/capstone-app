@@ -75,7 +75,7 @@ class SuperAdminTransactionController extends Controller
 
         if ($status) {
             // Validate status - only allow known statuses
-            $validStatuses = ['completed', 'cancelled', 'pending', 'in_kitchen', 'approved'];
+            $validStatuses = ['completed', 'cancelled', 'pending', 'in_kitchen', 'preparing', 'ready', 'approved'];
             if (in_array($status, $validStatuses)) {
                 $query->where('status', $status);
             }
@@ -95,7 +95,7 @@ class SuperAdminTransactionController extends Controller
                     'completed' => 'sale',
                     'cancelled' => 'refund',
                     'pending' => 'pending',
-                    'in_kitchen' => 'processing',
+                    'in_kitchen', 'preparing', 'ready' => 'processing',
                     'approved' => 'approved',
                     default => 'other',
                 };
@@ -171,7 +171,7 @@ class SuperAdminTransactionController extends Controller
             'completed' => 'sale',
             'cancelled' => 'refund',
             'pending' => 'pending',
-            'in_kitchen' => 'processing',
+            'in_kitchen', 'preparing', 'ready' => 'processing',
             default => 'other',
         };
 
@@ -201,4 +201,3 @@ class SuperAdminTransactionController extends Controller
         ]);
     }
 }
-

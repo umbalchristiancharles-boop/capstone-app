@@ -233,7 +233,8 @@ Route::middleware('web')->group(function () {
     // ==========================================
     // ORDERS - KITCHEN STAFF
     // ==========================================
-    Route::patch('/orders/{id}/mark-completed', [\App\Http\Controllers\Api\OrderController::class, 'markCompleted'])->middleware('auth');
+    Route::patch('/orders/{id}/mark-completed', [\App\Http\Controllers\Api\OrderController::class, 'markCompleted'])->middleware(['auth', 'permission:cashier']);
+    Route::patch('/orders/{id}/kitchen-status', [\App\Http\Controllers\Api\OrderController::class, 'updateKitchenStatus'])->middleware(['auth', 'permission:kitchen,fn:kitchen.orders']);
     Route::get('/orders/{id}', [\App\Http\Controllers\Api\OrderController::class, 'show'])->middleware('auth');
 
     Route::get('/owner-dashboard', [OwnerDashboardController::class, 'index']);

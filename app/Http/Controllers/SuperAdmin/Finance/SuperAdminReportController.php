@@ -182,7 +182,7 @@ class SuperAdminReportController extends Controller
                 'completed' => 'sale',
                 'cancelled' => 'refund',
                 'pending' => 'pending',
-                'in_kitchen' => 'processing',
+                'in_kitchen', 'preparing', 'ready' => 'processing',
                 default => 'other',
             };
 
@@ -371,4 +371,3 @@ class SuperAdminReportController extends Controller
         ]);
     }
 }
-

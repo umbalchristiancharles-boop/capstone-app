@@ -55,8 +55,9 @@ class AnnouncementController extends Controller
 
         try {
             $announcements = Announcement::visibleTo($user)
+                ->with(['sender:id,full_name,role'])
                 ->orderBy('created_at', 'desc')
-                ->get(['id', 'title', 'message', 'target', 'created_at']);
+                ->get(['id', 'title', 'message', 'target', 'sender_id', 'created_at']);
 
             return response()->json(['ok' => true, 'announcements' => $announcements]);
         } catch (\Exception $e) {

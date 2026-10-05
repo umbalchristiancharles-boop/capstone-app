@@ -47,6 +47,7 @@
           <PanelNotificationMenu
             :notification-items="financeNotificationItems"
             :notification-count="financeNotificationCount"
+            :announcements="announcements"
             @select="handleFinanceNotificationClick"
           />
           <div class="finance-user-pill" @click.stop>
@@ -1355,6 +1356,7 @@ async function performClockOut() {
 onMounted(() => {
   loadInitialData()
   loadPanelNotifications()
+  loadFinanceAnnouncements()
 
   // load receipt submissions for finance review
   loadReceiptSubmissions()

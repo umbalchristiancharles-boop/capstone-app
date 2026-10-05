@@ -106,7 +106,7 @@ class Order extends Model
      */
     public function scopeUnfinalized($query)
     {
-        return $query->whereIn('status', ['pending', 'in_kitchen', 'approved']);
+        return $query->whereIn('status', ['pending', 'in_kitchen', 'preparing', 'ready', 'approved']);
     }
 
     /**

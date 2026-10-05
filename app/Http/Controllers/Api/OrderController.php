@@ -7,12 +7,11 @@ use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use App\Models\Branch;
 
 class OrderController extends Controller
 {
     /**
-     * Mark an order as completed (transition from 'in_kitchen' to 'completed')
+     * Mark an active kitchen order as completed after it has been served.
      * PATCH /api/orders/{id}/mark-completed
      */
     public function markCompleted(Request $request, $id)
@@ -32,11 +31,10 @@ class OrderController extends Controller
             return response()->json(['error' => 'Unauthorized - different branch'], 403);
         }
 
-        // Only allow marking 'in_kitchen' or 'pending' orders as completed
-        if (!in_array($order->status, ['in_kitchen', 'pending'])) {
+        if ($order->status !== 'ready') {
             return response()->json([
                 'error' => 'Cannot mark as completed',
-                'message' => "Order status is '{$order->status}', expected 'in_kitchen' or 'pending'"
+                'message' => "Order status is '{$order->status}', expected 'ready'"
             ], 422);
         }
 
@@ -47,19 +45,6 @@ class OrderController extends Controller
                     'completed_at' => now(),
                     'completed_by' => $user->id,
                 ]);
-
-                // Credit branch budget with the order amount (sales increase budget)
-                try {
-                    $branch = Branch::where('id', $order->branch_id)->lockForUpdate()->first();
-                    if ($branch) {
-                        $amount = (float) ($order->grand_total ?? 0);
-                        $branch->budget = is_null($branch->budget) ? $amount : ($branch->budget + $amount);
-                        $branch->save();
-                    }
-                } catch (\Exception $e) {
-                    // If branch update fails, rethrow to rollback transaction
-                    throw $e;
-                }
             });
 
             return response()->json([
@@ -72,6 +57,53 @@ class OrderController extends Controller
                 'message' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Move a kitchen order from queued to preparing, then to ready.
+     * PATCH /api/orders/{id}/kitchen-status
+     */
+    public function updateKitchenStatus(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'status' => 'required|in:preparing,ready',
+        ]);
+
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        return DB::transaction(function () use ($user, $id, $validated) {
+            $order = Order::whereKey($id)->lockForUpdate()->first();
+            if (!$order) {
+                return response()->json(['error' => 'Order not found'], 404);
+            }
+
+            if ($order->branch_id !== $user->branch_id && !in_array($user->role, ['SUPER_ADMIN', 'SUPERADMIN'])) {
+                return response()->json(['error' => 'Unauthorized - different branch'], 403);
+            }
+
+            $allowedTransitions = [
+                'pending' => 'preparing',
+                'in_kitchen' => 'preparing',
+                'preparing' => 'ready',
+            ];
+
+            if (($allowedTransitions[$order->status] ?? null) !== $validated['status']) {
+                return response()->json([
+                    'error' => 'Invalid kitchen order transition',
+                    'message' => "Order status is '{$order->status}' and cannot be changed to '{$validated['status']}'",
+                ], 422);
+            }
+
+            $order->update(['status' => $validated['status']]);
+
+            return response()->json([
+                'message' => 'Kitchen order status updated',
+                'order' => $order->fresh(),
+            ]);
+        });
     }
 
     /**

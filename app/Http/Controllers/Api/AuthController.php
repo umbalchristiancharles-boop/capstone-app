@@ -199,22 +199,24 @@ class AuthController extends Controller
         $emailVerificationPending = !empty($user->email) && is_null($user->email_verified_at);
 
         // Ensure StaffDocument record exists for this user (for backward compatibility with old accounts)
-        try {
-            $existingDoc = StaffDocument::where('user_id', $user->id)->first();
-            if (!$existingDoc) {
-                StaffDocument::create([
-                    'user_id' => $user->id,
-                    'government_id_path' => null,
-                    'nbi_clearance_path' => null,
-                    'medical_certificate_path' => null,
-                    'tin_id_path' => null,
-                    'sss_id_path' => null,
-                    'philhealth_id_path' => null,
-                    'drug_test_result_path' => null
-                ]);
+        if (! in_array(strtoupper($user->role ?? ''), ['SUPER_ADMIN', 'SUPERADMIN'], true)) {
+            try {
+                $existingDoc = StaffDocument::where('user_id', $user->id)->first();
+                if (!$existingDoc) {
+                    StaffDocument::create([
+                        'user_id' => $user->id,
+                        'government_id_path' => null,
+                        'nbi_clearance_path' => null,
+                        'medical_certificate_path' => null,
+                        'tin_id_path' => null,
+                        'sss_id_path' => null,
+                        'philhealth_id_path' => null,
+                        'drug_test_result_path' => null
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::warning('Failed to create or check StaffDocument on login: ' . $e->getMessage());
             }
-        } catch (\Exception $e) {
-            Log::warning('Failed to create or check StaffDocument on login: ' . $e->getMessage());
         }
 
         // Check for missing account setup info based on setup type

@@ -20,7 +20,7 @@
     <div v-if="isOpen" class="panel-notification-menu__dropdown" role="menu" aria-label="Notifications">
       <p class="panel-notification-menu__heading">Notifications</p>
       <button
-        v-for="item in notificationItems"
+        v-for="item in notificationItems.filter(item => item.key !== 'announcements')"
         :key="item.key"
         type="button"
         class="panel-notification-menu__entry"
@@ -30,26 +30,56 @@
         <span>{{ item.label }}</span>
         <strong>{{ item.count }}</strong>
       </button>
-      <p v-if="notificationItems.length === 0" class="panel-notification-menu__empty">You're all caught up.</p>
+      <section v-if="announcements.length > 0" class="panel-notification-menu__announcements" aria-label="Announcements">
+        <p class="panel-notification-menu__section-heading">
+          Announcements
+          <span v-if="announcementUnreadCount > 0">{{ announcementUnreadCount }} new</span>
+        </p>
+        <button
+          v-for="announcement in announcements"
+          :key="announcement.id"
+          type="button"
+          class="panel-notification-menu__announcement"
+          role="menuitem"
+          :aria-label="`Announcement: ${announcement.title}`"
+          @click="selectNotification('announcements')"
+        >
+          <strong>{{ announcement.title }}</strong>
+          <small>{{ announcementAuthor(announcement) }} · {{ new Date(announcement.created_at).toLocaleString() }}</small>
+          <span>{{ announcement.message }}</span>
+        </button>
+      </section>
+      <p v-if="notificationItems.filter(item => item.key !== 'announcements').length === 0 && announcements.length === 0" class="panel-notification-menu__empty">You're all caught up.</p>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 
-defineProps({
+const props = defineProps({
   notificationItems: { type: Array, default: () => [] },
   notificationCount: { type: Number, default: 0 },
+  announcements: { type: Array, default: () => [] },
 })
 
 const emit = defineEmits(['select'])
 const menuRoot = ref(null)
 const isOpen = ref(false)
+const announcementUnreadCount = computed(() => (
+  props.notificationItems.find(item => item.key === 'announcements')?.count || 0
+))
 
 function selectNotification(key) {
   isOpen.value = false
   emit('select', key)
+}
+
+function announcementAuthor(announcement) {
+  const role = String(announcement.sender?.role || '').toUpperCase()
+  if (role === 'SUPER_ADMIN' || role === 'SUPERADMIN') return 'Super Admin'
+  if (role === 'OWNER') return 'Owner'
+  return announcement.sender?.full_name || 'Panel announcement'
 }
 
 function closeWhenOutside(event) {
@@ -165,6 +195,64 @@ onUnmounted(() => {
 .panel-notification-menu__entry:focus-visible {
   background: #fff7ed;
   outline: none;
+}
+
+.panel-notification-menu__section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0.25rem 0 0;
+  padding: 0.55rem 0.65rem 0.35rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+  color: #334155;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.panel-notification-menu__section-heading span {
+  color: #b45309;
+  font-size: 0.68rem;
+}
+
+.panel-notification-menu__announcement {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.6rem 0.65rem;
+  border: 0;
+  border-radius: 9px;
+  color: #334155;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.panel-notification-menu__announcement:hover,
+.panel-notification-menu__announcement:focus-visible {
+  background: #fff7ed;
+  outline: none;
+}
+
+.panel-notification-menu__announcement strong {
+  font-size: 0.76rem;
+}
+
+.panel-notification-menu__announcement small {
+  color: #64748b;
+  font-size: 0.65rem;
+}
+
+.panel-notification-menu__announcement > span {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #475569;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
 
 .panel-notification-menu__entry strong {

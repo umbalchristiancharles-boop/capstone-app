@@ -15,6 +15,7 @@
           <PanelNotificationMenu
             :notification-items="panelNotificationMenuItems"
             :notification-count="panelNotificationMenuCount"
+            :announcements="announcements"
             @select="handleNotificationClick"
           />
           <div class="owner-panel-user-pill" aria-label="Current account">
@@ -54,6 +55,7 @@
                   v-if="!showOwnerTopbar"
                   :notification-items="panelNotificationMenuItems"
                   :notification-count="panelNotificationMenuCount"
+                  :announcements="announcements"
                   @select="handleNotificationClick"
                 />
                 <template v-if="!isRightColumnHeaderRoute()">
@@ -86,6 +88,7 @@
             <PanelNotificationMenu
               :notification-items="panelNotificationMenuItems"
               :notification-count="panelNotificationMenuCount"
+              :announcements="announcements"
               @select="handleNotificationClick"
             />
           </div>

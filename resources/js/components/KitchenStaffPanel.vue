@@ -69,20 +69,6 @@
                           <div class="ingredient-name">{{ ing.name }}</div>
                           <div class="ingredient-brand" v-if="ing.brand"><small>Brand: {{ ing.brand }}</small></div>
                           <div class="ingredient-per" v-if="ing.unit"><em>- per serving: {{ formatPerServing(ing.per_serving) }} {{ ing.unit }}</em></div>
-                          <div class="ingredient-publish" v-if="ing.product">
-                            <small v-if="ing.product && !ing.product.is_published" style="color:#b91c1c">(product unpublished)</small>
-                            <small v-else style="color:#059669">(product published)</small>
-                          </div>
-                        </div>
-                        <div class="ingredient-actions">
-                          <button v-if="canReduceStock(ing)" class="update-stock-btn" :disabled="(!ing.product_id)" @click.prevent="showUpdateStock(ing)">Reduce Stock</button>
-                          <div v-if="updateStockVisible[ingKey(ing)]" class="update-stock-form">
-                            <input type="number" v-model.number="updateStockForm[ingKey(ing)].reduce" min="1" max="9999" />
-                            <button @click.prevent="submitUpdateStock(ing)" :disabled="updateStockSubmitting[ingKey(ing)]">
-                              {{ updateStockSubmitting[ingKey(ing)] ? 'Saving...' : 'Save' }}
-                            </button>
-                            <button @click.prevent="hideUpdateStock(ing)" :disabled="updateStockSubmitting[ingKey(ing)]">Cancel</button>
-                          </div>
                         </div>
                       </div>
                     </div>
@@ -105,20 +91,20 @@
                     v-if="pendingKitchenCount > 0"
                     type="button"
                     class="panel-badge"
-                    :aria-label="`${pendingKitchenCount} pending kitchen orders`"
-                    title="Open pending kitchen orders"
+                    :aria-label="`${pendingKitchenCount} active kitchen orders`"
+                    title="Open active kitchen orders"
                     @click="activeKitchenSection = 'kitchen-orders'"
                   >
                     {{ pendingKitchenCount }}
                   </button>
                 </h3>
-                <p class="sub">Pending / In Kitchen orders for this branch</p>
+                <p class="sub">Active kitchen orders for this branch</p>
               </div>
               <button type="button" class="refresh-btn" @click="loadOrderQueue" :disabled="queueLoading">
                 {{ queueLoading ? 'Refreshing...' : 'Refresh' }}
               </button>
             </div>
-            <div v-if="queueLoading">Loading queue...</div>
+            <div v-if="queueLoading && orderQueue.length === 0">Loading queue...</div>
             <div v-else-if="queueError" class="muted">{{ queueError }}</div>
             <div v-else-if="queueForbidden" class="muted">Access requires kitchen.orders permission.</div>
             <div v-else-if="orderQueue.length === 0" class="muted">No orders in queue.</div>
@@ -127,18 +113,20 @@
                 <div class="queue-main">
                   <strong>{{ order.title }}</strong>
                   <span class="queue-meta">{{ order.meta }}</span>
+                  <span v-if="order.items.length" class="queue-order-items">{{ order.items.join(' · ') }}</span>
                 </div>
                 <div class="queue-actions">
                   <span :class="['badge', order.badgeClass]">{{ order.badgeLabel }}</span>
                   <button
-                    v-if="order.badgeLabel && order.badgeLabel.toLowerCase().includes('kitchen')"
+                    v-if="order.nextAction"
                     type="button"
                     class="btn-done"
-                    @click="markOrderDone(order.id)"
+                    @click="advanceOrder(order)"
                     :disabled="markingDoneId === order.id"
                   >
-                    {{ markingDoneId === order.id ? 'Marking...' : 'Mark Done' }}
+                    {{ markingDoneId === order.id ? 'Updating...' : order.nextAction }}
                   </button>
+                  <span v-else-if="order.status === 'ready'" class="queue-meta">Waiting for cashier to serve</span>
                 </div>
               </div>
             </div>
@@ -200,7 +188,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import LoadingOverlay from './LoadingOverlay.vue'
 import axios from 'axios'
@@ -217,11 +205,11 @@ const dishes = ref([])
 const loading = ref(false)
 const queueLoading = ref(false)
 const markingDoneId = ref(null)
-const products = ref([])
 const orderQueue = ref([])
 const queueForbidden = ref(false)
 const queueError = ref('')
 const hasNotified = ref(false)
+let queueRefreshTimer = null
 const pendingKitchenCount = computed(() => (orderQueue.value || []).length)
 
 watch(pendingKitchenCount, (count) => {
@@ -230,7 +218,7 @@ watch(pendingKitchenCount, (count) => {
     return
   }
   if (!hasNotified.value && count > 0) {
-    showToast('You have pending kitchen orders.', 'info')
+    showToast('You have active kitchen orders.', 'info')
     hasNotified.value = true
   }
 })
@@ -247,40 +235,50 @@ async function loadDishes() {
   }
 }
 
-async function loadProducts() {
-  try {
-    const res = await axios.get('/api/staff/inventory/products?include_unpublished=1')
-    products.value = res.data || []
-  } catch (e) {
-    console.error('Failed to load products for kitchen form', e)
-    products.value = []
-  }
-}
-
 function mapQueueItem(task) {
-  const status = String(task.status || task.badgeLabel || '').toLowerCase()
-  const badgeLabel = task.badgeLabel || (status ? status.replace(/_/g, ' ') : 'pending')
-  const badgeClass = task.badgeClass || (status === 'in_kitchen' ? 'badge--warning' : 'badge--info')
+  const status = String(task.status || task.badgeLabel || '').toLowerCase().replace(/ /g, '_')
+  const labels = {
+    pending: 'Queued',
+    in_kitchen: 'Queued',
+    preparing: 'Preparing',
+    ready: 'Ready',
+  }
+  const badgeLabel = labels[status] || task.badgeLabel || (status ? status.replace(/_/g, ' ') : 'Queued')
+  const badgeClass = status === 'ready' ? 'badge--info' : 'badge--warning'
   const title = task.title || `Order #${task.code || task.id || task.order_id || 'N/A'}`
   const meta = task.meta || [task.customer ?? task.customer_name ?? 'Guest', task.created_at ?? task.time ?? ''].filter(Boolean).join(' • ')
+  const nextActions = {
+    pending: { status: 'preparing', label: 'Start Preparing' },
+    in_kitchen: { status: 'preparing', label: 'Start Preparing' },
+    preparing: { status: 'ready', label: 'Mark Ready' },
+  }
+  const nextAction = nextActions[status] || null
   return {
     id: task.id || task.order_id || task.code || Math.random().toString(36).slice(2, 9),
     title,
     meta,
+    status,
     badgeLabel,
     badgeClass,
+    items: Array.isArray(task.items) ? task.items : [],
+    nextStatus: nextAction?.status || null,
+    nextAction: nextAction?.label || null,
   }
 }
 
-async function markOrderDone(orderId) {
-  markingDoneId.value = orderId
+async function advanceOrder(order) {
+  markingDoneId.value = order.id
   try {
-    await axios.patch(`/api/orders/${orderId}/mark-completed`)
-    orderQueue.value = orderQueue.value.filter(order => String(order.id) !== String(orderId))
-    showToast('Order marked as done.', 'success')
+    await axios.patch(`/api/orders/${order.id}/kitchen-status`, { status: order.nextStatus })
+    await loadOrderQueue()
+    const successMessages = {
+      preparing: 'Order is now being prepared.',
+      ready: 'Order is ready to serve.',
+    }
+    showToast(successMessages[order.nextStatus] || 'Kitchen order updated.', 'success')
   } catch (e) {
-    console.error('Failed to mark order as done', e)
-    alert(e?.response?.data?.message || 'Failed to mark order as done')
+    console.error('Failed to update kitchen order', e)
+    alert(e?.response?.data?.message || 'Failed to update kitchen order')
   } finally {
     markingDoneId.value = null
   }
@@ -311,110 +309,6 @@ async function loadOrderQueue() {
   }
 }
 
-const updateStockVisible = reactive({})
-const updateStockForm = reactive({})
-const updateStockSubmitting = reactive({})
-
-function ingKey(ing) {
-  return String((ing.product && ing.product.id) || ing.product_id || ing.id || Math.random().toString(36).slice(2,9))
-}
-
-function canReduceStock(ing) {
-  const unit = String(ing.unit || '').trim().toLowerCase()
-  const category = String(ing.product?.category || '').trim().toLowerCase()
-  return ['g', 'gram', 'grams'].includes(unit) || category === 'condiment'
-}
-
-async function showUpdateStock(ing) {
-  const key = ingKey(ing)
-  updateStockVisible[key] = true
-  if (!updateStockForm[key]) {
-    updateStockForm[key] = { reduce: 1 }
-  }
-  try {
-    if (!ing.product && ing.product_id) {
-      if (!products.value || products.value.length === 0) {
-        await loadProducts()
-      }
-      const p = products.value.find(p => String(p.id) === String(ing.product_id))
-      if (p) {
-        ing.product = { ...p }
-      }
-    }
-  } catch (er) {
-    console.warn('Failed to load product for showUpdateStock', er)
-  }
-}
-
-function hideUpdateStock(ing) {
-  updateStockVisible[ingKey(ing)] = false
-}
-
-async function submitUpdateStock(ing) {
-  const productId = (ing.product && ing.product.id) || ing.product_id
-  if (!productId) {
-    alert('Cannot update stock for an ingredient not linked to a product.')
-    return
-  }
-
-  const key = ingKey(ing)
-  try {
-    const reduce = Number((updateStockForm[key] && updateStockForm[key].reduce) || 0)
-    if (reduce <= 0) {
-      alert('Enter a positive reduce amount')
-      return
-    }
-
-    const payload = { reduce }
-    updateStockSubmitting[key] = true
-
-    const res = await axios.put(`/api/manager/inventory/${productId}`, payload, { withCredentials: true })
-
-    try {
-      if (res.data && res.data.product) {
-        const updated = res.data.product
-        if (ing.product) {
-          ing.product.stock = updated.stock
-          if (typeof updated.real_stock !== 'undefined') {
-            ing.product.real_stock = updated.real_stock
-          }
-        }
-        const globalP = products.value.find(p => String(p.id) === String(productId))
-        if (globalP) {
-          globalP.stock = updated.stock
-          if (typeof updated.real_stock !== 'undefined') {
-            globalP.real_stock = updated.real_stock
-          }
-        }
-      }
-    } catch (er) { console.warn('Failed updating local stock view', er) }
-
-    showToast(res.data.message || 'Stock reduced', 'success')
-    updateStockVisible[key] = false
-    loadProducts().catch(()=>{})
-    loadDishes().catch(()=>{})
-  } catch (e) {
-    console.error('Failed updating stock', e)
-    const resp = e?.response
-    if (resp && resp.data) {
-      const body = resp.data
-      let msg = body.message || 'Validation error'
-      if (body.errors) {
-        const firstKey = Object.keys(body.errors)[0]
-        if (firstKey && Array.isArray(body.errors[firstKey])) {
-          msg = body.errors[firstKey].join(' ')
-        }
-      }
-      alert(msg)
-    } else {
-      alert(e?.message || 'Failed to update stock')
-    }
-  } finally {
-    updateStockSubmitting[key] = false
-    await nextTick()
-  }
-}
-
 function onProfileUpdated(updatedProfile) {
   userProfile.value = { ...userProfile.value, ...updatedProfile }
 }
@@ -435,7 +329,10 @@ onMounted(async () => {
   } catch (e) {
     console.error('Failed to load staff profile for kitchen panel', e)
   }
-  await Promise.all([loadDishes(), loadProducts(), loadOrderQueue()])
+  await Promise.all([loadDishes(), loadOrderQueue()])
+  queueRefreshTimer = window.setInterval(() => {
+    if (!document.hidden) loadOrderQueue()
+  }, 10000)
 })
 
 onMounted(() => {
@@ -444,6 +341,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener('click', onDocumentClick)
+  if (queueRefreshTimer) window.clearInterval(queueRefreshTimer)
 })
 
 const isLoggingOut = ref(false)
@@ -773,14 +671,11 @@ async function confirmLogout() {
 .dish-status { color:#6b7280 }
 .dish-ingredients { display:flex; flex-direction:column; gap:0.5rem }
 .ingredient-card { display:flex; align-items:center; justify-content:space-between; gap:0.5rem; padding:0.5rem; border-radius:8px; background:#fbfdff; border:1px solid #f1f5f9 }
-.ingredient-info { max-width:calc(100% - 120px) }
+.ingredient-info { max-width:100% }
 .ingredient-name { font-weight:600 }
 .ingredient-brand { color:#6b7280; font-size:0.85rem; }
 .ingredient-per { color:#374151; font-style:italic }
-.ingredient-actions { display:flex; align-items:center; gap:0.5rem }
-.update-stock-btn { padding:0.35rem 0.5rem; border-radius:6px; border:1px solid #cbd5e1; background:#f8fafc; color:#1f2937; cursor:pointer; transition: background 0.2s, border-color 0.2s; }
-.update-stock-btn:hover:not(:disabled) { background:#f1f5f9; border-color:#94a3b8; }
-.update-stock-form { display:flex; gap:0.5rem; align-items:center }
+.queue-order-items { color:#374151; font-size:0.9rem; }
 
 /* Match the HR panel's compact section and card treatment. */
 :deep(.admin-page.kitchen-staff-page) .panel-block {
@@ -843,7 +738,6 @@ async function confirmLogout() {
 }
 
 :deep(.admin-page.kitchen-staff-page) .refresh-btn,
-:deep(.admin-page.kitchen-staff-page) .update-stock-btn,
 :deep(.admin-page.kitchen-staff-page) .btn-done {
   background: #4b5563;
   color: #ffffff;
@@ -853,7 +747,6 @@ async function confirmLogout() {
 }
 
 :deep(.admin-page.kitchen-staff-page) .refresh-btn:hover:not(:disabled),
-:deep(.admin-page.kitchen-staff-page) .update-stock-btn:hover:not(:disabled),
 :deep(.admin-page.kitchen-staff-page) .btn-done:hover:not(:disabled) {
   background: #374151;
 }
@@ -1173,7 +1066,6 @@ async function confirmLogout() {
 
 .kitchen-staff-hero__action,
 :deep(.admin-page.kitchen-staff-page) .refresh-btn,
-:deep(.admin-page.kitchen-staff-page) .update-stock-btn,
 :deep(.admin-page.kitchen-staff-page) .btn-done {
   border: 1px solid #243447;
   border-radius: 10px;
@@ -1185,7 +1077,6 @@ async function confirmLogout() {
 
 .kitchen-staff-hero__action:hover:not(:disabled),
 :deep(.admin-page.kitchen-staff-page) .refresh-btn:hover:not(:disabled),
-:deep(.admin-page.kitchen-staff-page) .update-stock-btn:hover:not(:disabled),
 :deep(.admin-page.kitchen-staff-page) .btn-done:hover:not(:disabled) {
   background: #172536;
   transform: translateY(-1px);

@@ -128,6 +128,8 @@ class SuperAdminFinanceController extends Controller
             'completed' => (int) (clone $baseStatusQuery)->where('status', 'completed')->count(),
             'pending' => (int) (clone $baseStatusQuery)->where('status', 'pending')->count(),
             'in_kitchen' => (int) (clone $baseStatusQuery)->where('status', 'in_kitchen')->count(),
+            'preparing' => (int) (clone $baseStatusQuery)->where('status', 'preparing')->count(),
+            'ready' => (int) (clone $baseStatusQuery)->where('status', 'ready')->count(),
             'cancelled' => (int) (clone $baseStatusQuery)->where('status', 'cancelled')->count(),
             'approved' => (int) (clone $baseStatusQuery)->where('status', 'approved')->count(),
         ];
@@ -266,4 +268,3 @@ class SuperAdminFinanceController extends Controller
         ]);
     }
 }
-

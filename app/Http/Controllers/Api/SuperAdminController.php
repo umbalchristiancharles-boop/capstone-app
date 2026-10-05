@@ -305,7 +305,7 @@ class SuperAdminController extends Controller
             ->where('status', 'completed')
             ->count();
         $pending = Order::whereBetween('created_at', $dateRange)
-            ->whereIn('status', ['pending', 'in_kitchen'])
+            ->whereIn('status', ['pending', 'in_kitchen', 'preparing', 'ready'])
             ->count();
         $sales = Order::whereBetween('created_at', $dateRange)
             ->where('status', 'completed')
@@ -1101,8 +1101,8 @@ class SuperAdminController extends Controller
             $b = Branch::find($user->branch_id);
             $isMainBranchAdmin = (bool) ($b && ($b->is_main_branch ?? false));
         }
-        $isMainBranchFinance = false;
-        if (in_array($roleUpper, ['MANAGER', 'MANAGER_FINANCE'], true) && strtoupper($user->department ?? '') === 'FINANCE') {
+        $isMainBranchFinance = in_array($roleUpper, ['SUPER_ADMIN', 'SUPERADMIN'], true);
+        if (! $isMainBranchFinance && in_array($roleUpper, ['MANAGER', 'MANAGER_FINANCE'], true) && strtoupper($user->department ?? '') === 'FINANCE') {
             $b = Branch::find($user->branch_id);
             $isMainBranchFinance = (bool) ($b && ($b->is_main_branch ?? false));
         }
@@ -1468,8 +1468,8 @@ class SuperAdminController extends Controller
         }
 
         $roleUpper = strtoupper($user->role ?? '');
-        $isMainBranchFinance = false;
-        if (in_array($roleUpper, ['MANAGER', 'MANAGER_FINANCE'], true) && strtoupper($user->department ?? '') === 'FINANCE') {
+        $isMainBranchFinance = in_array($roleUpper, ['SUPER_ADMIN', 'SUPERADMIN'], true);
+        if (! $isMainBranchFinance && in_array($roleUpper, ['MANAGER', 'MANAGER_FINANCE'], true) && strtoupper($user->department ?? '') === 'FINANCE') {
             $b = Branch::find($user->branch_id);
             $isMainBranchFinance = (bool) ($b && ($b->is_main_branch ?? false));
         }
@@ -1517,8 +1517,8 @@ class SuperAdminController extends Controller
         }
 
         $roleUpper = strtoupper($user->role ?? '');
-        $isMainBranchFinance = false;
-        if (in_array($roleUpper, ['MANAGER', 'MANAGER_FINANCE'], true) && strtoupper($user->department ?? '') === 'FINANCE') {
+        $isMainBranchFinance = in_array($roleUpper, ['SUPER_ADMIN', 'SUPERADMIN'], true);
+        if (! $isMainBranchFinance && in_array($roleUpper, ['MANAGER', 'MANAGER_FINANCE'], true) && strtoupper($user->department ?? '') === 'FINANCE') {
             $b = Branch::find($user->branch_id);
             $isMainBranchFinance = (bool) ($b && ($b->is_main_branch ?? false));
         }
@@ -1562,8 +1562,8 @@ class SuperAdminController extends Controller
         }
 
         $roleUpper = strtoupper($user->role ?? '');
-        $isMainBranchFinance = false;
-        if ($roleUpper === 'MANAGER' && strtoupper($user->department ?? '') === 'FINANCE') {
+        $isMainBranchFinance = in_array($roleUpper, ['SUPER_ADMIN', 'SUPERADMIN'], true);
+        if (! $isMainBranchFinance && in_array($roleUpper, ['MANAGER', 'MANAGER_FINANCE'], true) && strtoupper($user->department ?? '') === 'FINANCE') {
             $b = Branch::find($user->branch_id);
             $isMainBranchFinance = (bool) ($b && ($b->is_main_branch ?? false));
         }
@@ -2334,4 +2334,3 @@ class SuperAdminController extends Controller
         }
     }
 }
-

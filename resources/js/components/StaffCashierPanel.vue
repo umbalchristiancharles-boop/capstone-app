@@ -139,7 +139,7 @@
                 <td>₱{{ fmt(tx.amount_paid) }}</td>
                 <td>₱{{ fmt(tx.change_amount) }}</td>
                 <td>
-                  <span :class="['status-badge', tx.status === 'cancelled' ? 'status-rejected' : (tx.status === 'completed' ? 'status-approved' : 'status-pending')]">{{ tx.status }}</span>
+                  <span :class="['status-badge', transactionStatusClass(tx.status)]">{{ orderStatusLabel(tx.status) }}</span>
                 </td>
                 <td>
                   <button v-if="tx.status !== 'cancelled' && (tx.status === 'completed' || tx.status === 'approved')" class="refund-btn" @click="refundOrder(tx)" :disabled="tx.isRefunding">Refund</button>
@@ -221,6 +221,35 @@
           </div>
         </div>
       </div>
+
+      <section v-if="activeCashierSection === 'cashier' && activeKitchenOrders.length" class="kitchen-order-status">
+        <div class="kitchen-order-status__header">
+          <h2>Kitchen Status</h2>
+          <span>{{ activeKitchenOrders.length }} active</span>
+        </div>
+        <div v-for="order in activeKitchenOrders" :key="order.id" class="kitchen-order-status__item">
+          <div class="kitchen-order-status__top">
+            <strong>{{ order.order_code }}</strong>
+            <span :class="['kitchen-order-status__badge', `kitchen-order-status__badge--${order.status}`]">
+              {{ orderStatusLabel(order.status) }}
+            </span>
+          </div>
+          <div class="kitchen-order-status__dishes">
+            <span v-for="item in kitchenOrderItems(order)" :key="item.id">
+              {{ item.quantity }}x {{ item.product_name }}
+            </span>
+          </div>
+          <button
+            v-if="order.status === 'ready'"
+            type="button"
+            class="kitchen-order-status__serve"
+            :disabled="servingOrderId === order.id"
+            @click="markOrderServed(order)"
+          >
+            {{ servingOrderId === order.id ? 'Updating...' : 'Mark Served' }}
+          </button>
+        </div>
+      </section>
 
       <section v-if="activeCashierSection === 'cashier'" class="cart-section">
         <div class="cart-header">
@@ -523,6 +552,11 @@ const pendingOrderCode = ref(null)
 const checkoutError = ref('')
 const checkoutSuccess = ref('')
 const transactions = ref([])
+let transactionRefreshTimer = null
+const servingOrderId = ref(null)
+const activeKitchenOrders = computed(() => transactions.value.filter(order =>
+  ['pending', 'in_kitchen', 'preparing', 'ready'].includes(String(order.status || '').toLowerCase())
+))
 const hasNotified = ref(false)
 // track refunding state per transaction
 // we will set `tx.isRefunding = true` temporarily when refund is in progress
@@ -586,6 +620,44 @@ function fmt(n) {
 function formatDate(d) {
   if (!d) return ''
   return new Date(d).toLocaleString()
+}
+
+function orderStatusLabel(status) {
+  const labels = {
+    pending: 'Pending',
+    in_kitchen: 'Queued in kitchen',
+    preparing: 'Being prepared',
+    ready: 'Ready for serving',
+    approved: 'Approved',
+    completed: 'Served',
+    cancelled: 'Cancelled',
+  }
+  return labels[String(status || '').toLowerCase()] || String(status || 'Unknown')
+}
+
+function transactionStatusClass(status) {
+  const normalizedStatus = String(status || '').toLowerCase()
+  if (normalizedStatus === 'cancelled') return 'status-rejected'
+  if (normalizedStatus === 'completed') return 'status-approved'
+  return 'status-pending'
+}
+
+function kitchenOrderItems(order) {
+  return (order.items || []).filter(item => !item.product || item.product.is_kitchen_dish)
+}
+
+async function markOrderServed(order) {
+  servingOrderId.value = order.id
+  try {
+    await axios.patch(`/api/orders/${order.id}/mark-completed`)
+    await loadTransactions()
+    showToast(`Order ${order.order_code} marked as served.`, 'success')
+  } catch (e) {
+    console.error('Failed to mark kitchen order as served', e)
+    showToast(e.response?.data?.message || 'Failed to mark order as served.', 'error')
+  } finally {
+    servingOrderId.value = null
+  }
 }
 
 function formatPricingType(type) {
@@ -1421,6 +1493,9 @@ onMounted(async () => {
   openCustomerDisplay()
   console.log('[StaffCashierPanel] mounted - localStorage user:', localStorage.getItem('user'))
   await loadStaffProfile()
+  transactionRefreshTimer = window.setInterval(() => {
+    if (!document.hidden && branchId.value) loadTransactions()
+  }, 5000)
   try {
     if (sessionStorage.getItem(scannerStorageKey) === '1') openBarcodeScanner()
   } catch (e) {}
@@ -1431,7 +1506,10 @@ onMounted(async () => {
   }
 })
 
-onBeforeUnmount(() => publishCustomerDisplay(false))
+onBeforeUnmount(() => {
+  publishCustomerDisplay(false)
+  if (transactionRefreshTimer) window.clearInterval(transactionRefreshTimer)
+})
 
 // Logout functions
 async function confirmLogout() {
@@ -1676,6 +1754,86 @@ async function performLogout() {
   min-width: 0;
   overflow: hidden;
   box-sizing: border-box;
+}
+
+.kitchen-order-status {
+  margin-bottom: 12px;
+  padding: 14px;
+  border: 1px solid #f1d2bb;
+  border-radius: 12px;
+  background: #fffaf5;
+}
+
+.kitchen-order-status__header,
+.kitchen-order-status__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.kitchen-order-status__header h2 {
+  margin: 0;
+  color: #7a2b00;
+  font-size: 1rem;
+}
+
+.kitchen-order-status__header > span {
+  color: #777;
+  font-size: 0.78rem;
+}
+
+.kitchen-order-status__item {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #f1e4d9;
+}
+
+.kitchen-order-status__top strong {
+  color: #42210f;
+  font-size: 0.88rem;
+}
+
+.kitchen-order-status__badge {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #ffedd5;
+  color: #9a3412;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.kitchen-order-status__badge--ready {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.kitchen-order-status__dishes {
+  display: grid;
+  gap: 3px;
+  margin-top: 5px;
+  color: #6b5a4f;
+  font-size: 0.82rem;
+}
+
+.kitchen-order-status__serve {
+  margin-top: 10px;
+  padding: 7px 12px;
+  border: 0;
+  border-radius: 7px;
+  background: #166534;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.kitchen-order-status__serve:hover:not(:disabled) {
+  background: #14532d;
+}
+
+.kitchen-order-status__serve:disabled {
+  cursor: wait;
+  opacity: 0.65;
 }
 
 .cart-header {
@@ -2477,4 +2635,3 @@ async function performLogout() {
   margin-top: 6px;
 }
 </style>
-

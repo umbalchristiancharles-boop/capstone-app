@@ -53,7 +53,7 @@ class StaffDashboardController extends Controller
                 ->whereBetween('created_at', $dateRange)
                 ->count(),
             'pending' => Order::where('branch_id', $user->branch_id)
-                ->whereIn('status', ['pending', 'in_kitchen'])
+                ->whereIn('status', ['pending', 'in_kitchen', 'preparing', 'ready'])
                 ->whereBetween('created_at', $dateRange)
                 ->count(),
             'sales' => Order::where('branch_id', $user->branch_id)
@@ -80,19 +80,27 @@ class StaffDashboardController extends Controller
                 ];
             });
 
-        // Get assigned tasks (pending orders for this branch)
-        $myTasks = Order::where('branch_id', $user->branch_id)
-            ->whereIn('status', ['pending', 'in_kitchen'])
+        // Get active kitchen tasks for this branch.
+        $myTasks = Order::with(['items.product:id,is_kitchen_dish'])
+            ->where('branch_id', $user->branch_id)
+            ->whereIn('status', ['pending', 'in_kitchen', 'preparing', 'ready'])
             ->orderBy('created_at', 'asc')
             ->limit(10)
             ->get()
             ->map(function ($order) {
+                $kitchenItems = $order->items
+                    ->filter(fn ($item) => $item->product && $item->product->is_kitchen_dish)
+                    ->map(fn ($item) => $item->quantity . 'x ' . $item->product_name)
+                    ->values();
+
                 return [
                     'id' => $order->id,
                     'title' => 'Order #' . ($order->order_code ?? $order->id),
                     'meta' => ($order->customer_name ?? 'Guest') . ' • ' . $order->created_at->diffForHumans(),
+                    'status' => $order->status,
                     'badgeLabel' => ucfirst(str_replace('_', ' ', $order->status)),
-                    'badgeClass' => $order->status === 'in_kitchen' ? 'badge--warning' : 'badge--info',
+                    'badgeClass' => in_array($order->status, ['in_kitchen', 'preparing']) ? 'badge--warning' : 'badge--info',
+                    'items' => $kitchenItems,
                 ];
             });
 

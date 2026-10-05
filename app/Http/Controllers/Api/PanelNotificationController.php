@@ -97,7 +97,7 @@ class PanelNotificationController extends Controller
         };
 
         // Admin + Cashier pending orders
-        $orderPendingQuery = Order::whereIn('status', ['pending', 'in_kitchen']);
+        $orderPendingQuery = Order::whereIn('status', ['pending', 'in_kitchen', 'preparing', 'ready']);
         if ($branchId) {
             $orderPendingQuery->where('branch_id', $branchId);
         }

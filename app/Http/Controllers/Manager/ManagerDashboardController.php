@@ -53,7 +53,7 @@ class ManagerDashboardController extends Controller
                 ->whereBetween('created_at', $dateRange)
                 ->count(),
             'pending' => Order::where('branch_id', $user->branch_id)
-                ->whereIn('status', ['pending', 'in_kitchen'])
+                ->whereIn('status', ['pending', 'in_kitchen', 'preparing', 'ready'])
                 ->whereBetween('created_at', $dateRange)
                 ->count(),
             'sales' => Order::where('branch_id', $user->branch_id)
@@ -87,9 +87,9 @@ class ManagerDashboardController extends Controller
                 ];
             });
 
-        // Get production queue (pending/in_kitchen orders)
+        // Get the active kitchen production queue
         $productionQueue = Order::where('branch_id', $user->branch_id)
-            ->whereIn('status', ['pending', 'in_kitchen'])
+            ->whereIn('status', ['pending', 'in_kitchen', 'preparing', 'ready'])
             ->orderBy('created_at', 'asc')
             ->limit(10)
             ->get()
@@ -99,7 +99,7 @@ class ManagerDashboardController extends Controller
                     'title' => 'Order #' . ($order->order_code ?? $order->id),
                     'meta' => $order->customer_name ?? 'Guest',
                     'badgeLabel' => ucfirst(str_replace('_', ' ', $order->status)),
-                    'badgeClass' => $order->status === 'in_kitchen' ? 'badge--warning' : 'badge--info',
+                    'badgeClass' => in_array($order->status, ['in_kitchen', 'preparing']) ? 'badge--warning' : 'badge--info',
                 ];
             });
 
