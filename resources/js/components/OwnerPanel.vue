@@ -29,6 +29,7 @@
         <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'dashboard' }" @click="selectSection('dashboard')">Dashboard</button>
         <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'dishApproval' }" @click="selectSection('dishApproval')">Dish Approval</button>
         <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'staffManagement' }" @click="selectSection('staffManagement')">Staff Management</button>
+        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'permissions' }" @click="selectSection('permissions')">Permissions</button>
         <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'branchConfirmations' }" @click="selectSection('branchConfirmations')">Branch Confirmations</button>
         <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'branchAnalytics' }" @click="selectSection('branchAnalytics')">Branch Analytics</button>
         <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'priceMarkups' }" @click="selectSection('priceMarkups')">Price Markups</button>
@@ -227,6 +228,28 @@
       </section>
       </template>
 
+      <section v-else-if="selectedSection === 'permissions'" class="panel-block owner-permissions-panel" aria-labelledby="owner-permissions-heading">
+        <div class="panel-header">
+          <div>
+            <p class="owner-announcement-eyebrow">Access control</p>
+            <h2 id="owner-permissions-heading">Permissions</h2>
+          </div>
+          <span class="owner-announcement-badge">Owner</span>
+        </div>
+        <div class="panel-body">
+          <p class="owner-permissions-summary">Set which owner-level controls are available in this workspace.</p>
+          <div class="owner-permissions-grid">
+            <label v-for="permission in ownerPermissionList" :key="permission.key" class="owner-permission-item">
+              <div class="owner-permission-copy">
+                <span class="owner-permission-name">{{ permission.label }}</span>
+                <small>{{ permission.description }}</small>
+              </div>
+              <input v-model="ownerPermissions[permission.key]" type="checkbox" @change="saveOwnerPermissions" />
+            </label>
+          </div>
+        </div>
+      </section>
+
       <section v-else-if="selectedSection === 'announcements'" class="panel-block owner-announcement-compose" aria-labelledby="owner-announcement-heading">
         <div class="panel-header">
           <div>
@@ -399,6 +422,39 @@ const pendingCounts = ref({
 })
 const hasNotified = ref(false)
 const selectedSection = ref('dashboard')
+const ownerPermissionsStorageKey = 'owner_permissions'
+const ownerPermissions = ref({
+  priceMarkups: true,
+  productRequests: true,
+})
+const ownerPermissionList = [
+  { key: 'priceMarkups', label: 'Price Markups', description: 'Review and validate price updates.' },
+  { key: 'productRequests', label: 'Request New Product', description: 'Allow branch managers to request products for approval.' },
+]
+
+function loadOwnerPermissions() {
+  try {
+    const raw = localStorage.getItem(ownerPermissionsStorageKey)
+    if (!raw) return
+    const parsed = JSON.parse(raw)
+    if (parsed && typeof parsed === 'object') {
+      ownerPermissions.value = { ...ownerPermissions.value, ...parsed }
+    }
+  } catch (error) {
+    console.warn('OwnerPanel: failed to load permission settings', error)
+  }
+}
+
+function saveOwnerPermissions() {
+  try {
+    localStorage.setItem(ownerPermissionsStorageKey, JSON.stringify({
+      priceMarkups: !!ownerPermissions.value.priceMarkups,
+      productRequests: !!ownerPermissions.value.productRequests,
+    }))
+  } catch (error) {
+    console.warn('OwnerPanel: failed to save permission settings', error)
+  }
+}
 const sectionComponents = {
   dishApproval: OwnerDishApprovalPanel,
   staffManagement: OwnerStaffManagement,
@@ -439,6 +495,8 @@ async function sendAnnouncement() {
 }
 
 onMounted(async () => {
+  loadOwnerPermissions()
+
   try {
     const local = JSON.parse(localStorage.getItem('user') || 'null')
     if (local) {
@@ -1875,6 +1933,82 @@ const handleLogout = async () => {
   background: #fee2e2;
   color: #b91c1c;
   border: 1px solid #fecaca;
+}
+
+.owner-permissions-panel {
+  background: #ffffff;
+  border: 1px solid #f1f5f9;
+  border-radius: 1.125rem;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.07);
+  overflow: hidden;
+}
+
+.owner-permissions-panel .panel-header {
+  align-items: center;
+  background: linear-gradient(135deg, #fff7ed 0%, #fffbeb 100%);
+  border-bottom: 1px solid #fed7aa;
+  display: flex;
+  justify-content: space-between;
+  padding: 1.1rem 1.25rem;
+}
+
+.owner-permissions-panel .panel-header h2 {
+  color: #1e293b;
+  font-size: 1.15rem;
+  font-weight: 750;
+  margin: 0;
+}
+
+.owner-permissions-panel .panel-body {
+  padding: 1.35rem 1.25rem 1.5rem;
+}
+
+.owner-permissions-summary {
+  color: #475569;
+  font-size: 0.9rem;
+  margin: 0 0 1rem;
+}
+
+.owner-permissions-grid {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.owner-permission-item {
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.9rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 0.9rem 1rem;
+}
+
+.owner-permission-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.owner-permission-name {
+  color: #1e293b;
+  font-size: 0.96rem;
+  font-weight: 700;
+}
+
+.owner-permission-copy small {
+  color: #64748b;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.owner-permission-item input[type='checkbox'] {
+  height: 1.15rem;
+  width: 1.15rem;
+  accent-color: #f97316;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
 @media (max-width: 900px) {

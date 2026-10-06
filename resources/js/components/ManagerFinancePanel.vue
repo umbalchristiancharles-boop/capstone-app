@@ -242,6 +242,7 @@
                 :isMainBranchFinance="props.isMainBranchFinance || isMainBranchFinanceManager"
                 :showOverviewCharts="true"
                 :showMarkupSection="false"
+                :requests-enabled="priceMarkupRequestsEnabled"
               />
             </section>
           </div>
@@ -249,11 +250,19 @@
 
         <!-- PRICE MARKUP SECTION -->
         <template v-if="selectedSection === 'markup'">
+          <div v-if="!priceMarkupRequestsEnabled" class="finance-panel-warning">
+            <div class="finance-panel-warning__icon">⚠</div>
+            <div>
+              <strong>Price markup requests are disabled</strong>
+              <p>The owner has turned off price markup request changes for this branch.</p>
+            </div>
+          </div>
           <section class="finance-card finance-card--section-full">
             <PriceMarkupManagerPanel
               v-if="userProfile && userProfile.branch_id"
               :branchId="userProfile.branch_id"
               :isMainBranchFinance="props.isMainBranchFinance || isMainBranchFinanceManager"
+              :requests-enabled="priceMarkupRequestsEnabled"
             />
           </section>
         </template>
@@ -664,6 +673,29 @@ const extractArray = (response, key = null) => {
 }
 
 const userProfile = ref({})
+const priceMarkupRequestsEnabled = ref(true)
+const ownerPermissionsStorageKey = 'owner_permissions'
+
+function readOwnerPermissions() {
+  try {
+    const raw = localStorage.getItem(ownerPermissionsStorageKey)
+    if (!raw) {
+      priceMarkupRequestsEnabled.value = true
+      return
+    }
+    const parsed = JSON.parse(raw)
+    priceMarkupRequestsEnabled.value = parsed?.priceMarkups !== false
+  } catch (error) {
+    console.warn('ManagerFinancePanel: failed to load owner permission settings', error)
+    priceMarkupRequestsEnabled.value = true
+  }
+}
+
+function handleOwnerPermissionsStorage(event) {
+  if (event.key !== ownerPermissionsStorageKey) return
+  readOwnerPermissions()
+}
+
 const dashboardTotals = ref({
   totalSales: '₱0',
   pendingApprovals: 0,
@@ -1354,6 +1386,9 @@ async function performClockOut() {
 }
 
 onMounted(() => {
+  readOwnerPermissions()
+  window.addEventListener('storage', handleOwnerPermissionsStorage)
+
   loadInitialData()
   loadPanelNotifications()
   loadFinanceAnnouncements()
@@ -1499,6 +1534,7 @@ function closeReceiptPreview() {
 }
 
 onUnmounted(() => {
+  window.removeEventListener('storage', handleOwnerPermissionsStorage)
   if (refreshInterval.value) {
     clearInterval(refreshInterval.value)
   }

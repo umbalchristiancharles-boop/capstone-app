@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 05, 2026 at 11:45 AM
+-- Generation Time: Oct 06, 2026 at 10:08 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -146,7 +146,7 @@ CREATE TABLE `branches` (
 --
 
 INSERT INTO `branches` (`id`, `code`, `name`, `address`, `latitude`, `longitude`, `is_active`, `is_main_branch`, `approval_status`, `requested_by`, `finance_confirmed_by`, `finance_confirmed_at`, `approved_by`, `approved_at`, `rejected_at`, `budget`, `square_meters`, `geofencing_radius`, `permit_bills`, `construction_costs`, `equipment_costs`, `total_investment`, `default_password`, `default_password_updated_at`, `created_at`, `updated_at`) VALUES
-(31, 'BR743957', 'Dasma Branch', 'Dasma', NULL, NULL, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 29546, NULL, NULL, NULL, NULL, NULL, NULL, 'BDP20261005C80262', '2026-10-05 08:32:23', '2026-03-22 10:19:21', '2026-10-05 08:32:23'),
+(31, 'BR743957', 'Dasma Branch', 'Dasma', NULL, NULL, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 29546, NULL, NULL, NULL, NULL, NULL, NULL, 'BDP20261006259490', '2026-10-06 07:30:20', '2026-03-22 10:19:21', '2026-10-06 07:30:20'),
 (32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, 204000, NULL, NULL, NULL, NULL, NULL, NULL, 'BDP2026100516DD63', '2026-10-05 08:32:23', '2026-03-25 06:56:11', '2026-10-05 08:32:23'),
 (54, 'BR981671', 'Kabankalan Branch', NULL, 9.93097681, 122.87109375, 0, 0, 'pending_owner', 159, 161, '2026-09-19 03:14:51', NULL, NULL, NULL, 100000, 50.00, 3.99, '[{\"type\":\"asd\",\"amount\":99996}]', '[{\"category\":\"asd\",\"amount\":100000}]', '[{\"name\":\"asd\",\"type\":\"asd\",\"quantity\":60,\"unit_cost\":99999}]', 6199936.00, 'BDP20261005B9D1B4', '2026-10-05 08:32:23', '2026-09-19 03:04:08', '2026-10-05 08:32:23'),
 (55, 'BR522771', 'Nasugbu Branch', NULL, 14.10877466, 120.75210571, 1, 0, 'approved', 159, 161, '2026-10-02 10:42:46', 31, '2026-10-02 10:44:08', NULL, 100000, 50.00, 3.99, '[{\"type\":\"asd\",\"amount\":10000}]', '[{\"category\":\"asd\",\"amount\":10000}]', '[{\"name\":\"asd\",\"type\":\"asd\",\"quantity\":10000,\"unit_cost\":10000}]', 100020000.00, 'BDP202610052FA185', '2026-10-05 08:32:23', '2026-10-02 10:41:17', '2026-10-05 08:32:23'),
@@ -959,6 +959,13 @@ CREATE TABLE `panel_notification_reads` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `panel_notification_reads`
+--
+
+INSERT INTO `panel_notification_reads` (`id`, `user_id`, `category`, `read_at`, `created_at`, `updated_at`) VALUES
+(1, 31, 'logistics', '2026-10-06 06:41:18', '2026-10-06 06:41:18', '2026-10-06 06:41:18');
 
 -- --------------------------------------------------------
 
@@ -2160,7 +2167,15 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (3307, 'App\\Models\\User', 147, 'auth-token', 'eab8e58eb7017eff69a95bb98ddf6d60fb9534df29d8304d62eff8e32ee44c0f', '[\"*\"]', NULL, NULL, '2026-10-02 12:21:33', '2026-10-02 12:21:33'),
 (3320, 'App\\Models\\User', 31, 'auth-token', 'f5e65dc98c5667c28e9574a405eee080e9659559a1d31d5d0398be5ad05947d9', '[\"*\"]', NULL, NULL, '2026-10-02 13:18:39', '2026-10-02 13:18:39'),
 (3326, 'App\\Models\\User', 147, 'auth-token', 'ad63e3a570ad743427fe00a7b3330b35d8ba8d84cdeb08f74cfef7b66aed7f03', '[\"*\"]', NULL, NULL, '2026-10-02 13:27:01', '2026-10-02 13:27:01'),
-(3349, 'App\\Models\\User', 147, 'auth-token', '35576bf52dbc3f4c883aeb601f33621e005ae4671622c32abb2fabb465d63961', '[\"*\"]', NULL, NULL, '2026-10-05 08:31:09', '2026-10-05 08:31:09');
+(3349, 'App\\Models\\User', 147, 'auth-token', '35576bf52dbc3f4c883aeb601f33621e005ae4671622c32abb2fabb465d63961', '[\"*\"]', NULL, NULL, '2026-10-05 08:31:09', '2026-10-05 08:31:09'),
+(3354, 'App\\Models\\User', 31, 'auth-token', '803ee3f25710528beffa5555fc537028e5961684c305a0f98795e51167613fa8', '[\"*\"]', NULL, NULL, '2026-10-06 06:22:27', '2026-10-06 06:22:27'),
+(3355, 'App\\Models\\User', 147, 'auth-token', 'c0c439d63813cab39eb057748f395769581f4bfa078181d1fb77a14e1e512d7e', '[\"*\"]', NULL, NULL, '2026-10-06 07:01:09', '2026-10-06 07:01:09');
+INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `name`, `token`, `abilities`, `last_used_at`, `expires_at`, `created_at`, `updated_at`) VALUES
+(3357, 'App\\Models\\User', 31, 'auth-token', '936ed2650bd749502cb2372fa59ebd8de83d5bc1b718778721218d2447a1ab0e', '[\"*\"]', NULL, NULL, '2026-10-06 07:12:26', '2026-10-06 07:12:26'),
+(3358, 'App\\Models\\User', 31, 'auth-token', '43c345640ffd354840fc7764b29896789ea547a37cd6390502fa2b89452f2d54', '[\"*\"]', NULL, NULL, '2026-10-06 07:12:37', '2026-10-06 07:12:37'),
+(3360, 'App\\Models\\User', 147, 'auth-token', '5a2d8341d85a318a26477e9d4aeeb0b5b36792e932c8f94a648be3fbc981b463', '[\"*\"]', NULL, NULL, '2026-10-06 07:17:06', '2026-10-06 07:17:06'),
+(3361, 'App\\Models\\User', 31, 'auth-token', '1468aee2f085be08527e4fbccecb00eed255d4dcd0449e5cd5717dfdd325bed6', '[\"*\"]', NULL, NULL, '2026-10-06 07:31:47', '2026-10-06 07:31:47'),
+(3362, 'App\\Models\\User', 147, 'auth-token', '741c4bdc29a94916176ccab45c45d7ca04712f936d2aca11ddb2eec20728c55a', '[\"*\"]', NULL, NULL, '2026-10-06 07:35:18', '2026-10-06 07:35:18');
 
 -- --------------------------------------------------------
 
@@ -2641,10 +2656,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('3YOSapH64CH39M28o0PqunRGU5grjafzH6NlOOHJ', 153, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiVk5NYlBmVENISkJCZEx1dWhCVlhGcmgyR3ZaQnJLZTFPRXZDck5PciI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzM6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hZG1pbi1sb2dpbiI7czo1OiJyb3V0ZSI7czoxNjoiYWRtaW4ubG9naW4ucGFnZSI7fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE1MztzOjc6InVzZXJfaWQiO2k6MTUzO3M6OToidXNlcl9yb2xlIjtzOjU6IlNUQUZGIjtzOjk6InVzZXJfbmFtZSI7czoxNToiSmFubmUgRGUgR3V6bWFuIjtzOjEzOiJyZWRpcmVjdF9wYXRoIjtzOjE0OiIvc3RhZmYvY2FzaGllciI7fQ==', 1791188691),
-('FLJN2kjbtKlsTpLK5R6Ft2ttwzAARTfdAZswokmU', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoiM3ZyTGV0VkFTNGs2U2F3bFJRZ2swQVFpVlZpQk92NTRMMUJHdDBUQSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1791188341),
-('qaOi6fCNYphBFKTw7eGIypDPwIFENWouMClVJkZU', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoiTG8wSGF1WHpKS2pLTWpKSERCTjduMHhxeUpWVzd3QndLdlZuMW1MdCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1791193463),
-('rmq0mJnfFVCoLY2PZYbSrBQF3Lm7HePt59yHfqEG', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiM293MzBwZDl4a3hNWHBYNmpwdXZtbkw1cnJUN1VUeHhuMjNqU1poNyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzM6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hZG1pbi1sb2dpbiI7czo1OiJyb3V0ZSI7czoxNjoiYWRtaW4ubG9naW4ucGFnZSI7fX0=', 1791193478);
+('8tUeUNKOji6BoBrzaxXTDCshYTt4hzLHJQ0iu1qK', 147, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiUXJtdGxiSDR1enNndzdSanFpYXA4SzBuV3piWXdHTGRYMnRsYm1keCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzM6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hZG1pbi1wYW5lbCI7czo1OiJyb3V0ZSI7czoxNToiYWRtaW4uZGFzaGJvYXJkIjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTQ3O3M6NzoidXNlcl9pZCI7aToxNDc7czo5OiJ1c2VyX3JvbGUiO3M6NToiQURNSU4iO3M6OToidXNlcl9uYW1lIjtzOjIwOiJBZG1pbiAtIERhc21hIEJyYW5jaCI7czoxMzoicmVkaXJlY3RfcGF0aCI7czoxMjoiL2FkbWluLXBhbmVsIjt9', 1791274104);
 
 -- --------------------------------------------------------
 
@@ -3402,7 +3414,7 @@ ALTER TABLE `order_items`
 -- AUTO_INCREMENT for table `panel_notification_reads`
 --
 ALTER TABLE `panel_notification_reads`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `payrolls`
@@ -3414,7 +3426,7 @@ ALTER TABLE `payrolls`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3354;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3363;
 
 --
 -- AUTO_INCREMENT for table `positions`

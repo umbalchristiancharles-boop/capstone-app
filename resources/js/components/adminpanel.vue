@@ -168,10 +168,17 @@
               <h2>Request New Product</h2>
               <div style="display:flex; gap:8px; align-items:center;">
                 <button class="panel-action" @click="loadProductRequests">Refresh</button>
-                <button class="panel-action" @click="showProductRequestForm = true">+ Request New Product</button>
+                <button class="panel-action" :disabled="!productRequestsEnabled" @click="showProductRequestForm = true">+ Request New Product</button>
               </div>
             </div>
             <div class="panel-body panel-body--list">
+              <div v-if="!productRequestsEnabled" class="product-request-warning" role="status">
+                <div class="product-request-warning__icon">⚠</div>
+                <div>
+                  <strong>Product requests are disabled</strong>
+                  <p>The owner has turned off new product requests for this branch.</p>
+                </div>
+              </div>
               <p>Request new products to be added to inventory. Requests will require owner/main branch logistics approval.</p>
               <div v-if="productRequestsLoading" class="supplier-review-empty">Loading product requests...</div>
               <div v-else-if="productRequests.length === 0" class="supplier-review-empty">No product requests yet.</div>
@@ -841,7 +848,7 @@
 </template>
 
 <script setup>
-import { createApp, h, ref, onMounted, computed } from 'vue'
+import { createApp, h, ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import LoadingOverlay from './LoadingOverlay.vue'
@@ -918,6 +925,8 @@ const isLoggingOut = ref(false)
 const showOverlay = ref(false)
 // Product request modal state (Admin)
 const showProductRequestForm = ref(false)
+const productRequestsEnabled = ref(true)
+const ownerPermissionsStorageKey = 'owner_permissions'
 const productRequestForm = ref({ name: '', category: '', brand: '', description: '', reason: '', target_audience: '', storage_requirements: '', is_perishable: false, unit: '' })
 const productRequestSubmitting = ref(false)
 const productRequests = ref([])
@@ -936,6 +945,30 @@ const landingProductSaving = ref(null)
 const landingProductFiles = ref({})
 const overlayText = ref('Logging out...')
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
+
+function readOwnerPermissions() {
+  try {
+    const raw = localStorage.getItem(ownerPermissionsStorageKey)
+    if (!raw) {
+      productRequestsEnabled.value = true
+      return
+    }
+    const parsed = JSON.parse(raw)
+    productRequestsEnabled.value = parsed?.productRequests !== false
+    if (!productRequestsEnabled.value) {
+      showProductRequestForm.value = false
+    }
+  } catch (error) {
+    console.warn('AdminPanel: failed to load owner permission settings', error)
+    productRequestsEnabled.value = true
+  }
+}
+
+function handleOwnerPermissionsStorage(event) {
+  if (event.key !== ownerPermissionsStorageKey) return
+  readOwnerPermissions()
+  loadProductRequests()
+}
 
 const ownerProfile = ref({
   fullName: '',
@@ -1093,6 +1126,10 @@ async function ensureCsrf() {
 }
 
 async function submitProductRequest() {
+  if (!productRequestsEnabled.value) {
+    showToast('Product requests are disabled by the owner', 'error')
+    return
+  }
   productRequestSubmitting.value = true
   try {
     const xsrf = await ensureCsrf()
@@ -1794,6 +1831,8 @@ function formatDate(dateString) {
 }
 
   onMounted(() => {
+    readOwnerPermissions()
+    window.addEventListener('storage', handleOwnerPermissionsStorage)
     loadDashboard(activeRange.value)
     // load branches + attendance overview for admin
     loadBranches()
@@ -1817,6 +1856,10 @@ function formatDate(dateString) {
     loadProductRequests()
   })
 
+  onUnmounted(() => {
+    window.removeEventListener('storage', handleOwnerPermissionsStorage)
+  })
+
 </script>
 
 <style scoped>
@@ -1824,6 +1867,39 @@ function formatDate(dateString) {
   display: grid;
   gap: 8px;
   margin-top: 14px;
+}
+
+.product-request-warning {
+  align-items: flex-start;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  color: #9a3412;
+  display: flex;
+  gap: 10px;
+  margin: 10px 0 14px;
+  padding: 12px 14px;
+}
+
+.product-request-warning__icon {
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.product-request-warning strong {
+  display: block;
+  font-size: 13px;
+}
+
+.product-request-warning p {
+  color: #c2410c;
+  font-size: 12px;
+  margin: 3px 0 0;
+}
+
+.panel-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .product-request-item {

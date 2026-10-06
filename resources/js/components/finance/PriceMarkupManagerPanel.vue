@@ -95,6 +95,16 @@
           <h3 class="card-title">Request Percentage Change</h3>
         </div>
 
+        <div v-if="!props.requestsEnabled" class="alert alert-warning">
+          <svg class="alert-icon" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+          </svg>
+          <div>
+            <strong>Price markup requests are disabled</strong>
+            <p>The owner has turned off price markup request changes for this branch.</p>
+          </div>
+        </div>
+
         <!-- Show Pending Request Alert if Exists -->
         <div v-if="pendingRequest" class="alert alert-warning">
           <svg class="alert-icon" viewBox="0 0 20 20" fill="currentColor">
@@ -122,7 +132,7 @@
                 placeholder="e.g., 25.00"
                 required
                 @input="updateMultiplierPreview"
-                :disabled="isSubmitting || !!pendingRequest"
+                :disabled="isSubmitting || !!pendingRequest || !props.requestsEnabled"
               />
               <span class="unit-suffix">%</span>
             </div>
@@ -141,7 +151,7 @@
               v-model="form.reason"
               placeholder="e.g., Increased operational costs, market adjustment..."
               rows="4"
-              :disabled="isSubmitting || !!pendingRequest"
+              :disabled="isSubmitting || !!pendingRequest || !props.requestsEnabled"
             ></textarea>
             <p class="help-text">Optional, but helps with approval process</p>
           </div>
@@ -150,7 +160,7 @@
             <button
               type="submit"
               class="btn btn-primary"
-              :disabled="isSubmitting || !isFormValid || !!pendingRequest"
+              :disabled="isSubmitting || !isFormValid || !!pendingRequest || !props.requestsEnabled"
             >
               <span v-if="isSubmitting" class="btn-loading">
                 <span class="spinner"></span> Submitting...
@@ -224,6 +234,10 @@ const props = defineProps({
     default: false
   },
   showMarkupSection: {
+    type: Boolean,
+    default: true
+  },
+  requestsEnabled: {
     type: Boolean,
     default: true
   }
@@ -436,6 +450,11 @@ async function fetchPendingRequest() {
 }
 
 async function submitRequest() {
+  if (!props.requestsEnabled) {
+    formError.value = 'Price markup requests are disabled by the owner.'
+    return
+  }
+
   if (!isFormValid.value) return
 
   isSubmitting.value = true

@@ -516,18 +516,42 @@ router.onError(() => {
 })
 
 // === GLOBAL GUARD PARA PROTECTED ANG /admin-panel ===
+const managerDepartmentByRole = {
+  manager_hr: 'hr',
+  manager_finance: 'finance',
+  manager_logistics: 'logistics',
+  manager_inventory: 'inventory',
+  manager_procurement: 'procurement',
+  manager_cashier: 'cashier',
+  manager_kitchen: 'kitchen',
+}
+
+function normalizePanelUser(user) {
+  if (!user) return user
+
+  const role = String(user.role || '').trim().toLowerCase()
+  const department = String(user.department || '').trim().toLowerCase()
+  const managerDepartment = managerDepartmentByRole[role]
+
+  return {
+    ...user,
+    role: managerDepartment ? 'manager' : role,
+    department: managerDepartment || department,
+  }
+}
+
 router.beforeEach(async (to, from, next) => {
   // Public routes - allow always (including unauthorized and staff landing)
   if (to.path === '/' || to.path === '/admin-login' || to.path === '/login' || to.path === '/staff-landing' || to.path === '/unauthorized') {
     // If already authenticated and heading to landing/login/root, redirect to role home
     try {
-      const u = JSON.parse(localStorage.getItem('user') || 'null')
+      const u = normalizePanelUser(JSON.parse(localStorage.getItem('user') || 'null'))
       const branchId = Number(u?.branch_id || u?.branchId || u?.branch || 0)
       const branchName = (u?.branch_name || u?.branch || '').toString().toUpperCase()
       const username = (u?.username || '').toString().toUpperCase()
       const isMainBranch = branchId === 32 || branchId === 1 || branchName.includes('MAIN') || username.includes('MAIN_BRANCH') || username.includes('MAINBRANCH')
-      const role = (u?.role || '').toString().toLowerCase()
-      const dept = (u?.department || '').toString().toLowerCase()
+      const role = u?.role || ''
+      const dept = u?.department || ''
       if (u && to.path !== '/unauthorized') {
         if (role === 'custom') return next('/custom-panel')
         if (role === 'owner') return next('/owner-panel')
@@ -564,11 +588,7 @@ router.beforeEach(async (to, from, next) => {
   // CRITICAL: Get user from localStorage for strict role checking
   let user = null;
   try {
-    user = JSON.parse(localStorage.getItem('user') || 'null');
-    // Normalize role to lowercase for comparison (database has uppercase: ADMIN, MANAGER, OWNER, STAFF)
-    if (user) {
-      user.role = (user.role || '').toLowerCase();
-    }
+    user = normalizePanelUser(JSON.parse(localStorage.getItem('user') || 'null'));
   } catch (e) {
     console.warn('[ROUTER] Failed to parse user from localStorage:', e);
   }
@@ -627,12 +647,13 @@ router.beforeEach(async (to, from, next) => {
       const branchName = (user.branch_name || user.branch || '').toString().toUpperCase()
       const username = (user.username || '').toString().toUpperCase()
       const isMainBranch = branchId === 32 || branchId === 1 || branchName.includes('MAIN') || username.includes('MAIN_BRANCH') || username.includes('MAINBRANCH')
+      const isHrUser = user.role === 'hr' || (user.role === 'manager' && user.department === 'hr')
       
-      if (user.role === 'manager' && user.department === 'hr' && isMainBranch) {
+      if (isHrUser && isMainBranch) {
         return next('/main-branch/hr')
       }
       
-      if (user.role === 'manager' && user.department === 'hr') { }
+      if (isHrUser) { }
       else if (user.role === 'custom' && hasModule('hr')) { }
       else return next('/unauthorized');
       // Allow navigation to staff-management sub-route
