@@ -1,6 +1,7 @@
 <template>
   <div class="manager-finance finance-manager-layout" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
     <aside class="finance-sidebar" :aria-hidden="sidebarCollapsed">
+      <PanelSidebarBrand />
       <nav class="finance-sidebar__nav">
         <button class="finance-sidebar__item" :class="{ active: selectedSection === 'overview' }" @click="selectedSection = 'overview'">
           <span class="finance-sidebar__label">Financial Overview</span>
@@ -530,6 +531,7 @@ import PriceMarkupManagerPanel from './finance/PriceMarkupManagerPanel.vue'
 import MainBranchFinanceBranchConfirmations from './MainBranchFinanceBranchConfirmations.vue'
 import PanelNotificationMenu from './PanelNotificationMenu.vue'
 import OwnerMessageMenu from './OwnerMessageMenu.vue'
+import PanelSidebarBrand from './PanelSidebarBrand.vue'
 import axios from 'axios'
 import { Chart } from 'vue-chartjs'
 import { showToast } from './toastStore'

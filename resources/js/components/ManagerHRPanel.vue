@@ -9,8 +9,14 @@
     :showHeader="false"
     :showProfileColumn="false"
     :ownerTwoColumnLayout="true"
+    :showOwnerTopbar="true"
+    :announcementsInModal="true"
+    :notificationDetailsInModal="true"
+    :externalSidebarCollapsed="hrSidebarCollapsed"
+    :topbarLabel="managerHrTopbarLabel"
     @logout="askLogout"
     @profile-updated="onProfileUpdated"
+    @toggle-sidebar="hrSidebarCollapsed = !hrSidebarCollapsed"
   >
     <template #sideTop>
       <div ref="profileWrapper" class="header-profile-wrapper manager-hr-compact-profile">
@@ -32,22 +38,9 @@
       </div>
     </template>
     <template #main>
-      <header class="manager-hr-topbar">
-        <button
-          class="manager-hr-menu-toggle"
-          type="button"
-          :aria-label="hrSidebarCollapsed ? 'Show menu' : 'Hide menu'"
-          :aria-expanded="(!hrSidebarCollapsed).toString()"
-          @click="hrSidebarCollapsed = !hrSidebarCollapsed"
-        >☰</button>
-        <div class="manager-hr-topbar__spacer"></div>
-        <div class="manager-hr-topbar__profile">
-          <div class="manager-hr-topbar__avatar">{{ (userProfile.fullName || userProfile.full_name || userProfile.name || 'H').toString().charAt(0).toUpperCase() }}</div>
-          <span>{{ 'HR Manager - ' + (userProfile.branch || userProfile.branch_name || 'Dasma Branch') }}</span>
-        </div>
-      </header>
       <div class="manager-hr-page" :class="{ 'manager-hr-sidebar-collapsed': hrSidebarCollapsed }">
         <aside class="manager-hr-sidebar" :aria-hidden="hrSidebarCollapsed">
+          <PanelSidebarBrand />
           <nav class="manager-hr-sidebar__nav" aria-label="HR sections">
             <button class="manager-hr-sidebar__item" :class="{ 'manager-hr-sidebar__item--active': selectedHrSection === 'overview' }" :aria-current="selectedHrSection === 'overview' ? 'page' : undefined" @click="scrollToHrSection('overview', '.manager-hr-hero')">HR Overview</button>
             <button class="manager-hr-sidebar__item" :class="{ 'manager-hr-sidebar__item--active': selectedHrSection === 'confirmations' }" :aria-current="selectedHrSection === 'confirmations' ? 'page' : undefined" @click="scrollToHrSection('confirmations', '.hr-confirmation-panel')">Confirmations</button>
@@ -970,6 +963,7 @@ import { useRouter } from 'vue-router'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import axios from 'axios'
 import { showToast } from './toastStore'
+import PanelSidebarBrand from './PanelSidebarBrand.vue'
 import { swalAlert, swalConfirm } from '../sweet-alerts'
 
 // HR Positions Modal state
@@ -1015,6 +1009,7 @@ const hrSectionTitle = computed(() => {
   }
   return titles[selectedHrSection.value] || 'HR Overview'
 })
+const managerHrTopbarLabel = computed(() => `HR Manager - ${userProfile.value.branch || userProfile.value.branch_name || 'Dasma Branch'}`)
 
 const scrollToHrSection = async (section, selector) => {
   selectedHrSection.value = section

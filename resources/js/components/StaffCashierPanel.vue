@@ -1,6 +1,7 @@
 <template>
   <div class="staff-cashier-panel" :class="{ 'staff-cashier-sidebar-collapsed': cashierSidebarCollapsed, 'staff-cashier-sidebar-resizing': isResizingSidebar }">
         <aside class="staff-cashier-sidebar" :aria-hidden="cashierSidebarCollapsed" :style="{ width: `${cashierSidebarWidth}px`, flexBasis: `${cashierSidebarWidth}px` }">
+          <PanelSidebarBrand />
           <nav class="staff-cashier-sidebar__nav" aria-label="Cashier sections">
             <button class="staff-cashier-sidebar__item" :class="{ 'staff-cashier-sidebar__item--active': activeCashierSection === 'cashier' }" type="button" @click="selectCashierSection('cashier')">Cashier</button>
             <button class="staff-cashier-sidebar__item" :class="{ 'staff-cashier-sidebar__item--active': activeCashierSection === 'transactions' }" type="button" @click="selectCashierSection('transactions')">Transactions</button>
@@ -409,6 +410,7 @@ import axios from 'axios'
 import Swal from 'sweetalert2'
 import { BrowserMultiFormatReader } from '@zxing/browser'
 import { BarcodeFormat, DecodeHintType } from '@zxing/library'
+import PanelSidebarBrand from './PanelSidebarBrand.vue'
 import { showToast } from './toastStore'
 import './StaffCashierPanel.css'
 
@@ -444,7 +446,7 @@ function startSidebarResize(event) {
 
   const resize = (moveEvent) => {
     const nextWidth = startWidth + moveEvent.clientX - startX
-    cashierSidebarWidth.value = Math.min(320, Math.max(120, nextWidth))
+    cashierSidebarWidth.value = Math.min(320, Math.max(180, nextWidth))
   }
 
   const stopResize = () => {

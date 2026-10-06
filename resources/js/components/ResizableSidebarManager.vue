@@ -33,16 +33,30 @@ function attachResizeHandle(sidebar) {
     const startWidth = sidebar.getBoundingClientRect().width
     const direction = isRightSidebar ? -1 : 1
     sidebar.classList.add('panel-sidebar-resizing')
+    const managerHrPage = sidebar.classList.contains('manager-hr-sidebar') ? sidebar.parentElement : null
+    const managerHrLayout = managerHrPage?.closest('.admin-layout')
+    if (managerHrPage && managerHrLayout) {
+      managerHrPage.classList.add('manager-hr-sidebar-resizing')
+      managerHrLayout.classList.add('manager-hr-sidebar-resizing')
+      managerHrPage.style.setProperty('--manager-hr-sidebar-width', `${startWidth}px`)
+      managerHrLayout.style.setProperty('--manager-hr-sidebar-width', `${startWidth}px`)
+    }
 
     const resize = (moveEvent) => {
       const nextWidth = startWidth + direction * (moveEvent.clientX - startX)
-      const width = Math.min(320, Math.max(120, nextWidth))
+      const width = Math.min(320, Math.max(180, nextWidth))
       sidebar.style.width = `${width}px`
       sidebar.style.minWidth = `${width}px`
+      if (managerHrPage && managerHrLayout) {
+        managerHrPage.style.setProperty('--manager-hr-sidebar-width', `${width}px`)
+        managerHrLayout.style.setProperty('--manager-hr-sidebar-width', `${width}px`)
+      }
     }
 
     const stopResize = () => {
       sidebar.classList.remove('panel-sidebar-resizing')
+      managerHrPage?.classList.remove('manager-hr-sidebar-resizing')
+      managerHrLayout?.classList.remove('manager-hr-sidebar-resizing')
       document.removeEventListener('pointermove', resize)
       document.removeEventListener('pointerup', stopResize)
     }

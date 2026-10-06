@@ -6,9 +6,10 @@
           <button
             type="button"
             class="owner-panel-hamburger"
-            :aria-label="ownerSidebarCollapsed ? 'Show menu' : 'Hide menu'"
-            :aria-expanded="(!ownerSidebarCollapsed).toString()"
-            @click.prevent.stop="toggleOwnerSidebar"
+            :class="{ 'owner-panel-hamburger--collapsed': topbarSidebarCollapsed }"
+            :aria-label="topbarSidebarCollapsed ? 'Show menu' : 'Hide menu'"
+            :aria-expanded="(!topbarSidebarCollapsed).toString()"
+            @click.prevent.stop="toggleTopbarSidebar"
           >☰</button>
           <div class="owner-panel-topbar-spacer"></div>
           <OwnerMessageMenu />
@@ -24,6 +25,7 @@
           </div>
         </header>
         <aside v-if="showOwnerSidebar" class="owner-panel-sidebar" aria-label="Owner sections">
+          <PanelSidebarBrand />
           <slot name="ownerSidebar"></slot>
           <div class="owner-sidebar-footer">
             <slot name="ownerSidebarFooter"></slot>
@@ -448,6 +450,7 @@ import Toast from './Toast.vue'
 import { showToast } from './toastStore'
 import PanelNotificationMenu from './PanelNotificationMenu.vue'
 import OwnerMessageMenu from './OwnerMessageMenu.vue'
+import PanelSidebarBrand from './PanelSidebarBrand.vue'
 
 const props = defineProps({
   embedded: { type: Boolean, default: false },
@@ -483,6 +486,7 @@ const props = defineProps({
   ,
   showOwnerSidebar: { type: Boolean, default: false },
   showOwnerTopbar: { type: Boolean, default: false },
+  externalSidebarCollapsed: { type: Boolean, default: false },
   announcementsInModal: { type: Boolean, default: false },
   notificationDetailsInModal: { type: Boolean, default: false },
   topbarLabel: { type: String, default: '' },
@@ -492,12 +496,13 @@ const props = defineProps({
 const superAdminEmbedded = inject('superAdminEmbedded', false)
 const isEmbedded = computed(() => props.embedded || superAdminEmbedded)
 
-const emit = defineEmits(['logout', 'profile-updated', 'back'])
+const emit = defineEmits(['logout', 'profile-updated', 'back', 'toggle-sidebar'])
 const route = useRoute()
 const router = useRouter()
 const ownerSidebarCollapsed = ref(false)
 const ownerSidebarWidth = ref(156)
 const ownerSidebarResizing = ref(false)
+const topbarSidebarCollapsed = computed(() => props.showOwnerSidebar ? ownerSidebarCollapsed.value : props.externalSidebarCollapsed)
 
 const ownerUserLabel = computed(() => {
   if (props.topbarLabel) return props.topbarLabel
@@ -510,6 +515,14 @@ function toggleOwnerSidebar() {
   ownerSidebarCollapsed.value = !ownerSidebarCollapsed.value
 }
 
+function toggleTopbarSidebar() {
+  if (props.showOwnerSidebar) {
+    toggleOwnerSidebar()
+  } else {
+    emit('toggle-sidebar')
+  }
+}
+
 function startOwnerSidebarResize(event) {
   if (ownerSidebarCollapsed.value) return
 
@@ -520,7 +533,7 @@ function startOwnerSidebarResize(event) {
 
   const resize = (moveEvent) => {
     const nextWidth = startWidth + moveEvent.clientX - startX
-    ownerSidebarWidth.value = Math.min(320, Math.max(120, nextWidth))
+    ownerSidebarWidth.value = Math.min(320, Math.max(180, nextWidth))
   }
 
   const stopResize = () => {
@@ -1572,8 +1585,11 @@ async function onAvatarChange(event) {
   transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1), background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
-.owner-sidebar-collapsed .owner-panel-hamburger {
+.owner-panel-hamburger--collapsed {
   transform: rotate(180deg);
+}
+
+.owner-sidebar-collapsed .owner-panel-hamburger--collapsed {
   position: fixed;
   top: 12px;
   left: 12px;

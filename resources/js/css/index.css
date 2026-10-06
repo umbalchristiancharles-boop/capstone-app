@@ -129,6 +129,16 @@
   transform: translateY(-1px);
 }
 
+.navbar-link.active {
+  background: rgba(255, 255, 255, 0.92);
+  color: #8a3c00;
+}
+
+.hero,
+.scaffold {
+  scroll-margin-top: 72px;
+}
+
 .navbar-link:active {
   transform: translateY(0);
 }
@@ -137,6 +147,11 @@
 @media (max-width: 768px) {
   .navbar-toggle {
     display: flex;
+  }
+
+  .hero,
+  .scaffold {
+    scroll-margin-top: 64px;
   }
 
   .navbar-menu {
@@ -177,6 +192,11 @@
     transform: translateX(4px);
   }
 
+  .navbar-link.active {
+    background: rgba(255, 255, 255, 0.92);
+    color: #8a3c00;
+  }
+
   .navbar-brand-text {
     font-size: 1rem;
   }
@@ -192,6 +212,11 @@
 }
 
 @media (max-width: 480px) {
+  .hero,
+  .scaffold {
+    scroll-margin-top: 60px;
+  }
+
   .navbar-container {
     padding: 0 12px;
     height: 60px;

@@ -1,6 +1,7 @@
 <template>
   <div class="super-admin-shell" :class="{ 'sidebar-collapsed': sidebarCollapsed, 'super-admin-sidebar-resizing': sidebarResizing }" :style="{ '--super-admin-sidebar-width': `${sidebarWidth}px` }">
     <aside class="super-admin-sidebar" :aria-hidden="sidebarCollapsed" :style="{ width: `${sidebarWidth}px` }">
+      <PanelSidebarBrand />
       <nav class="super-admin-sidebar__nav" aria-label="Website panels">
         <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'mainBranchAdmin' }" @click="openModule('mainBranchAdmin')">Admin Main Branch</button>
         <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'mainBranchLogistics' }" @click="openModule('mainBranchLogistics')">Logistics Main Branch</button>
@@ -325,6 +326,7 @@ import { ref, computed, onMounted, onBeforeUnmount, watch, defineAsyncComponent,
 import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import '../css/adminpanel.css'
+import PanelSidebarBrand from './PanelSidebarBrand.vue'
 import { showToast } from './toastStore'
 
 const router = useRouter()

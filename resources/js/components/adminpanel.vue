@@ -28,6 +28,7 @@
           </div>
         </div>
         <aside class="admin-sidebar" aria-label="Admin sections">
+          <PanelSidebarBrand />
           <nav class="admin-sidebar__nav">
             <button type="button" class="admin-sidebar__item" :class="{ 'admin-sidebar__item--active': activeSection === 'dashboard' }" @click="activeSection = 'dashboard'">Dashboard</button>
             <button type="button" class="admin-sidebar__item" :class="{ 'admin-sidebar__item--active': activeSection === 'orders' }" @click="activeSection = 'orders'">Orders &amp; Production</button>
@@ -856,6 +857,7 @@ import AdminCustomerReports from './AdminCustomerReports.vue'
 import StaffManagement from './StaffManagement.vue'
 import PanelNotificationMenu from './PanelNotificationMenu.vue'
 import OwnerMessageMenu from './OwnerMessageMenu.vue'
+import PanelSidebarBrand from './PanelSidebarBrand.vue'
 
 import { showToast } from './toastStore'
 

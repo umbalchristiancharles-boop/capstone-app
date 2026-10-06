@@ -1,6 +1,7 @@
 <template>
   <div class="cashier-page" :class="{ 'cashier-sidebar-collapsed': cashierSidebarCollapsed }">
     <aside class="cashier-right-sidebar" aria-label="Cashier sections">
+      <PanelSidebarBrand />
       <button
         type="button"
         class="cashier-right-sidebar__toggle"
@@ -244,6 +245,7 @@
 import { ref, computed, onMounted, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
+import PanelSidebarBrand from './PanelSidebarBrand.vue'
 
 const router = useRouter()
 const superAdminBranchId = inject('superAdminBranchId', null)

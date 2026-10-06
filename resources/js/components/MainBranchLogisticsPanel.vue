@@ -1,6 +1,7 @@
 <template>
   <div class="main-branch-page" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
     <aside class="logistics-sidebar">
+      <PanelSidebarBrand />
       <nav class="logistics-sidebar__nav" aria-label="Logistics navigation">
         <a class="logistics-sidebar__item" :class="{ active: selectedSection === 'overview' }" href="#logistics-overview" @click.prevent="selectedSection = 'overview'">Logistics Overview</a>
         <a class="logistics-sidebar__item" :class="{ active: selectedSection === 'inventory' }" href="#inventory-monitor" @click.prevent="selectedSection = 'inventory'">Inventory Monitor</a>
@@ -323,6 +324,7 @@ import { onMounted, ref, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { showToast } from './toastStore'
+import PanelSidebarBrand from './PanelSidebarBrand.vue'
 
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
 

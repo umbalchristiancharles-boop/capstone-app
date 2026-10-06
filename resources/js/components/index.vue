@@ -23,12 +23,12 @@
         </button>
 
         <div class="navbar-menu" :class="{ active: mobileMenuOpen }">
-          <a href="#hero" class="navbar-link" @click="scrollToSection('hero')">Home</a>
-          <a href="#branches" class="navbar-link" @click="scrollToSection('branches')">Branches</a>
-          <a href="#menu" class="navbar-link" @click="scrollToSection('menu')">Menu</a>
-          <a href="#careers" class="navbar-link" @click="scrollToSection('careers')">Careers</a>
-          <a href="#about" class="navbar-link" @click="scrollToSection('about')">About</a>
-          <a href="#contact" class="navbar-link" @click="scrollToSection('contact')">Contact Admin</a>
+          <a href="#hero" class="navbar-link" :class="{ active: activeSection === 'hero' }" :aria-current="activeSection === 'hero' ? 'location' : null" @click="scrollToSection('hero')">Home</a>
+          <a href="#branches" class="navbar-link" :class="{ active: activeSection === 'branches' }" :aria-current="activeSection === 'branches' ? 'location' : null" @click="scrollToSection('branches')">Branches</a>
+          <a href="#menu" class="navbar-link" :class="{ active: activeSection === 'menu' }" :aria-current="activeSection === 'menu' ? 'location' : null" @click="scrollToSection('menu')">Menu</a>
+          <a href="#careers" class="navbar-link" :class="{ active: activeSection === 'careers' }" :aria-current="activeSection === 'careers' ? 'location' : null" @click="scrollToSection('careers')">Careers</a>
+          <a href="#about" class="navbar-link" :class="{ active: activeSection === 'about' }" :aria-current="activeSection === 'about' ? 'location' : null" @click="scrollToSection('about')">About</a>
+          <a href="#contact" class="navbar-link" :class="{ active: activeSection === 'contact' }" :aria-current="activeSection === 'contact' ? 'location' : null" @click="scrollToSection('contact')">Contact Admin</a>
         </div>
       </div>
     </nav>
@@ -871,6 +871,8 @@ const showScrollTop = ref(false)
 const hideAdminLogin = ref(false)
 const scrolled = ref(false)
 const mobileMenuOpen = ref(false)
+const activeSection = ref('hero')
+const navigationSectionIds = ['hero', 'branches', 'menu', 'careers', 'about', 'contact']
 
 const chikintayoImg = new URL('../assets/chikintayo.jpg', import.meta.url).href
 const mrLoaderImg   = new URL('../assets/chikinlogo.png', import.meta.url).href
@@ -998,6 +1000,16 @@ watch(products, (newProducts) => {
 function handleScroll() {
   showScrollTop.value = window.scrollY > 400
   scrolled.value = window.scrollY > 50
+
+  const navbarHeight = document.querySelector('.navbar')?.offsetHeight || 0
+  const activationPoint = window.scrollY + navbarHeight
+
+  for (const sectionId of navigationSectionIds) {
+    const section = document.getElementById(sectionId)
+    if (section && section.getBoundingClientRect().top + window.scrollY <= activationPoint) {
+      activeSection.value = sectionId
+    }
+  }
 }
 
 onMounted(() => {
@@ -1210,6 +1222,7 @@ function scrollToScaffold3() {
 function scrollToSection(sectionId) {
   const target = document.getElementById(sectionId)
   if (target) {
+    activeSection.value = sectionId
     target.scrollIntoView({ behavior: 'smooth', block: 'start' })
     // Close mobile menu after clicking
     mobileMenuOpen.value = false
