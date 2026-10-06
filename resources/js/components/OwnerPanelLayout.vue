@@ -7,6 +7,7 @@
             type="button"
             class="owner-panel-hamburger"
             :class="{ 'owner-panel-hamburger--collapsed': topbarSidebarCollapsed }"
+            v-if="!showOwnerSidebar || (ownerSidebarCollapsed && !ownerSidebarTransitioning)"
             :aria-label="topbarSidebarCollapsed ? 'Show menu' : 'Hide menu'"
             :aria-expanded="(!topbarSidebarCollapsed).toString()"
             @click.prevent.stop="toggleTopbarSidebar"
@@ -24,7 +25,13 @@
             <span>{{ ownerUserLabel }}</span>
           </div>
         </header>
-        <aside v-if="showOwnerSidebar" class="owner-panel-sidebar" aria-label="Owner sections">
+        <aside
+          v-if="showOwnerSidebar"
+          class="owner-panel-sidebar"
+          aria-label="Owner sections"
+          @pointerdown="startOwnerSidebarSwipe"
+          @transitionend="finishOwnerSidebarTransition"
+        >
           <PanelSidebarBrand />
           <slot name="ownerSidebar"></slot>
           <div class="owner-sidebar-footer">
@@ -502,7 +509,11 @@ const router = useRouter()
 const ownerSidebarCollapsed = ref(false)
 const ownerSidebarWidth = ref(156)
 const ownerSidebarResizing = ref(false)
+const ownerSidebarTransitioning = ref(false)
 const topbarSidebarCollapsed = computed(() => props.showOwnerSidebar ? ownerSidebarCollapsed.value : props.externalSidebarCollapsed)
+let sidebarSwipeStart = null
+let sidebarTransitionTimeout
+let sidebarSwipeClickTimeout
 
 const ownerUserLabel = computed(() => {
   if (props.topbarLabel) return props.topbarLabel
@@ -512,7 +523,19 @@ const ownerUserLabel = computed(() => {
 })
 
 function toggleOwnerSidebar() {
-  ownerSidebarCollapsed.value = !ownerSidebarCollapsed.value
+  if (ownerSidebarCollapsed.value) {
+    clearTimeout(sidebarTransitionTimeout)
+    ownerSidebarTransitioning.value = false
+    ownerSidebarCollapsed.value = false
+    return
+  }
+
+  ownerSidebarTransitioning.value = true
+  ownerSidebarCollapsed.value = true
+  clearTimeout(sidebarTransitionTimeout)
+  sidebarTransitionTimeout = setTimeout(() => {
+    ownerSidebarTransitioning.value = false
+  }, 300)
 }
 
 function toggleTopbarSidebar() {
@@ -533,6 +556,12 @@ function startOwnerSidebarResize(event) {
 
   const resize = (moveEvent) => {
     const nextWidth = startWidth + moveEvent.clientX - startX
+    if (nextWidth <= 180 && moveEvent.clientX <= startX - 60) {
+      toggleOwnerSidebar()
+      stopResize()
+      return
+    }
+
     ownerSidebarWidth.value = Math.min(320, Math.max(180, nextWidth))
   }
 
@@ -540,10 +569,81 @@ function startOwnerSidebarResize(event) {
     ownerSidebarResizing.value = false
     document.removeEventListener('pointermove', resize)
     document.removeEventListener('pointerup', stopResize)
+    document.removeEventListener('pointercancel', stopResize)
   }
 
   document.addEventListener('pointermove', resize)
   document.addEventListener('pointerup', stopResize)
+  document.addEventListener('pointercancel', stopResize)
+}
+
+function startOwnerSidebarSwipe(event) {
+  if (ownerSidebarCollapsed.value || !event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0)) return
+  if (event.target.closest('.owner-panel-sidebar__resize-handle')) return
+
+  sidebarSwipeStart = { x: event.clientX, y: event.clientY, pointerId: event.pointerId }
+  document.addEventListener('pointermove', trackOwnerSidebarSwipe, { passive: false })
+  document.addEventListener('pointerup', finishOwnerSidebarSwipe)
+  document.addEventListener('pointercancel', cancelOwnerSidebarSwipe)
+}
+
+function trackOwnerSidebarSwipe(event) {
+  if (!sidebarSwipeStart || event.pointerId !== sidebarSwipeStart.pointerId) return
+
+  const deltaX = event.clientX - sidebarSwipeStart.x
+  const deltaY = event.clientY - sidebarSwipeStart.y
+  if (Math.abs(deltaY) >= 80 && Math.abs(deltaY) > Math.abs(deltaX)) {
+    cancelOwnerSidebarSwipe()
+    return
+  }
+
+  if (deltaX > -80 || Math.abs(deltaY) > Math.abs(deltaX)) return
+
+  cancelOwnerSidebarSwipe()
+  suppressSidebarSwipeClick()
+  toggleOwnerSidebar()
+}
+
+function finishOwnerSidebarSwipe(event) {
+  if (!sidebarSwipeStart || event.pointerId !== sidebarSwipeStart.pointerId) return
+
+  const deltaX = event.clientX - sidebarSwipeStart.x
+  const deltaY = event.clientY - sidebarSwipeStart.y
+  cancelOwnerSidebarSwipe()
+
+  if (deltaX <= -80 && Math.abs(deltaY) < 80 && Math.abs(deltaX) > Math.abs(deltaY)) {
+    suppressSidebarSwipeClick()
+    toggleOwnerSidebar()
+  }
+}
+
+function cancelOwnerSidebarSwipe() {
+  sidebarSwipeStart = null
+  document.removeEventListener('pointermove', trackOwnerSidebarSwipe)
+  document.removeEventListener('pointerup', finishOwnerSidebarSwipe)
+  document.removeEventListener('pointercancel', cancelOwnerSidebarSwipe)
+}
+
+function suppressSidebarSwipeClick() {
+  document.addEventListener('click', preventSidebarSwipeClick, true)
+  clearTimeout(sidebarSwipeClickTimeout)
+  sidebarSwipeClickTimeout = setTimeout(() => {
+    document.removeEventListener('click', preventSidebarSwipeClick, true)
+  }, 500)
+}
+
+function preventSidebarSwipeClick(event) {
+  document.removeEventListener('click', preventSidebarSwipeClick, true)
+  clearTimeout(sidebarSwipeClickTimeout)
+  event.preventDefault()
+  event.stopPropagation()
+}
+
+function finishOwnerSidebarTransition(event) {
+  if (event.target !== event.currentTarget || event.propertyName !== 'transform' || !ownerSidebarCollapsed.value) return
+
+  clearTimeout(sidebarTransitionTimeout)
+  ownerSidebarTransitioning.value = false
 }
 
 const isCustomAccount = computed(() => {
@@ -1032,7 +1132,11 @@ watch(() => props.userProfile, (newVal) => {
 
 onMounted(() => {
   if (window.matchMedia('(max-width: 1023px)').matches) {
+    ownerSidebarTransitioning.value = true
     ownerSidebarCollapsed.value = true
+    sidebarTransitionTimeout = setTimeout(() => {
+      ownerSidebarTransitioning.value = false
+    }, 300)
   }
 
   try {
@@ -1084,6 +1188,12 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (notificationTimer) window.clearInterval(notificationTimer)
+  clearTimeout(sidebarTransitionTimeout)
+  clearTimeout(sidebarSwipeClickTimeout)
+  document.removeEventListener('pointermove', trackOwnerSidebarSwipe)
+  document.removeEventListener('pointerup', finishOwnerSidebarSwipe)
+  document.removeEventListener('pointercancel', cancelOwnerSidebarSwipe)
+  document.removeEventListener('click', preventSidebarSwipeClick, true)
   try { window.removeEventListener('open-owner-edit-profile', openEditProfile) } catch (e) {}
   try { window.removeEventListener('open-owner-info', openInfoModal) } catch (e) {}
 })
@@ -1772,6 +1882,7 @@ async function onAvatarChange(event) {
   flex-direction: column;
   background: rgba(255, 255, 255, 0.42);
   border-right: 1px solid rgba(138, 113, 95, 0.18);
+  touch-action: pan-y;
 }
 
 .admin-layout--owner-sidebar-layout:not(.owner-sidebar-collapsed) .owner-panel-sidebar {
@@ -1794,6 +1905,7 @@ async function onAvatarChange(event) {
   border: 0;
   background: transparent;
   cursor: col-resize;
+  touch-action: none;
 }
 
 .owner-panel-sidebar__resize-handle::after {
