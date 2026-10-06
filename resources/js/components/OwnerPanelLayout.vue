@@ -2342,6 +2342,43 @@ async function onAvatarChange(event) {
   display: none !important;
 }
 
+.admin-layout--owner-sidebar-layout .owner-panel-topbar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: var(--owner-sidebar-width);
+  z-index: 500;
+  width: auto !important;
+  margin: 0 !important;
+  transition: left 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.owner-sidebar-collapsed.admin-layout--owner-sidebar-layout .owner-panel-topbar {
+  left: 0;
+}
+
+.admin-layout--owner-sidebar-layout .admin-main {
+  margin-top: 66px !important;
+}
+
+@media (max-width: 767px) {
+  .admin-layout--owner-sidebar-layout .admin-main {
+    height: calc(100vh - 66px) !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+  }
+}
+
+.owner-panel-layout--embedded .owner-panel-topbar {
+  position: relative;
+  left: auto;
+  right: auto;
+}
+
+.owner-panel-layout--embedded .admin-main {
+  margin-top: 0 !important;
+}
+
 :deep(.owner-panel-layout--embedded .back-to-dashboard-btn) {
   display: none !important;
 }
