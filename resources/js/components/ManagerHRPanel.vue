@@ -42,10 +42,10 @@
         <aside class="manager-hr-sidebar" :aria-hidden="hrSidebarCollapsed">
           <PanelSidebarBrand />
           <nav class="manager-hr-sidebar__nav" aria-label="HR sections">
-            <button class="manager-hr-sidebar__item" :class="{ 'manager-hr-sidebar__item--active': selectedHrSection === 'overview' }" :aria-current="selectedHrSection === 'overview' ? 'page' : undefined" @click="scrollToHrSection('overview', '.manager-hr-hero')">HR Overview</button>
-            <button class="manager-hr-sidebar__item" :class="{ 'manager-hr-sidebar__item--active': selectedHrSection === 'confirmations' }" :aria-current="selectedHrSection === 'confirmations' ? 'page' : undefined" @click="scrollToHrSection('confirmations', '.hr-confirmation-panel')">Confirmations</button>
-            <button class="manager-hr-sidebar__item" :class="{ 'manager-hr-sidebar__item--active': selectedHrSection === 'attendance' }" :aria-current="selectedHrSection === 'attendance' ? 'page' : undefined" @click="scrollToHrSection('attendance', '.hr-attendance-panel')">Attendance</button>
-            <button class="manager-hr-sidebar__item" :class="{ 'manager-hr-sidebar__item--active': selectedHrSection === 'payroll' }" :aria-current="selectedHrSection === 'payroll' ? 'page' : undefined" @click="scrollToHrSection('payroll', '.hr-payroll-panel')">Payroll</button>
+            <button class="manager-hr-sidebar__item" :class="{ 'manager-hr-sidebar__item--active': selectedHrSection === 'overview' }" :aria-current="selectedHrSection === 'overview' ? 'page' : undefined" @click="scrollToHrSection('overview')">HR Overview</button>
+            <button class="manager-hr-sidebar__item" :class="{ 'manager-hr-sidebar__item--active': selectedHrSection === 'confirmations' }" :aria-current="selectedHrSection === 'confirmations' ? 'page' : undefined" @click="scrollToHrSection('confirmations')">Confirmations</button>
+            <button class="manager-hr-sidebar__item" :class="{ 'manager-hr-sidebar__item--active': selectedHrSection === 'attendance' }" :aria-current="selectedHrSection === 'attendance' ? 'page' : undefined" @click="scrollToHrSection('attendance')">Attendance</button>
+            <button class="manager-hr-sidebar__item" :class="{ 'manager-hr-sidebar__item--active': selectedHrSection === 'payroll' }" :aria-current="selectedHrSection === 'payroll' ? 'page' : undefined" @click="scrollToHrSection('payroll')">Payroll</button>
           </nav>
           <div class="manager-hr-sidebar__footer">
             <button class="manager-hr-sidebar__account" type="button" @click="openInfo">Account Info</button>
@@ -958,7 +958,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import axios from 'axios'
@@ -1011,10 +1011,9 @@ const hrSectionTitle = computed(() => {
 })
 const managerHrTopbarLabel = computed(() => `HR Manager - ${userProfile.value.branch || userProfile.value.branch_name || 'Dasma Branch'}`)
 
-const scrollToHrSection = async (section, selector) => {
+const scrollToHrSection = (section) => {
   selectedHrSection.value = section
-  await nextTick()
-  document.querySelector(selector)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  window.scrollTo(0, 0)
 }
 const errorMessage = ref('')
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
