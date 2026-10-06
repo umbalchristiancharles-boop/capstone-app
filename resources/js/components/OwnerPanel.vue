@@ -229,7 +229,7 @@
       </template>
 
       <section v-else-if="selectedSection === 'permissions'" class="panel-block owner-permissions-panel" aria-labelledby="owner-permissions-heading">
-        <div class="panel-header">
+        <div class="panel-header owner-section-header-surface">
           <div>
             <p class="owner-announcement-eyebrow">Access control</p>
             <h2 id="owner-permissions-heading">Permissions</h2>
@@ -251,7 +251,7 @@
       </section>
 
       <section v-else-if="selectedSection === 'announcements'" class="panel-block owner-announcement-compose" aria-labelledby="owner-announcement-heading">
-        <div class="panel-header">
+        <div class="panel-header owner-section-header-surface">
           <div>
             <p class="owner-announcement-eyebrow">Owner communications</p>
             <h2 id="owner-announcement-heading">Send Announcement</h2>
@@ -681,7 +681,7 @@ const handleLogout = async () => {
 
 .owner-sidebar-nav {
   display: grid;
-  gap: 0.5rem;
+  gap: 0.3rem;
   position: sticky;
   top: 1rem;
 }
@@ -693,7 +693,7 @@ const handleLogout = async () => {
   background: transparent;
   text-align: left;
   cursor: pointer;
-  padding: 0.7rem 0.75rem;
+  padding: 0.6rem 0.75rem;
   border: 1px solid transparent;
   border-radius: 0.75rem;
   color: #334155;

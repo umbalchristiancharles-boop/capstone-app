@@ -25,14 +25,13 @@
           </svg>
           <span>Back to Dashboard</span>
         </button>
-        <div class="dish-approval-header">
+        <div class="dish-approval-group">
           <div class="dish-approval-title-block">
             <h1>Dish Approval</h1>
             <p>Review and approve new dishes from kitchen staff.</p>
           </div>
-        </div>
       <!-- Pending Product Requests Section -->
-      <section class="panel-block">
+      <section class="panel-block dish-approval-group__panel">
         <div class="panel-header">
           <h2>
             Pending Product Requests
@@ -144,6 +143,7 @@
           </div>
         </div>
       </section>
+        </div>
 
       <!-- Approved Product Requests Section -->
       <section class="panel-block">
@@ -407,7 +407,7 @@ onMounted(() => {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
   width: 100%;
   max-width: 100%;
   padding: 1.5rem;
@@ -432,6 +432,31 @@ onMounted(() => {
   border-radius: 22px;
   box-shadow: 0 20px 48px rgba(15, 23, 42, 0.06);
   overflow: hidden;
+}
+
+.dish-approval-group {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  width: 100%;
+  border: 1px solid #ffe4cc;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #ffffff 0%, #fff8f3 60%, #fff1e6 100%);
+  box-shadow: 0 4px 6px -1px rgba(249, 115, 22, 0.05), 0 24px 60px -18px rgba(15, 23, 42, 0.18);
+}
+
+.dish-approval-group::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, #f97316, #fb923c, #fbbf24);
+}
+
+.dish-approval-group__panel {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .panel-header {
@@ -474,14 +499,8 @@ onMounted(() => {
   padding: 1.2rem 1.4rem 1.4rem;
 }
 
-.dish-approval-header {
-  display: block;
-  margin-bottom: 0;
-  padding: 1.5rem;
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.08);
+.dish-approval-title-block {
+  padding: 1.5rem 1.5rem 1rem;
 }
 
 .dish-approval-back-button {
@@ -494,22 +513,35 @@ onMounted(() => {
   font-weight: 800;
   line-height: 1.05;
   background: none !important;
-  color: #000000 !important;
-  -webkit-text-fill-color: #000000 !important;
+  background-image: none !important;
+  background-clip: border-box !important;
+  -webkit-background-clip: border-box !important;
+  color: #1f2937 !important;
+  -webkit-text-fill-color: #1f2937 !important;
+  text-shadow: none !important;
 }
 
-:deep(.dish-approval-page .dish-approval-title-block h1),
+:deep(.dish-approval-page .dish-approval-title-block h1) {
+  background: none !important;
+  background-image: none !important;
+  color: #1f2937 !important;
+  -webkit-text-fill-color: #1f2937 !important;
+  text-shadow: none !important;
+}
+
 :deep(.dish-approval-page .dish-approval-title-block p) {
   background: none !important;
-  color: #000000 !important;
-  -webkit-text-fill-color: #000000 !important;
+  background-image: none !important;
+  color: #475569 !important;
+  -webkit-text-fill-color: #475569 !important;
+  text-shadow: none !important;
 }
 
 .dish-approval-title-block p {
   margin: 0;
   background: none !important;
-  color: #000000 !important;
-  -webkit-text-fill-color: #000000 !important;
+  color: #475569 !important;
+  -webkit-text-fill-color: #475569 !important;
   font-size: 0.95rem;
 }
 
@@ -910,7 +942,7 @@ small {
     gap: 1rem;
   }
 
-  .dish-approval-header {
+  .dish-approval-title-block {
     padding: 1rem;
   }
 

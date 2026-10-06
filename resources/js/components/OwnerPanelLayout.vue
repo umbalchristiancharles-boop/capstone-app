@@ -85,7 +85,7 @@
               </div>
             </div>
           </header>
-          <div v-if="!showHeader && !showOwnerTopbar" class="panel-notification-toolbar">
+          <div v-if="!showHeader && !showOwnerTopbar && !isEmbedded" class="panel-notification-toolbar">
             <OwnerMessageMenu />
             <PanelNotificationMenu
               :notification-items="panelNotificationMenuItems"
@@ -1344,6 +1344,32 @@ async function onAvatarChange(event) {
 <style scoped>
 @import '../css/adminpanel.css';
 
+:global(.owner-panel-light-mode .owner-section-header-surface) {
+  position: relative;
+  overflow: hidden;
+  padding: 22px !important;
+  border: 1px solid #ffe4cc !important;
+  border-bottom: 1px solid #ffe4cc !important;
+  border-radius: 22px !important;
+  background: linear-gradient(135deg, #ffffff 0%, #fff8f3 60%, #fff1e6 100%) !important;
+  box-shadow: 0 4px 6px -1px rgba(249, 115, 22, 0.05), 0 24px 60px -18px rgba(15, 23, 42, 0.18) !important;
+}
+
+:global(.owner-panel-light-mode .owner-section-header-surface::before) {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #f97316, #fb923c, #fbbf24);
+  pointer-events: none;
+}
+
+:global(.owner-panel-light-mode .owner-section-header-surface > *) {
+  position: relative;
+  z-index: 1;
+}
+
 :global(.owner-panel-light-mode) {
   --color-royal-blue: #ff6b1c;
   --color-golden-yellow: #ffd66b;
@@ -2359,6 +2385,7 @@ async function onAvatarChange(event) {
 
 .admin-layout--owner-sidebar-layout .admin-main {
   margin-top: 66px !important;
+  padding-top: 0.5rem;
 }
 
 @media (max-width: 767px) {

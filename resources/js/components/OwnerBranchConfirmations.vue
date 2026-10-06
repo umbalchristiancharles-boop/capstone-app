@@ -27,7 +27,7 @@
             <span>Back to Dashboard</span>
           </button>
 
-          <div class="branch-approval-header">
+          <div class="branch-approval-header owner-section-header-surface">
             <div>
               <h1>Branch Confirmations</h1>
               <p>Approve or reject new branch requests after finance confirmation</p>
@@ -53,17 +53,24 @@
                   <h3>{{ branch.name }}</h3>
                   <span class="badge badge-pending">Pending</span>
                 </div>
-                <p class="request-meta">
-                  Code: <strong>{{ branch.code }}</strong>
-                  <span class="dot">|</span>
-                  Budget: <strong>{{ formatCurrency(branch.budget || 0) }}</strong>
-                </p>
-                <p class="request-meta">
-                  Requested by:
-                  <strong>{{ branch.requested_by?.full_name || branch.requested_by?.username || 'Unknown' }}</strong>
-                  <span class="dot">|</span>
-                  {{ formatDate(branch.created_at) }}
-                </p>
+                <div class="request-meta-grid">
+                  <div class="request-meta">
+                    <span>Branch code</span>
+                    <strong>{{ branch.code }}</strong>
+                  </div>
+                  <div class="request-meta">
+                    <span>Requested budget</span>
+                    <strong>{{ formatCurrency(branch.budget || 0) }}</strong>
+                  </div>
+                  <div class="request-meta">
+                    <span>Requested by</span>
+                    <strong>{{ branch.requested_by?.full_name || branch.requested_by?.username || 'Unknown' }}</strong>
+                  </div>
+                  <div class="request-meta">
+                    <span>Request date</span>
+                    <strong>{{ formatDate(branch.created_at) }}</strong>
+                  </div>
+                </div>
               </div>
               <div class="request-id">#{{ branch.id }}</div>
             </div>
@@ -454,37 +461,65 @@ onMounted(async () => {
 }
 
 .request-card {
-  background: var(--paper);
-  border-radius: 18px;
-  padding: 18px;
-  box-shadow: 0 16px 28px rgba(0,0,0,0.08);
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #ffffff 0%, #fff8f3 60%, #fff1e6 100%);
+  border: 1px solid #ffe4cc;
+  border-radius: 1.375rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(249, 115, 22, 0.05), 0 24px 60px -18px rgba(15, 23, 42, 0.18);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 1.15rem;
+}
+
+.request-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, #f97316, #fb923c, #fbbf24);
 }
 
 .request-card__top {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: 1rem;
 }
 
 .request-title {
   display: flex;
   align-items: center;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 0.6rem;
 }
 
 .request-title h3 {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   color: var(--ink);
 }
 
 .request-meta {
-  margin: 6px 0 0;
-  color: rgba(47,38,31,0.7);
-  font-size: 0.92rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.request-meta strong {
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.request-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem 1.5rem;
+  margin-top: 1rem;
 }
 
 .dot {
@@ -500,47 +535,50 @@ onMounted(async () => {
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: rgba(47,38,31,0.5);
+  color: #94735f;
 }
 
 .address-block .value {
   font-size: 0.95rem;
   color: var(--ink);
-  margin-top: 6px;
+  margin-top: 0.35rem;
 }
 
 .request-card__actions {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
 .btn-approve,
 .btn-reject {
-  flex: 1;
-  padding: 10px 16px;
-  border-radius: 999px;
+  flex: 0 1 200px;
+  min-height: 40px;
+  padding: 9px 16px;
+  border-radius: 10px;
   border: none;
+  font-size: 0.88rem;
   font-weight: 700;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
 }
 
 .btn-approve {
   background: var(--success);
   color: #fff;
-  box-shadow: 0 10px 18px rgba(22,163,74,0.25);
+  box-shadow: 0 4px 10px rgba(22,163,74,0.16);
 }
 
 .btn-reject {
   background: var(--danger);
   color: #fff;
-  box-shadow: 0 10px 18px rgba(220,38,38,0.2);
+  box-shadow: 0 4px 10px rgba(220,38,38,0.14);
 }
 
 .btn-approve:hover,
 .btn-reject:hover {
   transform: translateY(-1px);
+  filter: brightness(0.96);
 }
 
 .badge {
@@ -584,8 +622,13 @@ onMounted(async () => {
     flex-direction: column;
   }
 
+  .request-meta-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .btn-approve,
   .btn-reject {
+    flex: 1 1 100%;
     width: 100%;
   }
 }

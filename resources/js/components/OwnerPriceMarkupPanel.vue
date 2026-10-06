@@ -28,7 +28,7 @@
             <span>Back to Dashboard</span>
           </button>
 
-          <div class="price-markup-header">
+          <div class="price-markup-header owner-section-header-surface">
             <div class="price-markup-title-block">
               <h1>Price Markup Approvals</h1>
               <p>Review and approve price markup percentage changes for all branches</p>

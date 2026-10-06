@@ -1,27 +1,27 @@
 <template>
   <section class="branch-analytics" aria-labelledby="branch-analytics-title">
-    <header class="branch-analytics__header">
-      <div>
-        <p class="branch-analytics__eyebrow">Multi-branch performance</p>
-        <h2 id="branch-analytics-title">Branch Analytics</h2>
-      </div>
-      <label class="branch-analytics__filter">
-        <span>Period</span>
-        <select v-model="range" @change="loadAnalytics">
-          <option value="today">Today</option>
-          <option value="yesterday">Yesterday</option>
-          <option value="thisWeek">This week</option>
-          <option value="thisMonth">This month</option>
-          <option value="lastMonth">Last month</option>
-          <option value="all">All time</option>
-        </select>
-      </label>
-    </header>
+    <div class="branch-analytics__overview">
+      <header class="branch-analytics__header">
+        <div>
+          <p class="branch-analytics__eyebrow">Multi-branch performance</p>
+          <h2 id="branch-analytics-title">Branch Analytics</h2>
+        </div>
+        <label class="branch-analytics__filter">
+          <span>Period</span>
+          <select v-model="range" @change="loadAnalytics">
+            <option value="today">Today</option>
+            <option value="yesterday">Yesterday</option>
+            <option value="thisWeek">This week</option>
+            <option value="thisMonth">This month</option>
+            <option value="lastMonth">Last month</option>
+            <option value="all">All time</option>
+          </select>
+        </label>
+      </header>
 
-    <p v-if="errorMessage" class="branch-analytics__notice branch-analytics__notice--error" role="alert">{{ errorMessage }}</p>
-    <p v-else-if="loading" class="branch-analytics__notice" role="status">Loading branch analytics...</p>
-    <template v-else>
-      <div class="branch-analytics__summary" aria-label="Combined branch totals">
+      <p v-if="errorMessage" class="branch-analytics__notice branch-analytics__notice--error" role="alert">{{ errorMessage }}</p>
+      <p v-else-if="loading" class="branch-analytics__notice" role="status">Loading branch analytics...</p>
+      <div v-else class="branch-analytics__summary" aria-label="Combined branch totals">
         <article class="branch-analytics__stat branch-analytics__stat--sales">
           <span>Total sales</span><strong>{{ formatCurrency(totals.total_sales) }}</strong>
         </article>
@@ -35,7 +35,9 @@
           <span>Net profit</span><strong>{{ formatCurrency(totals.net_profit) }}</strong>
         </article>
       </div>
+    </div>
 
+    <template v-if="!loading && !errorMessage">
       <div class="branch-analytics__table-wrap">
         <table class="branch-analytics__table">
           <thead>
@@ -111,19 +113,21 @@ onMounted(loadAnalytics)
 </script>
 
 <style scoped>
-.branch-analytics { color: #26354a; }
-.branch-analytics__header { display: flex; justify-content: space-between; align-items: end; gap: 20px; margin-bottom: 22px; }
+.branch-analytics { display: grid; gap: 16px; color: #26354a; }
+.branch-analytics__overview { position: relative; overflow: hidden; padding: 22px; border: 1px solid #ffe4cc; border-radius: 22px; background: linear-gradient(135deg, #ffffff 0%, #fff8f3 60%, #fff1e6 100%); box-shadow: 0 4px 6px -1px rgba(249, 115, 22, 0.05), 0 24px 60px -18px rgba(15, 23, 42, 0.18); }
+.branch-analytics__overview::before { content: ''; position: absolute; inset: 0 0 auto; height: 3px; background: linear-gradient(90deg, #f97316, #fb923c, #fbbf24); }
+.branch-analytics__header { display: flex; justify-content: space-between; align-items: end; gap: 20px; margin-bottom: 18px; }
 .branch-analytics__eyebrow { margin: 0 0 5px; color: #a94b22; font-size: 12px; font-weight: 700; text-transform: uppercase; }
 .branch-analytics h2 { margin: 0; color: #172a43; font-size: 25px; }
 .branch-analytics__filter { display: grid; gap: 5px; min-width: 150px; color: #526176; font-size: 12px; font-weight: 700; }
-.branch-analytics__filter select { min-height: 40px; padding: 0 32px 0 11px; border: 1px solid #d7dce2; border-radius: 6px; background: #fff; color: #26354a; font: inherit; }
-.branch-analytics__summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 20px; }
-.branch-analytics__stat { display: grid; gap: 8px; padding: 17px; border: 1px solid #e4e7eb; border-top: 3px solid #527d83; border-radius: 6px; background: #fff; }
+.branch-analytics__filter select { min-height: 40px; padding: 0 32px 0 11px; border: 1px solid #e7d9cf; border-radius: 10px; background: #fff; color: #26354a; font: inherit; }
+.branch-analytics__summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.branch-analytics__stat { display: grid; gap: 8px; padding: 15px; border: 1px solid #f0e4da; border-top: 3px solid #527d83; border-radius: 12px; background: rgba(255, 255, 255, 0.88); }
 .branch-analytics__stat--sales { border-top-color: #da6b36; }
 .branch-analytics__stat--profit { border-top-color: #4c8a65; }
 .branch-analytics__stat span { color: #667386; font-size: 12px; font-weight: 600; }
 .branch-analytics__stat strong { color: #1d3048; font-size: 20px; }
-.branch-analytics__table-wrap { overflow-x: auto; border: 1px solid #e4e7eb; border-radius: 6px; background: #fff; }
+.branch-analytics__table-wrap { overflow-x: auto; border: 1px solid #e4e7eb; border-radius: 12px; background: #fff; }
 .branch-analytics__table { width: 100%; border-collapse: collapse; white-space: nowrap; }
 .branch-analytics__table th, .branch-analytics__table td { padding: 13px 14px; border-bottom: 1px solid #edf0f2; text-align: right; font-size: 13px; }
 .branch-analytics__table thead th { background: #f5f7f8; color: #667386; font-size: 11px; font-weight: 700; text-transform: uppercase; }
@@ -138,6 +142,7 @@ onMounted(loadAnalytics)
 .branch-analytics__empty, .branch-analytics__notice { padding: 20px; color: #667386; text-align: center; }
 .branch-analytics__notice--error { color: #a33125; }
 @media (max-width: 760px) {
+  .branch-analytics__overview { padding: 18px; }
   .branch-analytics__header { align-items: start; }
   .branch-analytics__summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

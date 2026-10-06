@@ -10,7 +10,7 @@
     </button>
 
     <!-- Header -->
-    <div class="staff-header">
+    <div class="staff-header owner-section-header-surface">
       <h1 class="owner-staff-title">Staff Management</h1>
       <div class="header-actions">
         <input
@@ -659,6 +659,10 @@ function formatDate(dateString) {
   z-index: 1;
 }
 
+.owner-section-embedded .staff-header {
+  margin-bottom: 0.9rem;
+}
+
 .dark-mode .staff-header,
 .staff-management-page.dark-mode .staff-header {
   background: rgba(15, 23, 42, 0.9) !important;
@@ -933,6 +937,10 @@ function formatDate(dateString) {
   box-shadow: 0 20px 48px rgba(15, 23, 42, 0.06);
 }
 
+.owner-section-embedded .summary-card {
+  margin-bottom: 0.9rem;
+}
+
 .summary-card h3 {
   margin: 0;
   color: #1f2937;
@@ -943,6 +951,10 @@ function formatDate(dateString) {
   margin-bottom: 1.5rem;
 }
 
+.owner-section-embedded .branch-group {
+  margin-bottom: 0.9rem;
+}
+
 .branch-header {
   display: flex;
   align-items: center;
@@ -951,6 +963,10 @@ function formatDate(dateString) {
   padding: 1rem 1.25rem;
   margin-bottom: 0.9rem;
   border-left: 5px solid #ff6a3d;
+}
+
+.owner-section-embedded .branch-header {
+  margin-bottom: 0.5rem;
 }
 
 .branch-title {

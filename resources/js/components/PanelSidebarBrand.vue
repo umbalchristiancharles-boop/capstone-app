@@ -11,19 +11,15 @@ const logoSrc = new URL('../assets/chikinlogo.png', import.meta.url).href
 <style scoped>
 .panel-sidebar-brand {
   display: flex;
-  flex: 0 0 74px;
-  align-items: center;
-  justify-content: center;
+  flex: 0 0 58px;
+  align-items: flex-start;
+  justify-content: flex-start;
   width: 100%;
   min-width: 0;
-  height: 74px;
-  margin-bottom: 0.5rem;
-  padding: 0.75rem;
+  height: 58px;
+  margin-bottom: 0.2rem;
+  padding: 0;
   box-sizing: border-box;
-  border: 1px solid #e8c8ad;
-  border-radius: 0.875rem;
-  background: linear-gradient(145deg, #fffaf5, #f7ece2);
-  box-shadow: 0 6px 14px rgba(138, 79, 47, 0.1);
 }
 
 .panel-sidebar-brand__logo {
