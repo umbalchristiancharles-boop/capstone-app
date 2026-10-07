@@ -393,7 +393,7 @@
         <Transition name="admin-section" mode="out-in" appear>
         <aside v-if="activeSection === 'dashboard' || activeSection === 'staff' || activeSection === 'landing-images'" class="admin-side" :key="activeSection">
           <!-- Top products -->
-          <section v-if="activeSection === 'dashboard'" class="panel-block dashboard-white-panel">
+          <section v-if="activeSection === 'dashboard'" class="panel-block dashboard-white-panel dashboard-top-products-panel">
             <div class="panel-header">
               <h2>Top Products</h2>
             </div>
@@ -417,7 +417,7 @@
           </section>
 
           <!-- Low stock -->
-          <section v-if="activeSection === 'dashboard'" class="panel-block dashboard-white-panel">
+          <section v-if="activeSection === 'dashboard'" class="panel-block dashboard-white-panel dashboard-low-stock-panel">
             <div class="panel-header">
               <h2>Low Stock Items</h2>
             </div>
@@ -2900,6 +2900,84 @@ h1, h2 {
   .admin-panel-shell .admin-feature-header {
     padding: 16px !important;
     border-radius: 18px !important;
+  }
+}
+
+/* Keep dashboard surfaces visually grouped instead of stacking the default
+   header, KPI, and panel margins on top of one another. */
+.admin-panel-shell .admin-feature-header {
+  margin-bottom: 0.5rem;
+}
+
+.admin-panel-shell .admin-main > .admin-section-view {
+  margin-top: 0;
+}
+
+.admin-panel-shell .admin-main > .admin-section-view > .range-tabs {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.admin-panel-shell .admin-main > .admin-section-view > .overview-grid {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.admin-panel-shell .admin-main > .panel-block,
+.admin-panel-shell .admin-side > .panel-block {
+  margin-bottom: 0.5rem;
+}
+
+.admin-panel-shell .admin-side {
+  gap: 0.5rem;
+}
+
+.admin-panel-shell .admin-side > .dashboard-top-products-panel,
+.admin-panel-shell .admin-side > .dashboard-low-stock-panel {
+  padding: 12px 14px 14px !important;
+}
+
+.admin-panel-shell .admin-side > .dashboard-top-products-panel > .panel-header,
+.admin-panel-shell .admin-side > .dashboard-low-stock-panel > .panel-header {
+  margin-bottom: 8px !important;
+  padding: 8px 10px !important;
+}
+
+.admin-panel-shell .admin-side > .dashboard-top-products-panel > .panel-body,
+.admin-panel-shell .admin-side > .dashboard-low-stock-panel > .panel-body {
+  padding: 4px 10px 8px !important;
+}
+
+.admin-panel-shell .admin-side > .dashboard-top-products-panel .side-item,
+.admin-panel-shell .admin-side > .dashboard-low-stock-panel .side-item {
+  min-height: 32px;
+  padding: 8px 0 !important;
+}
+
+.admin-panel-shell .admin-side > .dashboard-low-stock-panel .side-item--alert .side-value {
+  color: #dc2626 !important;
+  font-weight: 700;
+}
+
+@media (min-width: 768px) {
+  .admin-panel-shell .admin-layout.admin-layout--dashboard {
+    align-content: start !important;
+    grid-template-rows: 66px max-content max-content !important;
+  }
+
+  .admin-panel-shell .admin-layout.admin-layout--dashboard > .admin-main,
+  .admin-panel-shell .admin-layout.admin-layout--dashboard > .admin-side {
+    align-self: start !important;
+  }
+
+  .admin-panel-shell .admin-layout.admin-layout--dashboard > .admin-side {
+    margin-top: -1rem !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .admin-panel-shell .admin-layout.admin-layout--dashboard > .admin-side {
+    margin-top: 0 !important;
   }
 }
 </style>
