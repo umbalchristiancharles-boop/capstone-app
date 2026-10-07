@@ -827,6 +827,16 @@
   transition: width 260ms cubic-bezier(0.22, 1, 0.36, 1), padding 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease;
 }
 
+:global(.manager-hr-sidebar > .panel-sidebar-brand) {
+  flex-basis: 48px;
+  height: 48px;
+  margin-bottom: 0;
+}
+
+:global(.manager-hr-sidebar > .panel-sidebar-brand + .manager-hr-sidebar__nav) {
+  margin-top: -0.15rem;
+}
+
 :global(.manager-hr-sidebar__brand) {
   display: flex;
   align-items: center;
@@ -1614,4 +1624,194 @@
   :global(.admin-page:has(.manager-hr-page) .owner-panel-topbar) {
     left: 0 !important;
   }
+}
+
+/* Match the Finance Manager shell: fixed rail, fixed header, and a
+   separately scrolling dashboard canvas. */
+:global(.admin-page:has(.manager-hr-page)),
+:global(.admin-layout:has(.manager-hr-page)),
+:global(.admin-layout:has(.manager-hr-page) > .admin-main) {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+:global(.admin-layout:has(.manager-hr-page) > .admin-main) {
+  height: calc(100vh - 66px);
+  margin-top: 66px !important;
+  overflow: hidden;
+}
+
+:global(.admin-layout:has(.manager-hr-page)) {
+  display: block !important;
+  position: relative;
+  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+}
+
+:global(.admin-layout:has(.manager-hr-page) > .admin-main) {
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+}
+
+:global(.admin-layout:has(.manager-hr-page)) {
+  --manager-hr-sidebar-width: 156px;
+}
+
+:global(.admin-main > .manager-hr-page) {
+  --manager-hr-sidebar-width: 156px;
+  display: block !important;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  min-height: 100%;
+  padding: 1.2rem 1.3rem 2rem calc(var(--manager-hr-sidebar-width) + 1.3rem);
+  box-sizing: border-box;
+  overflow-y: auto;
+  overflow-x: hidden;
+  transform: none !important;
+  animation: none !important;
+}
+
+:global(.admin-main > .manager-hr-page > .manager-hr-sidebar) {
+  position: fixed;
+  top: 0;
+  right: auto;
+  bottom: 0;
+  left: 0;
+  z-index: 20;
+  display: flex;
+  width: var(--manager-hr-sidebar-width);
+  min-width: var(--manager-hr-sidebar-width);
+  min-height: 100vh;
+  padding: 1.5rem 1rem 1rem;
+  box-sizing: border-box;
+  border-right: 1px solid rgba(138, 113, 95, 0.18);
+  background: rgba(255, 255, 255, 0.42);
+  overflow-y: auto;
+}
+
+:global(.admin-main > .manager-hr-page.manager-hr-sidebar-collapsed) {
+  --manager-hr-sidebar-width: 0px;
+  padding-left: 1.3rem;
+}
+
+:global(.admin-main > .manager-hr-page.manager-hr-sidebar-collapsed > .manager-hr-sidebar) {
+  width: 0;
+  min-width: 0;
+  padding-right: 0;
+  padding-left: 0;
+  border-right-color: transparent;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+:global(.manager-hr-section-view),
+:global(.manager-hr-page .manager-hr-main-wrapper),
+:global(.manager-hr-page .hr-confirmation-panel),
+:global(.manager-hr-page .hr-attendance-panel),
+:global(.manager-hr-page .hr-payroll-panel) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+:global(.manager-hr-page .hr-stats-grid) {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+:global(.admin-page:has(.manager-hr-page) .owner-panel-topbar) {
+  grid-column: 1 / -1 !important;
+  grid-row: 1 !important;
+  position: fixed !important;
+  top: 0 !important;
+  right: 0;
+  left: var(--manager-hr-sidebar-width, 156px) !important;
+  width: calc(100% - var(--manager-hr-sidebar-width, 156px)) !important;
+  margin: 0 !important;
+  min-height: 66px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 900px) and (min-width: 768px) {
+  :global(.manager-hr-page) {
+    padding-right: 0.95rem;
+    padding-left: calc(var(--manager-hr-sidebar-width) + 0.95rem);
+  }
+
+  :global(.manager-hr-page .hr-stats-grid) {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+
+  :global(.manager-hr-hero__actions) {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 767px) {
+  :global(.admin-page:has(.manager-hr-page) .owner-panel-topbar) {
+    left: 0 !important;
+  }
+
+  :global(.admin-main > .manager-hr-page) {
+    min-height: 100%;
+    padding: 1rem 0.85rem;
+  }
+
+  :global(.admin-main > .manager-hr-page > .manager-hr-sidebar) {
+    position: static;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    margin-bottom: 1rem;
+    padding: 0.85rem;
+    border: 1px solid #dbbca066;
+    border-radius: 14px;
+  }
+
+  :global(.manager-hr-sidebar__nav) {
+    flex-direction: row;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  :global(.manager-hr-sidebar__item) {
+    width: auto;
+    min-width: max-content;
+  }
+
+  :global(.manager-hr-page .hr-stats-grid) {
+    grid-template-columns: 1fr;
+  }
+
+  :global(.manager-hr-hero__actions) {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  :global(.manager-hr-hero__actions .panel-action--primary) {
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+
+  :global(.admin-layout:has(.manager-hr-page) > .admin-main) {
+    height: calc(100vh - 66px);
+    margin-top: 66px !important;
+  }
+
+  :global(.admin-page:has(.manager-hr-page) .owner-panel-topbar) {
+    left: 0 !important;
+    width: 100% !important;
+  }
+}
+
+:global(.admin-layout:has(.manager-hr-sidebar-collapsed) > .owner-panel-topbar) {
+  left: 0 !important;
+  width: 100% !important;
 }

@@ -1865,6 +1865,17 @@ function formatDate(dateString) {
 </script>
 
 <style scoped>
+/* Keep the admin navigation close to its brand, matching the reference
+   manager sidebars without changing the shared brand component. */
+.admin-panel-shell .admin-sidebar {
+  gap: 0.75rem;
+}
+
+.admin-panel-shell .admin-sidebar > .panel-sidebar-brand {
+  flex-basis: 40px;
+  height: 40px;
+  margin-bottom: 0;
+}
 .product-request-list {
   display: grid;
   gap: 8px;
@@ -2854,6 +2865,41 @@ h1, h2 {
 
   .admin-panel-shell :deep(.panel-sidebar-resize-handle) {
     display: none !important;
+  }
+}
+
+/* Give the admin feature heading the same contained surface as the Owner
+   Panel hero while keeping the existing dashboard content unchanged. */
+.admin-panel-shell .admin-feature-header {
+  position: relative;
+  overflow: hidden;
+  margin: 0 0 1rem;
+  padding: 22px !important;
+  border: 1px solid #ffe4cc !important;
+  border-radius: 22px !important;
+  background: linear-gradient(135deg, #ffffff 0%, #fff8f3 60%, #fff1e6 100%) !important;
+  box-shadow: 0 4px 6px -1px rgba(249, 115, 22, 0.05), 0 24px 60px -18px rgba(15, 23, 42, 0.18) !important;
+}
+
+.admin-panel-shell .admin-feature-header::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #f97316, #fb923c, #fbbf24);
+  pointer-events: none;
+}
+
+.admin-panel-shell .admin-feature-header > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 640px) {
+  .admin-panel-shell .admin-feature-header {
+    padding: 16px !important;
+    border-radius: 18px !important;
   }
 }
 </style>
