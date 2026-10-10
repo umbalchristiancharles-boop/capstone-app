@@ -100,7 +100,7 @@
         </div>
 
         <div v-else>
-          <ProductList :fetchUrl="fetchUrl" :compact="true" :showPublishControls="(staffProfile.role || '').toUpperCase() === 'ADMIN'" ref="productListRef" @open-add="openAddProduct" @edit="handleEdit" @delete="deleteProduct" @toggle-publish="handleTogglePublish" @request-procurement="requestProcurement" @report-expired="openExpiredReportModal" />
+          <ProductList :fetchUrl="fetchUrl" :compact="true" :showPublishControls="(staffProfile.role || '').toUpperCase() === 'ADMIN'" ref="productListRef" @toggle-publish="handleTogglePublish" @request-procurement="requestProcurement" @bulk-request-procurement="requestBulkProcurement" @report-expired="openExpiredReportModal" />
         </div>
       </div>
 
@@ -250,29 +250,6 @@
     </template>
   </OwnerPanelLayout>
   </div>
-
-  <!-- PRODUCT IMAGE MODAL -->
-  <transition name="fade">
-    <div v-if="showAddModal" class="info-backdrop" @click.self="showAddModal = false">
-      <div class="info-modal" style="max-width: 600px;">
-        <h3>{{ newProduct.id ? 'Edit Product' : 'Add Product' }}</h3>
-        <p class="info-sub">Choose the image customers will see on the landing page.</p>
-        <div v-if="formError" class="info-error">{{ formError }}</div>
-        <div class="info-grid">
-          <div class="info-row"><span class="info-label">Name</span><input v-model="newProduct.name" class="info-input" type="text" required /></div>
-          <div class="info-row"><span class="info-label">Price</span><input v-model="newProduct.price" class="info-input" type="number" min="0" step="0.01" required /></div>
-          <div class="info-row"><span class="info-label">Stock</span><input v-model="newProduct.stock" class="info-input" type="number" min="0" required /></div>
-          <div class="info-row"><span class="info-label">SKU</span><input v-model="newProduct.sku" class="info-input" type="text" /></div>
-          <div class="info-row"><span class="info-label">Landing image</span><input class="info-input" type="file" accept="image/jpeg,image/png,image/gif,image/webp" @change="onProductImageSelect" /></div>
-          <div v-if="newProduct.image_url" class="info-row"><span class="info-label">Current image</span><img :src="newProduct.image_url" :alt="newProduct.name" style="width: 96px; height: 96px; object-fit: contain;" /></div>
-        </div>
-        <div class="info-actions">
-          <button class="btn-outline" type="button" @click="showAddModal = false">Cancel</button>
-          <button class="btn-primary" type="button" @click="submitAddProduct">Save product</button>
-        </div>
-      </div>
-    </div>
-  </transition>
 
   <!-- INFO MODAL -->
   <transition name="fade">
@@ -448,6 +425,7 @@ import axios from 'axios';
 import OwnerPanelLayout from '../OwnerPanelLayout.vue'
 import ProductList from './ProductList.vue'
 import { showToast } from '../toastStore'
+import { swalPrompt } from '../../sweet-alerts'
 
 const router = useRouter();
 const ownerLayout = ref(null);
@@ -620,16 +598,12 @@ const endpoints = computed(() => {
   if (props.isSuperAdmin) {
     return {
       products: '/api/superadmin/logistics/products',
-      store: '/api/superadmin/logistics/products',
-      update: (id) => `/api/superadmin/logistics/products/${id}`,
-      destroy: (id) => `/api/superadmin/logistics/products/${id}`
+      update: (id) => `/api/superadmin/logistics/products/${id}`
     }
   }
   return {
     products: '/api/staff/inventory/products',
-    store: '/api/staff/inventory/products',
-    update: (id) => `/api/staff/inventory/products/${id}`,
-    destroy: (id) => `/api/staff/inventory/products/${id}`
+    update: (id) => `/api/staff/inventory/products/${id}`
   }
 })
 
@@ -769,15 +743,37 @@ function cancelProcRequest() {
 
 async function requestProcurement(product) {
   if (!product) return
-  const ok = window.swalConfirm ? await window.swalConfirm(`Create procurement request for ${product.name}?\n\n(Minimum 10 units will be requested)`) : true
-  if (!ok) return
+  const minStock = Number(product.min_stock) > 0 ? Number(product.min_stock) : 10
+  const currentStock = Number(product.real_stock ?? product.stock ?? 0) || 0
+  const suggestedQuantity = Math.max(Math.ceil(minStock - currentStock), 10)
+  const quantityInput = await swalPrompt(
+    `How many units of ${product.name} would you like to order?`,
+    'Request Procurement',
+    'number',
+    {
+      inputValue: suggestedQuantity,
+      inputAttributes: {
+        min: 1,
+        step: 1
+      },
+      inputValidator: value => {
+        if (!Number.isInteger(Number(value)) || Number(value) < 1) {
+          return 'Please enter a whole number greater than 0.'
+        }
+        return undefined
+      }
+    }
+  )
+  if (quantityInput === null) return
+
+  const quantity = Number(quantityInput)
+  if (!Number.isInteger(quantity) || quantity < 1) {
+    showToast('Please enter a whole number greater than 0.', 'error')
+    return
+  }
+
   requesting.value = { ...requesting.value, [product.id]: true }
   try {
-    // Ensure minimum 10 units for quick procurement requests
-    const minStock = Number(product.min_stock) > 0 ? Number(product.min_stock) : 10
-    const currentStock = Number(product.real_stock ?? product.stock ?? 0) || 0
-    const diff = Math.ceil(minStock - currentStock)
-    const quantity = Math.max(diff, 10)  // Ensure at least 10 units
     await ensureCsrf()
     const res = await axios.post('/api/procurement-requests', { product_id: product.id, quantity: quantity }, { withCredentials: true })
     const created = res.data?.data ?? res.data ?? null
@@ -820,10 +816,67 @@ async function requestProcurement(product) {
         showToast(errorMsg, 'error')
       }
     }
+
   } finally {
     requesting.value = { ...requesting.value, [product.id]: false }
     try { if (window.hideRouteOverlay) window.hideRouteOverlay() } catch (e) {}
     try { if (window.pageBlur && typeof window.pageBlur.hide === 'function') window.pageBlur.hide() } catch (e) {}
+  }
+}
+
+async function requestBulkProcurement(products) {
+  if (!Array.isArray(products) || products.length === 0) return
+
+  const items = []
+  for (const product of products) {
+    const minStock = Number(product.min_stock) > 0 ? Number(product.min_stock) : 10
+    const currentStock = Number(product.real_stock ?? product.stock ?? 0) || 0
+    const suggestedQuantity = Math.max(Math.ceil(minStock - currentStock), 10)
+    const quantityInput = await swalPrompt(
+      `How many units of ${product.name} would you like to order?`,
+      'Request Procurement',
+      'number',
+      {
+        inputValue: suggestedQuantity,
+        inputAttributes: {
+          min: 1,
+          step: 1
+        },
+        inputValidator: value => {
+          if (!Number.isInteger(Number(value)) || Number(value) < 1) {
+            return 'Please enter a whole number greater than 0.'
+          }
+          return undefined
+        }
+      }
+    )
+    if (quantityInput === null) return
+
+    const quantity = Number(quantityInput)
+    if (!Number.isInteger(quantity) || quantity < 1) {
+      showToast(`Invalid quantity for ${product.name}.`, 'error')
+      return
+    }
+    items.push({ product_id: product.id, quantity })
+  }
+
+  const ok = window.swalConfirm
+    ? await window.swalConfirm(`Create supplier-specific bulk orders for ${items.length} products? Products from the same supplier will be grouped together.`)
+    : true
+  if (!ok) return
+
+  try {
+    await ensureCsrf()
+    const res = await axios.post('/api/procurement-requests/bulk', { items }, { withCredentials: true })
+    const created = res.data?.data || []
+    procurementRequests.value = [...created, ...procurementRequests.value]
+    productListRef.value?.clearSelection?.()
+    const groupCount = Number(res.data?.group_count || 1)
+    showToast(`✓ ${groupCount} supplier-specific bulk order${groupCount === 1 ? '' : 's'} created for ${items.length} products`, 'success')
+    await refreshList()
+  } catch (e) {
+    const message = e.response?.data?.message || e.response?.data?.error || 'Failed to create bulk order'
+    showToast(message, 'error')
   }
 }
 
@@ -901,12 +954,9 @@ function cancelProductRequest() {
 // Modals / forms
 const showCountModal = ref(false);
 const showAdjustModal = ref(false);
-const showAddModal = ref(false);
 const activeProduct = ref(null);
 const countValue = ref(0);
 const adjust = ref({ delta: 0, note: '' });
-const newProduct = ref({ name: '', price: 0, stock: 0, sku: '' });
-const previewSku = ref('');
 
 // Expired product report modal state
 const showExpiredReportModal = ref(false);
@@ -1259,20 +1309,6 @@ async function fetchInventory() {
   }
 }
 
-function makePreviewSku(name) {
-  let base = (name || '').toUpperCase().replace(/[^A-Z0-9]+/g, '').substring(0, 6)
-  if (!base) base = 'PRD'
-  const random = Math.random().toString(36).replace(/[^a-z]+/g, '').substring(0,4).toUpperCase() || (Math.random()*1e6|0).toString(36).substring(0,4).toUpperCase()
-  return `${base}-${random}`
-}
-
-function regeneratePreview() {
-  previewSku.value = makePreviewSku(newProduct.value.name || '')
-}
-
-const displaySku = computed(() => {
-  return newProduct.value.sku && newProduct.value.sku.trim() !== '' ? newProduct.value.sku : (previewSku.value || makePreviewSku(newProduct.value.name || ''))
-})
 const formError = ref('');
 const formSuccess = ref('');
 const isLoading = ref(false)
@@ -1491,14 +1527,6 @@ function openAdjustModal(prod) {
   showAdjustModal.value = true;
 }
 
-function handleEdit(prod) {
-  // open the Add/Edit modal prefilled for editing
-  newProduct.value = { id: prod.id, name: prod.name, price: prod.price, stock: prod.stock, sku: prod.sku, image_url: prod.image_url, image: null }
-  formError.value = '';
-  formSuccess.value = '';
-  showAddModal.value = true;
-}
-
 async function submitAdjust() {
   if (!activeProduct.value) return;
   const okCsrf = await ensureCsrf()
@@ -1515,63 +1543,7 @@ async function submitAdjust() {
   }
 }
 
-function openAddProduct() {
-  newProduct.value = { name: '', price: 0, stock: 0, sku: '', image_url: '', image: null };
-  formError.value = '';
-  formSuccess.value = '';
-  showAddModal.value = true;
-  // prepare preview SKU
-  previewSku.value = makePreviewSku('')
-}
-
 // procurement confirmation UI removed from staff panel
-
-async function submitAddProduct() {
-  const okCsrf = await ensureCsrf()
-  if (!okCsrf) { formError.value = 'Unable to refresh CSRF token. Please reload or login.'; return }
-  try {
-    // If user didn't provide SKU, send the preview so server and UI match
-    const payload = { ...newProduct.value };
-    if (!payload.sku || payload.sku.trim() === '') payload.sku = previewSku.value || makePreviewSku(payload.name || '')
-    const formData = new FormData()
-    Object.entries(payload).forEach(([key, value]) => {
-      if (!['id', 'image_url', 'image'].includes(key) && value !== null && value !== undefined) formData.append(key, value)
-    })
-    if (payload.image) formData.append('image', payload.image)
-    let res
-    if (payload.id) {
-      // update existing product
-      formData.append('_method', 'PUT')
-      res = await axios.post(endpoints.value.update(payload.id), formData, { withCredentials: true, headers: { 'Content-Type': 'multipart/form-data' } })
-    } else {
-      res = await axios.post(endpoints.value.store, formData, { withCredentials: true, headers: { 'Content-Type': 'multipart/form-data' } });
-    }
-    if (res.data && (res.data.product || res.data.ok)) {
-      // refresh the list so ProductList reflects the change
-      refreshList()
-      formSuccess.value = payload.id ? 'Product updated.' : 'Product added.';
-      showAddModal.value = false;
-    }
-  } catch (e) {
-    formError.value = (e.response && e.response.data && e.response.data.message) || 'Failed to create product.';
-  }
-}
-
-function onProductImageSelect(event) {
-  newProduct.value.image = event?.target?.files?.[0] || null
-}
-
-async function deleteProduct(prod) {
-  if (!(await window.swalConfirm('Delete product "' + prod.name + '"? This cannot be undone.'))) return;
-  const okCsrf = await ensureCsrf()
-  if (!okCsrf) { alert('Unable to refresh CSRF token. Please reload or login.'); return }
-  try {
-    await axios.delete(endpoints.value.destroy(prod.id), { withCredentials: true });
-    refreshList()
-  } catch (e) {
-    alert((e.response && e.response.data && e.response.data.message) || 'Failed to delete product');
-  }
-}
 
 async function handleTogglePublish(payload) {
   if (!payload || !payload.id) return

@@ -305,6 +305,7 @@ Route::middleware('web')->group(function () {
     // Using 'auth:sanctum,web' middleware to support both Bearer token (Sanctum) AND session (web) auth
     // ==========================================
 Route::middleware('auth:sanctum,web')->group(function () {
+    Route::post('procurement-requests/bulk', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'storeBulk']);
     Route::apiResource('procurement-requests', \App\Http\Controllers\Api\ProcurementRequestController::class)->except(['show']);
     Route::post('procurement-requests/manual', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'storeManual']);
     Route::get('procurement-requests/requested-products', [\App\Http\Controllers\Api\ProcurementRequestController::class, 'requestedProducts']);
@@ -439,6 +440,8 @@ Route::prefix('manager')->middleware('auth:sanctum,web')->group(function () {
         Route::get('/finance/budget/all', [\App\Http\Controllers\Manager\BudgetRequestController::class, 'getAllRequests']);
         Route::put('/finance/budget/{id}/approve', [\App\Http\Controllers\Manager\BudgetRequestController::class, 'approveRequest']);
         Route::put('/finance/budget/{id}/reject', [\App\Http\Controllers\Manager\BudgetRequestController::class, 'rejectRequest']);
+        Route::put('/finance/budget/group/{group}/approve', [\App\Http\Controllers\Manager\BudgetRequestController::class, 'approveGroup']);
+        Route::put('/finance/budget/group/{group}/reject', [\App\Http\Controllers\Manager\BudgetRequestController::class, 'rejectGroup']);
         // Mark budget as handed to procurement (finance confirms physical handover)
         Route::put('/finance/budget/{id}/given', [\App\Http\Controllers\Manager\BudgetRequestController::class, 'markGiven']);
 

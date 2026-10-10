@@ -566,6 +566,9 @@ class ManagerFinanceController extends Controller
         $attendance->time_in = $timeIn;
         $attendance->status = $this->determineStatus($timeIn);
         $attendance->face_image = $faceImage; // Save the captured face image
+        $attendance->confirmed = false;
+        $attendance->confirmed_by = null;
+        $attendance->confirmed_at = null;
         $attendance->save();
         app(PayrollController::class)->syncAttendance($attendance);
 

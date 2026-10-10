@@ -16,6 +16,7 @@ use App\Models\PriceMarkupPercentage;
 use App\Services\LogisticsService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class ProcurementRequestController extends Controller
 {
@@ -411,6 +412,96 @@ class ProcurementRequestController extends Controller
      * Accepts optional receipt and product image uploads and can optionally create a BudgetRequest
      * to ask Finance for funds.
      */
+    public function storeBulk(Request $request)
+    {
+        $user = $request->user();
+        $role = strtoupper($user->role ?? '');
+        $dept = strtoupper($user->department ?? '');
+        $hasAccess = $role === 'SUPER_ADMIN'
+            || ($role === 'STAFF' && $dept === 'INVENTORY')
+            || ($role === 'MANAGER' && $dept === 'LOGISTICS')
+            || in_array($role, ['LOGISTICS_MANAGER', 'MANAGER_LOGISTICS'], true);
+
+        if (!$hasAccess) {
+            return response()->json(['error' => 'Unauthorized role'], 401);
+        }
+
+        $validated = $request->validate([
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|integer|distinct|exists:products,id',
+            'items.*.quantity' => 'required|integer|min:1',
+        ]);
+
+        $branchId = $user->branch_id ?: 1;
+        $products = Product::whereIn('id', collect($validated['items'])->pluck('product_id'))
+            ->where('branch_id', $branchId)
+            ->get()
+            ->keyBy('id');
+
+        if ($products->count() !== count($validated['items'])) {
+            return response()->json(['error' => 'One or more products are not in your branch.'], 403);
+        }
+
+        try {
+            $created = DB::transaction(function () use ($validated, $products, $user, $branchId) {
+                $requests = [];
+                $orderGroupIds = [];
+                foreach ($validated['items'] as $item) {
+                    $product = $products->get((int) $item['product_id']);
+                    $existing = ProcurementRequest::where('product_id', $product->id)
+                        ->where('branch_id', $branchId)
+                        ->whereNotIn('status', ['completed', 'cancelled'])
+                        ->exists();
+
+                    if ($existing) {
+                        throw new \DomainException('An active procurement request already exists for "' . $product->name . '".');
+                    }
+
+                    // A bulk selection may contain products from different suppliers.
+                    // Keep one order group per supplier so each supplier receives one order.
+                    $supplierGroupKey = $product->supplier_id
+                        ? 'supplier:' . (int) $product->supplier_id
+                        : 'unassigned:' . (int) $product->id;
+                    $orderGroupIds[$supplierGroupKey] ??= (string) Str::uuid();
+
+                    $requests[] = ProcurementRequest::create([
+                        'product_id' => $product->id,
+                        'order_group_id' => $orderGroupIds[$supplierGroupKey],
+                        'supplier_id' => $product->supplier_id,
+                        'logistics_user_id' => $user->id,
+                        'quantity' => (int) $item['quantity'],
+                        'price' => $product->price,
+                        'total_amount' => (float) $product->price * (int) $item['quantity'],
+                        'status' => 'pending',
+                        'budget_approved' => false,
+                        'branch_id' => $branchId,
+                    ]);
+
+                    $product->update(['logistics_request_available' => true, 'has_been_ordered' => true]);
+                }
+
+                return [
+                    'requests' => $requests,
+                    'group_count' => count($orderGroupIds),
+                ];
+            });
+        } catch (\DomainException $e) {
+            return response()->json(['error' => $e->getMessage()], 409);
+        } catch (\Throwable $e) {
+            Log::error('Bulk procurement request failed', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to create bulk procurement request.'], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $created['group_count'] === 1
+                ? 'Bulk procurement request created successfully.'
+                : $created['group_count'] . ' supplier-specific bulk procurement orders created successfully.',
+            'data' => $created['requests'],
+            'group_count' => $created['group_count'],
+        ], 201);
+    }
+
     public function storeManual(Request $request)
     {
         $user = $request->user();
@@ -648,7 +739,7 @@ public function requestedProducts(Request $request)
             $requests = ProcurementRequest::with(['product:id,name,price,sku,branch_id,supplier_id,logistics_request_available,status'])
                 ->where('branch_id', $branchId)
                     ->whereIn('status', ['pending', 'budget_pending', 'pending_order_to_supplier', 'delivery_pending', 'ongoing_delivery'])
-                ->get(['id', 'product_id', 'branch_id', 'status', 'budget_approved', 'supplier_confirmed', 'receipt_confirmed', 'receipt_path']);
+                ->get(['id', 'order_group_id', 'product_id', 'branch_id', 'status', 'budget_approved', 'supplier_confirmed', 'receipt_confirmed', 'receipt_path']);
             Log::info('Requests fetched', ['count' => $requests->count()]);
 
             if ($requests->isEmpty()) {
@@ -713,6 +804,7 @@ public function requestedProducts(Request $request)
             $products = $products->map(function ($p) use ($requestsByProduct, $productRequestStatuses, $broadcastedProcReqIds, $confirmedSupplierProcReqIds, $unconfirmedSupplierProcReqIds, $existingOrders, $markupPercentage) {
                 $req = $requestsByProduct->get($p->id);
                 $p->procurement_request_id = $req ? $req->id : null;
+                $p->order_group_id = $req ? $req->order_group_id : null;
                 $p->product_request_status = $productRequestStatuses->get($p->id);
                 $p->request_origin = $p->product_request_status
                     ? 'admin_product_request'
@@ -1004,6 +1096,15 @@ public function requestedProducts(Request $request)
                         }
 
                     $procRequest->update($updateData);
+                        $finalProduct->update([
+                            'supplier_id' => $selectedSupplierId,
+                            'supplier_name' => $selectedSupplierUser?->full_name
+                                ?? $selectedSupplierUser?->username
+                                ?? $finalProduct->supplier_name,
+                            'is_published' => true,
+                            'is_active' => true,
+                            'logistics_request_available' => true,
+                        ]);
 
                     // Use price from selected product (either supplier's or original)
                     $budgetAmount = $selectedProduct->price * max(1, $procRequest->quantity);
@@ -1017,7 +1118,9 @@ public function requestedProducts(Request $request)
                         BudgetRequest::create([
                             'branch_id' => $procRequest->branch_id,
                             'user_id' => $user->id, // procurement manager as requester
-                            'purpose' => "Procurement Request #{$procRequest->id}: {$selectedProduct->name} x{$procRequest->quantity}",
+                            'purpose' => ($procRequest->order_group_id
+                                ? "Bulk Order " . strtoupper(substr($procRequest->order_group_id, 0, 8)) . " - "
+                                : '') . "Procurement Request #{$procRequest->id}: {$selectedProduct->name} x{$procRequest->quantity}",
                             'requested_amount' => $budgetAmount,
                             'status' => 'Pending',
                             'date_requested' => now()->toDateString(),
@@ -1583,4 +1686,3 @@ public function requestedProducts(Request $request)
         ]);
     }
 }
-

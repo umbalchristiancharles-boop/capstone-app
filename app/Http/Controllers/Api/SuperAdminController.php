@@ -505,14 +505,13 @@ class SuperAdminController extends Controller
             if (!$procurementRequest && $isOwnerDirectProduct) {
                 $procurementRequest = \App\Models\ProcurementRequest::create([
                     'logistics_user_id' => $user->id,
-                    'supplier_id' => $order->supplier_id,
                     'product_id' => $order->product_id,
                     'quantity' => $quantity,
                     'price' => $price,
                     'total_amount' => $price * $quantity,
                     'status' => 'pending',
                     'budget_approved' => false,
-                    'supplier_confirmed' => true,
+                    'supplier_confirmed' => false,
                     'branch_id' => $order->branch_id,
                 ]);
                 $order->procurement_request_id = $procurementRequest->id;
@@ -527,15 +526,12 @@ class SuperAdminController extends Controller
 
             if ($procurementRequest) {
                 $procurementRequest->update([
-                    'supplier_id' => $order->supplier_id,
-                    'supplier_confirmed' => true,
+                    // Admin confirmation makes the quote selectable; only
+                    // Procurement may assign the supplier.
+                    'supplier_confirmed' => false,
                     'price' => $price,
                     'total_amount' => $price * $quantity,
                 ]);
-            }
-
-            if ($productRequest && $productRequest->status === 'pending_supplier') {
-                $productRequest->update(['status' => 'pending_logistics']);
             }
 
             return $procurementRequest;
@@ -1031,6 +1027,7 @@ class SuperAdminController extends Controller
                     'name' => $branch->name,
                     'address' => $branch->address,
                     'budget' => isset($branch->budget) ? (int) $branch->budget : 0,
+                    'initial_budget' => isset($branch->initial_budget) ? (int) $branch->initial_budget : (int) ($branch->budget ?? 0),
                     'is_active' => (bool) $branch->is_active,
                     'is_main_branch' => (bool) ($branch->is_main_branch ?? false),
                     'approval_status' => $branch->approval_status ?? 'approved',
@@ -1167,7 +1164,12 @@ class SuperAdminController extends Controller
         $permitBills = $request->input('permit_bills', []);
         $constructionCosts = $request->input('construction_costs', []);
         $equipmentCosts = $request->input('equipment_costs', []);
-        $totalInvestment = $request->input('total_investment');
+        $calculatedInvestment = collect($permitBills)->sum(fn ($item) => (float) ($item['amount'] ?? 0))
+            + collect($constructionCosts)->sum(fn ($item) => (float) ($item['amount'] ?? 0))
+            + collect($equipmentCosts)->sum(fn ($item) => (float) ($item['quantity'] ?? 0) * (float) ($item['unit_cost'] ?? 0));
+        $totalInvestment = max((float) ($request->input('total_investment') ?? 0), $calculatedInvestment);
+        // The branch must have enough available budget to cover its initial investment.
+        $requestedBudget = max($requestedBudget, (int) ceil($totalInvestment));
 
         $defaultPassword = config('chikintayo.default_password', 'Chikintayo_123');
 
@@ -1245,6 +1247,7 @@ class SuperAdminController extends Controller
                 'rejected_at' => null,
                 // Use provided budget or default to 100000
                 'budget' => $requestedBudget,
+                'initial_budget' => (int) ($request->input('budget', 100000)),
                 'square_meters' => $squareMeters,
                 'geofencing_radius' => $geofencingRadius,
                 // Cost details
@@ -1339,6 +1342,15 @@ class SuperAdminController extends Controller
                 'name' => $branch->name,
                 'address' => $branch->address,
                 'budget' => isset($branch->budget) ? (int) $branch->budget : 0,
+                'initial_budget' => isset($branch->initial_budget) ? (int) $branch->initial_budget : (int) ($branch->budget ?? 0),
+                'latitude' => $branch->latitude,
+                'longitude' => $branch->longitude,
+                'square_meters' => $branch->square_meters,
+                'geofencing_radius' => $branch->geofencing_radius,
+                'permit_bills' => $branch->permit_bills ?? [],
+                'construction_costs' => $branch->construction_costs ?? [],
+                'equipment_costs' => $branch->equipment_costs ?? [],
+                'total_investment' => (float) ($branch->total_investment ?? 0),
                 'created_at' => $branch->created_at,
                 'requested_by' => $requester ? [
                     'id' => $requester->id,
@@ -1492,6 +1504,14 @@ class SuperAdminController extends Controller
                 'name' => $branch->name,
                 'address' => $branch->address,
                 'budget' => isset($branch->budget) ? (int) $branch->budget : 0,
+                'latitude' => $branch->latitude,
+                'longitude' => $branch->longitude,
+                'square_meters' => $branch->square_meters,
+                'geofencing_radius' => $branch->geofencing_radius,
+                'permit_bills' => $branch->permit_bills ?? [],
+                'construction_costs' => $branch->construction_costs ?? [],
+                'equipment_costs' => $branch->equipment_costs ?? [],
+                'total_investment' => (float) ($branch->total_investment ?? 0),
                 'created_at' => $branch->created_at,
                 'requested_by' => $requester ? [
                     'id' => $requester->id,
@@ -1581,37 +1601,21 @@ class SuperAdminController extends Controller
 
         DB::beginTransaction();
         try {
-            $mainBranch = Branch::where('is_main_branch', 1)->lockForUpdate()->first();
-            if (! $mainBranch) {
-                DB::rollBack();
-                return response()->json(['ok' => false, 'message' => 'Main branch not found for budget allocation.'], 422);
-            }
-
-            $allocation = (int) ($branch->budget ?? 0);
-            $mainBudget = (int) ($mainBranch->budget ?? 0);
-            if ($mainBudget < $allocation) {
-                DB::rollBack();
-                return response()->json(['ok' => false, 'message' => 'Insufficient main branch budget for this allocation.'], 422);
-            }
-
-            $mainBranch->budget = $mainBudget - $allocation;
-            $mainBranch->save();
-
-            $branch->approval_status = 'approved';
-            $branch->approved_by = $user->id;
-            $branch->approved_at = now();
-            $branch->rejected_at = null;
-            $branch->is_active = 1;
+            $branch->approval_status = 'rejected';
+            $branch->approved_by = null;
+            $branch->approved_at = null;
+            $branch->rejected_at = now();
+            $branch->is_active = 0;
             $branch->save();
 
-            User::where('branch_id', $branch->id)->update(['is_active' => 1]);
+            User::where('branch_id', $branch->id)->update(['is_active' => 0]);
 
             DB::commit();
-            return response()->json(['ok' => true, 'message' => 'Branch approved and activated.']);
+            return response()->json(['ok' => true, 'message' => 'Budget allocation rejected.']);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('approveBranchRequest error: ' . $e->getMessage());
-            return response()->json(['ok' => false, 'message' => 'Failed to approve branch'], 500);
+            Log::error('rejectFinanceBranchRequest error: ' . $e->getMessage());
+            return response()->json(['ok' => false, 'message' => 'Failed to reject budget allocation'], 500);
         }
     }
 

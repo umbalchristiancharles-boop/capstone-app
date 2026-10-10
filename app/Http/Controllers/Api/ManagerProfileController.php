@@ -452,6 +452,8 @@ class ManagerProfileController extends Controller
                 'time_out' => $att->time_out?->format('h:i A') ?? null,
                 'hours_worked' => is_numeric($att->hours_worked) ? round($att->hours_worked / 60, 2) : 0,
                 'status' => $att->status,
+                'confirmed' => (bool) $att->confirmed,
+                'confirmation_status' => $att->confirmed ? 'Confirmed' : 'Pending Confirmation',
             ];
         });
 
@@ -964,10 +966,11 @@ class ManagerProfileController extends Controller
                         $q->where('branch_id', $branchId);
                     }
                 })
-                ->whereNotNull('face_image')
-                ->where('face_image', '!=', '')
                 ->where('date', Carbon::now()->toDateString())
-                ->where('confirmed', false)
+                ->where(function ($confirmationQuery) {
+                    $confirmationQuery->where('confirmed', false)
+                        ->orWhereNull('confirmed');
+                })
                 ->orderBy('time_in', 'desc');
 
             $records = $query->get()->map(function ($att) {
@@ -982,6 +985,7 @@ class ManagerProfileController extends Controller
                     'time_out' => $att->time_out?->format('h:i A') ?? null,
                     'status' => $att->status,
                     'face_image' => $att->face_image,
+                    'has_face_image' => !empty($att->face_image),
                     'confirmed' => $att->confirmed ?? false,
                     'confirmed_by' => $att->confirmedBy?->full_name ?? null,
                     'confirmed_at' => $att->confirmed_at?->format('Y-m-d H:i A') ?? null,
@@ -1025,6 +1029,13 @@ class ManagerProfileController extends Controller
             return response()->json(['ok' => false, 'message' => 'Forbidden'], 403);
         }
 
+        if (empty($attendance->face_image)) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Cannot confirm attendance without a clock-in photo.',
+            ], 422);
+        }
+
         // Update attendance record
         $attendance->confirmed = true;
         $attendance->confirmed_by = $user->id;
@@ -1058,6 +1069,10 @@ class ManagerProfileController extends Controller
         }
 
         // Clear the face image to mark as rejected
+        $attendance->time_in = null;
+        $attendance->time_out = null;
+        $attendance->hours_worked = null;
+        $attendance->status = null;
         $attendance->face_image = null;
         $attendance->confirmed = false;
         $attendance->confirmed_by = null;

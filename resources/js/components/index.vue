@@ -1840,13 +1840,27 @@ async function submitApplyNow() {
 
     if (!res.ok) {
       if (res.status === 422 && payload?.errors) {
-        // Map Laravel errors to inline fields
-        applyFieldErrors.value = Object.fromEntries(
-          Object.entries(payload.errors).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
-        )
+        const fieldErrors = {}
+        Object.entries(payload.errors).forEach(([key, value]) => {
+          const message = Array.isArray(value) ? value[0] : value
+          fieldErrors[key] = message
+
+          // Laravel uses keys such as supporting_documents.0 for wildcard
+          // validation; show those errors beside the upload control.
+          const parentKey = key.replace(/\.\d+$/, '')
+          if (parentKey !== key && !fieldErrors[parentKey]) {
+            fieldErrors[parentKey] = message
+          }
+        })
+        applyFieldErrors.value = fieldErrors
+        console.error('[APPLY] Validation failed', payload.errors)
         applyErrorMessage.value = 'Please fix the highlighted fields.'
         return
       }
+      console.error('[APPLY] Submission failed', {
+        status: res.status,
+        payload,
+      })
       applyErrorMessage.value = payload?.message || 'Unable to submit application right now.'
       return
     }

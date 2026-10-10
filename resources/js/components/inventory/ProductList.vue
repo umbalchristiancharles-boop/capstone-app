@@ -37,8 +37,10 @@
             </select>
           </div>
           <div class="pl-top-buttons">
+            <button v-if="selectedProducts.length" class="btn btn-primary" @click="submitBulkProcurement" aria-label="Order selected products">
+              Order Selected ({{ selectedProducts.length }})
+            </button>
             <button class="btn btn-light" @click="exportCsv" aria-label="Export CSV">Export CSV</button>
-            <button class="btn btn-primary" @click="$emit('open-add')" aria-label="Add product">+ Add Product</button>
           </div>
         </div>
       </header>
@@ -99,7 +101,7 @@
                     </td>
                     <td class="col-actions">
                       <div class="table-actions">
-                        <button type="button" class="btn btn-icon" @click="$emit('edit', p)">Edit</button>
+                        <button type="button" class="btn btn-icon" @click="selectedProduct = p">View Details</button>
                         <button v-if="showProcurementButton(p)" class="btn btn-primary btn-small procurement-request-btn" type="button" @click="$emit('request-procurement', p)">Request Procurement</button>
                         <button v-if="props.showPublishControls && p.is_published" type="button" class="btn btn-icon" @click="$emit('toggle-publish', { id: p.id, publish: false })">Unpublish</button>
                         <button v-else-if="props.showPublishControls" type="button" class="btn btn-icon btn-primary" @click="$emit('toggle-publish', { id: p.id, publish: true })">Publish</button>
@@ -117,6 +119,7 @@
             <table class="pl-table" role="table" aria-label="Product list table">
               <thead>
                 <tr>
+                  <th class="col-select">Select</th>
                   <th class="col-thumb">Image</th>
                   <th class="col-name" @click="toggleSort('name')" role="button" tabindex="0">Product Name <span class="sort">{{ sortIndicator('name') }}</span></th>
                   <th class="col-sku" @click="toggleSort('sku')" role="button" tabindex="0">SKU <span class="sort">{{ sortIndicator('sku') }}</span></th>
@@ -129,6 +132,14 @@
               </thead>
               <tbody>
                 <tr v-for="p in pageItems" :key="p.id" class="pl-row" :title="p.name" :class="rowStateClass(p)">
+                  <td class="col-select">
+                    <input
+                      type="checkbox"
+                      :checked="selectedIds.includes(p.id)"
+                      :aria-label="`Select ${p.name} for bulk procurement`"
+                      @change="toggleProductSelection(p)"
+                    />
+                  </td>
                   <td class="col-thumb">
                     <img v-if="p.image_url" :src="p.image_url" :alt="p.name" class="thumb" />
                     <div v-else class="thumb thumb-placeholder" aria-hidden="true">{{ p.name ? p.name.charAt(0) : '?' }}</div>
@@ -163,7 +174,7 @@
                   </td>
                   <td class="col-actions">
                     <div class="table-actions">
-                      <button type="button" class="btn btn-icon" @click="$emit('edit', p)">Edit</button>
+                      <button type="button" class="btn btn-icon" @click="selectedProduct = p">View Details</button>
                       <button v-if="showProcurementButton(p)" class="btn btn-primary btn-small procurement-request-btn" type="button" @click="$emit('request-procurement', p)">Request Procurement</button>
                       <button v-if="props.showPublishControls && p.is_published" type="button" class="btn btn-icon" @click="$emit('toggle-publish', { id: p.id, publish: false })">Unpublish</button>
                       <button v-else-if="props.showPublishControls" type="button" class="btn btn-icon btn-primary" @click="$emit('toggle-publish', { id: p.id, publish: true })">Publish</button>
@@ -218,6 +229,7 @@
                 <span v-else :class="['status-badge', statusClass(p)]">{{ statusLabel(p) }}</span>
               </div>
               <div class="card-actions">
+                <button type="button" class="btn btn-small" @click="selectedProduct = p">View Details</button>
                 <button v-if="showProcurementButton(p)" type="button" class="btn btn-small btn-primary procurement-request-btn" @click="$emit('request-procurement', p)">Request Procurement</button>
                 <button v-if="props.showPublishControls && p.is_published" type="button" class="btn btn-small" @click="$emit('toggle-publish', { id: p.id, publish: false })">Unpublish</button>
                 <button v-else-if="props.showPublishControls" type="button" class="btn btn-small btn-primary" @click="$emit('toggle-publish', { id: p.id, publish: true })">Publish</button>
@@ -233,6 +245,39 @@
         <div v-if="!isLoading && filtered.length === 0" class="pl-empty">No products matched your filters.</div>
       </main>
     </div>
+  </div>
+
+  <div v-if="selectedProduct" class="product-details-backdrop" @click.self="selectedProduct = null">
+    <section class="product-details-modal" role="dialog" aria-modal="true" aria-labelledby="product-details-title">
+      <header class="product-details-header">
+        <h3 id="product-details-title">Product Details</h3>
+        <button type="button" class="product-details-close" aria-label="Close product details" @click="selectedProduct = null">×</button>
+      </header>
+      <div class="product-details-body">
+        <div class="product-details-image">
+          <img v-if="selectedProduct.image_url" :src="selectedProduct.image_url" :alt="selectedProduct.name" />
+          <span v-else>{{ selectedProduct.name?.charAt(0) || '?' }}</span>
+        </div>
+        <div class="product-details-grid">
+          <div><strong>Product Name</strong><span>{{ selectedProduct.name || '—' }}</span></div>
+          <div><strong>Supplier</strong><span>{{ selectedProduct.supplier_name || '—' }}</span></div>
+          <div><strong>Pricing Type</strong><span>{{ pricingTypeLabel(selectedProduct.per_pack_or_individual) }}</span></div>
+          <div><strong>Price</strong><span>{{ formatCurrency(selectedProduct.price) }}</span></div>
+          <div><strong>Pack Quantity</strong><span>{{ selectedProduct.pack_quantity || '—' }}</span></div>
+          <div><strong>Pack Unit</strong><span>{{ selectedProduct.pack_unit || '—' }}</span></div>
+          <div><strong>Inventory Unit</strong><span>{{ selectedProduct.unit || 'pcs' }}</span></div>
+          <div><strong>SKU</strong><span>{{ selectedProduct.sku || '—' }}</span></div>
+          <div><strong>Barcode</strong><span>{{ selectedProduct.barcode || '—' }}</span></div>
+          <div><strong>Stock</strong><span>{{ selectedProduct.stock ?? 0 }}</span></div>
+          <div><strong>Date Made</strong><span>{{ formatDate(selectedProduct.date_made) }}</span></div>
+          <div><strong>Expires</strong><span>{{ formatDate(selectedProduct.expires_at) }}</span></div>
+          <div v-if="selectedProduct.brand"><strong>Brand</strong><span>{{ selectedProduct.brand }}</span></div>
+          <div v-if="selectedProduct.category"><strong>Category</strong><span>{{ selectedProduct.category }}</span></div>
+          <div v-if="selectedProduct.description" class="product-details-wide"><strong>Description</strong><span>{{ selectedProduct.description }}</span></div>
+          <div v-if="selectedProduct.storage_requirements" class="product-details-wide"><strong>Storage Requirements</strong><span>{{ selectedProduct.storage_requirements }}</span></div>
+        </div>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -260,7 +305,7 @@ const props = defineProps({
   showPublishControls: { type: Boolean, default: true }
 })
 
-const emit = defineEmits(['open-add', 'edit', 'delete', 'count', 'adjust', 'toggle-publish', 'request-procurement', 'report-expired'])
+const emit = defineEmits(['open-add', 'edit', 'delete', 'count', 'adjust', 'toggle-publish', 'request-procurement', 'bulk-request-procurement', 'report-expired'])
 
 const q = ref('')
 const stockFilter = ref('all')
@@ -271,6 +316,8 @@ const page = ref(1)
 const perPage = ref(25)
 const isLoading = ref(false)
 const sidebarCollapsed = ref(false)
+const selectedIds = ref([])
+const selectedProduct = ref(null)
 
 const internal = ref(props.products ? props.products.slice() : [])
 
@@ -404,6 +451,7 @@ const sorted = computed(() => {
 
 // helpers for inventory monitor status
 function statusClass(p) {
+  if (!p?.is_published && (!p?.supplier_id || Number(p?.price ?? 0) <= 0)) return 'status-pending'
   const expiryState = getExpiryClass(p)
   if (expiryState === 'expiry-expired') return 'status-expired'
   if (expiryState === 'expiry-critical' || expiryState === 'expiry-warning') return 'status-near-expiry'
@@ -415,6 +463,7 @@ function statusClass(p) {
 }
 
 function statusLabel(p) {
+  if (!p?.is_published && (!p?.supplier_id || Number(p?.price ?? 0) <= 0)) return 'AWAITING SUPPLIER'
   const expiryState = getExpiryClass(p)
   if (expiryState === 'expiry-expired') return 'EXPIRED'
   if (expiryState === 'expiry-critical' || expiryState === 'expiry-warning') return 'NEAR EXPIRY'
@@ -422,6 +471,14 @@ function statusLabel(p) {
   if (stockState === 'status-out') return 'OUT'
   if (stockState === 'status-low') return 'LOW STOCK'
   return 'OK'
+}
+
+function pricingTypeLabel(value) {
+  return {
+    individual: 'Individual',
+    per_pack: 'Per Pack',
+    both: 'Both Options'
+  }[value] || '—'
 }
 
 function rowStateClass(p) {
@@ -439,7 +496,10 @@ function isProductNearExpiry(product) {
 function showProcurementButton(product) {
   const stock = product?.stock == null ? 0 : Number(product.stock)
   const threshold = Number(product?.low_stock_threshold ?? 10)
-  return stock <= threshold
+  // Supplier quotes remain hidden from the procurement-request action until
+  // Procurement has selected a supplier and published the product.
+  const supplierSelected = Boolean(product?.supplier_id) && Number(product?.price ?? 0) > 0
+  return Boolean(product?.is_published) && supplierSelected && stock <= threshold
 }
 
 // Pagination
@@ -530,6 +590,26 @@ function getProductsByCategory(category) {
   return sorted.value.filter(p => (p.category || 'Uncategorized') === category)
 }
 
+const selectedProducts = computed(() => internal.value.filter(product => selectedIds.value.includes(product.id)))
+
+function toggleProductSelection(product) {
+  if (selectedIds.value.includes(product.id)) {
+    selectedIds.value = selectedIds.value.filter(id => id !== product.id)
+  } else {
+    selectedIds.value = [...selectedIds.value, product.id]
+  }
+}
+
+function submitBulkProcurement() {
+  if (selectedProducts.value.length) {
+    emit('bulk-request-procurement', selectedProducts.value)
+  }
+}
+
+function clearSelection() {
+  selectedIds.value = []
+}
+
 // Expiration date utilities
 const EXPIRY_CRITICAL_DAYS = 1
 const EXPIRY_NEAR_DAYS = 5
@@ -604,7 +684,7 @@ function getExpiryValue(product) {
   return product?.expires_at ?? product?.expiresAt ?? null
 }
 
-defineExpose({ fetchProducts, getStats, setQuery, setStockFilter, setCategoryFilter })
+defineExpose({ fetchProducts, getStats, setQuery, setStockFilter, setCategoryFilter, clearSelection })
 
 </script>
 
@@ -699,6 +779,51 @@ defineExpose({ fetchProducts, getStats, setQuery, setStockFilter, setCategoryFil
 .btn-icon { padding: 6px 8px; border-radius: 6px; background: #fff; border: 1px solid #e6eef6 }
 .btn-small { padding: 6px 8px; border-radius: 6px }
 
+.product-details-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(35, 25, 18, 0.55);
+}
+
+.product-details-modal {
+  width: min(760px, 100%);
+  max-height: min(760px, 90vh);
+  overflow: auto;
+  border-radius: 14px;
+  background: #fffaf5;
+  box-shadow: 0 20px 60px rgba(35, 25, 18, 0.25);
+}
+
+.product-details-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid #f0dfd0;
+}
+
+.product-details-header h3 { margin: 0; color: #3b2b20; }
+.product-details-close { border: 0; background: transparent; color: #6d5648; font-size: 26px; cursor: pointer; }
+.product-details-body { display: grid; grid-template-columns: 150px 1fr; gap: 22px; padding: 22px; }
+.product-details-image { display: flex; align-items: center; justify-content: center; width: 150px; height: 150px; border-radius: 12px; background: #fff; color: #7a2b00; font-size: 48px; font-weight: 700; }
+.product-details-image img { width: 100%; height: 100%; object-fit: contain; border-radius: 12px; }
+.product-details-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 18px; }
+.product-details-grid > div { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.product-details-grid strong { color: #8a4b1a; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.product-details-grid span { color: #3b2b20; overflow-wrap: anywhere; }
+.product-details-wide { grid-column: 1 / -1; }
+
+@media (max-width: 640px) {
+  .product-details-body { grid-template-columns: 1fr; }
+  .product-details-image { margin: 0 auto; }
+  .product-details-grid { grid-template-columns: 1fr; }
+}
+
 /* Main content area */
 .pl-main {
   background: transparent;
@@ -747,6 +872,7 @@ defineExpose({ fetchProducts, getStats, setQuery, setStockFilter, setCategoryFil
 .status-ok { background:#dcfce7; color:#166534 }
 .status-low { background:#fff7ed; color:#92400e }
 .status-out { background:#fee2e2; color:#7f1d1d }
+.status-pending { background:#e0e7ff; color:#3730a3 }
 .status-near-expiry { background:#fef3c7; color:#92400e }
 .status-expired { background:#fee2e2; color:#7f1d1d }
 
@@ -867,4 +993,3 @@ defineExpose({ fetchProducts, getStats, setQuery, setStockFilter, setCategoryFil
   .history-box { max-height: none; }
 }
 </style>
-

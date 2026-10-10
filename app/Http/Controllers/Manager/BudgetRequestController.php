@@ -243,6 +243,7 @@ class BudgetRequestController extends Controller
         Log::info('Finance getAllRequests', ['finance_user_id' => $user->id, 'branch_id' => $branchId, 'count' => $requests->count()]);
 
         $requests = $requests->map(function ($req) {
+                preg_match('/^Bulk Order ([A-F0-9]+)/i', (string) $req->purpose, $groupMatches);
                 return [
                     'id' => $req->id,
                     'branch_id' => $req->branch_id,
@@ -254,6 +255,7 @@ class BudgetRequestController extends Controller
                     'processed_by' => $req->processor?->full_name ?? null,
                     'date_processed' => $req->date_processed,
                     'created_at' => $req->created_at->toDateString(),
+                    'order_group_id' => !empty($groupMatches[1]) ? strtoupper($groupMatches[1]) : null,
                 ];
             });
 
@@ -354,7 +356,7 @@ class BudgetRequestController extends Controller
             ], 401);
         }
 
-        $branchId = $user->branch_id;
+            $branchId = $user->branch_id;
 
         try {
             $budgetRequest = DB::transaction(function () use ($id, $branchId) {
@@ -411,6 +413,65 @@ class BudgetRequestController extends Controller
                 'ok' => false,
                 'message' => 'Failed to reject budget request'
             ], 500);
+        }
+    }
+
+    public function approveGroup(Request $request, $group)
+    {
+        return $this->processGroup($request, $group, 'Approved');
+    }
+
+    public function rejectGroup(Request $request, $group)
+    {
+        return $this->processGroup($request, $group, 'Rejected');
+    }
+
+    private function processGroup(Request $request, string $group, string $status)
+    {
+        $user = Auth::user();
+        if (!$this->isAuthorizedUser($user, 'finance')) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        try {
+            $result = DB::transaction(function () use ($group, $status, $user) {
+                $requests = BudgetRequest::where('branch_id', $user->branch_id)
+                    ->where('purpose', 'LIKE', 'Bulk Order ' . strtoupper($group) . ' -%')
+                    ->where('status', 'Pending')
+                    ->lockForUpdate()
+                    ->get();
+
+                if ($requests->isEmpty()) {
+                    throw new \RuntimeException('Bulk budget request not found or already processed');
+                }
+
+                $processedDate = now()->toDateString();
+                foreach ($requests as $budgetRequest) {
+                    $budgetRequest->update([
+                        'status' => $status,
+                        'processed_by' => $user->id,
+                        'date_processed' => $processedDate,
+                    ]);
+
+                    if (preg_match('/Procurement Request #(\d+)/i', $budgetRequest->purpose, $matches)) {
+                        $proc = ProcurementRequest::find((int) ($matches[1] ?? 0));
+                        if ($proc) {
+                            $proc->update(['status' => $status === 'Approved' ? 'pending_order_to_supplier' : 'rejected']);
+                        }
+                    }
+                }
+
+                return ['count' => $requests->count()];
+            });
+
+            return response()->json([
+                'ok' => true,
+                'message' => "{$result['count']} budget requests {$status}.",
+                'count' => $result['count'],
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Bulk budget request processing failed', ['group' => $group, 'status' => $status, 'error' => $e->getMessage()]);
+            return response()->json(['ok' => false, 'message' => $e->getMessage()], 404);
         }
     }
 
@@ -509,4 +570,3 @@ class BudgetRequestController extends Controller
         }
     }
 }
-

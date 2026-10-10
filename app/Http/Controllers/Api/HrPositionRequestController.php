@@ -25,7 +25,16 @@ class HrPositionRequestController extends Controller
 
         return response()->json([
             'ok' => true,
-            'positions' => $positions,
+            'positions' => $positions->map(function (Position $position) {
+                return [
+                    'id' => $position->id,
+                    'name' => $position->name,
+                    'department' => $position->department,
+                    'description' => $position->description,
+                    'is_custom' => strtoupper((string) $position->department) === 'CUSTOM'
+                        || strtolower((string) $position->name) === 'custom account',
+                ];
+            }),
         ]);
     }
 
@@ -58,6 +67,12 @@ class HrPositionRequestController extends Controller
             'position_id' => ['required', 'integer', 'exists:positions,id'],
             'quantity' => ['required', 'integer', 'min:1'],
             'notes' => ['nullable', 'string', 'max:5000'],
+            'account_type' => ['nullable', Rule::in(['standard', 'custom'])],
+            'account_config' => ['nullable', 'array'],
+            'account_config.modules' => ['nullable', 'array'],
+            'account_config.modules.*' => ['string', 'max:100'],
+            'account_config.functions' => ['nullable', 'array'],
+            'account_config.functions.*' => ['string', 'max:100'],
         ]);
 
         // Authorization is handled by route middleware auth + the HR panel access.
@@ -77,6 +92,10 @@ class HrPositionRequestController extends Controller
             'requested_by_user_id' => (int) $user->id,
             'quantity' => (int) $request->input('quantity'),
             'notes' => $request->input('notes'),
+            'account_type' => $request->input('account_type', 'standard'),
+            'account_config' => $request->input('account_type') === 'custom'
+                ? $request->input('account_config', [])
+                : null,
             'status' => 'Pending',
         ];
 
@@ -202,4 +221,3 @@ class HrPositionRequestController extends Controller
         ]);
     }
 }
-

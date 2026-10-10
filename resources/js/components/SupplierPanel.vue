@@ -86,6 +86,7 @@
             <thead>
               <tr>
                 <th>Product</th>
+                <th>Order</th>
                 <th>Branch</th>
                 <th>Qty</th>
                 <th>Variance</th>
@@ -96,8 +97,40 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="order in orders" :key="order.id">
+              <template v-for="group in supplierOrderGroups" :key="group.key">
+              <tr v-if="group.order_group_id" class="bulk-order-row">
+                <td>
+                  <strong>Bulk Order {{ group.order_group_id.slice(0, 8).toUpperCase() }}</strong>
+                  <div class="bulk-order-products">
+                    <div v-for="order in group.orders" :key="'bulk-product-'+order.id">
+                      {{ order.product?.name }} <small>x{{ order.quantity }}</small>
+                    </div>
+                  </div>
+                </td>
+                <td>Bulk Order</td>
+                <td>{{ group.orders[0]?.branch?.name || group.orders[0]?.branch_id }}</td>
+                <td>{{ group.orders.reduce((total, order) => total + Number(order.quantity || 0), 0) }}</td>
+                <td>{{ group.orders.map(order => formatVariance(order.procurementRequest?.variance_quantity)).filter(Boolean).join(', ') || '—' }}</td>
+                <td>{{ formatPrice(group.orders.reduce((total, order) => total + Number(order.product?.price || 0) * Number(order.quantity || 0), 0)) }}</td>
+                <td>{{ group.orders.map(order => order.expires_at ? formatDate(order.expires_at) : 'N/A').join(', ') }}</td>
+                <td>
+                  <span :class="['status-badge', getStatusClass(group.status)]">{{ group.status }}</span>
+                  <div v-if="group.hasVariance" class="alert-badge">Variance reported</div>
+                </td>
+                <td class="action-cell">
+                  <div v-for="order in group.orders" :key="'bulk-action-'+order.id" class="bulk-order-action">
+                    <span class="small-text">{{ order.product?.name }}</span>
+                    <button v-if="order.status === 'pending' && canSubmitProduct(order)" class="btn-primary btn-small" @click="openSupplierSubmitModal(order)">Product available</button>
+                    <button v-else-if="order.status === 'pending' && canCompleteTransaction(order)" class="btn-primary btn-small" @click="completeTransaction(order.id)">Transaction complete</button>
+                    <span v-else-if="order.status === 'fulfilled'" class="btn-disabled btn-small">Completed</span>
+                    <span v-else-if="order.status === 'on_delivery'" class="btn-disabled btn-small">On delivery</span>
+                    <span v-else class="btn-disabled btn-small">Waiting for procurement</span>
+                  </div>
+                </td>
+              </tr>
+              <tr v-for="order in group.orders" v-else :key="order.id">
                 <td>{{ order.product?.name }}</td>
+                <td>Individual</td>
                 <td>{{ order.branch?.name || order.branch_id }}</td>
                 <td>{{ order.quantity }}</td>
                 <td>{{ formatVariance(order.procurementRequest?.variance_quantity) }}</td>
@@ -140,6 +173,7 @@
                   </template>
                 </td>
               </tr>
+              </template>
               <tr v-if="orders.length === 0">
                 <td colspan="8" class="empty-message">No orders yet.</td>
               </tr>
@@ -426,19 +460,6 @@
               </div>
             </div>
             <div class="form-group">
-              <label>Inventory Unit</label>
-              <select v-model="submitForm.unit">
-                <option value="" disabled>Select unit</option>
-                <option value="pcs">pcs</option>
-                <option value="g">g</option>
-                <option value="kg">kg</option>
-                <option value="ml">ml</option>
-                <option value="l">l</option>
-                <option value="pack">pack</option>
-                <option value="box">box</option>
-              </select>
-            </div>
-            <div class="form-group">
               <label>{{ submitForm.per_pack_or_individual === 'per_pack' ? 'Price per Pack (PHP)' : 'Unit Price (PHP)' }}</label>
               <input v-model.number="submitForm.price" type="number" min="0.01" step="0.01" placeholder="0.00" />
               <div v-if="submitForm.per_pack_or_individual === 'per_pack' && submitForm.pack_quantity > 0" class="muted small-text">
@@ -615,6 +636,27 @@ const products = ref([])
 const loadingProducts = ref(false)
 const orders = ref([])
 const ordersLoading = ref(false)
+const supplierOrderGroups = computed(() => {
+  const groups = new Map()
+  for (const order of orders.value) {
+    const orderGroupId = order.procurementRequest?.order_group_id || null
+    const key = orderGroupId || `individual-${order.id}`
+    if (!groups.has(key)) {
+      groups.set(key, {
+        key,
+        order_group_id: orderGroupId,
+        orders: [],
+        status: order.status,
+        hasVariance: false,
+      })
+    }
+    const group = groups.get(key)
+    group.orders.push(order)
+    group.hasVariance = group.hasVariance || Boolean(order.procurementRequest?.variance_quantity)
+    if (group.status !== 'pending' && order.status === 'pending') group.status = order.status
+  }
+  return Array.from(groups.values())
+})
 const suppliers = ref([])
 const notificationCounts = ref({ supplier: 0 })
 const hasNotified = ref(false)
@@ -642,7 +684,7 @@ const savingEstimatedDelivery = ref(false)
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
 // Supplier submit modal state
 const supplierSubmitModalVisible = ref(false)
-const submitForm = ref({ name: '', price: null, unit: '', per_pack_or_individual: '', date_made: '', pack_quantity: null, pack_unit: '', barcode: '', sku: '', product_image: null })
+const submitForm = ref({ name: '', price: null, per_pack_or_individual: '', date_made: '', pack_quantity: null, pack_unit: '', barcode: '', sku: '', product_image: null })
 const submitIsKitchenIngredient = ref(false)
 const todayDate = new Date().toLocaleDateString('en-CA')
 const submitSubmitting = ref(false)
@@ -991,7 +1033,7 @@ async function completeTransaction(id) {
 function openSupplierSubmitModal(order) {
   // Prefill product name if procurement request provides it
   submitError.value = ''
-  submitForm.value = { name: '', price: null, unit: '', per_pack_or_individual: '', date_made: '', pack_quantity: null, pack_unit: '', barcode: '', sku: '', product_image: null }
+  submitForm.value = { name: '', price: null, per_pack_or_individual: '', date_made: '', pack_quantity: null, pack_unit: '', barcode: '', sku: '', product_image: null }
   currentSubmitOrderId.value = null
   submitIsKitchenIngredient.value = false
   if (!order) return
@@ -1010,7 +1052,7 @@ function closeSupplierSubmitModal() {
   supplierSubmitModalVisible.value = false
   submitError.value = ''
   closeSupplierBarcodeScanner()
-  submitForm.value = { name: '', price: null, unit: '', per_pack_or_individual: '', date_made: '', pack_quantity: null, pack_unit: '', barcode: '', sku: '', product_image: null }
+  submitForm.value = { name: '', price: null, per_pack_or_individual: '', date_made: '', pack_quantity: null, pack_unit: '', barcode: '', sku: '', product_image: null }
   currentSubmitOrderId.value = null
   submitIsKitchenIngredient.value = false
 }
@@ -1116,7 +1158,6 @@ async function saveProductChanges() {
 async function submitProductForm() {
   if (!currentSubmitOrderId.value) return
   if (!submitForm.value.name) { await Swal.fire({ icon: 'error', title: 'Validation', text: 'Product name is required' }); return }
-  if (!submitForm.value.unit) { await Swal.fire({ icon: 'error', title: 'Validation', text: 'Inventory unit is required' }); return }
   if (!submitForm.value.per_pack_or_individual) { await Swal.fire({ icon: 'error', title: 'Validation', text: 'Pricing type is required' }); return }
   // If per-pack, require pack quantity and unit
   if (submitForm.value.per_pack_or_individual === 'per_pack') {
@@ -1134,7 +1175,6 @@ async function submitProductForm() {
     const payload = new FormData()
     payload.append('name', submitForm.value.name)
     payload.append('price', submitForm.value.price)
-    payload.append('unit', submitForm.value.unit)
     payload.append('per_pack_or_individual', submitForm.value.per_pack_or_individual)
     if (submitForm.value.pack_quantity !== null) payload.append('pack_quantity', submitForm.value.pack_quantity)
     if (submitForm.value.pack_unit) payload.append('pack_unit', submitForm.value.pack_unit)

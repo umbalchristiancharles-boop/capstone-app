@@ -292,7 +292,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="req in budgetRequests" :key="req.id">
+                  <tr v-for="req in budgetRequestGroups" :key="req.id">
                     <td>{{ formatDate(req.date_requested) }}</td>
                     <td>{{ req.requester_name }}</td>
                     <td>{{ req.purpose }}</td>
@@ -302,11 +302,11 @@
                     </td>
                     <td>
                       <div v-if="req.status === 'Pending'" class="action-buttons">
-                        <button class="btn-approve" @click="approveRequest(req.id)" :disabled="processingId === req.id">{{ processingId === req.id ? 'Processing...' : 'Approve' }}</button>
-                        <button class="btn-reject" @click="rejectRequest(req.id)" :disabled="processingId === req.id">{{ processingId === req.id ? 'Processing...' : 'Reject' }}</button>
+                        <button class="btn-approve" @click="approveRequest(req)" :disabled="processingId === req.id">{{ processingId === req.id ? 'Processing...' : (req.order_group_id ? 'Approve Bulk Order' : 'Approve') }}</button>
+                        <button class="btn-reject" @click="rejectRequest(req)" :disabled="processingId === req.id">{{ processingId === req.id ? 'Processing...' : (req.order_group_id ? 'Reject Bulk Order' : 'Reject') }}</button>
                       </div>
                       <div v-else-if="req.status === 'Approved' && req.purpose && /Procurement Request #\d+/i.test(req.purpose)">
-                        <button class="btn-approve" @click="markBudgetGiven(req.id)" :disabled="processingId === req.id">{{ processingId === req.id ? 'Processing...' : 'Budget Given' }}</button>
+                        <button class="btn-approve" @click="markBudgetGiven(req)" :disabled="processingId === req.id">{{ processingId === req.id ? 'Processing...' : 'Budget Given' }}</button>
                       </div>
                       <span v-else class="processed-info">{{ req.status }} by {{ req.processed_by || 'Unknown' }}<br><small>{{ formatDate(req.date_processed) }}</small></span>
                     </td>
@@ -813,6 +813,32 @@ const today = computed(() => {
 const budgetRequests = ref([])
 const budgetLoading = ref(true)
 const processingId = ref(null)
+const budgetRequestGroups = computed(() => {
+  const groups = new Map()
+  for (const request of budgetRequests.value) {
+    const key = request.order_group_id || `individual-${request.id}`
+    if (!groups.has(key)) {
+      groups.set(key, {
+        id: key,
+        order_group_id: request.order_group_id,
+        date_requested: request.date_requested,
+        requester_name: request.requester_name,
+        purpose: request.order_group_id ? `Bulk Order ${request.order_group_id} (${budgetRequests.value.filter(item => item.order_group_id === request.order_group_id).length} products)` : request.purpose,
+        requested_amount: '0.00',
+        status: request.status,
+        processed_by: request.processed_by,
+        date_processed: request.date_processed,
+        budget_request_id: request.id,
+        request_ids: [],
+      })
+    }
+    const group = groups.get(key)
+    group.request_ids.push(request.id)
+    group.requested_amount = (Number(group.requested_amount) + Number(String(request.requested_amount).replace(/,/g, ''))).toFixed(2)
+    if (request.status === 'Pending') group.status = 'Pending'
+  }
+  return Array.from(groups.values())
+})
 // Receipt submissions
 const receiptSubmissions = ref([])
 const receiptsLoading = ref(false)
@@ -992,26 +1018,21 @@ async function saveBudget(id) {
 }
 
 // Approve budget request
-async function approveRequest(id) {
+async function approveRequest(request) {
   if (processingId.value) return
 
-  if (!(await window.swalConfirm('Are you sure you want to approve this budget request?'))) {
+  if (!(await window.swalConfirm(request.order_group_id ? `Approve all products in Bulk Order ${request.order_group_id}?` : 'Are you sure you want to approve this budget request?'))) {
     return
   }
 
-  processingId.value = id
+  processingId.value = request.id
 
   try {
-    const response = await axios.put(`/api/manager/finance/budget/${id}/approve`, {}, { withCredentials: true })
+    const response = await axios.put(request.order_group_id ? `/api/manager/finance/budget/group/${request.order_group_id}/approve` : `/api/manager/finance/budget/${request.budget_request_id}/approve`, {}, { withCredentials: true })
 
     if (response.data.ok) {
       // Update the local request status
-      const index = budgetRequests.value.findIndex(r => r.id === id)
-      if (index !== -1) {
-        budgetRequests.value[index].status = 'Approved'
-        budgetRequests.value[index].processed_by = response.data.request.processed_by
-        budgetRequests.value[index].date_processed = response.data.request.date_processed
-      }
+      budgetRequests.value.filter(r => request.order_group_id ? r.order_group_id === request.order_group_id : request.request_ids.includes(r.id)).forEach(item => { item.status = 'Approved' })
       alert('Budget request approved successfully!')
     }
   } catch (err) {
@@ -1023,26 +1044,21 @@ async function approveRequest(id) {
 }
 
 // Reject budget request
-async function rejectRequest(id) {
+async function rejectRequest(request) {
   if (processingId.value) return
 
-  if (!(await window.swalConfirm('Are you sure you want to reject this budget request?'))) {
+  if (!(await window.swalConfirm(request.order_group_id ? `Reject all products in Bulk Order ${request.order_group_id}?` : 'Are you sure you want to reject this budget request?'))) {
     return
   }
 
-  processingId.value = id
+  processingId.value = request.id
 
   try {
-    const response = await axios.put(`/api/manager/finance/budget/${id}/reject`, {}, { withCredentials: true })
+    const response = await axios.put(request.order_group_id ? `/api/manager/finance/budget/group/${request.order_group_id}/reject` : `/api/manager/finance/budget/${request.budget_request_id}/reject`, {}, { withCredentials: true })
 
     if (response.data.ok) {
       // Update the local request status
-      const index = budgetRequests.value.findIndex(r => r.id === id)
-      if (index !== -1) {
-        budgetRequests.value[index].status = 'Rejected'
-        budgetRequests.value[index].processed_by = response.data.request.processed_by
-        budgetRequests.value[index].date_processed = response.data.request.date_processed
-      }
+      budgetRequests.value.filter(r => request.order_group_id ? r.order_group_id === request.order_group_id : request.request_ids.includes(r.id)).forEach(item => { item.status = 'Rejected' })
       alert('Budget request rejected.')
     }
   } catch (err) {
@@ -1596,10 +1612,11 @@ function onCustomDateChange() {
 }
 
 // Mark budget as given by finance (handed to procurement)
-async function markBudgetGiven(id) {
+async function markBudgetGiven(request) {
   if (processingId.value) return
   if (!(await window.swalConfirm('Confirm you have handed the budget to procurement?'))) return
-  processingId.value = id
+  const id = request.budget_request_id
+  processingId.value = request.id
   try {
     const response = await axios.put(`/api/manager/finance/budget/${id}/given`, {}, { withCredentials: true })
     if (response.data && response.data.ok) {

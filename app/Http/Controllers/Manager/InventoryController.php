@@ -49,17 +49,27 @@ class InventoryController extends Controller
         // Get the earliest expiration date from inventory_lots for each product
         $productIds = $products->pluck('id')->toArray();
         $earliestExpiryByProduct = [];
+        $earliestExpiryByName = [];
         
         if (!empty($productIds)) {
             $inventoryLots = InventoryLot::whereIn('product_id', $productIds)
                 ->where('branch_id', $branchId)
-                ->where('quantity', '>', 0)
+                ->whereNotNull('expires_at')
                 ->select('product_id', DB::raw('MIN(expires_at) as earliest_expiry'))
                 ->groupBy('product_id')
                 ->get();
             
             foreach ($inventoryLots as $lot) {
                 $earliestExpiryByProduct[$lot->product_id] = $lot->earliest_expiry;
+
+                $lotProduct = $products->firstWhere('id', $lot->product_id);
+                $nameKey = trim(strtolower((string) ($lotProduct->name ?? '')));
+                if ($nameKey !== '' && (
+                    !isset($earliestExpiryByName[$nameKey])
+                    || $lot->earliest_expiry < $earliestExpiryByName[$nameKey]
+                )) {
+                    $earliestExpiryByName[$nameKey] = $lot->earliest_expiry;
+                }
             }
         }
 
@@ -67,6 +77,11 @@ class InventoryController extends Controller
         foreach ($products as $product) {
             if (isset($earliestExpiryByProduct[$product->id])) {
                 $product->expires_at = $earliestExpiryByProduct[$product->id];
+            } else {
+                $nameKey = trim(strtolower((string) ($product->name ?? '')));
+                if (isset($earliestExpiryByName[$nameKey])) {
+                    $product->expires_at = $earliestExpiryByName[$nameKey];
+                }
             }
         }
 
@@ -231,4 +246,3 @@ class InventoryController extends Controller
         ]);
     }
 }
-

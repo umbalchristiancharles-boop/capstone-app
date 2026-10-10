@@ -158,7 +158,9 @@ class SupplierOrderController extends Controller
                     ->first();
             }
 
-            $inventoryUnit = $validated['unit'] ?? $order->procurementRequest?->product?->unit ?? $existingProduct?->unit;
+            $inventoryUnit = $validated['per_pack_or_individual'] === 'individual'
+                ? 'pcs'
+                : ($validated['unit'] ?? $validated['pack_unit'] ?? $order->procurementRequest?->product?->unit ?? $existingProduct?->unit ?? 'pcs');
 
             if ($existingProduct) {
                 // Update existing product fields (but NOT expiry date - that's now at order level)
@@ -182,7 +184,7 @@ class SupplierOrderController extends Controller
                     'supplier_name' => $user->full_name ?? $user->username,
                     // 'expires_at' => $validated['expires_at'], // REMOVED - expiry now tracked at order level
                     'date_made' => $validated['date_made'] ?? null,
-                    'is_published' => 1,
+                    'is_published' => 0,
                     'is_active' => 1,
                     'is_kitchen_dish' => $isKitchenIngredient || $isDish,
                 ]);
@@ -211,7 +213,7 @@ class SupplierOrderController extends Controller
                     'supplier_name' => $user->full_name ?? $user->username,
                     // 'expires_at' => $validated['expires_at'], // REMOVED - expiry now tracked at order level
                     'date_made' => $validated['date_made'] ?? null,
-                    'is_published' => 1,
+                    'is_published' => 0,
                     'is_active' => 1,
                     'is_kitchen_dish' => $isKitchenIngredient || $isDish,
                 ]);
@@ -428,4 +430,3 @@ class SupplierOrderController extends Controller
         }
     }
 }
-

@@ -150,24 +150,64 @@ class StaffInventoryController extends Controller
         // been accepted/placed into inventory by procurement.
         // (Procurement will still mark products as published when placed.)
 
-        $products = $query->select('id', 'name', 'slug', 'price', 'stock', 'real_stock', 'sku', 'branch_id', 'supplier_id', 'supplier_name', 'is_published', 'created_at', 'updated_at', 'status', 'expires_at')
+        $products = $query->select(
+                'id',
+                'name',
+                'slug',
+                'category',
+                'brand',
+                'description',
+                'storage_requirements',
+                'price',
+                'cost_price',
+                'stock',
+                'real_stock',
+                'min_stock',
+                'unit',
+                'image_path',
+                'per_pack_or_individual',
+                'pack_quantity',
+                'pack_unit',
+                'sku',
+                'barcode',
+                'barcode_is_generated',
+                'branch_id',
+                'supplier_id',
+                'supplier_name',
+                'date_made',
+                'is_published',
+                'created_at',
+                'updated_at',
+                'status',
+                'expires_at'
+            )
             ->orderBy('name')
             ->get();
 
         // Get the earliest expiration date from inventory_lots for each product
         $productIds = $products->pluck('id')->toArray();
         $earliestExpiryByProduct = [];
+        $earliestExpiryByName = [];
         
         if (!empty($productIds)) {
             $inventoryLots = InventoryLot::whereIn('product_id', $productIds)
                 ->where('branch_id', $branchId)
-                ->where('quantity', '>', 0)
+                ->whereNotNull('expires_at')
                 ->select('product_id', DB::raw('MIN(expires_at) as earliest_expiry'))
                 ->groupBy('product_id')
                 ->get();
             
             foreach ($inventoryLots as $lot) {
                 $earliestExpiryByProduct[$lot->product_id] = $lot->earliest_expiry;
+
+                $lotProduct = $products->firstWhere('id', $lot->product_id);
+                $nameKey = trim(strtolower((string) ($lotProduct->name ?? '')));
+                if ($nameKey !== '' && (
+                    !isset($earliestExpiryByName[$nameKey])
+                    || $lot->earliest_expiry < $earliestExpiryByName[$nameKey]
+                )) {
+                    $earliestExpiryByName[$nameKey] = $lot->earliest_expiry;
+                }
             }
         }
 
@@ -178,9 +218,13 @@ class StaffInventoryController extends Controller
                 $key = trim(strtolower($p->name ?? ''));
                 if ($key === '') continue;
                 
-                // Override expires_at with the earliest expiry from inventory_lots if available
+                // Override the product expiry with the earliest expiry from
+                // inventory_lots. Apply it by name too because duplicate
+                // supplier rows can be collapsed into a different row.
                 if (isset($earliestExpiryByProduct[$p->id])) {
                     $p->expires_at = $earliestExpiryByProduct[$p->id];
+                } elseif (isset($earliestExpiryByName[$key])) {
+                    $p->expires_at = $earliestExpiryByName[$key];
                 }
 
                 $p->stock = (int) ($p->real_stock ?? $p->stock ?? 0);

@@ -30,7 +30,9 @@
             <p class="request-meta">
               Code: <strong>{{ branch.code }}</strong>
               <span class="dot">|</span>
-              Budget: <strong>{{ formatCurrency(branch.budget || 0) }}</strong>
+              Initial budget: <strong>{{ formatCurrency(branch.initial_budget || 0) }}</strong>
+              <span class="dot">|</span>
+              Effective budget: <strong>{{ formatCurrency(branch.budget || 0) }}</strong>
             </p>
             <p class="request-meta">
               Requested by:
@@ -46,6 +48,17 @@
           <div class="address-block">
             <div class="label">Address</div>
             <div class="value">{{ branch.address || 'No address provided' }}</div>
+          </div>
+          <div class="request-meta-grid request-details-grid">
+            <div class="request-meta"><span>Store area</span><strong>{{ branch.square_meters || 'N/A' }} m²</strong></div>
+            <div class="request-meta"><span>Geofence radius</span><strong>{{ branch.geofencing_radius || 'N/A' }} m</strong></div>
+            <div class="request-meta"><span>Coordinates</span><strong>{{ branch.latitude ?? 'N/A' }}, {{ branch.longitude ?? 'N/A' }}</strong></div>
+            <div class="request-meta"><span>Total investment</span><strong>{{ formatCurrency(branch.total_investment || 0) }}</strong></div>
+          </div>
+          <div v-if="branch.permit_bills?.length || branch.construction_costs?.length || branch.equipment_costs?.length" class="cost-details">
+            <div v-if="branch.permit_bills?.length"><strong>Permit bills</strong><span v-for="(item, index) in branch.permit_bills" :key="`permit-${index}`">{{ item.type || 'Permit' }}: {{ formatCurrency(item.amount || 0) }}</span></div>
+            <div v-if="branch.construction_costs?.length"><strong>Construction costs</strong><span v-for="(item, index) in branch.construction_costs" :key="`construction-${index}`">{{ item.category || 'Construction' }}: {{ formatCurrency(item.amount || 0) }}</span></div>
+            <div v-if="branch.equipment_costs?.length"><strong>Equipment costs</strong><span v-for="(item, index) in branch.equipment_costs" :key="`equipment-${index}`">{{ item.name || 'Equipment' }} ({{ item.quantity || 0 }}): {{ formatCurrency((item.quantity || 0) * (item.unit_cost || 0)) }}</span></div>
           </div>
         </div>
 
@@ -333,6 +346,42 @@ onMounted(loadPending)
 
 .request-card__body {
   margin: 8px 0;
+}
+
+.request-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.request-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.request-meta span {
+  color: #6b7280;
+  font-size: 0.8rem;
+}
+
+.cost-details {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.cost-details div {
+  display: grid;
+  gap: 3px;
+}
+
+.cost-details span {
+  color: #4b5563;
+  font-size: 0.85rem;
 }
 
 .address-block .label {

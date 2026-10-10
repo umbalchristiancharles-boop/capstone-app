@@ -37,6 +37,7 @@ class BranchOpenPositionBroadcastTest extends TestCase
             $table->timestamp('approved_at')->nullable();
             $table->timestamp('rejected_at')->nullable();
             $table->integer('budget')->nullable();
+            $table->integer('initial_budget')->nullable();
             $table->string('default_password')->nullable();
             $table->timestamp('default_password_updated_at')->nullable();
             $table->json('permit_bills')->nullable();
@@ -279,5 +280,63 @@ class BranchOpenPositionBroadcastTest extends TestCase
             ->assertOk()
             ->assertJsonCount(1, 'applications')
             ->assertJsonPath('applications.0.branch_id', $branchA->id);
+    }
+
+    public function test_branch_budget_is_deducted_from_main_branch_only_after_owner_approval(): void
+    {
+        $mainBranch = Branch::create([
+            'code' => 'HQ',
+            'name' => 'Main Branch',
+            'is_main_branch' => true,
+            'is_active' => true,
+            'approval_status' => 'approved',
+            'budget' => 300000,
+        ]);
+
+        $financeUser = User::create([
+            'username' => 'main_finance',
+            'email' => 'mainfinance@example.com',
+            'password' => 'Password123!',
+            'full_name' => 'Main Finance',
+            'role' => 'MANAGER',
+            'department' => 'FINANCE',
+            'branch_id' => $mainBranch->id,
+            'is_active' => true,
+        ]);
+
+        $owner = User::create([
+            'username' => 'branch_owner',
+            'email' => 'branchowner@example.com',
+            'password' => 'Password123!',
+            'full_name' => 'Branch Owner',
+            'role' => 'OWNER',
+            'is_active' => true,
+        ]);
+
+        $branch = Branch::create([
+            'code' => 'BR01',
+            'name' => 'New Branch',
+            'is_main_branch' => false,
+            'is_active' => false,
+            'approval_status' => 'pending_finance',
+            'budget' => 100000,
+        ]);
+
+        $this->actingAs($financeUser)
+            ->postJson("/api/main-branch/finance/branch-requests/{$branch->id}/approve")
+            ->assertOk()
+            ->assertJsonPath('ok', true);
+
+        $this->assertSame(300000, (int) $mainBranch->fresh()->budget);
+        $this->assertSame('pending_owner', $branch->fresh()->approval_status);
+
+        $this->actingAs($owner)
+            ->postJson("/api/owner/branch-requests/{$branch->id}/approve")
+            ->assertOk()
+            ->assertJsonPath('ok', true);
+
+        $this->assertSame(200000, (int) $mainBranch->fresh()->budget);
+        $this->assertSame('approved', $branch->fresh()->approval_status);
+        $this->assertTrue((bool) $branch->fresh()->is_active);
     }
 }

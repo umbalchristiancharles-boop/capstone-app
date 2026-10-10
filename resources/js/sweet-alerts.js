@@ -32,11 +32,12 @@ export async function swalConfirm(message, title = 'Are you sure?') {
   return !!res.isConfirmed
 }
 
-export async function swalPrompt(message, title = '', input = 'text') {
+export async function swalPrompt(message, title = '', input = 'text', options = {}) {
   const res = await Swal.fire({
     title,
     text: message,
     input,
+    ...options,
     showCancelButton: true,
     confirmButtonText: 'OK',
     cancelButtonText: 'Cancel',

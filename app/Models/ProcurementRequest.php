@@ -13,6 +13,7 @@ class ProcurementRequest extends Model
     use HasFactory;
 
     protected $fillable = [
+        'order_group_id',
         'logistics_user_id',
         'procurement_user_id',
         'finance_user_id',
@@ -98,4 +99,3 @@ class ProcurementRequest extends Model
         return $this->belongsTo(Branch::class);
     }
 }
-

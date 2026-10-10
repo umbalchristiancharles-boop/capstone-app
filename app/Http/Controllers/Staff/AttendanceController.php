@@ -68,6 +68,16 @@ class AttendanceController extends Controller
             }
         }
 
+        $faceImage = $request->input('face_image');
+        if (!$faceImage) {
+            return response()->json([
+                'ok' => false,
+                'success' => false,
+                'message' => 'Face verification is required. Please take a photo to clock in.',
+                'face_verification_error' => true,
+            ], 400);
+        }
+
         // Create or update attendance
         if (!$attendance) {
             $attendance = new Attendance([
@@ -79,6 +89,10 @@ class AttendanceController extends Controller
         $timeIn = Carbon::now();
         $attendance->time_in = $timeIn;
         $attendance->status = $this->determineStatus($timeIn);
+        $attendance->face_image = $faceImage;
+        $attendance->confirmed = false;
+        $attendance->confirmed_by = null;
+        $attendance->confirmed_at = null;
         $attendance->save();
         app(\App\Http\Controllers\Api\PayrollController::class)->syncAttendance($attendance);
 

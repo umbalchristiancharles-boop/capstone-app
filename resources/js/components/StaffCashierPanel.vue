@@ -1094,27 +1094,7 @@ async function loadAttendanceSettings() {
 }
 
 async function performClockIn() {
-  if (isAttendanceProcessing.value) return
-  isAttendanceProcessing.value = true
-  attendanceMessage.value = ''
-
-  try {
-    const res = await axios.post('/api/staff/clock-in', {}, { withCredentials: true })
-    if (res.data && (res.data.success || res.data.ok)) {
-      attendanceMessage.value = 'Clocked in successfully!'
-      attendanceMessageType.value = 'success'
-      await loadAttendanceStatus()
-    } else {
-      attendanceMessage.value = res.data.message || 'Failed to clock in'
-      attendanceMessageType.value = 'error'
-    }
-  } catch (e) {
-    attendanceMessage.value = e.response?.data?.message || 'Error clocking in'
-    attendanceMessageType.value = 'error'
-  } finally {
-    isAttendanceProcessing.value = false
-    setTimeout(() => { attendanceMessage.value = '' }, 3000)
-  }
+  await initiateClockIn()
 }
 
 async function performClockOut() {

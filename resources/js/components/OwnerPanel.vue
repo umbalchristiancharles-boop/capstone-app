@@ -198,19 +198,6 @@
             </div>
 
             <div class="form-row">
-              <label>Unit</label>
-              <select v-model="productForm.unit">
-                <option value="">Select unit (optional)</option>
-                <option value="pcs">pcs</option>
-                <option value="g">g</option>
-                <option value="kg">kg</option>
-                <option value="ml">ml</option>
-                <option value="l">l</option>
-                <option value="pack">pack</option>
-              </select>
-            </div>
-
-            <div class="form-row">
               <label>Description</label>
               <textarea v-model="productForm.description" rows="3" placeholder="Description (optional)"></textarea>
             </div>
@@ -546,7 +533,7 @@ const products = ref([])
 const dishSubmitting = ref(false)
 const dishMessage = ref('')
 const dishMessageType = ref('')
-const productForm = ref({ name: '', category: '', brand: '', description: '', unit: '' })
+const productForm = ref({ name: '', category: '', brand: '', description: '' })
 const productSubmitting = ref(false)
 const productMessage = ref('')
 const productMessageType = ref('')
@@ -628,7 +615,7 @@ async function submitProduct() {
     const res = await axios.post('/api/owner/products', productForm.value, { withCredentials: true })
     productMessage.value = res.data?.message || 'Product created successfully and applied to all branches!'
     productMessageType.value = 'success'
-    productForm.value = { name: '', category: '', brand: '', description: '', unit: '' }
+    productForm.value = { name: '', category: '', brand: '', description: '' }
   } catch (e) {
     console.error('Failed to create product', e)
     productMessage.value = e?.response?.data?.message || e?.response?.data?.error || 'Failed to create product'

@@ -35,7 +35,6 @@ class ProductRequestController extends Controller
             'category' => 'required|string|max:100',
             'brand' => 'nullable|string|max:255',
             'description' => 'nullable|string|max:500',
-            'unit' => 'nullable|string|max:50',
         ]);
 
         $branches = Branch::where('is_active', true)->get();
@@ -48,13 +47,13 @@ class ProductRequestController extends Controller
                 $created = [];
 
                 foreach ($branches as $branch) {
-                    $created[] = Product::create([
+                    $product = Product::create([
                         'name' => $validated['name'],
                         'slug' => Str::slug($validated['name'] . '-' . $branch->id . '-' . time()),
                         'category' => $validated['category'],
                         'brand' => $validated['brand'] ?? null,
                         'description' => $validated['description'] ?? null,
-                        'unit' => $validated['unit'] ?? null,
+                        'unit' => null,
                         'price' => 0,
                         'cost_price' => 0,
                         'stock' => 0,
@@ -62,7 +61,10 @@ class ProductRequestController extends Controller
                         'branch_id' => $branch->id,
                         'supplier_name' => 'OWNER',
                         'supplier_id' => null,
-                        'is_published' => true,
+                        // An owner-created product still needs the supplier
+                        // quote/confirmation/selection workflow before it is
+                        // exposed as an orderable inventory item.
+                        'is_published' => false,
                         'is_active' => true,
                         'is_kitchen_dish' => false,
                         'has_been_ordered' => false,
@@ -71,6 +73,38 @@ class ProductRequestController extends Controller
                         'approved_by_owner' => $user->id,
                         'approved_at' => now(),
                     ]);
+
+                    $procurementRequest = ProcurementRequest::create([
+                        'logistics_user_id' => $user->id,
+                        'product_id' => $product->id,
+                        'quantity' => 10,
+                        'price' => 0,
+                        'total_amount' => 0,
+                        'status' => 'pending',
+                        'budget_approved' => false,
+                        'supplier_confirmed' => false,
+                        'branch_id' => $branch->id,
+                    ]);
+
+                    $suppliers = User::whereRaw('UPPER(COALESCE(role, "")) IN (?, ?)', ['SUPPLIER', 'SUPPLIER_MANAGER'])
+                        ->where(function ($query) use ($branch) {
+                            $query->whereNull('branch_id')->orWhere('branch_id', $branch->id);
+                        })
+                        ->get();
+
+                    foreach ($suppliers as $supplier) {
+                        SupplierOrder::create([
+                            'procurement_request_id' => $procurementRequest->id,
+                            'product_id' => $product->id,
+                            'supplier_id' => $supplier->id,
+                            'quantity' => $procurementRequest->quantity,
+                            'status' => 'pending',
+                            'is_broadcast' => true,
+                            'branch_id' => $branch->id,
+                        ]);
+                    }
+
+                    $created[] = $product;
                 }
 
                 return $created;
@@ -135,7 +169,7 @@ class ProductRequestController extends Controller
 
     /**
      * Create a new product request (Inventory Staff)
-    * New multi-level workflow: broadcasts to suppliers and sets status = 'pending_supplier'
+    * New multi-level workflow: approval precedes the supplier broadcast.
      */
     public function store(Request $request)
     {
@@ -195,11 +229,11 @@ class ProductRequestController extends Controller
                     'requested_by' => $user->id,
                     'branch_id' => $branchId,
                     'approval_status' => 'pending_approval',
-                    'status' => 'pending_supplier',
+                    'status' => 'pending_logistics',
                 ]);
 
-                // Create an unpublished catalog record now so supplier quotes can
-                // be collected before the logistics and owner approvals finish.
+                // Create an unpublished catalog record so it can be broadcast
+                // after Main Logistics and Owner approvals finish.
                 $product = Product::create([
                     'name' => $productRequest->name,
                     'slug' => Str::slug($productRequest->name . '-' . $productRequest->id . '-' . time()),
@@ -236,24 +270,6 @@ class ProductRequestController extends Controller
                     'branch_id' => $branchId,
                 ]);
 
-                $suppliers = User::whereRaw('UPPER(COALESCE(role, "")) IN (?, ?)', ['SUPPLIER', 'SUPPLIER_MANAGER'])
-                    ->where(function ($query) use ($branchId) {
-                        $query->whereNull('branch_id')->orWhere('branch_id', $branchId);
-                    })
-                    ->get();
-
-                foreach ($suppliers as $supplier) {
-                    SupplierOrder::create([
-                        'procurement_request_id' => $procurementRequest->id,
-                        'product_id' => $product->id,
-                        'supplier_id' => $supplier->id,
-                        'quantity' => $procurementRequest->quantity,
-                        'status' => 'pending',
-                        'is_broadcast' => true,
-                        'branch_id' => $branchId,
-                    ]);
-                }
-
                 try {
                     (new LogisticsService())->createProcurementTransaction($procurementRequest, 'procurement', $user->id);
                 } catch (\Throwable $e) {
@@ -263,10 +279,9 @@ class ProductRequestController extends Controller
                     ]);
                 }
 
-                Log::info('[ProductRequest] Supplier broadcast created', [
+                Log::info('[ProductRequest] Procurement request created; supplier broadcast waits for approvals', [
                     'product_request_id' => $productRequest->id,
                     'procurement_request_id' => $procurementRequest->id,
-                    'supplier_count' => $suppliers->count(),
                 ]);
 
                 return $productRequest;
@@ -382,7 +397,9 @@ class ProductRequestController extends Controller
                 ]);
 
                 $product->update([
-                    'is_published' => true,
+                    // Approval authorizes the request, but supplier selection
+                    // is the point at which the product becomes inventory-ready.
+                    'is_published' => false,
                     'is_active' => true,
                     'storage_requirements' => $productRequest->storage_requirements,
                     'is_perishable' => $productRequest->is_perishable,
@@ -752,7 +769,7 @@ class ProductRequestController extends Controller
                     'branch_id' => $productRequest->branch_id ?? 1,
                     'supplier_name' => 'TO BE ASSIGNED',
                     'supplier_id' => null,
-                    'is_published' => true,  // Published after owner approval
+                    'is_published' => false,
                     'is_active' => true,
                     'is_kitchen_dish' => false,
                     'has_been_ordered' => false,
@@ -760,7 +777,7 @@ class ProductRequestController extends Controller
                 ]);
 
                 $product->update([
-                    'is_published' => true,
+                    'is_published' => false,
                     'is_active' => true,
                     'storage_requirements' => $productRequest->storage_requirements,
                     'is_perishable' => $productRequest->is_perishable,
@@ -768,7 +785,10 @@ class ProductRequestController extends Controller
 
                 // Mark request as approved with owner info
                 $productRequest->update([
-                    'status' => 'approved',
+                    // Both approvals are complete. Supplier broadcast is the
+                    // next state, before admin confirmation and Procurement
+                    // supplier selection.
+                    'status' => 'pending_supplier',
                     'approval_status' => 'approved',  // Keep for backward compatibility
                     'approved_by_owner' => $user->id,
                     'owner_approval_notes' => $validated['notes'] ?? null,
@@ -776,6 +796,8 @@ class ProductRequestController extends Controller
                     'approved_at' => now(),
                     'product_id' => $product->id,
                 ]);
+
+                $this->broadcastApprovedProductRequest($productRequest->fresh(), $product);
 
                 Log::info('Product request approved at owner level and product created', [
                     'product_request_id' => $productRequest->id,
@@ -915,5 +937,41 @@ class ProductRequestController extends Controller
 
             return response()->json(['error' => 'Failed to reject product request'], 500);
         }
+    }
+
+    private function broadcastApprovedProductRequest(ProductRequest $productRequest, Product $product): void
+    {
+        $procurementRequest = ProcurementRequest::where('product_id', $product->id)->first();
+        if (!$procurementRequest) {
+            throw new \RuntimeException('Cannot broadcast product request without a procurement request');
+        }
+
+        $suppliers = User::whereRaw('UPPER(COALESCE(role, "")) IN (?, ?)', ['SUPPLIER', 'SUPPLIER_MANAGER'])
+            ->where(function ($query) use ($productRequest) {
+                $query->whereNull('branch_id')->orWhere('branch_id', $productRequest->branch_id);
+            })
+            ->get();
+
+        foreach ($suppliers as $supplier) {
+            SupplierOrder::firstOrCreate(
+                [
+                    'procurement_request_id' => $procurementRequest->id,
+                    'supplier_id' => $supplier->id,
+                ],
+                [
+                    'product_id' => $product->id,
+                    'quantity' => $procurementRequest->quantity,
+                    'status' => 'pending',
+                    'is_broadcast' => true,
+                    'branch_id' => $productRequest->branch_id,
+                ]
+            );
+        }
+
+        Log::info('[ProductRequest] Supplier broadcast created after approvals', [
+            'product_request_id' => $productRequest->id,
+            'procurement_request_id' => $procurementRequest->id,
+            'supplier_count' => $suppliers->count(),
+        ]);
     }
 }

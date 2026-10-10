@@ -138,7 +138,39 @@
               <button class="btn-refresh" @click="loadRequestedProducts">🔄 Refresh</button>
             </div>
             <div class="product-grid">
-              <div v-for="p in requestedProducts" :key="'req-'+p.id" class="product-card">
+              <div
+                v-for="group in requestedProductGroups.filter(item => item.order_group_id)"
+                :key="'bulk-'+group.order_group_id"
+                class="product-card bulk-order-card"
+              >
+                <div class="product-type-badge">Bulk Order {{ group.order_group_id.slice(0, 8).toUpperCase() }}</div>
+                <div class="product-name">Supplier Order</div>
+                <div class="bulk-order-lines">
+                  <div v-for="item in group.items" :key="'bulk-line-'+item.id" class="bulk-order-line">
+                    <span>{{ item.name }}<small v-if="item.quantity"> x{{ item.quantity }}</small></span>
+                    <strong>{{ formatPrice(item.supplier_quote_price ?? item.price) }}</strong>
+                  </div>
+                </div>
+                <div class="product-meta">
+                  <div class="product-price">
+                    {{ formatPrice(group.items.reduce((total, item) => total + Number(item.supplier_quote_price ?? item.price ?? 0) * Number(item.quantity ?? 1), 0)) }}
+                    <small class="supplier-quote-label">{{ group.items[0]?.supplier_quote_supplier || group.items[0]?.supplier_name || 'Supplier pending' }}</small>
+                  </div>
+                  <div>
+                    <button
+                      v-if="bulkGroupCanAcknowledge(group)"
+                      class="btn-small btn-primary"
+                      @click="acknowledgeBulkRequest(group.items[0])"
+                    >Acknowledge Bulk Order</button>
+                    <button v-else-if="bulkGroupStatus(group) === 'budget_pending'" class="btn-small btn-outline" disabled>Budget to be received</button>
+                    <span v-else class="btn-small btn-outline">{{ bulkGroupStatusLabel(group) }}</span>
+                  </div>
+                </div>
+                <div class="product-supplier">{{ group.items[0]?.supplier_name || group.items[0]?.supplier_quote_supplier || 'Supplier pending' }}</div>
+              </div>
+
+              <div v-for="p in requestedProducts.filter(item => !item.order_group_id)" :key="'req-'+p.id" class="product-card">
+                <div v-if="p.order_group_id" class="product-type-badge">Bulk Order {{ p.order_group_id.slice(0, 8).toUpperCase() }}</div>
                 <div class="product-name">{{ p.name }}</div>
                 <span v-if="p.request_origin === 'owner_direct'" class="product-type-badge">Owner-created product</span>
                 <div v-if="p.per_pack_or_individual" class="product-type-badge" :class="'type-' + p.per_pack_or_individual">
@@ -155,14 +187,19 @@
                     </small>
                   </div>
                   <div>
-                    <template v-if="p.product_request_status && p.product_request_status !== 'approved'">
+                    <template v-if="['pending_approval', 'pending_owner'].includes(p.product_request_status)">
                       <button class="btn-small btn-outline" disabled>Waiting for product approval</button>
                     </template>
                     <template v-else-if="p.awaiting_admin_confirmation">
                       <button class="btn-small btn-outline" disabled>Awaiting admin confirmation</button>
                     </template>
                     <template v-else-if="(p.procurement_status === 'pending' || p.status === 'pending') && !p.needs_supplier && (p.acknowledge_allowed === undefined ? true : p.acknowledge_allowed)">
-                      <button class="btn-small btn-primary" @click="acknowledgeRequest(p)">Acknowledge</button>
+                      <button
+                        v-if="!p.order_group_id || isFirstBulkLine(p)"
+                        class="btn-small btn-primary"
+                        @click="p.order_group_id ? acknowledgeBulkRequest(p) : acknowledgeRequest(p)"
+                      >{{ p.order_group_id ? 'Acknowledge Bulk Order' : 'Acknowledge' }}</button>
+                      <span v-else class="btn-small btn-outline">Included in bulk order</span>
                     </template>
                     <template v-else-if="(p.procurement_status === 'pending' || p.status === 'pending') && p.needs_supplier">
                       <button class="btn-small btn-warning" @click="requestSupplier(p)" :disabled="requestingSupplierIds[(p.procurement_request_id || p.id)]">{{ requestingSupplierIds[(p.procurement_request_id || p.id)] ? 'Requesting...' : 'Request Supplier for Product' }}</button>
@@ -188,7 +225,7 @@
                              <button class="btn-small btn-primary" @click="openReceiptModal(p)" :disabled="completingDeliveryIds[(p.procurement_request_id || p.id)]">
                                {{ completingDeliveryIds[(p.procurement_request_id || p.id)] ? 'Submitting...' : 'Upload Receipt' }}
                              </button>
-                           </template>
+                             </template>
                          </div>
                          <div v-else>
                            <button class="btn-small btn-primary"
@@ -724,6 +761,21 @@ function getPublishedProductsByCategory(category) {
 // Requested products (logistics requests)
 const requestedProducts = ref([])
 const requestedProductsLoading = ref(false)
+const requestedProductGroups = computed(() => {
+  const groups = new Map()
+  requestedProducts.value.forEach(product => {
+    const key = product.order_group_id || `individual-${product.id}`
+    if (!groups.has(key)) {
+      groups.set(key, {
+        key,
+        order_group_id: product.order_group_id || null,
+        items: []
+      })
+    }
+    groups.get(key).items.push(product)
+  })
+  return Array.from(groups.values())
+})
 const hasNotified = ref(false)
 const procurementPendingCount = computed(() => {
   const dashboardPending = Number(dashboardTotals.value?.pendingRequests || 0)
@@ -1079,6 +1131,7 @@ async function acknowledgeRequest(product) {
           openSupplierModal(product, 'acknowledge')
           return
         }
+
         // If exactly one supplier confirmed, auto-assign it and skip modal
         if (filteredConfirmed.length === 1) {
           const onlySupplier = filteredConfirmed[0]
@@ -1148,6 +1201,57 @@ async function acknowledgeRequest(product) {
     } else {
       alert('❌ ' + errorMsg)
     }
+  }
+}
+
+function isFirstBulkLine(product) {
+  return requestedProducts.value.find(item => item.order_group_id === product.order_group_id)?.id === product.id
+}
+
+function bulkGroupStatus(group) {
+  const statuses = group.items.map(item => item.procurement_status || item.status || 'pending')
+  if (statuses.some(status => ['pending', 'needs_supplier'].includes(status))) return 'pending'
+  if (statuses.some(status => status === 'budget_pending')) return 'budget_pending'
+  if (statuses.some(status => ['pending_order_to_supplier', 'cash_in_transit', 'delivery_pending'].includes(status))) return 'pending_order_to_supplier'
+  if (statuses.some(status => ['ongoing_delivery', 'receipt_confirmed'].includes(status))) return 'ongoing_delivery'
+  return statuses[0]
+}
+
+function bulkGroupCanAcknowledge(group) {
+  return group.items.every(item => (
+    (item.procurement_status === 'pending' || item.status === 'pending') &&
+    !item.needs_supplier &&
+    (item.acknowledge_allowed === undefined || item.acknowledge_allowed)
+  ))
+}
+
+function bulkGroupStatusLabel(group) {
+  const status = bulkGroupStatus(group)
+  return {
+    pending_order_to_supplier: 'Ready to order',
+    ongoing_delivery: 'Delivery in progress',
+    completed: 'Completed',
+    rejected: 'Rejected',
+  }[status] || 'Processing'
+}
+
+async function acknowledgeBulkRequest(product) {
+  const group = requestedProducts.value.filter(item => item.order_group_id === product.order_group_id)
+  if (!group.length) return
+  if (!(await window.swalConfirm(`Acknowledge all ${group.length} products in this bulk order?`))) return
+
+  try {
+    for (const item of group) {
+      const payload = item.supplier_id ? { supplier_id: item.supplier_id } : {}
+      await axios.post(`/api/procurement-requests/${item.procurement_request_id}/status`, payload, { withCredentials: true })
+    }
+    alert('Bulk order acknowledged and sent to Finance for budget approval.')
+    await loadRequestedProducts()
+    await loadProducts()
+    await refreshAllData()
+  } catch (e) {
+    const errorMsg = e.response?.data?.error || e.response?.data?.message || 'Failed to acknowledge bulk order'
+    alert(errorMsg)
   }
 }
 

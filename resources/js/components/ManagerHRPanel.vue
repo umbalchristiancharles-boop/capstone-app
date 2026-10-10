@@ -452,6 +452,25 @@
                     <div class="position-row__dept">{{ p.department || '—' }}</div>
                   </div>
 
+                  <div v-if="p.is_custom" class="custom-position-permissions">
+                    <p class="custom-position-permissions__hint">
+                      Select which panels the hired applicant can access.
+                    </p>
+                    <div class="permission-grid">
+                      <label
+                        v-for="module in permissionTemplates"
+                        :key="module.key"
+                        class="permission-card"
+                      >
+                        <input
+                          type="checkbox"
+                          v-model="customPositionModules[module.key]"
+                        />
+                        <span>{{ module.label }}</span>
+                      </label>
+                    </div>
+                  </div>
+
                   <div class="position-row__inputs">
                     <label class="field">
                       <span class="field-label">Quantity</span>
@@ -561,13 +580,19 @@
                 </div>
               </div>
               <div class="confirmation-actions">
-                <button class="btn-sm btn-success" @click="viewConfirmation(conf)">
-                  View Photo
+                <button type="button" class="btn-sm btn-success" @click="viewConfirmation(conf)">
+                  {{ reviewedConfirmations[conf.id] ? 'Review Photo Again' : 'Review Photo' }}
                 </button>
-                <button class="btn-sm btn-primary" @click="confirmClockIn(conf.id)">
-                  ✓ Confirm
+                <button
+                  type="button"
+                  class="btn-sm btn-primary"
+                  @click.stop.prevent="confirmClockIn(conf.id)"
+                  :disabled="confirmingConfirmations[conf.id]"
+                  title="Confirm this attendance"
+                >
+                  {{ confirmingConfirmations[conf.id] ? 'Confirming...' : '✓ Confirm' }}
                 </button>
-                <button class="btn-sm btn-danger" @click="rejectClockIn(conf.id)">
+                <button type="button" class="btn-sm btn-danger" @click="rejectClockIn(conf.id)">
                   ✗ Reject
                 </button>
               </div>
@@ -622,7 +647,15 @@
             <span>{{ att.time_out || '-' }}</span>
             <span>{{ att.hours_worked || '-' }}</span>
             <span>
-              <span class="badge" :class="attendanceStatusClass(att.status)">{{ att.status || '-' }}</span>
+              <span
+                v-if="!att.confirmed"
+                class="badge badge--warning"
+              >
+                Pending Confirmation
+              </span>
+              <span v-else class="badge" :class="attendanceStatusClass(att.status)">
+                {{ att.status || '-' }}
+              </span>
             </span>
           </div>
         </div>
@@ -910,10 +943,14 @@
 
         <div class="photo-modal__body">
           <img
-            :src="selectedConfirmation.face_image"
-            :alt="`Clock-in photo for ${selectedConfirmation.user_name}`"
-            class="photo-modal__image"
-          />
+          v-if="selectedConfirmation.has_face_image && selectedConfirmation.face_image"
+          :src="selectedConfirmation.face_image"
+          :alt="`Clock-in photo for ${selectedConfirmation.user_name}`"
+          class="photo-modal__image"
+        />
+        <div v-else class="photo-modal__missing-image">
+          No clock-in photo was captured for this attendance.
+        </div>
 
           <div class="photo-modal__info">
             <div class="photo-modal__info-row">
@@ -940,16 +977,24 @@
                 </span>
               </span>
             </div>
+            <p class="photo-modal__review-note">
+              Review the clock-in photo before confirming this attendance.
+            </p>
           </div>
         </div>
 
         <div class="photo-modal__footer">
-          <button class="btn-secondary" @click="showConfirmationModal = false">Close</button>
-          <button class="btn-danger" @click="rejectClockIn(selectedConfirmation.id); showConfirmationModal = false">
+          <button type="button" class="btn-secondary" @click="showConfirmationModal = false">Close</button>
+          <button type="button" class="btn-danger" @click="rejectClockIn(selectedConfirmation.id); showConfirmationModal = false">
             ✗ Reject
           </button>
-          <button class="btn-primary" @click="confirmClockIn(selectedConfirmation.id); showConfirmationModal = false">
-            ✓ Confirm
+          <button
+            type="button"
+            class="btn-primary"
+            @click="confirmSelectedClockIn"
+            :disabled="!selectedConfirmation.has_face_image || confirmingConfirmations[selectedConfirmation.id]"
+          >
+            {{ confirmingConfirmations[selectedConfirmation.id] ? 'Confirming...' : '✓ Confirm' }}
           </button>
         </div>
       </div>
@@ -973,6 +1018,23 @@ const positionsLoading = ref(false)
 const submittingPositions = ref(false)
 const requestQuantities = ref({})
 const requestNotes = ref({})
+const customPositionModules = ref({})
+
+const permissionTemplates = [
+  { key: 'admin', label: 'Admin' },
+  { key: 'finance', label: 'Finance' },
+  { key: 'logistics', label: 'Logistics' },
+  { key: 'inventory', label: 'Inventory' },
+  { key: 'procurement', label: 'Procurement' },
+  { key: 'kitchen', label: 'Kitchen Staff' },
+  { key: 'cashier', label: 'Cashier' },
+  { key: 'hr', label: 'HR' },
+  { key: 'reports', label: 'Reports' },
+]
+
+const emptyCustomPositionModules = () => Object.fromEntries(
+  permissionTemplates.map(module => [module.key, false])
+)
 
 // Job Applications Modal state (HR Manager view)
 const showApplicationsModal = ref(false)
@@ -1014,6 +1076,9 @@ const managerHrTopbarLabel = computed(() => `HR Manager - ${userProfile.value.br
 const scrollToHrSection = (section) => {
   selectedHrSection.value = section
   window.scrollTo(0, 0)
+  if (section === 'confirmations') {
+    loadPendingConfirmations()
+  }
 }
 const errorMessage = ref('')
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
@@ -1058,6 +1123,8 @@ const editingStaffId = ref(null)
   const isLoadingConfirmations = ref(false)
   const showConfirmationModal = ref(false)
   const selectedConfirmation = ref(null)
+  const reviewedConfirmations = ref({})
+  const confirmingConfirmations = ref({})
 
 watch(hrAlertCount, (count) => {
   if (!hasNotified.value && count > 0) {
@@ -1551,6 +1618,7 @@ onMounted(async () => {
     userProfile.value = res.data.user
   } catch (err) { if (err.response && err.response.status === 401) { router.push('/staff-landing'); return } }
   await refreshAllData()
+  await loadPendingConfirmations()
   loadAttendanceSettings()
   loadPayrolls()
 })
@@ -1786,6 +1854,7 @@ async function openPositionsModal() {
     })
     requestQuantities.value = quantities
     requestNotes.value = notes
+    customPositionModules.value = emptyCustomPositionModules()
   } catch (err) {
     alert(err.response?.data?.message || 'Failed to load positions')
     positions.value = []
@@ -1801,12 +1870,31 @@ async function submitPositionsRequests() {
     .map(p => {
       const q = Number(requestQuantities.value?.[p.id] || 0)
       const notes = requestNotes.value?.[p.id] || null
-      return { position_id: p.id, quantity: q, notes }
+      const isCustom = Boolean(p.is_custom)
+      const modules = isCustom
+        ? permissionTemplates
+          .filter(module => customPositionModules.value[module.key])
+          .map(module => module.key)
+        : []
+
+      return {
+        position_id: p.id,
+        quantity: q,
+        notes,
+        account_type: isCustom ? 'custom' : 'standard',
+        account_config: isCustom ? { modules, functions: [] } : null,
+      }
     })
     .filter(x => x.quantity && x.quantity >= 1)
 
   if (payloads.length === 0) {
     alert('Please enter quantity (min 1) for at least one position.')
+    return
+  }
+
+  const customPayload = payloads.find(payload => payload.account_type === 'custom')
+  if (customPayload && customPayload.account_config.modules.length === 0) {
+    alert('Please select at least one panel for the custom account.')
     return
   }
 
@@ -1848,25 +1936,64 @@ async function loadPendingConfirmations() {
 }
 
 function viewConfirmation(conf) {
+  reviewedConfirmations.value[conf.id] = true
   selectedConfirmation.value = conf
   showConfirmationModal.value = true
 }
 
 async function confirmClockIn(attendanceId) {
-  if (!confirm('Are you sure you want to confirm this clock-in?')) return
+  const confirmation = pendingConfirmations.value.find(item => item.id === attendanceId)
+  if (!confirmation?.has_face_image) {
+    alert('This attendance has no clock-in photo and cannot be confirmed.')
+    return false
+  }
 
+  const confirmed = window.swalConfirm
+    ? await window.swalConfirm('Are you sure you want to confirm this clock-in?')
+    : window.confirm('Are you sure you want to confirm this clock-in?')
+  if (!confirmed) return false
+
+  confirmingConfirmations.value[attendanceId] = true
   try {
     const res = await axios.post(`/api/manager/hr/attendance/${attendanceId}/confirm`, {}, { withCredentials: true })
     if (res.data && res.data.ok) {
-      alert('Clock-in confirmed successfully')
-      loadPendingConfirmations()
-      loadHrAttendance(attendanceRange.value)
+      if (window.swalAlert) {
+        await window.swalAlert('Clock-in confirmed successfully', 'success')
+      } else {
+        alert('Clock-in confirmed successfully')
+      }
+      await loadPendingConfirmations()
+      await loadHrAttendance(attendanceRange.value)
+      return true
     } else {
-      alert(res.data.message || 'Failed to confirm clock-in')
+      if (window.swalAlert) {
+        await window.swalAlert(res.data.message || 'Failed to confirm clock-in', 'error')
+      } else {
+        alert(res.data.message || 'Failed to confirm clock-in')
+      }
+      return false
     }
   } catch (e) {
     console.error('Error confirming clock-in:', e)
-    alert(e.response?.data?.message || 'Failed to confirm clock-in. Please try again.')
+    const message = e.response?.data?.message || 'Failed to confirm clock-in. Please try again.'
+    if (window.swalAlert) {
+      await window.swalAlert(message, 'error')
+    } else {
+      alert(message)
+    }
+    return false
+  } finally {
+    confirmingConfirmations.value[attendanceId] = false
+  }
+}
+
+async function confirmSelectedClockIn() {
+  if (!selectedConfirmation.value) return
+
+  const attendanceId = selectedConfirmation.value.id
+  const confirmed = await confirmClockIn(attendanceId)
+  if (confirmed) {
+    showConfirmationModal.value = false
   }
 }
 
@@ -2113,6 +2240,37 @@ defineExpose({ refreshAllData, onProfileUpdated })
   color: #666;
   font-size: 0.85rem;
   margin-top: 0.25rem;
+}
+.custom-position-permissions {
+  margin: 0 0 0.9rem;
+  padding: 0.75rem;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  background: #fff;
+}
+.custom-position-permissions__hint {
+  margin: 0 0 0.65rem;
+  color: #666;
+  font-size: 0.85rem;
+}
+.permission-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+.permission-card {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid #eee;
+  border-radius: 6px;
+  color: #333;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.permission-card input {
+  accent-color: #ff9f43;
 }
 .position-row__inputs {
   display: flex;
@@ -2444,6 +2602,17 @@ defineExpose({ refreshAllData, onProfileUpdated })
   border-radius: 8px;
   border: 2px solid #ddd;
 }
+.photo-modal__missing-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  padding: 1rem;
+  border: 2px dashed #e0b04b;
+  border-radius: 8px;
+  background: #fff8e8;
+  color: #7a5a00;
+}
 
 .photo-modal__info {
   margin-top: 1rem;
@@ -2471,6 +2640,15 @@ defineExpose({ refreshAllData, onProfileUpdated })
 
 .photo-modal__value {
   color: #333;
+}
+
+.photo-modal__review-note {
+  margin: 1rem 0 0;
+  padding: 0.75rem;
+  border-radius: 6px;
+  background: #fff8e8;
+  color: #7a5a00;
+  font-size: 0.85rem;
 }
 
 .photo-modal__footer {
