@@ -1019,7 +1019,9 @@ const isNotificationModalOpen = computed(() => (
   (props.announcementsInModal && activeNotificationPanel.value === 'announcements')
 ) && Boolean(activeNotificationPanel.value))
 const activeNotificationLabel = computed(() => (
-  notificationItems.value.find(item => item.key === activeNotificationPanel.value)?.label || 'Notifications'
+  notificationItems.value.find(item => item.key === activeNotificationPanel.value)?.label ||
+  moduleNotificationDefinitions.find(item => item.key === activeNotificationPanel.value)?.label ||
+  (activeNotificationPanel.value === 'announcements' ? 'Announcements' : 'Notifications')
 ))
 
 async function loadNotificationSummary() {
@@ -1052,19 +1054,21 @@ async function markNotificationRead(key) {
   }
 }
 
-function handleNotificationClick(key) {
-
+async function handleNotificationClick(key) {
+  if (props.notificationDetailsInModal) {
+    await loadNotificationSummary()
+  }
   activeNotificationPanel.value = key
   if (props.notificationDetailsInModal) {
-    Promise.resolve(markNotificationRead(key)).catch(() => {})
+    void markNotificationRead(key)
   }
   if ((key === 'announcements' && props.announcementsInModal) || props.notificationDetailsInModal) {
-    if (key === 'announcements') Promise.resolve(loadAnnouncements()).catch(() => {})
+    if (key === 'announcements') void loadAnnouncements()
     return
   }
 
   if (key === 'announcements') {
-    Promise.resolve(loadAnnouncements()).catch(() => {})
+    void loadAnnouncements()
   }
 }
 

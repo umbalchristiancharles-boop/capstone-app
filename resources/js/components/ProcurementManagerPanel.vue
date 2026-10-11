@@ -14,6 +14,8 @@
     :showOwnerTopbar="true"
     :enableDarkMode="false"
     :topbarLabel="procurementTopbarLabel"
+    :announcementsInModal="true"
+    :notificationDetailsInModal="true"
     accountInfoStyle="finance"
     @logout="askLogout"
     @profile-updated="onProfileUpdated"
@@ -82,7 +84,7 @@
                   <h3 id="manual-procurement-title">Create Manual Procurement</h3>
                   <button type="button" class="procurement-modal__close" aria-label="Close form" @click="cancelProcRequestManager">✕</button>
                 </div>
-                <form @submit.prevent="submitProcRequestManager">
+                <form class="procurement-modal__form" @submit.prevent="submitProcRequestManager">
                   <div class="form-group">
                     <label>Product *</label>
                     <select v-model="procRequestFormManager.product_id" required>
@@ -275,11 +277,12 @@
       </template>
 
       <template v-else-if="selectedSection === 'suppliers'">
-        <div class="panel-actions mt-1">
+        <div class="panel-actions supplier-panel-actions">
           <button class="btn-primary" @click="openAddSupplier">Add Supplier</button>
         </div>
         <section id="suppliers" class="supplier-products mt-1">
           <h2>Supplier Products (this branch)</h2>
+          <p class="section-description">Manage suppliers and review published products available to your branch.</p>
           <div v-if="loadingProducts">Loading products...</div>
           <div v-else-if="!products.length">No products available in your branch.</div>
           <div v-else>
@@ -288,15 +291,15 @@
               <div v-for="cat in publishedProductCategories" :key="cat" class="category-section mb-1">
                 <h4 class="category-title">{{ cat || 'Uncategorized' }}</h4>
                 <div class="product-grid">
-                  <div v-for="p in getPublishedProductsByCategory(cat)" :key="p.id" class="product-card">
+                  <div v-for="p in getPublishedProductsByCategory(cat)" :key="p.id" class="product-card supplier-product-card">
                     <div class="product-name">{{ p.name }}</div>
                     <div v-if="p.per_pack_or_individual" class="product-type-badge" :class="'type-' + p.per_pack_or_individual">
                       {{ formatPricingType(p.per_pack_or_individual) }}
                     </div>
-                    <div class="product-meta">
+                    <div class="product-meta supplier-product-meta">
                       <div class="product-price">{{ formatPrice(p.price) }}</div>
                       <div class="supplier-badge">{{ p.supplier_name || 'Unknown Supplier' }}</div>
-                      <div class="product-stock">Real stock: {{ p.real_stock ?? p.stock ?? 0 }}</div>
+                      <div class="product-stock"><span>Real stock</span><strong>{{ p.real_stock ?? p.stock ?? 0 }}</strong></div>
                       <div v-if="canChangeSupplier(p)" class="mt-1">
                         <button class="btn-small btn-warning" @click="changeSupplier(p)" :disabled="changingSupplierIds[(p.procurement_request_id || p.id)]">
                           {{ changingSupplierIds[(p.procurement_request_id || p.id)] ? 'Opening...' : 'Change Supplier' }}
@@ -347,23 +350,25 @@
             <div v-if="budgetError" class="error-msg mt-sm">{{ budgetError }}</div>
           </div>
 
-          <div class="mt-1">
+          <div class="budget-request-list">
             <h3>My Budget Requests</h3>
             <div v-if="budgetLoading">Loading...</div>
-            <div v-else-if="!budgetRequests.length">No budget requests.</div>
-            <table v-else class="data-table">
-              <thead>
-                <tr><th>Date</th><th>Purpose</th><th>Amount</th><th>Status</th></tr>
-              </thead>
-              <tbody>
-                <tr v-for="r in budgetRequests" :key="r.id">
-                  <td>{{ formatDate(r.date_requested) }}</td>
-                  <td>{{ r.purpose }}</td>
-                  <td>₱{{ r.requested_amount }}</td>
-                  <td>{{ r.status }}</td>
-                </tr>
-              </tbody>
-            </table>
+            <p v-else-if="!budgetRequests.length" class="budget-empty-state">No budget requests yet. Submitted requests will appear here.</p>
+            <div v-else class="budget-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr><th>Date</th><th>Purpose</th><th>Amount</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                  <tr v-for="r in budgetRequests" :key="r.id">
+                    <td>{{ formatDate(r.date_requested) }}</td>
+                    <td>{{ r.purpose }}</td>
+                    <td>₱{{ r.requested_amount }}</td>
+                    <td>{{ r.status }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
       </template>
@@ -406,7 +411,7 @@
 
       <transition name="fade">
         <div v-if="showAddModal" class="modal-backdrop" @click.self="closeAddSupplier">
-          <div class="modal">
+          <div class="modal supplier-account-modal">
             <div class="modal-card">
               <div class="modal-header">
                 <h3>Create Supplier Account</h3>
@@ -549,7 +554,7 @@
   <!-- Supplier selection modal - shown during Acknowledge button -->
   <transition name="fade">
     <div v-if="supplierModalVisible" class="modal-backdrop" @click.self="closeSupplierModal">
-      <div class="modal">
+      <div class="modal supplier-selection-modal">
         <div class="modal-card">
           <div class="modal-header">
             <h3>
@@ -2031,7 +2036,9 @@ onUnmounted(() => {
 }
 
 .manager-procurement-panel :deep(.admin-layout--owner-sidebar-layout) {
-  display: block;
+  display: grid;
+  grid-template-columns: 156px minmax(0, 1fr);
+  grid-template-rows: 66px minmax(0, 1fr);
   min-height: 100vh;
   overflow: visible;
 }
@@ -2080,12 +2087,13 @@ onUnmounted(() => {
 
 .manager-procurement-panel :deep(.admin-main) {
   display: flex;
-  width: auto;
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
-  height: calc(100vh - 66px);
-  min-height: 0;
-  margin: 66px 0 0 156px;
-  padding: 1.2rem 1.3rem 1.25rem;
+  height: 100%;
+  min-height: calc(100vh - 66px);
+  margin: 0;
+  padding: 0.65rem 1.3rem 1.25rem;
   box-sizing: border-box;
   flex-direction: column;
   gap: 0.75rem;
@@ -2095,8 +2103,17 @@ onUnmounted(() => {
 }
 
 .manager-procurement-panel :deep(.admin-main-header) {
-  padding: 0 0 4px;
-  margin-bottom: 0;
+  position: relative;
+  width: 100%;
+  margin: 0;
+  padding: 0.85rem 1.25rem;
+  overflow: hidden;
+  border: 1px solid rgba(219, 188, 160, 0.58);
+  border-top: 3px solid #ff6a3d;
+  border-radius: 18px;
+  background: linear-gradient(110deg, #fff 0%, #fffaf5 100%);
+  box-shadow: 0 10px 24px rgba(61, 42, 31, 0.07);
+  box-sizing: border-box;
 }
 
 .manager-procurement-panel :deep(.admin-main-header p:empty) {
@@ -2118,7 +2135,12 @@ onUnmounted(() => {
 }
 
 .manager-procurement-panel :deep(.admin-main-header-top) {
+  display: flex;
+  align-items: center;
   justify-content: flex-start;
+  gap: 0.75rem;
+  min-height: 0;
+  margin: 0;
 }
 
 .manager-procurement-panel :deep(.admin-main-header-top > .header-left-slot) {
@@ -2126,7 +2148,10 @@ onUnmounted(() => {
 }
 
 .manager-procurement-panel :deep(.admin-main-header-top > div:nth-child(2)) {
-  transform: translateX(-12px);
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  transform: none;
 }
 
 .manager-procurement-panel :deep(.admin-main-header-top > .header-actions-top) {
@@ -2134,8 +2159,9 @@ onUnmounted(() => {
 }
 
 .manager-procurement-panel :deep(.admin-main) {
-  padding: 1.2rem 1.75rem 1.25rem;
-  gap: 0.375rem;
+  margin-top: 0 !important;
+  padding: 0.65rem 1.75rem 1.25rem;
+  gap: 0.625rem;
 }
 
 .manager-procurement-panel .manual-procurement,
@@ -2144,11 +2170,12 @@ onUnmounted(() => {
 }
 
 .manager-procurement-panel :deep(.owner-sidebar-collapsed .admin-main) {
-  margin-left: 0;
+  width: 100%;
+  max-width: 100%;
 }
 
 .manager-procurement-panel :deep(.admin-layout.no-profile-column) {
-  display: block;
+  display: grid;
 }
 
 .panel-badge {
@@ -2207,15 +2234,15 @@ onUnmounted(() => {
 }
 
 .procurement-modal__dialog {
-  width: min(100%, 720px);
+  width: min(100%, 680px);
   max-height: calc(100vh - 2rem);
   overflow-y: auto;
-  padding: 1.25rem;
+  padding: 0;
   box-sizing: border-box;
   background: #fff;
-  border: 1px solid rgba(226, 232, 240, 0.95);
-  border-radius: 14px;
-  box-shadow: 0 18px 45px rgba(38, 28, 21, 0.24);
+  border: 1px solid rgba(219, 188, 160, 0.68);
+  border-radius: 16px;
+  box-shadow: 0 22px 55px rgba(38, 28, 21, 0.26);
 }
 
 .procurement-modal__header {
@@ -2223,84 +2250,160 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1rem;
+  margin: 0;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #eee4dc;
+  border-top: 3px solid #ff6a3d;
+  background: #fffdfb;
 }
 
 .procurement-modal__header h3 {
   margin: 0;
-  color: #4b2a06;
-  font-size: 1rem;
+  color: #3d2a1f;
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1.4;
 }
 
 .procurement-modal__close {
+  display: grid;
+  width: 34px;
+  height: 34px;
   flex: 0 0 auto;
-  padding: 0.25rem;
+  place-items: center;
+  padding: 0;
+  border-radius: 8px;
   border: 0;
   background: transparent;
-  color: #94a3b8;
-  font-size: 1.1rem;
+  color: #8b7565;
+  font-size: 1.2rem;
   line-height: 1;
   cursor: pointer;
 }
 
+.procurement-modal__close:hover {
+  background: #f6eee8;
+  color: #3d2a1f;
+}
+
+.procurement-modal__form {
+  padding: 1rem 1.25rem 0;
+}
+
 .procurement-modal__dialog .form-group {
-  margin-bottom: 0.85rem;
+  margin: 0 0 0.75rem;
 }
 
 .procurement-modal__dialog .form-group label {
   display: block;
-  margin-bottom: 0.35rem;
-  color: #334155;
-  font-size: 0.85rem;
-  font-weight: 600;
+  margin-bottom: 0.4rem;
+  color: #493426;
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
 .procurement-modal__dialog select,
-.procurement-modal__dialog input[type="number"] {
+.procurement-modal__dialog input[type="number"],
+.procurement-modal__dialog input[type="file"] {
   width: 100%;
-  min-height: 38px;
-  padding: 0.55rem 0.65rem;
+  min-height: 42px;
+  padding: 0.6rem 0.7rem;
   box-sizing: border-box;
-  border: 1px solid #cbd5e1;
-  border-radius: 7px;
+  border: 1px solid #d8dfe7;
+  border-radius: 8px;
   background: #fff;
-  color: #1e293b;
+  color: #243447;
+  font: inherit;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.procurement-modal__dialog select:focus,
+.procurement-modal__dialog input:focus {
+  border-color: #e68a4b;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(230, 138, 75, 0.14);
 }
 
 .procurement-modal__dialog small {
   display: block;
   margin-top: 0.35rem;
-  color: #94a3b8;
-  font-size: 0.75rem;
+  color: #786555;
+  font-size: 0.78rem;
+  line-height: 1.45;
 }
 
 .procurement-modal__uploads {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.85rem;
+  gap: 0.75rem;
+  margin-top: 0.1rem !important;
 }
 
 .procurement-modal__uploads input[type="file"] {
   width: 100%;
   max-width: 100%;
-  font-size: 0.78rem;
+  min-height: 46px;
+  padding: 0.45rem;
+  border: 1px dashed #d8c8bc;
+  background: #fcfaf8;
+  color: #615246;
+  font-size: 0.75rem;
+}
+
+.procurement-modal__uploads input[type="file"]::file-selector-button {
+  margin-right: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #e6d8cc;
+  border-radius: 6px;
+  background: #fff;
+  color: #493426;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.procurement-modal__uploads > div {
+  min-width: 0;
 }
 
 .procurement-modal__checkbox label {
   display: flex !important;
+  min-height: 42px;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.55rem;
+  margin: 0 !important;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid #eee4dc;
+  border-radius: 8px;
+  background: #fcfaf8;
+  cursor: pointer;
 }
 
 .procurement-modal__checkbox input {
-  width: auto;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #e85a0b;
+}
+
+.procurement-modal__form > .error-msg {
+  margin: 0 0 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 0.82rem;
 }
 
 .procurement-modal__actions {
   display: flex;
   justify-content: flex-end;
   gap: 0.6rem;
-  margin-top: 1rem;
+  margin: 0 -1.25rem;
+  padding: 0.8rem 1.25rem;
+  border-top: 1px solid #eee4dc;
+  background: #fcfaf8;
 }
 
 .procurement-modal__actions .btn-secondary,
@@ -2722,10 +2825,13 @@ onUnmounted(() => {
 
 /* Budget form specific styles */
 .budget-form {
-  max-width: 860px;
-  margin-top: 1rem;
-  padding: 1rem 0 0;
-  border-top: 1px solid #e5e7eb;
+  width: min(100%, 800px);
+  max-width: 800px;
+  margin-top: 0.75rem;
+  padding: 1rem;
+  border: 1px solid #eee4dc;
+  border-radius: 12px;
+  background: #fcfaf8;
 }
 .budget-form .form-row { display: flex; gap: 12px; align-items: end; flex-wrap:wrap }
 .budget-form .form-group.amount { width: 260px; display:flex; flex-direction:column }
@@ -2737,26 +2843,80 @@ onUnmounted(() => {
 .btn-outline { background: #64748b; color: #fff; border: 1px solid #64748b; border-radius: 8px; padding: 9px 14px; font-weight:700; cursor:pointer }
 
 /* Improved budget form grid and controls */
-.budget-form .form-grid { display: grid; grid-template-columns: 145px minmax(0, 600px); gap: 16px 18px; align-items: start; max-width: 800px }
-.budget-form .form-label { color: #4b1d1d; font-weight:700; padding-top:9px }
-.budget-form textarea { width:100%; min-height:78px; max-width:100%; padding:10px 12px; border-radius:8px; border:1px solid #dbe1e8; background:#fff; color:#1f2937; font: inherit; resize: vertical; box-sizing:border-box }
-.budget-form .inline-controls { display:flex; flex-wrap:wrap; gap:12px; align-items:center }
-.budget-form .amount-input { display:flex; align-items:center; gap:6px; background:#fff; border:1px solid #dbe1e8; padding:8px 10px; border-radius:8px }
+.budget-form .form-grid { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 12px 16px; align-items: start; max-width: 760px }
+.budget-form .form-label { color: #493426; font-weight:700; padding-top:9px }
+.budget-form textarea { width:100%; min-height:88px; max-width:100%; padding:10px 12px; border-radius:8px; border:1px solid #d8dfe7; background:#fff; color:#1f2937; font: inherit; resize: vertical; box-sizing:border-box }
+.budget-form .inline-controls { display:flex; flex-direction:column; align-items:flex-start; gap:10px }
+.budget-form .amount-input { display:flex; width:min(100%, 220px); min-height:42px; box-sizing:border-box; align-items:center; gap:6px; background:#fff; border:1px solid #d8dfe7; padding:8px 10px; border-radius:8px }
 .budget-form .amount-input .currency { color:#0b6e3a; font-weight:700 }
-.budget-form .amount-input input { border: none; outline: none; width:120px; font-weight:700; color:#334155; font: inherit }
+.budget-form .amount-input input { border: none; outline: none; width:100%; min-width:0; font-weight:600; color:#334155; font: inherit }
 .budget-form .form-field { display:flex; flex-direction:column }
-.budget-form .btn-budget { padding: 9px 14px; height:38px }
+.budget-form .btn-budget { padding: 9px 14px; min-height:38px }
 .budget-form .btn-outline { margin-bottom: 0 }
-.budget-form .action-row { display:flex; gap:8px; align-items:center }
+.budget-form .action-row { display:flex; flex-wrap:wrap; gap:8px; align-items:center }
 .budget-form .field-note { flex-basis:100%; }
 .budget-form .error-msg { padding-top:0; }
 
-.manager-procurement-panel .budget-requests > .mt-1 {
-  margin-top: 2rem;
+.manager-procurement-panel .budget-requests h3 {
+  margin: 0 0 0.5rem;
+  color: #493426;
+  font-size: 1rem;
 }
 
-.manager-procurement-panel .budget-requests h3 {
-  margin-bottom: 0.35rem;
+.manager-procurement-panel .budget-request-list {
+  margin-top: 1rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid #eee4dc;
+}
+
+.manager-procurement-panel .budget-empty-state {
+  margin: 0;
+  padding: 0.75rem 0.85rem;
+  border: 1px dashed #d8c8bc;
+  border-radius: 9px;
+  background: #fcfaf8;
+  color: #786555;
+  font-size: 0.9rem;
+}
+
+.manager-procurement-panel .budget-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid #eee4dc;
+  border-radius: 10px;
+}
+
+.manager-procurement-panel .budget-table-wrap .data-table {
+  min-width: 560px;
+  margin: 0;
+}
+
+@media (max-width: 600px) {
+  .manager-procurement-panel .budget-form {
+    padding: 0.85rem;
+  }
+
+  .manager-procurement-panel .budget-form .form-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.4rem;
+  }
+
+  .manager-procurement-panel .budget-form .form-label {
+    padding-top: 0.35rem;
+  }
+
+  .manager-procurement-panel .budget-form .form-field + .form-label {
+    margin-top: 0.4rem;
+  }
+
+  .manager-procurement-panel .budget-form .inline-controls,
+  .manager-procurement-panel .budget-form .action-row {
+    width: 100%;
+  }
+
+  .manager-procurement-panel .budget-form .action-row button {
+    flex: 1 1 auto;
+  }
 }
 
 
@@ -2973,8 +3133,8 @@ button:focus, a:focus, input:focus, select:focus { outline: 3px solid rgba(3,37,
 .manager-procurement-panel .supplier-products {
   box-sizing: border-box;
   width: 100%;
-  margin-top: 1rem;
-  padding: 1.25rem;
+  margin-top: 0;
+  padding: 1rem;
   background: #fff;
   border: 1px solid rgba(226, 232, 240, .9);
   border-radius: 14px;
@@ -2990,12 +3150,26 @@ button:focus, a:focus, input:focus, select:focus { outline: 3px solid rgba(3,37,
 .manager-procurement-panel .procurement-overview-card .hr-stat-card {
   margin-top: 0;
 }
+.manager-procurement-panel .procurement-overview-card {
+  gap: 0.625rem;
+}
+.manager-procurement-panel .hr-stat-card {
+  min-height: 76px;
+  padding: 0.75rem;
+}
 .manager-procurement-panel .manual-procurement h2,
 .manager-procurement-panel .requested-products h2,
 .manager-procurement-panel .budget-requests h2,
 .manager-procurement-panel .requests-history h2,
 .manager-procurement-panel .supplier-products h2 {
-  margin-top: 0;
+  margin: 0 0 0.35rem;
+}
+.manager-procurement-panel .manual-procurement > .section-description,
+.manager-procurement-panel .requested-products > .section-description {
+  margin: 0 0 0.625rem;
+}
+.manager-procurement-panel .manual-procurement > .mb-1 {
+  margin-bottom: 0;
 }
 .manager-procurement-panel .hr-stat-card { min-height: 84px; }
 .manager-procurement-panel .hr-stat-label { color: #8b6f59; }
@@ -3019,15 +3193,7 @@ button:focus, a:focus, input:focus, select:focus { outline: 3px solid rgba(3,37,
 .manager-procurement-panel .requests-scroll { overflow-x: auto; }
 
 @media (max-width: 900px) {
-  .manager-procurement-panel :deep(.admin-main) {
-    margin: 66px 0 0 150px;
-    width: calc(100% - 150px);
-    padding: 1rem;
-  }
-  .manager-procurement-panel :deep(.owner-sidebar-collapsed .admin-main) {
-    margin: 66px 0 0;
-    width: 100%;
-  }
+  .manager-procurement-panel :deep(.admin-main) { padding: 0.65rem 1rem 1rem; }
   .manager-procurement-panel .form-group[style*="display:flex"] {
     flex-direction: column;
   }
@@ -3037,6 +3203,24 @@ button:focus, a:focus, input:focus, select:focus { outline: 3px solid rgba(3,37,
     justify-content: stretch;
   }
   .manager-procurement-panel .form-actions button { flex: 1 1 140px; }
+}
+
+@media (max-width: 1023px) {
+  .manager-procurement-panel :deep(.admin-layout--owner-sidebar-layout) {
+    display: block;
+    min-height: 100vh;
+  }
+
+  .manager-procurement-panel :deep(.admin-main) {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0;
+    height: auto;
+    min-height: calc(100vh - 66px);
+    margin: 0 !important;
+    padding: 0.65rem 1rem 1rem;
+    box-sizing: border-box;
+  }
 }
 
 @media (max-width: 767px) {
@@ -3050,10 +3234,14 @@ button:focus, a:focus, input:focus, select:focus { outline: 3px solid rgba(3,37,
     min-width: 156px;
   }
   .manager-procurement-panel :deep(.admin-main) {
-    width: 100%;
-    margin: 60px 0 0;
-    height: calc(100vh - 60px);
-    padding: .75rem;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0;
+    margin: 0 !important;
+    height: auto;
+    min-height: calc(100vh - 66px);
+    padding: .65rem .75rem 1rem;
+    box-sizing: border-box;
   }
   .manager-procurement-panel .procurement-overview-card,
   .manager-procurement-panel .manual-procurement,
@@ -3076,6 +3264,32 @@ button:focus, a:focus, input:focus, select:focus { outline: 3px solid rgba(3,37,
     flex: 1;
   }
   .manager-procurement-panel .hr-stats-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 520px) {
+  .procurement-modal {
+    align-items: flex-start;
+    padding: 0.625rem;
+  }
+
+  .procurement-modal__dialog {
+    width: 100%;
+    max-height: calc(100vh - 1.25rem);
+    border-radius: 12px;
+  }
+
+  .procurement-modal__header,
+  .procurement-modal__form {
+    padding-right: 0.9rem;
+    padding-left: 0.9rem;
+  }
+
+  .procurement-modal__actions {
+    margin-right: -0.9rem;
+    margin-left: -0.9rem;
+    padding-right: 0.9rem;
+    padding-left: 0.9rem;
+  }
 }
 
 /* Keep the shell continuous like Finance Manager; cards provide the white surfaces. */
@@ -3131,4 +3345,556 @@ button:focus, a:focus, input:focus, select:focus { outline: 3px solid rgba(3,37,
    — the account ID will be visible inside the Info modal only. */
 :deep(.admin-profile-column .admin-id-block) { display: none !important }
 
-</style>
+.manager-procurement-panel .requested-products {
+  padding: 1rem;
+  border-color: rgba(219, 188, 160, 0.62);
+  box-shadow: 0 8px 22px rgba(61, 42, 31, 0.07);
+}
+
+.manager-procurement-panel .requested-products h2 {
+  margin-bottom: 0.35rem;
+  color: #3d2a1f;
+  font-size: 1.2rem;
+  line-height: 1.35;
+}
+
+.manager-procurement-panel .requested-products h2 .panel-badge {
+  position: static;
+  display: inline-flex;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  margin-left: 0.4rem;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  font-size: 0.72rem;
+}
+
+.manager-procurement-panel .requested-products > .section-description {
+  margin: 0 0 0.625rem;
+  color: #786555;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.manager-procurement-panel .requested-products > div > .inline-row {
+  display: flex;
+  min-height: 2.25rem;
+  margin-bottom: 0.625rem;
+  padding: 0.5rem 0.65rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid #eee4dc;
+  border-radius: 10px;
+  background: #fbf8f5;
+}
+
+.manager-procurement-panel .requested-products > div > .inline-row h3 {
+  color: #493426;
+  font-size: 0.93rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.manager-procurement-panel .requested-products .btn-refresh {
+  flex: 0 0 auto;
+  min-height: 2.2rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.manager-procurement-panel .requested-products .product-grid {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.625rem;
+  margin-top: 0;
+}
+
+.manager-procurement-panel .requested-products .product-grid > .product-card {
+  display: flex;
+  min-width: 0;
+  height: auto;
+  padding: 0.85rem;
+  flex-direction: column;
+  border: 1px solid #eee4dc;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fff 0%, #fffdfb 100%);
+  box-shadow: 0 3px 12px rgba(61, 42, 31, 0.045);
+}
+
+.manager-procurement-panel .requested-products .product-name {
+  color: #17324b;
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.manager-procurement-panel .requested-products .product-meta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.625rem;
+  margin-top: 0.625rem;
+}
+
+.manager-procurement-panel .requested-products .product-price {
+  min-width: 0;
+  color: #087443;
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.manager-procurement-panel .requested-products .supplier-quote-label {
+  display: block;
+  margin-top: 0.2rem;
+  color: #786555;
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.manager-procurement-panel .requested-products .product-meta .btn-small {
+  max-width: 100%;
+  padding: 0.55rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+  white-space: normal;
+}
+
+.manager-procurement-panel .requested-products .product-meta .btn-outline[disabled] {
+  border-color: #d9e0e7;
+  background: #f1f4f7;
+  color: #526273;
+  opacity: 1;
+}
+
+.manager-procurement-panel .requested-products .product-supplier,
+.manager-procurement-panel .requested-products .supplier-badge {
+  margin-top: 0.625rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: 8px;
+  background: #f6f3f0;
+  color: #615246;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+@media (max-width: 600px) {
+  .manager-procurement-panel .requested-products {
+    padding: 0.875rem;
+  }
+
+  .manager-procurement-panel .requested-products > div > .inline-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .manager-procurement-panel .requested-products > div > .inline-row .btn-refresh {
+    align-self: flex-start;
+  }
+
+  .manager-procurement-panel .requested-products .product-meta {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .manager-procurement-panel .requested-products .product-meta > div:last-child {
+    justify-self: start;
+  }
+}
+
+  .manager-procurement-panel .supplier-panel-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin: 0 0 0.625rem;
+  }
+
+  .manager-procurement-panel .supplier-panel-actions .btn-primary {
+    min-height: 2.4rem;
+    padding: 0.55rem 1rem;
+    border-radius: 9px;
+    background: #ff6a1a;
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 700;
+    box-shadow: 0 5px 12px rgba(255, 106, 26, 0.18);
+  }
+
+  .manager-procurement-panel .supplier-products {
+    padding: 1.1rem;
+  }
+
+  .manager-procurement-panel .supplier-products h2 {
+    margin-bottom: 0.35rem;
+    color: #3d2a1f;
+  }
+
+  .manager-procurement-panel .supplier-products > .section-description {
+    margin: 0 0 0.9rem;
+    color: #786555;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .manager-procurement-panel .supplier-products .section-subtitle {
+    margin: 0 0 0.65rem;
+    color: #493426;
+  }
+
+  .manager-procurement-panel .supplier-products .category-section {
+    margin: 0;
+  }
+
+  .manager-procurement-panel .supplier-products .category-title {
+    margin: 0 0 0.5rem;
+    color: #786555;
+    font-size: 0.83rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .manager-procurement-panel .supplier-products .product-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.625rem;
+    margin: 0;
+  }
+
+  .manager-procurement-panel .supplier-products .supplier-product-card {
+    display: grid;
+    min-height: 0;
+    height: auto;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.7rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid #eee4dc;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #fff 0%, #fffdfb 100%);
+    box-shadow: 0 3px 12px rgba(61, 42, 31, 0.045);
+  }
+
+  .manager-procurement-panel .supplier-product-card .product-name {
+    color: #17324b;
+    font-size: 1rem;
+  }
+
+  .manager-procurement-panel .supplier-product-card .product-type-badge {
+    justify-self: start;
+    margin: -0.35rem 0 0;
+  }
+
+  .manager-procurement-panel .supplier-product-card .supplier-product-meta {
+    display: grid;
+    grid-template-columns: minmax(110px, 0.7fr) minmax(150px, 1fr) minmax(110px, 0.6fr) auto;
+    align-items: center;
+    gap: 0.625rem;
+    margin: 0;
+  }
+
+  .manager-procurement-panel .supplier-product-meta .product-price {
+    font-size: 0.95rem;
+    white-space: nowrap;
+  }
+
+  .manager-procurement-panel .supplier-product-meta .supplier-badge {
+    width: fit-content;
+    max-width: 100%;
+    margin: 0;
+    overflow-wrap: anywhere;
+    border: 1px solid #ebe5df;
+    background: #f8f6f4;
+  }
+
+  .manager-procurement-panel .supplier-product-meta .product-stock {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: #615246;
+    font-size: 0.82rem;
+    white-space: nowrap;
+  }
+
+  .manager-procurement-panel .supplier-product-meta .product-stock strong {
+    color: #3d2a1f;
+  }
+
+  .manager-procurement-panel .supplier-product-meta > .mt-1 {
+    margin: 0;
+  }
+
+  .manager-procurement-panel .supplier-product-meta .btn-warning {
+    padding: 0.5rem 0.75rem;
+    border: 0;
+    border-radius: 8px;
+    background: #ff6a1a;
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .manager-procurement-panel .supplier-product-meta .expiry-info {
+    color: #786555;
+    font-size: 0.8rem;
+  }
+
+  .manager-procurement-panel .supplier-account-modal,
+  .manager-procurement-panel .supplier-selection-modal {
+    width: min(92vw, 760px);
+    max-width: 760px;
+    max-height: calc(100vh - 2rem);
+    margin: 0;
+    overflow: auto;
+    border: 1px solid rgba(219, 188, 160, 0.7);
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 20px 55px rgba(42, 30, 22, 0.28);
+  }
+
+  .manager-procurement-panel .supplier-account-modal .modal-card,
+  .manager-procurement-panel .supplier-selection-modal .modal-card {
+    overflow: visible;
+  }
+
+  .manager-procurement-panel .supplier-account-modal .modal-header,
+  .manager-procurement-panel .supplier-selection-modal .modal-header {
+    padding: 1.1rem 1.35rem 0.9rem;
+    border-bottom: 1px solid #eee4dc;
+    background: #fff;
+  }
+
+  .manager-procurement-panel .supplier-account-modal .modal-header h3,
+  .manager-procurement-panel .supplier-selection-modal .modal-header h3 {
+    color: #3d2a1f;
+    font-size: 1.1rem;
+  }
+
+  .manager-procurement-panel .supplier-account-modal .modal-body {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem 1rem;
+    padding: 1.1rem 1.35rem;
+  }
+
+  .manager-procurement-panel .supplier-account-modal .modal-body .form-group {
+    min-width: 0;
+    margin: 0;
+  }
+
+  .manager-procurement-panel .supplier-account-modal .modal-body .form-group.full-span,
+  .manager-procurement-panel .supplier-account-modal .password-group,
+  .manager-procurement-panel .supplier-account-modal .error-msg,
+  .manager-procurement-panel .supplier-account-modal .success-msg {
+    grid-column: 1 / -1;
+  }
+
+  .manager-procurement-panel .supplier-account-modal .modal-body label,
+  .manager-procurement-panel .supplier-selection-modal .modal-body label {
+    color: #493426;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+
+  .manager-procurement-panel .supplier-account-modal .modal-body input:not([type="checkbox"]),
+  .manager-procurement-panel .supplier-selection-modal .modal-body input[type="number"] {
+    width: 100%;
+    min-height: 40px;
+    box-sizing: border-box;
+    border: 1px solid #d8dfe7;
+    border-radius: 8px;
+    background: #fff;
+    color: #243447;
+    font: inherit;
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+  }
+
+  .manager-procurement-panel .supplier-account-modal .modal-body input:focus,
+  .manager-procurement-panel .supplier-selection-modal .modal-body input:focus {
+    border-color: #e68a4b;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(230, 138, 75, 0.14);
+  }
+
+  .manager-procurement-panel .supplier-account-modal .password-display-card {
+    padding: 0.85rem;
+    border: 1px solid #eee4dc !important;
+    border-radius: 10px;
+    background: #fcfaf8 !important;
+    box-shadow: none;
+  }
+
+  .manager-procurement-panel .supplier-account-modal .password-display-label {
+    margin-bottom: 0.55rem;
+    color: #9b4e21;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .manager-procurement-panel .supplier-account-modal .password-display-value {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.55rem;
+  }
+
+  .manager-procurement-panel .supplier-account-modal .password-text {
+    min-height: 38px;
+    padding: 0.5rem 0.7rem;
+    border: 1px solid #d8dfe7;
+    border-radius: 8px;
+    background: #fff;
+    color: #243447;
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-weight: 700;
+  }
+
+  .manager-procurement-panel .supplier-account-modal .form-hint {
+    margin-top: 0.55rem;
+    color: #786555;
+    font-size: 0.78rem;
+    line-height: 1.45;
+  }
+
+  .manager-procurement-panel .supplier-account-modal .modal-footer,
+  .manager-procurement-panel .supplier-selection-modal .modal-footer {
+    padding: 0.8rem 1.35rem;
+    border-top: 1px solid #eee4dc;
+    background: #fcfaf8;
+  }
+
+  .manager-procurement-panel .supplier-account-modal .modal-footer .btn-primary,
+  .manager-procurement-panel .supplier-selection-modal .modal-footer .btn-primary {
+    padding: 0.55rem 1rem;
+    border-radius: 8px;
+    background: #ff6a1a;
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 4px 10px rgba(255, 106, 26, 0.16);
+  }
+
+  .manager-procurement-panel .supplier-account-modal .modal-footer .btn-outline,
+  .manager-procurement-panel .supplier-selection-modal .modal-footer .btn-outline {
+    padding: 0.55rem 0.9rem;
+    border: 1px solid #d6dce3;
+    border-radius: 8px;
+    background: #fff;
+    color: #526273;
+    font-weight: 700;
+  }
+
+  .manager-procurement-panel .supplier-selection-modal .modal-body {
+    gap: 0.65rem;
+    padding: 1.1rem 1.35rem;
+  }
+
+  .manager-procurement-panel .supplier-selection-modal .form-note {
+    margin: 0;
+    padding: 0.65rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    line-height: 1.45;
+  }
+
+  .manager-procurement-panel .supplier-selection-modal .supplier-list-scroll {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0.625rem;
+    max-height: 260px;
+    padding: 0.25rem;
+  }
+
+  .manager-procurement-panel .supplier-selection-modal .supplier-row {
+    min-width: 0;
+    margin: 0;
+    padding: 0.75rem;
+    align-items: flex-start;
+    gap: 0.55rem;
+    border: 1px solid #e5e1dc;
+    border-radius: 10px;
+    background: #fff;
+    transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+  }
+
+  .manager-procurement-panel .supplier-selection-modal .supplier-row:hover {
+    border-color: #e8b58d;
+    background: #fffaf6;
+  }
+
+  .manager-procurement-panel .supplier-selection-modal .supplier-row:has(input:checked) {
+    border-color: #e68a4b;
+    background: #fff8f1;
+    box-shadow: 0 0 0 2px rgba(230, 138, 75, 0.12);
+  }
+
+  .manager-procurement-panel .supplier-selection-modal .supplier-row input[type="radio"] {
+    margin-top: 0.2rem;
+  }
+
+  .manager-procurement-panel .supplier-selection-modal .supplier-label {
+    min-width: 0;
+  }
+
+  .manager-procurement-panel .supplier-selection-modal .supplier-name {
+    color: #17324b;
+  }
+
+  .manager-procurement-panel .supplier-selection-modal .supplier-details {
+    margin: 0.35rem 0 0;
+    padding: 0.55rem !important;
+    border: 0;
+    border-radius: 7px;
+    background: #f7f5f2;
+  }
+
+  .manager-procurement-panel .supplier-selection-modal > .modal-card > .modal-body > .form-group:last-child {
+    max-width: 240px;
+  }
+
+  @media (max-width: 600px) {
+    .manager-procurement-panel .supplier-products {
+      min-width: 0;
+    }
+
+    .manager-procurement-panel .supplier-product-meta {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .manager-procurement-panel .supplier-product-meta .btn-warning {
+      white-space: normal;
+    }
+
+    .manager-procurement-panel .supplier-account-modal,
+    .manager-procurement-panel .supplier-selection-modal {
+      width: calc(100vw - 1.25rem);
+      max-height: calc(100vh - 1.25rem);
+    }
+
+    .manager-procurement-panel .supplier-account-modal .modal-body {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .manager-procurement-panel .supplier-account-modal .modal-body .form-group.full-span,
+    .manager-procurement-panel .supplier-account-modal .password-group,
+    .manager-procurement-panel .supplier-account-modal .error-msg,
+    .manager-procurement-panel .supplier-account-modal .success-msg {
+      grid-column: auto;
+    }
+
+    .manager-procurement-panel .supplier-account-modal .modal-header,
+    .manager-procurement-panel .supplier-selection-modal .modal-header,
+    .manager-procurement-panel .supplier-account-modal .modal-body,
+    .manager-procurement-panel .supplier-selection-modal .modal-body,
+    .manager-procurement-panel .supplier-account-modal .modal-footer,
+    .manager-procurement-panel .supplier-selection-modal .modal-footer {
+      padding-right: 1rem;
+      padding-left: 1rem;
+    }
+  }
+
+  </style>
