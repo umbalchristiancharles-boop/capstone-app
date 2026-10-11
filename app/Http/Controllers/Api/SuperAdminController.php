@@ -1816,14 +1816,20 @@ class SuperAdminController extends Controller
             ], 422);
         }
 
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'max:1000'],
+        ]);
+
         try {
             $branch->is_active = 0;
+            $branch->deactivation_reason = trim($validated['reason']);
             $branch->save();
 
             Log::info('Branch deactivated', [
                 'branch_id' => $branch->id,
                 'branch_name' => $branch->name,
                 'deactivated_by' => $user->username,
+                'reason' => $branch->deactivation_reason,
             ]);
 
             return response()->json([

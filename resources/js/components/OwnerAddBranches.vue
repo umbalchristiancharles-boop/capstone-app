@@ -18,6 +18,7 @@
               <button type="button" @click="closeAddBranch" class="close-button">&times;</button>
             </div>
 
+            <div class="modal-body">
             <div class="form-grid">
               <div class="form-group">
                 <label class="form-label">Branch Code *</label>
@@ -215,6 +216,7 @@
             <!-- Error / Success -->
             <div v-if="formError" class="error-message">{{ formError }}</div>
             <div v-if="formSuccess" class="success-message">{{ formSuccess }}</div>
+            </div>
 
             <div class="modal-footer">
               <button type="button" @click="closeAddBranch" class="btn btn-secondary" :disabled="isSubmitting">Cancel</button>
@@ -334,11 +336,7 @@
                     :disabled="isDeleting"
                     :title="branch.is_active ? 'Deactivate this branch' : 'Reactivate this branch'"
                   >
-                    <svg v-if="branch.is_active" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <circle cx="12" cy="12" r="1"></circle>
-                      <path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m4.12 4.12l4.24 4.24M1 12h6m6 0h6M4.22 19.78l4.24-4.24m4.12-4.12l4.24-4.24"></path>
-                    </svg>
-                    <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg v-if="!branch.is_active" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
                       <polyline points="9 9 12 15 22 4"></polyline>
                     </svg>
@@ -365,6 +363,7 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
+import Swal from 'sweetalert2'
 import '../css/adminpanel.css'
 import AddressCascaderWithMap from './AddressCascaderWithMap.vue'
 
@@ -632,19 +631,65 @@ async function confirmDeactivateBranch(branch) {
     }
 
     const count = branch.staff_count || 0
-    const ok = await window.swalConfirm(`Deactivate branch "${branch.name}"? This will deactivate the branch and disable access for all ${count} account(s) in it.`)
-    if (!ok) return
-    await deactivateBranch(branch.id)
+    const result = await Swal.fire({
+      title: `Why deactivate ${branch.name}?`,
+      text: `This will disable access for all ${count} account(s) in this branch.`,
+      html: `
+        <label for="branch-deactivation-reason" style="display:block;margin:0 0 8px;text-align:left;font-weight:600">Reason for deactivation</label>
+        <select id="branch-deactivation-reason" class="swal2-select" style="display:flex;width:100%;margin:0 0 12px">
+          <option value="">Choose a reason</option>
+          <option value="Temporary closure">Temporary closure</option>
+          <option value="Financial difficulties">Financial difficulties</option>
+          <option value="Staffing or resource constraints">Staffing or resource constraints</option>
+          <option value="Operational restructuring">Operational restructuring</option>
+          <option value="Compliance or safety concerns">Compliance or safety concerns</option>
+          <option value="Other">Other</option>
+        </select>
+        <textarea id="branch-deactivation-other" class="swal2-textarea" maxlength="1000" placeholder="Please explain why this branch is being deactivated..." aria-label="Other deactivation reason" style="display:none;margin:0;width:100%;box-sizing:border-box"></textarea>
+      `,
+      didOpen: () => {
+        const popup = Swal.getPopup()
+        const reasonSelect = popup?.querySelector('#branch-deactivation-reason')
+        const otherReason = popup?.querySelector('#branch-deactivation-other')
+        reasonSelect?.addEventListener('change', () => {
+          otherReason.style.display = reasonSelect.value === 'Other' ? 'block' : 'none'
+          if (reasonSelect.value !== 'Other') otherReason.value = ''
+        })
+      },
+      preConfirm: () => {
+        const popup = Swal.getPopup()
+        const reason = popup?.querySelector('#branch-deactivation-reason')?.value
+        const otherReason = popup?.querySelector('#branch-deactivation-other')?.value?.trim()
+        if (!reason) {
+          Swal.showValidationMessage('Choose a reason before deactivating this branch.')
+          return false
+        }
+        if (reason === 'Other' && !otherReason) {
+          Swal.showValidationMessage('Please explain the reason for deactivation.')
+          return false
+        }
+        return reason === 'Other' ? otherReason : reason
+      },
+      showCancelButton: true,
+      confirmButtonText: 'Continue to Deactivate',
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: '#b42318',
+      cancelButtonColor: '#64748b',
+      reverseButtons: true,
+      focusConfirm: false,
+    })
+    if (!result.isConfirmed) return
+    await deactivateBranch(branch.id, result.value)
   } catch (e) {
     console.error(e)
   }
 }
 
-async function deactivateBranch(branchId) {
+async function deactivateBranch(branchId, reason) {
   isDeleting.value = true
   try {
     await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
-    const res = await axios.patch(`/api/superadmin/branches/${branchId}/deactivate`, {}, { withCredentials: true })
+    const res = await axios.patch(`/api/superadmin/branches/${branchId}/deactivate`, { reason }, { withCredentials: true })
     if (res.data && res.data.ok) {
       formSuccess.value = res.data.message || 'Branch deactivated.'
       await loadBranches()
@@ -1573,5 +1618,404 @@ textarea.form-input { resize: vertical; }
   font-weight: 700;
   color: #856404;
   margin-left: 0.5rem;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) {
+  color: #1f2937;
+  font-family: 'Inter', 'Poppins', sans-serif;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .staff-header {
+  position: relative;
+  overflow: hidden;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 14px;
+  padding: 20px 24px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .staff-header::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, #f97316 0%, #fb923c 68%, #fbbf24 100%);
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .owner-staff-title {
+  margin: 0;
+  padding: 0;
+  color: #1f2937;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .header-actions {
+  gap: 10px;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .header-actions .btn-primary,
+.staff-management-page.main-branch-theme:not(.from-superadmin) .header-actions .btn-success {
+  min-height: 40px;
+  padding: 9px 16px;
+  border-radius: 9px;
+  font-size: 13px;
+  box-shadow: none;
+  transition: background-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .header-actions .btn-primary {
+  border: 1px solid #d8dee8;
+  background: #fff;
+  color: #25364d;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .header-actions .btn-primary:hover {
+  background: #f8fafc;
+  box-shadow: 0 3px 8px rgba(23, 35, 55, 0.08);
+  transform: translateY(-1px);
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .header-actions .btn-success {
+  background: #172337;
+  color: #fff;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .header-actions .btn-success:hover {
+  background: #263b58;
+  box-shadow: 0 3px 8px rgba(23, 35, 55, 0.14);
+  transform: translateY(-1px);
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .summary-card {
+  margin-bottom: 12px;
+  padding: 14px 18px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.035);
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .owner-staff-total {
+  color: #334155;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .staff-table-wrapper {
+  max-width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.045);
+  scrollbar-color: #9ca3af #f1f5f9;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .staff-table {
+  min-width: 1120px;
+  border-radius: 10px;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .staff-table thead {
+  background: #f8fafc;
+  box-shadow: none;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .staff-table th {
+  padding: 13px 14px;
+  border-bottom: 1px solid #e5e7eb;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0.045em;
+  white-space: normal;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .staff-table td {
+  padding: 13px 14px;
+  border-bottom: 1px solid #edf0f3;
+  color: #334155;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .staff-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .staff-table tbody tr:hover {
+  background: #fffaf5;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .btn-deactivate {
+  border: 1px solid #b42318;
+  background: #b42318;
+  color: #fff;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .btn-deactivate:hover:not(:disabled) {
+  background: #941d14;
+  border-color: #941d14;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .account-chip {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .loading-state,
+.staff-management-page.main-branch-theme:not(.from-superadmin) .empty-state {
+  padding: 28px 18px;
+  border: 1px dashed #d9dee7;
+  border-radius: 10px;
+  background: #fff;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .modal {
+  display: flex;
+  flex-direction: column;
+  width: min(760px, calc(100vw - 32px));
+  max-width: 760px;
+  max-height: min(90vh, 900px);
+  overflow: hidden;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 14px;
+  color: #1f2937;
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.28);
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .modal-card {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .modal form {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .modal-header {
+  flex: 0 0 auto;
+  min-height: 64px;
+  box-sizing: border-box;
+  padding: 15px 22px;
+  background: linear-gradient(110deg, #ff9650, #ff8054);
+  border-radius: 0;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .modal-body {
+  display: block;
+  flex: 1 1 auto;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  align-items: stretch;
+  min-height: 0;
+  max-height: none;
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .modal-header h2 {
+  font-size: 19px;
+  letter-spacing: -0.015em;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .close-button {
+  width: 34px;
+  height: 34px;
+  font-size: 21px;
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .form-grid {
+  gap: 18px 16px;
+  padding: 20px 22px;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .form-group {
+  min-width: 0;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .form-label {
+  margin-bottom: 6px;
+  color: #475569;
+  font-size: 11px;
+  letter-spacing: 0.055em;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .form-input {
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #d9dee7;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .form-input:focus {
+  border-color: #f28a4b;
+  box-shadow: 0 0 0 3px rgba(242, 138, 75, 0.14);
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .address-input-section {
+  min-width: 0;
+  gap: 10px;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .cost-items-container {
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #e8edf2;
+  border-radius: 10px;
+  background: #fafbfc;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .cost-item-row {
+  gap: 8px;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .default-accounts-info,
+.staff-management-page.main-branch-theme:not(.from-superadmin) .custom-account-card {
+  margin: 0;
+  padding: 18px 22px;
+  border-top: 1px solid #edf0f3;
+  background: #fafbfc;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .default-accounts-info h3,
+.staff-management-page.main-branch-theme:not(.from-superadmin) .custom-account-header h3 {
+  color: #1f2937;
+  font-size: 15px;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .info-sub {
+  margin-bottom: 12px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .default-account-list {
+  gap: 8px;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .default-account-item {
+  gap: 12px;
+  padding: 11px 12px;
+  border-color: #e5e7eb;
+  border-radius: 9px;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .account-details {
+  min-width: 0;
+  font-size: 12px;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .custom-account-body {
+  gap: 12px;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .permission-grid {
+  gap: 8px;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .permission-card {
+  border-radius: 9px;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .error-message,
+.staff-management-page.main-branch-theme:not(.from-superadmin) .success-message {
+  margin: 0 22px 14px;
+  border-radius: 8px;
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .modal-footer {
+  flex: 0 0 auto;
+  gap: 8px;
+  padding: 12px 22px;
+  border-top: 1px solid #e5e7eb;
+  background: rgba(255, 255, 255, 0.97);
+}
+
+.staff-management-page.main-branch-theme:not(.from-superadmin) .modal-footer .btn {
+  min-height: 40px;
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-weight: 650;
+}
+
+@media (max-width: 640px) {
+  .staff-management-page.main-branch-theme:not(.from-superadmin) .staff-header {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 17px;
+  }
+
+  .staff-management-page.main-branch-theme:not(.from-superadmin) .header-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .staff-management-page.main-branch-theme:not(.from-superadmin) .header-actions button {
+    width: 100%;
+  }
+
+  .staff-management-page.main-branch-theme:not(.from-superadmin) .summary-card {
+    padding: 12px 15px;
+  }
+
+  .staff-management-page.main-branch-theme:not(.from-superadmin) .modal {
+    width: calc(100vw - 20px);
+    max-height: 92vh;
+    border-radius: 12px;
+  }
+
+  .staff-management-page.main-branch-theme:not(.from-superadmin) .modal-header {
+    min-height: 58px;
+    padding: 12px 15px;
+  }
+
+  .staff-management-page.main-branch-theme:not(.from-superadmin) .form-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    padding: 16px 15px;
+  }
+
+  .staff-management-page.main-branch-theme:not(.from-superadmin) .form-group.full-span {
+    grid-column: auto;
+  }
+
+  .staff-management-page.main-branch-theme:not(.from-superadmin) .default-accounts-info,
+  .staff-management-page.main-branch-theme:not(.from-superadmin) .custom-account-card {
+    padding: 16px 15px;
+  }
+
+  .staff-management-page.main-branch-theme:not(.from-superadmin) .cost-item-row,
+  .staff-management-page.main-branch-theme:not(.from-superadmin) .cost-item-row.equipment-row {
+    flex-wrap: wrap;
+  }
+
+  .staff-management-page.main-branch-theme:not(.from-superadmin) .cost-item-row .form-input {
+    flex: 1 1 100% !important;
+  }
+
+  .staff-management-page.main-branch-theme:not(.from-superadmin) .modal-footer {
+    padding: 10px 15px;
+  }
 }
 </style>

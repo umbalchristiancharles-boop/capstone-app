@@ -15,6 +15,7 @@ class Branch extends Model
         'code',
         'name',
         'address',
+        'deactivation_reason',
         'latitude',
         'longitude',
         'square_meters',

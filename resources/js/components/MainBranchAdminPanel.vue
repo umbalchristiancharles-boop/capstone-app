@@ -60,8 +60,6 @@
               <p class="finance-sub">View branch KPIs and recent transactions</p>
             </div>
             <div class="finance-actions">
-              <button class="add-branch" @click.prevent="goToBranches">+ Add Branch</button>
-              <button class="crm-button" @click.prevent="goToCRM">CRM</button>
               <select
                 class="branch-select"
                 v-model="selectedBranch"
@@ -428,6 +426,10 @@ onUnmounted(() => {
   grid-template-columns: var(--owner-sidebar-width, 156px) minmax(0, 1fr) !important;
 }
 
+.main-branch-admin-panel :deep(.owner-sidebar-collapsed.admin-layout--owner-sidebar-layout.no-profile-column.admin-layout--wider) {
+  grid-template-columns: 0 minmax(0, 1fr) !important;
+}
+
 .main-branch-admin-panel :deep(.owner-panel-sidebar) {
   position: fixed !important;
   left: 0 !important;
@@ -442,7 +444,7 @@ onUnmounted(() => {
   max-height: none !important;
   padding: 1.5rem 1rem 1rem !important;
   background: #f2e9e1 !important;
-  border-right: 1px solid rgba(97, 72, 51, 0.1) !important;
+  border-right: 1px solid rgba(138, 113, 95, 0.2) !important;
   transform: none !important;
   opacity: 1 !important;
   overflow-x: hidden !important;
@@ -472,6 +474,9 @@ onUnmounted(() => {
   width: 100% !important;
   min-width: 0 !important;
   margin: 0 !important;
+  padding: 0.5rem 0.75rem 1.5rem 0.25rem !important;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .main-branch-admin-panel :deep(.owner-panel-topbar) {
@@ -480,15 +485,16 @@ onUnmounted(() => {
   left: var(--owner-sidebar-width, 156px);
   right: 0;
   width: auto !important;
-  height: 59px;
-  min-height: 59px;
+  height: 66px;
+  min-height: 66px;
   box-sizing: border-box;
   margin-left: 0 !important;
   margin-right: 0 !important;
   padding: 0.75rem 1.25rem;
-  background: linear-gradient(180deg, #e7d9cf 0%, #eee5df 100%) !important;
-  border-bottom-color: rgba(115, 93, 84, 0.18);
-  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.12);
+  background: #f2e9e1 !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(138, 113, 95, 0.2) !important;
+  box-shadow: none !important;
   transition: left 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -502,7 +508,7 @@ onUnmounted(() => {
 }
 
 .main-branch-admin-panel :deep(.admin-main) {
-  margin-top: 59px !important;
+  margin-top: 66px !important;
 }
 
 @media (max-width: 767px) {
@@ -616,10 +622,13 @@ onUnmounted(() => {
   .main-branch-admin-panel :deep(.admin-main) {
     grid-column: 1 !important;
     grid-row: 2 !important;
+    padding: 0.65rem !important;
   }
 }
 
 .main-branch-admin-hero {
+  position: relative;
+  overflow: hidden;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -630,6 +639,13 @@ onUnmounted(() => {
   border: 1px solid #f1e5d8;
   border-radius: 14px;
   box-shadow: 0 4px 14px rgba(66,33,11,0.05);
+}
+.main-branch-admin-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, #f97316 0%, #fb923c 68%, #fbbf24 100%);
 }
 .main-branch-admin-hero__copy { min-width: 0; }
 .main-branch-admin-hero__eyebrow { display: inline-block; margin-bottom: 6px; color: #c25a12; font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
