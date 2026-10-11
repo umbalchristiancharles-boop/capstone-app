@@ -1,6 +1,14 @@
 <template>
-  <div class="manager-finance finance-manager-layout" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
-    <aside class="finance-sidebar" :aria-hidden="sidebarCollapsed">
+  <div
+    class="manager-finance finance-manager-layout"
+    :class="{ 'sidebar-collapsed': sidebarCollapsed, 'main-branch-finance': props.isMainBranchFinance }"
+  >
+    <aside
+      class="finance-sidebar"
+      :aria-hidden="sidebarCollapsed"
+      @pointerdown="startFinanceSidebarSwipe"
+      @transitionend="finishFinanceSidebarTransition"
+    >
       <PanelSidebarBrand />
       <nav class="finance-sidebar__nav">
         <button class="finance-sidebar__item" :class="{ active: selectedSection === 'overview' }" @click="selectedSection = 'overview'">
@@ -37,10 +45,11 @@
     <div class="finance-main-panel">
       <header class="finance-main-header">
         <button
+          v-if="!props.isMainBranchFinance || (sidebarCollapsed && !sidebarTransitioning)"
           class="finance-hamburger"
           :aria-label="sidebarCollapsed ? 'Show menu' : 'Hide menu'"
           :aria-expanded="(!sidebarCollapsed).toString()"
-          @click="sidebarCollapsed = !sidebarCollapsed"
+          @click="toggleFinanceSidebar"
         >☰</button>
         <div class="finance-header__spacer"></div>
         <div class="finance-header__actions">
@@ -654,6 +663,100 @@ const showAccountInfoModal = ref(false)
   // Dashboard section navigation
   const selectedSection = ref('overview')
   const sidebarCollapsed = ref(false)
+  const sidebarTransitioning = ref(false)
+  let financeSidebarSwipeStart = null
+  let financeSidebarTransitionTimeout
+  let financeSidebarSwipeClickTimeout
+
+  const closeFinanceSidebarOnNarrowViewport = () => {
+    if (props.isMainBranchFinance && window.innerWidth <= 900) {
+      sidebarCollapsed.value = true
+    }
+  }
+
+  const toggleFinanceSidebar = () => {
+    if (sidebarCollapsed.value) {
+      clearTimeout(financeSidebarTransitionTimeout)
+      sidebarTransitioning.value = false
+      sidebarCollapsed.value = false
+      return
+    }
+
+    sidebarTransitioning.value = true
+    sidebarCollapsed.value = true
+    clearTimeout(financeSidebarTransitionTimeout)
+    financeSidebarTransitionTimeout = window.setTimeout(() => {
+      sidebarTransitioning.value = false
+    }, 300)
+  }
+
+  const startFinanceSidebarSwipe = (event) => {
+    if (!props.isMainBranchFinance || sidebarCollapsed.value || !event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0)) return
+    if (event.target instanceof Element && event.target.closest('.finance-sidebar__resize-handle')) return
+
+    financeSidebarSwipeStart = { x: event.clientX, y: event.clientY, pointerId: event.pointerId }
+    document.addEventListener('pointermove', trackFinanceSidebarSwipe, { passive: false })
+    document.addEventListener('pointerup', finishFinanceSidebarSwipe)
+    document.addEventListener('pointercancel', cancelFinanceSidebarSwipe)
+  }
+
+  const trackFinanceSidebarSwipe = (event) => {
+    if (!financeSidebarSwipeStart || event.pointerId !== financeSidebarSwipeStart.pointerId) return
+
+    const deltaX = event.clientX - financeSidebarSwipeStart.x
+    const deltaY = event.clientY - financeSidebarSwipeStart.y
+    if (Math.abs(deltaY) >= 80 && Math.abs(deltaY) > Math.abs(deltaX)) {
+      cancelFinanceSidebarSwipe()
+      return
+    }
+    if (deltaX > -80 || Math.abs(deltaY) > Math.abs(deltaX)) return
+
+    cancelFinanceSidebarSwipe()
+    suppressFinanceSidebarSwipeClick()
+    toggleFinanceSidebar()
+  }
+
+  const finishFinanceSidebarSwipe = (event) => {
+    if (!financeSidebarSwipeStart || event.pointerId !== financeSidebarSwipeStart.pointerId) return
+
+    const deltaX = event.clientX - financeSidebarSwipeStart.x
+    const deltaY = event.clientY - financeSidebarSwipeStart.y
+    cancelFinanceSidebarSwipe()
+
+    if (deltaX <= -80 && Math.abs(deltaY) < 80 && Math.abs(deltaX) > Math.abs(deltaY)) {
+      suppressFinanceSidebarSwipeClick()
+      toggleFinanceSidebar()
+    }
+  }
+
+  const cancelFinanceSidebarSwipe = () => {
+    financeSidebarSwipeStart = null
+    document.removeEventListener('pointermove', trackFinanceSidebarSwipe)
+    document.removeEventListener('pointerup', finishFinanceSidebarSwipe)
+    document.removeEventListener('pointercancel', cancelFinanceSidebarSwipe)
+  }
+
+  const suppressFinanceSidebarSwipeClick = () => {
+    document.addEventListener('click', preventFinanceSidebarSwipeClick, true)
+    clearTimeout(financeSidebarSwipeClickTimeout)
+    financeSidebarSwipeClickTimeout = window.setTimeout(() => {
+      document.removeEventListener('click', preventFinanceSidebarSwipeClick, true)
+    }, 500)
+  }
+
+  const preventFinanceSidebarSwipeClick = (event) => {
+    document.removeEventListener('click', preventFinanceSidebarSwipeClick, true)
+    clearTimeout(financeSidebarSwipeClickTimeout)
+    event.preventDefault()
+    event.stopPropagation()
+  }
+
+  const finishFinanceSidebarTransition = (event) => {
+    if (event.target !== event.currentTarget || event.propertyName !== 'width' || !sidebarCollapsed.value) return
+
+    clearTimeout(financeSidebarTransitionTimeout)
+    sidebarTransitioning.value = false
+  }
 
   // Face capture state
   const showFaceCapture = ref(false)
@@ -1442,6 +1545,8 @@ async function performClockOut() {
 }
 
 onMounted(() => {
+  closeFinanceSidebarOnNarrowViewport()
+  window.addEventListener('resize', closeFinanceSidebarOnNarrowViewport)
   readOwnerPermissions()
   window.addEventListener('storage', handleOwnerPermissionsStorage)
 
@@ -1590,6 +1695,13 @@ function closeReceiptPreview() {
 }
 
 onUnmounted(() => {
+  window.removeEventListener('resize', closeFinanceSidebarOnNarrowViewport)
+  clearTimeout(financeSidebarTransitionTimeout)
+  clearTimeout(financeSidebarSwipeClickTimeout)
+  document.removeEventListener('pointermove', trackFinanceSidebarSwipe)
+  document.removeEventListener('pointerup', finishFinanceSidebarSwipe)
+  document.removeEventListener('pointercancel', cancelFinanceSidebarSwipe)
+  document.removeEventListener('click', preventFinanceSidebarSwipeClick, true)
   window.removeEventListener('storage', handleOwnerPermissionsStorage)
   if (refreshInterval.value) {
     clearInterval(refreshInterval.value)

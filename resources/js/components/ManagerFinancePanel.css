@@ -513,6 +513,7 @@
 
 .finance-sidebar {
   width: 156px;
+  touch-action: pan-y;
   background: rgba(255, 255, 255, 0.3);
   border-right: 1px solid rgba(138, 113, 95, 0.18);
   display: flex;
@@ -535,6 +536,11 @@
   border-right-color: transparent;
   opacity: 0;
   overflow: hidden;
+}
+
+.finance-manager-layout.main-branch-finance.sidebar-collapsed .finance-sidebar {
+  min-width: 0;
+  flex-basis: 0;
 }
 
 .finance-sidebar__nav,
@@ -2489,6 +2495,96 @@
   border-color: rgba(138, 113, 95, 0.35);
   color: #5c4a3f;
   box-shadow: none;
+}
+
+.manager-finance.main-branch-finance {
+  position: fixed;
+  inset: 0;
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.finance-manager-layout.main-branch-finance {
+  min-width: 0;
+  height: 100%;
+}
+
+.finance-manager-layout.main-branch-finance .finance-sidebar {
+  flex: 0 0 auto;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.finance-manager-layout.main-branch-finance.sidebar-collapsed .finance-sidebar {
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  flex: 0 0 0 !important;
+  padding: 0 !important;
+  border-width: 0 !important;
+  margin: 0 !important;
+}
+
+.finance-manager-layout.main-branch-finance .finance-main-panel {
+  flex: 1 1 0%;
+  width: 0;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.finance-manager-layout.main-branch-finance .finance-dashboard-body {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.finance-manager-layout.main-branch-finance .finance-section-view,
+.finance-manager-layout.main-branch-finance .finance-section-content,
+.finance-manager-layout.main-branch-finance .finance-overview-content,
+.finance-manager-layout.main-branch-finance .finance-feature-header {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.finance-manager-layout.main-branch-finance :deep(.finance-card),
+.finance-manager-layout.main-branch-finance :deep(.financial-charts-section),
+.finance-manager-layout.main-branch-finance :deep(.charts-container),
+.finance-manager-layout.main-branch-finance :deep(.financial-chart-card),
+.finance-manager-layout.main-branch-finance :deep(.chart-wrapper),
+.finance-manager-layout.main-branch-finance :deep(.chart-canvas-wrap),
+.finance-manager-layout.main-branch-finance :deep(.form-group),
+.finance-manager-layout.main-branch-finance :deep(.form-field) {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.finance-manager-layout.main-branch-finance :deep(.table-container),
+.finance-manager-layout.main-branch-finance :deep(.branch-table-container),
+.finance-manager-layout.main-branch-finance :deep(.transactions-table-container) {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  box-sizing: border-box;
+}
+
+.finance-manager-layout.main-branch-finance :deep(canvas) {
+  max-width: 100%;
+}
+
+@media (max-width: 640px) {
+  .finance-manager-layout.main-branch-finance .finance-dashboard-body {
+    padding: 0.85rem;
+  }
 }
 
 .manager-finance .face-capture-content .btn-capture {
