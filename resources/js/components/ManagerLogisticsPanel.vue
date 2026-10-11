@@ -11,6 +11,8 @@
     :ownerTwoColumnLayout="true"
     :showOwnerSidebar="true"
     :showOwnerTopbar="true"
+    :announcementsInModal="true"
+    :notificationDetailsInModal="true"
     :topbarLabel="logisticsTopbarLabel"
     accountInfoStyle="finance"
     @logout="askLogout"
@@ -18,10 +20,10 @@
   >
     <template #ownerSidebar>
       <nav class="manager-logistics-sidebar-nav" aria-label="Logistics sections">
-        <button type="button" class="manager-logistics-sidebar-link" @click="selectedSection = 'overview'">Overview</button>
-        <button type="button" class="manager-logistics-sidebar-link" @click="selectedSection = 'barcodes'">Product Barcodes</button>
-        <button type="button" class="manager-logistics-sidebar-link" @click="selectedSection = 'pending-stock'">Pending Stock</button>
-        <button type="button" class="manager-logistics-sidebar-link" @click="selectedSection = 'confirmation-history'">Confirmation History</button>
+        <button type="button" class="manager-logistics-sidebar-link" :class="{ 'manager-logistics-sidebar-link--active': selectedSection === 'overview' }" :aria-current="selectedSection === 'overview' ? 'page' : undefined" @click="selectLogisticsSection('overview')">Overview</button>
+        <button type="button" class="manager-logistics-sidebar-link" :class="{ 'manager-logistics-sidebar-link--active': selectedSection === 'barcodes' }" :aria-current="selectedSection === 'barcodes' ? 'page' : undefined" @click="selectLogisticsSection('barcodes')">Product Barcodes</button>
+        <button type="button" class="manager-logistics-sidebar-link" :class="{ 'manager-logistics-sidebar-link--active': selectedSection === 'pending-stock' }" :aria-current="selectedSection === 'pending-stock' ? 'page' : undefined" @click="selectLogisticsSection('pending-stock')">Pending Stock</button>
+        <button type="button" class="manager-logistics-sidebar-link" :class="{ 'manager-logistics-sidebar-link--active': selectedSection === 'confirmation-history' }" :aria-current="selectedSection === 'confirmation-history' ? 'page' : undefined" @click="selectLogisticsSection('confirmation-history')">Confirmation History</button>
       </nav>
     </template>
 
@@ -535,7 +537,7 @@
       </div>
 
       <div v-if="selectedSection === 'confirmation-history'" id="logistics-confirmation-history" class="panel-section">
-        <div class="inline-row gap-sm align-center">
+        <div class="inline-row gap-sm align-center logistics-section-heading">
           <h2 class="section-title">Stock Confirmation History</h2>
           <button class="btn-secondary" type="button" @click="fetchConfirmedStockHistory" :disabled="confirmedStockHistoryLoading">
             {{ confirmedStockHistoryLoading ? 'Refreshing...' : 'Refresh' }}
@@ -649,6 +651,7 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch, computed, nextTick, inject } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import { BrowserMultiFormatReader } from '@zxing/browser'
 import { BarcodeFormat, DecodeHintType } from '@zxing/library'
@@ -657,9 +660,33 @@ import { showToast } from './toastStore'
 
 // basic state
 const userProfile = ref({})
+const logisticsRoute = useRoute()
+const logisticsRouter = useRouter()
 const superAdminBranchId = inject('superAdminBranchId', null)
 const superAdminBranchScoped = inject('superAdminBranchScoped', false)
 const selectedSection = ref('overview')
+const logisticsSections = ['overview', 'barcodes', 'pending-stock', 'confirmation-history']
+
+function routeLogisticsSection(section) {
+  const value = Array.isArray(section) ? section[0] : section
+  return logisticsSections.includes(value) ? value : 'overview'
+}
+
+watch(
+  () => logisticsRoute.query.section,
+  (section) => {
+    selectedSection.value = routeLogisticsSection(section)
+  },
+  { immediate: true }
+)
+
+function selectLogisticsSection(section) {
+  selectedSection.value = section
+  if (logisticsRoute.query.section !== section) {
+    logisticsRouter.replace({ query: { ...logisticsRoute.query, section } })
+  }
+}
+
 const dashboardTotals = ref({ totalProducts: 0, lowStock: 0, pendingRequests: 0 })
 const logisticsTopbarLabel = computed(() => {
   const branchName = userProfile.value?.branch?.name || userProfile.value?.branch || userProfile.value?.branch_name
@@ -1862,12 +1889,6 @@ function formatProductReqStatus(status) {
 .empty-state {
   color: #8b8b8b;
   font-size: 13px;
-}
-
-@media (max-width: 1100px) {
-  .logistics-three-panel {
-    grid-template-columns: 1fr;
-  }
 }
 
 .inventory-table-container {

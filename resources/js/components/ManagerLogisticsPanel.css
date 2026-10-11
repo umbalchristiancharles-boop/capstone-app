@@ -2,6 +2,10 @@
   min-height: 100vh;
   background: #e7d9cf;
   color: #3d2a1f;
+  --logistics-ink: #3d2a1f;
+  --logistics-muted: #806d60;
+  --logistics-surface: #fffaf5;
+  --logistics-border: #eadfd5;
 }
 
 .manager-logistics-panel :deep(.admin-page),
@@ -66,7 +70,7 @@
   min-height: 100vh;
   height: auto;
   margin: 0 0 0 var(--owner-sidebar-width, 156px);
-  padding: 66px 1.3rem 1.25rem;
+  padding: 12px 1.3rem 1.25rem;
   box-sizing: border-box;
   flex-direction: column;
   gap: 0.75rem;
@@ -112,6 +116,13 @@
   box-shadow: 0 8px 18px #eadfd5;
 }
 
+.manager-logistics-sidebar-link--active {
+  color: #8f4f2f;
+  background: #fffaf5;
+  border-color: #e2cdbd;
+  box-shadow: 0 6px 16px #8f4f2f18;
+}
+
 .manager-logistics-sidebar-account {
   border: 1px solid #bfdbfe;
   background: #eff6ff;
@@ -128,18 +139,18 @@
 
 .manager-logistics-panel :deep(.admin-main h1),
 .manager-logistics-panel :deep(.admin-main h2) {
-  color: #3d2a1f;
-  font-size: 26px;
-  line-height: 1.1;
+  color: var(--logistics-ink);
+  font-size: clamp(1.2rem, 1.6vw, 1.55rem);
+  line-height: 1.25;
   letter-spacing: 0;
 }
 
 .manager-logistics-panel :deep(.admin-main-header) {
-  margin: 0 0 0.75rem;
-  padding: 1.25rem 1.4rem;
-  border: 1px solid #eadfd5;
+  margin: 0;
+  padding: clamp(1rem, 2vw, 1.35rem) clamp(1rem, 2.2vw, 1.5rem);
+  border: 1px solid var(--logistics-border);
   border-radius: 14px;
-  background: #fffaf5;
+  background: var(--logistics-surface);
   box-shadow: 0 4px 14px rgba(61, 42, 31, 0.06);
   box-sizing: border-box;
 }
@@ -155,8 +166,8 @@
 
 .manager-logistics-panel :deep(.admin-main-header h1) {
   margin: 0;
-  color: #3d2a1f;
-  font-size: clamp(1.65rem, 2vw, 2rem);
+  color: var(--logistics-ink);
+  font-size: clamp(1.55rem, 2vw, 2rem);
   font-weight: 800;
   letter-spacing: -0.04em;
   line-height: 1.2;
@@ -175,7 +186,7 @@
 
 .manager-logistics-panel :deep(.admin-main-header p) {
   margin: 0.45rem 0 0;
-  color: #967d6c;
+  color: var(--logistics-muted);
   font-size: 0.95rem;
 }
 
@@ -191,27 +202,393 @@
   box-sizing: border-box;
 }
 
-.manager-logistics-panel :deep(.hr-stats-grid) {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+.manager-logistics-panel :deep(.manager-logistics-section-view) {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: clamp(0.75rem, 1.2vw, 1rem);
 }
 
-.manager-logistics-panel .hr-stats-grid {
-  gap: 12px !important;
-  margin-bottom: 14px !important;
+.manager-logistics-panel :deep(.hr-stats-grid) {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 0.75rem !important;
+  margin: 0 !important;
 }
 
 .manager-logistics-panel .panel-section {
-  margin-bottom: 16px !important;
-  padding: 18px !important;
+  min-width: 0;
+  margin: 0 !important;
+  padding: clamp(1rem, 1.6vw, 1.35rem) !important;
+  border: 1px solid rgba(234, 223, 213, 0.9);
   border-radius: 14px !important;
+  background: var(--logistics-surface);
+  box-shadow: 0 5px 16px rgba(61, 42, 31, 0.07);
+  box-sizing: border-box;
 }
 
 .manager-logistics-panel .section-title {
-  margin-bottom: 6px !important;
+  margin: 0 0 0.35rem !important;
+  color: var(--logistics-ink);
+  font-size: clamp(1.15rem, 1.45vw, 1.4rem);
+  font-weight: 750;
+  line-height: 1.3;
 }
 
 .manager-logistics-panel .section-description {
-  margin-bottom: 12px !important;
+  max-width: 78ch;
+  margin: 0 0 0.9rem !important;
+  color: var(--logistics-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.manager-logistics-panel .hr-stat-card {
+  min-width: 0;
+  min-height: 76px;
+  padding: 1rem 1.1rem;
+  border-radius: 13px;
+  background: #fffaf5;
+  box-shadow: 0 3px 10px rgba(61, 42, 31, 0.07);
+}
+
+.manager-logistics-panel .hr-stat-card:hover {
+  box-shadow: 0 6px 15px rgba(61, 42, 31, 0.1);
+}
+
+.manager-logistics-panel .hr-stat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+}
+
+.manager-logistics-panel .hr-stat-label {
+  color: var(--logistics-muted);
+  font-size: 0.82rem;
+}
+
+.manager-logistics-panel .hr-stat-value {
+  color: var(--logistics-ink);
+  font-size: 1.55rem;
+  line-height: 1.1;
+}
+
+.manager-logistics-panel :deep(.logistics-section-heading) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.manager-logistics-panel :deep(.logistics-section-heading .section-title) {
+  margin: 0 !important;
+}
+
+.manager-logistics-panel :deep(.table-container) {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid #f0e6dc;
+  border-radius: 10px;
+  background: #fff;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.manager-logistics-panel :deep(.data-table) {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: var(--logistics-ink);
+}
+
+.manager-logistics-panel :deep(.data-table th) {
+  padding: 0.75rem 0.85rem;
+  background: #fff3e5;
+  color: #6b3b1f;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.045em;
+  white-space: nowrap;
+}
+
+.manager-logistics-panel :deep(.data-table td) {
+  padding: 0.72rem 0.85rem;
+  color: #4f4037;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  vertical-align: middle;
+}
+
+.manager-logistics-panel :deep(.data-table tbody tr:last-child td) {
+  border-bottom: 0;
+}
+
+.manager-logistics-panel :deep(.data-table tbody tr:hover:not(:has(.empty-message))) {
+  background: #fffaf5;
+}
+
+.manager-logistics-panel :deep(#logistics-confirmation-history .data-table) {
+  min-width: 820px;
+}
+
+.manager-logistics-panel :deep(.empty-message) {
+  padding: 1rem;
+  color: #806d60;
+  text-align: center;
+}
+
+.manager-logistics-panel :deep(.logistics-three-panel) {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr));
+  align-items: stretch;
+  gap: 0.8rem;
+}
+
+.manager-logistics-panel :deep(.logistics-panel-card) {
+  min-width: 0;
+  border-color: #eadfd5;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 3px 10px rgba(61, 42, 31, 0.055);
+}
+
+.manager-logistics-panel :deep(.panel-card-header) {
+  padding: 0.8rem 1rem;
+  background: #fff3e5;
+  color: #6b3b1f;
+  font-size: 0.86rem;
+  font-weight: 750;
+}
+
+.manager-logistics-panel :deep(.panel-card-body) {
+  min-width: 0;
+  padding: 0.85rem;
+}
+
+.manager-logistics-panel :deep(.empty-state) {
+  display: grid;
+  min-height: 84px;
+  padding: 1rem;
+  place-items: center;
+  border-radius: 10px;
+  background: #fff8f0;
+  color: var(--logistics-muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.manager-logistics-panel :deep(.detail-grid) {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 145px), 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.manager-logistics-panel :deep(.detail-row) {
+  min-width: 0;
+  padding: 0.65rem;
+  border: 1px solid #f0e6dc;
+  border-radius: 9px;
+  background: #fffaf5;
+}
+
+.manager-logistics-panel :deep(.detail-value) {
+  overflow-wrap: anywhere;
+  color: var(--logistics-ink);
+  font-size: 0.88rem;
+}
+
+.manager-logistics-panel :deep(.form-group) {
+  margin-bottom: 0.9rem;
+}
+
+.manager-logistics-panel :deep(.form-group label) {
+  margin-bottom: 0.4rem;
+  color: #5c493d;
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+
+.manager-logistics-panel :deep(.form-group input),
+.manager-logistics-panel :deep(.form-group select),
+.manager-logistics-panel :deep(.form-group textarea) {
+  max-width: 100%;
+  border-color: #dfd1c5;
+  background: #fff;
+  color: var(--logistics-ink);
+  box-sizing: border-box;
+}
+
+.manager-logistics-panel :deep(.form-group input:focus),
+.manager-logistics-panel :deep(.form-group select:focus),
+.manager-logistics-panel :deep(.form-group textarea:focus) {
+  border-color: #c47a4b;
+  box-shadow: 0 0 0 3px rgba(196, 122, 75, 0.16);
+}
+
+.manager-logistics-panel :deep(.btn-primary),
+.manager-logistics-panel :deep(.btn-secondary),
+.manager-logistics-panel :deep(.btn-retry) {
+  display: inline-flex;
+  min-height: 38px;
+  width: auto;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.manager-logistics-panel :deep(.btn-primary) {
+  background: #a8552b;
+  color: #fff;
+  box-shadow: 0 3px 8px rgba(168, 85, 43, 0.18);
+}
+
+.manager-logistics-panel :deep(.btn-primary:hover:not(:disabled)) {
+  background: #914522;
+  box-shadow: 0 5px 12px rgba(168, 85, 43, 0.22);
+  transform: translateY(-1px);
+}
+
+.manager-logistics-panel :deep(.btn-secondary) {
+  border-color: #e3d6ca;
+  background: #f6eee7;
+  color: #563b2b;
+}
+
+.manager-logistics-panel :deep(.btn-secondary:hover:not(:disabled)) {
+  border-color: #cfad95;
+  background: #efe0d3;
+}
+
+.manager-logistics-panel :deep(.btn-retry) {
+  background: #a8552b;
+  color: #fff;
+}
+
+.manager-logistics-panel :deep(.btn-small) {
+  min-height: 32px;
+  padding: 0.4rem 0.65rem;
+  white-space: nowrap;
+}
+
+.manager-logistics-panel :deep(.btn-primary:disabled),
+.manager-logistics-panel :deep(.btn-secondary:disabled) {
+  cursor: not-allowed;
+  opacity: 0.58;
+  transform: none;
+}
+
+.manager-logistics-panel :deep(.form-actions) {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+@media (max-width: 900px) {
+  .manager-logistics-panel :deep(.admin-main) {
+    padding-right: 1rem;
+    padding-left: 1rem;
+  }
+
+  .manager-logistics-panel :deep(.logistics-three-panel) {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .manager-logistics-panel :deep(.admin-main) {
+    padding: 0.75rem 0.75rem 1rem;
+    gap: 0.65rem;
+  }
+
+  .manager-logistics-panel :deep(.admin-main-header) {
+    padding: 0.95rem 1rem;
+  }
+
+  .manager-logistics-panel :deep(.admin-main-header p) {
+    font-size: 0.88rem;
+  }
+
+  .manager-logistics-panel .panel-section {
+    padding: 0.9rem !important;
+    border-radius: 12px !important;
+  }
+
+  .manager-logistics-panel .hr-stat-card {
+    min-height: 68px;
+    padding: 0.85rem;
+  }
+
+  .manager-logistics-panel :deep(.logistics-three-panel) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.7rem;
+  }
+
+  .manager-logistics-panel :deep(.logistics-section-heading) {
+    align-items: flex-start;
+  }
+
+  .manager-logistics-panel :deep(.table-container) {
+    border-radius: 8px;
+  }
+
+  .manager-logistics-panel :deep(.data-table) {
+    min-width: 540px;
+  }
+
+  .manager-logistics-panel :deep(#logistics-confirmation-history .data-table) {
+    min-width: 820px;
+  }
+
+  .manager-logistics-panel :deep(.data-table thead) {
+    display: table-header-group;
+  }
+
+  .manager-logistics-panel :deep(.data-table tbody) {
+    display: table-row-group;
+    width: auto;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .manager-logistics-panel :deep(.data-table tr) {
+    display: table-row;
+    width: auto;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .manager-logistics-panel :deep(.data-table th),
+  .manager-logistics-panel :deep(.data-table td) {
+    display: table-cell;
+    width: auto;
+    padding: 0.65rem 0.7rem;
+    border-right: 0;
+    border-left: 0;
+    text-align: left;
+    white-space: normal;
+  }
+
+  .manager-logistics-panel :deep(.data-table th) {
+    white-space: nowrap;
+  }
+
+  .manager-logistics-panel :deep(.data-table td::before) {
+    content: none;
+  }
+
+  .manager-logistics-panel :deep(.form-actions > button) {
+    flex: 1 1 140px;
+  }
 }
 
 .manager-logistics-section-enter-active,
@@ -252,7 +629,7 @@
     max-width: 100%;
     min-width: 0;
     margin-left: 0;
-    padding: 66px 0.85rem 1rem;
+    padding: 12px 0.85rem 1rem;
   }
 
   .manager-logistics-panel :deep(.owner-sidebar-collapsed .admin-main) {
