@@ -36,7 +36,6 @@
             <button type="button" class="admin-sidebar__item" :class="{ 'admin-sidebar__item--active': activeSection === 'landing-images' }" @click="activeSection = 'landing-images'">Landing Page Images</button>
             <button type="button" class="admin-sidebar__item" :class="{ 'admin-sidebar__item--active': activeSection === 'reports' }" @click="activeSection = 'reports'">Reports &amp; CRM</button>
             <button type="button" class="admin-sidebar__item" :class="{ 'admin-sidebar__item--active': activeSection === 'staff' }" @click="activeSection = 'staff'">Staff &amp; Attendance</button>
-            <button type="button" class="admin-sidebar__item" :class="{ 'admin-sidebar__item--active': activeSection === 'announcements' }" @click="activeSection = 'announcements'">Announcements</button>
             <button
               v-if="(ownerProfile.role || '').toString().toUpperCase() !== 'STAFF'"
               type="button"

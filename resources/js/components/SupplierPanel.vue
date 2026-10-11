@@ -47,7 +47,7 @@
         </header>
 
       <Transition name="supplier-section" mode="out-in">
-      <div :key="selectedModule" class="panel-content supplier-module-view">
+      <div :key="selectedModule" class="panel-content supplier-module-view" :class="{ 'supplier-module-view--overview': selectedModule === 'overview' }">
         <div v-if="selectedModule === 'overview'" class="hr-stats-grid">
           <div class="hr-stat-card hr-stat-card--total">
             <div class="hr-stat-icon">📦</div>
@@ -74,7 +74,7 @@
         </div>
 
       <!-- Orders Section (merged) -->
-      <div v-if="selectedModule === 'overview' || selectedModule === 'orders'" class="panel-section">
+      <div v-if="selectedModule === 'overview' || selectedModule === 'orders'" class="panel-section supplier-orders-section">
         <h2 class="section-title">Your Orders</h2>
         <div v-if="ordersLoading" class="loading-container">
           <div class="loading-spinner"></div>
@@ -82,7 +82,7 @@
         </div>
         <div v-else class="requests-container">
           <div class="requests-scroll table-container">
-            <table class="data-table">
+            <table class="data-table supplier-orders-table">
             <thead>
               <tr>
                 <th>Product</th>
@@ -1850,31 +1850,93 @@ function onProfileUpdated(newData) {
 .supplier-products {
   width: 100%;
   min-width: 0;
-  margin-top: 1rem;
-  padding: 16px;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  box-shadow: 0 8px 20px rgba(16, 24, 40, 0.06);
+  margin-top: 0.75rem;
+  padding: 1.15rem;
+  background: #fffaf5;
+  border: 1px solid #eadfd5;
+  border-radius: 14px;
+  box-shadow: 0 8px 22px rgba(61, 42, 31, 0.07);
   box-sizing: border-box;
   scroll-margin-top: 84px;
 }
-.product-grid { display:grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap:0.75rem; margin-top:0.5rem }
-.product-card { background:#fff; border-radius:10px; padding:0.75rem; box-shadow:0 8px 24px rgba(15,23,42,0.06); border:1px solid #eef2f6 }
-.product-name { font-weight:700; color:#0f172a; font-size:0.95rem }
-.product-category { color:#7c3aed; font-size:0.8rem; font-weight:600; margin-top:4px; text-transform:capitalize }
-.product-type { display:inline-block; font-size:0.75rem; font-weight:600; padding:3px 8px; border-radius:6px; margin-top:4px; text-transform:capitalize }
-.product-type.type-individual { background:#dbeafe; color:#1e40af }
-.product-type.type-per_pack { background:#d1fae5; color:#065f46 }
-.product-type.type-both { background:#fef3c7; color:#92400e }
-.product-meta { display:flex; flex-direction:column; gap:6px; margin-top:8px }
-.product-price { color:#0b6e3a; font-weight:700; font-size:0.95rem }
+.supplier-products > h2 {
+  margin: 0 0 0.75rem;
+  color: #3d2a1f;
+  font-size: 1.2rem;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+}
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 290px));
+  gap: 0.85rem;
+  margin-top: 0;
+}
+.product-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 0.65rem;
+  padding: 1rem;
+  border: 1px solid #eadfd5;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 3px 10px rgba(61, 42, 31, 0.05);
+  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+.product-card:hover {
+  transform: translateY(-2px);
+  border-color: #d8c8bc;
+  box-shadow: 0 8px 18px rgba(61, 42, 31, 0.1);
+}
+.product-name { font-weight:800; color:#3d2a1f; font-size:0.98rem; line-height:1.35; overflow-wrap:anywhere }
+.product-category { color:#846e5d; font-size:0.78rem; font-weight:600; margin-top:0.1rem; text-transform:capitalize }
+.product-type { display:inline-flex; align-items:center; width:fit-content; font-size:0.74rem; font-weight:700; padding:4px 9px; border-radius:999px; margin-top:0; text-transform:capitalize }
+.product-type.type-individual { background:#f3e9e1; color:#704b34 }
+.product-type.type-per_pack { background:#f4e5d5; color:#704b34 }
+.product-type.type-both { background:#fff1e6; color:#8f4f2f }
+.product-meta { display:flex; flex-direction:column; gap:0.35rem; margin-top:0 }
+.product-price { color:#9d5631; font-weight:800; font-size:1rem }
 .product-expiry { color:#7c2d12; font-size:0.8rem; display:flex; gap:4px }
 .expiry-label { font-weight:600 }
-.product-stock { color:#6b7280 }
-.product-card-header { display:flex; justify-content:space-between; align-items:flex-start; gap:8px }
-.btn-edit { background:none; border:none; color:#7c3aed; cursor:pointer; font-size:1.2rem; padding:0 }
-.btn-edit:hover { opacity:.7 }
+.product-stock { color:#846e5d; font-size:0.82rem }
+.product-card-header { display:flex; justify-content:space-between; align-items:center; gap:0.6rem }
+.btn-edit {
+  display: grid;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #eadfd5;
+  border-radius: 8px;
+  background: #f7f0ea;
+  color: #9d5631;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+.btn-edit:hover { background:#f3e9e1; border-color:#d8c8bc; transform:translateY(-1px) }
+.btn-edit:focus-visible { outline:3px solid rgba(182,106,62,0.25); outline-offset:2px }
+
+@media (max-width: 640px) {
+  .supplier-products {
+    padding: 0.9rem;
+    border-radius: 12px;
+  }
+
+  .supplier-products > h2 {
+    margin-bottom: 0.65rem;
+    font-size: 1.08rem;
+  }
+
+  .product-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.7rem;
+  }
+}
 
 /* Pricing type options */
 .pricing-type-options { display:flex; flex-direction:column; gap:10px; margin-top:6px; padding:8px; background:#f9fafb; border-radius:8px; border:1px solid #e5e7eb }
@@ -2552,9 +2614,9 @@ function onProfileUpdated(newData) {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 20px;
-  padding: 18px 16px;
-  margin-bottom: 20px;
+  gap: 16px;
+  padding: 16px;
+  margin-bottom: 12px;
   background: linear-gradient(135deg, #fffaf5 0%, #ffffff 72%);
   border: 1px solid #f1e5d8;
   border-radius: 14px;
@@ -2605,11 +2667,43 @@ function onProfileUpdated(newData) {
 .panel-content {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
   overflow: visible;
+}
+
+.supplier-module-view--overview {
+  gap: 12px;
+}
+
+.supplier-module-view--overview > .hr-stats-grid {
+  gap: 12px;
+  margin: 0;
+}
+
+.supplier-module-view--overview > .hr-stats-grid .hr-stat-card {
+  gap: 12px;
+  padding: 14px;
+  border-radius: 14px;
+}
+
+.supplier-module-view--overview > .supplier-products {
+  margin-top: 0;
+}
+
+.supplier-module-view--overview :deep(.logistics-panel) {
+  padding: 14px;
+}
+
+.supplier-module-view--overview :deep(.logistics-panel > .section-title) {
+  margin-top: 0;
+  margin-bottom: 0.55rem;
+}
+
+.supplier-module-view--overview :deep(.logistics-panel > .empty-state) {
+  padding: 1.5rem;
 }
 
 .panel-content > * {
@@ -2629,6 +2723,128 @@ function onProfileUpdated(newData) {
   border-radius: 12px;
   box-shadow: 0 8px 20px rgba(16, 24, 40, 0.06);
   box-sizing: border-box;
+}
+
+.supplier-orders-section {
+  padding: 1.1rem 1.15rem 1rem;
+  border-color: #eadfd5;
+  border-radius: 14px;
+  background: #fffaf5;
+  box-shadow: 0 8px 22px rgba(61, 42, 31, 0.07);
+}
+
+.supplier-orders-section > .section-title {
+  margin: 0 0 0.6rem;
+  color: #3d2a1f;
+  font-size: 1.2rem;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+}
+
+.supplier-orders-section .requests-scroll {
+  max-height: min(420px, 58vh);
+  padding: 0;
+  border: 1px solid #eadfd5;
+  border-radius: 10px;
+  background: #fff;
+  scrollbar-color: #cdb5a4 #f7f0ea;
+  scrollbar-width: thin;
+}
+
+.supplier-orders-section .requests-scroll::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+.supplier-orders-section .requests-scroll::-webkit-scrollbar-track {
+  background: #f7f0ea;
+}
+
+.supplier-orders-section .requests-scroll::-webkit-scrollbar-thumb {
+  border: 2px solid #f7f0ea;
+  border-radius: 999px;
+  background: #cdb5a4;
+}
+
+.supplier-orders-table {
+  min-width: 980px;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: #3d2a1f;
+  font-size: 0.88rem;
+}
+
+.supplier-orders-table th,
+.supplier-orders-table td {
+  padding: 0.8rem 0.9rem;
+  border-bottom: 1px solid #eee5de;
+  vertical-align: middle;
+}
+
+.supplier-orders-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  background: #f7f0ea;
+  color: #5b4030;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.supplier-orders-table tbody tr {
+  transition: background-color 140ms ease;
+}
+
+.supplier-orders-table tbody tr:hover {
+  background: #fff8f1;
+}
+
+.supplier-orders-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.supplier-orders-table .action-cell {
+  min-width: 170px;
+  white-space: normal;
+}
+
+.supplier-orders-table .btn-small {
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+@media (max-width: 640px) {
+  .supplier-orders-section {
+    padding: 0.9rem;
+    border-radius: 12px;
+  }
+
+  .supplier-orders-section > .section-title {
+    margin-bottom: 0.55rem;
+    font-size: 1.08rem;
+  }
+
+  .supplier-orders-section .requests-scroll {
+    max-height: 60vh;
+  }
+
+  .supplier-orders-table {
+    min-width: 900px;
+    font-size: 0.82rem;
+  }
+
+  .supplier-orders-table th,
+  .supplier-orders-table td {
+    padding: 0.7rem;
+  }
 }
 
 :deep(.logistics-panel) {
@@ -2660,21 +2876,37 @@ function onProfileUpdated(newData) {
 .alert-badge { margin-top:6px; display:inline-block; padding:3px 8px; border-radius:999px; font-size:0.75rem; font-weight:600; background:#fff1f2; color:#be123c }
 .btn-small { padding:6px 8px; font-size:0.85rem }
 
-.product-grid { gap:0.75rem }
-.product-card { display:flex; flex-direction:column; justify-content:space-between }
-
 .panel-badge { position:absolute; top:-8px; right:-8px; min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:#ef4444; color:#ffffff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(239,68,68,0.35) }
 .stat-alert { border:1px solid #fecaca; box-shadow:0 0 0 2px rgba(239,68,68,0.12) }
 
 @media (max-width: 900px) {
-  .supplier-hero { flex-direction: column; gap: 12px; }
+  .supplier-hero { flex-direction: column; gap: 10px; margin-bottom: 12px; }
   .supplier-hero__action { width: 100%; }
   .overview-grid { flex-direction:column }
   .data-table { min-width:600px }
-  .product-grid { grid-template-columns: repeat(auto-fill,minmax(160px,1fr)) }
 }
 
 @media (max-width: 480px) {
+  .supplier-module-view--overview {
+    gap: 10px;
+  }
+
+  .supplier-module-view--overview > .hr-stats-grid {
+    gap: 10px;
+  }
+
+  .supplier-module-view--overview > .hr-stats-grid .hr-stat-card {
+    padding: 12px;
+  }
+
+  .supplier-module-view--overview :deep(.logistics-panel) {
+    padding: 12px;
+  }
+
+  .supplier-module-view--overview :deep(.logistics-panel > .empty-state) {
+    padding: 1.1rem;
+  }
+
   .data-table { min-width:480px }
   .action-cell { min-width:160px }
 }
