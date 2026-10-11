@@ -188,27 +188,42 @@
       </div>
 
           <section v-if="selectedModule === 'overview' || selectedModule === 'products'" id="supplier-products" class="supplier-products">
-            <h2>Your Products</h2>
-            <div v-if="loadingProducts">Loading products...</div>
-            <div v-else-if="!products.length">No products yet.</div>
+            <header class="supplier-products__header">
+              <div>
+                <span class="supplier-products__eyebrow">Product catalog</span>
+                <h2>Your Products</h2>
+                <p>Review your listed products, pricing, and current stock.</p>
+              </div>
+              <span v-if="!loadingProducts" class="supplier-products__count">
+                {{ products.length }} {{ products.length === 1 ? 'product' : 'products' }}
+              </span>
+            </header>
+            <div v-if="loadingProducts" class="supplier-products__state" role="status">Loading products...</div>
+            <div v-else-if="!products.length" class="supplier-products__state">
+              <strong>No products yet</strong>
+              <span>Your product listings will appear here when they are available.</span>
+            </div>
             <div v-else class="product-grid">
               <div v-for="p in products" :key="p.id" class="product-card">
                 <div class="product-card-header">
                   <div class="product-name">{{ p.name }}</div>
-                  <button class="btn-edit" @click="openEditProductModal(p)" title="Edit product">✎</button>
+                  <button class="btn-edit" @click="openEditProductModal(p)" :aria-label="`Edit ${p.name}`" title="Edit product">✎</button>
                 </div>
                 <div class="product-category" v-if="p.category">{{ p.category }}</div>
                 <div class="product-type" v-if="p.per_pack_or_individual" :class="'type-' + p.per_pack_or_individual">
                   {{ formatPricingType(p.per_pack_or_individual) }}
                 </div>
-            <div class="product-meta">
-              <div class="product-price">{{ formatPrice(p.price) }}</div>
-              <div class="product-stock">Real stock: {{ p.real_stock ?? p.stock ?? 0 }}</div>
-              <!-- Expiry is now tracked at order level, not product level -->
-            </div>
+                <div class="product-meta">
+                  <div class="product-price">{{ formatPrice(p.price) }}</div>
+                  <div class="product-stock">
+                    <span>Real stock</span>
+                    <strong>{{ p.real_stock ?? p.stock ?? 0 }}</strong>
+                  </div>
+                  <!-- Expiry is now tracked at order level, not product level -->
+                </div>
               </div>
             </div>
-              </section>
+          </section>
             </div>
             </Transition>
             </div>
@@ -1851,7 +1866,7 @@ function onProfileUpdated(newData) {
   width: 100%;
   min-width: 0;
   margin-top: 0.75rem;
-  padding: 1.15rem;
+  padding: 1.25rem;
   background: #fffaf5;
   border: 1px solid #eadfd5;
   border-radius: 14px;
@@ -1859,30 +1874,84 @@ function onProfileUpdated(newData) {
   box-sizing: border-box;
   scroll-margin-top: 84px;
 }
-.supplier-products > h2 {
-  margin: 0 0 0.75rem;
+.supplier-products__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid #eee2d8;
+}
+.supplier-products__eyebrow {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: #a15d38;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+.supplier-products__header h2 {
+  margin: 0;
   color: #3d2a1f;
   font-size: 1.2rem;
   font-weight: 800;
   line-height: 1.3;
   letter-spacing: -0.02em;
 }
+.supplier-products__header p {
+  margin: 0.25rem 0 0;
+  color: #846e5d;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+.supplier-products__count {
+  flex: 0 0 auto;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid #eadfd5;
+  border-radius: 999px;
+  background: #fff;
+  color: #704b34;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.supplier-products__state {
+  display: flex;
+  min-height: 84px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 1rem;
+  border: 1px dashed #d9c7b8;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.65);
+  color: #846e5d;
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+.supplier-products__state strong {
+  color: #493629;
+  font-size: 0.95rem;
+}
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 290px));
-  gap: 0.85rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 360px));
+  align-items: stretch;
+  gap: 0.9rem;
   margin-top: 0;
 }
 .product-card {
   display: flex;
   min-width: 0;
+  max-width: 390px;
   flex-direction: column;
   justify-content: flex-start;
-  gap: 0.65rem;
-  padding: 1rem;
+  gap: 0.55rem;
+  padding: 1rem 1.05rem;
   border: 1px solid #eadfd5;
-  border-radius: 12px;
-  background: #fff;
+  border-radius: 13px;
+  background: linear-gradient(180deg, #fff 0%, #fffdfb 100%);
   box-shadow: 0 3px 10px rgba(61, 42, 31, 0.05);
   transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
 }
@@ -1897,11 +1966,30 @@ function onProfileUpdated(newData) {
 .product-type.type-individual { background:#f3e9e1; color:#704b34 }
 .product-type.type-per_pack { background:#f4e5d5; color:#704b34 }
 .product-type.type-both { background:#fff1e6; color:#8f4f2f }
-.product-meta { display:flex; flex-direction:column; gap:0.35rem; margin-top:0 }
-.product-price { color:#9d5631; font-weight:800; font-size:1rem }
+.product-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-top: 0.15rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid #f0e8e1;
+}
+.product-price { color:#9d5631; font-weight:800; font-size:1.05rem; font-variant-numeric: tabular-nums }
 .product-expiry { color:#7c2d12; font-size:0.8rem; display:flex; gap:4px }
 .expiry-label { font-weight:600 }
-.product-stock { color:#846e5d; font-size:0.82rem }
+.product-stock {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: #846e5d;
+  font-size: 0.78rem;
+}
+.product-stock strong {
+  color: #493629;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
 .product-card-header { display:flex; justify-content:space-between; align-items:center; gap:0.6rem }
 .btn-edit {
   display: grid;
@@ -1927,14 +2015,23 @@ function onProfileUpdated(newData) {
     border-radius: 12px;
   }
 
-  .supplier-products > h2 {
-    margin-bottom: 0.65rem;
+  .supplier-products__header {
+    align-items: flex-start;
+    margin-bottom: 0.8rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .supplier-products > .supplier-products__header h2 {
     font-size: 1.08rem;
   }
 
   .product-grid {
     grid-template-columns: minmax(0, 1fr);
     gap: 0.7rem;
+  }
+
+  .product-card {
+    max-width: none;
   }
 }
 

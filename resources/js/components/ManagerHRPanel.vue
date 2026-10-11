@@ -546,7 +546,7 @@
       </div>
 
       <!-- Clock-in Confirmation Section -->
-      <section v-if="selectedHrSection === 'confirmations'" class="panel-block hr-confirmation-panel">
+      <section v-if="selectedHrSection === 'overview' || selectedHrSection === 'confirmations'" class="panel-block hr-confirmation-panel">
         <div class="panel-header hr-confirmation-header">
           <h2>
             Pending Clock-in Confirmations
@@ -600,6 +600,8 @@
           </div>
         </div>
       </section>
+
+      <AdminAttendanceCard v-if="selectedHrSection === 'attendance'" />
 
       <section v-if="selectedHrSection === 'attendance'" class="panel-block hr-attendance-panel">
         <div class="panel-header hr-attendance-header">
@@ -662,7 +664,7 @@
       </section>
 
       <!-- Payroll Tracking Section -->
-      <section v-if="selectedHrSection === 'payroll'" class="panel-block hr-payroll-panel">
+      <section v-if="selectedHrSection === 'overview' || selectedHrSection === 'payroll'" class="panel-block hr-payroll-panel">
         <div class="panel-header hr-payroll-header">
             <div>
               <h2>{{ showPayrollHistory ? 'Salary History' : 'Payroll Management' }}</h2>
@@ -890,45 +892,52 @@
 
   <transition name="fade">
     <div v-if="showProfileInfo" class="info-backdrop" @click.self="closeInfo">
-      <div class="info-modal">
-        <h3>Info</h3>
-        <p class="info-sub">Your account information.</p>
+      <section class="info-modal manager-hr-account-info" role="dialog" aria-modal="true" aria-labelledby="manager-hr-account-info-title">
+        <header class="manager-hr-account-info__header">
+          <div>
+            <h3 id="manager-hr-account-info-title">Account Information</h3>
+            <p>Your account information.</p>
+          </div>
+          <button class="manager-hr-account-info__close" type="button" @click="closeInfo" aria-label="Close account information">×</button>
+        </header>
 
-        <div class="info-grid">
-          <div class="info-row">
-            <span class="info-label">Full name</span>
-            <span class="info-value">{{ userProfile.fullName || userProfile.full_name || '-' }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Account I.D</span>
-            <span class="info-value">{{ userProfile.accountId || userProfile.account_id || userProfile.id || '-' }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Role</span>
-            <span class="info-value">{{ (userProfile.role || '-').toString().toUpperCase() }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Username</span>
-            <span class="info-value">{{ userProfile.username || '-' }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Email</span>
-            <span class="info-value">{{ userProfile.email || '-' }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Contact</span>
-            <span class="info-value">{{ userProfile.contact || userProfile.phone_number || '-' }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Department</span>
-            <span class="info-value">{{ userProfile.department || '-' }}</span>
+        <div class="manager-hr-account-info__body">
+          <div class="info-grid">
+            <div class="info-row">
+              <span class="info-label">Full name</span>
+              <span class="info-value">{{ userProfile.fullName || userProfile.full_name || 'N/A' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Account I.D</span>
+              <span class="info-value">{{ userProfile.accountId || userProfile.account_id || userProfile.id || 'N/A' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Role</span>
+              <span class="info-value">{{ (userProfile.role || userProfile.position || 'N/A').toString().toUpperCase() }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Username</span>
+              <span class="info-value">{{ userProfile.username || 'N/A' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Email</span>
+              <span class="info-value">{{ userProfile.email || 'N/A' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Contact</span>
+              <span class="info-value">{{ userProfile.contact || userProfile.phone_number || userProfile.phone || '-' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Department</span>
+              <span class="info-value">{{ userProfile.department || '-' }}</span>
+            </div>
           </div>
         </div>
 
-        <div class="info-actions">
+        <footer class="manager-hr-account-info__footer">
           <button class="btn-secondary" type="button" @click="closeInfo">Close</button>
-        </div>
-      </div>
+        </footer>
+      </section>
     </div>
   </transition>
 
@@ -1006,6 +1015,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
+import AdminAttendanceCard from './AdminAttendanceCard.vue'
 import axios from 'axios'
 import { showToast } from './toastStore'
 import PanelSidebarBrand from './PanelSidebarBrand.vue'
@@ -2127,7 +2137,7 @@ defineExpose({ refreshAllData, onProfileUpdated })
 .logo-loading-box p { color: #666; font-size: 1rem; }
 .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
-.panel-block { background: white; border-radius: 8px; padding: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 1rem; }
+.panel-block { background: white; border-radius: 8px; padding: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 0; }
 .panel-header h2 { margin: 0; font-size: 1.1rem; color: #333; }
 .attendance-override-toggle { display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid #eee; }
 .toggle-label { flex: 1; }
@@ -2318,7 +2328,7 @@ defineExpose({ refreshAllData, onProfileUpdated })
 
 /* Payroll Panel Styles */
 .hr-payroll-panel {
-  margin-top: 1rem;
+  margin-top: 0;
 }
 
 .hr-payroll-header {
@@ -2479,7 +2489,7 @@ defineExpose({ refreshAllData, onProfileUpdated })
 
 /* Clock-in Confirmation Styles */
 .hr-confirmation-panel {
-  margin-bottom: 1.5rem;
+  margin-bottom: 0;
 }
 
 .hr-confirmation-header {
@@ -2739,5 +2749,152 @@ defineExpose({ refreshAllData, onProfileUpdated })
 
 .btn-link:hover {
   text-decoration: underline;
+}
+
+.manager-hr-account-info {
+  display: flex;
+  width: min(520px, calc(100% - 2rem));
+  max-height: min(88vh, 760px);
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid #eadfd5;
+  border-radius: 20px;
+  background: #fffaf6;
+  color: #493629;
+  box-shadow: 0 24px 70px rgba(48, 35, 26, 0.24);
+}
+
+.manager-hr-account-info__header {
+  display: flex;
+  min-height: 72px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #eee2d8;
+  background: linear-gradient(180deg, #fffdfa 0%, #fffaf5 100%);
+}
+
+.manager-hr-account-info__header h3 {
+  margin: 0;
+  color: #493629;
+  font-size: 1.18rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.manager-hr-account-info__header p {
+  margin: 0.3rem 0 0;
+  color: #a18470;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.manager-hr-account-info__close {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #9b7156;
+  font-size: 1.8rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.manager-hr-account-info__close:hover {
+  background: #f4e9df;
+  color: #493629;
+}
+
+.manager-hr-account-info__body {
+  overflow-y: auto;
+  padding: 0.45rem 1.5rem;
+}
+
+.manager-hr-account-info .info-grid {
+  gap: 0;
+}
+
+.manager-hr-account-info .info-row {
+  grid-template-columns: minmax(100px, 0.8fr) minmax(0, 1.4fr);
+  gap: 1rem;
+  padding: 0.76rem 0;
+  border-bottom-color: #eee5dd;
+}
+
+.manager-hr-account-info .info-row:last-child {
+  border-bottom: 0;
+}
+
+.manager-hr-account-info .info-label {
+  color: #907b6b;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.manager-hr-account-info .info-value {
+  color: #493629;
+  font-size: 0.9rem;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
+.manager-hr-account-info__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.85rem 1.5rem 1rem;
+  border-top: 1px solid #eee5dd;
+  background: #fffaf6;
+}
+
+.manager-hr-account-info__footer .btn-secondary {
+  min-width: 4.5rem;
+  min-height: 2.35rem;
+  padding: 0.55rem 1rem;
+  border: 0;
+  border-radius: 999px;
+  background: #66788f;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+
+.manager-hr-account-info__footer .btn-secondary:hover {
+  background: #53657c;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 520px) {
+  .manager-hr-account-info {
+    width: min(100%, 520px);
+    max-height: 90vh;
+    border-radius: 16px;
+  }
+
+  .manager-hr-account-info__header {
+    min-height: 64px;
+    padding: 0.85rem 1rem;
+  }
+
+  .manager-hr-account-info__body {
+    padding: 0.35rem 1rem;
+  }
+
+  .manager-hr-account-info .info-row {
+    grid-template-columns: minmax(78px, 0.7fr) minmax(0, 1.3fr);
+    gap: 0.6rem;
+    padding: 0.72rem 0;
+  }
+
+  .manager-hr-account-info__footer {
+    padding: 0.75rem 1rem 0.9rem;
+  }
 }
 </style>

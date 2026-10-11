@@ -1383,11 +1383,82 @@
 }
 
 :global(.manager-hr-page .manager-hr-hero) {
-  padding: 0 0.2rem;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
+  position: relative;
+  align-items: center;
+  min-height: 112px;
+  margin: 0;
+  padding: 1rem 1.25rem;
+  border: 1px solid rgba(219, 188, 160, 0.62);
+  border-top: 3px solid #ff6a3d;
+  border-radius: 16px;
+  background: linear-gradient(110deg, #fff 0%, #fffaf5 100%);
+  box-shadow: 0 8px 22px rgba(61, 42, 31, 0.07);
+  box-sizing: border-box;
+}
+
+:global(.manager-hr-page .manager-hr-section-view) {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+:global(.manager-hr-page .manager-hr-hero__copy) {
+  gap: 0.25rem;
+}
+
+:global(.manager-hr-page .manager-hr-hero__title) {
+  color: #243447;
+  font-size: clamp(1.8rem, 2.5vw, 2.2rem);
+  line-height: 1.1;
+}
+
+:global(.manager-hr-page .manager-hr-hero__actions) {
+  gap: 0.5rem;
+}
+
+:global(.manager-hr-page .manager-hr-main-wrapper),
+:global(.manager-hr-page .hr-confirmation-panel),
+:global(.manager-hr-page .hr-payroll-panel) {
+  margin: 0;
+}
+
+:global(.manager-hr-page .manager-hr-stats-grid) {
+  gap: 0.65rem;
+}
+
+:global(.manager-hr-page .hr-confirmation-panel),
+:global(.manager-hr-page .hr-payroll-panel) {
+  padding: 1rem;
+  border: 1px solid rgba(219, 188, 160, 0.55);
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(61, 42, 31, 0.06);
+}
+
+:global(.manager-hr-page .hr-confirmation-header),
+:global(.manager-hr-page .hr-payroll-header) {
+  gap: 0.65rem;
+  margin-bottom: 0.65rem;
+}
+
+:global(.manager-hr-page .panel-body--table) {
+  padding-top: 0.5rem;
+}
+
+@media (max-width: 767px) {
+  :global(.manager-hr-page .manager-hr-hero) {
+    align-items: flex-start;
+    min-height: 0;
+    padding: 0.9rem;
+  }
+
+  :global(.manager-hr-page .manager-hr-hero__actions) {
+    gap: 0.45rem;
+  }
+
+  :global(.manager-hr-page .hr-confirmation-panel),
+  :global(.manager-hr-page .hr-payroll-panel) {
+    padding: 0.85rem;
+  }
 }
 
 :global(.manager-hr-section-heading) {
@@ -1669,7 +1740,8 @@
   width: 100%;
   max-width: none;
   min-width: 0;
-  min-height: 100%;
+  height: 100%;
+  min-height: 0;
   padding: 1.2rem 1.3rem 2rem calc(var(--manager-hr-sidebar-width) + 1.3rem);
   box-sizing: border-box;
   overflow-y: auto;
@@ -1814,4 +1886,165 @@
 :global(.admin-layout:has(.manager-hr-sidebar-collapsed) > .owner-panel-topbar) {
   left: 0 !important;
   width: 100% !important;
+}
+
+/* Keep the dashboard rhythm on one spacing scale instead of stacking section margins. */
+:global(.manager-hr-page .manager-hr-section-view) {
+  gap: 0.65rem;
+}
+
+:global(.manager-hr-page .manager-hr-section-view > .manager-hr-section-heading),
+:global(.manager-hr-page .manager-hr-section-view > .manager-hr-hero),
+:global(.manager-hr-page .manager-hr-section-view > .manager-hr-main-wrapper),
+:global(.manager-hr-page .manager-hr-section-view > .hr-confirmation-panel),
+:global(.manager-hr-page .manager-hr-section-view > .hr-attendance-panel),
+:global(.manager-hr-page .manager-hr-section-view > .hr-payroll-panel) {
+  margin: 0;
+}
+
+:global(.manager-hr-page .hr-stats-grid) {
+  gap: 0.65rem;
+}
+
+:global(.manager-hr-page .hr-confirmation-panel),
+:global(.manager-hr-page .hr-attendance-panel),
+:global(.manager-hr-page .hr-payroll-panel) {
+  padding: 1rem;
+}
+
+:global(.manager-hr-page .hr-confirmation-header),
+:global(.manager-hr-page .hr-attendance-header),
+:global(.manager-hr-page .hr-payroll-header) {
+  gap: 0.65rem;
+  margin: 0 0 0.65rem;
+}
+
+:global(.manager-hr-page .panel-body--table) {
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+}
+
+:global(.manager-hr-page .table-header),
+:global(.manager-hr-page .table-row) {
+  gap: 0.65rem;
+}
+
+:global(.manager-hr-page .confirmations-list) {
+  gap: 0.65rem;
+}
+
+:global(.manager-hr-page .confirmation-card) {
+  gap: 0.75rem;
+  padding: 0.85rem;
+}
+
+:global(.manager-hr-page .payroll-history-tools) {
+  gap: 0.65rem;
+  margin-bottom: 0.65rem;
+}
+
+@media (max-width: 767px) {
+  :global(.manager-hr-page .hr-confirmation-panel),
+  :global(.manager-hr-page .hr-attendance-panel),
+  :global(.manager-hr-page .hr-payroll-panel) {
+    padding: 0.85rem;
+  }
+}
+
+:global(.manager-hr-page .hr-payroll-panel .panel-body--table) {
+  gap: 0.4rem;
+  padding: 0.5rem 0 0;
+  border: 1px solid #e5ddd6;
+  border-radius: 12px;
+  background: #ffffff;
+  scrollbar-color: #b8a89b #f4efeb;
+}
+
+:global(.manager-hr-page .hr-payroll-panel .table-header),
+:global(.manager-hr-page .hr-payroll-panel .table-row) {
+  display: grid;
+  grid-template-columns: minmax(190px, 1.55fr) minmax(145px, 1.2fr) minmax(105px, 0.9fr) minmax(85px, 0.65fr) minmax(75px, 0.6fr) minmax(150px, 1.2fr) minmax(115px, 0.9fr) minmax(105px, 0.8fr) minmax(175px, 1.3fr) !important;
+  align-items: center;
+  column-gap: 0.7rem;
+  min-width: 1260px;
+  box-sizing: border-box;
+}
+
+:global(.manager-hr-page .hr-payroll-panel .table-header) {
+  padding: 0.8rem 0.9rem;
+  border-bottom: 1px solid #e8e1dc;
+  background: #f7f2ee;
+  color: #5a4639;
+  font-size: 0.74rem;
+  font-weight: 750;
+  letter-spacing: 0.045em;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+:global(.manager-hr-page .hr-payroll-panel .table-row) {
+  min-height: 3.8rem;
+  margin: 0 0.4rem 0.35rem;
+  padding: 0.75rem 0.5rem;
+  border: 1px solid #eee8e3;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #3d352f;
+  line-height: 1.45;
+}
+
+:global(.manager-hr-page .hr-payroll-panel .table-row:hover) {
+  background: #fcf8f5;
+}
+
+:global(.manager-hr-page .hr-payroll-panel .table-row > span) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+:global(.manager-hr-page .hr-payroll-panel .table-row > span:last-child) {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+:global(.manager-hr-page .hr-payroll-panel .table-row > span[colspan="9"]) {
+  grid-column: 1 / -1;
+}
+
+:global(.manager-hr-page .hr-payroll-panel .table-row .badge) {
+  width: fit-content;
+}
+
+:global(.manager-hr-page .manager-hr-section-heading) {
+  min-height: 112px;
+  margin: 0;
+  padding: 1rem 1.25rem;
+  border: 1px solid rgba(219, 188, 160, 0.62);
+  border-top: 3px solid #ff6a3d;
+  border-radius: 16px;
+  background: linear-gradient(110deg, #ffffff 0%, #fffaf5 100%);
+  box-shadow: 0 8px 22px rgba(61, 42, 31, 0.07);
+  box-sizing: border-box;
+}
+
+:global(.manager-hr-page .manager-hr-section-heading__eyebrow) {
+  margin-bottom: 0.25rem;
+  color: #9a5b3a;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+}
+
+:global(.manager-hr-page .manager-hr-section-heading h1) {
+  color: #243447;
+  font-size: clamp(1.8rem, 2.5vw, 2.2rem);
+  line-height: 1.1;
+}
+
+@media (max-width: 767px) {
+  :global(.manager-hr-page .manager-hr-section-heading) {
+    min-height: 0;
+    padding: 0.9rem;
+  }
 }
