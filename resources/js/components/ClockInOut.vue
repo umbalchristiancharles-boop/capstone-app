@@ -1046,27 +1046,32 @@ onUnmounted(() => {
   margin-bottom: 1rem;
 }
 
-.btn-capture {
+.face-capture-content .btn-capture {
   padding: 1rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
+  border: 1px solid #c2410c;
+  border-radius: 10px;
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  background: linear-gradient(135deg, #28a745, #20c997);
-  color: white;
+  background: linear-gradient(135deg, #c2410c, #d97706);
+  color: #fff;
   transition: all 0.3s ease;
 }
 
-.btn-capture:hover:not(:disabled) {
+.face-capture-content .btn-capture:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+  border-color: #9a3412;
+  background: linear-gradient(135deg, #9a3412, #b45309);
+  color: #fff;
+  box-shadow: 0 6px 14px rgba(154, 52, 18, 0.28);
 }
 
-.btn-capture:disabled {
-  background: #ccc;
+.face-capture-content .btn-capture:disabled {
+  border-color: #8b5e3c;
+  background: #8b5e3c;
+  color: #fff;
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 1;
 }
 
 .btn-cancel {

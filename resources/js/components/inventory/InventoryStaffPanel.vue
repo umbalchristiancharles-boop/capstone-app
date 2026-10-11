@@ -2878,28 +2878,44 @@ ProductList[compact] { width:100% }
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  overflow-y: auto;
+  padding: clamp(12px, 4vw, 24px);
   background: rgba(15, 23, 42, 0.68);
+  backdrop-filter: blur(4px);
 }
 
 .face-capture-content {
-  width: min(100%, 520px);
-  padding: 24px;
-  border-radius: 12px;
-  background: #fff;
-  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.24);
+  width: min(100%, 540px);
+  max-height: min(90vh, 760px);
+  overflow-y: auto;
+  padding: clamp(18px, 3vw, 28px);
+  border: 1px solid #f1e5d8;
+  border-top: 4px solid #f59e0b;
+  border-radius: 18px;
+  background: #fffaf5;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
 }
 
-.face-capture-content h3 { margin: 0 0 8px; color: #333; }
-.face-capture-instruction { margin: 0 0 16px; color: #6b6b6b; }
-.camera-container { position: relative; overflow: hidden; min-height: 240px; border-radius: 8px; background: #111827; }
-.camera-container video { display: block; width: 100%; min-height: 240px; object-fit: cover; }
-.camera-error { padding: 24px; color: #fecaca; text-align: center; }
-.face-capture-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
-.btn-capture, .btn-cancel { padding: 10px 14px; border: 0; border-radius: 8px; cursor: pointer; font-weight: 600; }
-.btn-capture { background: #16a34a; color: #fff; }
-.btn-capture:disabled { cursor: not-allowed; opacity: .55; }
-.btn-cancel { background: #e5e7eb; color: #1f2937; }
+.face-capture-content h3 { margin: 0 0 8px; color: #3d2a1f; font-size: 1.35rem; font-weight: 700; text-align: center; }
+.face-capture-instruction { margin: 0 0 1.1rem; color: #7c6758; font-size: 0.9rem; line-height: 1.5; text-align: center; }
+.camera-container { position: relative; overflow: hidden; width: 100%; min-height: 220px; max-height: 52vh; aspect-ratio: 16 / 9; margin-bottom: 1.1rem; border-radius: 12px; background: #111827; }
+.camera-container video { display: block; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+.camera-error { position: absolute; top: 50%; left: 50%; width: min(90%, 360px); padding: 1rem; transform: translate(-50%, -50%); border-radius: 10px; background: rgba(185, 28, 28, 0.92); color: #fff; text-align: center; }
+.face-capture-buttons { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin-top: 0; }
+.btn-capture, .btn-cancel { min-height: 46px; padding: 0.75rem 1rem; border: 1px solid transparent; border-radius: 10px; cursor: pointer; font-size: 0.95rem; font-weight: 600; transition: all 0.3s ease; }
+.face-capture-content .btn-capture { border-color: #c2410c; background: linear-gradient(135deg, #c2410c, #d97706); color: #fff; }
+.face-capture-content .btn-capture:hover:not(:disabled) { transform: translateY(-2px); border-color: #9a3412; background: linear-gradient(135deg, #9a3412, #b45309); color: #fff; box-shadow: 0 6px 14px rgba(154, 52, 18, 0.28); }
+.face-capture-content .btn-capture:disabled { border-color: #8b5e3c; background: #8b5e3c; color: #fff; cursor: not-allowed; opacity: 1; }
+.btn-cancel { border-color: #e2d8ce; background: #fff; color: #5b4638; }
+.btn-cancel:hover { background: #f5eee7; color: #3d2a1f; }
+.captured-preview { margin-top: 1rem; padding: 1rem; border: 1px solid #d6e7d8; border-radius: 12px; background: #f8f5f1; text-align: center; }
+.captured-preview img { max-width: 100%; max-height: 220px; border-radius: 8px; }
+
+@media (max-width: 520px) {
+  .face-capture-modal { align-items: flex-start; }
+  .face-capture-content { max-height: calc(100vh - 24px); }
+  .camera-container { min-height: 190px; }
+}
 
 /* Modal styles */
 .info-backdrop {

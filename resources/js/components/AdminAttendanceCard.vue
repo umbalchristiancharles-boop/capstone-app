@@ -541,28 +541,45 @@ onBeforeUnmount(() => {
   z-index: 10000;
   display: grid;
   place-items: center;
-  padding: 1rem;
-  background: rgba(15, 23, 42, 0.58);
+  overflow-y: auto;
+  padding: clamp(12px, 4vw, 24px);
+  background: rgba(15, 23, 42, 0.68);
   backdrop-filter: blur(4px);
 }
 
 .admin-attendance-self__camera-modal {
-  width: min(100%, 520px);
-  padding: 1.25rem;
+  width: min(100%, 540px);
+  max-height: min(90vh, 760px);
+  overflow-y: auto;
+  padding: clamp(18px, 3vw, 28px);
   border: 1px solid #f1e5d8;
-  border-radius: 16px;
+  border-top: 4px solid #f59e0b;
+  border-radius: 18px;
   background: #fffaf5;
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.24);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
+}
+
+.admin-attendance-self__camera-modal h2 {
+  margin: 0;
+  color: #3d2a1f;
+  font-size: 1.35rem;
+  text-align: center;
 }
 
 .admin-attendance-self__camera-modal > p {
-  margin-top: 0.35rem;
+  margin: 0.5rem 0 0;
   color: #7c6758;
   font-size: 0.85rem;
+  line-height: 1.5;
+  text-align: center;
 }
 
 .admin-attendance-self__camera {
-  margin-top: 1rem;
+  position: relative;
+  aspect-ratio: 16 / 9;
+  min-height: 220px;
+  max-height: 52vh;
+  margin-top: 1.1rem;
   overflow: hidden;
   border-radius: 12px;
   background: #111827;
@@ -571,24 +588,60 @@ onBeforeUnmount(() => {
 .admin-attendance-self__camera video {
   display: block;
   width: 100%;
-  max-height: 55vh;
+  height: 100%;
   object-fit: cover;
   transform: scaleX(-1);
 }
 
 .admin-attendance-self__camera p {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(90%, 360px);
+  margin: 0;
   padding: 1rem;
-  color: #fecaca;
+  transform: translate(-50%, -50%);
+  border-radius: 10px;
+  background: rgba(185, 28, 28, 0.92);
+  color: #fff;
+  text-align: center;
 }
 
 .admin-attendance-self__camera-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
   justify-content: flex-end;
   margin-top: 1rem;
 }
 
+.admin-attendance-self__camera-actions button:not(.is-secondary) {
+  border: 1px solid #c2410c;
+  color: #fff;
+  background: linear-gradient(135deg, #c2410c, #d97706);
+}
+
+.admin-attendance-self__camera-actions button:not(.is-secondary):hover:not(:disabled) {
+  border-color: #9a3412;
+  color: #fff;
+  background: linear-gradient(135deg, #9a3412, #b45309);
+}
+
+.admin-attendance-self__camera-actions button:not(.is-secondary):disabled {
+  border-color: #8b5e3c;
+  color: #fff;
+  background: #8b5e3c;
+  opacity: 1;
+}
+
+.admin-attendance-self__camera-actions button.is-secondary {
+  border: 1px solid #e2d8ce;
+  color: #5b4638;
+  background: #fff;
+}
+
 .admin-attendance-self__camera-actions .is-secondary {
-  color: #334155;
-  background: #e2e8f0;
+  color: #5b4638;
 }
 
 @media (max-width: 760px) {
@@ -608,6 +661,22 @@ onBeforeUnmount(() => {
 
   .admin-attendance-self__body {
     gap: 0.75rem;
+  }
+
+  .admin-attendance-self__backdrop {
+    align-items: start;
+  }
+
+  .admin-attendance-self__camera-modal {
+    max-height: calc(100vh - 24px);
+  }
+
+  .admin-attendance-self__camera {
+    min-height: 190px;
+  }
+
+  .admin-attendance-self__camera-actions button {
+    flex: 1 1 140px;
   }
 
   .admin-attendance-self__summary,

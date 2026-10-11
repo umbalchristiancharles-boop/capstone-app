@@ -2594,54 +2594,62 @@ async function performLogout() {
 /* Face Capture Modal Styles */
 .face-capture-modal {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  inset: 0;
+  background: rgba(15, 23, 42, 0.68);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 9999;
-  padding: 1rem;
+  overflow-y: auto;
+  padding: clamp(12px, 4vw, 24px);
+  backdrop-filter: blur(4px);
 }
 
 .face-capture-content {
-  background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  max-width: 600px;
-  width: 100%;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  width: min(100%, 540px);
+  max-height: min(90vh, 760px);
+  overflow-y: auto;
+  padding: clamp(18px, 3vw, 28px);
+  border: 1px solid #f1e5d8;
+  border-top: 4px solid #f59e0b;
+  border-radius: 18px;
+  background: #fffaf5;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
 }
 
 .face-capture-content h3 {
-  margin: 0 0 0.5rem 0;
-  color: #333;
-  font-size: 1.5rem;
+  margin: 0 0 0.5rem;
+  color: #3d2a1f;
+  font-size: 1.35rem;
+  font-weight: 700;
   text-align: center;
 }
 
 .face-capture-instruction {
   text-align: center;
-  color: #666;
-  margin-bottom: 1.5rem;
-  font-size: 0.95rem;
+  color: #7c6758;
+  margin: 0 0 1.1rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
 }
 
 .camera-container {
   position: relative;
   width: 100%;
   background: #000;
-  border-radius: 8px;
+  aspect-ratio: 16 / 9;
+  min-height: 220px;
+  max-height: 52vh;
+  border-radius: 12px;
   overflow: hidden;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.1rem;
 }
 
 .camera-container video {
+  height: 100%;
   width: 100%;
-  height: auto;
   display: block;
+  object-fit: cover;
   transform: scaleX(-1); /* Mirror the video for better UX */
 }
 
@@ -2660,61 +2668,70 @@ async function performLogout() {
 
 .face-capture-buttons {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0;
 }
 
-.btn-capture {
-  padding: 1rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
+.face-capture-content .btn-capture {
+  min-height: 46px;
+  padding: 0.75rem 1rem;
+  border: 1px solid #c2410c;
+  border-radius: 10px;
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  background: linear-gradient(135deg, #28a745, #20c997);
-  color: white;
+  background: linear-gradient(135deg, #c2410c, #d97706);
+  color: #fff;
   transition: all 0.3s ease;
 }
 
-.btn-capture:hover:not(:disabled) {
+.face-capture-content .btn-capture:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+  background: linear-gradient(135deg, #9a3412, #b45309);
+  border-color: #9a3412;
+  color: #fff;
+  box-shadow: 0 6px 14px rgba(154, 52, 18, 0.28);
 }
 
-.btn-capture:disabled {
-  background: #ccc;
+.face-capture-content .btn-capture:disabled {
+  background: #8b5e3c;
+  border-color: #8b5e3c;
+  color: #fff;
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 1;
 }
 
 .btn-cancel {
-  padding: 1rem;
-  border: 2px solid #dc3545;
-  border-radius: 8px;
-  font-size: 1rem;
+  min-height: 46px;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e2d8ce;
+  border-radius: 10px;
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  background: white;
-  color: #dc3545;
+  background: #fff;
+  color: #5b4638;
   transition: all 0.3s ease;
 }
 
 .btn-cancel:hover {
-  background: #dc3545;
-  color: white;
+  background: #f5eee7;
+  color: #3d2a1f;
 }
 
 .captured-preview {
   text-align: center;
+  margin-top: 1rem;
   padding: 1rem;
-  background: #f8f9fa;
-  border-radius: 8px;
-  border: 2px solid #28a745;
+  background: #f8f5f1;
+  border-radius: 12px;
+  border: 1px solid #d6e7d8;
 }
 
 .captured-preview img {
   max-width: 100%;
+  max-height: 220px;
   height: auto;
   border-radius: 8px;
   margin-bottom: 0.5rem;
@@ -2726,6 +2743,20 @@ async function performLogout() {
   font-weight: 600;
   margin: 0;
   font-size: 0.95rem;
+}
+
+@media (max-width: 520px) {
+  .face-capture-modal {
+    align-items: flex-start;
+  }
+
+  .face-capture-content {
+    max-height: calc(100vh - 24px);
+  }
+
+  .camera-container {
+    min-height: 190px;
+  }
 }
 </style>
 <style scoped>
