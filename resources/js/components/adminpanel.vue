@@ -169,12 +169,12 @@
           </section>
 
           <!-- Request New Product (Branch Manager) -->
-          <section v-if="activeSection === 'inventory'" id="admin-inventory-procurement" class="panel-block">
+          <section v-if="activeSection === 'inventory'" id="admin-inventory-procurement" class="panel-block admin-product-request-panel">
             <div class="panel-header">
               <h2>Request New Product</h2>
-              <div style="display:flex; gap:8px; align-items:center;">
-                <button class="panel-action" @click="loadProductRequests">Refresh</button>
-                <button class="panel-action" :disabled="!productRequestsEnabled" @click="showProductRequestForm = true">+ Request New Product</button>
+              <div class="admin-product-request-actions">
+                <button class="panel-action admin-product-request-refresh" @click="loadProductRequests">Refresh</button>
+                <button class="panel-action admin-product-request-create" :disabled="!productRequestsEnabled" @click="showProductRequestForm = true">+ Request New Product</button>
               </div>
             </div>
             <div class="panel-body panel-body--list">
@@ -331,7 +331,7 @@
           <section v-if="activeSection === 'reports'" id="admin-reports-crm" class="panel-block">
             <div class="panel-header">
               <h2>Customer Reports / CRM</h2>
-              <button class="panel-action" @click="showCustomerReports = !showCustomerReports">
+              <button class="panel-action customer-reports-toggle" @click="showCustomerReports = !showCustomerReports">
                 {{ showCustomerReports ? 'Hide' : 'View Reports' }}
               </button>
             </div>
@@ -3215,6 +3215,130 @@ h1, h2 {
   padding: 7px 11px;
 }
 
+.admin-product-request-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.customer-reports-toggle {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 15px !important;
+  border: 1px solid #d6c7bd !important;
+  border-radius: 9px !important;
+  background: #ffffff !important;
+  color: var(--color-deep-navy, #42210b) !important;
+  font-size: 0.86rem !important;
+  font-weight: 650 !important;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.customer-reports-toggle:hover {
+  transform: translateY(-1px);
+  border-color: #f97316 !important;
+  background: #fff7ed !important;
+  box-shadow: 0 3px 8px rgba(66, 33, 11, 0.1);
+}
+
+.customer-reports-toggle:focus-visible {
+  outline: 3px solid rgba(249, 115, 22, 0.35);
+  outline-offset: 2px;
+}
+
+:global(.dark-mode) .customer-reports-toggle {
+  border-color: #6b7280 !important;
+  background: #1f2937 !important;
+  color: #f3f4f6 !important;
+}
+
+:global(.dark-mode) .customer-reports-toggle:hover {
+  border-color: #ff8a50 !important;
+  background: #374151 !important;
+}
+
+.admin-product-request-panel .panel-header .panel-action,
+.supplier-review-panel .panel-header .panel-action,
+.landing-images-panel .panel-header .panel-action {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border: 1px solid #d6c7bd;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 650;
+  line-height: 1.25;
+  cursor: pointer;
+  transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.admin-product-request-panel .admin-product-request-refresh,
+.supplier-review-panel .panel-header .panel-action,
+.landing-images-panel .panel-header .panel-action {
+  background: #ffffff;
+  color: var(--color-deep-navy, #42210b);
+}
+
+.admin-product-request-panel .admin-product-request-refresh:hover,
+.supplier-review-panel .panel-header .panel-action:hover,
+.landing-images-panel .panel-header .panel-action:hover {
+  border-color: #f97316;
+  background: #fff7ed;
+  box-shadow: 0 3px 8px rgba(66, 33, 11, 0.1);
+}
+
+.admin-product-request-panel .admin-product-request-create {
+  border-color: #c2410c;
+  background: #c2410c;
+  color: #ffffff;
+  box-shadow: 0 3px 8px rgba(154, 52, 18, 0.18);
+}
+
+.admin-product-request-panel .admin-product-request-create:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: #9a3412;
+  background: #9a3412;
+  box-shadow: 0 5px 12px rgba(154, 52, 18, 0.22);
+}
+
+.admin-product-request-panel .panel-header .panel-action:focus-visible,
+.supplier-review-panel .panel-header .panel-action:focus-visible,
+.landing-images-panel .panel-header .panel-action:focus-visible {
+  outline: 3px solid rgba(249, 115, 22, 0.35);
+  outline-offset: 2px;
+}
+
+.admin-product-request-panel .admin-product-request-create:disabled {
+  border-color: #cbd5e1;
+  background: #e2e8f0;
+  color: #64748b;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+:global(.dark-mode) .admin-product-request-panel .admin-product-request-refresh,
+:global(.dark-mode) .supplier-review-panel .panel-header .panel-action,
+:global(.dark-mode) .landing-images-panel .panel-header .panel-action {
+  border-color: #6b7280;
+  background: #1f2937;
+  color: #f3f4f6;
+}
+
+:global(.dark-mode) .admin-product-request-panel .admin-product-request-refresh:hover,
+:global(.dark-mode) .supplier-review-panel .panel-header .panel-action:hover,
+:global(.dark-mode) .landing-images-panel .panel-header .panel-action:hover {
+  border-color: #ff8a50;
+  background: #374151;
+}
+
 .admin-panel-shell .admin-eyebrow {
   font-size: 0.72rem;
 }
@@ -3241,6 +3365,21 @@ h1, h2 {
 }
 
 @media (max-width: 767px) {
+  .admin-product-request-panel > .panel-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-product-request-actions {
+    width: 100%;
+  }
+
+  .admin-product-request-panel .panel-header .panel-action,
+  .supplier-review-panel .panel-header .panel-action,
+  .landing-images-panel .panel-header .panel-action {
+    flex: 1 1 auto;
+  }
+
   .admin-panel-shell .admin-main > .panel-block,
   .admin-panel-shell .admin-side > .panel-block {
     padding: 10px 12px !important;

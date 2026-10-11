@@ -1,7 +1,6 @@
 <template>
   <div class="customer-reports-panel">
     <div class="reports-header">
-      <h2>Customer Reports / CRM</h2>
       <div class="reports-stats">
         <div class="stat-card">
           <span class="stat-label">Total</span>
@@ -72,25 +71,25 @@
           :class="{ 'row-expanded': expandedReport === report.id }"
         >
           <div class="row-main" @click="toggleExpand(report.id)">
-            <span class="customer-info">
+            <div class="customer-info">
               <div class="customer-name">{{ report.customer_name }}</div>
               <div class="customer-email">{{ report.customer_email }}</div>
-            </span>
-            <span class="subject-text">{{ report.subject }}</span>
-            <span>
+            </div>
+            <div class="subject-text">{{ report.subject }}</div>
+            <div class="status-cell">
               <span class="badge" :class="getStatusClass(report.status)">
                 {{ formatStatus(report.status) }}
               </span>
-            </span>
-            <span class="date-text">{{ formatDate(report.created_at) }}</span>
-            <span class="actions-cell" @click.stop>
-              <button @click="openEditModal(report)" class="action-btn" title="Edit">
-                ✏️
+            </div>
+            <div class="date-text">{{ formatDate(report.created_at) }}</div>
+            <div class="actions-cell" @click.stop>
+              <button type="button" @click="openEditModal(report)" class="action-btn" title="Edit report">
+                Edit
               </button>
-              <button @click="deleteReport(report)" class="action-btn action-btn--danger" title="Delete">
-                🗑️
+              <button type="button" @click="deleteReport(report)" class="action-btn action-btn--danger" title="Delete report">
+                Delete
               </button>
-            </span>
+            </div>
           </div>
 
           <div v-if="expandedReport === report.id" class="row-details">
@@ -643,118 +642,150 @@ onMounted(() => {
 
 <style scoped>
 .customer-reports-panel {
-  padding: 24px;
+  width: 100%;
+  min-width: 0;
+  padding: clamp(14px, 2vw, 24px);
   max-width: 1400px;
   margin: 0 auto;
+  color: #42210b;
 }
 
 .reports-header {
-  margin-bottom: 24px;
-}
-
-.reports-header h2 {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #1F2937;
-  margin: 0 0 16px 0;
+  margin-bottom: 18px;
 }
 
 .reports-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
 }
 
 .stat-card {
-  background: white;
-  padding: 16px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  padding: 16px 18px;
+  border: 1px solid #eee5df;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 3px 10px rgba(66, 33, 11, 0.07);
   text-align: center;
 }
 
+.stat-card::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: #9a3412;
+  content: '';
+}
+
+.stat-pending::before { background: #d97706; }
+.stat-progress::before { background: #2563eb; }
+.stat-resolved::before { background: #059669; }
+
 .stat-label {
   display: block;
-  font-size: 0.85rem;
-  color: #6B7280;
-  margin-bottom: 4px;
+  margin-bottom: 5px;
+  color: #78685f;
+  font-size: 0.84rem;
+  font-weight: 500;
 }
 
 .stat-value {
   display: block;
-  font-size: 1.5rem;
+  color: #42210b;
+  font-size: 1.55rem;
   font-weight: 700;
-  color: #1F2937;
+  line-height: 1.2;
 }
 
-.stat-pending .stat-value {
-  color: #F59E0B;
-}
-
-.stat-progress .stat-value {
-  color: #3B82F6;
-}
-
-.stat-resolved .stat-value {
-  color: #10B981;
-}
+.stat-pending .stat-value { color: #b45309; }
+.stat-progress .stat-value { color: #2563eb; }
+.stat-resolved .stat-value { color: #047857; }
 
 .reports-controls {
   display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
   flex-wrap: wrap;
 }
 
 .filter-group {
   display: flex;
-  gap: 12px;
-  flex: 1;
+  min-width: 0;
+  flex: 1 1 360px;
+  gap: 10px;
 }
 
 .filter-select,
 .search-input {
-  padding: 10px 16px;
-  border: 1px solid #D1D5DB;
-  border-radius: 6px;
+  min-height: 42px;
+  padding: 9px 13px;
+  border: 1px solid #d6c7bd;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #42210b;
   font-size: 0.95rem;
   font-family: inherit;
 }
 
+.filter-select:focus,
+.search-input:focus {
+  border-color: #c2410c;
+  outline: 3px solid rgba(249, 115, 22, 0.16);
+}
+
 .filter-select {
-  min-width: 150px;
+  min-width: 145px;
 }
 
 .search-input {
-  flex: 1;
-  max-width: 300px;
+  min-width: 180px;
+  flex: 1 1 260px;
+  max-width: 380px;
 }
 
 .refresh-btn {
-  padding: 10px 20px;
-  background: #0066FF;
-  color: white;
-  border: none;
-  border-radius: 6px;
+  min-height: 42px;
+  padding: 9px 18px;
+  border: 1px solid #9a3412;
+  border-radius: 9px;
+  background: #c2410c;
+  color: #ffffff;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  box-shadow: 0 3px 8px rgba(154, 52, 18, 0.16);
+  transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
 .refresh-btn:hover:not(:disabled) {
-  background: #0057e6;
+  transform: translateY(-1px);
+  border-color: #7c2d12;
+  background: #9a3412;
+  box-shadow: 0 5px 12px rgba(154, 52, 18, 0.22);
+}
+
+.refresh-btn:focus-visible {
+  outline: 3px solid rgba(249, 115, 22, 0.28);
+  outline-offset: 2px;
 }
 
 .refresh-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.65;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .reports-table-wrapper {
-  background: white;
+  border: 1px solid #eee5df;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 4px 14px rgba(66, 33, 11, 0.07);
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .loading-state,
@@ -771,42 +802,54 @@ onMounted(() => {
 
 .reports-table {
   width: 100%;
+  min-width: 820px;
+  --reports-grid-columns: minmax(150px, 1.25fr) minmax(130px, 1.2fr) minmax(125px, 0.85fr) minmax(160px, 1.2fr) minmax(150px, 1fr);
 }
 
 .table-header {
   display: grid;
-  grid-template-columns: 2fr 2fr 1fr 1.5fr 1fr;
-  gap: 16px;
-  padding: 16px 20px;
-  background: #F9FAFB;
-  border-bottom: 1px solid #E5E7EB;
+  grid-template-columns: var(--reports-grid-columns);
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid #e8e1dc;
+  background: #faf7f5;
+  color: #42210b;
   font-weight: 600;
-  color: #374151;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
 }
 
 .table-row {
-  border-bottom: 1px solid #E5E7EB;
-  transition: background 0.2s;
+  display: block;
+  border-bottom: 1px solid #eee8e3;
+  transition: background-color 160ms ease;
+}
+
+.table-row:last-child {
+  border-bottom: 0;
 }
 
 .table-row:hover {
-  background: #F9FAFB;
+  background: #fffaf6;
 }
 
 .row-main {
   display: grid;
-  grid-template-columns: 2fr 2fr 1fr 1.5fr 1fr;
-  gap: 16px;
-  padding: 16px 20px;
+  grid-template-columns: var(--reports-grid-columns);
+  gap: 12px;
+  min-width: 0;
+  padding: 16px 18px;
   align-items: center;
   cursor: pointer;
 }
 
+.row-main > * {
+  min-width: 0;
+}
+
 .row-details {
-  padding: 20px;
-  background: #F9FAFB;
-  border-top: 1px solid #E5E7EB;
+  padding: 18px;
+  border-top: 1px solid #eee8e3;
+  background: #faf7f5;
 }
 
 .details-grid {
@@ -861,51 +904,80 @@ onMounted(() => {
 
 .customer-info {
   display: flex;
+  min-width: 0;
   flex-direction: column;
   gap: 2px;
 }
 
 .customer-name {
+  overflow-wrap: anywhere;
   font-weight: 600;
-  color: #1F2937;
+  color: #42210b;
 }
 
 .customer-email {
+  overflow-wrap: anywhere;
   font-size: 0.85rem;
-  color: #6B7280;
+  color: #78685f;
 }
 
 .subject-text {
-  color: #374151;
+  color: #59483d;
   font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+
+.status-cell {
+  min-width: 0;
 }
 
 .date-text {
-  color: #6B7280;
+  color: #78685f;
   font-size: 0.85rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .actions-cell {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
 }
 
 .action-btn {
-  background: none;
-  border: none;
-  font-size: 1.1rem;
+  min-height: 34px;
+  padding: 7px 11px;
+  border: 1px solid #eadfd8;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #9a3412;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1;
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: all 0.2s;
+  transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
 }
 
 .action-btn:hover {
-  background: #F3F4F6;
+  transform: translateY(-1px);
+  border-color: #fdba74;
+  background: #fff7ed;
+}
+
+.action-btn:focus-visible {
+  outline: 3px solid rgba(249, 115, 22, 0.24);
+  outline-offset: 2px;
+}
+
+.action-btn--danger {
+  color: #b42318;
 }
 
 .action-btn--danger:hover {
-  background: #FEE2E2;
+  border-color: #fca5a5;
+  background: #fef2f2;
 }
 
 .badge {
@@ -1297,14 +1369,8 @@ textarea.form-input {
 }
 
 @media (max-width: 1024px) {
-  .table-header,
-  .row-main {
-    grid-template-columns: 2fr 2fr 1fr 1fr;
-  }
-
-  .table-header span:nth-child(4),
-  .row-main span:nth-child(4) {
-    display: none;
+  .reports-table {
+    --reports-grid-columns: minmax(140px, 1.2fr) minmax(125px, 1.1fr) minmax(120px, 0.85fr) minmax(150px, 1.15fr) minmax(145px, 1fr);
   }
 }
 
@@ -1313,12 +1379,25 @@ textarea.form-input {
     grid-template-columns: repeat(2, 1fr);
   }
 
+  .reports-controls,
   .filter-group {
     flex-direction: column;
   }
 
+  .filter-group {
+    width: 100%;
+    flex-basis: auto;
+  }
+
+  .filter-select,
   .search-input {
+    width: 100%;
+    min-width: 0;
     max-width: none;
+  }
+
+  .reports-controls > .refresh-btn {
+    width: 100%;
   }
 
   .table-header,
@@ -1331,6 +1410,10 @@ textarea.form-input {
     display: none;
   }
 
+  .reports-table {
+    min-width: 0;
+  }
+
   .row-main {
     display: flex;
     flex-direction: column;
@@ -1341,6 +1424,20 @@ textarea.form-input {
   .actions-cell {
     width: 100%;
     justify-content: flex-end;
+  }
+}
+
+@media (max-width: 420px) {
+  .reports-stats {
+    gap: 8px;
+  }
+
+  .stat-card {
+    padding: 13px 10px;
+  }
+
+  .stat-value {
+    font-size: 1.35rem;
   }
 }
 </style>
