@@ -150,27 +150,27 @@ async function confirm() {
 <style scoped>
 .verify-email-page {
   --verify-ink: #3d2a1f;
-  --verify-muted: #64748b;
-  --verify-orange: #ff9f43;
+  --verify-muted: #967d6c;
+  --verify-accent: #b66a3e;
+  --verify-accent-hover: #9d5631;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: clamp(1rem, 4vw, 2rem);
   background:
-    radial-gradient(circle at top left, rgba(255, 159, 67, 0.12), transparent 28%),
-    radial-gradient(circle at bottom right, rgba(34, 197, 94, 0.08), transparent 30%),
-    linear-gradient(180deg, rgba(251, 247, 244, 0.98), rgba(247, 244, 240, 1));
+    radial-gradient(circle at top left, rgba(182, 106, 62, 0.1), transparent 30%),
+    linear-gradient(180deg, #f7f0ea 0%, #e7d9cf 100%);
 }
 
 .card {
   width: 100%;
   max-width: 540px;
   padding: clamp(1.25rem, 4vw, 2rem);
-  background: linear-gradient(135deg, #fffaf5 0%, #ffffff 72%);
-  border: 1px solid #f1e5d8;
+  background: #fffaf5;
+  border: 1px solid #eadfd5;
   border-radius: 16px;
-  box-shadow: 0 18px 46px rgba(66, 33, 11, 0.12);
+  box-shadow: 0 18px 46px rgba(61, 42, 31, 0.12);
 }
 
 .card-header {
@@ -188,7 +188,7 @@ async function confirm() {
   align-items: center;
   justify-content: center;
   font-size: 21px;
-  background: linear-gradient(135deg, #ff9f43, #f97316);
+  background: linear-gradient(135deg, #c77a4b, #a85d35);
   color: #fff;
   border-radius: 10px;
 }
@@ -223,14 +223,14 @@ async function confirm() {
   padding: 0.75rem;
   color: var(--verify-ink);
   background: #fff;
-  border: 1px solid #f1e5d8;
+  border: 1px solid #eadfd5;
   border-radius: 8px;
   outline: none;
 }
 
 .form-input:focus {
-  border-color: var(--verify-orange);
-  box-shadow: 0 0 0 3px rgba(255, 159, 67, 0.14);
+  border-color: var(--verify-accent);
+  box-shadow: 0 0 0 3px rgba(182, 106, 62, 0.14);
 }
 
 .error-text,
@@ -244,24 +244,53 @@ async function confirm() {
 .success-text { color: #065f46; background: #ecfdf5; }
 
 .btn-primary {
-  background: linear-gradient(90deg, #ff6a3d, #f59e0b);
+  background: var(--verify-accent);
   color: #fff;
   border: none;
   padding: 0.7rem 1.1rem;
   border-radius: 8px;
-  box-shadow: 0 6px 18px rgba(255, 106, 61, 0.18);
+  box-shadow: 0 6px 18px rgba(182, 106, 62, 0.2);
   cursor: pointer;
   font-weight: 700;
+  transition: background-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--verify-accent-hover);
+  box-shadow: 0 8px 20px rgba(157, 86, 49, 0.24);
+  transform: translateY(-1px);
+}
+
+.btn-primary:focus-visible,
+.btn-ghost:focus-visible {
+  outline: 3px solid rgba(182, 106, 62, 0.28);
+  outline-offset: 2px;
+}
+
+.btn-primary:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .btn-ghost {
   background: #fffaf5;
   color: var(--verify-ink);
-  border: 1px solid #ead2bd;
+  border: 1px solid #d8c8bc;
   padding: 0.6rem 1rem;
   border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: #f3e9e1;
+  border-color: #cdb5a4;
+}
+
+.btn-ghost:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .horizontal-note {

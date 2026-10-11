@@ -407,21 +407,24 @@
 
   <!-- Submit product modal for supplier to add product and price -->
   <transition name="fade">
-    <div v-if="supplierSubmitModalVisible" class="modal-backdrop" @click.self="closeSupplierSubmitModal">
-      <div class="modal">
-        <div class="modal-card">
-          <div class="modal-header">
-            <h3>Product Request - Add Product</h3>
+    <div v-if="supplierSubmitModalVisible" class="modal-backdrop supplier-submit-modal-backdrop" @click.self="closeSupplierSubmitModal">
+      <div class="modal supplier-submit-modal">
+        <div class="modal-card supplier-submit-card">
+          <div class="modal-header supplier-submit-header">
+            <div>
+              <span class="supplier-submit-eyebrow">Product request</span>
+              <h3 id="supplier-submit-title">Add Product</h3>
+            </div>
           </div>
-          <div class="modal-body">
+          <div class="modal-body supplier-submit-body">
             <div class="form-group full-span">
               <label>Product Name</label>
               <input v-model="submitForm.name" type="text" placeholder="Product name" readonly />
             </div>
             <div class="form-group full-span">
               <label>Pricing Type</label>
-              <div class="pricing-type-options">
-                <div class="option-group">
+              <div class="pricing-type-options" role="radiogroup" aria-label="Pricing type">
+                <div class="option-group" :class="{ 'option-group--selected': submitForm.per_pack_or_individual === 'individual' }">
                   <input
                     type="radio"
                     id="submit-type-individual"
@@ -433,7 +436,7 @@
                     <span class="option-desc">Sold by individual units</span>
                   </label>
                 </div>
-                <div class="option-group">
+                <div class="option-group" :class="{ 'option-group--selected': submitForm.per_pack_or_individual === 'per_pack' }">
                   <input
                     type="radio"
                     id="submit-type-per_pack"
@@ -445,7 +448,7 @@
                     <span class="option-desc">Sold in packs only</span>
                   </label>
                 </div>
-                <div class="option-group">
+                <div class="option-group" :class="{ 'option-group--selected': submitForm.per_pack_or_individual === 'both' }">
                   <input
                     type="radio"
                     id="submit-type-both"
@@ -474,7 +477,7 @@
               <label>Product Barcode<span v-if="submitIsKitchenIngredient"> (optional for kitchen ingredients)</span></label>
               <div class="barcode-input-row">
                 <input ref="supplierBarcodeInput" v-model.trim="submitForm.barcode" type="text" inputmode="numeric" autocomplete="off" placeholder="Scan or enter the supplier barcode" />
-                <button class="btn-outline" type="button" @click="openSupplierBarcodeScanner">Scan</button>
+                <button class="btn-outline supplier-submit-scan" type="button" @click="openSupplierBarcodeScanner">Scan</button>
               </div>
               <div class="muted small-text">{{ submitIsKitchenIngredient ? 'Barcode is optional for kitchen ingredients.' : 'Enter the real barcode printed on the product, or provide the product SKU below.' }}</div>
             </div>
@@ -489,7 +492,7 @@
             </div>
             <div v-if="submitForm.per_pack_or_individual === 'per_pack'" class="form-group">
               <label>Pack details</label>
-              <div style="display:flex;gap:8px">
+              <div class="supplier-pack-inputs">
                 <input v-model.number="submitForm.pack_quantity" type="number" min="0" step="0.01" placeholder="Quantity (e.g. 6 or 250)" />
                 <select v-model="submitForm.pack_unit">
                   <option value="">Unit</option>
@@ -502,9 +505,9 @@
             </div>
             <div v-if="submitError" class="error-msg">{{ submitError }}</div>
           </div>
-          <div class="modal-footer">
-            <button class="btn-outline" @click="closeSupplierSubmitModal">Cancel</button>
-            <button class="btn-primary" @click="submitProductForm" :disabled="submitSubmitting">{{ submitSubmitting ? 'Submitting...' : 'Submit Product' }}</button>
+          <div class="modal-footer supplier-submit-footer">
+            <button class="btn-outline supplier-submit-cancel" @click="closeSupplierSubmitModal">Cancel</button>
+            <button class="btn-primary supplier-submit-action" @click="submitProductForm" :disabled="submitSubmitting">{{ submitSubmitting ? 'Submitting...' : 'Submit Product' }}</button>
           </div>
         </div>
       </div>
@@ -1887,6 +1890,352 @@ function onProfileUpdated(newData) {
 .form-group input, .form-group select { padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:0.95rem }
 .form-group input:focus, .form-group select:focus { outline:none; border-color:#7c3aed; box-shadow:0 0 0 3px rgba(124,58,237,0.1) }
 .error-msg { background:#fee2e2; color:#dc2626; padding:10px 12px; border-radius:8px; font-size:0.9rem; margin-top:8px }
+
+.supplier-submit-modal-backdrop {
+  padding: 1rem;
+  background: rgba(48, 34, 25, 0.48);
+  backdrop-filter: blur(3px);
+}
+
+.supplier-submit-modal {
+  width: min(760px, calc(100vw - 2rem));
+  max-width: 760px;
+  max-height: min(90vh, 900px);
+  margin: auto;
+  padding: 0;
+  background: transparent;
+  overflow: hidden;
+  border-radius: 16px;
+}
+
+.supplier-submit-card {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  max-height: min(90vh, 900px);
+  flex-direction: column;
+  border: 1px solid #eadfd5;
+  border-radius: 16px;
+  background: #fffaf5;
+  box-shadow: 0 24px 64px rgba(61, 42, 31, 0.2);
+}
+
+.supplier-submit-header {
+  flex: 0 0 auto;
+  padding: 1.25rem 1.5rem;
+  border-bottom-color: #eadfd5;
+  background: #f7f0ea;
+}
+
+.supplier-submit-eyebrow {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: #b66a3e;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.supplier-submit-header h3 {
+  margin: 0;
+  color: #3d2a1f;
+  font-size: 1.25rem;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+}
+
+.supplier-submit-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 1.1rem 1rem;
+  min-height: 0;
+  max-height: none;
+  padding: 1.5rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-color: #cdb5a4 #f7f0ea;
+  scrollbar-width: thin;
+}
+
+.supplier-submit-body::-webkit-scrollbar {
+  width: 9px;
+}
+
+.supplier-submit-body::-webkit-scrollbar-track {
+  background: #f7f0ea;
+}
+
+.supplier-submit-body::-webkit-scrollbar-thumb {
+  border: 2px solid #f7f0ea;
+  border-radius: 999px;
+  background: #cdb5a4;
+}
+
+.supplier-submit-body .form-group {
+  min-width: 0;
+  gap: 0.45rem;
+}
+
+.supplier-submit-body .form-group label {
+  display: block;
+  margin-bottom: 0;
+  color: #5b4030;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.supplier-submit-body .form-group input:not([type="radio"]),
+.supplier-submit-body .form-group select {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  box-sizing: border-box;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #d8c8bc;
+  border-radius: 8px;
+  background: #fff;
+  color: #3d2a1f;
+  font: inherit;
+  font-size: 0.9rem;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.supplier-submit-body .form-group input:not([type="radio"]):focus,
+.supplier-submit-body .form-group select:focus {
+  border-color: #b66a3e;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(182, 106, 62, 0.14);
+}
+
+.supplier-submit-body .form-group input[readonly] {
+  background: #f7f0ea;
+  color: #6c5545;
+}
+
+.supplier-submit-body .form-group input[type="file"] {
+  padding: 0.45rem;
+  color: #6c5545;
+}
+
+.supplier-submit-body .form-group input[type="file"]::file-selector-button {
+  margin-right: 0.65rem;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid #d8c8bc;
+  border-radius: 6px;
+  background: #f7f0ea;
+  color: #3d2a1f;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.supplier-submit-body .small-text,
+.supplier-submit-body .muted {
+  color: #846e5d;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.supplier-submit-body .pricing-type-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-top: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.supplier-submit-body .option-group {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  min-width: 0;
+  gap: 0.55rem;
+  padding: 0.75rem;
+  border: 1px solid #eadfd5;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.supplier-submit-body .option-group:hover {
+  background: #f7f0ea;
+}
+
+.supplier-submit-body .option-group--selected {
+  border-color: #c77a4b;
+  background: #f7f0ea;
+  box-shadow: inset 0 0 0 1px rgba(182, 106, 62, 0.16);
+}
+
+.supplier-submit-body .option-group input[type="radio"] {
+  width: 16px;
+  min-height: 16px;
+  margin: 0.15rem 0 0;
+  padding: 0;
+  flex: 0 0 auto;
+  accent-color: #b66a3e;
+}
+
+.supplier-submit-body .option-group > .option-label {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  min-width: 0;
+  gap: 0.35rem;
+  cursor: pointer;
+}
+
+.supplier-submit-body .option-badge {
+  display: block;
+  width: auto;
+  padding: 0;
+  background: transparent;
+  color: #3d2a1f;
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.supplier-submit-body .option-desc {
+  color: #846e5d;
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+.supplier-submit-body .barcode-input-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.6rem;
+}
+
+.supplier-submit-body .barcode-input-row input {
+  flex: 1 1 auto;
+}
+
+.supplier-submit-scan {
+  flex: 0 0 auto;
+  align-self: stretch;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid #d8c8bc;
+  border-radius: 8px;
+  background: #f7f0ea;
+  color: #5b4030;
+  font-weight: 700;
+}
+
+.supplier-submit-scan:hover:not(:disabled),
+.supplier-submit-cancel:hover:not(:disabled) {
+  background: #eadfd5;
+}
+
+.supplier-pack-inputs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px;
+  gap: 0.6rem;
+}
+
+.supplier-submit-body .error-msg {
+  grid-column: 1 / -1;
+  margin-top: 0;
+  border: 1px solid #e8b7ad;
+  background: #fff1ee;
+  color: #8f3e30;
+}
+
+.supplier-submit-footer {
+  flex: 0 0 auto;
+  padding: 1rem 1.5rem;
+  border-top-color: #eadfd5;
+  background: #f7f0ea;
+}
+
+.supplier-submit-footer button {
+  min-height: 42px;
+  padding: 0.65rem 1rem;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.supplier-submit-cancel {
+  border: 1px solid #d8c8bc;
+  background: #fffaf5;
+  color: #5b4030;
+}
+
+.supplier-submit-action {
+  border: 1px solid #a85d35;
+  background: #b66a3e;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(182, 106, 62, 0.2);
+}
+
+.supplier-submit-action:hover:not(:disabled) {
+  background: #9d5631;
+  box-shadow: 0 6px 16px rgba(157, 86, 49, 0.25);
+  transform: translateY(-1px);
+}
+
+.supplier-submit-footer button:focus-visible,
+.supplier-submit-scan:focus-visible {
+  outline: 3px solid rgba(182, 106, 62, 0.28);
+  outline-offset: 2px;
+}
+
+.supplier-submit-footer button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .supplier-submit-modal-backdrop {
+    align-items: flex-start;
+    padding: 0.6rem;
+  }
+
+  .supplier-submit-modal,
+  .supplier-submit-card {
+    max-height: calc(100dvh - 1.2rem);
+  }
+
+  .supplier-submit-body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .supplier-submit-body .form-group.full-span {
+    grid-column: 1;
+  }
+
+  .supplier-submit-body .pricing-type-options {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .supplier-submit-body .option-group {
+    grid-template-columns: 16px minmax(0, 1fr);
+  }
+
+  .supplier-submit-header,
+  .supplier-submit-footer {
+    padding-right: 1rem;
+    padding-left: 1rem;
+  }
+
+  .supplier-submit-footer {
+    gap: 0.6rem;
+  }
+
+  .supplier-submit-footer button {
+    flex: 1 1 0;
+  }
+}
 
 /* Enhanced Receipt Styles */
 .receipt-box-enhanced {

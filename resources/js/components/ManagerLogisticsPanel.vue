@@ -18,10 +18,10 @@
   >
     <template #ownerSidebar>
       <nav class="manager-logistics-sidebar-nav" aria-label="Logistics sections">
-        <button type="button" class="manager-logistics-sidebar-link" :class="{ 'manager-logistics-sidebar-link--active': selectedSection === 'overview' }" @click="selectedSection = 'overview'">Overview</button>
-        <button type="button" class="manager-logistics-sidebar-link" :class="{ 'manager-logistics-sidebar-link--active': selectedSection === 'barcodes' }" @click="selectedSection = 'barcodes'">Product Barcodes</button>
-        <button type="button" class="manager-logistics-sidebar-link" :class="{ 'manager-logistics-sidebar-link--active': selectedSection === 'pending-stock' }" @click="selectedSection = 'pending-stock'">Pending Stock</button>
-        <button type="button" class="manager-logistics-sidebar-link" :class="{ 'manager-logistics-sidebar-link--active': selectedSection === 'confirmation-history' }" @click="selectedSection = 'confirmation-history'">Confirmation History</button>
+        <button type="button" class="manager-logistics-sidebar-link" @click="selectedSection = 'overview'">Overview</button>
+        <button type="button" class="manager-logistics-sidebar-link" @click="selectedSection = 'barcodes'">Product Barcodes</button>
+        <button type="button" class="manager-logistics-sidebar-link" @click="selectedSection = 'pending-stock'">Pending Stock</button>
+        <button type="button" class="manager-logistics-sidebar-link" @click="selectedSection = 'confirmation-history'">Confirmation History</button>
       </nav>
     </template>
 

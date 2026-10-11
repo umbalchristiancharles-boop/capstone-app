@@ -28,8 +28,6 @@
   min-height: 100vh;
   padding: 1.5rem 1rem 1rem;
   box-sizing: border-box;
-  background: rgba(255, 255, 255, 0.3);
-  border-right: 1px solid rgba(138, 113, 95, 0.18);
   transform: translateX(0);
   opacity: 1;
   transition: transform 260ms ease, opacity 180ms ease;
@@ -52,9 +50,6 @@
   min-height: 66px;
   margin: 0;
   box-sizing: border-box;
-  background: rgba(255, 255, 255, 0.22);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
 }
 
 .manager-logistics-panel :deep(.owner-sidebar-collapsed .owner-panel-topbar) {
@@ -73,10 +68,6 @@
   flex-direction: column;
   gap: 0.75rem;
   overflow: visible;
-}
-
-.manager-logistics-panel :deep(.owner-panel-user-pill) {
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
 }
 
 .manager-logistics-panel :deep(.owner-sidebar-collapsed .admin-main) {
@@ -110,8 +101,7 @@
   color: #3d2a1f;
 }
 
-.manager-logistics-sidebar-link:hover,
-.manager-logistics-sidebar-link--active {
+.manager-logistics-sidebar-link:hover {
   background: #fffaf5;
   border-color: #f1e5d8;
   box-shadow: 0 8px 18px #eadfd5;
