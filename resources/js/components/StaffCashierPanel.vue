@@ -1,12 +1,11 @@
 <template>
   <div class="staff-cashier-panel" :class="{ 'staff-cashier-sidebar-collapsed': cashierSidebarCollapsed, 'staff-cashier-sidebar-resizing': isResizingSidebar }">
-        <aside class="staff-cashier-sidebar" :aria-hidden="cashierSidebarCollapsed" :style="{ width: `${cashierSidebarWidth}px`, flexBasis: `${cashierSidebarWidth}px` }">
+        <aside class="staff-cashier-sidebar" :aria-hidden="cashierSidebarCollapsed" :style="{ '--cashier-sidebar-width': `${cashierSidebarWidth}px` }" @pointerdown="startCashierSidebarSwipe">
           <PanelSidebarBrand />
           <nav class="staff-cashier-sidebar__nav" aria-label="Cashier sections">
             <button class="staff-cashier-sidebar__item" :class="{ 'staff-cashier-sidebar__item--active': activeCashierSection === 'cashier' }" type="button" @click="selectCashierSection('cashier')">Cashier</button>
             <button class="staff-cashier-sidebar__item" :class="{ 'staff-cashier-sidebar__item--active': activeCashierSection === 'transactions' }" type="button" @click="selectCashierSection('transactions')">Transactions</button>
             <button class="staff-cashier-sidebar__item" :class="{ 'staff-cashier-sidebar__item--active': activeCashierSection === 'attendance' }" type="button" @click="selectCashierSection('attendance')">Attendance</button>
-            <button class="staff-cashier-sidebar__item" :class="{ 'staff-cashier-sidebar__item--active': activeCashierSection === 'announcements' }" type="button" @click="selectCashierSection('announcements')">Announcements</button>
           </nav>
           <div class="staff-cashier-sidebar__footer">
             <button class="staff-cashier-sidebar__account-info" type="button" @click="showAccountInfoModal = true">Account Info</button>
@@ -17,28 +16,39 @@
             type="button"
             aria-label="Resize sidebar"
             title="Resize sidebar"
-            @pointerdown="startSidebarResize"
+            @pointerdown.stop="startSidebarResize"
           ></button>
         </aside>
         <div class="staff-cashier-main">
           <header class="staff-cashier-header">
             <button
+              v-if="cashierSidebarCollapsed"
               class="staff-cashier-menu-toggle"
               type="button"
-              :aria-label="cashierSidebarCollapsed ? 'Show menu' : 'Hide menu'"
-              :aria-expanded="(!cashierSidebarCollapsed).toString()"
-              @click="cashierSidebarCollapsed = !cashierSidebarCollapsed"
+              aria-label="Show menu"
+              aria-expanded="false"
+              @click="cashierSidebarCollapsed = false"
             >☰</button>
             <button class="staff-cashier-display-button" type="button" @click="openCustomerDisplay">
               {{ customerDisplayBlocked ? 'Open Customer Display' : 'Customer Display' }}
             </button>
-            <div class="staff-cashier-user-pill">
-              <span class="staff-cashier-user-pill__avatar">{{ (userProfile.full_name || userProfile.username || 'C').charAt(0).toUpperCase() }}</span>
-              <span>Cashier - {{ branchName || 'Branch' }}</span>
+            <div class="staff-cashier-header__actions">
+              <OwnerMessageMenu />
+              <PanelNotificationMenu
+                :notification-items="cashierNotificationItems"
+                :notification-count="cashierNotificationCount"
+                :announcements="announcements"
+                @open="loadCashierNotifications(true)"
+                @select="handleCashierNotification"
+              />
+              <div class="staff-cashier-user-pill">
+                <span class="staff-cashier-user-pill__avatar">{{ (userProfile.full_name || userProfile.username || 'C').charAt(0).toUpperCase() }}</span>
+                <span>Cashier - {{ branchName || 'Branch' }}</span>
+              </div>
             </div>
           </header>
 
-          <main class="staff-cashier-content" :class="{ 'staff-cashier-content--single': activeCashierSection !== 'cashier', 'staff-cashier-content--attendance': activeCashierSection === 'attendance' }">
+          <main class="staff-cashier-content" :class="{ 'staff-cashier-content--single': activeCashierSection !== 'cashier' }">
           <section class="staff-cashier-feature-header">
             <div>
               <p>Cashier workspace</p>
@@ -46,7 +56,7 @@
             </div>
           </section>
           <Transition name="staff-cashier-section" mode="out-in">
-          <div :key="activeCashierSection" class="staff-cashier-section-view" :class="{ 'staff-cashier-section-view--cashier': activeCashierSection === 'cashier' }">
+          <div :key="activeCashierSection" class="staff-cashier-section-view" :class="{ 'staff-cashier-section-view--cashier': activeCashierSection === 'cashier', 'staff-cashier-section-view--attendance': activeCashierSection === 'attendance' }">
       <div v-if="!branchId" class="loading-text">Loading branch information...</div>
         <div v-else class="cashier-body" :class="{ 'staff-cashier-body--hidden': activeCashierSection !== 'cashier' }">
         <section v-if="activeCashierSection === 'cashier'" class="product-lookup-section">
@@ -152,26 +162,61 @@
           </table>
         </div>
       </section>
-      <aside v-if="['cashier', 'attendance', 'announcements'].includes(activeCashierSection)" class="staff-cashier-order-rail">
-      <div v-if="!hideAttendanceCard && activeCashierSection === 'attendance'" class="attendance-card" style="margin-bottom:12px; background:#ffffff;">
-        <div class="attendance-header">
-          <span class="attendance-title">Attendance</span>
+      <aside v-if="['cashier', 'attendance'].includes(activeCashierSection)" class="staff-cashier-order-rail">
+      <section v-if="!hideAttendanceCard && activeCashierSection === 'attendance'" class="attendance-card cashier-attendance-card">
+        <header class="cashier-attendance-card__header">
+          <div class="cashier-attendance-card__heading">
+            <h2>Today's Attendance</h2>
+            <p>Review your current shift and attendance times.</p>
+          </div>
           <span :class="['attendance-status-badge', attendanceStatus.is_clocked_in ? 'status-on-duty' : 'status-off-duty']">
             {{ attendanceStatus.is_clocked_in ? 'On Duty' : 'Off Duty' }}
           </span>
+        </header>
+
+        <div class="cashier-attendance-card__body">
+          <section class="cashier-attendance-card__summary" aria-label="Shift summary">
+            <div class="cashier-attendance-card__section-heading">
+              <h3>Shift summary</h3>
+              <p>{{ attendanceStatus.is_clocked_in ? 'Your shift is currently in progress.' : 'Your shift is currently not active.' }}</p>
+            </div>
+            <div class="cashier-attendance-card__times">
+              <div class="cashier-attendance-card__time">
+                <span>Clock In</span>
+                <strong>{{ attendanceStatus.clock_in_time || '—' }}</strong>
+              </div>
+              <div class="cashier-attendance-card__time">
+                <span>Clock Out</span>
+                <strong>{{ attendanceStatus.clock_out_time || '—' }}</strong>
+              </div>
+              <div v-if="attendanceStatus.hours_worked > 0" class="cashier-attendance-card__time">
+                <span>Hours Worked</span>
+                <strong>{{ attendanceStatus.hours_worked }} hrs</strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="cashier-attendance-card__actions" aria-label="Attendance actions">
+            <div class="cashier-attendance-card__section-heading">
+              <h3>Attendance actions</h3>
+              <p>Clock in or out when you are ready.</p>
+            </div>
+            <div class="attendance-buttons">
+              <button @click="initiateClockIn" :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing || locationLoading" class="btn-clock-in">
+                {{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock In' }}
+              </button>
+              <button @click="performClockOut" :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockOut" class="btn-clock-out" :class="{ 'btn-disabled': !canClockOut && attendanceStatus.is_clocked_in }">
+                {{ isAttendanceProcessing ? '...' : 'Clock Out' }}
+              </button>
+            </div>
+            <div v-if="!canClockOut && attendanceStatus.is_clocked_in" class="clockout-restriction">
+              <span class="restriction-icon">LOCK</span>
+              <span>Cannot clock out before {{ scheduledTimeOut }}</span>
+            </div>
+            <div v-if="attendanceMessage" :class="['attendance-message', attendanceMessageType]">{{ attendanceMessage }}</div>
+          </section>
         </div>
-        <div class="attendance-times" v-if="attendanceStatus.clock_in_time || attendanceStatus.clock_out_time">
-          <div class="time-row"><span class="time-label">Clock In:</span><span class="time-value">{{ attendanceStatus.clock_in_time || '-' }}</span></div>
-          <div class="time-row"><span class="time-label">Clock Out:</span><span class="time-value">{{ attendanceStatus.clock_out_time || '-' }}</span></div>
-          <div class="time-row" v-if="attendanceStatus.hours_worked > 0"><span class="time-label">Hours:</span><span class="time-value">{{ attendanceStatus.hours_worked }} hrs</span></div>
-        </div>
-        <div class="attendance-buttons">
-          <button @click="initiateClockIn" :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing || locationLoading" class="btn-clock-in">{{ isAttendanceProcessing ? '...' : 'Clock In' }}</button>
-          <button @click="performClockOut" :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockOut" class="btn-clock-out" :class="{ 'btn-disabled': !canClockOut && attendanceStatus.is_clocked_in }">{{ isAttendanceProcessing ? '...' : 'Clock Out' }}</button>
-        </div>
-        <div v-if="!canClockOut && attendanceStatus.is_clocked_in" class="clockout-restriction"><span class="restriction-icon">LOCK</span><span>Cannot clock out before {{ scheduledTimeOut }}</span></div>
-        <div v-if="attendanceMessage" :class="['attendance-message', attendanceMessageType]">{{ attendanceMessage }}</div>
-      </div>
+      </section>
 
       <!-- Face Capture Modal -->
       <div v-if="showFaceCapture" class="face-capture-modal">
@@ -198,27 +243,6 @@
           <div v-if="capturedImage" class="captured-preview">
             <img :src="capturedImage" alt="Captured face" />
             <p class="preview-label">Photo captured!</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Announcements -->
-      <div class="announcements-card" style="margin-bottom:12px;" v-if="branchId && activeCashierSection === 'announcements'">
-        <div class="side-card-header">
-          <span class="side-card-kicker">Announcements</span>
-          <span class="icon-chip">●</span>
-        </div>
-        <div class="announcements-list">
-          <div v-if="loadingAnnouncements" class="loading-text">Loading announcements...</div>
-          <div v-else>
-            <div v-if="announcements.length">
-              <div v-for="a in announcements" :key="a.id" class="announcement-item">
-                <div class="announcement-title">{{ a.title }}</div>
-                <div class="announcement-message">{{ a.message }}</div>
-                <div class="announcement-meta">{{ formatDate(a.created_at) }}</div>
-              </div>
-            </div>
-            <div v-else class="empty-text">No announcements</div>
           </div>
         </div>
       </div>
@@ -388,6 +412,17 @@
     </section>
   </div>
 
+  <PanelNotificationDetailsModal
+    :show="showCashierNotificationModal"
+    :title="activeCashierNotification === 'announcements' ? 'Announcements' : 'Pending cashier orders'"
+    :subtitle="activeCashierNotification === 'announcements' ? 'Latest updates for your account.' : 'Orders that need cashier attention.'"
+    :show-announcements="activeCashierNotification === 'announcements'"
+    :announcements="announcements"
+    :loading="loadingAnnouncements"
+    :detail-items="cashierNotificationDetailItems"
+    @close="showCashierNotificationModal = false"
+  />
+
 </template>
 
 <style scoped>
@@ -411,6 +446,9 @@ import Swal from 'sweetalert2'
 import { BrowserMultiFormatReader } from '@zxing/browser'
 import { BarcodeFormat, DecodeHintType } from '@zxing/library'
 import PanelSidebarBrand from './PanelSidebarBrand.vue'
+import OwnerMessageMenu from './OwnerMessageMenu.vue'
+import PanelNotificationMenu from './PanelNotificationMenu.vue'
+import PanelNotificationDetailsModal from './PanelNotificationDetailsModal.vue'
 import { showToast } from './toastStore'
 import './StaffCashierPanel.css'
 
@@ -419,14 +457,16 @@ const cashierSidebarCollapsed = ref(false)
 const cashierSidebarWidth = ref(156)
 const isResizingSidebar = ref(false)
 const activeCashierSection = ref('cashier')
+let cashierSidebarSwipeStart = null
+let cashierSidebarSwipeClickTimeout = null
+let cashierSidebarResizeStart = null
 
 const cashierSectionTitle = computed(() => {
   const titles = {
     cashier: 'Cashier',
     products: 'Products',
     transactions: 'Transactions',
-    attendance: 'Attendance',
-    announcements: 'Announcements'
+    attendance: 'Attendance'
   }
 
   return titles[activeCashierSection.value]
@@ -437,26 +477,115 @@ function selectCashierSection(section) {
 }
 
 function startSidebarResize(event) {
-  if (cashierSidebarCollapsed.value) return
+  if (cashierSidebarCollapsed.value || !event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0)) return
 
   event.preventDefault()
+  stopSidebarResize()
   isResizingSidebar.value = true
-  const startX = event.clientX
-  const startWidth = cashierSidebarWidth.value
-
-  const resize = (moveEvent) => {
-    const nextWidth = startWidth + moveEvent.clientX - startX
-    cashierSidebarWidth.value = Math.min(320, Math.max(180, nextWidth))
+  cashierSidebarResizeStart = {
+    x: event.clientX,
+    width: cashierSidebarWidth.value,
+    pointerId: event.pointerId,
+    handle: event.currentTarget,
   }
 
-  const stopResize = () => {
-    isResizingSidebar.value = false
-    document.removeEventListener('pointermove', resize)
-    document.removeEventListener('pointerup', stopResize)
+  if (event.currentTarget instanceof Element && event.currentTarget.setPointerCapture) {
+    event.currentTarget.setPointerCapture(event.pointerId)
+  }
+  document.addEventListener('pointermove', resizeSidebar)
+  document.addEventListener('pointerup', stopSidebarResize)
+  document.addEventListener('pointercancel', stopSidebarResize)
+}
+
+function resizeSidebar(event) {
+  if (!cashierSidebarResizeStart || event.pointerId !== cashierSidebarResizeStart.pointerId) return
+
+  const deltaX = event.clientX - cashierSidebarResizeStart.x
+  if (deltaX <= -60) {
+    cashierSidebarCollapsed.value = true
+    stopSidebarResize()
+    return
   }
 
-  document.addEventListener('pointermove', resize)
-  document.addEventListener('pointerup', stopResize)
+  cashierSidebarWidth.value = Math.min(320, Math.max(180, cashierSidebarResizeStart.width + deltaX))
+}
+
+function stopSidebarResize(event) {
+  if (event?.pointerId !== undefined && cashierSidebarResizeStart && event.pointerId !== cashierSidebarResizeStart.pointerId) return
+
+  const resizeStart = cashierSidebarResizeStart
+  cashierSidebarResizeStart = null
+  isResizingSidebar.value = false
+  document.removeEventListener('pointermove', resizeSidebar)
+  document.removeEventListener('pointerup', stopSidebarResize)
+  document.removeEventListener('pointercancel', stopSidebarResize)
+
+  if (resizeStart?.handle instanceof Element && resizeStart.handle.hasPointerCapture?.(resizeStart.pointerId)) {
+    resizeStart.handle.releasePointerCapture(resizeStart.pointerId)
+  }
+}
+
+function startCashierSidebarSwipe(event) {
+  if (cashierSidebarCollapsed.value || !event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0)) return
+  if (event.target instanceof Element && event.target.closest('.staff-cashier-sidebar__resize-handle')) return
+
+  cashierSidebarSwipeStart = { x: event.clientX, y: event.clientY, pointerId: event.pointerId }
+  document.addEventListener('pointermove', trackCashierSidebarSwipe, { passive: false })
+  document.addEventListener('pointerup', finishCashierSidebarSwipe)
+  document.addEventListener('pointercancel', cancelCashierSidebarSwipe)
+}
+
+function trackCashierSidebarSwipe(event) {
+  if (!cashierSidebarSwipeStart || event.pointerId !== cashierSidebarSwipeStart.pointerId) return
+
+  const deltaX = event.clientX - cashierSidebarSwipeStart.x
+  const deltaY = event.clientY - cashierSidebarSwipeStart.y
+
+  if (Math.abs(deltaY) >= 80 && Math.abs(deltaY) > Math.abs(deltaX)) {
+    cancelCashierSidebarSwipe()
+    return
+  }
+
+  if (deltaX > -80 || Math.abs(deltaY) > Math.abs(deltaX)) return
+
+  if (event.cancelable) event.preventDefault()
+  cancelCashierSidebarSwipe()
+  suppressCashierSidebarSwipeClick()
+  cashierSidebarCollapsed.value = true
+}
+
+function finishCashierSidebarSwipe(event) {
+  if (!cashierSidebarSwipeStart || event.pointerId !== cashierSidebarSwipeStart.pointerId) return
+
+  const deltaX = event.clientX - cashierSidebarSwipeStart.x
+  const deltaY = event.clientY - cashierSidebarSwipeStart.y
+  cancelCashierSidebarSwipe()
+
+  if (deltaX <= -80 && Math.abs(deltaY) < 80 && Math.abs(deltaX) > Math.abs(deltaY)) {
+    suppressCashierSidebarSwipeClick()
+    cashierSidebarCollapsed.value = true
+  }
+}
+
+function cancelCashierSidebarSwipe() {
+  cashierSidebarSwipeStart = null
+  document.removeEventListener('pointermove', trackCashierSidebarSwipe)
+  document.removeEventListener('pointerup', finishCashierSidebarSwipe)
+  document.removeEventListener('pointercancel', cancelCashierSidebarSwipe)
+}
+
+function suppressCashierSidebarSwipeClick() {
+  document.addEventListener('click', preventCashierSidebarSwipeClick, true)
+  window.clearTimeout(cashierSidebarSwipeClickTimeout)
+  cashierSidebarSwipeClickTimeout = window.setTimeout(() => {
+    document.removeEventListener('click', preventCashierSidebarSwipeClick, true)
+  }, 500)
+}
+
+function preventCashierSidebarSwipeClick(event) {
+  event.preventDefault()
+  event.stopPropagation()
+  document.removeEventListener('click', preventCashierSidebarSwipeClick, true)
 }
 
 // State
@@ -572,6 +701,24 @@ watch(cart, (value) => {
 // Announcements
 const announcements = ref([])
 const loadingAnnouncements = ref(false)
+const cashierNotificationCounts = ref({ pendingOrders: 0, announcements: 0 })
+const showCashierNotificationModal = ref(false)
+const activeCashierNotification = ref('')
+let cashierNotificationRefreshTimer = null
+
+const cashierNotificationItems = computed(() => [
+  { key: 'cashier', label: 'Pending cashier orders', count: cashierNotificationCounts.value.pendingOrders },
+  { key: 'announcements', label: 'Announcements', count: cashierNotificationCounts.value.announcements },
+].filter(item => item.count > 0))
+const cashierNotificationCount = computed(() => cashierNotificationItems.value.reduce((total, item) => total + item.count, 0))
+const cashierNotificationDetailItems = computed(() => {
+  if (activeCashierNotification.value !== 'cashier') return []
+  return [{
+    key: 'cashier',
+    label: 'Pending cashier orders',
+    count: cashierNotificationCounts.value.pendingOrders,
+  }]
+})
 
 // Attendance state
 const attendanceStatus = ref({
@@ -602,11 +749,48 @@ async function fetchAnnouncements() {
   loadingAnnouncements.value = true
   try {
     const res = await axios.get('/api/announcements', { withCredentials: true })
-    if (res.data && res.data.ok) announcements.value = res.data.announcements || []
+    if (!res.data?.ok) throw new Error(res.data?.message || 'Unable to load announcements.')
+    announcements.value = res.data.announcements || []
+    return true
   } catch (e) {
     console.error('Failed to load announcements:', e)
+    return false
   } finally {
     loadingAnnouncements.value = false
+  }
+}
+
+async function loadCashierNotifications(notifyOnError = false) {
+  try {
+    const response = await axios.get('/api/panel-notifications', { withCredentials: true })
+    if (!response.data?.ok) throw new Error(response.data?.message || 'Unable to load notifications.')
+
+    cashierNotificationCounts.value = {
+      pendingOrders: Number(response.data.counts?.cashier || 0),
+      announcements: Number(response.data.extras?.announcements || response.data.summary?.announcements || 0),
+    }
+  } catch (error) {
+    console.error('Failed to load cashier notifications:', error)
+    if (notifyOnError) showToast(error.response?.data?.message || 'Unable to refresh notifications.', 'error')
+  }
+}
+
+async function handleCashierNotification(key) {
+  activeCashierNotification.value = key
+  showCashierNotificationModal.value = true
+
+  if (key === 'announcements') {
+    const announcementsLoaded = await fetchAnnouncements()
+    if (!announcementsLoaded) showToast('Unable to load announcements.', 'error')
+
+    try {
+      const response = await axios.post('/api/panel-notifications/read', { category: 'announcements' }, { withCredentials: true })
+      if (!response.data?.ok) throw new Error(response.data?.message || 'Unable to mark announcements as read.')
+      await loadCashierNotifications()
+    } catch (error) {
+      console.error('Failed to mark cashier announcements as read:', error)
+      showToast(error.response?.data?.message || 'Unable to update announcement status.', 'error')
+    }
   }
 }
 
@@ -1482,6 +1666,10 @@ onMounted(async () => {
     if (sessionStorage.getItem(scannerStorageKey) === '1') openBarcodeScanner()
   } catch (e) {}
   fetchAnnouncements()
+  loadCashierNotifications()
+  cashierNotificationRefreshTimer = window.setInterval(() => {
+    if (!document.hidden) loadCashierNotifications()
+  }, 30000)
   if (!hideAttendanceCard.value) {
     loadAttendanceStatus()
     loadAttendanceSettings()
@@ -1491,6 +1679,11 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   publishCustomerDisplay(false)
   if (transactionRefreshTimer) window.clearInterval(transactionRefreshTimer)
+  if (cashierNotificationRefreshTimer) window.clearInterval(cashierNotificationRefreshTimer)
+  cancelCashierSidebarSwipe()
+  stopSidebarResize()
+  window.clearTimeout(cashierSidebarSwipeClickTimeout)
+  document.removeEventListener('click', preventCashierSidebarSwipeClick, true)
 })
 
 // Logout functions
@@ -2204,45 +2397,6 @@ async function performLogout() {
   margin-top: 4px;
   color: #6b7280;
   font-size: 0.78rem;
-}
-
-.announcements-card {
-  background: linear-gradient(180deg, #fff 0%, #fffaf5 100%);
-  border-radius: 12px;
-  padding: 14px;
-  border: 1px solid rgba(255, 154, 74, 0.25);
-}
-
-.announcements-title {
-  margin: 0 0 8px;
-  color: #7a2b00;
-  font-size: 0.95rem;
-}
-
-.announcements-list .announcement-item {
-  padding: 10px 0;
-  border-top: 1px dashed rgba(122,43,0,0.2);
-}
-
-.announcements-list .announcement-item:first-child {
-  border-top: none;
-}
-
-.announcement-title {
-  font-weight: 700;
-  color: #5b2b0a;
-}
-
-.announcement-message {
-  margin-top: 4px;
-  color: #6b7280;
-  font-size: 0.74rem;
-}
-
-.announcement-meta {
-  margin-top: 6px;
-  font-size: 0.69rem;
-  color: #a36b34;
 }
 
 /* Attendance card */
