@@ -100,6 +100,8 @@
 
           <Transition v-else name="admin-section" mode="out-in" appear>
             <div :key="activeSection" class="admin-section-view">
+              <AdminAttendanceCard v-if="activeSection === 'staff'" />
+
               <!-- Date range tabs (moved out of header) -->
               <div v-if="activeSection === 'dashboard'" class="range-tabs">
                 <button
@@ -487,13 +489,15 @@
             </div>
             <div class="panel-body panel-body--list">
               <p class="auto-clockout-help">Staff still clocked in after this time will be clocked out automatically for this branch.</p>
-              <label class="auto-clockout-field">
-                <span>Clock out time</span>
-                <input v-model="autoClockoutTime" type="time" :disabled="isSavingAutoClockout" />
-              </label>
-              <button class="panel-action auto-clockout-save" type="button" :disabled="isSavingAutoClockout" @click="saveAutoClockoutTime">
-                {{ isSavingAutoClockout ? 'Saving...' : 'Save time' }}
-              </button>
+              <div class="auto-clockout-field">
+                <label for="admin-auto-clockout-time">Clock out time</label>
+                <div class="auto-clockout-controls">
+                  <input id="admin-auto-clockout-time" v-model="autoClockoutTime" type="time" :disabled="isSavingAutoClockout" />
+                  <button class="panel-action auto-clockout-save" type="button" :disabled="isSavingAutoClockout" @click="saveAutoClockoutTime">
+                    {{ isSavingAutoClockout ? 'Saving...' : 'Save time' }}
+                  </button>
+                </div>
+              </div>
               <span v-if="autoClockoutMessage" class="auto-clockout-message">{{ autoClockoutMessage }}</span>
             </div>
           </section>
@@ -876,6 +880,7 @@ import { createApp, h, ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import LoadingOverlay from './LoadingOverlay.vue'
+import AdminAttendanceCard from './AdminAttendanceCard.vue'
 import AdminCustomerReports from './AdminCustomerReports.vue'
 import StaffManagement from './StaffManagement.vue'
 import PanelNotificationMenu from './PanelNotificationMenu.vue'
@@ -2224,8 +2229,11 @@ function formatDate(dateString) {
 .landing-images-help { margin: 0 0 12px; color: #6b7280; font-size: 13px; }
 .auto-clockout-help { margin: 0 0 14px; color: #6b7280; font-size: 13px; line-height: 1.45; }
 .auto-clockout-field { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #374151; font-size: 13px; font-weight: 600; }
+.auto-clockout-controls { display: flex; align-items: center; gap: 8px; }
 .auto-clockout-field input { min-width: 120px; padding: 7px 8px; border: 1px solid #d1d5db; border-radius: 6px; color: #111827; background: #fff; }
-.auto-clockout-save { width: 100%; margin-top: 12px; }
+.auto-clockout-save { min-height: 34px; border: 0; background: linear-gradient(135deg, #ff6a3d, #f59e0b); color: #fff; white-space: nowrap; box-shadow: 0 8px 18px rgba(255, 106, 61, 0.2); }
+.auto-clockout-save:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 10px 22px rgba(255, 106, 61, 0.28); }
+.auto-clockout-save:focus-visible { outline: 3px solid rgba(255, 106, 61, 0.35); outline-offset: 2px; }
 .auto-clockout-save:disabled { cursor: wait; opacity: .65; }
 .auto-clockout-message { display: block; margin-top: 8px; color: #15803d; font-size: 12px; }
 .landing-product-list { display: flex; flex-direction: column; gap: 10px; }
