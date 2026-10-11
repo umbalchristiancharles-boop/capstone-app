@@ -1618,13 +1618,13 @@ function formatProductReqStatus(status) {
 
 /* When profile column is hidden, lay out main + side as two columns so
    announcements (in the side) stay on the right and do not overlap main */
-:deep(.admin-layout.no-profile-column) {
+:deep(.admin-layout.no-profile-column:not(.admin-layout--owner-sidebar-layout)) {
   display: grid;
   grid-template-columns: 1fr 360px;
   gap: 1rem;
 }
-:deep(.admin-layout.no-profile-column) .admin-main { width: 100%; }
-:deep(.admin-layout.no-profile-column) .admin-side { width: 360px; }
+:deep(.admin-layout.no-profile-column:not(.admin-layout--owner-sidebar-layout)) .admin-main { width: 100%; }
+:deep(.admin-layout.no-profile-column:not(.admin-layout--owner-sidebar-layout)) .admin-side { width: 360px; }
 
 .section-title {
   font-size: 20px;
@@ -1641,6 +1641,7 @@ function formatProductReqStatus(status) {
 
 .branch-filter-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
   margin-bottom: 14px;
@@ -1653,7 +1654,8 @@ function formatProductReqStatus(status) {
 }
 
 .branch-filter-row select {
-  min-width: 240px;
+  min-width: min(240px, 100%);
+  max-width: 100%;
   padding: 8px 10px;
   border: 1px solid #d7d7d7;
   border-radius: 8px;
@@ -1726,7 +1728,7 @@ function formatProductReqStatus(status) {
 
 .logistics-three-panel {
   display: grid;
-  grid-template-columns: 1.2fr 1fr 0.9fr;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
   gap: 16px;
 }
 

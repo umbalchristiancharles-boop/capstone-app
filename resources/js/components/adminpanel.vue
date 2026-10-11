@@ -1,14 +1,15 @@
 <template>
   <div class="admin-panel-shell min-h-screen bg-gradient-to-b from-[#F8F1E4] to-[#FFFFFF]">
     <div class="admin-page">
-      <section class="admin-layout" :class="{ 'admin-sidebar-collapsed': adminSidebarCollapsed, 'admin-layout--dashboard': activeSection === 'dashboard', 'admin-layout--staff': activeSection === 'staff', 'admin-layout--announcements': activeSection === 'announcements', 'admin-layout--compact': activeSection !== 'dashboard' }">
+      <section class="admin-layout" :class="{ 'admin-sidebar-collapsed': adminSidebarCollapsed, 'admin-sidebar-resizing': adminSidebarResizing, 'admin-layout--dashboard': activeSection === 'dashboard', 'admin-layout--staff': activeSection === 'staff', 'admin-layout--announcements': activeSection === 'announcements', 'admin-layout--compact': activeSection !== 'dashboard' }" :style="{ '--admin-sidebar-width': `${adminSidebarWidth}px` }">
         <div class="admin-topbar">
           <button
+            v-if="adminSidebarCollapsed && !adminSidebarTransitioning"
             class="admin-hamburger"
             type="button"
-            :aria-label="adminSidebarCollapsed ? 'Show menu' : 'Hide menu'"
-            :aria-expanded="(!adminSidebarCollapsed).toString()"
-            @click="adminSidebarCollapsed = !adminSidebarCollapsed"
+            aria-label="Show menu"
+            aria-expanded="false"
+            @click.prevent.stop="toggleAdminSidebar"
           >☰</button>
           <div class="admin-header__spacer"></div>
           <div class="admin-header__actions">
@@ -27,7 +28,7 @@
             </div>
           </div>
         </div>
-        <aside class="admin-sidebar" aria-label="Admin sections">
+        <aside class="admin-sidebar" aria-label="Admin sections" @pointerdown="startAdminSidebarSwipe" @transitionend="finishAdminSidebarTransition">
           <PanelSidebarBrand />
           <nav class="admin-sidebar__nav">
             <button type="button" class="admin-sidebar__item" :class="{ 'admin-sidebar__item--active': activeSection === 'dashboard' }" @click="activeSection = 'dashboard'">Dashboard</button>
@@ -50,6 +51,13 @@
             <button class="admin-sidebar__account" type="button" @click="openInfoModal">Account Info</button>
             <button class="admin-sidebar__logout" type="button" @click="askLogout">Logout</button>
           </div>
+          <button
+            class="admin-sidebar__resize-handle"
+            type="button"
+            aria-label="Resize sidebar"
+            title="Resize sidebar"
+            @pointerdown="startAdminSidebarResize"
+          ></button>
         </aside>
         <div class="admin-content-scroll">
         <!-- LEFT: Announcements column -->
@@ -881,26 +889,157 @@ const router = useRouter()
 const activeRange = ref('today')
 const activeSection = ref('dashboard')
 const adminSidebarCollapsed = ref(false)
-let adminSidebarResizeObserver
+const adminSidebarWidth = ref(156)
+const adminSidebarResizing = ref(false)
+const adminSidebarTransitioning = ref(false)
+let adminSidebarSwipeStart = null
+let adminSidebarResizeTimeout
+let adminSidebarSwipeClickTimeout
 let adminNotificationRefreshTimer
 let adminNotificationRequestId = 0
 
-onMounted(() => {
-  const layout = document.querySelector('.admin-panel-shell .admin-layout')
-  const sidebar = layout?.querySelector(':scope > .admin-sidebar')
-  if (!layout || !sidebar || typeof ResizeObserver === 'undefined') return
-
-  const syncSidebarWidth = () => {
-    layout.style.setProperty('--admin-sidebar-width', `${sidebar.getBoundingClientRect().width}px`)
+function toggleAdminSidebar() {
+  if (adminSidebarCollapsed.value) {
+    clearTimeout(adminSidebarResizeTimeout)
+    adminSidebarTransitioning.value = false
+    adminSidebarCollapsed.value = false
+    return
   }
 
-  syncSidebarWidth()
-  adminSidebarResizeObserver = new ResizeObserver(syncSidebarWidth)
-  adminSidebarResizeObserver.observe(sidebar)
-})
+  adminSidebarTransitioning.value = true
+  adminSidebarCollapsed.value = true
+  clearTimeout(adminSidebarResizeTimeout)
+  adminSidebarResizeTimeout = window.setTimeout(() => {
+    adminSidebarTransitioning.value = false
+  }, 300)
+}
+
+function startAdminSidebarResize(event) {
+  if (adminSidebarCollapsed.value || window.innerWidth < 768) return
+  event.preventDefault()
+  event.stopPropagation()
+
+  adminSidebarResizing.value = true
+  const startX = event.clientX
+  const startWidth = adminSidebarWidth.value
+  const pointerId = event.pointerId
+  const resizeHandle = event.currentTarget
+  const minimumWidth = 156
+  const contentGutter = Math.min(28, Math.max(16, startWidth * 0.08))
+  const maximumWidth = Math.max(minimumWidth, Math.min(420, window.innerWidth - 320 - contentGutter * 2))
+  let resizing = true
+
+  cancelAdminSidebarSwipe()
+
+  const resize = (moveEvent) => {
+    if (moveEvent.pointerId !== pointerId) return
+    const deltaX = moveEvent.clientX - startX
+    const nextWidth = startWidth + deltaX
+
+    if (nextWidth <= minimumWidth && deltaX <= -60) {
+      stopResize()
+      toggleAdminSidebar()
+      return
+    }
+
+    adminSidebarWidth.value = Math.min(maximumWidth, Math.max(minimumWidth, nextWidth))
+  }
+
+  const stopResize = () => {
+    if (!resizing) return
+    resizing = false
+    adminSidebarResizing.value = false
+    resizeHandle.removeEventListener('pointermove', resize)
+    resizeHandle.removeEventListener('pointerup', stopResize)
+    resizeHandle.removeEventListener('pointercancel', stopResize)
+    resizeHandle.removeEventListener('lostpointercapture', stopResize)
+    if (resizeHandle?.hasPointerCapture?.(pointerId)) {
+      resizeHandle.releasePointerCapture(pointerId)
+    }
+  }
+
+  resizeHandle.addEventListener('pointermove', resize)
+  resizeHandle.addEventListener('pointerup', stopResize)
+  resizeHandle.addEventListener('pointercancel', stopResize)
+  resizeHandle.addEventListener('lostpointercapture', stopResize)
+  resizeHandle.setPointerCapture(pointerId)
+}
+
+function startAdminSidebarSwipe(event) {
+  if (adminSidebarCollapsed.value || !event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0)) return
+  if (event.target instanceof Element && event.target.closest('.admin-sidebar__resize-handle')) return
+
+  adminSidebarSwipeStart = { x: event.clientX, y: event.clientY, pointerId: event.pointerId }
+  document.addEventListener('pointermove', trackAdminSidebarSwipe, { passive: false })
+  document.addEventListener('pointerup', finishAdminSidebarSwipe)
+  document.addEventListener('pointercancel', cancelAdminSidebarSwipe)
+}
+
+function trackAdminSidebarSwipe(event) {
+  if (!adminSidebarSwipeStart || event.pointerId !== adminSidebarSwipeStart.pointerId) return
+
+  const deltaX = event.clientX - adminSidebarSwipeStart.x
+  const deltaY = event.clientY - adminSidebarSwipeStart.y
+  if (Math.abs(deltaY) >= 80 && Math.abs(deltaY) > Math.abs(deltaX)) {
+    cancelAdminSidebarSwipe()
+    return
+  }
+  if (deltaX > -80 || Math.abs(deltaY) > Math.abs(deltaX)) return
+
+  cancelAdminSidebarSwipe()
+  suppressAdminSidebarSwipeClick()
+  toggleAdminSidebar()
+}
+
+function finishAdminSidebarSwipe(event) {
+  if (!adminSidebarSwipeStart || event.pointerId !== adminSidebarSwipeStart.pointerId) return
+
+  const deltaX = event.clientX - adminSidebarSwipeStart.x
+  const deltaY = event.clientY - adminSidebarSwipeStart.y
+  cancelAdminSidebarSwipe()
+
+  if (deltaX <= -80 && Math.abs(deltaY) < 80 && Math.abs(deltaX) > Math.abs(deltaY)) {
+    suppressAdminSidebarSwipeClick()
+    toggleAdminSidebar()
+  }
+}
+
+function cancelAdminSidebarSwipe() {
+  adminSidebarSwipeStart = null
+  document.removeEventListener('pointermove', trackAdminSidebarSwipe)
+  document.removeEventListener('pointerup', finishAdminSidebarSwipe)
+  document.removeEventListener('pointercancel', cancelAdminSidebarSwipe)
+}
+
+function suppressAdminSidebarSwipeClick() {
+  document.addEventListener('click', preventAdminSidebarSwipeClick, true)
+  clearTimeout(adminSidebarSwipeClickTimeout)
+  adminSidebarSwipeClickTimeout = window.setTimeout(() => {
+    document.removeEventListener('click', preventAdminSidebarSwipeClick, true)
+  }, 500)
+}
+
+function preventAdminSidebarSwipeClick(event) {
+  document.removeEventListener('click', preventAdminSidebarSwipeClick, true)
+  clearTimeout(adminSidebarSwipeClickTimeout)
+  event.preventDefault()
+  event.stopPropagation()
+}
+
+function finishAdminSidebarTransition(event) {
+  if (event.target !== event.currentTarget || event.propertyName !== 'width' || !adminSidebarCollapsed.value) return
+
+  clearTimeout(adminSidebarResizeTimeout)
+  adminSidebarTransitioning.value = false
+}
 
 onUnmounted(() => {
-  adminSidebarResizeObserver?.disconnect()
+  clearTimeout(adminSidebarResizeTimeout)
+  clearTimeout(adminSidebarSwipeClickTimeout)
+  document.removeEventListener('pointermove', trackAdminSidebarSwipe)
+  document.removeEventListener('pointerup', finishAdminSidebarSwipe)
+  document.removeEventListener('pointercancel', cancelAdminSidebarSwipe)
+  document.removeEventListener('click', preventAdminSidebarSwipeClick, true)
 })
 
 const adminNotificationCounts = ref({ orders: 0, inventory: 0, announcements: 0 })
@@ -1952,12 +2091,51 @@ function formatDate(dateString) {
    manager sidebars without changing the shared brand component. */
 .admin-panel-shell .admin-sidebar {
   gap: 0.75rem;
+  touch-action: pan-y;
 }
 
 .admin-panel-shell .admin-sidebar > .panel-sidebar-brand {
   flex-basis: 40px;
   height: 40px;
   margin-bottom: 0;
+}
+
+.admin-sidebar__resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  width: 24px;
+  padding: 0;
+  border: 0;
+  background: linear-gradient(90deg, transparent 0, rgba(143, 79, 47, 0.04) 100%);
+  cursor: col-resize;
+  touch-action: none;
+  user-select: none;
+}
+
+.admin-sidebar__resize-handle::after {
+  position: absolute;
+  top: 50%;
+  right: 5px;
+  width: 3px;
+  height: 48px;
+  border-radius: 999px;
+  background: rgba(143, 79, 47, 0.38);
+  content: '';
+  transform: translateY(-50%);
+  transition: height 160ms ease, background-color 160ms ease;
+}
+
+.admin-sidebar__resize-handle:hover::after,
+.admin-sidebar__resize-handle:focus-visible::after {
+  height: 72px;
+  background: #8f4f2f;
+}
+
+.admin-sidebar-collapsed .admin-sidebar__resize-handle {
+  display: none;
 }
 .product-request-list {
   display: grid;
@@ -2937,7 +3115,7 @@ h1, h2 {
   }
 
   .admin-panel-shell .admin-layout {
-    grid-template-columns: minmax(156px, auto) minmax(0, 1fr) !important;
+    grid-template-columns: var(--admin-sidebar-width, 156px) minmax(0, 1fr) !important;
     overflow-x: clip !important;
     overflow-y: visible !important;
   }
@@ -2952,12 +3130,15 @@ h1, h2 {
     grid-column: 1 !important;
     grid-row: 1 / -1 !important;
     align-self: start !important;
+    width: var(--admin-sidebar-width, 156px) !important;
+    min-width: 0 !important;
     height: 100vh !important;
     min-height: 100vh !important;
     max-height: 100vh !important;
   }
 
   .admin-panel-shell .admin-sidebar-collapsed > .admin-sidebar {
+    width: 0 !important;
     min-width: 0 !important;
   }
 
@@ -2984,7 +3165,11 @@ h1, h2 {
     min-width: 0 !important;
   }
 
-  .admin-panel-shell .admin-layout:has(> .admin-sidebar.panel-sidebar-resizing) {
+  .admin-panel-shell .admin-layout:has(> .admin-sidebar.panel-sidebar-resizing),
+  .admin-panel-shell .admin-layout.admin-sidebar-resizing,
+  .admin-panel-shell .admin-sidebar-resizing > .admin-sidebar,
+  .admin-panel-shell .admin-sidebar-resizing > .admin-topbar,
+  .admin-panel-shell .admin-sidebar-resizing > .admin-content-scroll {
     transition: none !important;
   }
 }
@@ -3006,6 +3191,10 @@ h1, h2 {
   }
 
   .admin-panel-shell .admin-layout.admin-sidebar-collapsed > .admin-sidebar {
+    display: none !important;
+  }
+
+  .admin-panel-shell .admin-sidebar__resize-handle {
     display: none !important;
   }
 
@@ -3415,6 +3604,10 @@ h1, h2 {
 }
 
 @media (min-width: 768px) {
+  .admin-panel-shell .admin-layout {
+    --admin-content-gutter: clamp(16px, calc(var(--admin-sidebar-width, 156px) * 0.08), 28px);
+  }
+
   :global(html:has(.admin-panel-shell)),
   :global(body:has(.admin-panel-shell)),
   :global(#app:has(.admin-panel-shell)) {
@@ -3447,7 +3640,7 @@ h1, h2 {
   }
 
   .admin-panel-shell .admin-layout > .admin-sidebar {
-    max-width: min(320px, calc(100vw - 280px));
+    max-width: min(420px, calc(100vw - 280px));
   }
 
   .admin-panel-shell .admin-layout > .admin-topbar {
@@ -3461,9 +3654,9 @@ h1, h2 {
   .admin-panel-shell .admin-content-scroll {
     position: fixed;
     top: 66px;
-    right: 0;
+    right: var(--admin-content-gutter);
     bottom: 0;
-    left: var(--admin-sidebar-width, 156px);
+    left: calc(var(--admin-sidebar-width, 156px) + var(--admin-content-gutter));
     z-index: 1;
     display: flex;
     flex-direction: column;
@@ -3473,10 +3666,11 @@ h1, h2 {
     overscroll-behavior-y: contain;
     scrollbar-gutter: stable;
     transition: left 260ms cubic-bezier(0.22, 1, 0.36, 1);
+    box-sizing: border-box;
   }
 
   .admin-panel-shell .admin-sidebar-collapsed > .admin-content-scroll {
-    left: 0;
+    left: var(--admin-content-gutter);
   }
 
   .admin-panel-shell .admin-content-scroll > .admin-main,
@@ -3487,14 +3681,15 @@ h1, h2 {
     max-width: none;
     min-width: 0;
     margin: 0 !important;
+    box-sizing: border-box;
   }
 
   .admin-panel-shell .admin-content-scroll > .admin-main {
-    padding: 16px 16px 0 !important;
+    padding: 12px 12px 0 !important;
   }
 
   .admin-panel-shell .admin-content-scroll > .admin-side {
-    padding: 0 16px 16px !important;
+    padding: 0 12px 16px !important;
   }
 
   .admin-panel-shell .admin-content-scroll > .admin-side:has(> .dashboard-top-products-panel) {
@@ -3502,7 +3697,7 @@ h1, h2 {
   }
 
   .admin-panel-shell .admin-content-scroll > .admin-left {
-    padding: 16px !important;
+    padding: 12px 12px 16px !important;
   }
 
   .admin-panel-shell .admin-sidebar {

@@ -15,6 +15,7 @@
 
 .manager-logistics-panel :deep(.admin-layout--owner-sidebar-layout) {
   display: block;
+  width: 100%;
   min-height: 100vh;
   overflow: visible;
 }
@@ -23,8 +24,8 @@
   position: fixed;
   inset: 0 auto 0 0;
   z-index: 400;
-  width: 156px;
-  min-width: 156px;
+  width: var(--owner-sidebar-width, 156px);
+  min-width: var(--owner-sidebar-width, 156px);
   min-height: 100vh;
   padding: 1.5rem 1rem 1rem;
   box-sizing: border-box;
@@ -43,9 +44,9 @@
   position: fixed;
   top: 0;
   right: 0;
-  left: 156px;
+  left: var(--owner-sidebar-width, 156px);
   z-index: 300;
-  width: auto;
+  width: calc(100% - var(--owner-sidebar-width, 156px));
   height: 66px;
   min-height: 66px;
   margin: 0;
@@ -54,15 +55,17 @@
 
 .manager-logistics-panel :deep(.owner-sidebar-collapsed .owner-panel-topbar) {
   left: 0;
+  width: 100%;
 }
 
 .manager-logistics-panel :deep(.admin-main) {
   display: flex;
-  width: auto;
+  width: calc(100% - var(--owner-sidebar-width, 156px));
+  max-width: calc(100% - var(--owner-sidebar-width, 156px));
   min-width: 0;
   min-height: 100vh;
   height: auto;
-  margin: 0 0 0 156px;
+  margin: 0 0 0 var(--owner-sidebar-width, 156px);
   padding: 66px 1.3rem 1.25rem;
   box-sizing: border-box;
   flex-direction: column;
@@ -71,6 +74,8 @@
 }
 
 .manager-logistics-panel :deep(.owner-sidebar-collapsed .admin-main) {
+  width: 100%;
+  max-width: 100%;
   margin-left: 0;
 }
 
@@ -179,7 +184,15 @@
 }
 
 .manager-logistics-panel :deep(.admin-main > *) {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   margin-bottom: 0;
+  box-sizing: border-box;
+}
+
+.manager-logistics-panel :deep(.hr-stats-grid) {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
 }
 
 .manager-logistics-panel .hr-stats-grid {
@@ -222,17 +235,29 @@
   }
 
   .manager-logistics-panel :deep(.owner-panel-sidebar) {
-    width: 190px;
-    min-width: 190px;
+    position: absolute;
+    inset: 66px auto 0 0;
+    width: min(var(--owner-sidebar-width, 156px), calc(100vw - 56px));
+    min-width: min(var(--owner-sidebar-width, 156px), calc(100vw - 56px));
+    min-height: calc(100vh - 66px);
   }
 
   .manager-logistics-panel :deep(.owner-panel-topbar) {
     left: 0;
+    width: 100%;
   }
 
   .manager-logistics-panel :deep(.admin-main) {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
     margin-left: 0;
     padding: 66px 0.85rem 1rem;
+  }
+
+  .manager-logistics-panel :deep(.owner-sidebar-collapsed .admin-main) {
+    width: 100%;
+    max-width: 100%;
   }
 
   .manager-logistics-panel :deep(.admin-main-header) {

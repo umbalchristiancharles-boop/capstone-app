@@ -802,14 +802,14 @@ onMounted(() => {
 
 .reports-table {
   width: 100%;
-  min-width: 820px;
+  min-width: 760px;
   --reports-grid-columns: minmax(150px, 1.25fr) minmax(130px, 1.2fr) minmax(125px, 0.85fr) minmax(160px, 1.2fr) minmax(150px, 1fr);
 }
 
 .table-header {
   display: grid;
   grid-template-columns: var(--reports-grid-columns);
-  gap: 12px;
+  column-gap: 12px;
   padding: 14px 18px;
   border-bottom: 1px solid #e8e1dc;
   background: #faf7f5;
@@ -835,7 +835,7 @@ onMounted(() => {
 .row-main {
   display: grid;
   grid-template-columns: var(--reports-grid-columns);
-  gap: 12px;
+  column-gap: 12px;
   min-width: 0;
   padding: 16px 18px;
   align-items: center;
@@ -1370,7 +1370,7 @@ textarea.form-input {
 
 @media (max-width: 1024px) {
   .reports-table {
-    --reports-grid-columns: minmax(140px, 1.2fr) minmax(125px, 1.1fr) minmax(120px, 0.85fr) minmax(150px, 1.15fr) minmax(145px, 1fr);
+    --reports-grid-columns: minmax(145px, 1.2fr) minmax(125px, 1fr) minmax(120px, 0.85fr) minmax(150px, 1.1fr) minmax(145px, 1fr);
   }
 }
 
