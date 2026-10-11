@@ -597,6 +597,15 @@
         </div>
       </section>
 
+      <PanelNotificationDetailsModal
+        :show="showAdminAnnouncementNotifications"
+        title="Announcements"
+        subtitle="Latest updates for your account."
+        :announcements="announcements"
+        :loading="loadingAnnouncements"
+        @close="showAdminAnnouncementNotifications = false"
+      />
+
       <!-- ANNOUNCEMENT MODAL (Owner) -->
       <transition name="fade">
         <div v-if="showAnnouncement" class="info-backdrop" @click.self="closeAnnouncementModal">
@@ -862,6 +871,7 @@ import LoadingOverlay from './LoadingOverlay.vue'
 import AdminCustomerReports from './AdminCustomerReports.vue'
 import StaffManagement from './StaffManagement.vue'
 import PanelNotificationMenu from './PanelNotificationMenu.vue'
+import PanelNotificationDetailsModal from './PanelNotificationDetailsModal.vue'
 import OwnerMessageMenu from './OwnerMessageMenu.vue'
 import PanelSidebarBrand from './PanelSidebarBrand.vue'
 
@@ -898,6 +908,7 @@ const adminNotificationItems = computed(() => [
   { key: 'announcements', label: 'Announcements', count: adminNotificationCounts.value.announcements },
 ].filter(item => item.count > 0))
 const adminNotificationCount = computed(() => adminNotificationItems.value.reduce((total, item) => total + item.count, 0))
+const showAdminAnnouncementNotifications = ref(false)
 
 const activeSectionTitle = computed(() => ({
   dashboard: panelTitle.value,
@@ -1136,7 +1147,7 @@ function openAdminNotifications(type) {
   if (type === 'orders') activeSection.value = 'orders'
   if (type === 'inventory') activeSection.value = 'inventory'
   if (type === 'announcements') {
-    activeSection.value = 'announcements'
+    showAdminAnnouncementNotifications.value = true
     fetchAnnouncements()
   }
 }

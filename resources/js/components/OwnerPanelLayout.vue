@@ -127,42 +127,16 @@
               </ul>
             </template>
           </section>
-          <transition name="fade">
-            <div
-              v-if="isNotificationModalOpen"
-              class="info-backdrop info-backdrop--finance-style owner-announcement-backdrop"
-              @click.self="closeNotificationModal"
-            >
-              <section class="info-modal info-modal--finance-style owner-announcement-modal" role="dialog" aria-modal="true" aria-labelledby="owner-announcement-title">
-                <button type="button" class="info-modal-close" aria-label="Close notifications" @click="closeNotificationModal">✕</button>
-                <h3 id="owner-announcement-title">{{ activeNotificationLabel }}</h3>
-                <p class="info-sub">{{ activeNotificationPanel === 'announcements' ? 'Latest updates for your account.' : 'Items that need your attention.' }}</p>
-                <div class="info-grid owner-announcement-list">
-                  <template v-if="activeNotificationPanel === 'announcements'">
-                    <p v-if="loadingAnnouncements" class="owner-announcement-state">Loading announcements...</p>
-                    <p v-else-if="announcements.length === 0" class="owner-announcement-state">No announcements found.</p>
-                    <article v-for="announcement in announcements" :key="announcement.id" class="owner-announcement-entry">
-                      <strong>{{ announcement.title }}</strong>
-                      <small>{{ new Date(announcement.created_at).toLocaleString() }}<span v-if="announcement.target"> · {{ announcement.target }}</span></small>
-                      <p>{{ announcement.message }}</p>
-                    </article>
-                  </template>
-                  <template v-else>
-                    <p v-if="notificationDetailItems.length === 0" class="owner-announcement-state">No items need attention.</p>
-                    <ul v-else class="panel-notification-details__list panel-notification-details__counts owner-notification-modal-counts">
-                      <li v-for="item in notificationDetailItems" :key="item.key">
-                        <span>{{ item.label }}</span>
-                        <strong>{{ item.count }}</strong>
-                      </li>
-                    </ul>
-                  </template>
-                </div>
-                <div class="info-actions">
-                  <button type="button" class="btn-outline" @click="closeNotificationModal">Close</button>
-                </div>
-              </section>
-            </div>
-          </transition>
+          <PanelNotificationDetailsModal
+            :show="isNotificationModalOpen"
+            :title="activeNotificationLabel"
+            :subtitle="activeNotificationPanel === 'announcements' ? 'Latest updates for your account.' : 'Items that need your attention.'"
+            :show-announcements="activeNotificationPanel === 'announcements'"
+            :announcements="announcements"
+            :loading="loadingAnnouncements"
+            :detail-items="notificationDetailItems"
+            @close="closeNotificationModal"
+          />
           <slot name="main"></slot>
         </main>
         <!-- RIGHT: SIDE PANELS -->
@@ -456,6 +430,7 @@ import axios from 'axios'
 import Toast from './Toast.vue'
 import { showToast } from './toastStore'
 import PanelNotificationMenu from './PanelNotificationMenu.vue'
+import PanelNotificationDetailsModal from './PanelNotificationDetailsModal.vue'
 import OwnerMessageMenu from './OwnerMessageMenu.vue'
 import PanelSidebarBrand from './PanelSidebarBrand.vue'
 
@@ -1591,61 +1566,6 @@ async function onAvatarChange(event) {
 .panel-notification-details__counts li {
   grid-template-columns: 1fr auto;
   align-items: center;
-}
-
-.owner-announcement-backdrop {
-  z-index: 600;
-  background: rgba(15, 23, 42, 0.28);
-  -webkit-backdrop-filter: blur(3px);
-  backdrop-filter: blur(3px);
-}
-
-.owner-announcement-modal {
-  width: min(90vw, 640px);
-}
-
-.owner-announcement-modal .owner-announcement-list {
-  display: block;
-  max-height: min(55vh, 480px);
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
-}
-
-.owner-announcement-entry {
-  padding: 0.85rem 0;
-  border-bottom: 1px solid rgba(219, 188, 160, 0.3);
-}
-
-.owner-announcement-entry:last-child {
-  border-bottom: 0;
-}
-
-.owner-announcement-entry strong {
-  display: block;
-  color: #3d2a1f;
-  font-size: 0.92rem;
-}
-
-.owner-announcement-entry small {
-  display: block;
-  margin-top: 0.25rem;
-  color: #94735f;
-  font-size: 0.75rem;
-}
-
-.owner-announcement-entry p {
-  margin: 0.45rem 0 0;
-  color: #5f4b3e;
-  font-size: 0.86rem;
-  line-height: 1.5;
-  overflow-wrap: anywhere;
-}
-
-.owner-announcement-state {
-  margin: 0;
-  padding: 0.75rem 0;
-  color: #64748b;
-  font-size: 0.86rem;
 }
 
 @media (max-width: 767px) {
