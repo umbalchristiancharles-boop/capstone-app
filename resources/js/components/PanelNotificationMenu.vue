@@ -7,7 +7,7 @@
       :aria-expanded="isOpen"
       aria-haspopup="true"
       title="Notifications"
-      @click="isOpen = !isOpen"
+      @click="toggleMenu"
     >
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
@@ -63,12 +63,17 @@ const props = defineProps({
   announcements: { type: Array, default: () => [] },
 })
 
-const emit = defineEmits(['select'])
+const emit = defineEmits(['select', 'open'])
 const menuRoot = ref(null)
 const isOpen = ref(false)
 const announcementUnreadCount = computed(() => (
   props.notificationItems.find(item => item.key === 'announcements')?.count || 0
 ))
+
+function toggleMenu() {
+  isOpen.value = !isOpen.value
+  if (isOpen.value) emit('open')
+}
 
 function selectNotification(key) {
   isOpen.value = false

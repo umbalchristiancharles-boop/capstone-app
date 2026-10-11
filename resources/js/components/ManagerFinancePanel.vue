@@ -50,6 +50,7 @@
             :notification-count="financeNotificationCount"
             :announcements="announcements"
             @select="handleFinanceNotificationClick"
+            @open="refreshFinanceNotificationCounts"
           />
           <div class="finance-user-pill" @click.stop>
             <div class="finance-user-pill__avatar">{{ userInitial }}</div>
@@ -58,32 +59,9 @@
         </div>
       </header>
 
-      <section v-if="activeNotificationPanel" class="finance-notification-drawer" aria-live="polite">
-        <div class="finance-notification-drawer__header">
-          <div>
-            <strong>{{ activeNotificationPanel === 'announcements' ? 'Announcements' : 'Updates' }}</strong>
-            <span>{{ activeNotificationPanel === 'announcements' ? 'Latest notices for your account' : 'Items that may need your attention' }}</span>
-          </div>
-          <button type="button" class="finance-notification-drawer__close" @click="activeNotificationPanel = ''" aria-label="Close notification details">Close</button>
-        </div>
-        <div v-if="activeNotificationPanel === 'announcements'" class="finance-notification-drawer__body">
-          <div v-if="announcementsLoading" class="finance-notification-drawer__empty">Loading announcements...</div>
-          <div v-else-if="announcements.length === 0" class="finance-notification-drawer__empty">No announcements found.</div>
-          <article v-for="announcement in announcements" :key="announcement.id" class="finance-notification-entry">
-            <strong>{{ announcement.title }}</strong>
-            <small>{{ formatNotificationDate(announcement.created_at) }}</small>
-            <p>{{ announcement.message }}</p>
-          </article>
-        </div>
-        <div v-else class="finance-notification-drawer__body finance-notification-drawer__updates">
-          <div v-for="update in financeUpdateItems" :key="update.label" class="finance-notification-entry finance-notification-entry--update">
-            <strong>{{ update.label }}</strong>
-            <span>{{ update.count }} pending</span>
-          </div>
-        </div>
-      </section>
-
       <main class="finance-dashboard-body">
+        <Transition name="finance-section" mode="out-in">
+        <div :key="selectedSection" class="finance-section-view">
         <section class="finance-feature-header">
           <div>
             <p class="finance-eyebrow">Finance dashboard</p>
@@ -94,51 +72,76 @@
           </button>
         </section>
 
-        <Transition name="finance-section" mode="out-in">
-        <div :key="selectedSection" class="finance-section-view">
+        <div class="finance-section-content">
         <div v-if="selectedSection === 'attendance'" class="finance-main-attendance-card">
           <section class="attendance-card">
             <div class="attendance-header">
-              <span class="attendance-title">Attendance</span>
+              <div class="attendance-heading">
+                <span class="attendance-title">Today's Attendance</span>
+                <span class="attendance-subtitle">Review your current shift and attendance times.</span>
+              </div>
               <span :class="['attendance-status-badge', attendanceStatus.is_clocked_in ? 'status-on-duty' : 'status-off-duty']">
                 {{ attendanceStatus.is_clocked_in ? 'On Duty' : 'Off Duty' }}
               </span>
             </div>
 
-            <div class="attendance-times" v-if="attendanceStatus.clock_in_time || attendanceStatus.clock_out_time">
-              <div class="time-row"><span class="time-label">Clock In:</span><span class="time-value">{{ attendanceStatus.clock_in_time || '-' }}</span></div>
-              <div class="time-row"><span class="time-label">Clock Out:</span><span class="time-value">{{ attendanceStatus.clock_out_time || '-' }}</span></div>
-              <div class="time-row" v-if="attendanceStatus.hours_worked > 0"><span class="time-label">Hours:</span><span class="time-value">{{ attendanceStatus.hours_worked }} hrs</span></div>
-            </div>
+            <div class="attendance-body">
+              <div class="attendance-summary">
+                <div class="attendance-summary__heading">
+                  <h3>Shift summary</h3>
+                  <p>{{ attendanceStatus.is_clocked_in ? 'Your shift is currently in progress.' : 'Your shift is currently not active.' }}</p>
+                </div>
+                <div class="attendance-times">
+                  <div class="time-row">
+                    <span class="time-label">Clock In</span>
+                    <span class="time-value">{{ attendanceStatus.clock_in_time || '—' }}</span>
+                  </div>
+                  <div class="time-row">
+                    <span class="time-label">Clock Out</span>
+                    <span class="time-value">{{ attendanceStatus.clock_out_time || '—' }}</span>
+                  </div>
+                  <div v-if="attendanceStatus.hours_worked > 0" class="time-row">
+                    <span class="time-label">Hours Worked</span>
+                    <span class="time-value">{{ attendanceStatus.hours_worked }} hrs</span>
+                  </div>
+                </div>
+              </div>
 
-            <div class="attendance-buttons">
-              <button @click="performClockIn" :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockInGeofencing || locationLoading" class="btn-clock-in">
-                {{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock In' }}
-              </button>
-              <button @click="performClockOut" :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockOut || !canClockInGeofencing || locationLoading" class="btn-clock-out" :class="{ 'btn-disabled': !canClockOut && attendanceStatus.is_clocked_in }">
-                {{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock Out' }}
-              </button>
-            </div>
+              <div class="attendance-actions">
+                <div class="attendance-actions__heading">
+                  <h3>Attendance actions</h3>
+                  <p>Clock in or out when you are ready.</p>
+                </div>
+                <div class="attendance-buttons">
+                  <button @click="performClockIn" :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockInGeofencing || locationLoading" class="btn-clock-in">
+                    {{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock In' }}
+                  </button>
+                  <button @click="performClockOut" :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockOut || !canClockInGeofencing || locationLoading" class="btn-clock-out" :class="{ 'btn-disabled': !canClockOut && attendanceStatus.is_clocked_in }">
+                    {{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock Out' }}
+                  </button>
+                </div>
 
-            <div v-if="locationError" class="geofencing-status geofencing-error">
-              <span class="status-icon">⚠️</span>
-              <span>{{ locationError }}</span>
-            </div>
-            <div v-else-if="userLocation && canClockInGeofencing" class="geofencing-status geofencing-success">
-              <span class="status-icon">✓</span>
-              <span>Location verified</span>
-            </div>
-            <div v-else-if="!canClockInGeofencing && geofencingMessage" class="geofencing-status geofencing-error">
-              <span class="status-icon">🔒</span>
-              <span>{{ geofencingMessage }}</span>
-            </div>
+                <div v-if="locationError" class="geofencing-status geofencing-error">
+                  <span class="status-icon">⚠️</span>
+                  <span>{{ locationError }}</span>
+                </div>
+                <div v-else-if="userLocation && canClockInGeofencing" class="geofencing-status geofencing-success">
+                  <span class="status-icon">✓</span>
+                  <span>Location verified</span>
+                </div>
+                <div v-else-if="!canClockInGeofencing && geofencingMessage" class="geofencing-status geofencing-error">
+                  <span class="status-icon">🔒</span>
+                  <span>{{ geofencingMessage }}</span>
+                </div>
 
-            <div v-if="!canClockOut && attendanceStatus.is_clocked_in" class="clockout-restriction">
-              <span class="restriction-icon">LOCK</span>
-              <span>Cannot clock out before {{ scheduledTimeOut }}</span>
-            </div>
+                <div v-if="!canClockOut && attendanceStatus.is_clocked_in" class="clockout-restriction">
+                  <span class="restriction-icon">LOCK</span>
+                  <span>Cannot clock out before {{ scheduledTimeOut }}</span>
+                </div>
 
-            <div v-if="attendanceMessage" :class="['attendance-message', attendanceMessageType]">{{ attendanceMessage }}</div>
+                <div v-if="attendanceMessage" :class="['attendance-message', attendanceMessageType]">{{ attendanceMessage }}</div>
+              </div>
+            </div>
           </section>
         </div>
 
@@ -385,9 +388,21 @@
           </section>
         </template>
         </div>
+        </div>
         </Transition>
       </main>
     </div>
+
+    <PanelNotificationDetailsModal
+      :show="Boolean(activeNotificationPanel)"
+      :title="activeFinanceNotificationLabel"
+      :subtitle="activeNotificationPanel === 'announcements' ? 'Latest updates for your account.' : 'Items that need your attention.'"
+      :show-announcements="activeNotificationPanel === 'announcements'"
+      :announcements="announcements"
+      :loading="announcementsLoading"
+      :detail-items="activeFinanceNotificationDetails"
+      @close="activeNotificationPanel = ''"
+    />
 
     <transition name="fade">
       <div v-if="showLogoutConfirm" class="logout-confirm-backdrop">
@@ -530,6 +545,7 @@ import FinancePanelContent from './finance/FinancePanelContent.vue'
 import PriceMarkupManagerPanel from './finance/PriceMarkupManagerPanel.vue'
 import MainBranchFinanceBranchConfirmations from './MainBranchFinanceBranchConfirmations.vue'
 import PanelNotificationMenu from './PanelNotificationMenu.vue'
+import PanelNotificationDetailsModal from './PanelNotificationDetailsModal.vue'
 import OwnerMessageMenu from './OwnerMessageMenu.vue'
 import PanelSidebarBrand from './PanelSidebarBrand.vue'
 import axios from 'axios'
@@ -590,6 +606,20 @@ const financeNotificationItems = computed(() => [
   { key: 'updates', label: 'Updates', count: financeNotificationSummary.value.updates },
 ].filter(item => item.count > 0))
 const financeNotificationCount = computed(() => financeNotificationItems.value.reduce((total, item) => total + item.count, 0))
+const activeFinanceNotificationLabel = computed(() => (
+  financeNotificationItems.value.find(item => item.key === activeNotificationPanel.value)?.label || 'Notifications'
+))
+const activeFinanceNotificationDetails = computed(() => {
+  if (activeNotificationPanel.value === 'announcements') return []
+  const item = financeNotificationItems.value.find(({ key }) => key === activeNotificationPanel.value)
+  if (!item) return []
+  if (item.key === 'updates') return financeUpdateItems.value.map((update, index) => ({
+    key: `finance-update-${index}`,
+    label: update.label,
+    count: update.count,
+  }))
+  return [{ ...item }]
+})
 
 const financeUpdateItems = computed(() => [
   { label: 'Orders', count: Number(notificationCounts.value.admin || 0) },
@@ -888,22 +918,35 @@ async function loadPanelNotifications() {
   }
 }
 
+async function refreshFinanceNotificationCounts() {
+  await Promise.all([
+    loadPanelNotifications(),
+    loadReceiptSubmissions(),
+  ])
+}
+
 function handleFinanceNotificationClick(key) {
-  if (key === 'approvals') {
-    selectedSection.value = 'approvals'
-    return
-  }
-  if (key === 'receipt-approvals') {
-    selectedSection.value = 'receipt-approvals'
-    return
-  }
-  if (key === 'updates') {
-    activeNotificationPanel.value = 'updates'
-    return
-  }
+  activeNotificationPanel.value = key
   if (key === 'announcements') {
-    activeNotificationPanel.value = 'announcements'
-    loadFinanceAnnouncements()
+    Promise.all([
+      loadFinanceAnnouncements(),
+      markFinanceAnnouncementsRead(),
+    ]).catch((error) => {
+      console.error('Unable to open Finance announcements:', error)
+    })
+  } else if (key === 'receipt-approvals') {
+    loadReceiptSubmissions()
+  }
+}
+
+async function markFinanceAnnouncementsRead() {
+  try {
+    const response = await axios.post('/api/panel-notifications/read', { category: 'announcements' }, { withCredentials: true })
+    if (!response.data?.ok) throw new Error(response.data?.message || 'Unable to mark announcements as read.')
+    await loadPanelNotifications()
+  } catch (error) {
+    console.error('Unable to mark Finance announcements as read:', error)
+    showToast(error.response?.data?.message || 'Unable to update announcement read status.', 'error')
   }
 }
 
@@ -917,11 +960,6 @@ async function loadFinanceAnnouncements() {
   } finally {
     announcementsLoading.value = false
   }
-}
-
-function formatNotificationDate(value) {
-  if (!value) return ''
-  return new Date(value).toLocaleString()
 }
 
 // Handle profile update from layout

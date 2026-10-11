@@ -1,105 +1,3 @@
-.finance-notification-drawer {
-  margin: 18px 26px;
-  overflow: hidden;
-  border: 1px solid #f0c4a3;
-  border-radius: 10px;
-  background: #fff;
-  box-shadow: 0 8px 24px rgba(23, 43, 70, 0.12);
-}
-
-.finance-notification-drawer__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px 16px;
-  color: #172b46;
-  background: #fff4e9;
-}
-
-.finance-notification-drawer__header > div {
-  display: grid;
-  gap: 3px;
-}
-
-.finance-notification-drawer__header span {
-  color: #6b7280;
-  font-size: 12px;
-}
-
-.finance-notification-drawer__close {
-  flex: 0 0 auto;
-  padding: 6px 10px;
-  border: 1px solid #e6a477;
-  border-radius: 6px;
-  color: #8b3f1e;
-  background: #fff;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.finance-notification-drawer__body {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 10px;
-  max-height: 260px;
-  padding: 12px;
-  overflow-y: auto;
-}
-
-.finance-notification-entry {
-  padding: 11px 12px;
-  border: 1px solid #eee2d8;
-  border-radius: 8px;
-  background: #fffdfb;
-}
-
-.finance-notification-entry strong {
-  display: block;
-  color: #172b46;
-  font-size: 13px;
-}
-
-.finance-notification-entry small,
-.finance-notification-entry p,
-.finance-notification-entry span {
-  display: block;
-  margin-top: 5px;
-  color: #6b7280;
-  font-size: 12px;
-}
-
-.finance-notification-entry p {
-  margin-bottom: 0;
-  line-height: 1.45;
-}
-
-.finance-notification-entry--update {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.finance-notification-entry--update span {
-  margin-top: 0;
-  color: #f04444;
-  font-weight: 800;
-}
-
-.finance-notification-drawer__empty {
-  grid-column: 1 / -1;
-  padding: 18px;
-  color: #6b7280;
-  text-align: center;
-}
-
-@media (max-width: 700px) {
-  .finance-notification-drawer {
-    margin: 14px;
-  }
-}
 :global(.dark-mode) .manager-finance {
   color: #f8fafc;
   background:
@@ -111,6 +9,8 @@
 :global(.dark-mode) .manager-finance .filter-bar,
 :global(.dark-mode) .manager-finance .kpi-card,
 :global(.dark-mode) .manager-finance .branch-stats,
+:global(.dark-mode) .manager-finance .finance-feature-header,
+:global(.dark-mode) .manager-finance .finance-section-content,
 :global(.dark-mode) .manager-finance .panel-section,
 :global(.dark-mode) .manager-finance .attendance-card,
 :global(.dark-mode) .manager-finance .loading-container,
@@ -124,7 +24,10 @@
 
 :global(.dark-mode) .manager-finance .filter-group label,
 :global(.dark-mode) .manager-finance .date-separator,
+:global(.dark-mode) .manager-finance .finance-title,
 :global(.dark-mode) .manager-finance .attendance-title,
+:global(.dark-mode) .manager-finance .attendance-summary__heading h3,
+:global(.dark-mode) .manager-finance .attendance-actions__heading h3,
 :global(.dark-mode) .manager-finance .time-value,
 :global(.dark-mode) .manager-finance .kpi-label,
 :global(.dark-mode) .manager-finance .kpi-value,
@@ -139,6 +42,33 @@
 :global(.dark-mode) .manager-finance .chart-label,
 :global(.dark-mode) .manager-finance .chart-value {
   color: #f8fafc;
+}
+
+:global(.dark-mode) .manager-finance .finance-eyebrow {
+  color: #fdba74;
+}
+
+:global(.dark-mode) .manager-finance .finance-feature-header,
+:global(.dark-mode) .manager-finance .finance-section-content {
+  border-color: rgba(148, 163, 184, 0.18);
+}
+
+:global(.dark-mode) .manager-finance .finance-feature-header {
+  border-top-color: #f59e0b;
+}
+
+:global(.dark-mode) .manager-finance .attendance-subtitle,
+:global(.dark-mode) .manager-finance .attendance-summary__heading p,
+:global(.dark-mode) .manager-finance .attendance-actions__heading p,
+:global(.dark-mode) .manager-finance .time-label {
+  color: #cbd5e1;
+}
+
+:global(.dark-mode) .manager-finance .finance-main-attendance-card .attendance-summary,
+:global(.dark-mode) .manager-finance .finance-main-attendance-card .attendance-actions,
+:global(.dark-mode) .manager-finance .finance-main-attendance-card .time-row {
+  border-color: rgba(148, 163, 184, 0.2);
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.92), rgba(17, 24, 39, 0.96));
 }
 
 :global(.dark-mode) .manager-finance .filter-group select,
@@ -625,6 +555,18 @@
 
 .finance-section-view {
   min-height: 1px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.finance-section-content {
+  min-width: 0;
+  padding: 1.15rem;
+  border: 1px solid #f1e5d8;
+  border-radius: 16px;
+  background: rgba(255, 250, 245, 0.78);
+  box-shadow: 0 8px 22px rgba(66, 33, 11, 0.045);
 }
 
 .finance-section-enter-active,
@@ -849,8 +791,13 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1rem;
-  padding: 0.2rem 0.2rem 0.6rem;
+  min-height: 96px;
+  padding: 1.2rem 1.35rem;
+  border: 1px solid #f1e5d8;
+  border-top: 3px solid #f59e0b;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #fffaf5 0%, #fff 72%);
+  box-shadow: 0 8px 22px rgba(66, 33, 11, 0.06);
 }
 
 .finance-eyebrow {
@@ -1265,25 +1212,129 @@
 }
 
 .finance-main-attendance-card {
-  width: min(100%, 760px);
-  margin: 0 auto 1.25rem;
+  width: 100%;
+  margin: 0;
 }
 
 .finance-main-attendance-card .attendance-card {
-  gap: 0.65rem;
+  gap: 1.15rem;
   margin-bottom: 0;
-  padding: 0.85rem 0.95rem;
+  padding: 1.35rem;
+  border-radius: 16px;
+}
+
+.finance-main-attendance-card .attendance-header {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(219, 188, 160, 0.4);
+}
+
+.finance-main-attendance-card .attendance-heading,
+.finance-main-attendance-card .attendance-summary__heading,
+.finance-main-attendance-card .attendance-actions__heading {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.finance-main-attendance-card .attendance-subtitle,
+.finance-main-attendance-card .attendance-summary__heading p,
+.finance-main-attendance-card .attendance-actions__heading p {
+  margin: 0;
+  color: #7c6758;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.finance-main-attendance-card .attendance-title {
+  font-size: 1.15rem;
+}
+
+.finance-main-attendance-card .attendance-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+  gap: 1.1rem;
+  align-items: stretch;
+}
+
+.finance-main-attendance-card .attendance-summary,
+.finance-main-attendance-card .attendance-actions {
+  min-width: 0;
+  padding: 1.1rem;
+  border: 1px solid rgba(219, 188, 160, 0.38);
   border-radius: 14px;
+  background: linear-gradient(180deg, #fffdfa 0%, #fff7ef 100%);
+}
+
+.finance-main-attendance-card .attendance-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.finance-main-attendance-card .attendance-summary__heading h3,
+.finance-main-attendance-card .attendance-actions__heading h3 {
+  margin: 0;
+  color: #3d2a1f;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.finance-main-attendance-card .attendance-times {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  gap: 0.7rem;
+  font-size: 0.9rem;
+}
+
+.finance-main-attendance-card .time-row {
+  min-height: 76px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.85rem;
+  border: 1px solid rgba(219, 188, 160, 0.34);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.finance-main-attendance-card .time-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.finance-main-attendance-card .time-value {
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.finance-main-attendance-card .attendance-actions {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.85rem;
 }
 
 .finance-main-attendance-card .attendance-buttons {
-  gap: 0.6rem;
+  gap: 0.65rem;
 }
 
 .finance-main-attendance-card .btn-clock-in,
 .finance-main-attendance-card .btn-clock-out {
-  flex-basis: 8rem;
-  padding: 0.65rem 0.85rem;
+  flex-basis: 9rem;
+  min-height: 44px;
+  padding: 0.7rem 0.85rem;
+}
+
+.finance-main-attendance-card .geofencing-status,
+.finance-main-attendance-card .clockout-restriction,
+.finance-main-attendance-card .attendance-message {
+  margin-top: 0;
+}
+
+@media (max-width: 760px) {
+  .finance-main-attendance-card .attendance-body {
+    grid-template-columns: 1fr;
+  }
 }
 
 .manager-finance-side-card .attendance-card {
@@ -1993,6 +2044,14 @@
     align-items: flex-start;
     flex-wrap: wrap;
   }
+
+  .finance-section-view {
+    gap: 0.85rem;
+  }
+
+  .finance-section-content {
+    padding: 0.95rem;
+  }
 }
 
 @media (max-width: 640px) {
@@ -2041,6 +2100,31 @@
 
   .finance-table-header .finance-refresh-button {
     width: 100%;
+  }
+
+  .finance-feature-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .finance-feature-header .finance-refresh-button {
+    width: 100%;
+  }
+
+  .finance-section-view {
+    gap: 0.7rem;
+  }
+
+  .finance-feature-header {
+    min-height: 0;
+    padding: 1rem;
+    border-radius: 12px;
+  }
+
+  .finance-section-content {
+    padding: 0.75rem;
+    border-radius: 12px;
   }
 
   .branch-table th,
