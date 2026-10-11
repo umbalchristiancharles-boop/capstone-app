@@ -1,5 +1,5 @@
 <template>
-  <div class="staff-management-page">
+  <div class="staff-management-page" :class="{ 'staff-management-page--embedded': embedded }">
     <!-- Back to Dashboard Button -->
     <button v-if="!embedded" @click="backToDashboard()" class="btn-secondary back-to-dashboard-btn">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="back-icon">
@@ -10,9 +10,10 @@
     </button>
 
     <!-- Header -->
-    <div class="staff-header">
-      <h1 class="owner-staff-title">Staff Management</h1>
-      <div class="header-actions">
+    <div class="staff-header" :class="{ 'staff-header--embedded': embedded }">
+      <h1 v-if="!embedded" class="owner-staff-title">Staff Management</h1>
+      <Teleport to="#admin-staff-management-filters" :disabled="!embedded">
+        <div class="header-actions" :class="{ 'header-actions--embedded': embedded }">
         <input
           v-model="searchQuery"
           type="text"
@@ -38,7 +39,8 @@
           <span>Show inactive</span>
         </label>
         <button @click="refreshStaff" class="btn-primary">Refresh</button>
-      </div>
+        </div>
+      </Teleport>
     </div>
 
     <!-- Loading State -->
@@ -677,6 +679,12 @@ async function onResetPasswordClick(staffId) {
   color: var(--text-dark);
 }
 
+.staff-management-page--embedded {
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+}
+
 .staff-header {
   display: flex;
   justify-content: space-between;
@@ -686,6 +694,10 @@ async function onResetPasswordClick(staffId) {
   padding: 1.25rem 1.5rem;
   border-radius: 12px;
   box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+}
+
+.staff-header--embedded {
+  display: none;
 }
 
 /* Title: slightly smaller and 'sakto' size */
@@ -735,6 +747,10 @@ async function onResetPasswordClick(staffId) {
   display: flex;
   gap: 1rem;
   align-items: center;
+}
+
+.header-actions--embedded {
+  gap: 0.6rem;
 }
 
 .filter-select {
@@ -891,6 +907,67 @@ async function onResetPasswordClick(staffId) {
 
 .staff-table tbody tr:hover {
   background: rgba(255,255,255,0.14);
+}
+
+.staff-management-page--embedded .header-actions--embedded .search-input,
+.staff-management-page--embedded .header-actions--embedded .filter-select {
+  border: 1px solid #d8c8bc;
+  border-radius: 8px;
+  color: #3d2a1f;
+}
+
+.staff-management-page--embedded .header-actions--embedded .search-input:focus {
+  border-color: #b66a3e;
+  box-shadow: 0 0 0 3px rgba(182, 106, 62, 0.14);
+}
+
+.staff-management-page--embedded .header-actions--embedded .toggle-inline {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.staff-management-page--embedded .header-actions--embedded .btn-primary {
+  flex: 0 0 auto;
+  background: #b66a3e !important;
+  color: #fff !important;
+  box-shadow: 0 4px 12px rgba(182, 106, 62, 0.2);
+}
+
+.staff-management-page--embedded .header-actions--embedded .btn-primary:hover {
+  background: #9d5631 !important;
+}
+
+.staff-management-page--embedded .summary-card {
+  background: #fffaf5;
+  border: 1px solid #eadfd5;
+  border-radius: 10px;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 6px 18px rgba(61, 42, 31, 0.04);
+}
+
+.staff-management-page--embedded .branch-header {
+  background: #f7f0ea;
+  border: 1px solid #eadfd5;
+  border-left: 4px solid #b66a3e;
+}
+
+.staff-management-page--embedded .branch-count {
+  background: #fffaf5;
+}
+
+.staff-management-page--embedded .staff-table-wrapper {
+  background: #fffaf5;
+  border: 1px solid #eadfd5;
+  box-shadow: 0 2px 8px rgba(61, 42, 31, 0.06);
+}
+
+.staff-management-page--embedded .staff-table thead {
+  background: #f3e9e1;
+  border-bottom: 1px solid #eadfd5;
+}
+
+.staff-management-page--embedded .staff-table tbody tr:hover {
+  background: #fff5eb;
 }
 
 .staff-table tbody tr.inactive {
@@ -1076,4 +1153,3 @@ async function onResetPasswordClick(staffId) {
   transform: scale(0.98);
 }
 </style>
-

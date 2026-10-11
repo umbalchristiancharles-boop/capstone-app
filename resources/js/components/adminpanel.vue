@@ -74,11 +74,16 @@
 
         <!-- MIDDLE: MAIN DASHBOARD -->
         <main class="admin-main">
-          <section class="admin-feature-header">
+          <section class="admin-feature-header" :class="{ 'admin-feature-header--staff-management': activeSection === 'staff-management' }">
             <div>
               <p class="admin-eyebrow">Branch Manager dashboard</p>
               <h1 class="admin-feature-title">{{ activeSectionTitle }}</h1>
             </div>
+            <div
+              v-if="activeSection === 'staff-management'"
+              id="admin-staff-management-filters"
+              class="admin-staff-management-filters"
+            ></div>
           </section>
 
           <div v-if="activeSection === 'staff-management'" class="admin-staff-management-embedded">
@@ -2152,6 +2157,74 @@ h1, h2 {
   font-weight: 800 !important;
   letter-spacing: -0.04em !important;
   line-height: 1.1 !important;
+}
+
+.admin-feature-header--staff-management {
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.admin-staff-management-filters {
+  flex: 1 1 620px;
+  min-width: 0;
+}
+
+.admin-staff-management-filters :deep(.header-actions--embedded) {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.admin-staff-management-filters :deep(.search-input) {
+  flex: 1 1 150px;
+  width: auto;
+  min-width: 130px;
+}
+
+.admin-staff-management-filters :deep(.filter-select) {
+  flex: 1 1 115px;
+  min-width: 110px;
+}
+
+@media (max-width: 1100px) {
+  .admin-feature-header--staff-management {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-staff-management-filters :deep(.header-actions--embedded) {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-staff-management-filters :deep(.header-actions--embedded) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
+  }
+
+  .admin-staff-management-filters :deep(.search-input),
+  .admin-staff-management-filters :deep(.filter-select) {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .admin-staff-management-filters :deep(.search-input) {
+    grid-column: 1 / -1;
+  }
+
+  .admin-staff-management-filters :deep(.toggle-inline) {
+    justify-content: flex-start;
+    white-space: nowrap;
+  }
+
+  .admin-staff-management-filters :deep(.header-actions--embedded .btn-primary) {
+    width: 100%;
+  }
 }
 
 .admin-section-view {
