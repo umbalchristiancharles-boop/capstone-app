@@ -1,8 +1,8 @@
 <template>
   <div id="app" data-v-app>
     <router-view v-slot="{ Component, route }">
-      <transition :name="transitionName" mode="out-in" :key="route ? route.fullPath : ''">
-        <div class="route-view">
+      <transition :name="transitionName" mode="out-in">
+        <div class="route-view" :key="route ? (route.path === '/manager/logistics' ? route.path : route.fullPath) : ''">
           <component :is="Component" />
         </div>
       </transition>
