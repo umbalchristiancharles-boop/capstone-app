@@ -1750,17 +1750,26 @@ function onProfileUpdated(newData) {
   left: 0;
 }
 
-.supplier-panel-shell :deep(.admin-main) {
+.supplier-panel-shell :deep(.admin-layout--owner-sidebar-layout .admin-main) {
   display: block;
   width: 100%;
   min-width: 0;
   min-height: 100vh;
   margin: 0 0 0 156px;
-  padding: 82px 1.3rem 2rem;
+  margin-top: 66px !important;
+  padding: 1.25rem 1.3rem 2rem !important;
   box-sizing: border-box;
   overflow-x: hidden;
   overflow-y: auto;
 }
+
+@media (max-width: 1023px) {
+  .supplier-panel-shell :deep(.admin-layout--owner-sidebar-layout .admin-main) {
+    margin-top: 0 !important;
+    padding-top: 1.25rem !important;
+  }
+}
+
 .supplier-panel-shell :deep(.loading-overlay) {
   z-index: 100500 !important;
   background: rgba(0, 0, 0, .5);
