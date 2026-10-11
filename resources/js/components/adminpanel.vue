@@ -871,6 +871,26 @@ const router = useRouter()
 const activeRange = ref('today')
 const activeSection = ref('dashboard')
 const adminSidebarCollapsed = ref(false)
+let adminSidebarResizeObserver
+
+onMounted(() => {
+  const layout = document.querySelector('.admin-panel-shell .admin-layout')
+  const sidebar = layout?.querySelector(':scope > .admin-sidebar')
+  if (!layout || !sidebar || typeof ResizeObserver === 'undefined') return
+
+  const syncSidebarWidth = () => {
+    layout.style.setProperty('--admin-sidebar-width', `${sidebar.getBoundingClientRect().width}px`)
+  }
+
+  syncSidebarWidth()
+  adminSidebarResizeObserver = new ResizeObserver(syncSidebarWidth)
+  adminSidebarResizeObserver.observe(sidebar)
+})
+
+onUnmounted(() => {
+  adminSidebarResizeObserver?.disconnect()
+})
+
 const adminNotificationCounts = ref({ orders: 0, inventory: 0, announcements: 0 })
 const adminNotificationItems = computed(() => [
   { key: 'orders', label: 'Pending orders', count: adminNotificationCounts.value.orders },
@@ -3222,7 +3242,24 @@ h1, h2 {
     min-height: 0;
     overflow-x: hidden;
     overflow-y: hidden;
+    grid-template-columns: var(--admin-sidebar-width, 156px) minmax(0, 1fr) !important;
     grid-template-rows: 66px minmax(0, 1fr) !important;
+  }
+
+  .admin-panel-shell .admin-layout.admin-sidebar-collapsed {
+    grid-template-columns: 0 minmax(0, 1fr) !important;
+  }
+
+  .admin-panel-shell .admin-layout > .admin-sidebar {
+    max-width: min(320px, calc(100vw - 280px));
+  }
+
+  .admin-panel-shell .admin-layout > .admin-topbar {
+    left: var(--admin-sidebar-width, 156px) !important;
+  }
+
+  .admin-panel-shell .admin-layout.admin-sidebar-collapsed > .admin-topbar {
+    left: 0 !important;
   }
 
   .admin-panel-shell .admin-content-scroll {
@@ -3230,7 +3267,7 @@ h1, h2 {
     top: 66px;
     right: 0;
     bottom: 0;
-    left: 156px;
+    left: var(--admin-sidebar-width, 156px);
     z-index: 1;
     display: flex;
     flex-direction: column;
