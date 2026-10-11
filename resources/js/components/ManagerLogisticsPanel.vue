@@ -35,7 +35,15 @@
     </template>
 
     <template #main>
-      <Transition name="manager-logistics-section" mode="out-in">
+      <Transition
+        :css="false"
+        mode="out-in"
+        appear
+        @before-enter="prepareLogisticsSectionEnter"
+        @enter="animateLogisticsSectionEnter"
+        @leave="finishLogisticsSectionLeave"
+        @appear="animateLogisticsSectionEnter"
+      >
       <div :key="selectedSection" class="manager-logistics-section-view">
       <template v-if="selectedSection === 'overview'">
         <div id="logistics-overview" class="hr-stats-grid">
@@ -683,8 +691,58 @@ watch(
 function selectLogisticsSection(section) {
   selectedSection.value = section
   if (logisticsRoute.query.section !== section) {
-    logisticsRouter.replace({ query: { ...logisticsRoute.query, section } })
+    sessionStorage.setItem('suppressRouteOverlay', '1')
+    logisticsRouter.replace({ query: { ...logisticsRoute.query, section } }).catch((error) => {
+      sessionStorage.removeItem('suppressRouteOverlay')
+      console.error('Unable to update the Logistics section URL:', error)
+    })
   }
+}
+
+function prepareLogisticsSectionEnter(element) {
+  element.style.opacity = '0'
+  element.style.transform = 'translateY(10px)'
+}
+
+function animateLogisticsSectionEnter(element, done) {
+  animateLogisticsSection(element, [
+    { opacity: 0, transform: 'translateY(10px)' },
+    { opacity: 1, transform: 'translateY(0)' },
+  ], done)
+}
+
+function finishLogisticsSectionLeave(element, done) {
+  element.style.opacity = ''
+  element.style.transform = ''
+  done()
+}
+
+function animateLogisticsSection(element, keyframes, done) {
+  if (typeof element.animate !== 'function') {
+    element.style.opacity = ''
+    element.style.transform = ''
+    done()
+    return
+  }
+
+  const animation = element.animate(keyframes, {
+    duration: 220,
+    delay: 70,
+    easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+  })
+  let completed = false
+
+  const finish = () => {
+    if (completed) return
+    completed = true
+    animation.cancel()
+    element.style.opacity = ''
+    element.style.transform = ''
+    done()
+  }
+
+  animation.onfinish = finish
+  animation.oncancel = finish
 }
 
 const dashboardTotals = ref({ totalProducts: 0, lowStock: 0, pendingRequests: 0 })
