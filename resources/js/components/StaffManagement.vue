@@ -941,14 +941,25 @@ async function onResetPasswordClick(staffId) {
   background: #fffaf5;
   border: 1px solid #eadfd5;
   border-radius: 10px;
-  margin-bottom: 1.25rem;
+  margin: 0.75rem 0;
   box-shadow: 0 6px 18px rgba(61, 42, 31, 0.04);
 }
 
+.staff-management-page--embedded .branch-group {
+  margin: 0 0 0.75rem;
+}
+
 .staff-management-page--embedded .branch-header {
+  margin-bottom: 0.75rem;
   background: #f7f0ea;
   border: 1px solid #eadfd5;
   border-left: 4px solid #b66a3e;
+}
+
+.staff-management-page--embedded .loading-state,
+.staff-management-page--embedded .alert,
+.staff-management-page--embedded .empty-state {
+  margin: 0 0 0.75rem;
 }
 
 .staff-management-page--embedded .branch-count {

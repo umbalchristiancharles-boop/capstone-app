@@ -2162,6 +2162,11 @@ h1, h2 {
 .admin-feature-header--staff-management {
   align-items: center;
   gap: 1.25rem;
+  margin-bottom: 0;
+}
+
+.admin-panel-shell .admin-main:has(> .admin-staff-management-embedded) {
+  gap: 0.75rem;
 }
 
 .admin-staff-management-filters {
@@ -2980,6 +2985,10 @@ h1, h2 {
    header, KPI, and panel margins on top of one another. */
 .admin-panel-shell .admin-feature-header {
   margin-bottom: 0.5rem;
+}
+
+.admin-panel-shell .admin-feature-header--staff-management {
+  margin-bottom: 0;
 }
 
 .admin-panel-shell .admin-main > .admin-section-view {
