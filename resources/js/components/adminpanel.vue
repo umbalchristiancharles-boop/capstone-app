@@ -51,6 +51,7 @@
             <button class="admin-sidebar__logout" type="button" @click="askLogout">Logout</button>
           </div>
         </aside>
+        <div class="admin-content-scroll">
         <!-- LEFT: Announcements column -->
         <Transition name="admin-section" mode="out-in" appear>
         <aside v-if="activeSection === 'announcements'" id="admin-announcements" class="admin-left" :key="activeSection">
@@ -593,6 +594,7 @@
 
         </aside>
         </Transition>
+        </div>
       </section>
 
       <!-- ANNOUNCEMENT MODAL (Owner) -->
@@ -3001,7 +3003,7 @@ h1, h2 {
 
 .admin-panel-shell .admin-main > .admin-section-view > .overview-grid {
   margin-top: 0.5rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0;
 }
 
 .admin-panel-shell .admin-main > .panel-block,
@@ -3009,35 +3011,140 @@ h1, h2 {
   margin-bottom: 0.5rem;
 }
 
-.admin-panel-shell .admin-side {
-  gap: 0.5rem;
+.admin-panel-shell .admin-layout.admin-layout--dashboard > .admin-side {
+  gap: 0.375rem;
 }
 
 .admin-panel-shell .admin-side > .dashboard-top-products-panel,
 .admin-panel-shell .admin-side > .dashboard-low-stock-panel {
-  padding: 12px 14px 14px !important;
+  padding: 10px 12px 12px !important;
+  margin-bottom: 0 !important;
 }
 
 .admin-panel-shell .admin-side > .dashboard-top-products-panel > .panel-header,
 .admin-panel-shell .admin-side > .dashboard-low-stock-panel > .panel-header {
-  margin-bottom: 8px !important;
-  padding: 8px 10px !important;
+  margin-bottom: 6px !important;
+  padding: 7px 9px !important;
 }
 
 .admin-panel-shell .admin-side > .dashboard-top-products-panel > .panel-body,
 .admin-panel-shell .admin-side > .dashboard-low-stock-panel > .panel-body {
-  padding: 4px 10px 8px !important;
+  padding: 2px 8px 6px !important;
 }
 
 .admin-panel-shell .admin-side > .dashboard-top-products-panel .side-item,
 .admin-panel-shell .admin-side > .dashboard-low-stock-panel .side-item {
-  min-height: 32px;
-  padding: 8px 0 !important;
+  min-height: 28px;
+  padding: 6px 0 !important;
+}
+
+.admin-panel-shell .admin-layout.admin-layout--dashboard .admin-main > .admin-section-view > .overview-grid > .overview-card {
+  min-height: 84px;
+  padding: 0.8rem 0.9rem;
 }
 
 .admin-panel-shell .admin-side > .dashboard-low-stock-panel .side-item--alert .side-value {
   color: #dc2626 !important;
   font-weight: 700;
+}
+
+.admin-panel-shell .admin-main > .panel-block,
+.admin-panel-shell .admin-side > .panel-block {
+  padding: 12px 14px !important;
+}
+
+.admin-panel-shell .panel-block > .panel-header {
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px !important;
+  padding: 8px 10px !important;
+}
+
+.admin-panel-shell .panel-block > .panel-header h2 {
+  font-size: 1.05rem;
+  line-height: 1.35;
+}
+
+.admin-panel-shell .panel-block > .panel-body {
+  padding: 6px 10px 8px !important;
+}
+
+.admin-panel-shell .admin-side > .dashboard-top-products-panel,
+.admin-panel-shell .admin-side > .dashboard-low-stock-panel {
+  padding: 12px 14px !important;
+}
+
+.admin-panel-shell .admin-side > .dashboard-top-products-panel > .panel-header,
+.admin-panel-shell .admin-side > .dashboard-low-stock-panel > .panel-header {
+  padding: 8px 10px !important;
+}
+
+.admin-panel-shell .admin-side > .dashboard-top-products-panel > .panel-body,
+.admin-panel-shell .admin-side > .dashboard-low-stock-panel > .panel-body {
+  padding: 6px 10px 8px !important;
+}
+
+.admin-panel-shell .panel-body--list,
+.admin-panel-shell .panel-body--table {
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.admin-panel-shell .table-header,
+.admin-panel-shell .table-row {
+  align-items: center;
+  gap: 10px;
+  padding: 8px 6px;
+}
+
+.admin-panel-shell .table-header {
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.admin-panel-shell .queue-item,
+.admin-panel-shell .side-item {
+  min-height: 36px;
+  gap: 12px;
+  padding: 8px 6px !important;
+  line-height: 1.45;
+}
+
+.admin-panel-shell .admin-side > .dashboard-top-products-panel .side-item,
+.admin-panel-shell .admin-side > .dashboard-low-stock-panel .side-item {
+  min-height: 36px;
+  padding: 8px 6px !important;
+}
+
+.admin-panel-shell .queue-meta,
+.admin-panel-shell .product-request-meta,
+.admin-panel-shell .supplier-review-details,
+.admin-panel-shell .auto-clockout-help,
+.admin-panel-shell .landing-images-help {
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.admin-panel-shell .side-value {
+  font-size: 0.88rem;
+}
+
+.admin-panel-shell .panel-action,
+.admin-panel-shell .range-tab {
+  font-size: 0.84rem;
+}
+
+.admin-panel-shell .panel-action {
+  padding: 7px 11px;
+}
+
+.admin-panel-shell .admin-eyebrow {
+  font-size: 0.72rem;
+}
+
+.admin-panel-shell .admin-layout.admin-layout--dashboard .admin-main > .admin-section-view > .overview-grid > .overview-card {
+  min-height: 88px;
+  padding: 0.9rem 1rem;
 }
 
 @media (min-width: 768px) {
@@ -3052,13 +3159,128 @@ h1, h2 {
   }
 
   .admin-panel-shell .admin-layout.admin-layout--dashboard > .admin-side {
-    margin-top: -1rem !important;
+    margin-top: -3.5rem !important;
   }
 }
 
 @media (max-width: 767px) {
+  .admin-panel-shell .admin-main > .panel-block,
+  .admin-panel-shell .admin-side > .panel-block {
+    padding: 10px 12px !important;
+  }
+
+  .admin-panel-shell .panel-block > .panel-header {
+    padding: 7px 9px !important;
+  }
+
+  .admin-panel-shell .panel-block > .panel-body {
+    padding: 5px 8px 7px !important;
+  }
+
+  .admin-panel-shell .admin-side > .dashboard-top-products-panel,
+  .admin-panel-shell .admin-side > .dashboard-low-stock-panel {
+    padding: 10px 12px !important;
+  }
+
+  .admin-panel-shell .admin-side > .dashboard-top-products-panel > .panel-body,
+  .admin-panel-shell .admin-side > .dashboard-low-stock-panel > .panel-body {
+    padding: 5px 8px 7px !important;
+  }
+
+  .admin-panel-shell .table-header,
+  .admin-panel-shell .table-row {
+    gap: 8px;
+    padding: 8px 4px;
+  }
+
   .admin-panel-shell .admin-layout.admin-layout--dashboard > .admin-side {
     margin-top: 0 !important;
+  }
+}
+
+@media (min-width: 768px) {
+  :global(html:has(.admin-panel-shell)),
+  :global(body:has(.admin-panel-shell)),
+  :global(#app:has(.admin-panel-shell)) {
+    height: 100%;
+    overflow: hidden !important;
+  }
+
+  .admin-panel-shell {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden !important;
+  }
+
+  .admin-panel-shell .admin-page {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .admin-panel-shell .admin-layout {
+    height: 100%;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: hidden;
+    grid-template-rows: 66px minmax(0, 1fr) !important;
+  }
+
+  .admin-panel-shell .admin-content-scroll {
+    position: fixed;
+    top: 66px;
+    right: 0;
+    bottom: 0;
+    left: 156px;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-gutter: stable;
+    transition: left 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .admin-panel-shell .admin-sidebar-collapsed > .admin-content-scroll {
+    left: 0;
+  }
+
+  .admin-panel-shell .admin-content-scroll > .admin-main,
+  .admin-panel-shell .admin-content-scroll > .admin-left,
+  .admin-panel-shell .admin-content-scroll > .admin-side {
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    margin: 0 !important;
+  }
+
+  .admin-panel-shell .admin-content-scroll > .admin-main {
+    padding: 16px 16px 0 !important;
+  }
+
+  .admin-panel-shell .admin-content-scroll > .admin-side {
+    padding: 0 16px 16px !important;
+  }
+
+  .admin-panel-shell .admin-content-scroll > .admin-side:has(> .dashboard-top-products-panel) {
+    padding-top: 12px !important;
+  }
+
+  .admin-panel-shell .admin-content-scroll > .admin-left {
+    padding: 16px !important;
+  }
+
+  .admin-panel-shell .admin-sidebar {
+    max-height: 100dvh !important;
+    height: 100dvh !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .admin-panel-shell .admin-content-scroll {
+    display: contents;
   }
 }
 </style>
