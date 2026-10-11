@@ -864,7 +864,7 @@
 </template>
 
 <script setup>
-import { createApp, h, ref, onMounted, onUnmounted, computed } from 'vue'
+import { createApp, h, ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import LoadingOverlay from './LoadingOverlay.vue'
@@ -882,6 +882,8 @@ const activeRange = ref('today')
 const activeSection = ref('dashboard')
 const adminSidebarCollapsed = ref(false)
 let adminSidebarResizeObserver
+let adminNotificationRefreshTimer
+let adminNotificationRequestId = 0
 
 onMounted(() => {
   const layout = document.querySelector('.admin-panel-shell .admin-layout')
@@ -1120,36 +1122,74 @@ async function fetchAnnouncements() {
   loadingAnnouncements.value = true
   try {
     const res = await axios.get('/api/announcements', { withCredentials: true })
-    if (res.data && res.data.ok) announcements.value = res.data.announcements || []
+    if (!res.data?.ok) throw new Error(res.data?.message || 'Unable to load announcements.')
+    announcements.value = res.data.announcements || []
+    return true
   } catch (e) {
-    // ignore non-critical errors
+    console.error('Error loading announcements:', e)
+    showToast(e.response?.data?.message || 'Unable to load announcements.', 'error')
+    return false
   } finally {
     loadingAnnouncements.value = false
   }
 }
 
 async function loadAdminNotifications() {
+  const requestId = ++adminNotificationRequestId
   try {
     const res = await axios.get('/api/panel-notifications', { withCredentials: true })
-    if (res.data?.ok) {
-      adminNotificationCounts.value = {
-        orders: Number(res.data.counts?.admin || 0),
-        inventory: Number(res.data.counts?.inventory || 0),
-        announcements: Number(res.data.summary?.announcements || 0),
-      }
+    if (!res.data?.ok) throw new Error(res.data?.message || 'Unable to load notification counts.')
+    if (requestId !== adminNotificationRequestId) return
+
+    adminNotificationCounts.value = {
+      orders: Number(res.data.counts?.admin || 0),
+      inventory: Number(res.data.counts?.inventory || 0),
+      announcements: Number(res.data.summary?.announcements || 0),
     }
   } catch (e) {
     console.error('Error loading admin notifications:', e)
   }
 }
 
-function openAdminNotifications(type) {
+async function markAdminNotificationRead(category) {
+  try {
+    const res = await axios.post('/api/panel-notifications/read', { category }, { withCredentials: true })
+    if (!res.data?.ok) throw new Error(res.data?.message || 'Unable to mark notification as read.')
+    await loadAdminNotifications()
+  } catch (e) {
+    console.error(`Error marking ${category} notifications as read:`, e)
+    showToast(e.response?.data?.message || 'Unable to update notification read status.', 'error')
+  }
+}
+
+async function openAdminNotifications(type) {
+  const categoryByType = {
+    orders: 'admin',
+    inventory: 'inventory',
+    announcements: 'announcements',
+  }
+  const category = categoryByType[type]
+  if (!category) return
+
   if (type === 'orders') activeSection.value = 'orders'
   if (type === 'inventory') activeSection.value = 'inventory'
   if (type === 'announcements') {
     showAdminAnnouncementNotifications.value = true
-    fetchAnnouncements()
+    if (!await fetchAnnouncements()) return
   }
+
+  await markAdminNotificationRead(category)
+}
+
+watch(activeSection, async (section) => {
+  loadAdminNotifications()
+  if (section === 'announcements' && await fetchAnnouncements()) {
+    await markAdminNotificationRead('announcements')
+  }
+})
+
+function refreshAdminNotificationsWhenVisible() {
+  if (document.visibilityState === 'visible') loadAdminNotifications()
 }
 
 // Ensure a fresh CSRF cookie/header is present before mutating requests
@@ -1568,6 +1608,9 @@ async function onAvatarChange(event) {
 // Auto-upload pending avatar after reload (branch manager panel)
 onMounted(async () => {
   loadAdminNotifications()
+  window.addEventListener('focus', refreshAdminNotificationsWhenVisible)
+  document.addEventListener('visibilitychange', refreshAdminNotificationsWhenVisible)
+  adminNotificationRefreshTimer = window.setInterval(refreshAdminNotificationsWhenVisible, 30000)
 
   // Mark initial mount complete first (before loading dashboard)
   isInitialMount.value = false
@@ -1897,6 +1940,9 @@ function formatDate(dateString) {
 
   onUnmounted(() => {
     window.removeEventListener('storage', handleOwnerPermissionsStorage)
+    window.removeEventListener('focus', refreshAdminNotificationsWhenVisible)
+    document.removeEventListener('visibilitychange', refreshAdminNotificationsWhenVisible)
+    window.clearInterval(adminNotificationRefreshTimer)
   })
 
 </script>

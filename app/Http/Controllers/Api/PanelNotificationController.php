@@ -102,6 +102,9 @@ class PanelNotificationController extends Controller
             $orderPendingQuery->where('branch_id', $branchId);
         }
         if ($hasModule('admin')) {
+            if ($adminReadAt = $readAt('admin')) {
+                $orderPendingQuery->where('updated_at', '>', $adminReadAt);
+            }
             $counts['admin'] = (int) $orderPendingQuery->count();
         }
 
@@ -145,6 +148,9 @@ class PanelNotificationController extends Controller
             $inventoryPendingQuery->where('branch_id', $branchId);
         }
         if ($hasModule('inventory')) {
+            if ($inventoryReadAt = $readAt('inventory')) {
+                $inventoryPendingQuery->where('updated_at', '>', $inventoryReadAt);
+            }
             $counts['inventory'] = (int) $inventoryPendingQuery->count();
         }
 
@@ -278,7 +284,7 @@ class PanelNotificationController extends Controller
     public function markRead(Request $request)
     {
         $validated = $request->validate([
-            'category' => ['required', Rule::in(['announcements', 'logistics', 'supplier', 'branchPendingOwner'])],
+            'category' => ['required', Rule::in(['admin', 'inventory', 'announcements', 'logistics', 'supplier', 'branchPendingOwner'])],
         ]);
 
         $now = now();
