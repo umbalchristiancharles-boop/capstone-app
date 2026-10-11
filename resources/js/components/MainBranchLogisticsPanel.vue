@@ -1,6 +1,11 @@
 <template>
-  <div class="main-branch-page" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
-    <aside class="logistics-sidebar">
+  <div
+    ref="pageLayout"
+    class="main-branch-page"
+    :class="{ 'sidebar-collapsed': sidebarCollapsed, 'sidebar-resizing': sidebarResizing }"
+    @pointerdown.capture="startSidebarResizeTracking"
+  >
+    <aside ref="logisticsSidebar" class="logistics-sidebar" @pointerdown.capture="startSidebarSwipe" @touchstart.passive="startSidebarTouchSwipe" @touchend.passive="finishSidebarTouchSwipe" @touchcancel="cancelSidebarSwipe">
       <PanelSidebarBrand />
       <nav class="logistics-sidebar__nav" aria-label="Logistics navigation">
         <a class="logistics-sidebar__item" :class="{ active: selectedSection === 'overview' }" href="#logistics-overview" @click.prevent="selectedSection = 'overview'">Logistics Overview</a>
@@ -17,7 +22,7 @@
 
     <div class="logistics-workspace">
       <header class="logistics-topbar">
-        <button class="logistics-menu-button" type="button" :aria-label="sidebarCollapsed ? 'Show logistics menu' : 'Hide logistics menu'" :aria-expanded="(!sidebarCollapsed).toString()" @click="sidebarCollapsed = !sidebarCollapsed">☰</button>
+        <button v-if="sidebarCollapsed" class="logistics-menu-button" type="button" aria-label="Show logistics menu" aria-expanded="false" @click="reopenSidebar">☰</button>
         <div class="logistics-topbar__spacer"></div>
         <div class="header-profile-wrapper">
           <div class="header-profile-btn" aria-label="Current account">
@@ -47,35 +52,64 @@
         <Transition name="logistics-section" mode="out-in">
         <div :key="selectedSection" class="logistics-section-view">
         <div v-if="selectedSection === 'attendance'" class="logistics-attendance-view">
-          <section id="attendance" class="attendance-card logistics-attendance-card">
-            <div class="attendance-header">
-              <span class="attendance-title">Attendance</span>
-              <span :class="['attendance-status-badge', attendanceStatus.is_clocked_in ? 'status-on-duty' : 'status-off-duty']">
+          <section id="attendance" class="logistics-attendance-card" aria-labelledby="logistics-attendance-title">
+            <header class="logistics-attendance-card__header">
+              <div>
+                <h2 id="logistics-attendance-title">Today's Attendance</h2>
+                <p>Review your current shift and attendance times.</p>
+              </div>
+              <span class="logistics-attendance-card__status" :class="attendanceStatus.is_clocked_in ? 'is-on-duty' : 'is-off-duty'">
                 {{ attendanceStatus.is_clocked_in ? 'On Duty' : 'Off Duty' }}
               </span>
+            </header>
+
+            <div class="logistics-attendance-card__body">
+              <section class="logistics-attendance-card__summary" aria-labelledby="logistics-attendance-summary-title">
+                <div>
+                  <h3 id="logistics-attendance-summary-title">Shift summary</h3>
+                  <p>{{ attendanceStatus.is_clocked_in ? 'Your shift is currently in progress.' : 'Your shift is currently not active.' }}</p>
+                </div>
+                <div class="logistics-attendance-card__times">
+                  <div class="logistics-attendance-card__time">
+                    <span>Clock In</span>
+                    <strong>{{ attendanceStatus.clock_in_time || '—' }}</strong>
+                  </div>
+                  <div class="logistics-attendance-card__time">
+                    <span>Clock Out</span>
+                    <strong>{{ attendanceStatus.clock_out_time || '—' }}</strong>
+                  </div>
+                  <div v-if="attendanceStatus.hours_worked > 0" class="logistics-attendance-card__time">
+                    <span>Hours Worked</span>
+                    <strong>{{ attendanceStatus.hours_worked }} hrs</strong>
+                  </div>
+                </div>
+              </section>
+
+              <section class="logistics-attendance-card__actions" aria-labelledby="logistics-attendance-actions-title">
+                <div>
+                  <h3 id="logistics-attendance-actions-title">Attendance actions</h3>
+                  <p>Clock in or out when you are ready.</p>
+                </div>
+                <div class="logistics-attendance-card__buttons">
+                  <button type="button" @click="performClockIn" :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockInGeofencing || locationLoading">
+                    {{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock In' }}
+                  </button>
+                  <button type="button" @click="performClockOut" :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockOut || !canClockInGeofencing || locationLoading">
+                    {{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock Out' }}
+                  </button>
+                </div>
+
+                <p v-if="locationError" class="logistics-attendance-card__message is-error" role="status">{{ locationError }}</p>
+                <p v-else-if="userLocation && canClockInGeofencing" class="logistics-attendance-card__message is-success" role="status">✓ Location verified</p>
+                <p v-else-if="!canClockInGeofencing && geofencingMessage" class="logistics-attendance-card__message is-error" role="status">{{ geofencingMessage }}</p>
+                <p v-else-if="locationLoading" class="logistics-attendance-card__message" role="status">Checking your location...</p>
+
+                <p v-if="!canClockOut && attendanceStatus.is_clocked_in" class="logistics-attendance-card__message is-warning" role="status">
+                  Cannot clock out before {{ scheduledTimeOut }}.
+                </p>
+                <p v-if="attendanceMessage" class="logistics-attendance-card__message" :class="`is-${attendanceMessageType}`" role="status">{{ attendanceMessage }}</p>
+              </section>
             </div>
-
-            <div class="attendance-times" v-if="attendanceStatus.clock_in_time || attendanceStatus.clock_out_time">
-              <div class="time-row"><span class="time-label">Clock In:</span><span class="time-value">{{ attendanceStatus.clock_in_time || '-' }}</span></div>
-              <div class="time-row"><span class="time-label">Clock Out:</span><span class="time-value">{{ attendanceStatus.clock_out_time || '-' }}</span></div>
-              <div class="time-row" v-if="attendanceStatus.hours_worked > 0"><span class="time-label">Hours:</span><span class="time-value">{{ attendanceStatus.hours_worked }} hrs</span></div>
-            </div>
-
-            <div class="attendance-buttons">
-              <button @click="performClockIn" :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockInGeofencing || locationLoading" class="btn-clock-in">
-                {{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock In' }}
-              </button>
-              <button @click="performClockOut" :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockOut || !canClockInGeofencing || locationLoading" class="btn-clock-out" :class="{ 'btn-disabled': !canClockOut && attendanceStatus.is_clocked_in }">
-                {{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock Out' }}
-              </button>
-            </div>
-
-            <div v-if="locationError" class="geofencing-status geofencing-error"><span class="status-icon">!</span><span>{{ locationError }}</span></div>
-            <div v-else-if="userLocation && canClockInGeofencing" class="geofencing-status geofencing-success"><span class="status-icon">✓</span><span>Location verified</span></div>
-            <div v-else-if="!canClockInGeofencing && geofencingMessage" class="geofencing-status geofencing-error"><span class="status-icon">LOCK</span><span>{{ geofencingMessage }}</span></div>
-
-            <div v-if="!canClockOut && attendanceStatus.is_clocked_in" class="clockout-restriction"><span class="restriction-icon">LOCK</span><span>Cannot clock out before {{ scheduledTimeOut }}</span></div>
-            <div v-if="attendanceMessage" :class="['attendance-message', attendanceMessageType]">{{ attendanceMessage }}</div>
           </section>
         </div>
         <section v-if="selectedSection === 'overview'" class="overview-grid">
@@ -320,7 +354,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref, watch, computed } from 'vue'
+import { onMounted, onBeforeUnmount, ref, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { showToast } from './toastStore'
@@ -329,9 +363,16 @@ import PanelSidebarBrand from './PanelSidebarBrand.vue'
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
 
 const router = useRouter()
+const pageLayout = ref(null)
+const logisticsSidebar = ref(null)
 const profile = ref({})
 const selectedSection = ref('overview')
 const sidebarCollapsed = ref(false)
+const sidebarResizing = ref(false)
+let sidebarStyleObserver
+let sidebarSwipeStart = null
+let sidebarResizeStart = null
+let expandedSidebarWidth = 156
 const showAccountInfoModal = ref(false)
 const showLogoutConfirm = ref(false)
 const isLoggingOut = ref(false)
@@ -554,7 +595,151 @@ function formatProcStatus(status, budgetApproved) {
   return (status || '').toUpperCase()
 }
 
+function setWorkspaceSidebarWidth(width) {
+  if (!pageLayout.value || !Number.isFinite(width)) return
+  pageLayout.value.style.setProperty('--logistics-sidebar-width', `${Math.max(0, width)}px`)
+}
+
+function startSidebarResizeTracking(event) {
+  if (event.target instanceof Element && event.target.closest('.panel-sidebar-resize-handle')) {
+    event.preventDefault()
+    event.stopPropagation()
+    sidebarResizing.value = true
+    sidebarResizeStart = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startWidth: logisticsSidebar.value?.getBoundingClientRect().width || expandedSidebarWidth
+    }
+    window.addEventListener('pointermove', resizeSidebarFromHandle, true)
+    window.addEventListener('pointerup', finishSidebarHandleResize, true)
+    window.addEventListener('pointercancel', finishSidebarHandleResize, true)
+  }
+}
+
+function resizeSidebarFromHandle(event) {
+  if (!sidebarResizeStart || event.pointerId !== sidebarResizeStart.pointerId) return
+  const nextWidth = sidebarResizeStart.startWidth + event.clientX - sidebarResizeStart.startX
+
+  if (nextWidth <= 105) {
+    expandedSidebarWidth = sidebarResizeStart.startWidth
+    sidebarCollapsed.value = true
+    if (logisticsSidebar.value) {
+      logisticsSidebar.value.style.width = '0px'
+      logisticsSidebar.value.style.minWidth = '0px'
+    }
+    setWorkspaceSidebarWidth(0)
+    finishSidebarHandleResize()
+    return
+  }
+
+  const width = Math.min(320, Math.max(120, nextWidth))
+  expandedSidebarWidth = width
+  if (logisticsSidebar.value) {
+    logisticsSidebar.value.style.width = `${width}px`
+    logisticsSidebar.value.style.minWidth = `${width}px`
+  }
+  setWorkspaceSidebarWidth(width)
+}
+
+function finishSidebarHandleResize() {
+  sidebarResizeStart = null
+  sidebarResizing.value = false
+  window.removeEventListener('pointermove', resizeSidebarFromHandle, true)
+  window.removeEventListener('pointerup', finishSidebarHandleResize, true)
+  window.removeEventListener('pointercancel', finishSidebarHandleResize, true)
+}
+
+function reopenSidebar() {
+  if (logisticsSidebar.value) {
+    logisticsSidebar.value.style.width = `${expandedSidebarWidth}px`
+    logisticsSidebar.value.style.minWidth = `${expandedSidebarWidth}px`
+  }
+  setWorkspaceSidebarWidth(expandedSidebarWidth)
+  sidebarCollapsed.value = false
+}
+
+function stopSidebarResizeTracking() {
+  sidebarResizing.value = false
+}
+
+function canStartSidebarSwipe(target) {
+  if (sidebarCollapsed.value || sidebarResizing.value) return false
+  if (target instanceof Element && target.closest('.panel-sidebar-resize-handle')) return false
+  return true
+}
+
+function startSidebarSwipe(event) {
+  if (!canStartSidebarSwipe(event.target)) return
+  sidebarSwipeStart = {
+    pointerId: event.pointerId,
+    x: event.clientX,
+    y: event.clientY
+  }
+}
+
+function startSidebarTouchSwipe(event) {
+  if (!canStartSidebarSwipe(event.target) || !event.changedTouches.length) return
+  const touch = event.changedTouches[0]
+  sidebarSwipeStart = {
+    pointerId: touch.identifier,
+    x: touch.clientX,
+    y: touch.clientY,
+    touch: true
+  }
+}
+
+function finishSidebarSwipe(event) {
+  if (!sidebarSwipeStart || sidebarSwipeStart.touch || event.pointerId !== sidebarSwipeStart.pointerId) return
+
+  const deltaX = event.clientX - sidebarSwipeStart.x
+  const deltaY = event.clientY - sidebarSwipeStart.y
+  sidebarSwipeStart = null
+
+  if (deltaX <= -55 && Math.abs(deltaY) < 100) {
+    sidebarCollapsed.value = true
+  }
+}
+
+function trackSidebarSwipe(event) {
+  if (!sidebarSwipeStart || sidebarSwipeStart.touch || event.pointerId !== sidebarSwipeStart.pointerId) return
+  const deltaX = event.clientX - sidebarSwipeStart.x
+  const deltaY = event.clientY - sidebarSwipeStart.y
+  if (deltaX <= -55 && Math.abs(deltaY) < Math.abs(deltaX)) {
+    sidebarSwipeStart = null
+    sidebarCollapsed.value = true
+  }
+}
+
+function finishSidebarTouchSwipe(event) {
+  if (!sidebarSwipeStart?.touch || !event.changedTouches.length) return
+  const touch = Array.from(event.changedTouches).find(({ identifier }) => identifier === sidebarSwipeStart.pointerId)
+  if (!touch) return
+
+  const deltaX = touch.clientX - sidebarSwipeStart.x
+  const deltaY = touch.clientY - sidebarSwipeStart.y
+  sidebarSwipeStart = null
+  if (deltaX <= -55 && Math.abs(deltaY) < 100) sidebarCollapsed.value = true
+}
+
+function cancelSidebarSwipe() {
+  sidebarSwipeStart = null
+}
+
 onMounted(async () => {
+  if (logisticsSidebar.value) {
+    setWorkspaceSidebarWidth(logisticsSidebar.value.getBoundingClientRect().width)
+    sidebarStyleObserver = new MutationObserver(() => {
+      const inlineWidth = Number.parseFloat(logisticsSidebar.value?.style.width || '')
+      if (Number.isFinite(inlineWidth)) setWorkspaceSidebarWidth(inlineWidth)
+    })
+    sidebarStyleObserver.observe(logisticsSidebar.value, { attributes: true, attributeFilter: ['style'] })
+  }
+  window.addEventListener('pointerup', stopSidebarResizeTracking, true)
+  window.addEventListener('pointercancel', stopSidebarResizeTracking, true)
+  window.addEventListener('pointerup', finishSidebarSwipe, true)
+  window.addEventListener('pointercancel', cancelSidebarSwipe, true)
+  window.addEventListener('pointermove', trackSidebarSwipe, true)
+
   await loadProfile()
   await loadMetrics()
   await loadPanelNotifications()
@@ -570,6 +755,16 @@ onMounted(async () => {
   }
   // fetch pending product requests for logistics approval
   await fetchPendingProductRequests().catch(()=>{})
+})
+
+onBeforeUnmount(() => {
+  sidebarStyleObserver?.disconnect()
+  finishSidebarHandleResize()
+  window.removeEventListener('pointerup', stopSidebarResizeTracking, true)
+  window.removeEventListener('pointercancel', stopSidebarResizeTracking, true)
+  window.removeEventListener('pointerup', finishSidebarSwipe, true)
+  window.removeEventListener('pointercancel', cancelSidebarSwipe, true)
+  window.removeEventListener('pointermove', trackSidebarSwipe, true)
 })
 
 async function fetchAnnouncements() {
@@ -1296,7 +1491,12 @@ watch(selectedBranch, async () => {
 }
 .logistics-section-view > .panel-section + .panel-section { margin-top: 18px; }
 
-.logistics-attendance-view { width: min(100%, 760px); margin: 0 auto 1.25rem; }
+.logistics-attendance-view {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  margin: 0 0 1.25rem;
+}
 .logistics-attendance-card {
   display: flex;
   flex-direction: column;
@@ -1427,5 +1627,385 @@ watch(selectedBranch, async () => {
 @keyframes logistics-logo-bounce {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-6px); }
+}
+
+/* Keep the workspace and fixed topbar aligned to the resizable sidebar. */
+.main-branch-page {
+  --logistics-sidebar-width: 156px;
+  overflow-x: clip;
+}
+
+.logistics-sidebar {
+  background: #f2e9e1;
+  background-color: #f2e9e1;
+  justify-content: flex-start;
+  gap: 1rem;
+  touch-action: pan-y;
+  z-index: 30;
+}
+
+.logistics-sidebar__footer {
+  margin-top: auto;
+}
+
+.logistics-workspace {
+  width: calc(100% - var(--logistics-sidebar-width, 156px));
+  margin-left: var(--logistics-sidebar-width, 156px);
+  transition: margin-left 260ms cubic-bezier(.22, 1, .36, 1), width 260ms cubic-bezier(.22, 1, .36, 1);
+}
+
+.logistics-topbar {
+  left: var(--logistics-sidebar-width, 156px);
+  width: calc(100% - var(--logistics-sidebar-width, 156px));
+  transition: left 260ms cubic-bezier(.22, 1, .36, 1), width 260ms cubic-bezier(.22, 1, .36, 1);
+}
+
+.main-branch-page.sidebar-resizing .logistics-workspace,
+.main-branch-page.sidebar-resizing .logistics-topbar,
+.main-branch-page.sidebar-resizing .logistics-sidebar {
+  transition: none !important;
+}
+
+.main-branch-page.sidebar-collapsed .logistics-sidebar {
+  width: 0 !important;
+  min-width: 0 !important;
+}
+
+.main-branch-page.sidebar-collapsed .logistics-workspace {
+  width: 100%;
+  margin-left: 0;
+}
+
+.main-branch-page.sidebar-collapsed .logistics-topbar {
+  left: 0;
+  width: 100%;
+}
+
+.logistics-feature-header {
+  padding: 18px 20px;
+  border: 1px solid #f0c5a2;
+  border-top: 4px solid #f97316;
+  border-radius: 14px;
+  background: linear-gradient(115deg, #fff0e2 0%, #fff8f1 58%, #fffaf7 100%);
+  box-shadow: 0 5px 14px rgba(145, 76, 31, 0.08);
+}
+
+.logistics-feature-header .logistics-eyebrow {
+  color: #a94f16;
+}
+
+.logistics-feature-header h1 {
+  color: #243447;
+}
+
+.logistics-feature-header .logistics-refresh-button {
+  flex: 0 0 auto;
+}
+
+.main-col > .panel-section,
+.logistics-section-view > .panel-section {
+  padding: 18px;
+}
+
+.main-col .section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  margin: 0 0 8px;
+  padding: 9px 13px;
+  border: 1px solid #e7e5e4;
+  border-radius: 9px;
+  background: #f8fafc;
+  color: #243447;
+  font-size: 18px;
+  line-height: 1.35;
+}
+
+.main-col .section-title .panel-badge {
+  position: static;
+  flex: 0 0 auto;
+  min-width: 22px;
+  height: 22px;
+  box-shadow: none;
+}
+
+.main-col .section-description {
+  margin: 0 0 12px;
+  color: #806d60;
+}
+
+.logistics-attendance-card .attendance-header {
+  margin: -0.85rem -0.95rem 0;
+  padding: 12px 15px;
+  border-bottom: 1px solid #eadfd4;
+  border-radius: 13px 13px 0 0;
+  background: #fff;
+}
+
+.logistics-attendance-card .attendance-title {
+  color: #42210b;
+}
+
+.logistics-account-header {
+  border-radius: 20px 20px 0 0;
+  border-bottom-color: #eadfd4;
+  background: #fff;
+}
+
+.logistics-account-header h3 {
+  color: #42210b;
+}
+
+.data-table th {
+  background: #fff1e5;
+  color: #8f4b1e;
+}
+
+.main-col #inventory-monitor .status-low {
+  background: #dc2626;
+  color: #fff;
+  font-weight: 700;
+}
+
+.logistics-attendance-card {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 16px 18px 18px;
+  border: 1px solid #eadfd4;
+  border-radius: 15px;
+  background: #fff;
+  box-shadow: 0 7px 18px rgba(97, 69, 45, 0.08);
+}
+
+.logistics-attendance-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0;
+  padding: 0 0 13px;
+  border: 0;
+  border-bottom: 1px solid #e7e5e4;
+  border-radius: 0;
+  background: transparent;
+}
+
+.logistics-attendance-card__header h2,
+.logistics-attendance-card__summary h3,
+.logistics-attendance-card__actions h3 {
+  margin: 0;
+  color: #42210b;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.logistics-attendance-card__header p,
+.logistics-attendance-card__summary p,
+.logistics-attendance-card__actions > div:first-child p {
+  margin: 4px 0 0;
+  color: #806d60;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.logistics-attendance-card__status {
+  flex: 0 0 auto;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.logistics-attendance-card__status.is-on-duty {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.logistics-attendance-card__status.is-off-duty {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.logistics-attendance-card__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 1fr);
+  gap: 14px;
+  padding-top: 12px;
+}
+
+.logistics-attendance-card__summary,
+.logistics-attendance-card__actions {
+  min-width: 0;
+  padding: 15px;
+  border: 1px solid #e7e5e4;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.logistics-attendance-card__times {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.logistics-attendance-card__time {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid #e7e5e4;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.logistics-attendance-card__time span {
+  color: #806d60;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.logistics-attendance-card__time strong {
+  color: #42210b;
+  font-size: 17px;
+  line-height: 1.25;
+}
+
+.logistics-attendance-card__buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.logistics-attendance-card__buttons button {
+  flex: 1 1 0;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid #243447;
+  border-radius: 10px;
+  background: #243447;
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color 160ms ease, transform 160ms ease, opacity 160ms ease;
+}
+
+.logistics-attendance-card__buttons button + button {
+  border-color: #b96b63;
+  background: #b96b63;
+}
+
+.logistics-attendance-card__buttons button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(0.95);
+}
+
+.logistics-attendance-card__buttons button:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+.logistics-attendance-card__message {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 9px;
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.logistics-attendance-card__message.is-success {
+  border-color: #9be6b0;
+  background: #eaf7e7;
+  color: #16834a;
+}
+
+.logistics-attendance-card__message.is-error {
+  border-color: #f2c4c4;
+  background: #fff0f0;
+  color: #a33b3b;
+}
+
+.logistics-attendance-card__message.is-warning {
+  border-color: #f0d6a6;
+  background: #fff8e8;
+  color: #8a5a12;
+}
+
+@media (max-width: 768px) {
+  .logistics-feature-header {
+    padding: 15px;
+  }
+
+  .main-col > .panel-section,
+  .logistics-section-view > .panel-section {
+    padding: 14px;
+  }
+
+  .main-col .section-title {
+    min-height: 40px;
+    padding: 8px 10px;
+    font-size: 16px;
+  }
+
+  .logistics-attendance-card {
+    padding: 14px;
+  }
+
+  .logistics-attendance-card__body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .logistics-attendance-card__summary,
+  .logistics-attendance-card__actions {
+    padding: 14px;
+  }
+
+  .logistics-workspace {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .logistics-topbar {
+    left: 0;
+    width: 100%;
+  }
+}
+
+@media (max-width: 900px) {
+  .logistics-attendance-card__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 460px) {
+  .logistics-attendance-card__header {
+    align-items: flex-start;
+  }
+
+  .logistics-attendance-card__status {
+    padding: 6px 9px;
+    font-size: 10px;
+  }
+
+  .logistics-attendance-card__times {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .logistics-attendance-card__buttons {
+    flex-direction: column;
+  }
 }
 </style>
