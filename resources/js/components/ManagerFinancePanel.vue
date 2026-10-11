@@ -7,6 +7,7 @@
       class="finance-sidebar"
       :aria-hidden="sidebarCollapsed"
       @pointerdown="startFinanceSidebarSwipe"
+      @touchstart.passive="startFinanceSidebarTouch"
       @transitionend="finishFinanceSidebarTransition"
     >
       <PanelSidebarBrand />
@@ -45,7 +46,7 @@
     <div class="finance-main-panel">
       <header class="finance-main-header">
         <button
-          v-if="!props.isMainBranchFinance || (sidebarCollapsed && !sidebarTransitioning)"
+          v-if="sidebarCollapsed && !sidebarTransitioning"
           class="finance-hamburger"
           :aria-label="sidebarCollapsed ? 'Show menu' : 'Hide menu'"
           :aria-expanded="(!sidebarCollapsed).toString()"
@@ -665,11 +666,12 @@ const showAccountInfoModal = ref(false)
   const sidebarCollapsed = ref(false)
   const sidebarTransitioning = ref(false)
   let financeSidebarSwipeStart = null
+  let financeSidebarTouchStart = null
   let financeSidebarTransitionTimeout
   let financeSidebarSwipeClickTimeout
 
   const closeFinanceSidebarOnNarrowViewport = () => {
-    if (props.isMainBranchFinance && window.innerWidth <= 900) {
+    if (window.innerWidth <= 900) {
       sidebarCollapsed.value = true
     }
   }
@@ -691,13 +693,61 @@ const showAccountInfoModal = ref(false)
   }
 
   const startFinanceSidebarSwipe = (event) => {
-    if (!props.isMainBranchFinance || sidebarCollapsed.value || !event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0)) return
+    if (sidebarCollapsed.value || event.pointerType === 'touch' || !event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0)) return
     if (event.target instanceof Element && event.target.closest('.finance-sidebar__resize-handle')) return
 
     financeSidebarSwipeStart = { x: event.clientX, y: event.clientY, pointerId: event.pointerId }
     document.addEventListener('pointermove', trackFinanceSidebarSwipe, { passive: false })
     document.addEventListener('pointerup', finishFinanceSidebarSwipe)
     document.addEventListener('pointercancel', cancelFinanceSidebarSwipe)
+  }
+
+  const startFinanceSidebarTouch = (event) => {
+    if (sidebarCollapsed.value || event.touches.length !== 1) return
+
+    const touch = event.touches[0]
+    financeSidebarTouchStart = { x: touch.clientX, y: touch.clientY, identifier: touch.identifier }
+    document.addEventListener('touchmove', trackFinanceSidebarTouch, { passive: true })
+    document.addEventListener('touchend', finishFinanceSidebarTouch, { passive: true })
+    document.addEventListener('touchcancel', cancelFinanceSidebarTouch, { passive: true })
+  }
+
+  const trackFinanceSidebarTouch = (event) => {
+    const touch = Array.from(event.touches).find(({ identifier }) => identifier === financeSidebarTouchStart?.identifier)
+    if (!financeSidebarTouchStart || !touch) return
+
+    const deltaX = touch.clientX - financeSidebarTouchStart.x
+    const deltaY = touch.clientY - financeSidebarTouchStart.y
+    if (Math.abs(deltaY) >= 80 && Math.abs(deltaY) > Math.abs(deltaX)) {
+      cancelFinanceSidebarTouch()
+      return
+    }
+    if (deltaX > -60 || Math.abs(deltaY) > Math.abs(deltaX)) return
+
+    cancelFinanceSidebarTouch()
+    suppressFinanceSidebarSwipeClick()
+    toggleFinanceSidebar()
+  }
+
+  const finishFinanceSidebarTouch = (event) => {
+    const touch = Array.from(event.changedTouches).find(({ identifier }) => identifier === financeSidebarTouchStart?.identifier)
+    if (!financeSidebarTouchStart || !touch) return
+
+    const deltaX = touch.clientX - financeSidebarTouchStart.x
+    const deltaY = touch.clientY - financeSidebarTouchStart.y
+    cancelFinanceSidebarTouch()
+
+    if (deltaX <= -60 && Math.abs(deltaY) < 80 && Math.abs(deltaX) > Math.abs(deltaY)) {
+      suppressFinanceSidebarSwipeClick()
+      toggleFinanceSidebar()
+    }
+  }
+
+  const cancelFinanceSidebarTouch = () => {
+    financeSidebarTouchStart = null
+    document.removeEventListener('touchmove', trackFinanceSidebarTouch)
+    document.removeEventListener('touchend', finishFinanceSidebarTouch)
+    document.removeEventListener('touchcancel', cancelFinanceSidebarTouch)
   }
 
   const trackFinanceSidebarSwipe = (event) => {
@@ -1698,6 +1748,7 @@ onUnmounted(() => {
   window.removeEventListener('resize', closeFinanceSidebarOnNarrowViewport)
   clearTimeout(financeSidebarTransitionTimeout)
   clearTimeout(financeSidebarSwipeClickTimeout)
+  cancelFinanceSidebarTouch()
   document.removeEventListener('pointermove', trackFinanceSidebarSwipe)
   document.removeEventListener('pointerup', finishFinanceSidebarSwipe)
   document.removeEventListener('pointercancel', cancelFinanceSidebarSwipe)
