@@ -124,6 +124,24 @@ const defaultPassword = ref("");
 
 const logoImg = new URL("../assets/chikinlogo.png", import.meta.url).href;
 
+function normalizeUserRole(role = '') {
+    const normalized = String(role || '').trim().toLowerCase();
+    const aliasMap = {
+        'branch_manager': 'manager',
+        'manager_hr': 'manager',
+        'manager_finance': 'manager',
+        'manager_logistics': 'manager',
+        'manager_inventory': 'manager',
+        'manager_procurement': 'manager',
+        'manager_cashier': 'manager',
+        'manager_kitchen': 'manager',
+        'super_admin': 'super_admin',
+        'superadmin': 'super_admin',
+    };
+
+    return aliasMap[normalized] || normalized;
+}
+
 async function getCurrentLocation() {
     if (!navigator.geolocation) {
         return null;
@@ -198,8 +216,8 @@ async function handleLogin() {
             const userData = {
                 id: res.data.user?.id,
                 username: res.data.user?.username,
-                role: (res.data.user?.role || '').toLowerCase(), // Normalize to lowercase
-                department: (res.data.user?.department || '').toLowerCase(), // Normalize to lowercase
+                role: normalizeUserRole(res.data.user?.role),
+                department: (res.data.user?.department || '').toLowerCase(),
                 full_name: res.data.user?.full_name,
                 branch_id: res.data.user?.branch_id
             };
@@ -228,7 +246,7 @@ async function handleLogin() {
                         const merged = Object.assign({}, userData, {
                             id: serverUser.id,
                             username: serverUser.username || userData.username,
-                            role: (serverUser.role || userData.role || '').toLowerCase(),
+                            role: normalizeUserRole(serverUser.role || userData.role),
                             department: (serverUser.department || userData.department || '').toLowerCase(),
                             full_name: serverUser.full_name || userData.full_name,
                             branch_id: serverUser.branch_id || userData.branch_id,

@@ -524,19 +524,37 @@ const managerDepartmentByRole = {
   manager_procurement: 'procurement',
   manager_cashier: 'cashier',
   manager_kitchen: 'kitchen',
+  branch_manager: 'manager',
+  manager: 'manager',
+  super_admin: 'super_admin',
+  superadmin: 'super_admin',
 }
 
 function normalizePanelUser(user) {
   if (!user) return user
 
-  const role = String(user.role || '').trim().toLowerCase()
+  const rawRole = String(user.role || '').trim().toLowerCase()
   const department = String(user.department || '').trim().toLowerCase()
-  const managerDepartment = managerDepartmentByRole[role]
+
+  let role = rawRole
+  let normalizedDepartment = department
+
+  if (rawRole === 'branch_manager' || rawRole === 'manager_hr' || rawRole === 'manager_finance' || rawRole === 'manager_logistics' || rawRole === 'manager_inventory' || rawRole === 'manager_procurement' || rawRole === 'manager_cashier' || rawRole === 'manager_kitchen') {
+    role = 'manager'
+    normalizedDepartment = managerDepartmentByRole[rawRole] || normalizedDepartment
+  } else if (rawRole === 'manager') {
+    role = 'manager'
+  } else if (rawRole === 'super_admin' || rawRole === 'superadmin') {
+    role = 'super_admin'
+  } else if (managerDepartmentByRole[rawRole]) {
+    role = 'manager'
+    normalizedDepartment = managerDepartmentByRole[rawRole]
+  }
 
   return {
     ...user,
-    role: managerDepartment ? 'manager' : role,
-    department: managerDepartment || department,
+    role,
+    department: normalizedDepartment,
   }
 }
 
