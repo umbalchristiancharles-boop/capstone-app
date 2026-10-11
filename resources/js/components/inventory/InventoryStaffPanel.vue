@@ -1,9 +1,11 @@
 <template>
-  <div class="inventory-staff-panel-shell">
+  <div class="inventory-staff-panel-shell" :class="{ 'inventory-staff-panel-shell--attendance': isAttendanceView }">
   <OwnerPanelLayout
     ref="ownerLayout"
     :userProfile="staffProfile"
     :panelTitle="pageTitle"
+    panelEyebrow="INVENTORY DASHBOARD"
+    :panelDescription="isAttendanceView ? 'Review your current shift and attendance times.' : ''"
     :enableProfileUpdate="true"
     :showProfileColumn="false"
     :ownerTwoColumnLayout="true"
@@ -11,16 +13,22 @@
     :showOwnerTopbar="true"
     :enableDarkMode="false"
     :showAnnouncements="false"
+    :announcementsInModal="true"
     :showAttendanceCard="!isAttendanceView"
     accountInfoStyle="finance"
     @logout="logout"
   >
+    <template #headerActions>
+      <button v-if="isAttendanceView" type="button" class="inventory-attendance-refresh" @click="loadAttendanceStatus">
+        Refresh
+      </button>
+    </template>
+
     <template #ownerSidebar>
       <nav class="owner-sidebar-nav inventory-sidebar-nav" aria-label="Inventory sections">
-        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': !isDisposalView && !isAttendanceView && !isAnnouncementsView }" @click="isDisposalView = false; isAttendanceView = false; isAnnouncementsView = false">Inventory</button>
-        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': isDisposalView }" @click="isDisposalView = true; isAttendanceView = false; isAnnouncementsView = false">Product Disposal</button>
-        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': isAttendanceView }" @click="isDisposalView = false; isAttendanceView = true; isAnnouncementsView = false">Attendance</button>
-        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': isAnnouncementsView }" @click="isDisposalView = false; isAttendanceView = false; isAnnouncementsView = true">Announcements</button>
+        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': !isDisposalView && !isAttendanceView }" @click="isDisposalView = false; isAttendanceView = false">Inventory</button>
+        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': isDisposalView }" @click="isDisposalView = true; isAttendanceView = false">Product Disposal</button>
+        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': isAttendanceView }" @click="isDisposalView = false; isAttendanceView = true">Attendance</button>
       </nav>
     </template>
 
@@ -56,9 +64,9 @@
 
     <template #main>
       <Transition name="inventory-section" mode="out-in">
-        <div :key="isAnnouncementsView ? 'announcements' : (isAttendanceView ? 'attendance' : (isDisposalView ? 'product-disposal' : 'inventory-monitor'))" class="inventory-section-view">
+        <div :key="isAttendanceView ? 'attendance' : (isDisposalView ? 'product-disposal' : 'inventory-monitor')" class="inventory-section-view">
       <!-- Dashboard stats (match manager panel) -->
-      <div v-if="!isDisposalView && !isAttendanceView && !isAnnouncementsView" class="hr-stats-grid">
+      <div v-if="!isDisposalView && !isAttendanceView" class="hr-stats-grid">
         <div class="hr-stat-card hr-stat-card--total">
           <div class="hr-stat-icon">●</div>
           <div class="hr-stat-content">
@@ -84,7 +92,7 @@
       </div>
 
       <!-- Inventory Monitor (manager-style table) -->
-      <div v-if="!isDisposalView && !isAttendanceView && !isAnnouncementsView" class="panel-section">
+      <div v-if="!isDisposalView && !isAttendanceView" class="panel-section">
         <h2 class="section-title">Inventory Monitor</h2>
         <p class="section-description">Current stock levels for your branch (Read-only)</p>
         <p class="section-note" style="color: #666; font-size: 13px; margin-top: 8px;">💡 <strong>Request Procurement:</strong> Click the button in the table to automatically request <strong>minimum 10 units</strong> of any low-stock product.</p>
@@ -105,63 +113,50 @@
       </div>
 
       <div v-if="isAttendanceView" class="inventory-main-attendance-card">
-        <div class="attendance-card">
+        <section class="attendance-card">
           <div class="attendance-header">
-            <span class="attendance-title">Attendance</span>
+            <div class="attendance-heading">
+              <span class="attendance-title">Today's Attendance</span>
+              <span class="attendance-subtitle">Review your current shift and attendance times.</span>
+            </div>
             <span :class="['attendance-status-badge', attendanceStatus.is_clocked_in ? 'status-on-duty' : 'status-off-duty']">
               {{ attendanceStatus.is_clocked_in ? 'On Duty' : 'Off Duty' }}
             </span>
           </div>
-          <div class="attendance-times" v-if="attendanceStatus.clock_in_time || attendanceStatus.clock_out_time">
-            <div class="time-row"><span class="time-label">Clock In:</span><span class="time-value">{{ attendanceStatus.clock_in_time || '-' }}</span></div>
-            <div class="time-row"><span class="time-label">Clock Out:</span><span class="time-value">{{ attendanceStatus.clock_out_time || '-' }}</span></div>
-            <div class="time-row" v-if="attendanceStatus.hours_worked > 0"><span class="time-label">Hours:</span><span class="time-value">{{ attendanceStatus.hours_worked }} hrs</span></div>
-          </div>
-          <div class="attendance-buttons">
-            <button @click="performClockIn" :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockInGeofencing || locationLoading" class="btn-clock-in">
-              {{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock In' }}
-            </button>
-            <button @click="performClockOut" :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockOut || !canClockInGeofencing || locationLoading" class="btn-clock-out" :class="{ 'btn-disabled': !canClockOut && attendanceStatus.is_clocked_in }">
-              {{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock Out' }}
-            </button>
-          </div>
-          <div v-if="locationError" class="geofencing-status geofencing-error">
-            <span class="status-icon">⚠️</span>
-            <span>{{ locationError }}</span>
-          </div>
-          <div v-else-if="userLocation && canClockInGeofencing" class="geofencing-status geofencing-success">
-            <span class="status-icon">✓</span>
-            <span>Location verified</span>
-          </div>
-          <div v-else-if="!canClockInGeofencing && geofencingMessage" class="geofencing-status geofencing-error">
-            <span class="status-icon">🔒</span>
-            <span>{{ geofencingMessage }}</span>
-          </div>
-          <div v-if="!canClockOut && attendanceStatus.is_clocked_in" class="clockout-restriction">
-            <span class="restriction-icon">LOCK</span>
-            <span>Cannot clock out before {{ scheduledTimeOut }}</span>
-          </div>
-          <div v-if="attendanceMessage" :class="['attendance-message', attendanceMessageType]">{{ attendanceMessage }}</div>
-        </div>
-      </div>
+          <div class="attendance-body">
+            <div class="attendance-summary">
+              <div class="attendance-summary__heading">
+                <h3>Shift summary</h3>
+                <p>{{ attendanceStatus.is_clocked_in ? 'Your shift is currently in progress.' : 'Your shift is currently not active.' }}</p>
+              </div>
+              <div class="attendance-times">
+                <div class="time-row"><span class="time-label">Clock In</span><span class="time-value">{{ attendanceStatus.clock_in_time || '—' }}</span></div>
+                <div class="time-row"><span class="time-label">Clock Out</span><span class="time-value">{{ attendanceStatus.clock_out_time || '—' }}</span></div>
+                <div v-if="attendanceStatus.hours_worked > 0" class="time-row"><span class="time-label">Hours Worked</span><span class="time-value">{{ attendanceStatus.hours_worked }} hrs</span></div>
+              </div>
+            </div>
 
-      <div v-if="isAnnouncementsView" class="panel-section inventory-announcements-section">
-        <h2 class="section-title">Announcements</h2>
-        <p class="section-description">Latest announcements for your account</p>
-        <div v-if="loadingAnnouncements" class="loading-container">
-          <div class="loading-spinner"></div>
-          <p>Loading announcements...</p>
-        </div>
-        <div v-else-if="announcements.length === 0" class="empty-container">
-          <p>No announcements found.</p>
-        </div>
-        <div v-else class="inventory-announcement-list">
-          <article v-for="announcement in announcements" :key="announcement.id" class="inventory-announcement-item">
-            <h3>{{ announcement.title }}</h3>
-            <p class="inventory-announcement-meta">{{ new Date(announcement.created_at).toLocaleString() }}<span v-if="announcement.target"> · {{ announcement.target }}</span></p>
-            <p>{{ announcement.message }}</p>
-          </article>
-        </div>
+            <div class="attendance-actions">
+              <div class="attendance-actions__heading">
+                <h3>Attendance actions</h3>
+                <p>Clock in or out when you are ready.</p>
+              </div>
+              <div class="attendance-buttons">
+                <button @click="performClockIn" :disabled="attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockInGeofencing || locationLoading" class="btn-clock-in">
+                  {{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock In' }}
+                </button>
+                <button @click="performClockOut" :disabled="!attendanceStatus.is_clocked_in || isAttendanceProcessing || !canClockOut || !canClockInGeofencing || locationLoading" class="btn-clock-out" :class="{ 'btn-disabled': !canClockOut && attendanceStatus.is_clocked_in }">
+                  {{ (isAttendanceProcessing || locationLoading) ? '...' : 'Clock Out' }}
+                </button>
+              </div>
+              <div v-if="locationError" class="geofencing-status geofencing-error"><span class="status-icon">⚠️</span><span>{{ locationError }}</span></div>
+              <div v-else-if="userLocation && canClockInGeofencing" class="geofencing-status geofencing-success"><span class="status-icon">✓</span><span>Location verified</span></div>
+              <div v-else-if="!canClockInGeofencing && geofencingMessage" class="geofencing-status geofencing-error"><span class="status-icon">🔒</span><span>{{ geofencingMessage }}</span></div>
+              <div v-if="!canClockOut && attendanceStatus.is_clocked_in" class="clockout-restriction"><span class="restriction-icon">LOCK</span><span>Cannot clock out before {{ scheduledTimeOut }}</span></div>
+              <div v-if="attendanceMessage" :class="['attendance-message', attendanceMessageType]">{{ attendanceMessage }}</div>
+            </div>
+          </div>
+        </section>
       </div>
 
       <!-- Product Disposal List Section -->
@@ -432,7 +427,6 @@ const ownerLayout = ref(null);
 
 const isDisposalView = ref(false);
 const isAttendanceView = ref(false);
-const isAnnouncementsView = ref(false);
 
 // Back button logic
 const showBackButton = computed(() => {
@@ -591,7 +585,7 @@ watch(() => props.products, (newProducts) => {
 })
 
 // Computed title
-const pageTitle = computed(() => props.pageTitle)
+const pageTitle = computed(() => isAttendanceView.value ? 'Attendance' : props.pageTitle)
 
 // Compute API endpoints based on whether it's superadmin or not
 const endpoints = computed(() => {
@@ -1322,29 +1316,6 @@ const totalProducts = ref(0)
 const lowStockCount = ref(0)
 const outOfStockCount = ref(0)
 
-// Announcements state for staff panels
-const announcements = ref([])
-const loadingAnnouncements = ref(false)
-
-async function fetchAnnouncements() {
-  loadingAnnouncements.value = true
-  try {
-    const res = await axios.get('/api/announcements', { withCredentials: true })
-    if (res.data) {
-      // API may return { announcements: [...] } or data array directly
-      if (Array.isArray(res.data)) announcements.value = res.data
-      else if (Array.isArray(res.data.announcements)) announcements.value = res.data.announcements
-      else if (Array.isArray(res.data.data)) announcements.value = res.data.data
-      else announcements.value = []
-    }
-  } catch (e) {
-    console.error('Failed to load announcements:', e)
-    announcements.value = []
-  } finally {
-    loadingAnnouncements.value = false
-  }
-}
-
 function formatDate(d) {
   if (!d) return ''
   try { return new Date(d).toLocaleString() } catch (e) { return d }
@@ -1423,7 +1394,6 @@ onMounted(async () => {
   // ProductList will handle fetching when given a fetchUrl; if a parent passed products prop, ProductList will display them.
   // initial stats update after mount
   setTimeout(() => updateStats(), 300)
-  fetchAnnouncements()
   // pending/confirmed procurement loading removed for staff panel
 
   // Load internal products for selects (use same fetchUrl so include_unpublished is respected)

@@ -332,10 +332,54 @@
 }
 
 .inventory-staff-panel-shell :deep(.admin-main-header) {
-  margin: 0 0 0.7rem;
-  padding: 0 0 0.25rem;
-  border: 0;
-  background: transparent;
+  position: relative;
+  margin: 0 0 0.65rem;
+  padding: clamp(1rem, 1.8vw, 1.25rem) clamp(1rem, 2.2vw, 1.5rem);
+  overflow: hidden;
+  border: 1px solid rgba(219, 188, 160, 0.58);
+  border-top: 3px solid #ff6a3d;
+  border-radius: 20px;
+  background: linear-gradient(110deg, #fff 0%, #fffaf5 100%);
+  box-shadow: 0 12px 28px rgba(61, 42, 31, 0.07);
+  box-sizing: border-box;
+}
+
+.inventory-staff-panel-shell :deep(.admin-main-header)::before {
+  content: none;
+}
+
+.inventory-staff-panel-shell :deep(.admin-main-header-top) {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  margin: 0;
+}
+
+.inventory-staff-panel-shell :deep(.admin-main-header-top > .header-left-slot) {
+  display: none;
+}
+
+.inventory-staff-panel-shell :deep(.admin-main-header-top > div:nth-child(2)) {
+  display: flex !important;
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left !important;
+}
+
+.inventory-staff-panel-shell :deep(.admin-main-header__eyebrow) {
+  display: block;
+  order: 0;
+  margin-bottom: 0.3rem;
+  color: #c25a12;
+  font-size: 0.68rem;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  font-weight: 800;
 }
 
 .inventory-staff-panel-shell :deep(.admin-main-header p:empty) {
@@ -343,23 +387,30 @@
 }
 
 .inventory-staff-panel-shell :deep(.admin-main-header h1) {
+  display: block;
+  order: 1;
+  width: 100%;
   margin: 0;
   color: #102a43;
-  font-size: clamp(2rem, 2.4vw, 2.25rem);
+  font-size: clamp(1.8rem, 2.6vw, 2.25rem);
   line-height: 1.1;
   letter-spacing: -0.045em;
   font-weight: 800;
+  text-align: left !important;
 }
 
 .inventory-staff-panel-shell :deep(.admin-main-header h1)::before {
-  content: 'INVENTORY DASHBOARD';
-  display: block;
-  margin-bottom: 0.35rem;
-  color: #c25a12;
-  font-size: 0.62rem;
-  line-height: 1;
-  letter-spacing: 0.12em;
-  font-weight: 800;
+  content: none;
+}
+
+.inventory-staff-panel-shell :deep(.admin-main-header p) {
+  order: 2;
+}
+
+.inventory-staff-panel-shell--attendance :deep(.admin-main-header-top > .header-actions-top) {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
 }
 
 .inventory-staff-panel-shell :deep(.admin-main-header p) {
@@ -812,25 +863,146 @@
 }
 
 .inventory-main-attendance-card {
-  width: min(100%, 760px);
-  margin: 0 auto 1.25rem;
+  width: 100%;
+  min-width: 0;
+  margin: 0 0 1.25rem;
 }
 
 .inventory-main-attendance-card .attendance-card {
-  gap: 0.65rem;
+  gap: 1rem;
   margin-bottom: 0;
-  padding: 0.85rem 0.95rem;
+  padding: 1.2rem;
+  border-radius: 16px;
+}
+
+.inventory-main-attendance-card .attendance-header {
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid rgba(219, 188, 160, 0.4);
+}
+
+.inventory-main-attendance-card .attendance-heading,
+.inventory-main-attendance-card .attendance-summary__heading,
+.inventory-main-attendance-card .attendance-actions__heading {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.inventory-main-attendance-card .attendance-subtitle,
+.inventory-main-attendance-card .attendance-summary__heading p,
+.inventory-main-attendance-card .attendance-actions__heading p {
+  margin: 0;
+  color: var(--inventory-muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.inventory-main-attendance-card .attendance-title {
+  font-size: 1.1rem;
+}
+
+.inventory-main-attendance-card .attendance-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+  align-items: stretch;
+  gap: 0.9rem;
+}
+
+.inventory-main-attendance-card .attendance-summary,
+.inventory-main-attendance-card .attendance-actions {
+  min-width: 0;
+  padding: 0.95rem;
+  border: 1px solid rgba(219, 188, 160, 0.38);
   border-radius: 14px;
+  background: linear-gradient(180deg, #fffdfa 0%, #fff7ef 100%);
+}
+
+.inventory-main-attendance-card .attendance-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.inventory-main-attendance-card .attendance-summary__heading h3,
+.inventory-main-attendance-card .attendance-actions__heading h3 {
+  margin: 0;
+  color: var(--inventory-ink);
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.inventory-main-attendance-card .attendance-times {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.65rem;
+}
+
+.inventory-main-attendance-card .time-row {
+  min-height: 72px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.8rem;
+  border: 1px solid rgba(219, 188, 160, 0.34);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.inventory-main-attendance-card .time-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.inventory-main-attendance-card .time-value {
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.inventory-main-attendance-card .attendance-actions {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.75rem;
 }
 
 .inventory-main-attendance-card .attendance-buttons {
-  gap: 0.6rem;
+  gap: 0.65rem;
 }
 
 .inventory-main-attendance-card .btn-clock-in,
 .inventory-main-attendance-card .btn-clock-out {
   flex-basis: 8rem;
-  padding: 0.65rem 0.85rem;
+  min-height: 44px;
+  padding: 0.7rem 0.85rem;
+}
+
+.inventory-main-attendance-card .geofencing-status,
+.inventory-main-attendance-card .clockout-restriction,
+.inventory-main-attendance-card .attendance-message {
+  margin-top: 0;
+}
+
+.inventory-attendance-refresh {
+  min-height: 40px;
+  padding: 0.6rem 1rem;
+  border: 1px solid #243447;
+  border-radius: 11px;
+  color: #fff;
+  background: #243447;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.inventory-attendance-refresh:hover {
+  background: #172536;
+}
+
+@media (max-width: 760px) {
+  .inventory-main-attendance-card .attendance-body {
+    grid-template-columns: 1fr;
+  }
 }
 
 .inventory-main-attendance-card .btn-clock-in {
@@ -857,47 +1029,6 @@
   background: #76231e;
   border-color: #76231e;
   box-shadow: 0 10px 22px #8f302833;
-}
-
-.inventory-announcements-section {
-  max-width: 920px;
-  margin-inline: auto;
-}
-
-.inventory-announcement-list {
-  display: grid;
-  gap: 0.8rem;
-}
-
-.inventory-announcement-item {
-  padding: 1rem 1.1rem;
-  border: 1px solid rgba(176, 151, 136, 0.2);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.78);
-  box-shadow: 0 8px 18px rgba(74, 57, 48, 0.04);
-}
-
-.inventory-announcement-item h3,
-.inventory-announcement-item p {
-  margin: 0;
-}
-
-.inventory-announcement-item h3 {
-  color: var(--inventory-ink);
-  font-size: 0.98rem;
-  font-weight: 800;
-}
-
-.inventory-announcement-item p:last-child {
-  margin-top: 0.45rem;
-  color: var(--inventory-ink);
-  line-height: 1.55;
-}
-
-.inventory-announcement-meta {
-  margin-top: 0.3rem !important;
-  color: var(--inventory-muted);
-  font-size: 0.75rem;
 }
 
 .attendance-header {
