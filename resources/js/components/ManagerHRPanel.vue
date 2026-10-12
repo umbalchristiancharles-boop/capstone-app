@@ -16,7 +16,7 @@
     :topbarLabel="managerHrTopbarLabel"
     @logout="askLogout"
     @profile-updated="onProfileUpdated"
-    @toggle-sidebar="hrSidebarCollapsed = !hrSidebarCollapsed"
+    @toggle-sidebar="toggleHrSidebar"
   >
     <template #sideTop>
       <div ref="profileWrapper" class="header-profile-wrapper manager-hr-compact-profile">
@@ -38,8 +38,8 @@
       </div>
     </template>
     <template #main>
-      <div class="manager-hr-page" :class="{ 'manager-hr-sidebar-collapsed': hrSidebarCollapsed }">
-        <aside class="manager-hr-sidebar" :aria-hidden="hrSidebarCollapsed">
+      <div class="manager-hr-page" :class="{ 'manager-hr-sidebar-collapsed': hrSidebarCollapsed }" @manager-hr-sidebar-collapse="collapseHrSidebar">
+        <aside ref="hrSidebar" class="manager-hr-sidebar" :aria-hidden="hrSidebarCollapsed" @pointerdown="startHrSidebarSwipe">
           <PanelSidebarBrand />
           <nav class="manager-hr-sidebar__nav" aria-label="HR sections">
             <button class="manager-hr-sidebar__item" :class="{ 'manager-hr-sidebar__item--active': selectedHrSection === 'overview' }" :aria-current="selectedHrSection === 'overview' ? 'page' : undefined" @click="scrollToHrSection('overview')">HR Overview</button>
@@ -1073,6 +1073,10 @@ const selectedApplicationDetails = ref(null)
 
 const router = useRouter()
 const hrSidebarCollapsed = ref(false)
+const hrSidebar = ref(null)
+let expandedHrSidebarWidth = 180
+let hrSidebarSwipeStart = null
+let hrSidebarSwipeClickTimeout
 const selectedHrSection = ref('overview')
 const hrSectionTitle = computed(() => {
   const titles = {
@@ -1083,6 +1087,93 @@ const hrSectionTitle = computed(() => {
   return titles[selectedHrSection.value] || 'HR Overview'
 })
 const managerHrTopbarLabel = computed(() => `HR Manager - ${userProfile.value.branch || userProfile.value.branch_name || 'Dasma Branch'}`)
+
+function collapseHrSidebar(event) {
+  const width = Number(event.detail?.width)
+  if (Number.isFinite(width) && width > 0) expandedHrSidebarWidth = width
+  hrSidebarCollapsed.value = true
+}
+
+function toggleHrSidebar() {
+  if (!hrSidebarCollapsed.value) {
+    hrSidebarCollapsed.value = true
+    return
+  }
+
+  const sidebar = hrSidebar.value
+  const width = Number.parseFloat(sidebar?.dataset.managerExpandedWidth || '')
+  if (Number.isFinite(width) && width > 0) expandedHrSidebarWidth = width
+  if (sidebar) {
+    sidebar.style.width = `${expandedHrSidebarWidth}px`
+    sidebar.style.minWidth = `${expandedHrSidebarWidth}px`
+    const page = sidebar.parentElement
+    const layout = page?.closest('.admin-layout')
+    page?.style.setProperty('--manager-hr-sidebar-width', `${expandedHrSidebarWidth}px`)
+    layout?.style.setProperty('--manager-hr-sidebar-width', `${expandedHrSidebarWidth}px`)
+  }
+  hrSidebarCollapsed.value = false
+}
+
+function startHrSidebarSwipe(event) {
+  if (hrSidebarCollapsed.value || !event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0)) return
+  if (event.target instanceof Element && event.target.closest('.owner-panel-sidebar__resize-handle, .panel-sidebar-resize-handle')) return
+
+  hrSidebarSwipeStart = { x: event.clientX, y: event.clientY, pointerId: event.pointerId }
+  document.addEventListener('pointermove', trackHrSidebarSwipe, { passive: false })
+  document.addEventListener('pointerup', finishHrSidebarSwipe)
+  document.addEventListener('pointercancel', cancelHrSidebarSwipe)
+}
+
+function trackHrSidebarSwipe(event) {
+  if (!hrSidebarSwipeStart || event.pointerId !== hrSidebarSwipeStart.pointerId) return
+
+  const deltaX = event.clientX - hrSidebarSwipeStart.x
+  const deltaY = event.clientY - hrSidebarSwipeStart.y
+  if (Math.abs(deltaY) >= 80 && Math.abs(deltaY) > Math.abs(deltaX)) {
+    cancelHrSidebarSwipe()
+    return
+  }
+
+  if (deltaX > -80 || Math.abs(deltaY) > Math.abs(deltaX)) return
+  cancelHrSidebarSwipe()
+  suppressHrSidebarSwipeClick()
+  hrSidebarCollapsed.value = true
+}
+
+function finishHrSidebarSwipe(event) {
+  if (!hrSidebarSwipeStart || event.pointerId !== hrSidebarSwipeStart.pointerId) return
+
+  const deltaX = event.clientX - hrSidebarSwipeStart.x
+  const deltaY = event.clientY - hrSidebarSwipeStart.y
+  cancelHrSidebarSwipe()
+
+  if (deltaX <= -80 && Math.abs(deltaY) < 80 && Math.abs(deltaX) > Math.abs(deltaY)) {
+    suppressHrSidebarSwipeClick()
+    hrSidebarCollapsed.value = true
+  }
+}
+
+function cancelHrSidebarSwipe() {
+  hrSidebarSwipeStart = null
+  document.removeEventListener('pointermove', trackHrSidebarSwipe)
+  document.removeEventListener('pointerup', finishHrSidebarSwipe)
+  document.removeEventListener('pointercancel', cancelHrSidebarSwipe)
+}
+
+function suppressHrSidebarSwipeClick() {
+  document.addEventListener('click', preventHrSidebarSwipeClick, true)
+  clearTimeout(hrSidebarSwipeClickTimeout)
+  hrSidebarSwipeClickTimeout = setTimeout(() => {
+    document.removeEventListener('click', preventHrSidebarSwipeClick, true)
+  }, 500)
+}
+
+function preventHrSidebarSwipeClick(event) {
+  document.removeEventListener('click', preventHrSidebarSwipeClick, true)
+  clearTimeout(hrSidebarSwipeClickTimeout)
+  event.preventDefault()
+  event.stopPropagation()
+}
 
 const scrollToHrSection = (section) => {
   selectedHrSection.value = section
@@ -1635,6 +1726,9 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  clearTimeout(hrSidebarSwipeClickTimeout)
+  cancelHrSidebarSwipe()
+  document.removeEventListener('click', preventHrSidebarSwipeClick, true)
   document.removeEventListener('click', onDocumentClick)
 })
 

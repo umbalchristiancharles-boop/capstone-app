@@ -7,7 +7,7 @@
             type="button"
             class="owner-panel-hamburger"
             :class="{ 'owner-panel-hamburger--collapsed': topbarSidebarCollapsed }"
-            v-if="!showOwnerSidebar || (ownerSidebarCollapsed && !ownerSidebarTransitioning)"
+            v-if="showOwnerSidebar ? (ownerSidebarCollapsed && !ownerSidebarTransitioning) : topbarSidebarCollapsed"
             :aria-label="topbarSidebarCollapsed ? 'Show menu' : 'Hide menu'"
             :aria-expanded="(!topbarSidebarCollapsed).toString()"
             @click.prevent.stop="toggleTopbarSidebar"

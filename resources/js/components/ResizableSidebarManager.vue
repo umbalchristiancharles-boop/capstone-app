@@ -44,10 +44,21 @@ function attachResizeHandle(sidebar) {
 
     const resize = (moveEvent) => {
       const nextWidth = startWidth + direction * (moveEvent.clientX - startX)
+      if (managerHrPage && nextWidth <= 120 && moveEvent.clientX < startX) {
+        sidebar.dataset.managerExpandedWidth = String(startWidth)
+        managerHrPage.dispatchEvent(new CustomEvent('manager-hr-sidebar-collapse', {
+          bubbles: true,
+          detail: { width: startWidth },
+        }))
+        stopResize()
+        return
+      }
+
       const width = Math.min(320, Math.max(180, nextWidth))
       sidebar.style.width = `${width}px`
       sidebar.style.minWidth = `${width}px`
       if (managerHrPage && managerHrLayout) {
+        sidebar.dataset.managerExpandedWidth = String(width)
         managerHrPage.style.setProperty('--manager-hr-sidebar-width', `${width}px`)
         managerHrLayout.style.setProperty('--manager-hr-sidebar-width', `${width}px`)
       }
