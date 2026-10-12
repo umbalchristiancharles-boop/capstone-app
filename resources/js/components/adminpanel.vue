@@ -49,7 +49,7 @@
           </nav>
           <div class="admin-sidebar__footer">
             <button class="admin-sidebar__account" type="button" @click="openInfoModal">Account Info</button>
-            <button class="admin-sidebar__logout" type="button" @click="askLogout">Logout</button>
+            <button class="admin-sidebar__logout" type="button" @click="handleSidebarExit">{{ isCustomPanelOrigin() ? 'Leave' : 'Logout' }}</button>
           </div>
           <button
             class="admin-sidebar__resize-handle"
@@ -887,6 +887,7 @@ import PanelNotificationMenu from './PanelNotificationMenu.vue'
 import PanelNotificationDetailsModal from './PanelNotificationDetailsModal.vue'
 import OwnerMessageMenu from './OwnerMessageMenu.vue'
 import PanelSidebarBrand from './PanelSidebarBrand.vue'
+import { isCustomPanelOrigin, leaveToCustomPanel } from './customPanelNavigation.js'
 
 import { showToast } from './toastStore'
 
@@ -1849,6 +1850,11 @@ async function askLogout() {
     const ok = await (window.swalConfirm ? window.swalConfirm('This will end your current session for Chikin Tayo Branch Manager.', 'Confirm logout') : Promise.resolve(false))
     if (ok) await confirmLogout()
   } catch (e) { console.error('askLogout failed', e) }
+}
+
+function handleSidebarExit() {
+  if (leaveToCustomPanel()) return
+  askLogout()
 }
 
 // Announcement modal state (OWNER)

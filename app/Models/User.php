@@ -62,6 +62,7 @@ class User extends Authenticatable implements CanResetPassword
         'requires_setup',
         'required_setup_type',
         'email_verified_at',
+        'last_login_at',
     ];
 
     /**
@@ -79,6 +80,7 @@ class User extends Authenticatable implements CanResetPassword
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'last_login_at' => 'datetime',
         'is_active' => 'boolean',
         'must_change_password' => 'boolean',
         'requires_setup' => 'boolean',

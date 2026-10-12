@@ -32,7 +32,7 @@
     <template #ownerSidebarFooter>
       <div class="manager-procurement-sidebar-actions">
         <button type="button" class="manager-procurement-sidebar-account" @click="ownerLayout?.openInfoModal()">Account Info</button>
-        <button type="button" class="manager-procurement-sidebar-logout" @click="askLogout">Logout</button>
+        <button type="button" class="manager-procurement-sidebar-logout" @click="handleSidebarExit">{{ isCustomPanelOrigin() ? 'Leave' : 'Logout' }}</button>
       </div>
     </template>
 
@@ -613,6 +613,7 @@ import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import LoadingOverlay from './LoadingOverlay.vue'
 import axios from 'axios'
 import { showToast } from './toastStore'
+import { isCustomPanelOrigin, leaveToCustomPanel } from './customPanelNavigation.js'
 
 const router = useRouter()
 const userProfile = ref({})
@@ -994,6 +995,11 @@ async function askLogout() {
     const ok = await (window.swalConfirm ? window.swalConfirm('This will end your current session for Chikin Tayo Manager.', 'Confirm logout') : Promise.resolve(false))
     if (ok) await confirmLogout()
   } catch (e) { console.error('askLogout failed', e) }
+}
+
+function handleSidebarExit() {
+  if (leaveToCustomPanel()) return
+  askLogout()
 }
 
 function onProfileUpdated(updatedProfile) {

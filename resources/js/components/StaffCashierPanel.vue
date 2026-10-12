@@ -9,7 +9,7 @@
           </nav>
           <div class="staff-cashier-sidebar__footer">
             <button class="staff-cashier-sidebar__account-info" type="button" @click="showAccountInfoModal = true">Account Info</button>
-            <button class="staff-cashier-sidebar__logout" type="button" @click="confirmLogout">Logout</button>
+            <button class="staff-cashier-sidebar__logout" type="button" @click="handleSidebarExit">{{ isCustomPanelOrigin() ? 'Leave' : 'Logout' }}</button>
           </div>
           <button
             class="staff-cashier-sidebar__resize-handle"
@@ -450,6 +450,7 @@ import OwnerMessageMenu from './OwnerMessageMenu.vue'
 import PanelNotificationMenu from './PanelNotificationMenu.vue'
 import PanelNotificationDetailsModal from './PanelNotificationDetailsModal.vue'
 import { showToast } from './toastStore'
+import { isCustomPanelOrigin, leaveToCustomPanel } from './customPanelNavigation.js'
 import './StaffCashierPanel.css'
 
 const router = useRouter()
@@ -1691,6 +1692,11 @@ async function confirmLogout() {
   if (isLoggingOut.value) return
   if (!(await window.swalConfirm('Are you sure you want to logout?'))) return
   performLogout()
+}
+
+async function handleSidebarExit() {
+  if (leaveToCustomPanel()) return
+  await confirmLogout()
 }
 
 async function performLogout() {

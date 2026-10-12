@@ -162,6 +162,8 @@ class AuthController extends Controller
             ], 500);
         }
 
+        $user->forceFill(['last_login_at' => now()])->save();
+
         // Check if user must change password - redirect to password change page
         if ($user->must_change_password) {
             $redirectPath = '/change-password';
@@ -254,6 +256,7 @@ class AuthController extends Controller
                 'role' => strtolower($user->role),
                 'department' => strtolower($user->department ?? ''),
                 'full_name' => $user->full_name,
+                'last_login_at' => $user->last_login_at?->toISOString(),
                 'branch_id' => $user->branch_id,
                 'email' => !is_null($user->email_verified_at) ? $user->email : null,
                 'must_change_password' => (bool) $user->must_change_password,

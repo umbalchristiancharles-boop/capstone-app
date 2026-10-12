@@ -29,7 +29,7 @@
     <template #ownerSidebarFooter>
       <div class="supplier-sidebar-actions">
         <button type="button" class="supplier-sidebar-account" @click="ownerLayout?.openInfoModal()">Account Info</button>
-        <button type="button" class="supplier-sidebar-logout" @click="askLogout">Logout</button>
+        <button type="button" class="supplier-sidebar-logout" @click="handleSidebarExit">{{ isCustomPanelOrigin() ? 'Leave' : 'Logout' }}</button>
       </div>
     </template>
 
@@ -645,6 +645,7 @@ import { BrowserMultiFormatReader } from '@zxing/browser'
 import { BarcodeFormat, DecodeHintType } from '@zxing/library'
 import Swal from 'sweetalert2'
 import { showToast } from './toastStore'
+import { isCustomPanelOrigin, leaveToCustomPanel } from './customPanelNavigation.js'
 
 const userProfile = ref({})
 const selectedModule = ref('overview')
@@ -1684,6 +1685,11 @@ async function askLogout() {
     })
     if (result.isConfirmed) await confirmLogout()
   } catch (e) { console.error('askLogout failed', e) }
+}
+
+function handleSidebarExit() {
+  if (leaveToCustomPanel()) return
+  askLogout()
 }
 
 function onProfileUpdated(newData) {

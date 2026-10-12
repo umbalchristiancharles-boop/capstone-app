@@ -37,8 +37,8 @@
         <button class="finance-sidebar__account-info" @click="showAccountInfoModal = true" aria-label="Account Info">
           <span class="finance-sidebar__account-text">Account Info</span>
         </button>
-        <button class="finance-sidebar__logout" @click="askLogout" aria-label="Logout">
-          <span class="finance-sidebar__logout-text">Logout</span>
+        <button class="finance-sidebar__logout" @click="handleSidebarExit" :aria-label="isCustomPanelOrigin() ? 'Leave to Custom Panel' : 'Logout'">
+          <span class="finance-sidebar__logout-text">{{ isCustomPanelOrigin() ? 'Leave' : 'Logout' }}</span>
         </button>
       </div>
     </aside>
@@ -558,6 +558,7 @@ import PanelNotificationMenu from './PanelNotificationMenu.vue'
 import PanelNotificationDetailsModal from './PanelNotificationDetailsModal.vue'
 import OwnerMessageMenu from './OwnerMessageMenu.vue'
 import PanelSidebarBrand from './PanelSidebarBrand.vue'
+import { isCustomPanelOrigin, leaveToCustomPanel } from './customPanelNavigation.js'
 import axios from 'axios'
 import { Chart } from 'vue-chartjs'
 import { showToast } from './toastStore'
@@ -1145,6 +1146,11 @@ async function askLogout() {
     const ok = await (window.swalConfirm ? window.swalConfirm('This will end your current session for Chikin Tayo Manager.', 'Confirm logout') : Promise.resolve(false))
     if (ok) await confirmLogout()
   } catch (e) { console.error('askLogout failed', e) }
+}
+
+function handleSidebarExit() {
+  if (leaveToCustomPanel()) return
+  askLogout()
 }
 
 // Fetch budget requests

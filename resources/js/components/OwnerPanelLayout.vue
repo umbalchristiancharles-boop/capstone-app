@@ -642,9 +642,8 @@ const hideAttendanceCard = computed(() => {
   }
 })
 
-// Show a back button when parent explicitly requests it via prop, when the
-// current route contains `?from=custom-panel`, or when the logged-in account is
-// of type custom (so modules always have a way back).
+// Keep explicit and custom-account back navigation outside the Custom Panel
+// entry flow, where the sidebar Leave action provides the return path.
 const slots = useSlots()
 const hasSideSlot = computed(() => {
   try { return Boolean(slots.side && slots.side().length) } catch (e) { return false }
@@ -754,7 +753,8 @@ async function performClockOut() {
 
 const showBackComputed = computed(() => {
   try {
-    return Boolean(props.showBackButton) || (route && route.query && route.query.from === 'custom-panel') || isCustomAccount.value
+    const isFromCustomPanel = route && route.query && route.query.from === 'custom-panel'
+    return !isFromCustomPanel && (Boolean(props.showBackButton) || isCustomAccount.value)
   } catch (e) {
     return Boolean(props.showBackButton) || isCustomAccount.value
   }

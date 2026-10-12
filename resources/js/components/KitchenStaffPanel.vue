@@ -18,7 +18,7 @@
     :announcementsAfterAttendance="true"
     :ownerTwoColumnLayout="true"
     @profile-updated="onProfileUpdated"
-    @logout="requestLogout"
+    @logout="handleSidebarExit"
   >
     <template #ownerSidebar>
       <nav class="kitchen-sidebar-nav" aria-label="Kitchen sections">
@@ -31,7 +31,7 @@
     <template #ownerSidebarFooter>
       <div class="kitchen-sidebar-actions">
         <button type="button" class="kitchen-sidebar-account" @click="ownerLayout?.openInfoModal()">Account Info</button>
-        <button type="button" class="kitchen-sidebar-logout" @click="requestLogout">Logout</button>
+        <button type="button" class="kitchen-sidebar-logout" @click="handleSidebarExit">{{ isCustomPanelOrigin() ? 'Leave' : 'Logout' }}</button>
       </div>
     </template>
 
@@ -193,6 +193,7 @@ import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import LoadingOverlay from './LoadingOverlay.vue'
 import axios from 'axios'
 import { showToast } from './toastStore'
+import { isCustomPanelOrigin, leaveToCustomPanel } from './customPanelNavigation.js'
 
 const userProfile = ref({})
 const ownerLayout = ref(null)
@@ -380,6 +381,11 @@ function handleLogoutClick() {
 
 function requestLogout() {
   if (!isLoggingOut.value) showLogoutConfirm.value = true
+}
+
+function handleSidebarExit() {
+  if (leaveToCustomPanel()) return
+  requestLogout()
 }
 
 function cancelLogout() {

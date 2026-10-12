@@ -30,7 +30,7 @@
     <template #ownerSidebarFooter>
       <div class="manager-logistics-sidebar-actions">
         <button type="button" class="manager-logistics-sidebar-account" @click="ownerLayout?.openInfoModal()">Account Info</button>
-        <button type="button" class="manager-logistics-sidebar-logout" @click="askLogout">Logout</button>
+        <button type="button" class="manager-logistics-sidebar-logout" @click="handleSidebarExit">{{ isCustomPanelOrigin() ? 'Leave' : 'Logout' }}</button>
       </div>
     </template>
 
@@ -657,6 +657,7 @@ import { BrowserMultiFormatReader } from '@zxing/browser'
 import { BarcodeFormat, DecodeHintType } from '@zxing/library'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import { showToast } from './toastStore'
+import { isCustomPanelOrigin, leaveToCustomPanel } from './customPanelNavigation.js'
 
 // basic state
 const userProfile = ref({})
@@ -1472,6 +1473,11 @@ async function askLogout() {
     const ok = await (window.swalConfirm ? window.swalConfirm('This will end your current session for Chikin Tayo.', 'Confirm logout') : Promise.resolve(false))
     if (ok) await confirmLogout()
   } catch (e) { console.error('askLogout failed', e) }
+}
+
+function handleSidebarExit() {
+  if (leaveToCustomPanel()) return
+  askLogout()
 }
 
 // Product Request Functions

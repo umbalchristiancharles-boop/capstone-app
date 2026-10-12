@@ -49,7 +49,7 @@
           </nav>
           <div class="manager-hr-sidebar__footer">
             <button class="manager-hr-sidebar__account" type="button" @click="openInfo">Account Info</button>
-            <button class="manager-hr-sidebar__logout" type="button" @click="askLogout">Logout</button>
+            <button class="manager-hr-sidebar__logout" type="button" @click="handleSidebarExit">{{ isCustomPanelOrigin() ? 'Leave' : 'Logout' }}</button>
           </div>
         </aside>
         <Transition name="manager-hr-section" mode="out-in">
@@ -1020,6 +1020,7 @@ import axios from 'axios'
 import { showToast } from './toastStore'
 import PanelSidebarBrand from './PanelSidebarBrand.vue'
 import { swalAlert, swalConfirm } from '../sweet-alerts'
+import { isCustomPanelOrigin, leaveToCustomPanel } from './customPanelNavigation.js'
 
 // HR Positions Modal state
 const showPositionsModal = ref(false)
@@ -1653,6 +1654,11 @@ async function askLogout() {
     const ok = await (window.swalConfirm ? window.swalConfirm('This will end your current session for Chikin Tayo Manager.', 'Confirm logout') : Promise.resolve(false))
     if (ok) await confirmLogout()
   } catch (e) { console.error('askLogout failed', e) }
+}
+
+function handleSidebarExit() {
+  if (leaveToCustomPanel()) return
+  askLogout()
 }
 
 async function closePositionsModal() {

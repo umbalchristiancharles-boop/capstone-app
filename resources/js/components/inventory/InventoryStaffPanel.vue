@@ -16,7 +16,7 @@
     :announcementsInModal="true"
     :showAttendanceCard="!isAttendanceView"
     accountInfoStyle="finance"
-    @logout="logout"
+    @logout="handleSidebarExit"
   >
     <template #headerActions>
       <button v-if="isAttendanceView" type="button" class="inventory-attendance-refresh" @click="loadAttendanceStatus">
@@ -37,8 +37,8 @@
         <button type="button" class="owner-sidebar-account" @click="ownerLayout?.openInfoModal()">
           Account Info
         </button>
-        <button type="button" class="owner-sidebar-logout" @click="logout">
-          Logout
+        <button type="button" class="owner-sidebar-logout" @click="handleSidebarExit">
+          {{ isCustomPanelOrigin() ? 'Leave' : 'Logout' }}
         </button>
       </div>
     </template>
@@ -420,6 +420,7 @@ import axios from 'axios';
 import OwnerPanelLayout from '../OwnerPanelLayout.vue'
 import ProductList from './ProductList.vue'
 import { showToast } from '../toastStore'
+import { isCustomPanelOrigin, leaveToCustomPanel } from '../customPanelNavigation.js'
 import { swalPrompt } from '../../sweet-alerts'
 
 const router = useRouter();
@@ -1645,6 +1646,11 @@ async function logout() {
       try { window.location.replace('/admin-login') } catch (e) { router.push('/admin-login').catch(() => {}) }
     }, 600);
   } catch (e) { console.error('logout failed', e) }
+}
+
+function handleSidebarExit() {
+  if (leaveToCustomPanel()) return
+  logout()
 }
 
 // Attendance functions
