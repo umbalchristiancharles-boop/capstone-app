@@ -1,14 +1,15 @@
 <template>
   <div class="super-admin-shell" :class="{ 'sidebar-collapsed': sidebarCollapsed, 'super-admin-sidebar-resizing': sidebarResizing }" :style="{ '--super-admin-sidebar-width': `${sidebarWidth}px` }">
-    <aside class="super-admin-sidebar" :aria-hidden="sidebarCollapsed" :style="{ width: `${sidebarWidth}px` }">
+    <aside id="super-admin-sidebar" class="super-admin-sidebar" :aria-hidden="sidebarCollapsed" :style="{ width: `${sidebarWidth}px` }">
       <PanelSidebarBrand />
       <nav class="super-admin-sidebar__nav" aria-label="Website panels">
+        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'dashboard' }" :aria-current="activeModule === 'dashboard' ? 'page' : undefined" @click="openModule('dashboard')">Dashboard</button>
+        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'owner' }" @click="openModule('owner')">Owner Panel</button>
         <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'mainBranchAdmin' }" @click="openModule('mainBranchAdmin')">Admin Main Branch</button>
+        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'admin' }" @click="openModule('admin')">Admin Panel</button>
         <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'mainBranchLogistics' }" @click="openModule('mainBranchLogistics')">Logistics Main Branch</button>
         <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'mainBranchHr' }" @click="openModule('mainBranchHr')">HR Main Branch</button>
         <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'mainBranchFinance' }" @click="openModule('mainBranchFinance')">Finance Manager Main Branch</button>
-        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'owner' }" @click="openModule('owner')">Owner Panel</button>
-        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'admin' }" @click="openModule('admin')">Admin Panel</button>
         <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'logisticsManager' }" @click="openModule('logisticsManager')">Logistics Manager</button>
         <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'procurementManager' }" @click="openModule('procurementManager')">Procurement Manager</button>
         <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'hrManager' }" @click="openModule('hrManager')">HR Manager</button>
@@ -19,12 +20,6 @@
         <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'supplier' }" @click="openModule('supplier')">Supplier Panel</button>
       </nav>
 
-      <div class="super-admin-sidebar__footer">
-        <button class="super-admin-sidebar__account" @click="openInfoModal">Account Info</button>
-        <button class="super-admin-sidebar__action super-admin-sidebar__action--primary" @click="showAnnouncement = true">Send Announcement</button>
-        <button class="super-admin-sidebar__action" @click="showTerms = true">Update Terms</button>
-        <button class="super-admin-sidebar__logout" @click.prevent="askLogout">Logout</button>
-      </div>
       <button
         class="super-admin-sidebar__resize-handle"
         type="button"
@@ -36,7 +31,15 @@
 
     <div class="super-admin-main-panel">
       <header class="super-admin-topbar">
-        <button class="super-admin-hamburger" :aria-label="sidebarCollapsed ? 'Show menu' : 'Hide menu'" @click="sidebarCollapsed = !sidebarCollapsed">☰</button>
+        <button
+          v-if="sidebarCollapsed"
+          class="super-admin-hamburger"
+          type="button"
+          aria-label="Show menu"
+          aria-controls="super-admin-sidebar"
+          :aria-expanded="false"
+          @click="sidebarCollapsed = false"
+        >☰</button>
         <div class="super-admin-topbar__spacer"></div>
         <label v-if="showBranchSelector" class="super-admin-branch-filter">
           <span>Branch</span>
@@ -45,15 +48,57 @@
             <option v-for="branch in availableBranches" :key="branch.id" :value="String(branch.id)">{{ branch.name }}</option>
           </select>
         </label>
-        <div class="super-admin-user-pill">
-          <span class="super-admin-user-pill__avatar">{{ userInitial }}</span>
-          <span>{{ superAdminProfile.fullName || 'Super Admin' }}</span>
+        <div ref="accountMenuRef" class="super-admin-account-menu">
+          <button
+            id="super-admin-account-toggle"
+            class="super-admin-user-pill"
+            type="button"
+            aria-haspopup="menu"
+            :aria-expanded="isAccountMenuOpen"
+            aria-controls="super-admin-account-dropdown"
+            @click="isAccountMenuOpen = !isAccountMenuOpen"
+            @keydown.down.prevent="openAccountMenu"
+          >
+            <span class="super-admin-user-pill__avatar">{{ userInitial }}</span>
+            <span>{{ superAdminProfile.fullName || 'Super Admin' }}</span>
+            <span class="super-admin-user-pill__chevron" :class="{ 'is-open': isAccountMenuOpen }" aria-hidden="true">⌄</span>
+          </button>
+          <div
+            v-if="isAccountMenuOpen"
+            id="super-admin-account-dropdown"
+            class="super-admin-account-dropdown"
+            role="menu"
+            aria-labelledby="super-admin-account-toggle"
+            @keydown="handleAccountMenuKeydown"
+          >
+            <div class="super-admin-account-dropdown__heading">
+              <span class="super-admin-account-dropdown__name">{{ superAdminProfile.fullName || 'Super Admin' }}</span>
+              <span class="super-admin-account-dropdown__role">Super Administrator</span>
+            </div>
+            <button class="super-admin-account-dropdown__item" type="button" role="menuitem" @click="openAccountInfo">
+              <span class="super-admin-account-dropdown__item-icon" aria-hidden="true">◉</span>
+              <span>Account Info</span>
+            </button>
+            <button class="super-admin-account-dropdown__item" type="button" role="menuitem" @click="openAnnouncement">
+              <span class="super-admin-account-dropdown__item-icon" aria-hidden="true">✉</span>
+              <span>Send Announcement</span>
+            </button>
+            <button class="super-admin-account-dropdown__item" type="button" role="menuitem" @click="openTerms">
+              <span class="super-admin-account-dropdown__item-icon" aria-hidden="true">▤</span>
+              <span>Update Terms</span>
+            </button>
+            <div class="super-admin-account-dropdown__divider"></div>
+            <button class="super-admin-account-dropdown__item super-admin-account-dropdown__item--logout" type="button" role="menuitem" @click="logoutFromAccountMenu">
+              <span class="super-admin-account-dropdown__item-icon" aria-hidden="true">↪</span>
+              <span>Logout</span>
+            </button>
+          </div>
         </div>
       </header>
 
       <div class="admin-page">
-      <section v-if="activeModule === 'dashboard'" class="admin-layout">
-          <div class="page-header-top">
+      <section v-if="activeModule === 'dashboard'" class="admin-layout super-admin-dashboard-layout">
+          <div class="page-header-top super-admin-page-header">
             <div>
               <h1>{{ panelTitle }}</h1>
               <p>{{ panelDescription }}</p>
@@ -63,23 +108,23 @@
           </div>
 
           <aside class="admin-side super-admin-dashboard-side">
-            <section class="panel-block">
+            <section class="panel-block super-admin-summary-card">
               <div class="panel-header"><h2>Top Products (All Branches)</h2></div>
               <div class="panel-body panel-body--list">
                 <div v-if="topProducts.length === 0" class="side-item"><span>No data for this range.</span></div>
                 <div v-else v-for="prod in topProducts" :key="prod.id" class="side-item"><span>{{ prod.name }}</span><span class="side-value">{{ prod.orders }} orders</span></div>
               </div>
             </section>
-            <section class="panel-block">
+            <section class="panel-block super-admin-summary-card super-admin-summary-card--stock">
               <div class="panel-header"><h2>Low Stock Alerts</h2></div>
               <div class="panel-body panel-body--list">
                 <div v-if="lowStockItems.length === 0" class="side-item side-item--alert"><span>All items above minimum stock.</span></div>
                 <div v-else v-for="item in lowStockItems" :key="item.id" class="side-item side-item--alert"><span>{{ item.name }}</span><span class="side-value">{{ item.stock }}</span></div>
               </div>
             </section>
-            <section class="panel-block">
+            <section class="panel-block super-admin-summary-card super-admin-summary-card--attendance">
               <div class="panel-header"><h2>Staff Attendance (All Branches)</h2></div>
-              <div class="panel-body panel-body--table">
+              <div class="panel-body panel-body--table super-admin-attendance-table">
                 <div class="table-header"><span>Staff</span><span>Branch</span><span>Status</span></div>
                 <div v-if="adminAttendance.length === 0" class="table-row"><span>No records.</span><span></span><span></span></div>
                 <div v-else v-for="att in adminAttendance.slice(0, 10)" :key="att.id" class="table-row"><span>{{ att.user_name }}</span><span>{{ att.branch_name || '-' }}</span><span><span class="badge" :class="{ 'badge--success': att.status === 'present', 'badge--warning': att.status === 'late', 'badge--info': att.status === 'absent' }">{{ att.status || '-' }}</span></span></div>
@@ -87,26 +132,26 @@
             </section>
           </aside>
 
-        <main class="admin-main">
-          <div class="range-tabs">
+        <main class="admin-main super-admin-dashboard-main">
+          <div class="range-tabs super-admin-range-tabs">
             <button class="range-tab" :class="{ 'range-tab--active': activeRange === 'today' }" @click="changeRange('today')">Today</button>
             <button class="range-tab" :class="{ 'range-tab--active': activeRange === 'yesterday' }" @click="changeRange('yesterday')">Yesterday</button>
             <button class="range-tab" :class="{ 'range-tab--active': activeRange === 'thisWeek' }" @click="changeRange('thisWeek')">This Week</button>
             <button class="range-tab" :class="{ 'range-tab--active': activeRange === 'thisMonth' }" @click="changeRange('thisMonth')">This Month</button>
           </div>
 
-          <section class="overview-grid">
-            <div class="overview-card"><span class="overview-label">Total Orders:</span><span class="overview-value">&nbsp;{{ dashboardTotals.orders }}</span></div>
-            <div class="overview-card"><span class="overview-label">Completed: </span><span class="overview-value">&nbsp;{{ dashboardTotals.completed }}</span></div>
-            <div class="overview-card"><span class="overview-label">Total Sales:</span><span class="overview-value">&nbsp;{{ dashboardTotals.sales }}</span></div>
-            <div class="overview-card"><span class="overview-label">Pending:</span><span class="overview-value">&nbsp;{{ dashboardTotals.pending }}</span></div>
+          <section class="overview-grid super-admin-overview-grid">
+            <div class="overview-card"><span class="overview-label">Total Orders</span><span class="overview-value">{{ dashboardTotals.orders }}</span></div>
+            <div class="overview-card"><span class="overview-label">Completed</span><span class="overview-value">{{ dashboardTotals.completed }}</span></div>
+            <div class="overview-card"><span class="overview-label">Total Sales</span><span class="overview-value">{{ dashboardTotals.sales }}</span></div>
+            <div class="overview-card"><span class="overview-label">Pending</span><span class="overview-value">{{ dashboardTotals.pending }}</span></div>
           </section>
 
-          <section class="panel-block">
+          <section class="panel-block super-admin-branch-panel">
             <div class="panel-header">
               <h2>System Overview by Branch</h2>
             </div>
-            <div class="panel-body panel-body--table">
+            <div class="panel-body panel-body--table super-admin-branch-table">
               <div class="table-header"><span>Branch</span><span>Orders</span><span>Sales</span><span>Staff</span><span>Status</span></div>
               <div v-if="branchStats.length === 0" class="table-row"><span>No branch data for this range.</span><span></span><span></span><span></span><span></span></div>
               <div v-else v-for="branch in branchStats" :key="branch.id" class="table-row">
@@ -123,7 +168,7 @@
             </div>
           </section>
 
-          <section class="panel-block">
+          <section class="panel-block super-admin-activity-panel">
             <div class="panel-header">
               <h2>Recent System Activity</h2>
             </div>
@@ -158,8 +203,14 @@
         <div v-if="showAnnouncement" class="info-backdrop" @click.self="closeAnnouncementModal">
           <div class="info-modal announcement-modal">
             <div class="modal-header-custom">
-              <h3>📢 Send Announcement</h3>
-              <button class="modal-close-btn" @click="closeAnnouncementModal">✕</button>
+              <div class="announcement-modal__heading">
+                <span class="announcement-modal__icon" aria-hidden="true">📢</span>
+                <div>
+                  <h3>Send Announcement</h3>
+                  <p>Share an update with selected people across your organization.</p>
+                </div>
+              </div>
+              <button class="modal-close-btn" type="button" aria-label="Close announcement dialog" @click="closeAnnouncementModal">✕</button>
             </div>
 
             <div class="modal-body-custom">
@@ -227,24 +278,39 @@
 
       <!-- TERMS MODAL -->
       <transition name="fade">
-        <div v-if="showTerms" class="info-backdrop">
-          <div class="info-modal">
-            <h3>Update Terms & Agreement</h3>
-            <p class="info-sub">Update the system-wide terms and conditions.</p>
-
-            <div class="info-grid">
-              <div class="info-row">
-                <span class="info-label">Terms Content</span>
-                <textarea v-model="termsText" class="info-input" rows="10" placeholder="Enter terms and agreement..."></textarea>
+        <div v-if="showTerms" class="info-backdrop" @click.self="showTerms = false">
+          <div class="info-modal terms-modal">
+            <div class="modal-header-custom">
+              <div class="announcement-modal__heading">
+                <span class="announcement-modal__icon" aria-hidden="true">📄</span>
+                <div>
+                  <h3>Update Terms &amp; Agreement</h3>
+                  <p>Manage the terms and conditions shown throughout the system.</p>
+                </div>
               </div>
+              <button class="modal-close-btn" type="button" aria-label="Close terms dialog" @click="showTerms = false">✕</button>
             </div>
 
-            <div v-if="termsError" class="info-error">{{ termsError }}</div>
-            <div v-if="termsSuccess" class="info-success">{{ termsSuccess }}</div>
+            <div class="terms-modal__body">
+              <div class="form-group-custom">
+                <label class="info-label" for="super-admin-terms-content">Terms content</label>
+                <textarea
+                  id="super-admin-terms-content"
+                  v-model="termsText"
+                  class="info-input"
+                  rows="10"
+                  placeholder="Enter the terms and conditions..."
+                ></textarea>
+                <span class="terms-modal__hint">Changes will apply system-wide after saving.</span>
+              </div>
 
-            <div class="info-actions">
-              <button class="btn-outline" @click="showTerms = false">Cancel</button>
-              <button class="btn-primary" @click="updateTerms" :disabled="isUpdatingTerms">
+              <div v-if="termsError" class="info-error">{{ termsError }}</div>
+              <div v-if="termsSuccess" class="info-success">{{ termsSuccess }}</div>
+            </div>
+
+            <div class="modal-footer-custom">
+              <button class="btn-outline" type="button" @click="showTerms = false">Cancel</button>
+              <button class="btn-primary" type="button" @click="updateTerms" :disabled="isUpdatingTerms">
                 {{ isUpdatingTerms ? 'Saving...' : 'Save Terms' }}
               </button>
             </div>
@@ -354,6 +420,8 @@ const showLogoutConfirm = ref(false)
 const showAnnouncement = ref(false)
 const showTerms = ref(false)
 const isLoggingOut = ref(false)
+const isAccountMenuOpen = ref(false)
+const accountMenuRef = ref(null)
 const sidebarCollapsed = ref(false)
 const sidebarWidth = ref(220)
 const sidebarResizing = ref(false)
@@ -396,6 +464,61 @@ const moduleComponents = {
 const activeModuleComponent = computed(() => moduleComponents[activeModule.value] || null)
 let lightModeObserver = null
 
+function closeAccountMenuOnOutsideClick(event) {
+  if (!accountMenuRef.value?.contains(event.target)) {
+    isAccountMenuOpen.value = false
+  }
+}
+
+function closeAccountMenuOnEscape(event) {
+  if (event.key === 'Escape' && isAccountMenuOpen.value) {
+    isAccountMenuOpen.value = false
+    document.getElementById('super-admin-account-toggle')?.focus()
+  }
+}
+
+function openAccountMenu() {
+  isAccountMenuOpen.value = true
+  requestAnimationFrame(() => {
+    accountMenuRef.value?.querySelector('[role="menuitem"]')?.focus()
+  })
+}
+
+function handleAccountMenuKeydown(event) {
+  const items = Array.from(accountMenuRef.value?.querySelectorAll('[role="menuitem"]') || [])
+  const currentIndex = items.indexOf(document.activeElement)
+  let nextIndex = currentIndex
+
+  if (event.key === 'ArrowDown') nextIndex = (currentIndex + 1) % items.length
+  else if (event.key === 'ArrowUp') nextIndex = (currentIndex - 1 + items.length) % items.length
+  else if (event.key === 'Home') nextIndex = 0
+  else if (event.key === 'End') nextIndex = items.length - 1
+  else return
+
+  event.preventDefault()
+  items[nextIndex]?.focus()
+}
+
+function openAccountInfo() {
+  isAccountMenuOpen.value = false
+  openInfoModal()
+}
+
+function openAnnouncement() {
+  isAccountMenuOpen.value = false
+  showAnnouncement.value = true
+}
+
+function openTerms() {
+  isAccountMenuOpen.value = false
+  showTerms.value = true
+}
+
+function logoutFromAccountMenu() {
+  isAccountMenuOpen.value = false
+  askLogout()
+}
+
 function startSidebarResize(event) {
   if (sidebarCollapsed.value) return
 
@@ -403,19 +526,30 @@ function startSidebarResize(event) {
   sidebarResizing.value = true
   const startX = event.clientX
   const startWidth = sidebarWidth.value
-
-  const resize = (moveEvent) => {
-    sidebarWidth.value = Math.min(360, Math.max(200, startWidth + moveEvent.clientX - startX))
-  }
+  const resizeHandle = event.currentTarget
+  resizeHandle.setPointerCapture(event.pointerId)
 
   const stopResize = () => {
     sidebarResizing.value = false
     document.removeEventListener('pointermove', resize)
     document.removeEventListener('pointerup', stopResize)
+    document.removeEventListener('pointercancel', stopResize)
+  }
+
+  const resize = (moveEvent) => {
+    const nextWidth = startWidth + moveEvent.clientX - startX
+    if (nextWidth < 180) {
+      sidebarCollapsed.value = true
+      stopResize()
+      return
+    }
+
+    sidebarWidth.value = Math.min(360, Math.max(200, nextWidth))
   }
 
   document.addEventListener('pointermove', resize)
   document.addEventListener('pointerup', stopResize)
+  document.addEventListener('pointercancel', stopResize)
 }
 
 // Announcement
@@ -692,7 +826,7 @@ async function onAvatarChange(event) {
 }
 
 function openModule(name) {
-  if (moduleComponents[name]) activeModule.value = name
+  if (name === 'dashboard' || moduleComponents[name]) activeModule.value = name
 }
 
 function ownerAddBranches() {
@@ -789,6 +923,8 @@ async function askLogout() {
 }
 
 onMounted(async () => {
+  document.addEventListener('pointerdown', closeAccountMenuOnOutsideClick)
+  document.addEventListener('keydown', closeAccountMenuOnEscape)
   startLightModeGuard()
   isInitialMount.value = false
   superAdminProfile.value = { fullName: '', role: 'SUPER_ADMIN', email: '', contact: '', accountId: '', avatarUrl: '' }
@@ -798,6 +934,8 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', closeAccountMenuOnOutsideClick)
+  document.removeEventListener('keydown', closeAccountMenuOnEscape)
   axios.interceptors.request.eject(branchRequestInterceptor)
   lightModeObserver?.disconnect()
   lightModeObserver = null
@@ -838,6 +976,310 @@ watch(() => route.path, (p) => {
   color: #42210b;
 }
 
+.super-admin-shell :deep(.info-backdrop),
+.super-admin-shell :deep(.logout-confirm-backdrop) {
+  z-index: 1000;
+}
+
+.super-admin-shell :deep(.announcement-modal) {
+  display: flex;
+  width: min(560px, calc(100vw - 2rem));
+  max-width: 560px;
+  max-height: calc(100vh - 2rem);
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid #e8e2dc;
+  border-radius: 18px;
+  background: #fff;
+  color: #33251d;
+  box-shadow: 0 24px 70px rgba(31, 25, 20, 0.24);
+}
+
+.super-admin-shell :deep(.announcement-modal .modal-header-custom) {
+  min-height: 88px;
+  margin: 0;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #eee8e3;
+  background: #fffaf6;
+}
+
+.super-admin-shell :deep(.announcement-modal__heading) {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.super-admin-shell :deep(.announcement-modal__icon) {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 12px;
+  background: #fff0e7;
+  font-size: 1.2rem;
+}
+
+.super-admin-shell :deep(.announcement-modal .modal-header-custom h3) {
+  margin: 0;
+  color: #42210b;
+  font-size: 1.15rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.super-admin-shell :deep(.announcement-modal .modal-header-custom p) {
+  margin: 0.25rem 0 0;
+  color: #7b6c62;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.super-admin-shell :deep(.announcement-modal .modal-close-btn) {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  background: #f3efeb;
+  color: #62554c;
+}
+
+.super-admin-shell :deep(.announcement-modal .modal-close-btn:hover) {
+  background: #e9e1da;
+  color: #42210b;
+}
+
+.super-admin-shell :deep(.announcement-modal .modal-body-custom) {
+  gap: 1.1rem;
+  overflow-y: auto;
+  padding: 1.4rem 1.5rem;
+}
+
+.super-admin-shell :deep(.announcement-modal .form-group-custom) {
+  gap: 0.45rem;
+}
+
+.super-admin-shell :deep(.announcement-modal .form-group-custom .info-label) {
+  margin: 0;
+  color: #4d4037;
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.super-admin-shell :deep(.announcement-modal .info-input) {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid #ded8d2;
+  border-radius: 9px;
+  background: #fff;
+  color: #33251d;
+  font: inherit;
+  font-size: 0.88rem;
+  box-sizing: border-box;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.super-admin-shell :deep(.announcement-modal textarea.info-input) {
+  min-height: 132px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.super-admin-shell :deep(.announcement-modal .info-input:focus) {
+  border-color: #e85b22;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(232, 91, 34, 0.13);
+}
+
+.super-admin-shell :deep(.announcement-modal .info-input::placeholder) {
+  color: #a49a92;
+}
+
+.super-admin-shell :deep(.announcement-modal .modal-footer-custom) {
+  gap: 0.65rem;
+  margin: 0;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #eee8e3;
+  background: #fff;
+}
+
+.super-admin-shell :deep(.announcement-modal .modal-footer-custom button) {
+  min-width: 116px;
+  min-height: 42px;
+  border-radius: 9px;
+  font-size: 0.86rem;
+  font-weight: 650;
+}
+
+.super-admin-shell :deep(.announcement-modal .modal-footer-custom .btn-outline) {
+  border: 1px solid #ded8d2;
+  background: #fff !important;
+  color: #55483f !important;
+}
+
+.super-admin-shell :deep(.announcement-modal .modal-footer-custom .btn-outline:hover:not(:disabled)) {
+  background: #f8f5f2 !important;
+}
+
+.super-admin-shell :deep(.announcement-modal .modal-footer-custom .btn-primary) {
+  border: 1px solid #df4e16;
+  background: #e85b22;
+  color: #fff;
+  box-shadow: 0 3px 8px rgba(232, 91, 34, 0.17);
+}
+
+.super-admin-shell :deep(.announcement-modal .modal-footer-custom .btn-primary:hover:not(:disabled)) {
+  background: #cf4b18;
+}
+
+.super-admin-shell :deep(.terms-modal) {
+  display: flex;
+  width: min(620px, calc(100vw - 2rem));
+  max-width: 620px;
+  max-height: calc(100vh - 2rem);
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid #e8e2dc;
+  border-radius: 18px;
+  background: #fff;
+  color: #33251d;
+  box-shadow: 0 24px 70px rgba(31, 25, 20, 0.24);
+}
+
+.super-admin-shell :deep(.terms-modal .modal-header-custom) {
+  min-height: 88px;
+  margin: 0;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #eee8e3;
+  background: #fffaf6;
+}
+
+.super-admin-shell :deep(.terms-modal .modal-header-custom h3) {
+  margin: 0;
+  color: #42210b;
+  font-size: 1.15rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.super-admin-shell :deep(.terms-modal .modal-header-custom p) {
+  margin: 0.25rem 0 0;
+  color: #7b6c62;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.super-admin-shell :deep(.terms-modal .modal-close-btn) {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  background: #f3efeb;
+  color: #62554c;
+}
+
+.super-admin-shell :deep(.terms-modal .modal-close-btn:hover) {
+  background: #e9e1da;
+  color: #42210b;
+}
+
+.super-admin-shell :deep(.terms-modal__body) {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow-y: auto;
+  padding: 1.4rem 1.5rem;
+}
+
+.super-admin-shell :deep(.terms-modal .form-group-custom) {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.super-admin-shell :deep(.terms-modal .info-label) {
+  color: #4d4037;
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.super-admin-shell :deep(.terms-modal textarea.info-input) {
+  width: 100%;
+  min-height: 260px;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid #ded8d2;
+  border-radius: 9px;
+  background: #fff;
+  color: #33251d;
+  font: inherit;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  resize: vertical;
+  box-sizing: border-box;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.super-admin-shell :deep(.terms-modal textarea.info-input:focus) {
+  border-color: #e85b22;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(232, 91, 34, 0.13);
+}
+
+.super-admin-shell :deep(.terms-modal textarea.info-input::placeholder) {
+  color: #a49a92;
+}
+
+.super-admin-shell :deep(.terms-modal__hint) {
+  color: #84766d;
+  font-size: 0.76rem;
+}
+
+.super-admin-shell :deep(.terms-modal .info-error),
+.super-admin-shell :deep(.terms-modal .info-success) {
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.super-admin-shell :deep(.terms-modal .modal-footer-custom) {
+  gap: 0.65rem;
+  margin: 0;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #eee8e3;
+  background: #fff;
+}
+
+.super-admin-shell :deep(.terms-modal .modal-footer-custom button) {
+  min-width: 116px;
+  min-height: 42px;
+  border-radius: 9px;
+  font-size: 0.86rem;
+  font-weight: 650;
+}
+
+.super-admin-shell :deep(.terms-modal .modal-footer-custom .btn-outline) {
+  border: 1px solid #ded8d2;
+  background: #fff !important;
+  color: #55483f !important;
+}
+
+.super-admin-shell :deep(.terms-modal .modal-footer-custom .btn-outline:hover:not(:disabled)) {
+  background: #f8f5f2 !important;
+}
+
+.super-admin-shell :deep(.terms-modal .modal-footer-custom .btn-primary) {
+  border: 1px solid #df4e16;
+  background: #e85b22;
+  color: #fff;
+  box-shadow: 0 3px 8px rgba(232, 91, 34, 0.17);
+}
+
+.super-admin-shell :deep(.terms-modal .modal-footer-custom .btn-primary:hover:not(:disabled)) {
+  background: #cf4b18;
+}
+
 .super-admin-sidebar {
   position: fixed;
   inset: 0 auto 0 0;
@@ -853,6 +1295,18 @@ watch(() => route.path, (p) => {
   background: #f3e9e1;
   border-right: 1px solid #d8c8bc;
   transition: transform 220ms ease, opacity 220ms ease;
+  scrollbar-width: none;
+}
+
+.super-admin-sidebar::-webkit-scrollbar,
+.super-admin-sidebar__nav::-webkit-scrollbar,
+.super-admin-sidebar__footer::-webkit-scrollbar {
+  display: none;
+}
+
+.super-admin-sidebar__nav,
+.super-admin-sidebar__footer {
+  scrollbar-width: none;
 }
 
 .super-admin-sidebar__resize-handle {
@@ -866,6 +1320,7 @@ watch(() => route.path, (p) => {
   border: 0;
   background: transparent;
   cursor: col-resize;
+  touch-action: none;
 }
 
 .super-admin-sidebar__resize-handle::after {
@@ -1037,6 +1492,143 @@ watch(() => route.path, (p) => {
   color: #1f2937;
   font-size: 0.82rem;
   font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.super-admin-user-pill:hover,
+.super-admin-user-pill[aria-expanded="true"] {
+  border-color: #ddcbbd;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(66, 33, 11, 0.08);
+}
+
+.super-admin-user-pill:focus-visible {
+  outline: 3px solid rgba(232, 91, 34, 0.3);
+  outline-offset: 2px;
+}
+
+.super-admin-account-menu {
+  position: relative;
+  z-index: 500;
+}
+
+.super-admin-user-pill__chevron {
+  margin-left: 0.15rem;
+  color: #857467;
+  font-size: 1rem;
+  line-height: 1;
+  transition: transform 160ms ease;
+}
+
+.super-admin-user-pill__chevron.is-open {
+  transform: rotate(180deg);
+}
+
+.super-admin-account-dropdown {
+  position: absolute;
+  top: calc(100% + 0.65rem);
+  right: 0;
+  z-index: 510;
+  width: min(280px, calc(100vw - 2rem));
+  padding: 0.45rem;
+  border: 1px solid #e8e0d9;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 16px 38px rgba(48, 35, 25, 0.17);
+  animation: super-admin-menu-enter 140ms ease-out;
+}
+
+.super-admin-account-dropdown__heading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.75rem 0.8rem 0.85rem;
+}
+
+.super-admin-account-dropdown__name {
+  overflow: hidden;
+  color: #3d2a1f;
+  font-size: 0.88rem;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.super-admin-account-dropdown__role {
+  color: #85776d;
+  font-size: 0.74rem;
+}
+
+.super-admin-account-dropdown__item {
+  display: flex;
+  width: 100%;
+  min-height: 42px;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 0.75rem;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #493b31;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+.super-admin-account-dropdown__item:hover,
+.super-admin-account-dropdown__item:focus-visible {
+  outline: none;
+  background: #f8f3ef;
+  color: #a9431b;
+}
+
+.super-admin-account-dropdown__item-icon {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 8px;
+  background: #fff3eb;
+  color: #d95a26;
+  font-size: 0.95rem;
+}
+
+.super-admin-account-dropdown__divider {
+  height: 1px;
+  margin: 0.4rem 0.35rem;
+  background: #eee8e2;
+}
+
+.super-admin-account-dropdown__item--logout {
+  color: #b42318;
+}
+
+.super-admin-account-dropdown__item--logout .super-admin-account-dropdown__item-icon {
+  background: #fff0ef;
+  color: #c43227;
+}
+
+.super-admin-account-dropdown__item--logout:hover,
+.super-admin-account-dropdown__item--logout:focus-visible {
+  background: #fff3f2;
+  color: #a51d14;
+}
+
+@keyframes super-admin-menu-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .super-admin-user-pill__avatar {
@@ -1245,6 +1837,27 @@ watch(() => route.path, (p) => {
   box-shadow: none;
 }
 
+.super-admin-main-panel .page-header-top.super-admin-page-header {
+  display: flex;
+  min-height: 116px;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding: 1.5rem 1.75rem;
+  border: 1px solid #e5d4c7;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #fff 0%, #fffaf6 100%);
+  box-shadow: 0 8px 24px rgba(66, 33, 11, 0.07);
+  box-sizing: border-box;
+}
+
+.super-admin-page-header h1 {
+  margin-bottom: 0.5rem;
+}
+
+.super-admin-page-header p {
+  margin: 0;
+}
+
 .super-admin-dashboard-side {
   display: grid;
   width: 100%;
@@ -1255,6 +1868,271 @@ watch(() => route.path, (p) => {
 }
 
 .super-admin-dashboard-side .panel-block { margin: 0; }
+
+.super-admin-main-panel :deep(.super-admin-dashboard-layout) {
+  display: flex !important;
+  min-height: calc(100vh - 66px);
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.25rem;
+}
+
+.super-admin-main-panel .page-header-top.super-admin-page-header {
+  margin: 0;
+}
+
+.super-admin-main-panel :deep(.super-admin-dashboard-side) {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 0;
+}
+
+.super-admin-main-panel :deep(.super-admin-summary-card),
+.super-admin-main-panel :deep(.super-admin-branch-panel),
+.super-admin-main-panel :deep(.super-admin-activity-panel) {
+  min-width: 0;
+  padding: 1rem 1.1rem;
+  border: 1px solid #e7ddd5;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(66, 33, 11, 0.045);
+}
+
+.super-admin-main-panel :deep(.super-admin-summary-card) {
+  min-height: 132px;
+  margin: 0;
+}
+
+.super-admin-main-panel :deep(.super-admin-summary-card .panel-header),
+.super-admin-main-panel :deep(.super-admin-branch-panel .panel-header),
+.super-admin-main-panel :deep(.super-admin-activity-panel .panel-header) {
+  margin-bottom: 0.75rem;
+}
+
+.super-admin-main-panel :deep(.super-admin-summary-card .panel-header h2),
+.super-admin-main-panel :deep(.super-admin-branch-panel .panel-header h2),
+.super-admin-main-panel :deep(.super-admin-activity-panel .panel-header h2) {
+  margin: 0;
+  color: #42210b;
+  font-size: 0.95rem;
+  font-weight: 750;
+}
+
+.super-admin-main-panel :deep(.super-admin-summary-card .panel-body),
+.super-admin-main-panel :deep(.super-admin-branch-panel .panel-body),
+.super-admin-main-panel :deep(.super-admin-activity-panel .panel-body) {
+  color: #594638;
+}
+
+.super-admin-main-panel :deep(.super-admin-summary-card .side-item) {
+  min-height: 32px;
+  align-items: center;
+  border-bottom: 1px solid #f2ece7;
+}
+
+.super-admin-main-panel :deep(.super-admin-summary-card .side-item:last-child) {
+  border-bottom: 0;
+}
+
+.super-admin-main-panel :deep(.super-admin-summary-card:not(.super-admin-summary-card--stock) .side-value) {
+  color: #a94d20;
+  font-weight: 700;
+}
+
+.super-admin-main-panel :deep(.super-admin-summary-card--stock .side-value) {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.super-admin-main-panel :deep(.super-admin-attendance-table) {
+  overflow-x: auto;
+}
+
+.super-admin-main-panel :deep(.super-admin-attendance-table .table-header),
+.super-admin-main-panel :deep(.super-admin-attendance-table .table-row) {
+  min-width: 360px;
+  grid-template-columns: minmax(100px, 1.2fr) minmax(90px, 1fr) minmax(75px, 0.8fr);
+  gap: 0.75rem;
+}
+
+.super-admin-main-panel :deep(.super-admin-dashboard-main) {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 0;
+  overflow: visible !important;
+}
+
+.super-admin-main-panel :deep(.super-admin-range-tabs) {
+  width: fit-content;
+  max-width: 100%;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0.3rem;
+  border: 1px solid #e7ddd5;
+  border-radius: 999px;
+  background: #fff;
+}
+
+.super-admin-main-panel :deep(.super-admin-range-tabs .range-tab) {
+  min-height: 36px;
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  color: #594638;
+  font-weight: 650;
+}
+
+.super-admin-main-panel :deep(.super-admin-range-tabs .range-tab--active) {
+  background: #e85b22;
+  color: #fff;
+  outline: none;
+  box-shadow: 0 3px 8px rgba(232, 91, 34, 0.2);
+}
+
+.super-admin-main-panel :deep(.super-admin-overview-grid) {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 0;
+}
+
+.super-admin-main-panel :deep(.super-admin-overview-grid .overview-card) {
+  position: relative;
+  display: flex;
+  min-height: 104px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem 1.1rem;
+  overflow: hidden;
+  border: 1px solid #e7ddd5;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(66, 33, 11, 0.045);
+}
+
+.super-admin-main-panel :deep(.super-admin-overview-grid .overview-card::before) {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: #e85b22;
+  content: '';
+}
+
+.super-admin-main-panel :deep(.super-admin-overview-grid .overview-card:nth-child(2)::before) {
+  background: #26936b;
+}
+
+.super-admin-main-panel :deep(.super-admin-overview-grid .overview-card:nth-child(3)::before) {
+  background: #bd7b18;
+}
+
+.super-admin-main-panel :deep(.super-admin-overview-grid .overview-card:nth-child(4)::before) {
+  background: #64748b;
+}
+
+.super-admin-main-panel :deep(.super-admin-overview-grid .overview-label) {
+  color: #76665c;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.super-admin-main-panel :deep(.super-admin-overview-grid .overview-value) {
+  color: #42210b;
+  font-size: 1.45rem;
+  line-height: 1.15;
+}
+
+.super-admin-main-panel :deep(.super-admin-branch-panel),
+.super-admin-main-panel :deep(.super-admin-activity-panel) {
+  margin: 0;
+  padding: 1.1rem 1.2rem;
+}
+
+.super-admin-main-panel :deep(.super-admin-branch-table) {
+  overflow-x: auto;
+}
+
+.super-admin-main-panel :deep(.super-admin-branch-table .table-header),
+.super-admin-main-panel :deep(.super-admin-branch-table .table-row) {
+  min-width: 620px;
+  grid-template-columns: minmax(160px, 1.6fr) minmax(75px, 0.7fr) minmax(110px, 1fr) minmax(75px, 0.7fr) minmax(95px, 0.8fr);
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.8rem 0.5rem;
+  border: 0;
+  border-bottom: 1px solid #f0e9e3;
+}
+
+.super-admin-main-panel :deep(.super-admin-branch-table .table-header) {
+  color: #76665c;
+  background: #fbf8f5;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.super-admin-main-panel :deep(.super-admin-branch-table .table-row:last-child) {
+  border-bottom: 0;
+}
+
+.super-admin-main-panel :deep(.super-admin-branch-table .table-row > span),
+.super-admin-main-panel :deep(.super-admin-attendance-table .table-row > span) {
+  min-width: 0;
+}
+
+.super-admin-main-panel :deep(.super-admin-branch-table .badge),
+.super-admin-main-panel :deep(.super-admin-attendance-table .badge) {
+  display: inline-flex;
+  min-width: 68px;
+  justify-content: center;
+  padding: 0.35rem 0.65rem;
+  background: #fff4e8;
+  color: #87502e;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.super-admin-main-panel :deep(.super-admin-branch-table .badge--success),
+.super-admin-main-panel :deep(.super-admin-attendance-table .badge--success) {
+  background: #e8f6ee;
+  color: #187443;
+}
+
+.super-admin-main-panel :deep(.super-admin-branch-table .badge--warning),
+.super-admin-main-panel :deep(.super-admin-attendance-table .badge--warning) {
+  background: #fff3dc;
+  color: #9a5b00;
+}
+
+.super-admin-main-panel :deep(.super-admin-attendance-table .badge--info) {
+  background: #eaf2ff;
+  color: #2859a8;
+}
+
+.super-admin-main-panel :deep(.super-admin-activity-panel .queue-item) {
+  gap: 1rem;
+  padding: 0.85rem 0.25rem;
+  border-bottom: 1px solid #f0e9e3;
+}
+
+.super-admin-main-panel :deep(.super-admin-activity-panel .queue-item:last-child) {
+  border-bottom: 0;
+}
+
+.super-admin-main-panel :deep(.super-admin-activity-panel .queue-title) {
+  color: #42210b;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.super-admin-main-panel :deep(.super-admin-activity-panel .queue-meta) {
+  margin-top: 0.2rem;
+  color: #84766d;
+}
 
 .sidebar-collapsed .super-admin-sidebar {
   transform: translateX(-100%);
@@ -1274,6 +2152,9 @@ watch(() => route.path, (p) => {
   .super-admin-main-panel { margin-left: var(--super-admin-sidebar-width); }
   .super-admin-topbar { left: var(--super-admin-sidebar-width); }
   .super-admin-dashboard-side { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .super-admin-main-panel :deep(.super-admin-overview-grid) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .super-admin-main-panel :deep(.super-admin-summary-card--attendance) { grid-column: 1 / -1; }
+  .super-admin-main-panel .page-header-top.super-admin-page-header { padding: 1.25rem; }
 }
 
 @media (max-width: 640px) {
@@ -1285,6 +2166,22 @@ watch(() => route.path, (p) => {
   .super-admin-main-panel > .admin-page { padding-top: 66px; }
   .super-admin-main-panel :deep(.admin-layout) { padding: 0.75rem; }
   .super-admin-dashboard-side { grid-template-columns: 1fr; }
+  .super-admin-main-panel :deep(.super-admin-dashboard-layout) { gap: 1rem; padding: 0.75rem; }
+  .super-admin-main-panel :deep(.super-admin-summary-card--attendance) { grid-column: auto; }
+  .super-admin-main-panel :deep(.super-admin-overview-grid) { grid-template-columns: 1fr; gap: 0.75rem; }
+  .super-admin-main-panel :deep(.super-admin-range-tabs) { width: 100%; justify-content: space-between; }
+  .super-admin-main-panel :deep(.super-admin-range-tabs .range-tab) { padding-inline: 0.65rem; }
+  .super-admin-main-panel :deep(.super-admin-activity-panel .queue-item) { align-items: flex-start; }
+  .super-admin-shell :deep(.announcement-modal .modal-header-custom) { padding: 1rem; }
+  .super-admin-shell :deep(.announcement-modal .modal-body-custom) { padding: 1rem; }
+  .super-admin-shell :deep(.announcement-modal .modal-footer-custom) { padding: 0.85rem 1rem; }
+  .super-admin-shell :deep(.announcement-modal .modal-footer-custom button) { min-width: 0; flex: 1; }
+  .super-admin-shell :deep(.terms-modal .modal-header-custom) { padding: 1rem; }
+  .super-admin-shell :deep(.terms-modal__body) { padding: 1rem; }
+  .super-admin-shell :deep(.terms-modal textarea.info-input) { min-height: 200px; }
+  .super-admin-shell :deep(.terms-modal .modal-footer-custom) { padding: 0.85rem 1rem; }
+  .super-admin-shell :deep(.terms-modal .modal-footer-custom button) { min-width: 0; flex: 1; }
+  .super-admin-main-panel .page-header-top.super-admin-page-header { min-height: 0; padding: 1rem; }
   .super-admin-branch-filter { gap: 0.25rem; }
   .super-admin-branch-filter span { display: none; }
   .super-admin-branch-filter select { width: min(180px, 42vw); min-width: 120px; }
