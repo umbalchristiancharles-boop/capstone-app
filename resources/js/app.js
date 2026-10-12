@@ -629,6 +629,42 @@ router.beforeEach(async (to, from, next) => {
         return mods.includes((m||'').toString().toLowerCase());
       } catch (e) { return false }
     }
+    if (to.path === '/custom-panel' && user.role !== 'custom') {
+      const branchId = Number(user.branch_id || user.branchId || user.branch || 0)
+      const branchName = (user.branch_name || user.branch || '').toString().toUpperCase()
+      const username = (user.username || '').toString().toUpperCase()
+      const isMainBranch = branchId === 32 || branchId === 1 || branchName.includes('MAIN') || username.includes('MAIN_BRANCH') || username.includes('MAINBRANCH')
+      let dashboardPath = '/unauthorized'
+
+      if (user.role === 'admin') {
+        dashboardPath = isMainBranch ? '/main-branch/admin' : '/admin-panel'
+      } else if (user.role === 'owner') {
+        dashboardPath = '/owner-panel'
+      } else if (user.role === 'manager') {
+        if (isMainBranch && user.department === 'hr') dashboardPath = '/main-branch/hr'
+        else if (isMainBranch && user.department === 'finance') dashboardPath = '/main-branch/finance'
+        else if (isMainBranch && user.department === 'logistics') dashboardPath = '/main-branch/logistics'
+        else if (user.department === 'hr') dashboardPath = '/manager/hr'
+        else if (user.department === 'finance') dashboardPath = '/manager/finance'
+        else if (user.department === 'inventory') dashboardPath = '/inventory'
+        else if (user.department === 'logistics') dashboardPath = '/manager/logistics'
+        else if (user.department === 'procurement') dashboardPath = '/manager/procurement'
+        else dashboardPath = '/manager-panel'
+      } else if (user.role === 'hr') {
+        dashboardPath = isMainBranch ? '/main-branch/hr' : '/manager/hr'
+      } else if (user.role === 'supplier') {
+        dashboardPath = '/supplier-panel'
+      } else if (user.role === 'staff') {
+        if (user.department === 'cashier') dashboardPath = '/staff/cashier'
+        else if (user.department === 'finance') dashboardPath = '/staff/finance'
+        else if (user.department === 'inventory') dashboardPath = '/inventory'
+        else if (user.department === 'kitchen') dashboardPath = '/staff/kitchen'
+        else if (user.department === 'logistics') dashboardPath = '/staff/logistics'
+        else dashboardPath = '/staff-panel'
+      }
+
+      return next(dashboardPath)
+    }
     if (to.path.startsWith('/manager/finance')) {
       // Main-branch finance should go to /main-branch/finance instead
       const branchId = Number(user.branch_id || user.branchId || user.branch || 0)

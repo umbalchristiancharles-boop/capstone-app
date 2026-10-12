@@ -664,11 +664,20 @@ onMounted(() => {
         permissions: rawUser.permissions || {},
       };
 
+      let cached = null;
+      try {
+        cached = JSON.parse(localStorage.getItem('user') || 'null');
+      } catch (e) {
+        cached = null;
+      }
+      if (cached?.id && String(cached.id) !== String(normalized.id)) {
+        return;
+      }
+
       applyUserProfile(normalized);
 
       try {
-        const cached = JSON.parse(localStorage.getItem('user') || '{}') || {};
-        localStorage.setItem('user', JSON.stringify({ ...cached, ...normalized }));
+        localStorage.setItem('user', JSON.stringify({ ...(cached || {}), ...normalized }));
       } catch (e) {
         localStorage.setItem('user', JSON.stringify(normalized));
       }
@@ -849,6 +858,7 @@ const logout = async () => {
   isLoggingOut.value = true;
   try { await axios.post('/api/logout', {}, { withCredentials: true }); } catch (e) {}
   try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
+  delete axios.defaults.headers.common['Authorization'];
   try {
     await router.replace('/admin-login');
   } catch (e) {

@@ -228,6 +228,14 @@ async function handleLogin() {
             }
 
             try {
+                // Start the new authenticated identity without inheriting prior route/session state.
+                ['user', 'token', 'redirect_path', 'pending_username', 'pending_email'].forEach((key) => {
+                    localStorage.removeItem(key);
+                });
+                ['skipRouteOverlay', 'suppressRouteOverlay', 'appReloaded', 'preReloadPath'].forEach((key) => {
+                    sessionStorage.removeItem(key);
+                });
+                delete axios.defaults.headers.common['Authorization'];
                 localStorage.setItem('user', JSON.stringify(userData));
                 console.debug('[LOGIN] User saved to localStorage:', userData);
 
@@ -243,17 +251,17 @@ async function handleLogin() {
                     const me = await axios.get('/api/me', { withCredentials: true });
                     if (me && me.data && me.data.user) {
                         const serverUser = me.data.user;
-                        const merged = Object.assign({}, userData, {
-                            id: serverUser.id,
-                            username: serverUser.username || userData.username,
-                            role: normalizeUserRole(serverUser.role || userData.role),
-                            department: (serverUser.department || userData.department || '').toLowerCase(),
-                            full_name: serverUser.full_name || userData.full_name,
-                            branch_id: serverUser.branch_id || userData.branch_id,
-                            permissions: serverUser.permissions || userData.permissions || {},
-                        });
-                        localStorage.setItem('user', JSON.stringify(merged));
-                        console.debug('[LOGIN] Updated localStorage user from /api/me', merged);
+                        if (String(serverUser.id) === String(userData.id)) {
+                            const merged = Object.assign({}, userData, {
+                                username: serverUser.username || userData.username,
+                                full_name: serverUser.full_name || userData.full_name,
+                                permissions: serverUser.permissions || userData.permissions || {},
+                            });
+                            localStorage.setItem('user', JSON.stringify(merged));
+                            console.debug('[LOGIN] Updated localStorage user from /api/me', merged);
+                        } else {
+                            console.warn('[LOGIN] Ignored /api/me identity that does not match the account that just logged in');
+                        }
                     }
                 } catch (e) {
                     console.debug('[LOGIN] /api/me fetch failed, continuing', e);
