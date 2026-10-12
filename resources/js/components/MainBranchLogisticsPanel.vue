@@ -24,13 +24,23 @@
       <header class="logistics-topbar">
         <button v-if="sidebarCollapsed" class="logistics-menu-button" type="button" aria-label="Show logistics menu" aria-expanded="false" @click="reopenSidebar">☰</button>
         <div class="logistics-topbar__spacer"></div>
-        <div class="header-profile-wrapper">
-          <div class="header-profile-btn" aria-label="Current account">
-            <div class="header-avatar">
-              <div v-if="profile.avatarUrl" class="header-avatar-img" :style="{ backgroundImage: 'url(' + profile.avatarUrl + ')' }"></div>
-              <div v-else class="header-avatar-initials">{{ (profile.full_name || profile.fullName || 'M').charAt(0) }}</div>
+        <div class="logistics-topbar__actions">
+          <OwnerMessageMenu />
+          <PanelNotificationMenu
+            :notification-items="logisticsNotificationItems"
+            :notification-count="logisticsNotificationCount"
+            :announcements="announcements"
+            @open="refreshLogisticsNotifications"
+            @select="handleLogisticsNotificationClick"
+          />
+          <div class="header-profile-wrapper">
+            <div class="header-profile-btn" aria-label="Current account">
+              <div class="header-avatar">
+                <div v-if="profile.avatarUrl" class="header-avatar-img" :style="{ backgroundImage: 'url(' + profile.avatarUrl + ')' }"></div>
+                <div v-else class="header-avatar-initials">{{ (profile.full_name || profile.fullName || 'M').charAt(0) }}</div>
+              </div>
+              <div class="header-name">Logistics - {{ profile.branch_name || profile.branch || 'Main Branch' }}</div>
             </div>
-            <div class="header-name">Logistics - {{ profile.branch_name || profile.branch || 'Main Branch' }}</div>
           </div>
         </div>
       </header>
@@ -305,6 +315,17 @@
       </section>
     </div>
 
+    <PanelNotificationDetailsModal
+      :show="Boolean(activeNotificationPanel)"
+      :title="activeLogisticsNotificationLabel"
+      :subtitle="activeNotificationPanel === 'announcements' ? 'Latest updates for your account.' : 'Items that need your attention.'"
+      :show-announcements="activeNotificationPanel === 'announcements'"
+      :announcements="announcements"
+      :loading="loadingAnnouncements"
+      :detail-items="activeLogisticsNotificationDetails"
+      @close="activeNotificationPanel = ''"
+    />
+
     <transition name="fade">
       <div v-if="showLogoutConfirm" class="logout-confirm-backdrop">
         <div class="logout-confirm-box logout-confirm-dialog">
@@ -359,6 +380,9 @@ import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { showToast } from './toastStore'
 import PanelSidebarBrand from './PanelSidebarBrand.vue'
+import OwnerMessageMenu from './OwnerMessageMenu.vue'
+import PanelNotificationMenu from './PanelNotificationMenu.vue'
+import PanelNotificationDetailsModal from './PanelNotificationDetailsModal.vue'
 
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
 
@@ -398,6 +422,7 @@ const suppliersLoading = ref(false)
 const suppliersError = ref('')
 const announcements = ref([])
 const loadingAnnouncements = ref(false)
+const activeNotificationPanel = ref('')
 const attendanceStatus = ref({ is_clocked_in: false, clock_in_time: null, clock_out_time: null, hours_worked: 0 })
 const isAttendanceProcessing = ref(false)
 const attendanceMessage = ref('')
@@ -409,6 +434,7 @@ const locationError = ref('')
 const canClockInGeofencing = ref(true)
 const geofencingMessage = ref('')
 const notificationCounts = ref({ logistics: 0 })
+const notificationSummary = ref({ announcements: 0 })
 const hasNotified = ref(false)
 const pendingDeliveriesCount = computed(() => {
   const apiPending = Number(notificationCounts.value?.logistics || 0)
@@ -417,6 +443,25 @@ const pendingDeliveriesCount = computed(() => {
 })
 const pendingProductRequestsCount = computed(() => (pendingProductRequests.value || []).length)
 const logisticsAlertCount = computed(() => Math.max(pendingDeliveriesCount.value, pendingProductRequestsCount.value, 0))
+const logisticsNotificationItems = computed(() => [
+  { key: 'logistics', label: 'Logistics', count: logisticsAlertCount.value },
+  { key: 'announcements', label: 'Announcements', count: Number(notificationSummary.value.announcements || 0) },
+].filter(item => item.count > 0))
+const logisticsNotificationCount = computed(() => (
+  logisticsNotificationItems.value.reduce((total, item) => total + item.count, 0)
+))
+const activeLogisticsNotificationLabel = computed(() => (
+  activeNotificationPanel.value === 'announcements'
+    ? 'Announcements'
+    : activeNotificationPanel.value === 'logistics'
+      ? 'Logistics'
+      : 'Notifications'
+))
+const activeLogisticsNotificationDetails = computed(() => {
+  if (activeNotificationPanel.value === 'announcements') return []
+  const item = logisticsNotificationItems.value.find(({ key }) => key === activeNotificationPanel.value)
+  return item ? [{ ...item }] : []
+})
 
 function toggleProductRequestDetails(id) {
   expandedProductRequestId.value = expandedProductRequestId.value === id ? null : id
@@ -503,9 +548,33 @@ async function loadPanelNotifications() {
     const res = await axios.get('/api/panel-notifications', { withCredentials: true })
     if (res.data && res.data.ok) {
       notificationCounts.value = { logistics: Number(res.data.counts?.logistics || 0) }
+      notificationSummary.value = { announcements: Number(res.data.summary?.announcements || 0) }
     }
   } catch (e) {
     notificationCounts.value = { logistics: 0 }
+    notificationSummary.value = { announcements: 0 }
+    console.error('Failed to load logistics notifications', e)
+  }
+}
+
+async function refreshLogisticsNotifications() {
+  await Promise.all([loadPanelNotifications(), fetchPendingProductRequests()])
+}
+
+async function handleLogisticsNotificationClick(key) {
+  activeNotificationPanel.value = key
+  if (key === 'announcements') await fetchAnnouncements()
+  if (key === 'announcements' || key === 'logistics') await markLogisticsNotificationRead(key)
+}
+
+async function markLogisticsNotificationRead(category) {
+  try {
+    const res = await axios.post('/api/panel-notifications/read', { category }, { withCredentials: true })
+    if (!res.data?.ok) throw new Error(res.data?.message || 'Unable to update notification read status.')
+    await loadPanelNotifications()
+  } catch (e) {
+    console.error('Failed to mark logistics notification as read', e)
+    showToast(e.response?.data?.message || 'Unable to update notification read status.', 'error')
   }
 }
 
@@ -1221,6 +1290,7 @@ watch(selectedBranch, async () => {
 .main-branch-page.sidebar-collapsed .logistics-menu-button { transform: rotate(180deg); }
 .main-branch-page.sidebar-collapsed .logistics-menu-button:hover { transform: rotate(180deg) translateY(-1px); }
 .logistics-topbar__spacer { flex: 1; }
+.logistics-topbar__actions { display: flex; align-items: center; gap: 10px; }
 .header-profile-wrapper { position: relative; }
 .header-profile-btn {
   display: flex;
@@ -1990,6 +2060,8 @@ watch(selectedBranch, async () => {
 }
 
 @media (max-width: 460px) {
+  .logistics-topbar__actions { gap: 6px; }
+
   .logistics-attendance-card__header {
     align-items: flex-start;
   }

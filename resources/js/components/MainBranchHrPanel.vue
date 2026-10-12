@@ -12,6 +12,7 @@
       :showProfileColumn="false"
       :showOwnerSidebar="true"
       :showOwnerTopbar="true"
+      :notificationDetailsInModal="true"
       topbarLabel="HR - Main Branch"
       accountInfoStyle="finance"
       @logout="askLogout"
