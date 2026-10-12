@@ -567,7 +567,7 @@ router.beforeEach(async (to, from, next) => {
       const branchId = Number(u?.branch_id || u?.branchId || u?.branch || 0)
       const branchName = (u?.branch_name || u?.branch || '').toString().toUpperCase()
       const username = (u?.username || '').toString().toUpperCase()
-      const isMainBranch = branchId === 32 || branchId === 1 || branchName.includes('MAIN') || username.includes('MAIN_BRANCH') || username.includes('MAINBRANCH')
+      const isMainBranch = u?.is_main_branch === true || Number(u?.is_main_branch) === 1 || branchId === 32 || branchId === 1 || branchName.includes('MAIN') || username.includes('MAIN_BRANCH') || username.includes('MAINBRANCH')
       const role = u?.role || ''
       const dept = u?.department || ''
       if (u && to.path !== '/unauthorized') {
@@ -633,7 +633,7 @@ router.beforeEach(async (to, from, next) => {
       const branchId = Number(user.branch_id || user.branchId || user.branch || 0)
       const branchName = (user.branch_name || user.branch || '').toString().toUpperCase()
       const username = (user.username || '').toString().toUpperCase()
-      const isMainBranch = branchId === 32 || branchId === 1 || branchName.includes('MAIN') || username.includes('MAIN_BRANCH') || username.includes('MAINBRANCH')
+      const isMainBranch = user.is_main_branch === true || Number(user.is_main_branch) === 1 || branchId === 32 || branchId === 1 || branchName.includes('MAIN') || username.includes('MAIN_BRANCH') || username.includes('MAINBRANCH')
       let dashboardPath = '/unauthorized'
 
       if (user.role === 'admin') {
@@ -670,7 +670,7 @@ router.beforeEach(async (to, from, next) => {
       const branchId = Number(user.branch_id || user.branchId || user.branch || 0)
       const branchName = (user.branch_name || user.branch || '').toString().toUpperCase()
       const username = (user.username || '').toString().toUpperCase()
-      const isMainBranch = branchId === 32 || branchId === 1 || branchName.includes('MAIN') || username.includes('MAIN_BRANCH') || username.includes('MAINBRANCH')
+      const isMainBranch = user.is_main_branch === true || Number(user.is_main_branch) === 1 || branchId === 32 || branchId === 1 || branchName.includes('MAIN') || username.includes('MAIN_BRANCH') || username.includes('MAINBRANCH')
       
       if (user.role === 'manager' && user.department === 'finance' && isMainBranch) {
         return next('/main-branch/finance')
@@ -685,7 +685,7 @@ router.beforeEach(async (to, from, next) => {
       const branchId = Number(user.branch_id || user.branchId || user.branch || 0)
       const branchName = (user.branch_name || user.branch || '').toString().toUpperCase()
       const username = (user.username || '').toString().toUpperCase()
-      const isMainBranch = branchId === 32 || branchId === 1 || branchName.includes('MAIN') || username.includes('MAIN_BRANCH') || username.includes('MAINBRANCH')
+      const isMainBranch = user.is_main_branch === true || Number(user.is_main_branch) === 1 || branchId === 32 || branchId === 1 || branchName.includes('MAIN') || username.includes('MAIN_BRANCH') || username.includes('MAINBRANCH')
       
       if (user.role === 'manager' && user.department === 'logistics' && isMainBranch) {
         return next('/main-branch/logistics')
@@ -700,7 +700,7 @@ router.beforeEach(async (to, from, next) => {
       const branchId = Number(user.branch_id || user.branchId || user.branch || 0)
       const branchName = (user.branch_name || user.branch || '').toString().toUpperCase()
       const username = (user.username || '').toString().toUpperCase()
-      const isMainBranch = branchId === 32 || branchId === 1 || branchName.includes('MAIN') || username.includes('MAIN_BRANCH') || username.includes('MAINBRANCH')
+      const isMainBranch = user.is_main_branch === true || Number(user.is_main_branch) === 1 || branchId === 32 || branchId === 1 || branchName.includes('MAIN') || username.includes('MAIN_BRANCH') || username.includes('MAINBRANCH')
       const isHrUser = user.role === 'hr' || (user.role === 'manager' && user.department === 'hr')
       
       if (isHrUser && isMainBranch) {
@@ -775,7 +775,7 @@ router.beforeEach(async (to, from, next) => {
 
     // Main Branch role pages
     if (to.path.startsWith('/main-branch/admin')) {
-      const isMainBranchUser = (Number(user.branch_id || user.branchId || user.branch || 0) === 32 || Number(user.branch_id || user.branchId || user.branch || 0) === 1)
+      const isMainBranchUser = user.is_main_branch === true || Number(user.is_main_branch) === 1 || Number(user.branch_id || user.branchId || user.branch || 0) === 32 || Number(user.branch_id || user.branchId || user.branch || 0) === 1
       const branchName = (user.branch_name || user.branch || '').toString().toUpperCase()
       const username = (user.username || '').toString().toUpperCase()
       const isMainBranchByName = branchName.includes('MAIN') || username.includes('MAIN_BRANCH') || username.includes('MAINBRANCH')
@@ -790,7 +790,7 @@ router.beforeEach(async (to, from, next) => {
       }
     }
     if (to.path.startsWith('/main-branch/hr')) {
-      const isMainBranchUser = (Number(user.branch_id || user.branchId || user.branch || 0) === 32 || Number(user.branch_id || user.branchId || user.branch || 0) === 1)
+      const isMainBranchUser = user.is_main_branch === true || Number(user.is_main_branch) === 1 || Number(user.branch_id || user.branchId || user.branch || 0) === 32 || Number(user.branch_id || user.branchId || user.branch || 0) === 1
       const branchName = (user.branch_name || user.branch || '').toString().toUpperCase()
       const username = (user.username || '').toString().toUpperCase()
       const isMainBranchByName = branchName.includes('MAIN') || username.includes('MAIN_BRANCH') || username.includes('MAINBRANCH')

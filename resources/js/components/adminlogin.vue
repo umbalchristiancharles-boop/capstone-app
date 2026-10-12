@@ -219,7 +219,9 @@ async function handleLogin() {
                 role: normalizeUserRole(res.data.user?.role),
                 department: (res.data.user?.department || '').toLowerCase(),
                 full_name: res.data.user?.full_name,
-                branch_id: res.data.user?.branch_id
+                branch_id: res.data.user?.branch_id,
+                branch_name: res.data.user?.branch_name,
+                is_main_branch: Boolean(res.data.user?.is_main_branch)
             };
 
             // Persist permissions for CUSTOM fallback routing
@@ -255,6 +257,8 @@ async function handleLogin() {
                             const merged = Object.assign({}, userData, {
                                 username: serverUser.username || userData.username,
                                 full_name: serverUser.full_name || userData.full_name,
+                                branch_name: serverUser.branch_name || userData.branch_name,
+                                is_main_branch: Boolean(serverUser.is_main_branch ?? userData.is_main_branch),
                                 permissions: serverUser.permissions || userData.permissions || {},
                             });
                             localStorage.setItem('user', JSON.stringify(merged));
@@ -276,7 +280,12 @@ async function handleLogin() {
 
             // Fallback to client-side calculation if server doesn't provide redirect_path
             if (!redirectPath) {
-                redirectPath = resolveRedirectPath(res.data.user?.role, res.data.user?.department, res.data.user?.permissions);
+                redirectPath = resolveRedirectPath(
+                    res.data.user?.role,
+                    res.data.user?.department,
+                    res.data.user?.permissions,
+                    res.data.user
+                );
             }
 
             console.debug('[LOGIN] Initial redirectPath:', redirectPath);
@@ -383,10 +392,18 @@ function handleBack() {
     }, 2000);
 }
 
-function resolveRedirectPath(role, department, permissions = {}) {
+function resolveRedirectPath(role, department, permissions = {}, user = {}) {
     // Use case-insensitive comparison by normalizing to uppercase
     let r = (role || '').toString().trim().toUpperCase();
     const d = (department || '').toString().trim().toUpperCase();
+    const branchName = (user.branch_name || '').toString().trim().toUpperCase();
+    const username = (user.username || '').toString().trim().toUpperCase();
+    const isMainBranch = Boolean(user.is_main_branch) ||
+        Number(user.branch_id || user.branchId || 0) === 1 ||
+        Number(user.branch_id || user.branchId || 0) === 32 ||
+        branchName.includes('MAIN') ||
+        username.includes('MAIN_BRANCH') ||
+        username.includes('MAINBRANCH');
 
     // Normalize permissions for CUSTOM accounts (modules/functions arrays)
     const permModules = Array.isArray(permissions.modules)
@@ -395,7 +412,7 @@ function resolveRedirectPath(role, department, permissions = {}) {
 
     // Handle MANAGER_HR role specially - treat as MANAGER with HR department
     if (r === 'MANAGER_HR') {
-        return '/manager/hr';
+        return isMainBranch ? '/main-branch/hr' : '/manager/hr';
     }
 
     // CUSTOM: choose a panel based on assigned modules; fallback to staff panel
@@ -411,6 +428,11 @@ function resolveRedirectPath(role, department, permissions = {}) {
         if (has(['HR'])) return '/manager/hr';
         if (has(['REPORTS'])) return '/manager/finance';
         return '/staff-panel';
+    }
+
+    // Main-branch HR accounts use their dedicated HQ panel.
+    if ((r === 'HR' || r === 'MANAGER' || r.includes('MANAGER')) && d.includes('HR') && isMainBranch) {
+        return '/main-branch/hr';
     }
 
     // If department explicitly indicates inventory/finance/etc, prefer that

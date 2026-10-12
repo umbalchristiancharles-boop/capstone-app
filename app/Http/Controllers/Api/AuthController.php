@@ -242,6 +242,8 @@ class AuthController extends Controller
             }
         }
 
+        $loginBranch = $user->branch_id ? Branch::find($user->branch_id) : null;
+
         return response()->json([
             'ok' => true,
             'message' => 'Login successful',
@@ -258,6 +260,8 @@ class AuthController extends Controller
                 'full_name' => $user->full_name,
                 'last_login_at' => $user->last_login_at?->toISOString(),
                 'branch_id' => $user->branch_id,
+                'branch_name' => $loginBranch?->name,
+                'is_main_branch' => (bool) ($loginBranch?->is_main_branch ?? false),
                 'email' => !is_null($user->email_verified_at) ? $user->email : null,
                 'must_change_password' => (bool) $user->must_change_password,
                 'permissions' => $user->permissions ?? [],
@@ -370,6 +374,9 @@ class AuthController extends Controller
 
         // HR
         if ($role === 'HR') {
+            if ($isMainBranchUser) {
+                return '/main-branch/hr';
+            }
             return '/hr-panel';
         }
 
