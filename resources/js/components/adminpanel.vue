@@ -45,6 +45,13 @@
             >
               Staff Management
             </button>
+            <label v-if="showBranchSelector && branches.length" class="admin-sidebar__branch-filter">
+              <span>Branch</span>
+              <select v-model="selectedBranchId" aria-label="Filter panel by branch">
+                <option value="">All Branches</option>
+                <option v-for="branch in branches" :key="branch.id" :value="String(branch.id)">{{ branch.name }}</option>
+              </select>
+            </label>
           </nav>
           <div class="admin-sidebar__footer">
             <button class="admin-sidebar__account" type="button" @click="openInfoModal">Account Info</button>
@@ -606,15 +613,9 @@
 
             <!-- Attendance Monitoring (Branch Manager) -->
             <section v-if="activeSection === 'staff'" id="admin-attendance" class="panel-block dashboard-white-panel">
-              <div class="panel-header" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+              <div class="panel-header">
                 <h2>Attendance Monitoring</h2>
-                <div style="display:flex; gap:8px; align-items:center;">
-                  <select v-model="selectedBranchId" @change="loadAdminAttendance(activeRange)" style="padding:6px; border-radius:6px;">
-                    <option :value="null">All branches</option>
-                    <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
-                  </select>
-                  <button class="panel-action" @click="loadAdminAttendance(activeRange)">Refresh</button>
-                </div>
+                <button class="panel-action" @click="loadAdminAttendance(activeRange)">Refresh</button>
               </div>
 
             <!-- Early Clock-Out Override Toggle for Owner/HR only -->
@@ -965,6 +966,13 @@ import { isCustomPanelOrigin, leaveToCustomPanel } from './customPanelNavigation
 
 import { showToast } from './toastStore'
 
+defineProps({
+  showBranchSelector: {
+    type: Boolean,
+    default: false,
+  },
+})
+
 const router = useRouter()
 const activeRange = ref('today')
 const activeSection = ref('dashboard')
@@ -1165,7 +1173,7 @@ const adminStaffActivity = ref([])
 const announcements = ref([])
 const loadingAnnouncements = ref(false)
 const branches = ref([])
-const selectedBranchId = ref(null)
+const selectedBranchId = ref('')
 const adminAttendance = ref([])
 const adminAttendanceLoading = ref(false)
 const adminAttendanceError = ref('')

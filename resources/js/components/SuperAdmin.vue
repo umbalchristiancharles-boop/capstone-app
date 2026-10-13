@@ -41,13 +41,6 @@
           @click="sidebarCollapsed = false"
         >☰</button>
         <div class="super-admin-topbar__spacer"></div>
-        <label v-if="showBranchSelector" class="super-admin-branch-filter">
-          <span>Branch</span>
-          <select v-model="selectedBranchId" aria-label="Filter panel by branch">
-            <option v-if="availableBranches.length === 0" value="" disabled>Loading branches...</option>
-            <option v-for="branch in availableBranches" :key="branch.id" :value="String(branch.id)">{{ branch.name }}</option>
-          </select>
-        </label>
         <div ref="accountMenuRef" class="super-admin-account-menu">
           <button
             id="super-admin-account-toggle"
@@ -204,6 +197,7 @@
           v-bind="{
             ...(activeModule === 'inventoryStaff' ? { isSuperAdmin: true } : {}),
             ...(activeModule === 'mainBranchAdmin' ? { monitoringOnly: true } : {}),
+            ...(activeModule === 'admin' ? { showBranchSelector: true } : {}),
           }"
           :key="`${activeModule}:${selectedBranchId}`"
         />
@@ -2145,6 +2139,55 @@ watch(() => route.path, (p) => {
   border-radius: 9px !important;
   text-align: center !important;
   white-space: normal !important;
+}
+
+.super-admin-module-view :deep(.admin-panel-shell .admin-sidebar__branch-filter) {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  margin-left: auto !important;
+  padding: 0.3rem 0.7rem 0.3rem 0.75rem !important;
+  border: 1px solid #eadfd6 !important;
+  border-radius: 10px !important;
+  background: #fffaf6 !important;
+  color: #4d3c35 !important;
+  font-size: 0.76rem !important;
+  font-weight: 700 !important;
+}
+
+.super-admin-module-view :deep(.admin-panel-shell .admin-sidebar__branch-filter span) {
+  color: #4d3c35 !important;
+  font-weight: 700 !important;
+}
+
+.super-admin-module-view :deep(.admin-panel-shell .admin-sidebar__branch-filter select) {
+  width: min(210px, 26vw) !important;
+  min-width: 150px !important;
+  height: 34px !important;
+  padding: 0 0.65rem !important;
+  border: 1px solid #ddcbbd !important;
+  border-radius: 8px !important;
+  background: #fff !important;
+  color: #2a211d !important;
+  font: inherit !important;
+  font-size: 0.78rem !important;
+}
+
+@media (max-width: 767px) {
+  .super-admin-module-view :deep(.admin-panel-shell .admin-sidebar__nav) {
+    align-items: stretch !important;
+  }
+
+  .super-admin-module-view :deep(.admin-panel-shell .admin-sidebar__branch-filter) {
+    width: 100% !important;
+    margin-left: 0 !important;
+    justify-content: space-between !important;
+  }
+
+  .super-admin-module-view :deep(.admin-panel-shell .admin-sidebar__branch-filter select) {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
 }
 
 .super-admin-module-view :deep(.admin-panel-shell .admin-main) {
