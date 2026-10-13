@@ -1,7 +1,7 @@
 <template>
   <div class="superadmin-logistics-wrapper">
     <OwnerPanelLayout
-      panelTitle="Super Admin Supplier Panel"
+      panelTitle="Supplier"
       panelDescription="Manage suppliers, view supplier inventory, and monitor supplier requests across branches."
       :fullWidth="true"
       :showProfileColumn="false"
@@ -20,7 +20,7 @@
             Back to Super Admin
           </button>
           <div class="supplier-page-header__copy">
-            <h1>Super Admin Supplier Panel</h1>
+            <h1>Supplier</h1>
             <p>Manage suppliers, view supplier inventory, and monitor supplier requests across branches.</p>
           </div>
         </header>

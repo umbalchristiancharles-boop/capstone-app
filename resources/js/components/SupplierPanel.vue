@@ -1702,7 +1702,9 @@ function onProfileUpdated(newData) {
 
 .supplier-panel-shell {
   width: 100%;
+  height: 100dvh;
   min-height: 100vh;
+  overflow: hidden;
   background: #e7d9cf;
 }
 
@@ -1717,13 +1719,15 @@ function onProfileUpdated(newData) {
 }
 
 .supplier-panel-shell :deep(.min-h-screen) {
-  min-height: 100vh;
+  height: 100%;
+  min-height: 0;
   background: #e7d9cf !important;
 }
 
 .supplier-panel-shell :deep(.admin-layout) {
   display: block;
-  min-height: 100vh;
+  height: 100%;
+  min-height: 0;
   padding: 0;
   border-radius: 0;
   overflow: hidden;
@@ -1771,7 +1775,7 @@ function onProfileUpdated(newData) {
   left: 0;
 }
 
-.supplier-panel-shell :deep(.admin-layout--owner-sidebar-layout .admin-main) {
+.supplier-panel-shell :deep(.admin-layout.no-profile-column.admin-layout--owner-sidebar-layout .admin-main) {
   display: block;
   width: 100%;
   min-width: 0;
@@ -1802,6 +1806,82 @@ function onProfileUpdated(newData) {
 
 .supplier-panel-shell :deep(.admin-layout.no-profile-column) .admin-main {
   width: 100%;
+}
+
+@media (min-width: 1024px) {
+  .supplier-panel-shell :deep(.admin-page),
+  .supplier-panel-shell :deep(.admin-layout) {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .supplier-panel-shell :deep(.admin-layout.no-profile-column.admin-layout--owner-sidebar-layout) {
+    display: grid !important;
+    grid-template-columns: var(--owner-sidebar-width, 156px) minmax(0, 1fr) !important;
+    grid-template-rows: 66px minmax(0, 1fr) !important;
+    align-items: stretch !important;
+    column-gap: 12px !important;
+  }
+
+  .supplier-panel-shell :deep(.admin-layout.no-profile-column.admin-layout--owner-sidebar-layout.owner-sidebar-collapsed) {
+    grid-template-columns: minmax(0, 1fr) !important;
+    column-gap: 0 !important;
+  }
+
+  .supplier-panel-shell :deep(.admin-layout.no-profile-column.admin-layout--owner-sidebar-layout > .admin-main) {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    justify-self: stretch !important;
+    height: calc(100dvh - 66px) !important;
+    min-height: 0 !important;
+    max-height: calc(100dvh - 66px) !important;
+    margin: 0 !important;
+    margin-right: 0 !important;
+    padding: 1.25rem 1.3rem 2rem !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-gutter: stable;
+  }
+
+  .supplier-panel-shell :deep(.admin-layout.no-profile-column.admin-layout--owner-sidebar-layout.owner-sidebar-collapsed > .admin-main) {
+    grid-column: 1 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+@media (max-width: 1023px) {
+  .supplier-panel-shell {
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  .supplier-panel-shell :deep(.min-h-screen),
+  .supplier-panel-shell :deep(.admin-page),
+  .supplier-panel-shell :deep(.admin-layout) {
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  .supplier-panel-shell :deep(.admin-layout.no-profile-column.admin-layout--owner-sidebar-layout .admin-main) {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+  }
 }
 
 .supplier-sidebar-nav,
@@ -3344,6 +3424,15 @@ html.dark-mode .overview-card {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+@media (min-width: 1024px) {
+  .supplier-panel-shell :deep(.admin-layout.no-profile-column.admin-layout--owner-sidebar-layout > .admin-main) {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
 }
 
 </style>

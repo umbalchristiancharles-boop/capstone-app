@@ -187,7 +187,18 @@
 
       </section>
 
-      <section v-else class="super-admin-module-view">
+      <section
+        v-else
+        ref="monitoringViewRef"
+        class="super-admin-module-view"
+        @click.capture="guardMonitoringClick"
+        @change.capture="guardMonitoringChange"
+        @submit.capture="guardMonitoringSubmit"
+      >
+        <div class="super-admin-monitoring-notice" role="status">
+          <strong>Read-only monitoring</strong>
+          <span>Operational actions, attendance controls, and panel logout are unavailable. Super Admin account controls remain in the top bar.</span>
+        </div>
         <component
           :is="activeModuleComponent"
           v-bind="{
@@ -422,6 +433,7 @@ const showTerms = ref(false)
 const isLoggingOut = ref(false)
 const isAccountMenuOpen = ref(false)
 const accountMenuRef = ref(null)
+const monitoringViewRef = ref(null)
 const sidebarCollapsed = ref(false)
 const sidebarWidth = ref(220)
 const sidebarResizing = ref(false)
@@ -434,8 +446,27 @@ provide('superAdminEmbedded', true)
 provide('superAdminBranchId', selectedBranchId)
 provide('superAdminBranchScoped', showBranchSelector)
 
+const monitoringActionPattern = /\b(?:log[\s_-]*out|sign[\s_-]*out|clock[\s_-]*(?:in|out)|check[\s_-]*(?:in|out)|create|add|edit|update|save|delete|remove|approve|reject|confirm|submit|send|publish|unpublish|request|receive|dispatch|transfer|assign|issue|adjust|process|complete|refund|void|upload|import|activate|deactivate|toggle|archive|restore|reset)\b/i
+const monitoringReadControlPattern = /^\s*(?:view|details|show|hide|expand|collapse|refresh|reload|search|filter|clear filters?|export|download|print|previous|next|page(?:\s+\d+)?|\d+|today|week|month|year|all|active|inactive|pending|completed|dashboard|overview|back|close|menu|more|less)\b/i
+let monitoringControlsObserver = null
+
 const branchRequestInterceptor = axios.interceptors.request.use((config) => {
   const method = String(config.method || 'get').toLowerCase()
+  const requestPath = String(config.url || '')
+    .replace(/^https?:\/\/[^/]+/i, '')
+    .split(/[?#]/, 1)[0]
+  const isSuperAdminOwnAction = config.superAdminAction === true && (
+    (method === 'put' && requestPath === '/api/superadmin-profile') ||
+    (method === 'post' && ['/api/superadmin/avatar', '/api/superadmin/announce', '/api/superadmin/terms'].includes(requestPath))
+  )
+  const isPanelActionPath = /(?:^|\/)(?:logout|clock[\s_-]*(?:in|out)|check[\s_-]*(?:in|out)|approve|reject|confirm|mark-as-[^/]+|delete|remove|create|update|save|publish|unpublish|assign|receive|transfer|submit|cancel|send|upload|activate|deactivate|toggle|archive|restore|reset)(?:\/|$)/i.test(requestPath)
+
+  if (activeModule.value !== 'dashboard' && !isSuperAdminOwnAction &&
+      (!['get', 'head', 'options'].includes(method) || isPanelActionPath)) {
+    showToast('Read-only monitoring mode: operational actions are unavailable.', 'info')
+    throw new Error('This panel is view-only in Super Admin monitoring mode.')
+  }
+
   if (!showBranchSelector.value || method !== 'get' || !selectedBranchId.value || !String(config.url || '').startsWith('/api/')) {
     return config
   }
@@ -463,6 +494,136 @@ const moduleComponents = {
 
 const activeModuleComponent = computed(() => moduleComponents[activeModule.value] || null)
 let lightModeObserver = null
+
+function getMonitoringControlDescription(control) {
+  const associatedLabels = Array.from(control.labels || []).map(label => label.textContent)
+  return [
+    control.textContent,
+    control.getAttribute('aria-label'),
+    control.getAttribute('title'),
+    control.getAttribute('href'),
+    control.getAttribute('placeholder'),
+    ...associatedLabels,
+    control.id,
+    typeof control.className === 'string' ? control.className : '',
+  ].filter(Boolean).join(' ')
+}
+
+function isMonitoringReadFilterForm(form) {
+  const description = getMonitoringControlDescription(form)
+  return !monitoringActionPattern.test(description) && /\b(?:search|filter|report|date|range)\b/i.test(description)
+}
+
+function isRestrictedMonitoringControl(control) {
+  const description = getMonitoringControlDescription(control)
+  const isLogoutOrAttendanceControl = /\b(?:log[\s_-]*out|sign[\s_-]*out|clock[\s_-]*(?:in|out)|check[\s_-]*(?:in|out))\b/i.test(description) ||
+    /\b(?:attendance-buttons|btn-clock|clock-in|clock-out)\b/i.test(description)
+  if (isLogoutOrAttendanceControl) {
+    return true
+  }
+
+  if (control.closest('nav, [role="tablist"], [class*="sidebar"], [class*="navigation"], [class*="pagination"], [class*="filter-bar"], [class*="filters"]')) {
+    return false
+  }
+
+  if (monitoringActionPattern.test(description)) return true
+
+  if (control instanceof HTMLAnchorElement &&
+      (control.origin !== window.location.origin || control.pathname !== window.location.pathname)) {
+    return true
+  }
+
+  if (control.matches(':disabled, [readonly]')) return false
+  const form = control.closest('form')
+  if (form && isMonitoringReadFilterForm(form)) return false
+  if (control.matches('[type="submit"], input[type="button"], input[type="submit"]')) return true
+  if (control.matches('[role="tab"], [aria-expanded]')) return false
+  if (control.matches('input[type="search"]')) return false
+
+  return !monitoringReadControlPattern.test(description)
+}
+
+function updateMonitoringControls() {
+  const monitoringView = monitoringViewRef.value
+  if (!monitoringView) return
+
+  monitoringView.querySelectorAll('[data-super-admin-monitoring-restricted="true"]').forEach((element) => {
+    element.removeAttribute('data-super-admin-monitoring-restricted')
+  })
+
+  const controls = monitoringView.querySelectorAll('button, [role="button"], input:not([type="hidden"]), select, textarea, a[href]')
+  controls.forEach((control) => {
+    if (isRestrictedMonitoringControl(control)) {
+      control.setAttribute('data-super-admin-monitoring-restricted', 'true')
+    } else {
+      control.removeAttribute('data-super-admin-monitoring-restricted')
+    }
+  })
+
+  const forms = monitoringView.querySelectorAll('form')
+  forms.forEach((form) => {
+    if (isMonitoringReadFilterForm(form)) return
+    const hasRestrictedControl = Array.from(form.querySelectorAll('button, [role="button"], input:not([type="hidden"]), select, textarea'))
+      .some(isRestrictedMonitoringControl)
+    if (!hasRestrictedControl) return
+
+    form.setAttribute('data-super-admin-monitoring-restricted', 'true')
+    const panelBlock = form.closest('.panel-block')
+    if (panelBlock && panelBlock.querySelectorAll('form').length === 1 &&
+        !panelBlock.querySelector('table, .table-row, [role="table"], .side-item, .queue-item, .overview-card, ul, ol')) {
+      panelBlock.setAttribute('data-super-admin-monitoring-restricted', 'true')
+    }
+  })
+}
+
+function observeMonitoringControls() {
+  monitoringControlsObserver?.disconnect()
+  monitoringControlsObserver = null
+  if (!monitoringViewRef.value) return
+
+  updateMonitoringControls()
+  monitoringControlsObserver = new MutationObserver(updateMonitoringControls)
+  monitoringControlsObserver.observe(monitoringViewRef.value, {
+    attributes: true,
+    attributeFilter: ['aria-label', 'class', 'href', 'title'],
+    characterData: true,
+    childList: true,
+    subtree: true,
+  })
+}
+
+function notifyMonitoringRestriction() {
+  showToast('Read-only monitoring mode: operational actions are unavailable.', 'info')
+}
+
+function guardMonitoringClick(event) {
+  const target = event.target
+  if (!(target instanceof Element)) return
+
+  const control = target.closest('button, [role="button"], input[type="button"], input[type="submit"], a[href]')
+  if (control && isRestrictedMonitoringControl(control)) {
+    event.preventDefault()
+    event.stopPropagation()
+    notifyMonitoringRestriction()
+  }
+}
+
+function guardMonitoringChange(event) {
+  const target = event.target
+  if (!(target instanceof Element) || !isRestrictedMonitoringControl(target)) return
+  event.preventDefault()
+  event.stopPropagation()
+  notifyMonitoringRestriction()
+}
+
+function guardMonitoringSubmit(event) {
+  const form = event.target
+  if (form instanceof HTMLFormElement && isMonitoringReadFilterForm(form)) return
+
+  event.preventDefault()
+  event.stopPropagation()
+  notifyMonitoringRestriction()
+}
 
 function closeAccountMenuOnOutsideClick(event) {
   if (!accountMenuRef.value?.contains(event.target)) {
@@ -750,7 +911,7 @@ async function saveProfile() {
       email: superAdminProfile.value.email,
       contact: superAdminProfile.value.contact
     }
-    const res = await axios.put('/api/superadmin-profile', payload, { withCredentials: true })
+    const res = await axios.put('/api/superadmin-profile', payload, { withCredentials: true, superAdminAction: true })
     if (res.data.ok) {
       isEditingInfo.value = false
       profileSuccess.value = 'Profile updated successfully.'
@@ -798,6 +959,7 @@ async function onAvatarChange(event) {
         'X-XSRF-TOKEN': xsrfToken || '',
       },
       withCredentials: true,
+      superAdminAction: true,
     })
 
     if (res.data && res.data.ok) {
@@ -850,7 +1012,7 @@ async function sendAnnouncement() {
       title: announcementTitle.value,
       message: announcementText.value,
       target: announcementTarget.value
-    }, { withCredentials: true })
+    }, { withCredentials: true, superAdminAction: true })
     if (res.data.ok) {
       announcementSuccess.value = 'Announcement sent successfully!'
       setTimeout(() => {
@@ -880,7 +1042,7 @@ async function updateTerms() {
   try {
     const res = await axios.post('/api/superadmin/terms', {
       content: termsText.value
-    }, { withCredentials: true })
+    }, { withCredentials: true, superAdminAction: true })
     if (res.data.ok) {
       termsSuccess.value = 'Terms updated successfully!'
       setTimeout(() => {
@@ -925,6 +1087,7 @@ async function askLogout() {
 onMounted(async () => {
   document.addEventListener('pointerdown', closeAccountMenuOnOutsideClick)
   document.addEventListener('keydown', closeAccountMenuOnEscape)
+  observeMonitoringControls()
   startLightModeGuard()
   isInitialMount.value = false
   superAdminProfile.value = { fullName: '', role: 'SUPER_ADMIN', email: '', contact: '', accountId: '', avatarUrl: '' }
@@ -937,6 +1100,8 @@ onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', closeAccountMenuOnOutsideClick)
   document.removeEventListener('keydown', closeAccountMenuOnEscape)
   axios.interceptors.request.eject(branchRequestInterceptor)
+  monitoringControlsObserver?.disconnect()
+  monitoringControlsObserver = null
   lightModeObserver?.disconnect()
   lightModeObserver = null
 })
@@ -953,6 +1118,8 @@ async function loadAvailableBranches() {
     availableBranches.value = []
   }
 }
+
+watch(activeModule, observeMonitoringControls, { flush: 'post' })
 
 // Reload dashboard whenever we navigate to this route so external changes (like added branches)
 // are reflected immediately without requiring a manual refresh.
@@ -1662,65 +1829,242 @@ watch(() => route.path, (p) => {
   background: #f1e5dc;
 }
 
-.super-admin-module-view :deep(.logistics-topbar),
-.super-admin-module-view :deep(.admin-topbar) {
+.super-admin-module-view:has(.admin-panel-shell) {
+  height: calc(100dvh - 66px);
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+
+.super-admin-monitoring-notice {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 0 0 0.85rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #b8dfc8;
+  border-radius: 12px;
+  background: #f0faf3;
+  color: #315b40;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.super-admin-monitoring-notice strong {
+  flex: 0 0 auto;
+  color: #17633a;
+}
+
+.super-admin-module-view :deep(.owner-dish-section) {
+  margin-top: 1rem !important;
+}
+
+.super-admin-module-view :deep([data-super-admin-monitoring-restricted="true"]) {
   display: none !important;
 }
 
-.super-admin-module-view :deep(.admin-layout--owner-sidebar-layout) {
+.super-admin-module-view :deep(.owner-panel-topbar),
+.super-admin-module-view :deep(.admin-topbar),
+.super-admin-module-view :deep(.logistics-topbar),
+.super-admin-module-view :deep(.finance-main-header),
+.super-admin-module-view :deep(.manager-hr-compact-profile),
+.super-admin-module-view :deep(.panel-sidebar-brand),
+.super-admin-module-view :deep(.owner-sidebar-footer),
+.super-admin-module-view :deep(.finance-sidebar__footer),
+.super-admin-module-view :deep(.manager-hr-sidebar__footer),
+.super-admin-module-view :deep(.logistics-sidebar__footer),
+.super-admin-module-view :deep(.cashier-right-sidebar__toggle),
+.super-admin-module-view :deep(.cashier-right-sidebar__reopen),
+.super-admin-module-view :deep(.admin-sidebar__footer),
+.super-admin-module-view :deep(.admin-sidebar__resize-handle),
+.super-admin-module-view :deep(.admin-panel-shell .panel-sidebar-resize-handle),
+.super-admin-module-view :deep(.owner-panel-sidebar__resize-handle),
+.super-admin-module-view :deep(.back-to-dashboard-btn),
+.super-admin-module-view :deep(.back-to-superadmin-btn),
+.super-admin-module-view :deep(.back-to-super-admin-btn) {
+  display: none !important;
+}
+
+.super-admin-module-view :deep(.admin-layout--owner-sidebar-layout),
+.super-admin-module-view :deep(.main-branch-admin-panel .admin-layout--owner-sidebar-layout),
+.super-admin-module-view :deep(.main-branch-admin-panel .admin-layout--owner-sidebar-layout.no-profile-column.admin-layout--wider) {
   display: grid !important;
-  grid-template-columns: minmax(120px, 156px) minmax(0, 1fr) !important;
-  grid-template-rows: minmax(0, 1fr) !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
   align-items: start;
   min-height: 0 !important;
   padding: 0 !important;
 }
 
 .super-admin-module-view :deep(.owner-panel-layout--embedded .owner-panel-sidebar) {
-  position: relative !important;
-  grid-column: 1 !important;
-  grid-row: 1 !important;
-  display: flex !important;
-  width: 100% !important;
+  position: static !important;
+  inset: auto !important;
+  z-index: auto !important;
+  display: contents !important;
+  width: auto !important;
   min-width: 0 !important;
-  min-height: calc(100vh - 100px) !important;
+  min-height: 0 !important;
   height: auto !important;
+  max-height: none !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
   transform: none !important;
   opacity: 1 !important;
+  overflow: visible !important;
 }
 
 .super-admin-module-view :deep(.owner-panel-layout--embedded .admin-main) {
-  grid-column: 2 !important;
-  grid-row: 1 !important;
+  grid-column: 1 !important;
+  grid-row: 2 !important;
   width: 100% !important;
   min-width: 0 !important;
   margin: 0 !important;
   padding: 1rem !important;
 }
 
+.super-admin-module-view :deep(.main-branch-admin-panel .admin-layout--owner-sidebar-layout .admin-main) {
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+}
+
+.super-admin-module-view :deep(.owner-sidebar-nav),
+.super-admin-module-view :deep(.main-branch-hr-sidebar-nav),
+.super-admin-module-view :deep(.manager-logistics-sidebar-nav),
+.super-admin-module-view :deep(.manager-procurement-sidebar-nav),
+.super-admin-module-view :deep(.inventory-sidebar-nav) {
+  position: static !important;
+  grid-column: 1 / -1 !important;
+  grid-row: 1 !important;
+  display: flex !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  margin: 0 0 0.75rem !important;
+  padding: 0.65rem !important;
+  border: 1px solid #eadfd6 !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+  box-shadow: 0 3px 12px rgba(66, 33, 11, 0.045) !important;
+  overflow: visible !important;
+}
+
+.super-admin-module-view :deep(.owner-sidebar-nav > button),
+.super-admin-module-view :deep(.main-branch-hr-sidebar-link),
+.super-admin-module-view :deep(.manager-logistics-sidebar-link),
+.super-admin-module-view :deep(.manager-procurement-sidebar-link),
+.super-admin-module-view :deep(.inventory-sidebar-nav .owner-sidebar-link) {
+  display: inline-flex !important;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 38px !important;
+  flex: 0 0 auto !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  padding: 0.55rem 0.8rem !important;
+  border: 1px solid transparent !important;
+  border-radius: 9px !important;
+  text-align: center !important;
+  white-space: normal !important;
+}
+
+.super-admin-module-view :deep(.owner-sidebar-nav > button:hover),
+.super-admin-module-view :deep(.main-branch-hr-sidebar-link:hover),
+.super-admin-module-view :deep(.manager-logistics-sidebar-link:hover),
+.super-admin-module-view :deep(.manager-procurement-sidebar-link:hover),
+.super-admin-module-view :deep(.inventory-sidebar-nav .owner-sidebar-link:hover) {
+  transform: none !important;
+}
+
 .super-admin-module-view :deep(.main-branch-page) {
   display: grid !important;
-  grid-template-columns: minmax(120px, 156px) minmax(0, 1fr) !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
   gap: 0 !important;
-  min-height: calc(100vh - 100px) !important;
+  min-height: 0 !important;
   padding: 0 !important;
 }
 
 .super-admin-module-view :deep(.main-branch-page .logistics-sidebar) {
-  position: relative !important;
+  position: static !important;
   inset: auto !important;
-  display: flex !important;
-  grid-column: 1 !important;
-  grid-row: 1 !important;
-  width: 100% !important;
-  min-height: calc(100vh - 100px) !important;
+  z-index: auto !important;
+  display: contents !important;
+  grid-column: auto !important;
+  grid-row: auto !important;
+  width: auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
   transform: none !important;
   opacity: 1 !important;
+  overflow: visible !important;
+}
+
+.super-admin-module-view :deep(.logistics-sidebar__nav),
+.super-admin-module-view :deep(.finance-sidebar__nav),
+.super-admin-module-view :deep(.manager-hr-sidebar__nav),
+.super-admin-module-view :deep(.cashier-right-sidebar__nav) {
+  position: static !important;
+  grid-column: 1 / -1 !important;
+  grid-row: 1 !important;
+  display: flex !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 0.5rem !important;
+  margin: 0 0 0.75rem !important;
+  padding: 0.65rem !important;
+  border: 1px solid #eadfd6 !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+  box-shadow: 0 3px 12px rgba(66, 33, 11, 0.045) !important;
+  overflow: visible !important;
+}
+
+.super-admin-module-view :deep(.logistics-sidebar__item),
+.super-admin-module-view :deep(.finance-sidebar__item),
+.super-admin-module-view :deep(.manager-hr-sidebar__item),
+.super-admin-module-view :deep(.cashier-right-sidebar__item) {
+  display: inline-flex !important;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 38px !important;
+  flex: 0 0 auto !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  padding: 0.55rem 0.8rem !important;
+  border: 1px solid transparent !important;
+  border-radius: 9px !important;
+  text-align: center !important;
+  white-space: normal !important;
+}
+
+.super-admin-module-view :deep(.logistics-sidebar__item:hover),
+.super-admin-module-view :deep(.finance-sidebar__item:hover),
+.super-admin-module-view :deep(.manager-hr-sidebar__item:hover),
+.super-admin-module-view :deep(.cashier-right-sidebar__item:hover) {
+  transform: none !important;
 }
 
 .super-admin-module-view :deep(.main-branch-page .logistics-workspace) {
-  grid-column: 2 !important;
-  grid-row: 1 !important;
+  grid-column: 1 !important;
+  grid-row: 2 !important;
   width: 100% !important;
   margin-left: 0 !important;
   padding-top: 0 !important;
@@ -1728,38 +2072,743 @@ watch(() => route.path, (p) => {
 
 .super-admin-module-view :deep(.admin-panel-shell .admin-layout) {
   display: grid !important;
-  grid-template-columns: 156px minmax(0, 1fr) !important;
+  grid-template-columns: minmax(0, 1fr) !important;
   grid-template-rows: auto auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
   min-height: 0 !important;
+  overflow: visible !important;
   padding: 0 !important;
 }
 
+.super-admin-module-view :deep(.admin-panel-shell),
+.super-admin-module-view :deep(.admin-panel-shell .admin-page) {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+}
+
 .super-admin-module-view :deep(.admin-panel-shell .admin-sidebar) {
-  position: relative !important;
-  grid-column: 1 !important;
-  grid-row: 1 / -1 !important;
+  position: static !important;
+  inset: auto !important;
+  z-index: auto !important;
+  display: contents !important;
+  grid-column: auto !important;
+  grid-row: auto !important;
+  width: auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  transform: none !important;
+  opacity: 1 !important;
+  overflow: visible !important;
+}
+
+.super-admin-module-view :deep(.admin-panel-shell .admin-sidebar__nav) {
+  position: static !important;
+  grid-column: 1 / -1 !important;
+  grid-row: 1 !important;
   display: flex !important;
   width: 100% !important;
-  height: auto !important;
-  min-height: calc(100vh - 100px) !important;
-  max-height: none !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  margin: 0 0 0.75rem !important;
+  padding: 0.65rem !important;
+  border: 1px solid #eadfd6 !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+  box-shadow: 0 3px 12px rgba(66, 33, 11, 0.045) !important;
+  overflow: visible !important;
+}
+
+.super-admin-module-view :deep(.admin-panel-shell .admin-sidebar__item) {
+  display: inline-flex !important;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 38px !important;
+  flex: 0 0 auto !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  padding: 0.55rem 0.8rem !important;
+  border: 1px solid transparent !important;
+  border-radius: 9px !important;
+  text-align: center !important;
+  white-space: normal !important;
 }
 
 .super-admin-module-view :deep(.admin-panel-shell .admin-main) {
-  grid-column: 2 !important;
-  grid-row: 1 !important;
+  grid-column: 1 !important;
+  grid-row: 2 !important;
   min-height: 0 !important;
   margin: 0 !important;
   padding: 1rem !important;
 }
 
 .super-admin-module-view :deep(.admin-panel-shell .admin-side) {
-  grid-column: 2 !important;
-  grid-row: 2 !important;
+  grid-column: 1 !important;
+  grid-row: 3 !important;
   display: block !important;
   width: 100% !important;
   min-height: 0 !important;
   margin: 0 !important;
+}
+
+.super-admin-module-view :deep(.admin-panel-shell .dashboard-detail-grid) {
+  gap: 1rem !important;
+  margin-top: 1rem !important;
+}
+
+.super-admin-module-view :deep(.admin-panel-shell .dashboard-detail-grid > .panel-block) {
+  margin: 0 !important;
+  padding: 1rem 1.1rem !important;
+  border: 1px solid #e8ded6 !important;
+  border-radius: 16px !important;
+  background: #fff !important;
+  box-shadow: 0 8px 22px rgba(66, 33, 11, 0.06) !important;
+}
+
+.super-admin-module-view :deep(.admin-panel-shell .dashboard-detail-grid > .panel-block > .panel-header) {
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 0.75rem !important;
+  margin: 0 !important;
+  padding: 0.1rem 0 0.85rem !important;
+  border: 0 !important;
+  border-bottom: 1px solid #eee6e0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.super-admin-module-view :deep(.admin-panel-shell .dashboard-detail-grid .panel-header h2) {
+  margin: 0 !important;
+  color: #263445 !important;
+  font-size: 1rem !important;
+  font-weight: 750 !important;
+  letter-spacing: -0.02em !important;
+}
+
+.super-admin-module-view :deep(.admin-panel-shell .dashboard-detail-caption) {
+  flex: 0 0 auto;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid #eee5dd;
+  border-radius: 999px;
+  background: #faf7f4;
+  color: #76685e;
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.super-admin-module-view :deep(.admin-panel-shell .dashboard-detail-grid .panel-body) {
+  padding: 0.85rem 0 0.1rem !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.super-admin-module-view :deep(.admin-panel-shell .dashboard-detail-summary) {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 0.45rem 0.55rem !important;
+  padding: 0 0 0.85rem !important;
+  color: #6d625b !important;
+}
+
+.super-admin-module-view :deep(.admin-panel-shell .dashboard-detail-summary > span) {
+  padding: 0.35rem 0.6rem;
+  border: 1px solid #eee7e1;
+  border-radius: 8px;
+  background: #faf8f6;
+  font-size: 0.75rem;
+}
+
+.super-admin-module-view :deep(.admin-panel-shell .dashboard-detail-summary strong) {
+  color: #263445 !important;
+  font-weight: 750 !important;
+}
+
+.super-admin-module-view :deep(.admin-panel-shell .dashboard-detail-table-wrap) {
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  border: 1px solid #eee7e1;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.super-admin-module-view :deep(.admin-panel-shell .dashboard-detail-table) {
+  width: 100% !important;
+  min-width: 760px !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  font-size: 0.78rem !important;
+}
+
+.super-admin-module-view :deep(.admin-panel-shell .dashboard-detail-table th) {
+  padding: 0.7rem 0.75rem !important;
+  border-bottom: 1px solid #e8ded6 !important;
+  background: #faf8f6 !important;
+  color: #776b63 !important;
+  font-size: 0.68rem !important;
+  font-weight: 750 !important;
+  letter-spacing: 0.045em !important;
+}
+
+.super-admin-module-view :deep(.admin-panel-shell .dashboard-detail-table td) {
+  padding: 0.75rem !important;
+  border-bottom: 1px solid #f0ebe7 !important;
+  color: #51463e !important;
+  line-height: 1.45 !important;
+}
+
+.super-admin-module-view :deep(.admin-panel-shell .dashboard-detail-table tbody tr:last-child td) {
+  border-bottom: 0 !important;
+}
+
+.super-admin-module-view :deep(.admin-panel-shell .dashboard-detail-table tbody tr:hover) {
+  background: #fcfaf8 !important;
+}
+
+.super-admin-module-view :deep(.admin-panel-shell .dashboard-detail-table td strong) {
+  color: #263445 !important;
+  font-weight: 700 !important;
+}
+
+.super-admin-module-view :deep(.admin-panel-shell .dashboard-detail-table td small) {
+  color: #81756d !important;
+  line-height: 1.4 !important;
+}
+
+.super-admin-module-view :deep(.main-branch-finance-panel .manager-finance.finance-manager-layout) {
+  position: relative !important;
+  inset: auto !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto auto !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+.super-admin-module-view :deep(.main-branch-finance-panel),
+.super-admin-module-view :deep(.main-branch-finance-panel .content-area) {
+  position: relative !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+.super-admin-module-view :deep(.manager-finance .finance-sidebar) {
+  position: static !important;
+  inset: auto !important;
+  z-index: auto !important;
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  transform: none !important;
+  opacity: 1 !important;
+  overflow: visible !important;
+}
+
+.super-admin-module-view :deep(.manager-finance.finance-manager-layout:not(.main-branch-finance)) {
+  position: relative !important;
+  inset: auto !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto auto !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+.super-admin-module-view :deep(.manager-finance.finance-manager-layout:not(.main-branch-finance) .finance-main-panel) {
+  display: block !important;
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  background: transparent !important;
+}
+
+.super-admin-module-view :deep(.manager-finance.finance-manager-layout:not(.main-branch-finance) .finance-dashboard-body) {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0.25rem 0 1rem !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+.super-admin-module-view :deep(.manager-finance.finance-manager-layout:not(.main-branch-finance) .finance-section-view) {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  gap: 1rem !important;
+}
+
+.super-admin-module-view :deep(.manager-finance.finance-manager-layout:not(.main-branch-finance) .finance-section-content) {
+  border-color: #e8ded6 !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+  box-shadow: 0 8px 22px rgba(66, 33, 11, 0.05) !important;
+}
+
+.super-admin-module-view :deep(.main-branch-finance-panel .manager-finance .finance-main-panel) {
+  display: block !important;
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  background: transparent !important;
+}
+
+.super-admin-module-view :deep(.main-branch-finance-panel .manager-finance .finance-dashboard-body) {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0.25rem 0 1rem !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+.super-admin-module-view :deep(.main-branch-finance-panel .manager-finance .finance-section-view) {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  gap: 1rem !important;
+}
+
+.super-admin-module-view :deep(.main-branch-finance-panel .manager-finance .finance-section-content) {
+  border-color: #e8ded6 !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+  box-shadow: 0 8px 22px rgba(66, 33, 11, 0.05) !important;
+}
+
+.super-admin-module-view :deep(.manager-hr-page) {
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.75rem !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+  transition: none !important;
+}
+
+.super-admin-module-view :deep(.manager-hr-sidebar) {
+  position: static !important;
+  inset: auto !important;
+  z-index: auto !important;
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  transform: none !important;
+  opacity: 1 !important;
+  overflow: visible !important;
+}
+
+.super-admin-module-view :deep(.manager-hr-sidebar__nav) {
+  justify-content: flex-start !important;
+  margin: 0 !important;
+}
+
+.super-admin-module-view :deep(.manager-hr-sidebar__item) {
+  min-height: 38px !important;
+  padding: 0.55rem 0.85rem !important;
+  border: 1px solid transparent !important;
+  border-radius: 9px !important;
+  font-weight: 650 !important;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease !important;
+}
+
+.super-admin-module-view :deep(.manager-hr-sidebar__item--active) {
+  border-color: #f2d8c7 !important;
+  background: #fff6ef !important;
+  color: #9a3412 !important;
+  box-shadow: none !important;
+}
+
+.super-admin-module-view :deep(.manager-hr-section-view) {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.75rem !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+}
+
+.super-admin-module-view :deep(.superadmin-logistics-wrapper),
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .owner-panel-layout--embedded),
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .admin-page),
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .admin-layout) {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  min-height: 0 !important;
+  height: auto !important;
+  margin: 0 !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+  background: transparent !important;
+}
+
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .admin-layout) {
+  display: block !important;
+  padding: 0 !important;
+}
+
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .admin-main) {
+  display: flex !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  min-height: 0 !important;
+  flex-direction: column !important;
+  gap: 1rem !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .supplier-page-header) {
+  display: flex !important;
+  min-height: 104px !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 1rem !important;
+  margin: 0 !important;
+  padding: 1.25rem 1.5rem !important;
+  border: 1px solid #e8ded6 !important;
+  border-top: 3px solid #e85b22 !important;
+  border-radius: 16px !important;
+  background: linear-gradient(110deg, #fff 0%, #fffaf5 100%) !important;
+  box-shadow: 0 8px 22px rgba(66, 33, 11, 0.06) !important;
+  text-align: left !important;
+}
+
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .supplier-page-header__copy) {
+  width: 100% !important;
+  text-align: left !important;
+}
+
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .supplier-page-header__copy h1) {
+  margin: 0 !important;
+  color: #263445 !important;
+  font-size: clamp(1.45rem, 2vw, 1.9rem) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.035em !important;
+  line-height: 1.15 !important;
+}
+
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .supplier-page-header__copy p) {
+  margin: 0.4rem 0 0 !important;
+  color: #76685e !important;
+  font-size: 0.88rem !important;
+  line-height: 1.5 !important;
+}
+
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .admin-main > .panel-section) {
+  display: flex !important;
+  min-width: 0 !important;
+  flex-direction: column !important;
+  gap: 1rem !important;
+  margin: 0 !important;
+  padding: 1.25rem !important;
+  border: 1px solid #e8ded6 !important;
+  border-radius: 16px !important;
+  background: #fff !important;
+  box-shadow: 0 8px 22px rgba(66, 33, 11, 0.055) !important;
+}
+
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .section-title) {
+  margin: 0 !important;
+  color: #263445 !important;
+  font-size: 1.15rem !important;
+  font-weight: 750 !important;
+  letter-spacing: -0.025em !important;
+}
+
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .section-description) {
+  margin: -0.65rem 0 0 !important;
+  color: #76685e !important;
+  font-size: 0.85rem !important;
+  line-height: 1.5 !important;
+}
+
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .supplier-directory-section),
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .supplier-products) {
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 1rem !important;
+  border: 1px solid #eee6e0 !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+}
+
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .supplier-directory-section h3),
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .supplier-products h3),
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .admin-main > .panel-section > .panel-section h3) {
+  margin: 0 0 0.75rem !important;
+  color: #344454 !important;
+  font-size: 0.98rem !important;
+  font-weight: 750 !important;
+  line-height: 1.35 !important;
+}
+
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .admin-main > .panel-section > .panel-section) {
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 1rem !important;
+  border: 1px solid #eee6e0 !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+  box-shadow: none !important;
+}
+
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .table-container),
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .orders-table-wrapper),
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .products-table-wrapper) {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  border: 1px solid #eee6e0;
+  border-radius: 10px;
+  background: #fff;
+  box-sizing: border-box !important;
+}
+
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .table-container) {
+  overflow: auto !important;
+}
+
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .data-table),
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .products-table) {
+  width: 100% !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .data-table) {
+  min-width: 720px !important;
+}
+
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .supplier-directory-section .data-table) {
+  min-width: 540px !important;
+}
+
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .products-table) {
+  min-width: 440px !important;
+}
+
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .data-table thead th),
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .products-table thead th) {
+  padding: 0.75rem 0.85rem !important;
+  border-bottom: 1px solid #eee6e0 !important;
+  background: #faf7f4 !important;
+  color: #76685e !important;
+  font-size: 0.69rem !important;
+  font-weight: 750 !important;
+  letter-spacing: 0.045em !important;
+  white-space: nowrap !important;
+}
+
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .data-table td),
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .products-table td) {
+  padding: 0.75rem 0.85rem !important;
+  border-bottom: 1px solid #f0ebe7 !important;
+  color: #51463e !important;
+  font-size: 0.82rem !important;
+  line-height: 1.45 !important;
+}
+
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .data-table tbody tr:last-child td),
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .products-table tbody tr:last-child td) {
+  border-bottom: 0 !important;
+}
+
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .data-table tbody tr:hover td),
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .products-table tbody tr:hover td) {
+  background: #fcfaf8 !important;
+}
+
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .empty-message) {
+  display: flex !important;
+  min-height: 68px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  padding: 0.85rem 1rem !important;
+  border: 1px dashed #e5d9cf !important;
+  border-radius: 10px !important;
+  background: #fcfaf8 !important;
+  color: #81756d !important;
+  font-size: 0.82rem !important;
+  font-style: normal !important;
+  text-align: center !important;
+}
+
+.super-admin-module-view :deep(.superadmin-logistics-wrapper .loading-container) {
+  min-height: 120px !important;
+  border: 1px solid #eee6e0;
+  border-radius: 10px;
+  background: #fcfaf8;
+  color: #76685e;
+}
+
+.super-admin-module-view :deep(.cashier-page) {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 1rem !important;
+}
+
+.super-admin-module-view :deep(.cashier-right-sidebar) {
+  position: static !important;
+  inset: auto !important;
+  z-index: auto !important;
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  margin: 0 0 0.75rem !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  transform: none !important;
+  opacity: 1 !important;
+  overflow: visible !important;
+}
+
+.super-admin-module-view :deep(.cashier-sidebar-collapsed .cashier-right-sidebar) {
+  transform: none !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+.super-admin-module-view :deep(.cashier-sidebar-collapsed) {
+  padding-right: 1rem !important;
+}
+
+.super-admin-module-view :deep(.cashier-body),
+.super-admin-module-view :deep(.cashier-header),
+.super-admin-module-view :deep(.cashier-page > .branch-filter) {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.super-admin-module-view :deep(.admin-panel-shell .admin-content-scroll) {
+  position: static !important;
+  inset: auto !important;
+  z-index: auto !important;
+  display: block !important;
+  grid-column: 1 / -1 !important;
+  grid-row: 2 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  transition: none !important;
+  box-sizing: border-box !important;
+}
+
+.super-admin-module-view :deep(.admin-panel-shell .admin-content-scroll > .admin-main),
+.super-admin-module-view :deep(.admin-panel-shell .admin-content-scroll > .admin-left),
+.super-admin-module-view :deep(.admin-panel-shell .admin-content-scroll > .admin-side) {
+  position: static !important;
+  grid-column: auto !important;
+  grid-row: auto !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.super-admin-module-view :deep(.admin-panel-shell .admin-content-scroll > .admin-main) {
+  padding: 1rem !important;
+}
+
+.super-admin-module-view :deep(.admin-panel-shell .admin-content-scroll > .admin-side) {
+  padding: 0 1rem 1rem !important;
 }
 
 .super-admin-module-view :deep(.manager-procurement-panel .admin-main-header-top > div:nth-child(2)) {
@@ -2164,6 +3213,44 @@ watch(() => route.path, (p) => {
   .super-admin-topbar { left: 0; }
   .super-admin-shell:not(.sidebar-collapsed) .super-admin-sidebar { transform: translateX(0); }
   .super-admin-main-panel > .admin-page { padding-top: 66px; }
+  .super-admin-module-view { padding: 0.75rem; }
+  .super-admin-monitoring-notice { align-items: flex-start; flex-direction: column; gap: 0.2rem; }
+  .super-admin-module-view :deep(.superadmin-logistics-wrapper .supplier-page-header) {
+    min-height: 0 !important;
+    padding: 1rem !important;
+  }
+  .super-admin-module-view :deep(.superadmin-logistics-wrapper .admin-main > .panel-section) {
+    gap: 0.75rem !important;
+    padding: 0.9rem !important;
+  }
+  .super-admin-module-view :deep(.superadmin-logistics-wrapper .supplier-directory-section),
+  .super-admin-module-view :deep(.superadmin-logistics-wrapper .supplier-products),
+  .super-admin-module-view :deep(.superadmin-logistics-wrapper .admin-main > .panel-section > .panel-section) {
+    padding: 0.75rem !important;
+  }
+  .super-admin-module-view :deep(.admin-layout--owner-sidebar-layout),
+  .super-admin-module-view :deep(.main-branch-page),
+  .super-admin-module-view :deep(.admin-panel-shell .admin-layout) {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: auto auto auto !important;
+  }
+  .super-admin-module-view :deep(.owner-panel-layout--embedded .owner-panel-sidebar),
+  .super-admin-module-view :deep(.main-branch-page .logistics-sidebar),
+  .super-admin-module-view :deep(.admin-panel-shell .admin-sidebar) {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    min-height: 0 !important;
+  }
+  .super-admin-module-view :deep(.owner-panel-layout--embedded .admin-main),
+  .super-admin-module-view :deep(.main-branch-page .logistics-workspace),
+  .super-admin-module-view :deep(.admin-panel-shell .admin-main) {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+  }
+  .super-admin-module-view :deep(.admin-panel-shell .admin-side) {
+    grid-column: 1 !important;
+    grid-row: 3 !important;
+  }
   .super-admin-main-panel :deep(.admin-layout) { padding: 0.75rem; }
   .super-admin-dashboard-side { grid-template-columns: 1fr; }
   .super-admin-main-panel :deep(.super-admin-dashboard-layout) { gap: 1rem; padding: 0.75rem; }
