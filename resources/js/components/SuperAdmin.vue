@@ -188,10 +188,6 @@
         @change.capture="guardMonitoringChange"
         @submit.capture="guardMonitoringSubmit"
       >
-        <div class="super-admin-monitoring-notice" role="status">
-          <strong>Read-only monitoring</strong>
-          <span>Operational actions, attendance controls, and panel logout are unavailable. Super Admin account controls remain in the top bar.</span>
-        </div>
         <component
           :is="activeModuleComponent"
           v-bind="{
