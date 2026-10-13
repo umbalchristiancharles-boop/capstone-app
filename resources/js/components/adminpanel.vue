@@ -184,11 +184,11 @@
               <h2>Request New Product</h2>
               <div class="admin-product-request-actions">
                 <button class="panel-action admin-product-request-refresh" @click="loadProductRequests">Refresh</button>
-                <button class="panel-action admin-product-request-create" :disabled="!productRequestsEnabled" @click="showProductRequestForm = true">+ Request New Product</button>
+                <button class="panel-action admin-product-request-create" :disabled="!canRequestProducts" @click="showProductRequestForm = true">+ Request New Product</button>
               </div>
             </div>
             <div class="panel-body panel-body--list">
-              <div v-if="!productRequestsEnabled" class="product-request-warning" role="status">
+              <div v-if="!canRequestProducts" class="product-request-warning" role="status">
                 <div class="product-request-warning__icon">⚠</div>
                 <div>
                   <strong>Product requests are disabled</strong>
@@ -1112,6 +1112,7 @@ const showOverlay = ref(false)
 // Product request modal state (Admin)
 const showProductRequestForm = ref(false)
 const productRequestsEnabled = ref(true)
+const productRequestScope = ref({ mode: 'all', branchIds: [] })
 const ownerPermissionsStorageKey = 'owner_permissions'
 const productRequestForm = ref({ name: '', category: '', brand: '', description: '', reason: '', target_audience: '', storage_requirements: '', is_perishable: false, unit: '' })
 const productRequestSubmitting = ref(false)
@@ -1141,14 +1142,25 @@ function readOwnerPermissions() {
     }
     const parsed = JSON.parse(raw)
     productRequestsEnabled.value = parsed?.productRequests !== false
-    if (!productRequestsEnabled.value) {
+    productRequestScope.value = {
+      mode: parsed?.productRequestScope?.mode === 'specific' ? 'specific' : 'all',
+      branchIds: Array.isArray(parsed?.productRequestScope?.branchIds) ? parsed.productRequestScope.branchIds.map(Number) : [],
+    }
+    if (!canRequestProducts.value) {
       showProductRequestForm.value = false
     }
+
   } catch (error) {
     console.warn('AdminPanel: failed to load owner permission settings', error)
     productRequestsEnabled.value = true
   }
 }
+
+const canRequestProducts = computed(() => {
+  if (!productRequestsEnabled.value) return false
+  if (productRequestScope.value.mode !== 'specific') return true
+  return productRequestScope.value.branchIds.includes(Number(ownerProfile.value.branch_id))
+})
 
 function handleOwnerPermissionsStorage(event) {
   if (event.key !== ownerPermissionsStorageKey) return
@@ -1350,7 +1362,7 @@ async function ensureCsrf() {
 }
 
 async function submitProductRequest() {
-  if (!productRequestsEnabled.value) {
+  if (!canRequestProducts.value) {
     showToast('Product requests are disabled by the owner', 'error')
     return
   }

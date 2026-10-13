@@ -43,9 +43,20 @@ class OwnerDashboardController extends Controller
                 }
 
                 $sales = (float) (clone $orders)->where('status', 'completed')->sum('grand_total');
-                $orderCount = (int) (clone $orders)->where('status', 'completed')->count();
+                $completedOrders = (int) (clone $orders)->where('status', 'completed')->count();
+                $totalOrders = (int) (clone $orders)->count();
+                $pendingOrders = (int) (clone $orders)
+                    ->whereNotIn('status', ['completed', 'cancelled'])
+                    ->count();
+                $cancelledOrders = (int) (clone $orders)->where('status', 'cancelled')->count();
                 $refunds = (float) (clone $orders)->where('status', 'cancelled')->sum('grand_total');
-                $totalExpenses = (float) (clone $expenses)->where('status', 'approved')->sum('amount');
+                $approvedExpenses = (clone $expenses)->where('status', 'approved');
+                $totalExpenses = (float) (clone $approvedExpenses)->sum('amount');
+                $expenseCount = (int) (clone $approvedExpenses)->count();
+                $averageOrderValue = $completedOrders > 0 ? $sales / $completedOrders : 0;
+                $completionRate = $totalOrders > 0 ? ($completedOrders / $totalOrders) * 100 : 0;
+                $refundRate = $totalOrders > 0 ? ($cancelledOrders / $totalOrders) * 100 : 0;
+                $profitMargin = $sales > 0 ? (($sales - $totalExpenses - $refunds) / $sales) * 100 : 0;
 
                 return [
                     'branch_id' => $branch->id,
@@ -53,22 +64,56 @@ class OwnerDashboardController extends Controller
                     'branch_code' => $branch->code,
                     'is_active' => (bool) $branch->is_active,
                     'total_sales' => $sales,
-                    'total_orders' => $orderCount,
+                    'total_orders' => $totalOrders,
+                    'completed_orders' => $completedOrders,
+                    'pending_orders' => $pendingOrders,
+                    'cancelled_orders' => $cancelledOrders,
                     'total_expenses' => $totalExpenses,
+                    'expense_count' => $expenseCount,
                     'total_refunds' => $refunds,
+                    'average_order_value' => $averageOrderValue,
+                    'completion_rate' => $completionRate,
+                    'refund_rate' => $refundRate,
+                    'profit_margin' => $profitMargin,
                     'net_profit' => $sales - $totalExpenses - $refunds,
                 ];
             });
+
+        $topSales = $branches->sortByDesc('total_sales')->first();
+        $topProfit = $branches->sortByDesc('net_profit')->first();
+        $totalOrders = $branches->sum('total_orders');
+        $completedOrders = $branches->sum('completed_orders');
+        $cancelledOrders = $branches->sum('cancelled_orders');
 
         return response()->json([
             'ok' => true,
             'branches' => $branches,
             'totals' => [
                 'total_sales' => $branches->sum('total_sales'),
-                'total_orders' => $branches->sum('total_orders'),
+                'total_orders' => $totalOrders,
+                'completed_orders' => $completedOrders,
+                'pending_orders' => $branches->sum('pending_orders'),
+                'cancelled_orders' => $cancelledOrders,
                 'total_expenses' => $branches->sum('total_expenses'),
+                'expense_count' => $branches->sum('expense_count'),
                 'total_refunds' => $branches->sum('total_refunds'),
+                'average_order_value' => $completedOrders > 0 ? $branches->sum('total_sales') / $completedOrders : 0,
+                'completion_rate' => $totalOrders > 0 ? ($completedOrders / $totalOrders) * 100 : 0,
+                'refund_rate' => $totalOrders > 0 ? ($cancelledOrders / $totalOrders) * 100 : 0,
                 'net_profit' => $branches->sum('net_profit'),
+                'profit_margin' => $branches->sum('total_sales') > 0
+                    ? ($branches->sum('net_profit') / $branches->sum('total_sales')) * 100
+                    : 0,
+            ],
+            'highlights' => [
+                'top_sales_branch' => $topSales ? [
+                    'name' => $topSales['branch_name'],
+                    'value' => $topSales['total_sales'],
+                ] : null,
+                'top_profit_branch' => $topProfit ? [
+                    'name' => $topProfit['branch_name'],
+                    'value' => $topProfit['net_profit'],
+                ] : null,
             ],
             'filters' => ['range' => $range],
         ]);

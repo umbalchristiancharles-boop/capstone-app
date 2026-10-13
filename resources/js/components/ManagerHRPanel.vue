@@ -69,11 +69,19 @@
               {{ loadingApplications ? 'Loading...' : 'View Applications' }}
             </button>
             <span v-if="applicationsCount > 0" class="panel-badge">{{ applicationsCount }} total</span>
-            <button class="panel-action panel-action--primary" @click="openPositionsModal" :disabled="positionsLoading">
+            <button class="panel-action panel-action--primary" @click="openPositionsModal" :disabled="!canRequestPositions || positionsLoading">
               {{ positionsLoading ? 'Loading...' : 'Request Open Positions' }}
             </button>
           </div>
         </header>
+
+        <div v-if="!canRequestPositions" class="product-request-warning" role="status">
+          <div class="product-request-warning__icon">⚠</div>
+          <div>
+            <strong>{{ positionRequestsEnabled ? 'Position requests are unavailable for this branch' : 'Position requests are disabled' }}</strong>
+            <p>{{ positionRequestsEnabled ? 'The owner has limited position requests to specific branches.' : 'The owner has turned off new position requests for HR managers.' }}</p>
+          </div>
+        </div>
 
       <!-- Job Applications (HR Manager View) -->
       <transition name="fade">
@@ -502,7 +510,7 @@
               <button
                 class="btn-primary"
                 @click="submitPositionsRequests"
-                :disabled="submittingPositions || positionsLoading"
+                :disabled="!canRequestPositions || submittingPositions || positionsLoading"
               >
                 {{ submittingPositions ? 'Submitting...' : 'Submit Request(s)' }}
               </button>
@@ -1030,6 +1038,46 @@ const submittingPositions = ref(false)
 const requestQuantities = ref({})
 const requestNotes = ref({})
 const customPositionModules = ref({})
+const positionRequestsEnabled = ref(true)
+const positionRequestScope = ref({ mode: 'all', branchIds: [] })
+const ownerPermissionsStorageKey = 'owner_permissions'
+
+function readOwnerPermissions() {
+  try {
+    const raw = localStorage.getItem(ownerPermissionsStorageKey)
+    if (!raw) {
+      positionRequestsEnabled.value = true
+      return
+    }
+
+    const parsed = JSON.parse(raw)
+    positionRequestsEnabled.value = parsed?.positionRequests !== false
+    positionRequestScope.value = {
+      mode: parsed?.positionRequestScope?.mode === 'specific' ? 'specific' : 'all',
+      branchIds: Array.isArray(parsed?.positionRequestScope?.branchIds)
+        ? parsed.positionRequestScope.branchIds.map(Number)
+        : [],
+    }
+    if (!canRequestPositions.value) {
+      showPositionsModal.value = false
+    }
+  } catch (error) {
+    console.warn('ManagerHRPanel: failed to load owner permission settings', error)
+    positionRequestsEnabled.value = true
+  }
+}
+
+function handleOwnerPermissionsStorage(event) {
+  if (event.key === ownerPermissionsStorageKey) {
+    readOwnerPermissions()
+  }
+}
+
+const canRequestPositions = computed(() => {
+  if (!positionRequestsEnabled.value) return false
+  if (positionRequestScope.value.mode !== 'specific') return true
+  return positionRequestScope.value.branchIds.includes(Number(userProfile.value.branch_id))
+})
 
 const permissionTemplates = [
   { key: 'admin', label: 'Admin' },
@@ -1715,6 +1763,8 @@ function formatNumber(num) {
 
 onMounted(async () => {
   document.addEventListener('click', onDocumentClick)
+  readOwnerPermissions()
+  window.addEventListener('storage', handleOwnerPermissionsStorage)
   try {
     const res = await axios.get('/api/manager/hr/profile', { withCredentials: true })
     userProfile.value = res.data.user
@@ -1730,6 +1780,7 @@ onUnmounted(() => {
   cancelHrSidebarSwipe()
   document.removeEventListener('click', preventHrSidebarSwipeClick, true)
   document.removeEventListener('click', onDocumentClick)
+  window.removeEventListener('storage', handleOwnerPermissionsStorage)
 })
 
 function onProfileUpdated(updatedProfile) { userProfile.value = { ...userProfile.value, ...updatedProfile } }
@@ -1948,6 +1999,14 @@ async function markAsNotPassed(application) {
 }
 
 async function openPositionsModal() {
+  readOwnerPermissions()
+  if (!canRequestPositions.value) {
+    showToast(positionRequestsEnabled.value
+      ? 'Position requests are not enabled for your branch'
+      : 'Position requests are disabled by the owner', 'error')
+    return
+  }
+
   showPositionsModal.value = true
   positionsLoading.value = true
 
@@ -1974,6 +2033,15 @@ async function openPositionsModal() {
 }
 
 async function submitPositionsRequests() {
+  readOwnerPermissions()
+  if (!canRequestPositions.value) {
+    showToast(positionRequestsEnabled.value
+      ? 'Position requests are not enabled for your branch'
+      : 'Position requests are disabled by the owner', 'error')
+    showPositionsModal.value = false
+    return
+  }
+
   if (!Array.isArray(positions.value) || positions.value.length === 0) return
 
   const payloads = positions.value

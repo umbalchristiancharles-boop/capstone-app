@@ -230,6 +230,30 @@
               <div class="owner-permission-copy">
                 <span class="owner-permission-name">{{ permission.label }}</span>
                 <small>{{ permission.description }}</small>
+                <div v-if="ownerPermissions[permission.key] && ownerPermissions[permission.scopeKey]" class="owner-permission-scope">
+                  <label class="owner-permission-scope__option">
+                    <input v-model="ownerPermissions[permission.scopeKey].mode" type="radio" value="all" @change="saveOwnerPermissions" />
+                    <span>All branches</span>
+                  </label>
+                  <label class="owner-permission-scope__option">
+                    <input v-model="ownerPermissions[permission.scopeKey].mode" type="radio" value="specific" @change="saveOwnerPermissions" />
+                    <span>Specific branches</span>
+                  </label>
+                  <select
+                    v-if="ownerPermissions[permission.scopeKey].mode === 'specific'"
+                    v-model="ownerPermissions[permission.scopeKey].branchIds"
+                    class="owner-permission-scope__select"
+                    multiple
+                    @change="saveOwnerPermissions"
+                  >
+                    <option v-for="branch in ownerBranches" :key="branch.id" :value="branch.id">
+                      {{ branch.name }}
+                    </option>
+                  </select>
+                  <small v-if="ownerPermissions[permission.scopeKey].mode === 'specific' && ownerBranches.length === 0">
+                    No active branches found.
+                  </small>
+                </div>
               </div>
               <input v-model="ownerPermissions[permission.key]" type="checkbox" @change="saveOwnerPermissions" />
             </label>
@@ -413,10 +437,19 @@ const ownerPermissionsStorageKey = 'owner_permissions'
 const ownerPermissions = ref({
   priceMarkups: true,
   productRequests: true,
+  positionRequests: true,
+  priceMarkupScope: { mode: 'all', branchIds: [] },
+  productRequestScope: { mode: 'all', branchIds: [] },
+  positionRequestScope: {
+    mode: 'all',
+    branchIds: [],
+  },
 })
+const ownerBranches = ref([])
 const ownerPermissionList = [
-  { key: 'priceMarkups', label: 'Price Markups', description: 'Review and validate price updates.' },
-  { key: 'productRequests', label: 'Request New Product', description: 'Allow branch managers to request products for approval.' },
+  { key: 'priceMarkups', scopeKey: 'priceMarkupScope', label: 'Price Markups', description: 'Review and validate price updates.' },
+  { key: 'productRequests', scopeKey: 'productRequestScope', label: 'Request New Product', description: 'Allow branch managers to request products for approval.' },
+  { key: 'positionRequests', scopeKey: 'positionRequestScope', label: 'Request New Position', description: 'Allow HR managers to request open positions for approval.' },
 ]
 
 function loadOwnerPermissions() {
@@ -425,7 +458,20 @@ function loadOwnerPermissions() {
     if (!raw) return
     const parsed = JSON.parse(raw)
     if (parsed && typeof parsed === 'object') {
-      ownerPermissions.value = { ...ownerPermissions.value, ...parsed }
+      ownerPermissions.value = {
+        ...ownerPermissions.value,
+        ...parsed,
+        priceMarkupScope: normalizePermissionScope(parsed.priceMarkupScope),
+        productRequestScope: normalizePermissionScope(parsed.productRequestScope),
+        positionRequestScope: normalizePermissionScope(parsed.positionRequestScope),
+      }
+
+      function normalizePermissionScope(scope) {
+        return {
+          mode: scope?.mode === 'specific' ? 'specific' : 'all',
+          branchIds: Array.isArray(scope?.branchIds) ? scope.branchIds.map(Number) : [],
+        }
+      }
     }
   } catch (error) {
     console.warn('OwnerPanel: failed to load permission settings', error)
@@ -437,9 +483,33 @@ function saveOwnerPermissions() {
     localStorage.setItem(ownerPermissionsStorageKey, JSON.stringify({
       priceMarkups: !!ownerPermissions.value.priceMarkups,
       productRequests: !!ownerPermissions.value.productRequests,
+      positionRequests: !!ownerPermissions.value.positionRequests,
+      priceMarkupScope: normalizePermissionScope(ownerPermissions.value.priceMarkupScope),
+      productRequestScope: normalizePermissionScope(ownerPermissions.value.productRequestScope),
+      positionRequestScope: normalizePermissionScope(ownerPermissions.value.positionRequestScope),
     }))
   } catch (error) {
     console.warn('OwnerPanel: failed to save permission settings', error)
+  }
+}
+
+async function loadOwnerBranches() {
+  try {
+    const response = await axios.get('/api/admin/branches', { withCredentials: true })
+    ownerBranches.value = (response.data?.data || []).filter(branch => {
+      const name = String(branch?.name || '').trim().toUpperCase()
+      return name !== 'MAIN BRANCH'
+    })
+
+    const availableBranchIds = new Set(ownerBranches.value.map(branch => Number(branch.id)))
+    for (const scopeKey of ['priceMarkupScope', 'productRequestScope', 'positionRequestScope']) {
+      ownerPermissions.value[scopeKey].branchIds =
+        ownerPermissions.value[scopeKey].branchIds.filter(id => availableBranchIds.has(Number(id)))
+    }
+    saveOwnerPermissions()
+  } catch (error) {
+    console.warn('OwnerPanel: failed to load branches', error)
+    ownerBranches.value = []
   }
 }
 const sectionComponents = {
@@ -483,6 +553,7 @@ async function sendAnnouncement() {
 
 onMounted(async () => {
   loadOwnerPermissions()
+  loadOwnerBranches()
 
   try {
     const local = JSON.parse(localStorage.getItem('user') || 'null')
@@ -1976,6 +2047,7 @@ const handleLogout = async () => {
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
+  min-width: 0;
 }
 
 .owner-permission-name {
@@ -1988,6 +2060,34 @@ const handleLogout = async () => {
   color: #64748b;
   font-size: 0.76rem;
   line-height: 1.45;
+}
+
+.owner-permission-scope {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 0.9rem;
+  margin-top: 0.45rem;
+}
+
+.owner-permission-scope__option {
+  align-items: center;
+  color: #475569;
+  display: inline-flex;
+  font-size: 0.78rem;
+  gap: 0.35rem;
+}
+
+.owner-permission-scope__option input {
+  accent-color: #f97316;
+}
+
+.owner-permission-scope__select {
+  border: 1px solid #cbd5e1;
+  border-radius: 0.45rem;
+  color: #334155;
+  flex-basis: 100%;
+  min-height: 4.5rem;
+  padding: 0.35rem;
 }
 
 .owner-permission-item input[type='checkbox'] {

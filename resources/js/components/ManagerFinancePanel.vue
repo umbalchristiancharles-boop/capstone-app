@@ -256,7 +256,7 @@
                 :isMainBranchFinance="props.isMainBranchFinance || isMainBranchFinanceManager"
                 :showOverviewCharts="true"
                 :showMarkupSection="false"
-                :requests-enabled="priceMarkupRequestsEnabled"
+                :requests-enabled="canRequestPriceMarkups"
               />
             </section>
           </div>
@@ -264,7 +264,7 @@
 
         <!-- PRICE MARKUP SECTION -->
         <template v-if="selectedSection === 'markup'">
-          <div v-if="!priceMarkupRequestsEnabled" class="finance-panel-warning">
+          <div v-if="!canRequestPriceMarkups" class="finance-panel-warning">
             <div class="finance-panel-warning__icon">⚠</div>
             <div>
               <strong>Price markup requests are disabled</strong>
@@ -276,7 +276,7 @@
               v-if="userProfile && userProfile.branch_id"
               :branchId="userProfile.branch_id"
               :isMainBranchFinance="props.isMainBranchFinance || isMainBranchFinanceManager"
-              :requests-enabled="priceMarkupRequestsEnabled"
+              :requests-enabled="canRequestPriceMarkups"
             />
           </section>
         </template>
@@ -860,6 +860,7 @@ const extractArray = (response, key = null) => {
 
 const userProfile = ref({})
 const priceMarkupRequestsEnabled = ref(true)
+const priceMarkupScope = ref({ mode: 'all', branchIds: [] })
 const ownerPermissionsStorageKey = 'owner_permissions'
 
 function readOwnerPermissions() {
@@ -871,16 +872,27 @@ function readOwnerPermissions() {
     }
     const parsed = JSON.parse(raw)
     priceMarkupRequestsEnabled.value = parsed?.priceMarkups !== false
+    priceMarkupScope.value = {
+      mode: parsed?.priceMarkupScope?.mode === 'specific' ? 'specific' : 'all',
+      branchIds: Array.isArray(parsed?.priceMarkupScope?.branchIds) ? parsed.priceMarkupScope.branchIds.map(Number) : [],
+    }
   } catch (error) {
     console.warn('ManagerFinancePanel: failed to load owner permission settings', error)
     priceMarkupRequestsEnabled.value = true
   }
+
 }
 
 function handleOwnerPermissionsStorage(event) {
   if (event.key !== ownerPermissionsStorageKey) return
   readOwnerPermissions()
 }
+
+const canRequestPriceMarkups = computed(() => {
+  if (!priceMarkupRequestsEnabled.value) return false
+  if (priceMarkupScope.value.mode !== 'specific') return true
+  return priceMarkupScope.value.branchIds.includes(Number(userProfile.value.branch_id))
+})
 
 const dashboardTotals = ref({
   totalSales: '₱0',
