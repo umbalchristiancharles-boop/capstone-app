@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 13, 2026 at 11:46 AM
+-- Generation Time: Oct 13, 2026 at 12:20 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -662,7 +662,7 @@ INSERT INTO `messages` (`id`, `branch_id`, `from_user_id`, `to_user_id`, `body`,
 (40, 31, 154, 148, 'EMPLOYEE REPORT\nEmployee: Vince Hannibal Bido\n\nPenge pang Mcdo', NULL, NULL, NULL, NULL, NULL, '2026-08-21 06:52:24', '2026-08-21 06:51:55', '2026-08-21 06:52:24'),
 (41, 31, 148, 154, '', '2026-08-21 06:52:34', 'message-attachments/ZOiYqXot59C5zTIF8DXgdluRHwVc3Y0VDBbOLCzS.jpg', NULL, 'images.jpg', 'image/jpeg', '2026-08-21 06:52:52', '2026-08-21 06:52:34', '2026-08-21 06:52:52'),
 (42, 31, 154, 148, 'lah', '2026-08-21 06:53:00', NULL, NULL, NULL, NULL, '2026-08-28 10:41:44', '2026-08-21 06:53:00', '2026-08-28 10:41:44'),
-(43, 31, 157, 147, 'helloooooo', '2026-08-28 10:40:32', NULL, NULL, NULL, NULL, NULL, '2026-08-28 10:40:32', '2026-08-28 10:40:32'),
+(43, 31, 157, 147, 'helloooooo', '2026-08-28 10:40:32', NULL, NULL, NULL, NULL, '2026-10-13 10:00:30', '2026-08-28 10:40:32', '2026-10-13 10:00:30'),
 (44, 31, 157, 148, 'EMPLOYEE REPORT\nEmployee: christian Umbal\n\nKulang sahod ko', NULL, NULL, NULL, NULL, NULL, '2026-08-28 10:41:36', '2026-08-28 10:40:51', '2026-08-28 10:41:36'),
 (45, 31, 157, 148, '', '2026-08-28 10:41:03', 'message-attachments/yVHuWBRGTDdzST0DGPe5BodO383HP19A1q4IJKQk.jpg', NULL, '01ac5b864a6c29efb24c1145aeb9c7be.jpg', 'image/jpeg', '2026-08-28 10:41:36', '2026-08-28 10:41:03', '2026-08-28 10:41:36'),
 (46, 31, 149, 147, '', '2026-09-02 07:27:02', 'message-attachments/8fvZ43xZ9UEWARYfD9xZzpurfGQK1V6majbYteJr.jpg', NULL, '01ac5b864a6c29efb24c1145aeb9c7be.jpg', 'image/jpeg', '2026-10-01 11:36:27', '2026-09-02 07:27:02', '2026-10-01 11:36:27'),
@@ -2071,7 +2071,11 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (3513, 'App\\Models\\User', 147, 'auth-token', '48dd5ed9586e9fdd1778dd6692134a5dc4ee207daa83b0265465f6ffdcfd1cb3', '[\"*\"]', NULL, NULL, '2026-10-13 05:25:17', '2026-10-13 05:25:17'),
 (3519, 'App\\Models\\User', 31, 'auth-token', '1a5006ae8f64bb029b127209d116d2bd9f14818cabf0c5ee8cfdff0151cc00e7', '[\"*\"]', NULL, NULL, '2026-10-13 05:50:08', '2026-10-13 05:50:08'),
 (3520, 'App\\Models\\User', 147, 'auth-token', 'a08329e93e5b1bb1c920eb9deaf8973be21c36063a748b37379821a23556487e', '[\"*\"]', NULL, NULL, '2026-10-13 05:50:31', '2026-10-13 05:50:31'),
-(3522, 'App\\Models\\User', 31, 'auth-token', 'cdf75ee12aea1063fc1604e5afc8ce69c7f131c2677041f19c851e5c14ea02c7', '[\"*\"]', NULL, NULL, '2026-10-13 06:02:19', '2026-10-13 06:02:19');
+(3522, 'App\\Models\\User', 31, 'auth-token', 'cdf75ee12aea1063fc1604e5afc8ce69c7f131c2677041f19c851e5c14ea02c7', '[\"*\"]', NULL, NULL, '2026-10-13 06:02:19', '2026-10-13 06:02:19'),
+(3525, 'App\\Models\\User', 147, 'auth-token', '6e30327bb45fd1e3a64c7f7db0d842d44e68eb9b8f200f97f7a1525ff3b4cffb', '[\"*\"]', NULL, NULL, '2026-10-13 09:53:51', '2026-10-13 09:53:51'),
+(3527, 'App\\Models\\User', 147, 'auth-token', '7a80862dd4d0a0c9127e19c9cec9a2feae414fdb7dc84577a3f5cfdaebaafcfb', '[\"*\"]', NULL, NULL, '2026-10-13 10:15:25', '2026-10-13 10:15:25'),
+(3528, 'App\\Models\\User', 147, 'auth-token', '93ce23c70a4ee7f5de32e867803d9e0e8908c436eb2ce8953aa9e00105d28b08', '[\"*\"]', NULL, NULL, '2026-10-13 10:17:51', '2026-10-13 10:17:51'),
+(3529, 'App\\Models\\User', 31, 'auth-token', '83f52ae8910c89d344f6f4aa0f28bdbdb2793624926df04d1c232f6cfd4286ae', '[\"*\"]', NULL, NULL, '2026-10-13 10:18:54', '2026-10-13 10:18:54');
 
 -- --------------------------------------------------------
 
@@ -2521,7 +2525,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('PsfY7pAc4OvYZFSrl5rPxFGdvMypwGi1tU1hcYcL', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiNThzVkw3WHJGU21yb29jeVJlTkZuZE5JZzJUSXlPSmxheVpPQVBDSyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzM6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hZG1pbi1sb2dpbiI7czo1OiJyb3V0ZSI7czoxNjoiYWRtaW4ubG9naW4ucGFnZSI7fX0=', 1791884728);
+('8Qsz3PRZgzqtGIeA8d1ZME0wVod7le91WptXUGc7', 31, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiZGU4bEtNc2Vtb2ttcHRmWmUzV21FVXNVTVBsbWFrZnpkRHJZb01UQiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzM6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hZG1pbi1sb2dpbiI7czo1OiJyb3V0ZSI7czoxNjoiYWRtaW4ubG9naW4ucGFnZSI7fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjMxO3M6NzoidXNlcl9pZCI7aTozMTtzOjk6InVzZXJfcm9sZSI7czo1OiJPV05FUiI7czo5OiJ1c2VyX25hbWUiO3M6ODoiTXIucGFya3MiO3M6MTM6InJlZGlyZWN0X3BhdGgiO3M6MTI6Ii9vd25lci1wYW5lbCI7fQ==', 1791886771);
 
 -- --------------------------------------------------------
 
@@ -2697,14 +2701,14 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`id`, `email`, `username`, `full_name`, `name`, `password`, `email_verified_at`, `role`, `department`, `permissions`, `branch_id`, `remember_token`, `created_at`, `updated_at`, `deleted_at`, `must_change_password`, `requires_setup`, `is_active`, `address`, `latitude`, `longitude`, `avatar_url`, `phone_number`, `required_setup_type`, `last_login_at`) VALUES
 (28, 'superadmin@example.com', 'superadmin', 'Super Administrators', NULL, '$2y$12$f67akYY/xm/H9KJoqytmXeblCxSgZ786slMmHkmqzlMozGUn3Ew7G', '2026-03-05 15:03:55', 'SUPER_ADMIN', NULL, NULL, NULL, NULL, '2026-03-05 15:03:55', '2026-10-13 05:47:23', NULL, 0, 1, 1, NULL, NULL, NULL, '/storage/avatars/avatar_28_1775232518.jpg', NULL, NULL, '2026-10-13 05:47:23'),
-(31, 'fowal15977@pmdeal.com', 'Parks', 'Mr.parks', NULL, '$2y$12$/jjxezfu4JAW55dvduVkVu7hpmk5CBXg2GWKtlT17A8jEMfJFpY8y', NULL, 'OWNER', NULL, NULL, NULL, NULL, '2026-03-07 04:30:58', '2026-10-13 06:02:18', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, 'admin', NULL, '2026-10-13 06:02:18'),
-(147, 'biteyag645@onbap.com', 'admin_br743957', 'Admin - Dasma Branch', NULL, '$2y$12$8RJHYsL5dHsXJc9.XiEUSuHL8F2DAPRGug1ED5uYU6tZylZwpcjGa', '2026-03-22 11:35:00', 'ADMIN', NULL, NULL, 31, NULL, '2026-03-22 10:19:22', '2026-10-13 05:50:31', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-13 05:50:31'),
+(31, 'fowal15977@pmdeal.com', 'Parks', 'Mr.parks', NULL, '$2y$12$/jjxezfu4JAW55dvduVkVu7hpmk5CBXg2GWKtlT17A8jEMfJFpY8y', NULL, 'OWNER', NULL, NULL, NULL, NULL, '2026-03-07 04:30:58', '2026-10-13 10:18:54', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, 'admin', NULL, '2026-10-13 10:18:54'),
+(147, 'biteyag645@onbap.com', 'admin_br743957', 'Admin - Dasma Branch', NULL, '$2y$12$8RJHYsL5dHsXJc9.XiEUSuHL8F2DAPRGug1ED5uYU6tZylZwpcjGa', '2026-03-22 11:35:00', 'ADMIN', NULL, NULL, 31, NULL, '2026-03-22 10:19:22', '2026-10-13 10:17:51', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-13 10:17:51'),
 (148, 'yawilog234@lxbeta.com', 'hr_br743957', 'HR Manager - Dasma Branch', NULL, '$2y$12$1AUNIAaO6IsU.NgPHyVqfuZmrI7EbeUTnHrku.w9douNkI7STbjfW', '2026-03-22 10:21:24', 'MANAGER', 'HR', NULL, 31, NULL, '2026-03-22 10:19:22', '2026-10-13 05:49:21', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-13 05:49:21'),
-(149, 'jiveda9771@lxbeta.com', 'finance_br743957', 'Finance Manager - Dasma Branch', NULL, '$2y$12$9tGgivqfWOXFzZjHh./TNeQnKFXsrvyMHitvfpjtnRH9ctUwYKA5S', '2026-03-22 10:27:01', 'MANAGER', 'FINANCE', NULL, 31, NULL, '2026-03-22 10:19:22', '2026-10-13 09:29:53', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-13 09:29:53'),
+(149, 'jiveda9771@lxbeta.com', 'finance_br743957', 'Finance Manager - Dasma Branch', NULL, '$2y$12$9tGgivqfWOXFzZjHh./TNeQnKFXsrvyMHitvfpjtnRH9ctUwYKA5S', '2026-03-22 10:27:01', 'MANAGER', 'FINANCE', NULL, 31, NULL, '2026-03-22 10:19:22', '2026-10-13 09:47:28', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-13 09:47:28'),
 (150, 'yenater279@onbap.com', 'procurement_br743957', 'Procurement Manager - Dasma Branch', NULL, '$2y$12$kF..QIb.DvV18ylucsDIHuPPnLwxXpZe4R5/VcwiI5CCZ2XpkCYx.', '2026-03-22 10:33:29', 'MANAGER', 'PROCUREMENT', NULL, 31, NULL, '2026-03-22 10:19:22', '2026-03-22 10:33:29', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (151, 'rogogaj619@onbap.com', 'logistics_br743957', 'Logistics Manager - Dasma Branch', NULL, '$2y$12$OGJ.SPNyGXorcgKCa/EAaOmnaeqm4sLmZtx6dpGJiijay1uXA6LXq', '2026-03-22 11:37:41', 'MANAGER', 'LOGISTICS', NULL, 31, NULL, '2026-03-22 10:19:22', '2026-10-12 17:20:12', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-12 17:20:12'),
 (152, 'xidaya9674@bncinema.com', 'Umberto', 'Umberto Batumbakal', NULL, '$2y$12$eym3kh1XoBRy0Ibjr3qrR.fLvvYUL9bimjdYe.f867drHAYjMURWa', NULL, 'SUPPLIER', NULL, NULL, 31, NULL, '2026-03-22 10:37:58', '2026-03-22 10:38:57', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, '', NULL, NULL),
-(153, 'mecepey855@lxbeta.com', 'janne', 'Janne De Guzman', NULL, '$2y$12$JnVEw48I2r6afT4JqGJiNuk2awucGvPFRKrb6faEkMFuDmvDLbBKG', '2026-03-22 10:58:41', 'STAFF', 'CASHIER', NULL, 31, NULL, '2026-03-22 10:49:07', '2026-09-16 09:07:44', NULL, 0, 1, 1, '213', NULL, NULL, NULL, '09156818822', NULL, NULL),
+(153, 'mecepey855@lxbeta.com', 'janne', 'Janne De Guzman', NULL, '$2y$12$JnVEw48I2r6afT4JqGJiNuk2awucGvPFRKrb6faEkMFuDmvDLbBKG', '2026-03-22 10:58:41', 'STAFF', 'CASHIER', NULL, 31, NULL, '2026-03-22 10:49:07', '2026-10-13 10:14:32', NULL, 0, 1, 1, '213', NULL, NULL, NULL, '09156818822', NULL, '2026-10-13 10:14:32'),
 (154, 'lalaher611@lxbeta.com', 'vince', 'Vince Hannibal Bido', NULL, '$2y$12$.9o2LKOIrQQWcrtHTKCtKOxdGGgLVs41Xr.eaY9OqHDe/iNtJwnUi', '2026-03-22 10:55:12', 'STAFF', 'INVENTORY', NULL, 31, NULL, '2026-03-22 10:50:09', '2026-10-12 17:39:59', NULL, 0, 1, 1, '213', NULL, NULL, NULL, '09156818811', NULL, '2026-10-12 17:39:59'),
 (157, 'sevof40551@pmdeal.com', 'charles', 'christian Umbal', NULL, '$2y$12$puxmFYNzX6Yg0Olks0Sa5OWMIPeX6g3H1.RoyJMMkK80b6jdRTe62', '2026-03-23 05:10:23', 'STAFF', 'KITCHEN', NULL, 31, NULL, '2026-03-23 05:07:32', '2026-05-23 09:43:11', NULL, 0, 1, 1, '123', NULL, NULL, NULL, '09156818831', NULL, NULL),
 (158, 'xiralih141@lxbeta.com', 'John', 'John Stalone', NULL, '$2y$12$LOUp7zlefTxO05AmE6OCAuQtq3vFSVkgFjMUSa2LAyD57UwtF85uC', '2026-03-24 08:58:36', 'SUPPLIER', NULL, NULL, 31, NULL, '2026-03-24 08:57:40', '2026-03-24 08:58:36', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, '', NULL, NULL),
@@ -3257,7 +3261,7 @@ ALTER TABLE `logistics_transactions`
 -- AUTO_INCREMENT for table `messages`
 --
 ALTER TABLE `messages`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=54;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=55;
 
 --
 -- AUTO_INCREMENT for table `migrations`
@@ -3293,7 +3297,7 @@ ALTER TABLE `payrolls`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3524;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3530;
 
 --
 -- AUTO_INCREMENT for table `positions`

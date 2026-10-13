@@ -71,25 +71,25 @@ class ManagerDashboardController extends Controller
 
         // Get recent orders
         $recentOrders = Order::where('branch_id', $user->branch_id)
-            ->whereBetween('created_at', $dateRange)
             ->orderBy('created_at', 'desc')
             ->limit(10)
             ->get()
             ->map(function ($order) {
                 return [
                     'id' => $order->id,
-                    'code' => $order->order_number ?? 'ORD-' . $order->id,
+                    'code' => $order->order_code ?? 'ORD-' . $order->id,
                     'customer' => $order->customer_name ?? 'Guest',
                     'status' => $order->status,
                     'statusLabel' => ucfirst(str_replace('_', ' ', $order->status)),
                     'total' => '₱' . number_format($order->grand_total ?? 0, 2),
-                    'created_at' => $order->created_at->format('M d, Y H:i'),
+                    'created_at' => $order->created_at ? $order->created_at->format('M d, Y H:i') : 'N/A',
                 ];
             });
 
         // Get the active kitchen production queue
         $productionQueue = Order::where('branch_id', $user->branch_id)
             ->whereIn('status', ['pending', 'in_kitchen', 'preparing', 'ready'])
+            ->with('items')
             ->orderBy('created_at', 'asc')
             ->limit(10)
             ->get()
@@ -98,6 +98,10 @@ class ManagerDashboardController extends Controller
                     'id' => $order->id,
                     'title' => 'Order #' . ($order->order_code ?? $order->id),
                     'meta' => $order->customer_name ?? 'Guest',
+                    'products' => $order->items->map(fn ($item) => [
+                        'name' => $item->product_name ?? 'Product',
+                        'quantity' => (int) $item->quantity,
+                    ])->values(),
                     'badgeLabel' => ucfirst(str_replace('_', ' ', $order->status)),
                     'badgeClass' => in_array($order->status, ['in_kitchen', 'preparing']) ? 'badge--warning' : 'badge--info',
                 ];

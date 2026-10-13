@@ -253,9 +253,8 @@ class CashierController extends Controller
             foreach ($request->items as $item) {
                 $product = Product::where('id', $item['product_id'])
                     ->where('branch_id', $request->branch_id)
-                    ->where(function ($q) {
-                        $q->where('is_published', 1)->orWhere('is_active', 1);
-                    })
+                    ->where('is_published', 1)
+                    ->where('is_active', 1)
                     ->lockForUpdate()
                     ->first();
 

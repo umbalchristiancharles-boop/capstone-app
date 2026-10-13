@@ -607,12 +607,15 @@ export default {
         this.loadConversation(this.selected.id)
       }).catch(err => {
         const status = err && err.response && err.response.status
+        const errorMessage = err?.response?.data?.error
+          || err?.response?.data?.message
+          || 'Send failed'
         if (status === 401) {
           alert('Session expired. Please login again.')
           this.hasSession = false
           try { this.$router.push('/staff-landing') } catch(e) { window.location.href = '/staff-landing' }
         } else {
-          alert('Send failed')
+          alert(errorMessage)
         }
       }).finally(() => { this.sending = false })
     },
@@ -630,7 +633,7 @@ export default {
           alert('Session expired. Please login again.')
           this.hasSession = false
         } else {
-          alert((err && err.response && err.response.data && err.response.data.error) || 'Could not send employee report')
+          alert(err?.response?.data?.error || err?.response?.data?.message || 'Could not send employee report')
         }
       }).finally(() => { this.reportSending = false })
     }

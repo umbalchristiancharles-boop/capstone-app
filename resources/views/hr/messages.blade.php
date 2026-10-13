@@ -124,7 +124,7 @@
         });
         if(!res.ok){ 
             const errorData = await res.json().catch(() => ({}));
-            const errorMsg = errorData.error || `Error: ${res.statusText}`;
+            const errorMsg = errorData.error || errorData.message || `Error: ${res.statusText}`;
             alert('Send failed: ' + errorMsg); 
             return; 
         }

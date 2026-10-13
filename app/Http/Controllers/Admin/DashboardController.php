@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
+use App\Models\Dish;
 use App\Models\Order;
 use App\Models\User;
 use App\Models\Product;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -83,7 +85,9 @@ class DashboardController extends Controller
         $dates = $this->getDateRange($range);
         $user = $request->user();
         $isSuperAdmin = in_array(strtoupper($user->role ?? ''), ['SUPER_ADMIN', 'SUPERADMIN']);
-        $branchId = $isSuperAdmin && $request->filled('branch_id') ? (int) $request->query('branch_id') : null;
+        $branchId = $isSuperAdmin && $request->filled('branch_id')
+            ? (int) $request->query('branch_id')
+            : (!$isSuperAdmin ? $user->branch_id : null);
 
         // Count branches (active only)
         $branchesCount = Branch::where('is_active', 1)
@@ -101,7 +105,13 @@ class DashboardController extends Controller
             ->count();
 
         // Orders with date range filter
-        $ordersQuery = Order::whereBetween('ordered_at', [$dates['start'], $dates['end']])
+        $ordersQuery = Order::where(function ($query) use ($dates) {
+                $query->whereBetween('ordered_at', [$dates['start'], $dates['end']])
+                    ->orWhere(function ($fallback) use ($dates) {
+                        $fallback->whereNull('ordered_at')
+                            ->whereBetween('created_at', [$dates['start'], $dates['end']]);
+                    });
+            })
             ->when($branchId, fn ($query) => $query->where('branch_id', $branchId));
         $ordersCount = $ordersQuery->count();
 
@@ -119,8 +129,9 @@ class DashboardController extends Controller
         $salesFormatted = '₱' . number_format($totalSales, 2);
 
         // Recent orders
-        $recentOrders = (clone $ordersQuery)
-            ->orderBy('ordered_at', 'desc')
+        $recentOrders = Order::query()
+            ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
+            ->orderByRaw('COALESCE(ordered_at, created_at) desc')
             ->limit(10)
             ->get()
             ->map(function ($order) {
@@ -137,9 +148,9 @@ class DashboardController extends Controller
 
         // Production Queue
         $productionQueue = Order::whereIn('status', ['pending', 'in_kitchen', 'preparing', 'ready'])
-            ->whereBetween('ordered_at', [$dates['start'], $dates['end']])
             ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
-            ->orderBy('ordered_at', 'asc')
+            ->with('items')
+            ->orderByRaw('COALESCE(ordered_at, created_at) asc')
             ->limit(10)
             ->get()
             ->map(function ($order) {
@@ -153,41 +164,137 @@ class DashboardController extends Controller
                     'id' => $order->id,
                     'title' => $order->order_code ?? 'ORD-' . str_pad($order->id, 5, '0', STR_PAD_LEFT),
                     'meta' => ($order->customer_name ?? 'Guest') . ' - ₱' . number_format($order->grand_total, 2),
+                    'products' => $order->items->map(fn ($item) => [
+                        'name' => $item->product_name ?? 'Product',
+                        'quantity' => (int) $item->quantity,
+                    ])->values(),
                     'badgeLabel' => $this->getStatusLabel($order->status),
                     'badgeClass' => $badgeClass,
                 ];
             });
 
-        // Top Products
-        $topProducts = Product::query()
+        $salesByProduct = DB::table('order_items')
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->where('orders.status', 'completed')
+            ->where(function ($query) use ($dates) {
+                $query->whereBetween('orders.ordered_at', [$dates['start'], $dates['end']])
+                    ->orWhere(function ($fallback) use ($dates) {
+                        $fallback->whereNull('orders.ordered_at')
+                            ->whereBetween('orders.created_at', [$dates['start'], $dates['end']]);
+                    });
+            })
+            ->when($branchId, fn ($query) => $query->where('orders.branch_id', $branchId))
+            ->select(
+                DB::raw('TRIM(UPPER(order_items.product_name)) as product_key'),
+                DB::raw('SUM(order_items.quantity) as units_sold'),
+                DB::raw('SUM(order_items.subtotal) as revenue')
+            )
+            ->groupBy(DB::raw('TRIM(UPPER(order_items.product_name))'))
+            ->get()
+            ->keyBy('product_key');
+
+        // Product performance and complete inventory status for the dashboard.
+        $productRows = Product::query()
             ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
-            ->orderBy('stock', 'asc')
-            ->limit(5)
-            ->get(['id', 'name', 'stock', 'branch_id'])
-            ->map(function ($product, $index) {
+            ->orderBy('name')
+            ->get([
+                'id', 'name', 'category', 'brand', 'sku', 'price', 'stock', 'real_stock',
+                'min_stock', 'is_active', 'is_published', 'is_kitchen_dish', 'is_dish_product',
+                'branch_id', 'expires_at', 'image_path',
+            ]);
+
+        // Supplier records can represent one sellable product. Group by SKU when
+        // available, otherwise by normalized name, matching Product's stock rules.
+        $productCatalog = $productRows
+            ->groupBy(function ($product) {
+                return !empty($product->sku)
+                    ? 'sku:' . trim(strtoupper($product->sku))
+                    : 'name:' . trim(strtoupper($product->name));
+            })
+            ->map(function ($group) use ($salesByProduct, $branches) {
+                $product = $group
+                    ->sortByDesc(fn ($item) => ((int) $item->is_published * 2) + (int) $item->is_active)
+                    ->first();
+                $nameKey = trim(strtoupper((string) $product->name));
+                $sales = $salesByProduct->get($nameKey);
+                $activeRows = $group->where('is_active', true);
+                $stock = (int) $activeRows->sum(fn ($item) => (int) $item->stock);
+                $minStock = (int) $group->max('min_stock');
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
-                    'orders' => rand(5, 50) - $index,
-                    'stock' => $product->stock,
+                    'category' => $product->category,
+                    'brand' => $product->brand,
+                    'sku' => $product->sku,
+                    'price' => (float) ($group->where('is_published', true)->where('price', '>', 0)->sortByDesc('price')->first()?->price ?? $product->price),
+                    'stock' => $stock,
+                    'real_stock' => $stock,
+                    'min_stock' => $minStock,
+                    'is_active' => $activeRows->isNotEmpty(),
+                    'is_published' => $activeRows->where('is_published', true)->isNotEmpty(),
+                    'is_kitchen_dish' => (bool) $product->is_kitchen_dish,
+                    'is_dish_product' => (bool) $product->is_dish_product,
+                    'branch' => $branches->firstWhere('id', $product->branch_id)?->name ?? 'N/A',
+                    'expires_at' => $product->expires_at?->format('M d, Y'),
+                    'units_sold' => (int) ($sales->units_sold ?? 0),
+                    'revenue' => (float) ($sales->revenue ?? 0),
+                    'image_url' => $product->image_url,
+                    'supplier_records' => $group->count(),
+                    'suppliers' => $group->pluck('supplier_name')->filter()->unique()->values(),
                 ];
             });
 
-        // Low Stock Items
-        $lowStockItems = Product::where('stock', '<', 10)
-            ->where('stock', '>', 0)
+        $topProducts = $productCatalog->sortByDesc('units_sold')->take(5)->values();
+
+        $dishDetails = Dish::query()
             ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
-            ->limit(10)
-            ->get(['id', 'name', 'stock', 'branch_id'])
-            ->map(function ($product) use ($branches) {
-                $branchName = $branches->firstWhere('id', $product->branch_id)?->name ?? 'N/A';
+            ->with('ingredients.product')
+            ->orderBy('name')
+            ->get()
+            ->map(function ($dish) use ($productCatalog) {
+                $dishProduct = $productCatalog->firstWhere('name', $dish->name);
                 return [
-                    'id' => $product->id,
-                    'name' => $product->name,
-                    'stock' => $product->stock,
-                    'branch' => $branchName,
+                    'id' => $dish->id,
+                    'name' => $dish->name,
+                    'status' => $dish->status,
+                    'approval_status' => $dish->approval_status,
+                    'price' => $dishProduct['price'] ?? null,
+                    'stock' => $dishProduct['real_stock'] ?? 0,
+                    'units_sold' => $dishProduct['units_sold'] ?? 0,
+                    'revenue' => $dishProduct['revenue'] ?? 0,
+                    'ingredients' => $dish->ingredients->map(fn ($ingredient) => [
+                        'name' => $ingredient->name,
+                        'quantity' => $ingredient->per_serving,
+                        'unit' => $ingredient->unit,
+                        'available_stock' => $ingredient->product?->real_stock ?? $ingredient->product?->stock ?? null,
+                    ])->values(),
+                ];
+            })->values();
+
+        // Low Stock Items
+        $lowStockItems = $productCatalog
+            ->filter(fn ($product) => $product['stock'] > 0 && $product['stock'] < 10)
+            ->sortBy('stock')
+            ->take(10)
+            ->map(function ($product) {
+                return [
+                    'id' => $product['id'],
+                    'name' => $product['name'],
+                    'stock' => $product['stock'],
+                    'branch' => $product['branch'],
                 ];
             });
+
+        $productSummary = [
+            'total' => $productCatalog->count(),
+            'active' => $productCatalog->where('is_active', true)->count(),
+            'published' => $productCatalog->where('is_published', true)->count(),
+            'disabled' => $productCatalog->where('is_active', false)->count(),
+            'low_stock' => $productCatalog->filter(fn ($product) => $product['stock'] <= $product['min_stock'])->count(),
+            'units_sold' => $productCatalog->sum('units_sold'),
+            'revenue' => $productCatalog->sum('revenue'),
+            'dishes' => $dishDetails->count(),
+        ];
 
         // Staff Activity
         $recentActivity = User::whereIn('role', $employeeRoles)
@@ -223,6 +330,9 @@ class DashboardController extends Controller
             'recent_orders' => $recentOrders,
             'production_queue' => $productionQueue,
             'top_products' => $topProducts,
+            'product_catalog' => $productCatalog->values(),
+            'dish_details' => $dishDetails,
+            'product_summary' => $productSummary,
             'low_stock_items' => $lowStockItems,
             'recent_activity' => $recentActivity,
             'branches' => $allBranches,

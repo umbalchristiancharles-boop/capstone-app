@@ -32,7 +32,6 @@
           <PanelSidebarBrand />
           <nav class="admin-sidebar__nav">
             <button type="button" class="admin-sidebar__item" :class="{ 'admin-sidebar__item--active': activeSection === 'dashboard' }" @click="activeSection = 'dashboard'">Dashboard</button>
-            <button type="button" class="admin-sidebar__item" :class="{ 'admin-sidebar__item--active': activeSection === 'orders' }" @click="activeSection = 'orders'">Orders &amp; Production</button>
             <button type="button" class="admin-sidebar__item" :class="{ 'admin-sidebar__item--active': activeSection === 'inventory' }" @click="activeSection = 'inventory'">Inventory &amp; Procurement</button>
             <button type="button" class="admin-sidebar__item" :class="{ 'admin-sidebar__item--active': activeSection === 'landing-images' }" @click="activeSection = 'landing-images'">Landing Page Images</button>
             <button type="button" class="admin-sidebar__item" :class="{ 'admin-sidebar__item--active': activeSection === 'reports' }" @click="activeSection = 'reports'">Reports &amp; CRM</button>
@@ -176,6 +175,76 @@
                 &nbsp;{{ dashboardTotals.pending }}
               </span>
             </div>
+          </section>
+
+          <section v-if="activeSection === 'dashboard'" class="dashboard-detail-grid">
+            <article class="panel-block dashboard-white-panel">
+              <div class="panel-header">
+                <h2>Product Performance & Inventory</h2>
+                <span class="dashboard-detail-caption">{{ productSummary.total }} products</span>
+              </div>
+              <div class="panel-body panel-body--table dashboard-detail-table-wrap">
+                <div class="dashboard-detail-summary">
+                  <span>Active <strong>{{ productSummary.active }}</strong></span>
+                  <span>Published <strong>{{ productSummary.published }}</strong></span>
+                  <span>Disabled <strong>{{ productSummary.disabled }}</strong></span>
+                  <span>Units sold <strong>{{ productSummary.units_sold }}</strong></span>
+                  <span>Revenue <strong>{{ formatSupplierQuotePrice(productSummary.revenue) }}</strong></span>
+                </div>
+                <div v-if="productCatalog.length === 0" class="dashboard-detail-empty">No products found for this branch.</div>
+                <table v-else class="dashboard-detail-table">
+                  <thead>
+                    <tr><th>Product</th><th>Category / SKU</th><th>Price</th><th>Stock</th><th>Visibility</th><th>Performance</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="product in productCatalog" :key="product.id">
+                      <td>
+                        <strong>{{ product.name }}</strong>
+                        <small>{{ product.brand || 'No brand' }} · {{ product.branch }} · {{ product.supplier_records }} inventory record{{ product.supplier_records === 1 ? '' : 's' }}</small>
+                      </td>
+                      <td>{{ product.category || 'Uncategorized' }}<small>{{ product.sku || 'No SKU' }}</small></td>
+                      <td>{{ formatSupplierQuotePrice(product.price) }}</td>
+                      <td>
+                        <strong :class="{ 'dashboard-danger-text': product.stock <= product.min_stock }">{{ product.stock }}</strong>
+                        <small>min {{ product.min_stock }} · real {{ product.real_stock }}</small>
+                      </td>
+                      <td>
+                        <span :class="['dashboard-status-pill', product.is_active ? 'dashboard-status-pill--ok' : 'dashboard-status-pill--off']">{{ product.is_active ? 'Active' : 'Disabled' }}</span>
+                        <small>{{ product.is_published ? 'Published' : 'Unpublished' }}</small>
+                      </td>
+                      <td><strong>{{ product.units_sold }} sold</strong><small>{{ formatSupplierQuotePrice(product.revenue) }}</small></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </article>
+
+            <article class="panel-block dashboard-white-panel">
+              <div class="panel-header">
+                <h2>Dish Performance & Recipes</h2>
+                <span class="dashboard-detail-caption">{{ productSummary.dishes }} dishes</span>
+              </div>
+              <div class="panel-body panel-body--table dashboard-detail-table-wrap">
+                <div v-if="dishDetails.length === 0" class="dashboard-detail-empty">No dishes found for this branch.</div>
+                <table v-else class="dashboard-detail-table">
+                  <thead><tr><th>Dish</th><th>Status</th><th>Price / Stock</th><th>Sales</th><th>Ingredients</th></tr></thead>
+                  <tbody>
+                    <tr v-for="dish in dishDetails" :key="dish.id">
+                      <td><strong>{{ dish.name }}</strong><small>{{ dish.approval_status || 'Not submitted' }}</small></td>
+                      <td>{{ dish.status || 'Active' }}</td>
+                      <td>{{ dish.price == null ? '—' : formatSupplierQuotePrice(dish.price) }}<small>{{ dish.stock }} available</small></td>
+                      <td><strong>{{ dish.units_sold }} sold</strong><small>{{ formatSupplierQuotePrice(dish.revenue) }}</small></td>
+                      <td>
+                        <span v-if="dish.ingredients.length === 0">No ingredients</span>
+                        <span v-else v-for="ingredient in dish.ingredients" :key="`${dish.id}-${ingredient.name}`" class="dashboard-ingredient">
+                          {{ ingredient.name }}: {{ ingredient.quantity || 0 }} {{ ingredient.unit || '' }}<small v-if="ingredient.available_stock != null">({{ ingredient.available_stock }} stock)</small>
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </article>
           </section>
 
           <!-- Request New Product (Branch Manager) -->
@@ -324,6 +393,11 @@
                 <div>
                   <div class="queue-title">{{ item.title }}</div>
                   <div class="queue-meta">{{ item.meta }}</div>
+                  <div v-if="item.products?.length" class="queue-products">
+                    <span v-for="product in item.products" :key="`${item.id}-${product.name}`">
+                      {{ product.quantity }}× {{ product.name }}
+                    </span>
+                  </div>
                 </div>
                 <span class="badge" :class="item.badgeClass">
                   {{ item.badgeLabel }}
@@ -426,7 +500,7 @@
                 class="side-item"
               >
                 <span>{{ prod.name }}</span>
-                <span class="side-value">{{ prod.orders }} orders</span>
+                <span class="side-value">{{ prod.units_sold ?? prod.orders ?? 0 }} sold</span>
               </div>
             </div>
           </section>
@@ -1083,6 +1157,9 @@ const summaryTotals = ref({ totalBranches: 0, totalEmployees: 0 })
 const productionQueue = ref([])
 const topProducts = ref([])
 const lowStockItems = ref([])
+const productCatalog = ref([])
+const dishDetails = ref([])
+const productSummary = ref({ total: 0, active: 0, published: 0, disabled: 0, low_stock: 0, units_sold: 0, revenue: 0, dishes: 0 })
 const staffActivity = ref([])
 const adminStaffActivity = ref([])
 const announcements = ref([])
@@ -1556,6 +1633,9 @@ async function loadDashboard(range) {
   productionQueue.value = []
   topProducts.value = []
   lowStockItems.value = []
+  productCatalog.value = []
+  dishDetails.value = []
+  productSummary.value = { total: 0, active: 0, published: 0, disabled: 0, low_stock: 0, units_sold: 0, revenue: 0, dishes: 0 }
   staffActivity.value = []
   adminStaffActivity.value = []
 
@@ -1589,9 +1669,9 @@ async function loadDashboard(range) {
           pending: res.data.stats?.pending || 0,
         }
 
-        recentOrders.value = res.data.recentOrders || []
-        productionQueue.value = res.data.productionQueue || []
-        staffActivity.value = res.data.staffActivity || []
+        recentOrders.value = res.data.recentOrders || res.data.recent_orders || []
+        productionQueue.value = res.data.productionQueue || res.data.production_queue || []
+        staffActivity.value = res.data.staffActivity || res.data.staff_activity || []
       } else {
         // Admin dashboard response structure - map all new fields from enhanced API
         if (userRole !== 'STAFF') {
@@ -1620,6 +1700,9 @@ async function loadDashboard(range) {
 
         // Map low stock items
         lowStockItems.value = res.data.low_stock_items || []
+        productCatalog.value = res.data.product_catalog || []
+        dishDetails.value = res.data.dish_details || []
+        productSummary.value = res.data.product_summary || productSummary.value
 
         // Map staff activity
         adminStaffActivity.value = res.data.recent_activity || res.data.recentActivity || []
@@ -3737,4 +3820,20 @@ h1, h2 {
     display: contents;
   }
 }
+.dashboard-detail-grid { display: grid; gap: 16px; margin-top: 16px; }
+.dashboard-detail-table-wrap { overflow-x: auto; }
+.dashboard-detail-caption { color: #7b6d63; font-size: 12px; }
+.dashboard-detail-summary { display: flex; flex-wrap: wrap; gap: 10px 18px; padding: 0 0 12px; color: #6d625b; font-size: 12px; }
+.dashboard-detail-summary strong { color: #1e293b; margin-left: 3px; }
+.dashboard-detail-table { width: 100%; min-width: 720px; border-collapse: collapse; font-size: 12px; }
+.dashboard-detail-table th { text-align: left; color: #6d625b; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; padding: 8px; border-bottom: 1px solid #eadfd7; white-space: nowrap; }
+.dashboard-detail-table td { padding: 9px 8px; border-bottom: 1px solid #f1e9e4; vertical-align: top; color: #3c342f; }
+.dashboard-detail-table td strong { display: block; color: #1e293b; }
+.dashboard-detail-table td small, .dashboard-ingredient small { display: block; color: #887b72; font-size: 11px; margin-top: 3px; }
+.dashboard-detail-empty { color: #887b72; padding: 12px 0; }
+.dashboard-status-pill { display: inline-block; border-radius: 999px; padding: 3px 7px; font-size: 10px; font-weight: 700; }
+.dashboard-status-pill--ok { background: #e8f7ed; color: #217346; }
+.dashboard-status-pill--off { background: #fbe9e7; color: #b42318; }
+.dashboard-danger-text { color: #c62828 !important; }
+.dashboard-ingredient { display: block; margin-bottom: 4px; }
 </style>

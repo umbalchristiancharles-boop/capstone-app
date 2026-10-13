@@ -103,6 +103,7 @@
                       <div class="table-actions">
                         <button type="button" class="btn btn-icon" @click="selectedProduct = p">View Details</button>
                         <button v-if="showProcurementButton(p)" class="btn btn-primary btn-small procurement-request-btn" type="button" @click="$emit('request-procurement', p)">Request Procurement</button>
+                        <button v-if="props.showActiveControls" type="button" class="btn btn-icon" @click="$emit('toggle-active', { id: p.id, active: !p.is_active })">{{ p.is_active ? 'Disable' : 'Enable' }}</button>
                         <button v-if="props.showPublishControls && p.is_published" type="button" class="btn btn-icon" @click="$emit('toggle-publish', { id: p.id, publish: false })">Unpublish</button>
                         <button v-else-if="props.showPublishControls" type="button" class="btn btn-icon btn-primary" @click="$emit('toggle-publish', { id: p.id, publish: true })">Publish</button>
                       </div>
@@ -176,6 +177,7 @@
                     <div class="table-actions">
                       <button type="button" class="btn btn-icon" @click="selectedProduct = p">View Details</button>
                       <button v-if="showProcurementButton(p)" class="btn btn-primary btn-small procurement-request-btn" type="button" @click="$emit('request-procurement', p)">Request Procurement</button>
+                      <button v-if="props.showActiveControls" type="button" class="btn btn-icon" @click="$emit('toggle-active', { id: p.id, active: !p.is_active })">{{ p.is_active ? 'Disable' : 'Enable' }}</button>
                       <button v-if="props.showPublishControls && p.is_published" type="button" class="btn btn-icon" @click="$emit('toggle-publish', { id: p.id, publish: false })">Unpublish</button>
                       <button v-else-if="props.showPublishControls" type="button" class="btn btn-icon btn-primary" @click="$emit('toggle-publish', { id: p.id, publish: true })">Publish</button>
                     </div>
@@ -231,6 +233,7 @@
               <div class="card-actions">
                 <button type="button" class="btn btn-small" @click="selectedProduct = p">View Details</button>
                 <button v-if="showProcurementButton(p)" type="button" class="btn btn-small btn-primary procurement-request-btn" @click="$emit('request-procurement', p)">Request Procurement</button>
+                <button v-if="props.showActiveControls" type="button" class="btn btn-small" @click="$emit('toggle-active', { id: p.id, active: !p.is_active })">{{ p.is_active ? 'Disable' : 'Enable' }}</button>
                 <button v-if="props.showPublishControls && p.is_published" type="button" class="btn btn-small" @click="$emit('toggle-publish', { id: p.id, publish: false })">Unpublish</button>
                 <button v-else-if="props.showPublishControls" type="button" class="btn btn-small btn-primary" @click="$emit('toggle-publish', { id: p.id, publish: true })">Publish</button>
               </div>
@@ -302,10 +305,11 @@ const props = defineProps({
   products: { type: Array, default: () => [] },
   fetchUrl: { type: String, default: '' }, // optional API endpoint to fetch products
   compact: { type: Boolean, default: false }, // when true hide header/sidebar for embedding
-  showPublishControls: { type: Boolean, default: true }
+  showPublishControls: { type: Boolean, default: true },
+  showActiveControls: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['open-add', 'edit', 'delete', 'count', 'adjust', 'toggle-publish', 'request-procurement', 'bulk-request-procurement', 'report-expired'])
+const emit = defineEmits(['open-add', 'edit', 'delete', 'count', 'adjust', 'toggle-publish', 'toggle-active', 'request-procurement', 'bulk-request-procurement', 'report-expired'])
 
 const q = ref('')
 const stockFilter = ref('all')

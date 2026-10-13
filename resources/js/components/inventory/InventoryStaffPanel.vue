@@ -108,7 +108,7 @@
         </div>
 
         <div v-else>
-          <ProductList :fetchUrl="fetchUrl" :compact="true" :showPublishControls="(staffProfile.role || '').toUpperCase() === 'ADMIN'" ref="productListRef" @toggle-publish="handleTogglePublish" @request-procurement="requestProcurement" @bulk-request-procurement="requestBulkProcurement" @report-expired="openExpiredReportModal" />
+          <ProductList :fetchUrl="fetchUrl" :compact="true" :showPublishControls="(staffProfile.role || '').toUpperCase() === 'ADMIN'" :showActiveControls="(staffProfile.role || '').toUpperCase() === 'ADMIN'" ref="productListRef" @toggle-publish="handleTogglePublish" @toggle-active="handleToggleActive" @request-procurement="requestProcurement" @bulk-request-procurement="requestBulkProcurement" @report-expired="openExpiredReportModal" />
         </div>
       </div>
 
@@ -1534,6 +1534,27 @@ async function handleTogglePublish(payload) {
   } catch (e) {
     console.error('publish toggle error', e)
     showToast(e.response?.data?.message || 'Failed to update product visibility', 'error')
+  }
+}
+
+async function handleToggleActive(payload) {
+  if (!payload || !payload.id) return
+  if (!staffProfile.value || (staffProfile.value.role || '').toUpperCase() !== 'ADMIN') {
+    showToast('Only branch admins can enable or disable products', 'error')
+    return
+  }
+  const action = payload.active ? 'enable' : 'disable'
+  const ok = await window.swalConfirm ? await window.swalConfirm(`Are you sure you want to ${action} this product?`) : true
+  if (!ok) return
+  const okCsrf = await ensureCsrf()
+  if (!okCsrf) { showToast('Unable to refresh CSRF token', 'error'); return }
+  try {
+    await axios.put(endpoints.value.update(payload.id), { is_active: payload.active ? 1 : 0 }, { withCredentials: true })
+    showToast(payload.active ? 'Product enabled' : 'Product disabled', 'success')
+    await refreshList()
+  } catch (e) {
+    console.error('active toggle error', e)
+    showToast(e.response?.data?.message || 'Failed to update product status', 'error')
   }
 }
 

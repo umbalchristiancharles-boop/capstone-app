@@ -117,7 +117,6 @@ class StaffInventoryController extends Controller
         }
 
         $query = Product::where('branch_id', $branchId)
-            ->where('is_active', 1)
             ->where(function($q) {
                 // Show all active products including pending approval; exclude only rejected
                 $q->whereNull('status')
@@ -129,6 +128,8 @@ class StaffInventoryController extends Controller
         $includeUnpublished = $request->boolean('include_unpublished', false);
         if (in_array($roleUpper, ['ADMIN', 'OWNER', 'SUPER_ADMIN', 'SUPERADMIN'])) {
             $includeUnpublished = true;
+        } else {
+            $query->where('is_active', 1);
         }
 
         // Exclude representative dish products from the inventory list (only ingredients should show)
@@ -176,6 +177,7 @@ class StaffInventoryController extends Controller
                 'supplier_name',
                 'date_made',
                 'is_published',
+                'is_active',
                 'created_at',
                 'updated_at',
                 'status',
@@ -433,6 +435,7 @@ class StaffInventoryController extends Controller
             'expires_at' => 'sometimes|date_format:Y-m-d\\TH:i',
             // allow branch-level Admins to toggle publish state
             'is_published' => 'sometimes|boolean',
+            'is_active' => 'sometimes|boolean',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ]);
 
@@ -442,22 +445,28 @@ class StaffInventoryController extends Controller
         }
 
         // Only allow changing publish state if the actor is a branch Admin/Owner/SuperAdmin
-        if (array_key_exists('is_published', $validated)) {
+        if (array_key_exists('is_published', $validated) || array_key_exists('is_active', $validated)) {
             if (in_array(strtoupper($user->role), ['ADMIN', 'OWNER', 'SUPER_ADMIN', 'SUPERADMIN'])) {
-                $wasPublished = (bool) $product->is_published;
-                $nowPublished = (bool) $validated['is_published'];
-                $product->is_published = $nowPublished;
+                if (array_key_exists('is_published', $validated)) {
+                    $wasPublished = (bool) $product->is_published;
+                    $nowPublished = (bool) $validated['is_published'];
+                    $product->is_published = $nowPublished;
+                }
+                if (array_key_exists('is_active', $validated)) {
+                    $product->is_active = (bool) $validated['is_active'];
+                }
                 // Record audit info when publishing
-                if ($nowPublished && !$wasPublished) {
+                if (isset($nowPublished) && $nowPublished && !$wasPublished) {
                     $product->published_by = $user->id;
                     $product->published_at = now();
                 }
                 // Clear audit info when unpublishing
-                if (!$nowPublished && $wasPublished) {
+                if (isset($nowPublished) && !$nowPublished && $wasPublished) {
                     $product->published_by = null;
                     $product->published_at = null;
                 }
                 unset($validated['is_published']);
+                unset($validated['is_active']);
             }
         }
 

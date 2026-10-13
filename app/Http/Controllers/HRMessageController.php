@@ -5,12 +5,17 @@ namespace App\Http\Controllers;
 use App\Models\Branch;
 use App\Models\Message;
 use App\Models\User;
+use App\Services\MessageContentFilter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class HRMessageController extends Controller
 {
+    public function __construct(private MessageContentFilter $contentFilter)
+    {
+    }
+
     public function index()
     {
         $user = $this->currentUser();
@@ -111,6 +116,12 @@ class HRMessageController extends Controller
         if (! $me) {
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
+
+        if ($this->contentFilter->containsInappropriateLanguage($request->input('body'))) {
+            return response()->json([
+                'error' => 'Message was not sent because it contains inappropriate language. Please revise it.',
+            ], 422);
+        }
         
         // Prevent messaging self
         if ((int)$request->to_user_id === (int)$me->id) {
@@ -149,6 +160,12 @@ class HRMessageController extends Controller
         $me = $this->currentUser();
         if (! $me) {
             return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        if ($this->contentFilter->containsInappropriateLanguage($request->input('report_body'))) {
+            return response()->json([
+                'error' => 'Report was not sent because it contains inappropriate language. Please revise it.',
+            ], 422);
         }
 
         $to = User::findOrFail($request->to_user_id);
