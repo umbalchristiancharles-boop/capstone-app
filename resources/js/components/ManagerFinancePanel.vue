@@ -54,6 +54,13 @@
         >☰</button>
         <div class="finance-header__spacer"></div>
         <div class="finance-header__actions">
+          <button
+            class="finance-help-button"
+            type="button"
+            aria-label="Open finance panel tutorial"
+            title="Finance panel tutorial"
+            @click="openFinanceTutorial"
+          >?</button>
           <OwnerMessageMenu />
           <PanelNotificationMenu
             :notification-items="financeNotificationItems"
@@ -403,6 +410,71 @@
       </main>
     </div>
 
+    <transition name="fade">
+      <div
+        v-if="showFinanceTutorial"
+        class="finance-tutorial-backdrop"
+        role="presentation"
+        @click.self="closeFinanceTutorial"
+      >
+        <section
+          class="finance-tutorial-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="finance-tutorial-title"
+          tabindex="-1"
+          @keydown.esc="closeFinanceTutorial"
+        >
+          <header class="finance-tutorial-header">
+            <div>
+              <p class="finance-eyebrow">Finance manager guide</p>
+              <h3 id="finance-tutorial-title">How to use this panel</h3>
+            </div>
+            <button
+              class="finance-tutorial-close"
+              type="button"
+              aria-label="Close finance panel tutorial"
+              @click="closeFinanceTutorial"
+            >✕</button>
+          </header>
+
+          <div class="finance-tutorial-progress" aria-live="polite">
+            <span
+              v-for="(step, index) in financeTutorialSteps"
+              :key="step.title"
+              class="finance-tutorial-progress__dot"
+              :class="{ active: index === financeTutorialStep }"
+              :aria-label="`Step ${index + 1}: ${step.title}`"
+            ></span>
+            <span>Step {{ financeTutorialStep + 1 }} of {{ financeTutorialSteps.length }}</span>
+          </div>
+
+          <div class="finance-tutorial-body">
+            <div class="finance-tutorial-icon" aria-hidden="true">{{ financeTutorialSteps[financeTutorialStep].icon }}</div>
+            <h4>{{ financeTutorialSteps[financeTutorialStep].title }}</h4>
+            <p>{{ financeTutorialSteps[financeTutorialStep].description }}</p>
+            <ul class="finance-tutorial-list">
+              <li v-for="item in financeTutorialSteps[financeTutorialStep].items" :key="item">{{ item }}</li>
+            </ul>
+          </div>
+
+          <footer class="finance-tutorial-footer">
+            <button
+              class="finance-tutorial-button finance-tutorial-button--secondary"
+              type="button"
+              :disabled="financeTutorialStep === 0"
+              @click="financeTutorialStep -= 1"
+            >Previous</button>
+            <button
+              class="finance-tutorial-button finance-tutorial-button--primary"
+              type="button"
+              @click="financeTutorialStep === financeTutorialSteps.length - 1 ? closeFinanceTutorial() : financeTutorialStep += 1"
+            >{{ financeTutorialStep === financeTutorialSteps.length - 1 ? 'Done' : 'Next' }}</button>
+          </footer>
+        </section>
+      </div>
+    </transition>
+
     <PanelNotificationDetailsModal
       :show="Boolean(activeNotificationPanel)"
       :title="activeFinanceNotificationLabel"
@@ -646,6 +718,89 @@ const showOverlay = ref(false)
 const overlayText = ref('Logging out...')
 
 const showAccountInfoModal = ref(false)
+const showFinanceTutorial = ref(false)
+const financeTutorialStep = ref(0)
+const financeTutorialSteps = [
+  {
+    icon: '⌂',
+    title: 'Finance dashboard overview',
+    description: 'Start here for a quick view of your branch financial health.',
+    items: [
+      'Use Branch and Date Range filters to change the reporting scope.',
+      'Review Total Sales, Total Orders, Pending Approvals, and Net Revenue.',
+      'Read the Income, Expenses, and Profit reports, then use Refresh for the latest figures.',
+    ],
+  },
+  {
+    icon: '↗',
+    title: 'Price Markup',
+    description: 'Manage proposed product price changes for your branch.',
+    items: [
+      'Review current prices and markup requests.',
+      'Create or request a markup when product pricing needs to change.',
+      'Track each request status and the approval history shown in the module.',
+    ],
+  },
+  {
+    icon: '✓',
+    title: 'Approvals',
+    description: 'Process budget and procurement requests that need your decision.',
+    items: [
+      'Open a request to review its product, supplier, quantity, and amount.',
+      'Choose Approve or Reject for pending requests.',
+      'Use Budget Given when an approved request has been funded, and monitor the status afterward.',
+    ],
+  },
+  {
+    icon: '▣',
+    title: 'Receipt Approval',
+    description: 'Verify supplier receipts before a delivery is marked on the way.',
+    items: [
+      'Use View Receipt to inspect the uploaded proof and open it in a new tab.',
+      'Confirm valid receipts or reject receipts that need correction.',
+      'The badge in the sidebar shows how many receipt submissions are waiting for review.',
+    ],
+  },
+  {
+    icon: '₱',
+    title: 'Transactions',
+    description: 'Review recent finance activity and transaction reports.',
+    items: [
+      'Use the reports to compare income, expenses, and profit.',
+      'Review transaction details to understand recorded sales and expenses.',
+      'Return to Financial Overview when you need the KPI summary and filters.',
+    ],
+  },
+  {
+    icon: '◷',
+    title: 'Attendance',
+    description: 'Record your manager attendance from the finance panel.',
+    items: [
+      'Use Clock In when you arrive and Clock Out when your shift ends.',
+      'Location permission and the attendance rules must allow clock-in or clock-out.',
+      'The card shows today’s status, timestamps, and hours worked.',
+    ],
+  },
+  {
+    icon: '?',
+    title: 'Header tools and account',
+    description: 'Use the top bar to access communication, alerts, and your profile.',
+    items: [
+      'Open Messages to communicate with the relevant team or owner.',
+      'Open Notifications to review approvals, receipt alerts, announcements, and updates.',
+      'Select Account Info in the sidebar to view your profile, or use Logout to end the session.',
+    ],
+  },
+]
+
+function openFinanceTutorial() {
+  financeTutorialStep.value = 0
+  showFinanceTutorial.value = true
+}
+
+function closeFinanceTutorial() {
+  showFinanceTutorial.value = false
+}
 
   const attendanceStatus = ref({
     is_clocked_in: false,
