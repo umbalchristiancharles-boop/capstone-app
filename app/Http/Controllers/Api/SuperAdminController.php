@@ -379,12 +379,117 @@ class SuperAdminController extends Controller
             ];
         });
 
-        // System activity (mock data)
-        $systemActivity = [
-            ['id' => 1, 'title' => 'System started', 'description' => 'Server initialized', 'status' => 'Normal', 'badgeClass' => 'badge--success'],
-            ['id' => 2, 'title' => 'Database backup', 'description' => 'Auto-backup completed', 'status' => 'Success', 'badgeClass' => 'badge--success'],
-            ['id' => 3, 'title' => 'API health check', 'description' => 'All endpoints responding', 'status' => 'OK', 'badgeClass' => 'badge--success'],
-        ];
+        // Build the activity feed from persisted records only. There is no generic
+        // activity table, so each entry identifies the source record and event time.
+        $activity = collect();
+
+        Order::with(['owner:id,full_name,role', 'cashier:id,full_name,role', 'branch:id,name'])
+            ->whereBetween('created_at', $dateRange)
+            ->latest('created_at')
+            ->limit(25)
+            ->get()
+            ->each(function ($order) use ($activity) {
+                $actor = $order->cashier ?: $order->owner;
+                $actorName = $actor?->full_name ?: 'Unknown user';
+                $actorRole = $actor?->role ? strtoupper(str_replace('_', ' ', $actor->role)) : 'Unknown role';
+                $status = strtoupper(str_replace('_', ' ', (string) ($order->status ?: 'created')));
+
+                $activity->push([
+                    'id' => 'order-created-' . $order->id,
+                    'title' => 'Order ' . ($order->order_code ?: '#' . $order->id) . ' recorded',
+                    'description' => "{$actorName} ({$actorRole}) created an order in " . ($order->branch?->name ?: 'Unknown branch') . ". Status: {$status}.",
+                    'actor' => $actorName,
+                    'role' => $actorRole,
+                    'module' => 'Orders',
+                    'branch' => $order->branch?->name,
+                    'timestamp' => optional($order->created_at)->toIso8601String(),
+                    'status' => ucfirst(strtolower($status)),
+                    'badgeClass' => in_array(strtolower((string) $order->status), ['cancelled', 'refunded'], true) ? 'badge--warning' : 'badge--success',
+                ]);
+            });
+
+        User::with('branch:id,name')
+            ->whereBetween('created_at', $dateRange)
+            ->whereNull('deleted_at')
+            ->whereNotIn('role', ['SUPER_ADMIN', 'SUPERADMIN'])
+            ->latest('created_at')
+            ->limit(25)
+            ->get(['id', 'full_name', 'role', 'branch_id', 'created_at'])
+            ->each(function ($createdUser) use ($activity) {
+                $role = $createdUser->role ? strtoupper(str_replace('_', ' ', $createdUser->role)) : 'Unknown role';
+                $name = $createdUser->full_name ?: 'Unknown user';
+
+                $activity->push([
+                    'id' => 'user-created-' . $createdUser->id,
+                    'title' => 'User account created',
+                    'description' => "{$name} ({$role}) was added to " . ($createdUser->branch?->name ?: 'Unknown branch') . ".",
+                    'actor' => $name,
+                    'role' => $role,
+                    'module' => 'User Management',
+                    'branch' => $createdUser->branch?->name,
+                    'timestamp' => optional($createdUser->created_at)->toIso8601String(),
+                    'status' => 'Recorded',
+                    'badgeClass' => 'badge--info',
+                ]);
+            });
+
+        \App\Models\Attendance::with(['user:id,full_name,role,branch_id', 'user.branch:id,name'])
+            ->whereBetween('date', [$dateRange[0]->format('Y-m-d'), $dateRange[1]->format('Y-m-d')])
+            ->latest('date')
+            ->latest('time_in')
+            ->limit(25)
+            ->get()
+            ->each(function ($attendance) use ($activity) {
+                $user = $attendance->user;
+                $name = $user?->full_name ?: 'Unknown user';
+                $role = $user?->role ? strtoupper(str_replace('_', ' ', $user->role)) : 'Unknown role';
+                $status = strtolower((string) ($attendance->status ?: 'recorded'));
+                $eventTime = $attendance->time_in ?: $attendance->created_at;
+
+                $activity->push([
+                    'id' => 'attendance-' . $attendance->id,
+                    'title' => 'Attendance ' . ucfirst($status),
+                    'description' => "{$name} ({$role}) recorded attendance in " . ($user?->branch?->name ?: 'Unknown branch') . ".",
+                    'actor' => $name,
+                    'role' => $role,
+                    'module' => 'Attendance',
+                    'branch' => $user?->branch?->name,
+                    'timestamp' => optional($eventTime)->toIso8601String(),
+                    'status' => ucfirst($status),
+                    'badgeClass' => in_array($status, ['absent', 'late'], true) ? 'badge--warning' : 'badge--success',
+                ]);
+            });
+
+        \App\Models\Announcement::with('sender:id,full_name,role')
+            ->whereBetween('created_at', $dateRange)
+            ->latest('created_at')
+            ->limit(25)
+            ->get()
+            ->each(function ($announcement) use ($activity) {
+                $sender = $announcement->sender;
+                $name = $sender?->full_name ?: 'Unknown user';
+                $role = $sender?->role ? strtoupper(str_replace('_', ' ', $sender->role)) : 'Unknown role';
+
+                $activity->push([
+                    'id' => 'announcement-' . $announcement->id,
+                    'title' => 'Announcement published',
+                    'description' => "{$name} ({$role}) published “{$announcement->title}” to " . ($announcement->target ?: 'selected users') . ".",
+                    'actor' => $name,
+                    'role' => $role,
+                    'module' => 'Announcements',
+                    'branch' => null,
+                    'timestamp' => optional($announcement->created_at)->toIso8601String(),
+                    'status' => 'Published',
+                    'badgeClass' => 'badge--info',
+                ]);
+            });
+
+        $systemActivity = $activity
+            ->filter(fn ($item) => !empty($item['timestamp']))
+            ->sortByDesc('timestamp')
+            ->take(15)
+            ->values()
+            ->all();
 
         return response()->json([
             'ok' => true,

@@ -45,9 +45,10 @@
             >
               Staff Management
             </button>
-            <label v-if="showBranchSelector && branches.length" class="admin-sidebar__branch-filter">
+            <label v-if="showBranchSelector && (branches.length || isSuperAdminBranchSelector)" class="admin-sidebar__branch-filter" :class="{ 'admin-sidebar__branch-filter--loading': branchSelectorLoading }">
               <span>Branch</span>
-              <select v-model="selectedBranchId" aria-label="Filter panel by branch">
+              <select v-model="selectedBranchId" aria-label="Filter panel by branch" :disabled="branchSelectorLoading">
+                <option v-if="branchSelectorLoading && !branches.length" value="">Loading branches...</option>
                 <option value="">All Branches</option>
                 <option v-for="branch in branches" :key="branch.id" :value="String(branch.id)">{{ branch.name }}</option>
               </select>
@@ -966,12 +967,23 @@ import { isCustomPanelOrigin, leaveToCustomPanel } from './customPanelNavigation
 
 import { showToast } from './toastStore'
 
-defineProps({
+const props = defineProps({
   showBranchSelector: {
     type: Boolean,
     default: false,
   },
+  superAdminBranches: {
+    type: Array,
+    default: null,
+  },
+  superAdminBranchLoading: {
+    type: Boolean,
+    default: false,
+  },
 })
+
+const isSuperAdminBranchSelector = computed(() => Array.isArray(props.superAdminBranches))
+const branchSelectorLoading = computed(() => isSuperAdminBranchSelector.value && props.superAdminBranchLoading && branches.value.length === 0)
 
 const router = useRouter()
 const activeRange = ref('today')
@@ -1174,6 +1186,11 @@ const announcements = ref([])
 const loadingAnnouncements = ref(false)
 const branches = ref([])
 const selectedBranchId = ref('')
+
+watch(() => props.superAdminBranches, (branchOptions) => {
+  if (!Array.isArray(branchOptions)) return
+  branches.value = branchOptions
+}, { immediate: true })
 const adminAttendance = ref([])
 const adminAttendanceLoading = ref(false)
 const adminAttendanceError = ref('')
@@ -2169,8 +2186,8 @@ function formatDate(dateString) {
     readOwnerPermissions()
     window.addEventListener('storage', handleOwnerPermissionsStorage)
     loadDashboard(activeRange.value)
-    // load branches + attendance overview for admin
-    loadBranches()
+    // The embedded Super Admin view supplies its already-fetched branch list.
+    if (!isSuperAdminBranchSelector.value) loadBranches()
     loadAdminAttendance(activeRange.value)
     loadAttendanceSettings()
     axios
