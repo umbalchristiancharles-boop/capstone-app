@@ -663,6 +663,7 @@ import { isCustomPanelOrigin, leaveToCustomPanel } from './customPanelNavigation
 const userProfile = ref({})
 const logisticsRoute = useRoute()
 const logisticsRouter = useRouter()
+const superAdminEmbedded = inject('superAdminEmbedded', false)
 const superAdminBranchId = inject('superAdminBranchId', null)
 const superAdminBranchScoped = inject('superAdminBranchScoped', false)
 const selectedSection = ref('overview')
@@ -683,6 +684,8 @@ watch(
 
 function selectLogisticsSection(section) {
   selectedSection.value = section
+  if (superAdminEmbedded) return
+
   if (logisticsRoute.query.section !== section) {
     sessionStorage.setItem('suppressRouteOverlay', '1')
     logisticsRouter.replace({ query: { ...logisticsRoute.query, section } }).catch((error) => {

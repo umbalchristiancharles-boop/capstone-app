@@ -193,6 +193,10 @@
         v-else
         ref="monitoringViewRef"
         class="super-admin-module-view"
+        :class="{
+          'super-admin-module-view--wheel-scroll': ['mainBranchHr', 'inventoryStaff'].includes(activeModule),
+          'super-admin-module-view--owner-scroll': activeModule === 'owner',
+        }"
         @click.capture="guardMonitoringClick"
         @change.capture="guardMonitoringChange"
         @submit.capture="guardMonitoringSubmit"
@@ -2018,11 +2022,26 @@ watch(() => route.path, (p) => {
   }
 }
 
-.super-admin-module-view:has(.admin-panel-shell) {
+.super-admin-module-view:has(.admin-panel-shell),
+.super-admin-module-view--wheel-scroll {
   height: calc(100dvh - 66px);
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior-y: contain;
+}
+
+.super-admin-module-view--owner-scroll {
+  height: auto;
+  min-height: calc(100vh - 66px);
+  overflow-y: visible;
+  overscroll-behavior-y: auto;
+}
+
+.super-admin-module-view--owner-scroll :deep(.owner-panel-layout--embedded .admin-main) {
+  height: auto !important;
+  max-height: none !important;
+  overflow-y: visible !important;
+  overscroll-behavior-y: auto !important;
 }
 
 .super-admin-monitoring-notice {
@@ -2249,6 +2268,17 @@ watch(() => route.path, (p) => {
 .super-admin-module-view :deep(.manager-hr-sidebar__item:hover),
 .super-admin-module-view :deep(.cashier-right-sidebar__item:hover) {
   transform: none !important;
+}
+
+.super-admin-module-view :deep(nav :is(button, a, [role="tab"])) {
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease !important;
+}
+
+.super-admin-module-view :deep(nav :is(button, a, [role="tab"]):is([aria-current="page"], [aria-selected="true"], .active, [class*="--active"])) {
+  border-color: #d94e19 !important;
+  background: #e85b22 !important;
+  color: #fff !important;
+  box-shadow: 0 3px 9px rgba(232, 91, 34, 0.2) !important;
 }
 
 .super-admin-module-view :deep(.main-branch-page .logistics-workspace) {
@@ -3352,6 +3382,481 @@ watch(() => route.path, (p) => {
 
 .super-admin-module-view :deep(.main-branch-admin-panel .admin-main) {
   margin-top: 0 !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .staff-management-page) {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  padding: 0.75rem 0 1rem !important;
+  overflow-x: hidden !important;
+  background: transparent !important;
+  color: #42210b !important;
+  box-sizing: border-box !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .staff-header),
+.super-admin-module-view :deep(.main-branch-admin-panel .summary-card) {
+  width: 100% !important;
+  margin: 0 0 1rem !important;
+  padding: 1.25rem 1.4rem !important;
+  border: 1px solid #e7d9cf !important;
+  border-radius: 14px !important;
+  background: linear-gradient(135deg, #fff 0%, #fffaf6 100%) !important;
+  box-shadow: 0 5px 16px rgba(66, 33, 11, 0.055) !important;
+  box-sizing: border-box !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .staff-header) {
+  gap: 1rem !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .owner-staff-title) {
+  margin: 0 !important;
+  padding: 0 !important;
+  color: #42210b !important;
+  font-size: clamp(1.45rem, 2.3vw, 1.9rem) !important;
+  font-weight: 750 !important;
+  letter-spacing: -0.03em !important;
+  line-height: 1.2 !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .owner-staff-total) {
+  margin: 0 !important;
+  color: #594638 !important;
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .header-actions) {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 0.65rem !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .header-actions button) {
+  min-height: 42px !important;
+  margin: 0 !important;
+  padding: 0.65rem 1rem !important;
+  border: 1px solid transparent !important;
+  border-radius: 9px !important;
+  font-size: 0.84rem !important;
+  font-weight: 700 !important;
+  transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .header-actions .btn-primary) {
+  border-color: #e2d4ca !important;
+  background: #fff !important;
+  color: #594638 !important;
+  box-shadow: 0 2px 6px rgba(66, 33, 11, 0.05) !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .header-actions .btn-success) {
+  border-color: #d94e19 !important;
+  background: #e85b22 !important;
+  color: #fff !important;
+  box-shadow: 0 3px 9px rgba(232, 91, 34, 0.18) !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .header-actions button:hover:not(:disabled)) {
+  transform: translateY(-1px) !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .header-actions .btn-primary:hover:not(:disabled)) {
+  border-color: #d8bba8 !important;
+  background: #fffaf6 !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .header-actions .btn-success:hover:not(:disabled)) {
+  background: #cf4b18 !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .branch-group) {
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 1px solid #e7d9cf !important;
+  border-radius: 14px !important;
+  background: #fff !important;
+  box-shadow: 0 5px 16px rgba(66, 33, 11, 0.055) !important;
+  overflow: hidden !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .staff-table-wrapper) {
+  width: 100% !important;
+  max-width: 100% !important;
+  border: 0 !important;
+  border-radius: 14px !important;
+  background: #fff !important;
+  box-shadow: none !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .staff-table) {
+  min-width: 1120px !important;
+  border-collapse: collapse !important;
+  background: #fff !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .staff-table thead) {
+  background: #fff4eb !important;
+  box-shadow: none !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .staff-table th) {
+  padding: 0.85rem 0.8rem !important;
+  border-bottom: 1px solid #eee2d8 !important;
+  color: #7c3c1d !important;
+  font-size: 0.7rem !important;
+  font-weight: 750 !important;
+  letter-spacing: 0.045em !important;
+  line-height: 1.35 !important;
+  white-space: normal !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .staff-table td) {
+  padding: 0.8rem !important;
+  border-bottom: 1px solid #f0e9e3 !important;
+  color: #594638 !important;
+  font-size: 0.8rem !important;
+  line-height: 1.45 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .staff-table tbody tr:last-child td) {
+  border-bottom: 0 !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .staff-table tbody tr:hover) {
+  background: #fffaf6 !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .empty-state),
+.super-admin-module-view :deep(.main-branch-admin-panel .loading-state) {
+  margin: 0 !important;
+  padding: 2rem 1rem !important;
+  border: 1px solid #e7d9cf !important;
+  border-radius: 14px !important;
+  background: #fff !important;
+  color: #76665c !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .modal-backdrop) {
+  z-index: 1100 !important;
+  padding: 1rem !important;
+  box-sizing: border-box !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .modal) {
+  display: flex !important;
+  width: min(920px, 100%) !important;
+  max-width: 100% !important;
+  max-height: min(90dvh, 900px) !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  border: 1px solid #e7d9cf !important;
+  border-radius: 16px !important;
+  background: #fff !important;
+  box-shadow: 0 24px 70px rgba(31, 25, 20, 0.24) !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .modal-card),
+.super-admin-module-view :deep(.main-branch-admin-panel .modal-card form) {
+  display: flex !important;
+  min-height: 0 !important;
+  flex-direction: column !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .modal-header) {
+  min-height: 68px !important;
+  flex: 0 0 auto !important;
+  padding: 1rem 1.4rem !important;
+  border-bottom: 1px solid #eee2d8 !important;
+  border-radius: 0 !important;
+  background: #fffaf6 !important;
+  color: #42210b !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .modal-header h2) {
+  margin: 0 !important;
+  color: #42210b !important;
+  font-size: 1.15rem !important;
+  font-weight: 750 !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .close-button) {
+  width: 36px !important;
+  height: 36px !important;
+  flex: 0 0 auto !important;
+  border: 1px solid #e7d9cf !important;
+  border-radius: 9px !important;
+  background: #fff !important;
+  color: #76665c !important;
+  font-size: 1.25rem !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .close-button:hover) {
+  transform: none !important;
+  background: #fff1e8 !important;
+  color: #a74318 !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .modal-body) {
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overscroll-behavior-y: contain !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .form-grid) {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 1rem !important;
+  padding: 1.25rem 1.4rem !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .form-group) {
+  min-width: 0 !important;
+  gap: 0.35rem !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .form-label) {
+  margin: 0 !important;
+  color: #594638 !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.015em !important;
+  text-transform: none !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .form-input) {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 42px !important;
+  padding: 0.65rem 0.75rem !important;
+  border: 1px solid #ddcbbd !important;
+  border-radius: 9px !important;
+  background: #fff !important;
+  color: #33251d !important;
+  font: inherit !important;
+  font-size: 0.85rem !important;
+  box-sizing: border-box !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .form-input:focus) {
+  border-color: #d8662b !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(216, 102, 43, 0.14) !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .budget-helper),
+.super-admin-module-view :deep(.main-branch-admin-panel .form-helper),
+.super-admin-module-view :deep(.main-branch-admin-panel .info-sub) {
+  color: #84766d !important;
+  font-size: 0.76rem !important;
+  line-height: 1.5 !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .default-accounts-info),
+.super-admin-module-view :deep(.main-branch-admin-panel .custom-account-card) {
+  margin: 0 !important;
+  padding: 1.15rem 1.4rem !important;
+  border-top: 1px solid #eee7e1 !important;
+  background: #fffaf6 !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .default-accounts-info h3),
+.super-admin-module-view :deep(.main-branch-admin-panel .custom-account-header h3) {
+  margin: 0 0 0.35rem !important;
+  color: #42210b !important;
+  font-size: 0.95rem !important;
+  font-weight: 750 !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .default-account-item),
+.super-admin-module-view :deep(.main-branch-admin-panel .permission-card) {
+  border-color: #e7d9cf !important;
+  border-radius: 10px !important;
+  background: #fff !important;
+  box-shadow: 0 2px 7px rgba(66, 33, 11, 0.035) !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .cost-items-container) {
+  min-width: 0 !important;
+  padding: 0.8rem !important;
+  border: 1px solid #e7d9cf !important;
+  border-radius: 10px !important;
+  background: #fffaf6 !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .cost-item-row) {
+  min-width: 0 !important;
+  gap: 0.55rem !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .btn-add-item) {
+  min-height: 38px !important;
+  padding: 0.55rem 0.8rem !important;
+  border: 1px solid #f0c5ad !important;
+  border-radius: 8px !important;
+  background: #fff1e8 !important;
+  color: #a74318 !important;
+  font-size: 0.8rem !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .btn-add-item:hover) {
+  background: #ffe7d8 !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .btn-remove-item) {
+  width: 38px !important;
+  height: 38px !important;
+  flex: 0 0 auto !important;
+  border-radius: 8px !important;
+  background: #fff1f0 !important;
+  color: #b42318 !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .total-investment-display) {
+  padding: 0.9rem 1rem !important;
+  border: 1px solid #f0c5ad !important;
+  border-radius: 10px !important;
+  background: #fff5ee !important;
+  color: #594638 !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .error-message),
+.super-admin-module-view :deep(.main-branch-admin-panel .success-message) {
+  margin: 0.75rem 1.4rem !important;
+  padding: 0.75rem 0.9rem !important;
+  border-radius: 9px !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .modal-footer) {
+  flex: 0 0 auto !important;
+  gap: 0.65rem !important;
+  padding: 0.9rem 1.4rem !important;
+  border-top: 1px solid #eee2d8 !important;
+  background: #fff !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .modal-footer .btn) {
+  min-width: 104px !important;
+  min-height: 40px !important;
+  padding: 0.6rem 0.95rem !important;
+  border-radius: 9px !important;
+  font-size: 0.84rem !important;
+  font-weight: 700 !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .modal-footer .btn-secondary) {
+  border: 1px solid #ddcbbd !important;
+  background: #fff !important;
+  color: #594638 !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .modal-footer .btn-primary) {
+  border: 1px solid #d94e19 !important;
+  background: #e85b22 !important;
+  color: #fff !important;
+  box-shadow: 0 3px 9px rgba(232, 91, 34, 0.18) !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .modal-footer .btn-primary:hover:not(:disabled)) {
+  background: #cf4b18 !important;
+}
+
+.super-admin-module-view :deep(.main-branch-admin-panel .modal-footer button:disabled) {
+  cursor: not-allowed !important;
+  opacity: 0.65 !important;
+}
+
+@media (max-width: 640px) {
+  .super-admin-module-view :deep(.main-branch-admin-panel .staff-management-page) {
+    padding: 0.5rem 0 0.75rem !important;
+  }
+
+  .super-admin-module-view :deep(.main-branch-admin-panel .staff-header) {
+    align-items: stretch !important;
+    flex-direction: column !important;
+    padding: 1rem !important;
+  }
+
+  .super-admin-module-view :deep(.main-branch-admin-panel .header-actions) {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .super-admin-module-view :deep(.main-branch-admin-panel .header-actions button) {
+    width: 100% !important;
+    padding-inline: 0.6rem !important;
+  }
+
+  .super-admin-module-view :deep(.main-branch-admin-panel .summary-card) {
+    padding: 0.9rem 1rem !important;
+  }
+
+  .super-admin-module-view :deep(.main-branch-admin-panel .modal-backdrop) {
+    align-items: flex-start !important;
+    padding: 0.6rem !important;
+  }
+
+  .super-admin-module-view :deep(.main-branch-admin-panel .modal) {
+    width: 100% !important;
+    max-height: calc(100dvh - 1.2rem) !important;
+    border-radius: 12px !important;
+  }
+
+  .super-admin-module-view :deep(.main-branch-admin-panel .modal-header) {
+    min-height: 58px !important;
+    padding: 0.8rem 1rem !important;
+  }
+
+  .super-admin-module-view :deep(.main-branch-admin-panel .form-grid) {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 0.85rem !important;
+    padding: 1rem !important;
+  }
+
+  .super-admin-module-view :deep(.main-branch-admin-panel .form-group.full-span) {
+    grid-column: auto !important;
+  }
+
+  .super-admin-module-view :deep(.main-branch-admin-panel .default-accounts-info),
+  .super-admin-module-view :deep(.main-branch-admin-panel .custom-account-card) {
+    padding: 1rem !important;
+  }
+
+  .super-admin-module-view :deep(.main-branch-admin-panel .default-account-item),
+  .super-admin-module-view :deep(.main-branch-admin-panel .custom-account-header) {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+  }
+
+  .super-admin-module-view :deep(.main-branch-admin-panel .account-details),
+  .super-admin-module-view :deep(.main-branch-admin-panel .account-info),
+  .super-admin-module-view :deep(.main-branch-admin-panel .account-username),
+  .super-admin-module-view :deep(.main-branch-admin-panel .account-password) {
+    min-width: 0 !important;
+    flex-wrap: wrap !important;
+  }
+
+  .super-admin-module-view :deep(.main-branch-admin-panel .cost-item-row),
+  .super-admin-module-view :deep(.main-branch-admin-panel .cost-item-row.equipment-row) {
+    flex-wrap: wrap !important;
+  }
+
+  .super-admin-module-view :deep(.main-branch-admin-panel .cost-item-row .form-input) {
+    flex: 1 1 100% !important;
+  }
+
+  .super-admin-module-view :deep(.main-branch-admin-panel .modal-footer) {
+    padding: 0.75rem 1rem !important;
+  }
+
+  .super-admin-module-view :deep(.main-branch-admin-panel .modal-footer .btn) {
+    min-width: 0 !important;
+    flex: 1 1 0 !important;
+  }
 }
 
 .super-admin-module-view :deep(.manager-finance .filter-bar .filter-group:first-child),
