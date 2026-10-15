@@ -31,20 +31,16 @@ class AuthController extends Controller
 
         $credentials = $request->only(['username', 'password']);
 
-        // Debug: log credentials and password hash
+        // Log the account lookup without recording credentials or password hashes.
         $user = User::where('username', '=', $credentials['username'])->first();
         Log::debug('Login attempt', [
             'username' => $credentials['username'],
-            'input_password' => $credentials['password'],
-            'db_password' => $user ? $user->password : null,
             'user_exists' => $user ? true : false,
         ]);
 
         if (!Auth::attempt($credentials)) {    // uses getAuthPassword() if defined
             Log::debug('Auth::attempt failed', [
                 'username' => $credentials['username'],
-                'input_password' => $credentials['password'],
-                'db_password' => $user ? $user->password : null,
             ]);
             return response()->json([
                 'ok'      => false,
