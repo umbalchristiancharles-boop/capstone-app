@@ -452,6 +452,13 @@ const ownerPermissionList = [
   { key: 'positionRequests', scopeKey: 'positionRequestScope', label: 'Request New Position', description: 'Allow HR managers to request open positions for approval.' },
 ]
 
+function normalizePermissionScope(scope) {
+  return {
+    mode: scope?.mode === 'specific' ? 'specific' : 'all',
+    branchIds: Array.isArray(scope?.branchIds) ? scope.branchIds.map(Number) : [],
+  }
+}
+
 function loadOwnerPermissions() {
   try {
     const raw = localStorage.getItem(ownerPermissionsStorageKey)
@@ -464,13 +471,6 @@ function loadOwnerPermissions() {
         priceMarkupScope: normalizePermissionScope(parsed.priceMarkupScope),
         productRequestScope: normalizePermissionScope(parsed.productRequestScope),
         positionRequestScope: normalizePermissionScope(parsed.positionRequestScope),
-      }
-
-      function normalizePermissionScope(scope) {
-        return {
-          mode: scope?.mode === 'specific' ? 'specific' : 'all',
-          branchIds: Array.isArray(scope?.branchIds) ? scope.branchIds.map(Number) : [],
-        }
       }
     }
   } catch (error) {

@@ -150,8 +150,11 @@ class SuperAdminSandboxMiddleware
             $this->forgetQueueManager();
 
             if ($shouldDiscard) {
+                $isPrecreatedDatabase = $this->sandbox->isPrecreatedDatabase($sandboxDatabase);
                 try {
-                    $this->sandbox->dropDatabase($sandboxDatabase);
+                    if (! $isPrecreatedDatabase) {
+                        $this->sandbox->dropDatabase($sandboxDatabase);
+                    }
                 } finally {
                     try {
                         if ($sandboxUserId) {
@@ -159,7 +162,9 @@ class SuperAdminSandboxMiddleware
                             $user?->tokens()->delete();
                         }
                     } finally {
-                        \Illuminate\Support\Facades\File::deleteDirectory($sandboxRoot);
+                        if (! $isPrecreatedDatabase) {
+                            \Illuminate\Support\Facades\File::deleteDirectory($sandboxRoot);
+                        }
                     }
                 }
             }
@@ -259,7 +264,7 @@ class SuperAdminSandboxMiddleware
 
     private function discardIncompleteSandbox(?string $database): void
     {
-        if (! $database) {
+        if (! $database || $this->sandbox->isPrecreatedDatabase($database)) {
             return;
         }
 

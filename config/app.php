@@ -54,6 +54,10 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'asset_url' => env('ASSET_URL'),
+
+    'superadmin_sandbox_database' => env('SUPERADMIN_SANDBOX_DATABASE'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

@@ -24,6 +24,11 @@ class SuperAdminSandbox
             throw new RuntimeException('The configured source database is missing.');
         }
 
+        $precreatedDatabase = config('app.superadmin_sandbox_database');
+        if (is_string($precreatedDatabase) && $precreatedDatabase !== '') {
+            return $this->usePrecreatedDatabase($sourceDatabase, $precreatedDatabase);
+        }
+
         $sandboxHash = substr(hash_hmac('sha256', $userId . ':' . $sessionId, (string) config('app.key')), 0, 32);
         $sandboxDatabase = 'sa_sandbox_' . $sandboxHash;
         $lockName = 'sa-sandbox-' . substr(hash('sha256', $sandboxDatabase), 0, 40);
@@ -113,36 +118,57 @@ class SuperAdminSandbox
 
     public function activate(string $database): array
     {
-        if (! preg_match('/\Asa_sandbox_[a-f0-9]{32}\z/', $database)) {
+        if (! $this->isPrecreatedDatabase($database)
+            && ! preg_match('/\Asa_sandbox_[a-f0-9]{32}\z/', $database)) {
             throw new RuntimeException('Invalid super admin sandbox database identifier.');
         }
 
         $default = DB::getDefaultConnection();
-        $configKey = "database.connections.{$default}.database";
-        $originalDatabase = config($configKey);
+        $originalConfig = config("database.connections.{$default}");
+        $sandboxConnection = config('database.connections.superadmin_sandbox');
+        if (! is_array($originalConfig) || ! is_array($sandboxConnection)) {
+            throw new RuntimeException('The sandbox database connection is not configured.');
+        }
 
-        Config::set($configKey, $database);
+        $liveDatabase = $originalConfig['database'] ?? null;
+        $sandboxDatabase = $sandboxConnection['database'] ?? null;
+        if (! is_string($liveDatabase) || ! is_string($sandboxDatabase)
+            || ! hash_equals($sandboxDatabase, $database)
+            || hash_equals($liveDatabase, $database)) {
+            throw new RuntimeException('The sandbox database must be different from the live database.');
+        }
+
+        Config::set("database.connections.{$default}", $sandboxConnection);
         DB::purge($default);
 
-        return [$default, $originalDatabase];
+        return [$default, $originalConfig];
     }
 
     public function restore(array $connectionState): void
     {
-        [$default, $originalDatabase] = $connectionState;
+        [$default, $originalConfig] = $connectionState;
 
         DB::purge($default);
-        Config::set("database.connections.{$default}.database", $originalDatabase);
+        Config::set("database.connections.{$default}", $originalConfig);
         DB::purge($default);
     }
 
     public function dropDatabase(string $database): void
     {
+        if ($this->isPrecreatedDatabase($database)) {
+            throw new RuntimeException('Refusing to drop the configured pre-created sandbox database.');
+        }
+
         if (! preg_match('/\Asa_sandbox_[a-f0-9]{32}\z/', $database)) {
             throw new RuntimeException('Invalid super admin sandbox database identifier.');
         }
 
         $default = DB::getDefaultConnection();
+        $sourceDatabase = config("database.connections.{$default}.database");
+        if (is_string($sourceDatabase) && hash_equals($sourceDatabase, $database)) {
+            throw new RuntimeException('Refusing to drop the live database.');
+        }
+
         $sourceConfig = config("database.connections.{$default}");
         $adminConnection = $this->adminConnectionName();
 
@@ -151,6 +177,77 @@ class SuperAdminSandbox
             $admin->statement('DROP DATABASE IF EXISTS ' . $this->quoteIdentifier($database));
         } finally {
             $this->forgetConnection($adminConnection);
+        }
+    }
+
+    public function isPrecreatedDatabase(string $database): bool
+    {
+        $configuredDatabase = config('app.superadmin_sandbox_database');
+
+        return is_string($configuredDatabase)
+            && $configuredDatabase !== ''
+            && hash_equals($configuredDatabase, $database);
+    }
+
+    private function usePrecreatedDatabase(
+        string $sourceDatabase,
+        string $sandboxDatabase
+    ): string {
+        if (! preg_match('/\A[A-Za-z0-9_]+\z/', $sandboxDatabase)) {
+            throw new RuntimeException('The configured pre-created sandbox database name is invalid.');
+        }
+
+        if (hash_equals($sourceDatabase, $sandboxDatabase)) {
+            throw new RuntimeException('The sandbox database must be different from the live database.');
+        }
+
+        $sandboxConfig = config('database.connections.superadmin_sandbox');
+        if (! is_array($sandboxConfig)
+            || ! in_array($sandboxConfig['driver'] ?? null, ['mysql', 'mariadb'], true)
+            || ! is_string($sandboxConfig['database'] ?? null)
+            || ! hash_equals($sandboxDatabase, $sandboxConfig['database'])
+            || ! is_string($sandboxConfig['host'] ?? null)
+            || $sandboxConfig['host'] === ''
+            || ! is_string($sandboxConfig['username'] ?? null)
+            || $sandboxConfig['username'] === ''
+            || ! is_string($sandboxConfig['password'] ?? null)
+            || $sandboxConfig['password'] === '') {
+            throw new RuntimeException('The pre-created sandbox database connection is incomplete.');
+        }
+
+        $targetConnection = $this->targetConnectionName();
+
+        try {
+            Config::set("database.connections.{$targetConnection}", $sandboxConfig);
+            DB::purge($targetConnection);
+            $target = DB::connection($targetConnection);
+            $selectedDatabase = $target->selectOne('SELECT DATABASE() AS database_name');
+            if (! is_object($selectedDatabase)
+                || ! hash_equals($sandboxDatabase, (string) ($selectedDatabase->database_name ?? ''))) {
+                throw new RuntimeException('The configured pre-created sandbox database could not be selected.');
+            }
+
+            $tables = $target->select('SHOW FULL TABLES WHERE Table_type = ?', ['BASE TABLE']);
+            $tableNames = array_map(
+                static fn (object $table): string => (string) array_values((array) $table)[0],
+                $tables
+            );
+
+            if (! in_array('users', $tableNames, true) || ! in_array('migrations', $tableNames, true)) {
+                throw new RuntimeException(
+                    'The pre-created sandbox database must be imported and contain users and migrations tables.'
+                );
+            }
+
+            return $sandboxDatabase;
+        } catch (\Throwable $exception) {
+            Log::error('Failed to connect to the pre-created super admin sandbox database.', [
+                'exception' => $exception->getMessage(),
+            ]);
+
+            throw new RuntimeException('Could not use the pre-created super admin sandbox.', 0, $exception);
+        } finally {
+            $this->forgetConnection($targetConnection);
         }
     }
 

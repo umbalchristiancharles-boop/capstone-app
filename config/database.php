@@ -59,6 +59,28 @@ return [
             'strict' => true,
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
+                \PDO::ATTR_PERSISTENT => true,
+                \PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
+        'superadmin_sandbox' => [
+            'driver' => env('SUPERADMIN_SANDBOX_DB_CONNECTION', env('DB_CONNECTION', 'mysql')),
+            'url' => null,
+            'host' => env('SUPERADMIN_SANDBOX_DB_HOST'),
+            'port' => env('SUPERADMIN_SANDBOX_DB_PORT', '3306'),
+            'database' => env('SUPERADMIN_SANDBOX_DATABASE'),
+            'username' => env('SUPERADMIN_SANDBOX_DB_USERNAME'),
+            'password' => env('SUPERADMIN_SANDBOX_DB_PASSWORD'),
+            'unix_socket' => env('SUPERADMIN_SANDBOX_DB_SOCKET', ''),
+            'charset' => env('DB_CHARSET', 'utf8mb4'),
+            'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                \PDO::ATTR_PERSISTENT => true,
                 \PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
         ],
