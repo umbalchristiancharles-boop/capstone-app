@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use App\Models\ProcurementRequest;
+use App\Support\Permission;
 
 class BudgetRequestController extends Controller
 {
@@ -26,26 +27,24 @@ class BudgetRequestController extends Controller
         $isManager = in_array($role, ['MANAGER', 'MANAGER_HR', 'BRANCH_MANAGER']);
         $hasDeptAccess = strtoupper($requiredDepartment) === $userDept;
 
-        // Allow CUSTOM accounts that have the required module in their permissions
-        if ($role === 'CUSTOM') {
-            try {
-                $perms = $user->permissions ?? [];
-                if (is_string($perms)) $perms = json_decode($perms, true) ?: [];
-                $modules = [];
-                if (is_array($perms) && isset($perms['modules']) && is_array($perms['modules'])) {
-                    $modules = $perms['modules'];
-                } elseif (is_array($perms)) {
-                    $modules = $perms;
-                }
-                foreach ($modules as $m) {
-                    if (strtoupper(trim((string)$m)) === strtoupper($requiredDepartment)) return true;
-                }
-            } catch (\Throwable $e) {
-                // ignore and continue
-            }
+        if ($isManager && $hasDeptAccess) {
+            return true;
         }
 
-        return $isManager && $hasDeptAccess;
+        if (strtoupper($user->role ?? '') === 'CUSTOM') {
+            $featureGroups = [
+                'finance' => ['budget-request-approvals', 'financial-overview'],
+                'procurement' => ['manual-procurement', 'procurement-requests'],
+                'logistics' => ['manual-procurement', 'procurement-requests'],
+            ];
+            $permissions = is_array($user->permissions) ? $user->permissions : [];
+            $modules = $permissions['modules'] ?? [];
+            return collect($featureGroups[strtolower($requiredDepartment)] ?? [])
+                ->intersect($modules)
+                ->isNotEmpty();
+        }
+
+        return Permission::hasPermissions($user, [$requiredDepartment]);
     }
 
     /**

@@ -34,4 +34,35 @@ class PermissionTest extends TestCase
 
         $this->assertFalse(Permission::allowed($user, ['MANAGER'], ['finance'], ['finance.approve']));
     }
+
+    public function test_assigned_permissions_can_extend_any_account_role(): void
+    {
+        $user = new User();
+        $user->forceFill([
+            'id' => 3,
+            'role' => 'STAFF',
+            'permissions' => [
+                'modules' => ['Inventory'],
+                'functions' => ['reports.sales'],
+            ],
+        ]);
+
+        $this->assertTrue(Permission::allowed($user, [], ['inventory']));
+        $this->assertTrue(Permission::allowed($user, [], [], ['REPORTS.SALES']));
+    }
+
+    public function test_assigned_permissions_do_not_replace_role_checks_without_a_match(): void
+    {
+        $user = new User();
+        $user->forceFill([
+            'id' => 4,
+            'role' => 'STAFF',
+            'permissions' => [
+                'modules' => ['inventory'],
+                'functions' => [],
+            ],
+        ]);
+
+        $this->assertFalse(Permission::allowed($user, ['MANAGER'], ['finance']));
+    }
 }

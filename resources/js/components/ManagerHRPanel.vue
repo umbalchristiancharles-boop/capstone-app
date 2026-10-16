@@ -9,7 +9,9 @@
     :showHeader="false"
     :showProfileColumn="false"
     :ownerTwoColumnLayout="true"
-    :showOwnerTopbar="true"
+    :showOwnerSidebar="!props.embeddedSection"
+    :showOwnerTopbar="!props.embeddedSection"
+    :embedded="Boolean(props.embeddedSection)"
     :announcementsInModal="true"
     :notificationDetailsInModal="true"
     :externalSidebarCollapsed="hrSidebarCollapsed"
@@ -39,7 +41,7 @@
     </template>
     <template #main>
       <div class="manager-hr-page" :class="{ 'manager-hr-sidebar-collapsed': hrSidebarCollapsed }" @manager-hr-sidebar-collapse="collapseHrSidebar">
-        <aside ref="hrSidebar" class="manager-hr-sidebar" :aria-hidden="hrSidebarCollapsed" @pointerdown="startHrSidebarSwipe">
+        <aside v-if="!props.embeddedSection" ref="hrSidebar" class="manager-hr-sidebar" :aria-hidden="hrSidebarCollapsed" @pointerdown="startHrSidebarSwipe">
           <PanelSidebarBrand />
           <nav class="manager-hr-sidebar__nav" aria-label="HR sections">
             <button class="manager-hr-sidebar__item" :class="{ 'manager-hr-sidebar__item--active': selectedHrSection === 'overview' }" :aria-current="selectedHrSection === 'overview' ? 'page' : undefined" @click="scrollToHrSection('overview')">HR Overview</button>
@@ -132,7 +134,7 @@
 
                       <!-- Show "Ready for Interview" button if status is NOT "Ready for Interview" -->
                       <button
-                        v-if="!isReadyForInterview(a.status)"
+                        v-if="!isReadyForInterview(a.status) && !isPassedForHiring(a.status)"
                         class="btn-primary btn-sm"
                         @click="openInterviewScheduleModal(a)"
                         :disabled="sendingInterviewEmail[a.id]"
@@ -145,7 +147,7 @@
                          v-if="isReadyForInterview(a.status) && !isPassedForHiring(a.status)"
                          class="btn-success btn-sm"
                          @click="markAsPassed(a)"
-                         :disabled="markingAsPassed[a.id]"
+                         :disabled="markingAsPassed[a.id] || !isInterviewTimeReached(a)"
                        >
                          {{ markingAsPassed[a.id] ? 'Processing...' : '✓ Mark as Passed' }}
                        </button>
@@ -1030,6 +1032,10 @@ import PanelSidebarBrand from './PanelSidebarBrand.vue'
 import { swalAlert, swalConfirm } from '../sweet-alerts'
 import { isCustomPanelOrigin, leaveToCustomPanel } from './customPanelNavigation.js'
 
+const props = defineProps({
+  embeddedSection: { type: String, default: '' },
+})
+
 // HR Positions Modal state
 const showPositionsModal = ref(false)
 const positions = ref([])
@@ -1125,7 +1131,7 @@ const hrSidebar = ref(null)
 let expandedHrSidebarWidth = 180
 let hrSidebarSwipeStart = null
 let hrSidebarSwipeClickTimeout
-const selectedHrSection = ref('overview')
+const selectedHrSection = ref(props.embeddedSection || 'overview')
 const hrSectionTitle = computed(() => {
   const titles = {
     confirmations: 'Confirmations',
@@ -1310,6 +1316,12 @@ function isReadyForInterview(status) {
 function isPassedForHiring(status) {
   const s = (status || '').toString().toLowerCase().trim()
   return s === 'passed - ready for hiring' || s === 'passed_ready_for_hiring' || s === 'passed'
+}
+
+function isInterviewTimeReached(application) {
+  if (!application?.interview_date || !application?.interview_time) return false
+  const interviewAt = new Date(`${application.interview_date}T${application.interview_time}`)
+  return !Number.isNaN(interviewAt.getTime()) && Date.now() >= interviewAt.getTime()
 }
 
 function formatDate(date) {

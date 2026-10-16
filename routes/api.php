@@ -275,6 +275,8 @@ Route::middleware('web')->group(function () {
         Route::get('/dashboard',        [DashboardController::class, 'index']);
         Route::get('/staff/branch/default-password', [StaffController::class, 'getBranchDefaultPassword']);
         Route::get('/staff',            [StaffController::class, 'apiIndex']);
+        Route::get('/custom-accounts', [StaffController::class, 'customAccounts']);
+        Route::put('/custom-accounts/{id}', [StaffController::class, 'updateCustomAccount']);
         Route::get('/staff/{id}',       [StaffController::class, 'apiShow']);
         Route::post('/staff',           [StaffController::class, 'apiStore']);
         Route::put('/staff/{id}',       [StaffController::class, 'apiUpdate']);

@@ -1,5 +1,5 @@
 <template>
-  <div class="manager-procurement-panel">
+  <div class="manager-procurement-panel" :class="{ 'manager-procurement-panel--embedded': props.embeddedSection }">
   <OwnerPanelLayout ref="ownerLayout"
     :userProfile="userProfile"
     :panelEyebrow="'PROCUREMENT DASHBOARD'"
@@ -10,8 +10,10 @@
     :canChangePassword="true"
     :showProfileColumn="false"
     :ownerTwoColumnLayout="true"
-    :showOwnerSidebar="true"
-    :showOwnerTopbar="true"
+    :showOwnerSidebar="!props.embeddedSection"
+    :showOwnerTopbar="!props.embeddedSection"
+    :showHeader="!props.embeddedSection"
+    :embedded="Boolean(props.embeddedSection)"
     :enableDarkMode="false"
     :topbarLabel="procurementTopbarLabel"
     :announcementsInModal="true"
@@ -21,7 +23,7 @@
     @profile-updated="onProfileUpdated"
   >
     <template #ownerSidebar>
-      <nav class="manager-procurement-sidebar-nav" aria-label="Procurement sections">
+      <nav v-if="!props.embeddedSection" class="manager-procurement-sidebar-nav" aria-label="Procurement sections">
         <button type="button" class="manager-procurement-sidebar-link" :class="{ 'manager-procurement-sidebar-link--active': selectedSection === 'overview' }" @click="selectSection('overview')">Overview</button>
         <button type="button" class="manager-procurement-sidebar-link" :class="{ 'manager-procurement-sidebar-link--active': selectedSection === 'suppliers' }" @click="selectSection('suppliers')">Suppliers</button>
         <button type="button" class="manager-procurement-sidebar-link" :class="{ 'manager-procurement-sidebar-link--active': selectedSection === 'budget-requests' }" @click="selectSection('budget-requests')">Budget Requests</button>
@@ -615,13 +617,16 @@ import axios from 'axios'
 import { showToast } from './toastStore'
 import { isCustomPanelOrigin, leaveToCustomPanel } from './customPanelNavigation.js'
 
+const props = defineProps({
+  embeddedSection: { type: String, default: '' },
+})
 const router = useRouter()
 const userProfile = ref({})
 const procurementTopbarLabel = computed(() => {
   const branchName = userProfile.value?.branch?.name || userProfile.value?.branch_name || userProfile.value?.branch || ''
   return `PROCUREMENT MANAGER - ${branchName || 'DASMA BRANCH'}`
 })
-const selectedSection = ref('overview')
+const selectedSection = ref(props.embeddedSection || 'overview')
 const dashboardTotals = ref({ totalSuppliers: 0, activeSuppliers: 0, pendingRequests: 0 })
 const showLogoutConfirm = ref(false)
 const isLoggingOut = ref(false)

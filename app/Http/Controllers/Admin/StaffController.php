@@ -21,6 +21,159 @@ class StaffController extends Controller
     // Online threshold in minutes (user is considered online if activity within this time)
     private const ONLINE_THRESHOLD_MINUTES = 5;
 
+    private const CUSTOM_ACCOUNT_MODULES = [
+        'budget-request-approvals' => 'Budget Request Approvals',
+        'current-price-markup' => 'Current Price Markup',
+        'receipt-approval' => 'Receipt Approval',
+        'financial-overview' => 'Financial Overview',
+        'recent-transactions' => 'Recent Transactions',
+        'manual-procurement' => 'Manual Procurement',
+        'procurement-requests' => 'Procurement Requests',
+        'add-supplier' => 'Add Supplier',
+        'supplier-products' => 'Supplier Products',
+        'stock-confirmation-history' => 'Stock Confirmation History',
+        'product-barcodes' => 'Product Barcodes',
+        'pending-stock' => 'Pending Stock',
+        'request-new-product' => 'Request New Product',
+        'supplier-product-confirmations' => 'Supplier Product Confirmations',
+        'inventory-monitor' => 'Inventory Monitor',
+        'product-disposal' => 'Product Disposal List',
+        'landing-page-product-images' => 'Landing Page Product Images',
+        'staff-activity' => 'Staff Activity',
+        'automatic-clock-out' => 'Automatic Clock-Out',
+        'staff-management' => 'Staff Management',
+    ];
+
+    private const EDITABLE_ACCOUNT_ROLES = [
+        'STAFF',
+        'MANAGER',
+    ];
+
+    private const EDITABLE_ACCOUNT_DEPARTMENTS = [
+        'HR',
+        'FINANCE',
+        'INVENTORY',
+        'LOGISTICS',
+        'CASHIER',
+        'KITCHEN',
+        'PROCUREMENT',
+    ];
+
+    private const ACCOUNT_ROLE_DEPARTMENTS = [
+        'STAFF' => ['CASHIER', 'INVENTORY', 'KITCHEN'],
+        'MANAGER' => ['FINANCE', 'PROCUREMENT', 'LOGISTICS', 'HR'],
+    ];
+
+    public function customAccounts(Request $request)
+    {
+        $actor = Auth::user();
+        if (! $actor || ! in_array(strtoupper((string) $actor->role), ['OWNER', 'ADMIN', 'SUPER_ADMIN', 'SUPERADMIN'], true)) {
+            return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+        }
+
+        $query = User::query()
+            ->whereNotIn('role', ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN'])
+            ->whereNull('deleted_at')
+            ->with('branch:id,name')
+            ->orderBy('full_name');
+
+        if (strtoupper((string) $actor->role) === 'ADMIN' && $actor->branch_id) {
+            $query->where('branch_id', $actor->branch_id);
+        }
+
+        $accounts = $query->get([
+            'id', 'username', 'full_name', 'email', 'role', 'department',
+            'branch_id', 'is_active', 'permissions',
+        ])->map(function (User $account) {
+            $permissions = is_array($account->permissions) ? $account->permissions : [];
+
+            return [
+                'id' => $account->id,
+                'username' => $account->username,
+                'full_name' => $account->full_name,
+                'email' => $account->email,
+                'role' => $account->role,
+                'department' => $account->department,
+                'branch_id' => $account->branch_id,
+                'branch_name' => $account->branch?->name,
+                'is_active' => (bool) $account->is_active,
+                'permissions' => [
+                    'modules' => array_values(array_intersect(
+                        array_keys(self::CUSTOM_ACCOUNT_MODULES),
+                        array_map('strtolower', $permissions['modules'] ?? [])
+                    )),
+                    'functions' => [],
+                ],
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'accounts' => $accounts,
+            'modules' => collect(self::CUSTOM_ACCOUNT_MODULES)
+                ->map(fn (string $label, string $key) => ['key' => $key, 'label' => $label])
+                ->values(),
+            'roles' => self::EDITABLE_ACCOUNT_ROLES,
+            'departments' => self::EDITABLE_ACCOUNT_DEPARTMENTS,
+        ]);
+    }
+
+    public function updateCustomAccount(Request $request, int $id)
+    {
+        $actor = Auth::user();
+        if (! $actor || ! in_array(strtoupper((string) $actor->role), ['OWNER', 'ADMIN', 'SUPER_ADMIN', 'SUPERADMIN'], true)) {
+            return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+        }
+
+        $account = User::whereNull('deleted_at')->find($id);
+        if (! $account || in_array(strtoupper((string) $account->role), ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN'], true)) {
+            return response()->json(['success' => false, 'message' => 'Account not found or cannot be modified'], 404);
+        }
+
+        if (strtoupper((string) $actor->role) === 'ADMIN' && $actor->branch_id && (int) $account->branch_id !== (int) $actor->branch_id) {
+            return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+        }
+
+        $validated = $request->validate([
+            'role' => ['required', 'string', 'in:' . implode(',', [...self::EDITABLE_ACCOUNT_ROLES, 'CUSTOM'])],
+            'department' => ['nullable', 'string', 'in:' . implode(',', self::EDITABLE_ACCOUNT_DEPARTMENTS)],
+            'modules' => 'array',
+            'modules.*' => 'string',
+            'is_custom' => 'required|boolean',
+        ]);
+
+        $role = $validated['is_custom'] ? 'CUSTOM' : strtoupper($validated['role']);
+        $department = $validated['is_custom'] ? null : strtoupper((string) ($validated['department'] ?? ''));
+        if ($role !== 'CUSTOM' && !in_array($department, self::ACCOUNT_ROLE_DEPARTMENTS[$role] ?? [], true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'The selected department is not available for this role.',
+            ], 422);
+        }
+
+        $modules = array_values(array_unique(array_intersect(
+            array_keys(self::CUSTOM_ACCOUNT_MODULES),
+            array_map('strtolower', $validated['modules'] ?? [])
+        )));
+
+        $account->role = $role;
+        $account->department = $department;
+        $account->permissions = $validated['is_custom']
+            ? ['modules' => $modules, 'functions' => []]
+            : null;
+        $account->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => $validated['is_custom'] ? 'Custom account permissions saved.' : 'Custom account permissions removed.',
+            'account' => [
+                'id' => $account->id,
+                'role' => $account->role,
+                'permissions' => $account->permissions ?? ['modules' => [], 'functions' => []],
+            ],
+        ]);
+    }
+
     // ==========================================
     // API METHODS (for Vue.js)
     // ==========================================
@@ -720,7 +873,8 @@ $rules = [
                 ]);
 
                 $allowedModules = [
-                    'admin', 'finance', 'logistics', 'inventory', 'procurement', 'kitchen', 'cashier', 'hr', 'reports'
+                    'admin', 'finance', 'logistics', 'inventory', 'inventory-monitor', 'product-disposal',
+                    'procurement', 'kitchen', 'cashier', 'hr', 'reports'
                 ];
                 $allowedFunctions = [
                     'admin.users', 'admin.branches', 'admin.settings',

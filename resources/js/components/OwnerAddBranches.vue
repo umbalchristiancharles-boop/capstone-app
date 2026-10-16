@@ -63,7 +63,7 @@
               <div class="form-group">
                 <label class="form-label">Initial Budget (PHP)</label>
                 <input v-model.number="branchForm.budget" type="number" min="100000" max="1000000" step="1000" class="form-input" />
-                <small class="budget-helper">Min 100,000 - Max 1,000,000</small>
+                <small class="budget-helper">Min 100,000 - Max 1,000,000. Must cover the total initial investment.</small>
               </div>
 
               <div class="form-group">
@@ -151,6 +151,17 @@
                     </label>
                     <div class="account-info">
                       <span class="account-role-badge" :class="account.badgeClass">{{ account.badgeText }}</span>
+                      <label class="account-quantity">
+                        <span>Open positions:</span>
+                        <input
+                          v-model.number="branchForm.accountQuantities[account.key]"
+                          type="number"
+                          min="1"
+                          step="1"
+                          class="form-input account-quantity-input"
+                          :disabled="!branchForm.selectedAccounts[account.key]"
+                        />
+                      </label>
                       <span class="account-username">
                         Username:
                         <strong>{{ account.prefix }}_{{ codeSlugPreview }}</strong>
@@ -179,37 +190,58 @@
                   <p class="info-sub">Select which panels the hired applicant can access. The CUSTOM account is created after the application is passed.</p>
                 </div>
                 <label class="toggle">
-                  <input type="checkbox" v-model="branchForm.customAccount.enabled" />
+                  <input
+                    type="checkbox"
+                    :checked="branchForm.customAccounts.length > 0"
+                    @change="toggleCustomAccounts"
+                  />
                   <span>Create custom account</span>
                 </label>
               </div>
 
-              <div v-if="branchForm.customAccount.enabled" class="custom-account-body">
-                <div class="form-grid compact">
-                  <div class="form-group">
-                    <label class="form-label">Username</label>
-                    <input v-model="branchForm.customAccount.username" class="form-input" :placeholder="`custom_${codeSlugPreview}`" />
+              <div v-if="branchForm.customAccounts.length > 0" class="custom-account-body">
+                <div v-for="(customAccount, accountIndex) in branchForm.customAccounts" :key="accountIndex" class="custom-account-config">
+                  <div class="custom-account-config-header">
+                    <h4>Custom Account {{ accountIndex + 1 }}</h4>
+                    <button
+                      v-if="branchForm.customAccounts.length > 1"
+                      type="button"
+                      class="btn btn-secondary"
+                      @click="removeCustomAccount(accountIndex)"
+                    >
+                      Remove
+                    </button>
                   </div>
-                  <div class="form-group">
-                    <label class="form-label">Full Name</label>
-                    <input v-model="branchForm.customAccount.fullName" class="form-input" :placeholder="`Custom Account - ${branchForm.name || branchForm.code}`" />
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">Credentials</label>
-                    <span class="form-helper">Generated and emailed after the applicant is hired.</span>
-                  </div>
-                </div>
 
-                <div class="permission-grid">
-                  <div v-for="module in permissionTemplates" :key="module.key" class="permission-card">
+                  <div class="form-grid compact">
+                    <div class="form-group">
+                      <label class="form-label">Username</label>
+                      <input v-model="customAccount.username" class="form-input" :placeholder="`custom_${codeSlugPreview}_${accountIndex + 1}`" />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Full Name</label>
+                      <input v-model="customAccount.fullName" class="form-input" :placeholder="`Custom Account ${accountIndex + 1} - ${branchForm.name || branchForm.code}`" />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Credentials</label>
+                      <span class="form-helper">Generated and emailed after the applicant is hired.</span>
+                    </div>
+                  </div>
+
+                  <div class="permission-grid">
+                    <div v-for="module in permissionTemplates" :key="module.key" class="permission-card">
                     <div class="permission-card-header">
                       <label style="display:flex;align-items:center;gap:8px">
-                        <input type="checkbox" v-model="branchForm.customAccount.permissions.modules[module.key]" />
+                        <input type="checkbox" v-model="customAccount.permissions.modules[module.key]" />
                         <span style="font-weight:700; text-transform:capitalize">{{ module.label }}</span>
                       </label>
                     </div>
                   </div>
+                  </div>
                 </div>
+                <button type="button" class="btn btn-secondary add-custom-account-btn" @click="addCustomAccount">
+                  + Add another custom account
+                </button>
               </div>
             </div>
 
@@ -417,54 +449,28 @@ const accountOptions = [
   { key: 'logistics', label: 'Logistics Manager Account', badgeText: 'LOGISTICS MANAGER', badgeClass: 'logistics-badge', prefix: 'logistics' },
 ]
 
-// Modules and granular functions available for custom accounts
+// Keep custom-account choices aligned with the features available in CustomPanel.
 const permissionTemplates = [
-  { key: 'admin', label: 'Admin', functions: [
-    { key: 'admin.users', label: 'User Management' },
-    { key: 'admin.branches', label: 'Branch Settings' },
-    { key: 'admin.settings', label: 'System Settings' },
-  ]},
-  { key: 'finance', label: 'Finance', functions: [
-    { key: 'finance.dashboard', label: 'Dashboard & KPIs' },
-    { key: 'finance.budget', label: 'Branch Budgets' },
-    { key: 'finance.reports', label: 'Reports' },
-    { key: 'finance.expenses', label: 'Expenses' },
-  ]},
-  { key: 'logistics', label: 'Logistics', functions: [
-    { key: 'logistics.dispatch', label: 'Dispatch / Delivery' },
-    { key: 'logistics.receiving', label: 'Receiving' },
-    { key: 'logistics.transfers', label: 'Transfers' },
-  ]},
-  { key: 'inventory', label: 'Inventory', functions: [
-    { key: 'inventory.products', label: 'Products' },
-    { key: 'inventory.counts', label: 'Stock Counts' },
-    { key: 'inventory.adjustments', label: 'Adjustments' },
-  ]},
-  { key: 'procurement', label: 'Procurement', functions: [
-    { key: 'procurement.purchase_orders', label: 'Purchase Orders' },
-    { key: 'procurement.suppliers', label: 'Suppliers' },
-    { key: 'procurement.approvals', label: 'Approvals' },
-  ]},
-  { key: 'kitchen', label: 'Kitchen Staff', functions: [
-    { key: 'kitchen.orders', label: 'Orders Queue' },
-    { key: 'kitchen.production', label: 'Production' },
-    { key: 'kitchen.waste', label: 'Waste / Spoilage' },
-  ]},
-  { key: 'cashier', label: 'Cashier', functions: [
-    { key: 'cashier.pos', label: 'POS' },
-    { key: 'cashier.refunds', label: 'Refunds / Voids' },
-    { key: 'cashier.shifts', label: 'Shift Closure' },
-  ]},
-  { key: 'hr', label: 'HR', functions: [
-    { key: 'hr.attendance', label: 'Attendance' },
-    { key: 'hr.scheduling', label: 'Scheduling' },
-    { key: 'hr.payroll', label: 'Payroll Export' },
-  ]},
-  { key: 'reports', label: 'Reports', functions: [
-    { key: 'reports.sales', label: 'Sales Reports' },
-    { key: 'reports.inventory', label: 'Inventory Reports' },
-    { key: 'reports.finance', label: 'Finance Reports' },
-  ]},
+  { key: 'budget-request-approvals', label: 'Budget Request Approvals', functions: [] },
+  { key: 'current-price-markup', label: 'Current Price Markup', functions: [] },
+  { key: 'receipt-approval', label: 'Receipt Approval', functions: [] },
+  { key: 'financial-overview', label: 'Financial Overview', functions: [] },
+  { key: 'recent-transactions', label: 'Recent Transactions', functions: [] },
+  { key: 'manual-procurement', label: 'Manual Procurement', functions: [] },
+  { key: 'procurement-requests', label: 'Procurement Requests', functions: [] },
+  { key: 'add-supplier', label: 'Add Supplier', functions: [] },
+  { key: 'supplier-products', label: 'Supplier Products', functions: [] },
+  { key: 'stock-confirmation-history', label: 'Stock Confirmation History', functions: [] },
+  { key: 'product-barcodes', label: 'Product Barcodes', functions: [] },
+  { key: 'pending-stock', label: 'Pending Stock', functions: [] },
+  { key: 'request-new-product', label: 'Request New Product', functions: [] },
+  { key: 'supplier-product-confirmations', label: 'Supplier Product Confirmations', functions: [] },
+  { key: 'inventory-monitor', label: 'Inventory Monitor', functions: [] },
+  { key: 'product-disposal', label: 'Product Disposal List', functions: [] },
+  { key: 'landing-page-product-images', label: 'Landing Page Product Images', functions: [] },
+  { key: 'staff-activity', label: 'Staff Activity', functions: [] },
+  { key: 'automatic-clock-out', label: 'Automatic Clock-Out', functions: [] },
+  { key: 'staff-management', label: 'Staff Management', functions: [] },
 ]
 
 function buildPermissionState() {
@@ -483,6 +489,14 @@ const defaultAccountSelection = () => ({
   finance: true,
   procurement: true,
   logistics: true,
+})
+
+const defaultAccountQuantities = () => ({
+  admin: 1,
+  hr: 1,
+  finance: 1,
+  procurement: 1,
+  logistics: 1,
 })
 
 const getInitialBranchForm = () => ({
@@ -508,14 +522,35 @@ const getInitialBranchForm = () => ({
     { name: '', type: '', quantity: 1, unit_cost: 0 }
   ],
   selectedAccounts: defaultAccountSelection(),
-  customAccount: {
-    enabled: false,
+  accountQuantities: defaultAccountQuantities(),
+  customAccounts: [],
+})
+
+function createCustomAccount() {
+  return {
     username: '',
     fullName: '',
     password: '',
     permissions: buildPermissionState(),
-  },
-})
+  }
+}
+
+function addCustomAccount() {
+  branchForm.value.customAccounts.push(createCustomAccount())
+}
+
+function removeCustomAccount(index) {
+  branchForm.value.customAccounts.splice(index, 1)
+}
+
+function toggleCustomAccounts(event) {
+  if (event.target.checked) {
+    if (branchForm.value.customAccounts.length === 0) addCustomAccount()
+    return
+  }
+
+  branchForm.value.customAccounts = []
+}
 
 // Show/hide password toggle for default password preview
 const showPassword = ref(false)
@@ -839,7 +874,7 @@ function onBranchAddressSaved(payload) {
    if (addressComponents.city) parts.push(addressComponents.city)
    if (addressComponents.province) parts.push(addressComponents.province)
    if (addressComponents.region) parts.push(addressComponents.region)
-   savedAddress.value = parts.join(', ')
+   savedAddress.value = parts.join(', ') || `Pinned location: ${Number(payload.lat).toFixed(6)}, ${Number(payload.lng).toFixed(6)}`
    
    // CRITICAL: Set the address field that gets sent to the backend
    branchForm.value.address = savedAddress.value
@@ -951,26 +986,31 @@ async function submitBranch() {
     return
   }
 
+  if (calculatedTotalInvestment.value > budgetValue) {
+    formError.value = 'Initial budget must cover the total initial investment.'
+    return
+  }
+
   isSubmitting.value = true
   try {
     await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
 
-    let customAccountPayload = null
-    if (branchForm.value.customAccount.enabled) {
-      const selectedModules = permissionTemplates
-        .filter(m => branchForm.value.customAccount.permissions.modules[m.key])
-        .map(m => m.key)
+    const customAccountsPayload = branchForm.value.customAccounts
+      .map((customAccount, accountIndex) => {
+        const selectedModules = permissionTemplates
+          .filter(m => customAccount.permissions.modules[m.key])
+          .map(m => m.key)
 
-      if (selectedModules.length > 0) {
-        const username = (branchForm.value.customAccount.username || '').trim() || `custom_${codeSlugPreview.value}`
-        const fullName = (branchForm.value.customAccount.fullName || '').trim() || `Custom Account - ${branchForm.value.name || branchForm.value.code}`
-        customAccountPayload = {
-          username,
-          full_name: fullName,
+        if (selectedModules.length === 0) return null
+
+        return {
+          username: (customAccount.username || '').trim() || `custom_${codeSlugPreview.value}_${accountIndex + 1}`,
+          full_name: (customAccount.fullName || '').trim() || `Custom Account ${accountIndex + 1} - ${branchForm.value.name || branchForm.value.code}`,
           modules: selectedModules,
+          functions: [],
         }
-      }
-    }
+      })
+      .filter(Boolean)
 
      const res = await axios.post('/api/superadmin/branches', {
        code: branchForm.value.code.trim(),
@@ -990,7 +1030,8 @@ async function submitBranch() {
        equipment_costs: branchForm.value.equipment_costs.filter(e => e.name && e.unit_cost > 0),
        total_investment: calculatedTotalInvestment.value,
        accounts: branchForm.value.selectedAccounts,
-       custom_account: customAccountPayload,
+       account_quantities: branchForm.value.accountQuantities,
+       custom_accounts: customAccountsPayload,
      }, { withCredentials: true })
 
     if (res.data && res.data.ok) {
@@ -1140,6 +1181,8 @@ textarea.form-input { resize: vertical; }
 .account-checkbox-label { font-weight: 700; color: #374151; cursor: pointer; }
 .checkbox-helper { margin-left: 6px; font-weight: 600; color: #6b7280; font-size: 0.8rem; }
 .account-info { display: flex; flex-direction: column; gap: 6px; }
+.account-quantity { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: #4b5563; }
+.account-quantity-input { width: 76px; padding: 4px 8px; }
 .account-username, .account-password { display: inline-flex; align-items: center; gap: 6px; }
 .password-toggle-btn { margin-left: 8px; padding: 4px 8px; font-size: 0.78rem; }
 

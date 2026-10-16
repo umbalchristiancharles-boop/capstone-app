@@ -47,7 +47,12 @@ class ProcurementRequestController extends Controller
                     $modules = $perms;
                 }
                 foreach ($modules as $m) {
-                    if (strtoupper(trim((string)$m)) === 'PROCUREMENT') return true;
+                    if (in_array(strtolower(trim((string) $m)), [
+                        'manual-procurement',
+                        'procurement-requests',
+                        'add-supplier',
+                        'supplier-products',
+                    ], true)) return true;
                 }
             } catch (\Throwable $e) { /* ignore */ }
         }
@@ -75,7 +80,14 @@ class ProcurementRequestController extends Controller
                 $modules = $perms;
             }
             foreach ($modules as $m) {
-                if (strtoupper(trim((string)$m)) === 'LOGISTICS') return true;
+                if (in_array(strtolower(trim((string) $m)), [
+                    'logistics',
+                    'product-barcodes',
+                    'pending-stock',
+                    'stock-confirmation-history',
+                    'request-new-product',
+                    'supplier-product-confirmations',
+                ], true)) return true;
             }
         } catch (\Throwable $e) { /* ignore */ }
 
@@ -255,7 +267,11 @@ class ProcurementRequestController extends Controller
                     $modules = $perms;
                 }
                 foreach ($modules as $m) {
-                    if (strtoupper(trim((string)$m)) === 'LOGISTICS') {
+                    if (in_array(strtolower(trim((string) $m)), [
+                        'logistics',
+                        'inventory',
+                        'inventory-monitor',
+                    ], true)) {
                         $hasLogisticsAccess = true;
                         break;
                     }
@@ -718,7 +734,12 @@ public function requestedProducts(Request $request)
                     $modules = $perms;
                 }
                 foreach ($modules as $m) {
-                    if (strtoupper(trim((string)$m)) === 'PROCUREMENT') { $isAllowed = true; break; }
+                    if (in_array(strtolower(trim((string) $m)), [
+                        'manual-procurement',
+                        'procurement-requests',
+                        'add-supplier',
+                        'supplier-products',
+                    ], true)) { $isAllowed = true; break; }
                 }
             } catch (\Throwable $e) { /* ignore */ }
         }
@@ -903,7 +924,12 @@ public function requestedProducts(Request $request)
                     $modules = $perms;
                 }
                 foreach ($modules as $m) {
-                    if (strtoupper(trim((string)$m)) === 'FINANCE') { $allowed = true; break; }
+                    if (in_array(strtolower(trim((string) $m)), [
+                        'budget-request-approvals',
+                        'receipt-approval',
+                        'financial-overview',
+                        'recent-transactions',
+                    ], true)) { $allowed = true; break; }
                 }
             } catch (\Throwable $e) { /* ignore */ }
         }

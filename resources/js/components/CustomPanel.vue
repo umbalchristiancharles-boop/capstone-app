@@ -14,11 +14,12 @@
           type="button"
           class="custom-sidebar__link"
           :class="{ 'custom-sidebar__link--alert': pendingCount(module) > 0 }"
-          :title="prettyName(module)"
-          @click="goToSidebarModule(module)"
+          :title="moduleLabel(module)"
+          :aria-current="selectedFeature === module ? 'page' : undefined"
+          @click="selectFeature(module)"
         >
-          <span class="custom-sidebar__link-icon">{{ prettyName(module).charAt(0) }}</span>
-          <span class="custom-sidebar__link-name">{{ prettyName(module) }}</span>
+          <span class="custom-sidebar__link-icon">{{ moduleLabel(module).charAt(0) }}</span>
+          <span class="custom-sidebar__link-name">{{ moduleLabel(module) }}</span>
           <span v-if="pendingCount(module) > 0" class="custom-sidebar__badge">{{ pendingCount(module) > 99 ? '99+' : pendingCount(module) }}</span>
         </button>
         <p v-if="modules.length === 0" class="custom-sidebar__empty">No modules assigned</p>
@@ -86,7 +87,26 @@
           </div>
         </div>
 
-        <div class="custom-dashboard-grid">
+        <section v-if="selectedFeature" class="custom-feature-view" :aria-labelledby="'custom-feature-title-' + selectedFeature">
+          <div class="custom-feature-view__header">
+            <div>
+              <p class="dashboard-eyebrow">SELECTED FEATURE</p>
+              <h2 :id="'custom-feature-title-' + selectedFeature">{{ moduleLabel(selectedFeature) }}</h2>
+            </div>
+            <button type="button" class="custom-feature-view__close" @click="selectedFeature = ''">Close</button>
+          </div>
+          <component
+            v-if="selectedFeatureComponent"
+            :is="selectedFeatureComponent"
+            :key="selectedFeature"
+            :embedded-section="featureSections[selectedFeature] || ''"
+          />
+          <p v-else class="custom-feature-view__empty">
+            This feature is assigned to your account, but its screen is not available in the custom workspace yet.
+          </p>
+        </section>
+
+        <div v-if="!selectedFeature" class="custom-dashboard-grid">
           <section class="custom-dashboard-section custom-dashboard-section--attendance" aria-label="Attendance">
             <div class="attendance-card">
               <div class="attendance-header">
@@ -157,34 +177,6 @@
             </div>
           </section>
 
-          <section class="custom-dashboard-section custom-dashboard-section--workspace" aria-labelledby="custom-workspace-title">
-            <div class="modules-section-heading">
-              <div>
-                <p class="dashboard-eyebrow">YOUR WORKSPACE</p>
-                <h2 id="custom-workspace-title">Applications</h2>
-                <p>Your assigned tools and modules.</p>
-              </div>
-              <span v-if="modules?.length" class="module-count">{{ modules.length }} {{ modules.length === 1 ? 'module' : 'modules' }}</span>
-            </div>
-
-            <p v-if="!modules || modules.length === 0" class="empty-message">No modules assigned. Contact admin to enable modules.</p>
-
-            <div v-else class="modules-grid">
-              <div
-                v-for="m in modules"
-                :key="m"
-                class="module-tile"
-                :class="{ 'module-tile--alert': pendingCount(m) > 0 }"
-              >
-                <div class="module-icon">{{ (prettyName(m) || '').charAt(0) }}</div>
-                <span v-if="pendingCount(m) > 0" class="module-badge" :aria-label="`${pendingCount(m)} pending notifications`">{{ pendingCount(m) > 99 ? '99+' : pendingCount(m) }}</span>
-                <div class="module-info">
-                  <div class="module-name">{{ prettyName(m) }}</div>
-                  <div class="module-desc">{{ panelDescription(m) }}</div>
-                </div>
-              </div>
-            </div>
-          </section>
         </div>
 
         <div v-if="showFaceCapture" class="face-capture-modal">
@@ -235,10 +227,83 @@ import { showToast } from './toastStore';
 import OwnerMessageMenu from './OwnerMessageMenu.vue';
 import PanelNotificationMenu from './PanelNotificationMenu.vue';
 import PanelNotificationDetailsModal from './PanelNotificationDetailsModal.vue';
+import ManagerFinancePanel from './ManagerFinancePanel.vue';
+import ProcurementManagerPanel from './ProcurementManagerPanel.vue';
+import ManagerLogisticsPanel from './ManagerLogisticsPanel.vue';
+import InventoryStaffPanel from './inventory/InventoryStaffPanel.vue';
+import ManagerHRPanel from './ManagerHRPanel.vue';
+import AdminPanel from './adminpanel.vue';
+import CustomAutomaticClockout from './CustomAutomaticClockout.vue';
+import CustomAddSupplier from './CustomAddSupplier.vue';
 
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href;
 const router = useRouter();
 const modules = ref([]);
+const selectedFeature = ref('');
+const moduleLabels = {
+  'budget-request-approvals': 'Budget Request Approvals',
+  'current-price-markup': 'Current Price Markup',
+  'receipt-approval': 'Receipt Approval',
+  'financial-overview': 'Financial Overview',
+  'recent-transactions': 'Recent Transactions',
+  'manual-procurement': 'Manual Procurement',
+  'procurement-requests': 'Procurement Requests',
+  'add-supplier': 'Add Supplier',
+  'supplier-products': 'Supplier Products',
+  'stock-confirmation-history': 'Stock Confirmation History',
+  'product-barcodes': 'Product Barcodes',
+  'pending-stock': 'Pending Stock',
+  'request-new-product': 'Request New Product',
+  'supplier-product-confirmations': 'Supplier Product Confirmations',
+  'inventory-monitor': 'Inventory Monitor',
+  'product-disposal': 'Product Disposal List',
+  'landing-page-product-images': 'Landing Page Product Images',
+  'staff-activity': 'Staff Activity',
+  'automatic-clock-out': 'Automatic Clock-Out',
+  'staff-management': 'Staff Management',
+};
+const featureComponents = {
+  'budget-request-approvals': ManagerFinancePanel,
+  'current-price-markup': ManagerFinancePanel,
+  'receipt-approval': ManagerFinancePanel,
+  'financial-overview': ManagerFinancePanel,
+  'recent-transactions': ManagerFinancePanel,
+  'manual-procurement': ProcurementManagerPanel,
+  'procurement-requests': ProcurementManagerPanel,
+  'add-supplier': CustomAddSupplier,
+  'supplier-products': ManagerLogisticsPanel,
+  'stock-confirmation-history': ManagerLogisticsPanel,
+  'product-barcodes': ManagerLogisticsPanel,
+  'pending-stock': ManagerLogisticsPanel,
+  'request-new-product': AdminPanel,
+  'supplier-product-confirmations': ManagerLogisticsPanel,
+  'inventory-monitor': InventoryStaffPanel,
+  'product-disposal': InventoryStaffPanel,
+  'landing-page-product-images': AdminPanel,
+  'staff-activity': ManagerHRPanel,
+  'automatic-clock-out': CustomAutomaticClockout,
+  'staff-management': ManagerHRPanel,
+};
+const featureSections = {
+  'budget-request-approvals': 'approvals',
+  'current-price-markup': 'markup',
+  'receipt-approval': 'receipt-approvals',
+  'financial-overview': 'overview',
+  'recent-transactions': 'transactions',
+  'manual-procurement': 'overview',
+  'procurement-requests': 'budget-requests',
+  'supplier-products': 'suppliers',
+  'stock-confirmation-history': 'confirmation-history',
+  'product-barcodes': 'barcodes',
+  'pending-stock': 'pending-stock',
+  'request-new-product': 'product-request',
+  'supplier-product-confirmations': 'confirmation-history',
+  'inventory-monitor': 'inventory-monitor',
+  'product-disposal': 'product-disposal',
+  'landing-page-product-images': 'landing-page-product-images',
+  'staff-activity': 'overview',
+  'staff-management': 'overview',
+};
 const sidebarCollapsed = ref(false);
 const isMobileViewport = ref(false);
 const isLoggingOut = ref(false);
@@ -807,15 +872,19 @@ const toggleSidebar = () => {
   sidebarCollapsed.value = !sidebarCollapsed.value;
 };
 
-const goToSidebarModule = (module) => {
-  if (isMobileViewport.value) sidebarCollapsed.value = true;
-  goToModule(module);
-};
-
 const prettyName = (m) => {
   if (!m) return 'Unknown';
   return m.charAt(0).toUpperCase() + m.slice(1);
 }
+
+const moduleLabel = (m) => moduleLabels[String(m || '').toLowerCase()] || prettyName(m);
+
+const selectedFeatureComponent = computed(() => featureComponents[selectedFeature.value] || null);
+
+const selectFeature = (feature) => {
+  selectedFeature.value = selectedFeature.value === feature ? '' : feature;
+  if (isMobileViewport.value) sidebarCollapsed.value = true;
+};
 
 const panelDescription = (m) => {
   const fallbackDescriptions = {
@@ -887,6 +956,50 @@ const logout = async () => {
   padding: 30px;
 }
 .panel-main-inner { width: 100%; max-width: 1240px }
+.custom-feature-view { margin: 0 0 24px; padding: 20px; background: #fff; border: 1px solid #E5E7EB; border-radius: 16px; box-shadow: 0 8px 18px rgba(0,0,0,0.06); }
+.custom-feature-view__header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 18px; }
+.custom-feature-view__header h2 { margin: 4px 0 0; color: #1F2937; }
+.custom-feature-view__close { border: 1px solid #E5E7EB; border-radius: 8px; padding: 8px 12px; background: #fff; color: #374151; cursor: pointer; }
+.custom-feature-view__close:hover { border-color: #F97316; color: #C2410C; }
+.custom-feature-view__empty { margin: 0; color: #6B7280; }
+
+.custom-feature-view > :deep(.manager-procurement-panel),
+.custom-feature-view > :deep(.manager-logistics-panel),
+.custom-feature-view > :deep(.inventory-staff-panel-shell),
+.custom-feature-view > :deep(.manager-finance),
+.custom-feature-view > :deep(.owner-panel-layout--embedded),
+.custom-feature-view > :deep(.admin-panel-shell--embedded) {
+  min-height: 0;
+  height: auto;
+  background: transparent;
+}
+
+.custom-feature-view > :deep(.manager-procurement-panel--embedded),
+.custom-feature-view > :deep(.manager-logistics-panel--embedded) {
+  color: #3d2a1f;
+}
+
+.custom-feature-view > :deep(.owner-panel-layout--embedded .admin-main) {
+  min-height: 0;
+  padding: 0;
+}
+
+.custom-feature-view > :deep(.owner-panel-layout--embedded .admin-layout) {
+  min-height: 0 !important;
+  width: 100% !important;
+  max-width: none !important;
+  display: block !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.custom-feature-view > :deep(.owner-panel-layout--embedded .admin-page),
+.custom-feature-view > :deep(.owner-panel-layout--embedded .admin-main) {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
 .panel-logo { display:block; width:58px; height:auto; flex-shrink: 0 }
 .cards-greeting-row { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; margin: 0 0 52px 0 }
 .cards-greeting-text { font-size: 18px; font-weight: 700; color: #1F2937 }

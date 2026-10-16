@@ -1496,6 +1496,13 @@ async function onAvatarChange(event) {
   display: block;
 }
 
+.owner-panel-layout--embedded .admin-layout--owner-two-column {
+  display: block !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 0 !important;
+  width: 100% !important;
+}
+
 .owner-panel-layout--embedded .admin-main {
   width: 100%;
   min-height: 0;
@@ -2363,7 +2370,7 @@ async function onAvatarChange(event) {
   padding: 0 !important;
 }
 
-.owner-panel-layout--embedded .admin-layout {
+.owner-panel-layout--embedded .admin-layout--owner-sidebar-layout {
   display: grid !important;
   grid-template-columns: minmax(120px, 156px) minmax(0, 1fr) !important;
   grid-template-rows: minmax(0, 1fr) !important;
@@ -2378,7 +2385,7 @@ async function onAvatarChange(event) {
   grid-template-columns: minmax(120px, 156px) minmax(0, 1fr) !important;
 }
 
-.owner-panel-layout--embedded .admin-main {
+.owner-panel-layout--embedded .admin-layout--owner-sidebar-layout .admin-main {
   display: block !important;
   grid-column: 2 !important;
   grid-row: 1 !important;

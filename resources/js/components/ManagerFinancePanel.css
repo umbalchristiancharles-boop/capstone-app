@@ -2931,3 +2931,13 @@
   transform: translateY(-1px);
   box-shadow: 0 5px 12px rgba(15, 23, 42, 0.14);
 }
+.embedded-finance-feature {
+  min-height: auto;
+  width: 100%;
+}
+
+.embedded-finance-feature .finance-main-panel,
+.embedded-finance-feature .finance-dashboard-body {
+  width: 100%;
+  min-height: auto;
+}

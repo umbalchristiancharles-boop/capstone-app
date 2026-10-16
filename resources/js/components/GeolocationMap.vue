@@ -338,6 +338,12 @@ async function reverseGeocode(lat, lng) {
     // Build formatted address string
     const addressString = [barangay, city, region].filter(Boolean).join(', ')
     selectedLocation.value.address = addressString
+    selectedLocation.value.addressComponents = {
+      region: region,
+      province: '',
+      city: city,
+      barangay: barangay
+    }
     
     // Emit location with address info
     emit('update:location', { 
@@ -351,6 +357,7 @@ async function reverseGeocode(lat, lng) {
         barangay: barangay
       }
     })
+    return addressString.trim()
   } catch (error) {
     console.warn('Could not reverse geocode:', error)
     // Still emit location even if geocoding fails - with empty addressComponents
@@ -364,6 +371,7 @@ async function reverseGeocode(lat, lng) {
         barangay: ''
       }
     })
+    return ''
   }
 }
 
@@ -535,11 +543,16 @@ function resetMap() {
   emit('update:location', { lat: defaultLat, lng: defaultLng })
 }
 
-function saveLocation() {
+async function saveLocation() {
   if (!selectedLocation.value.lat || !selectedLocation.value.lng) {
     alert('Please select a location first')
     return
   }
+
+  if (!selectedLocation.value.address || selectedLocation.value.address === 'Fetching...') {
+    await reverseGeocode(selectedLocation.value.lat, selectedLocation.value.lng)
+  }
+
   emit('save:location', { 
     lat: selectedLocation.value.lat, 
     lng: selectedLocation.value.lng,

@@ -363,6 +363,15 @@ class AuthController extends Controller
             return '/super-admin/dashboard';
         }
 
+        // Assigned modules take precedence for normal accounts so they can use
+        // the unified custom workspace without changing their original role.
+        $assignedModules = is_array($user->permissions ?? null)
+            ? array_filter($user->permissions['modules'] ?? [])
+            : [];
+        if (count($assignedModules) > 0) {
+            return '/custom-panel';
+        }
+
         // ADMIN
         if ($role === 'ADMIN') {
             return '/admin-panel';

@@ -101,7 +101,15 @@ class Product extends Model
         }
 
         if (str_starts_with($path, 'product-images/')) {
+            if (!is_file(public_path($path)) && !\Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+                return null;
+            }
+
             return asset('product-image/' . substr($path, strlen('product-images/')));
+        }
+
+        if (!is_file(public_path('storage/' . $path)) && !\Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+            return null;
         }
 
         return asset('storage/' . $path);
@@ -255,4 +263,3 @@ class Product extends Model
         return $this->hasMany(InventoryLot::class);
     }
 }
-

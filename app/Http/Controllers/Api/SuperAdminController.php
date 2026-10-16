@@ -58,7 +58,7 @@ class SuperAdminController extends Controller
      * Create a default branch-role position record that can be applied to by candidates.
      * This mirrors the HR flow where accounts are created only after a successful application.
      */
-    private function createApprovedBranchPositionRequest(Branch $branch, string $roleKey, int $requestedByUserId, ?array $accountConfig = null): array
+    private function createApprovedBranchPositionRequest(Branch $branch, string $roleKey, int $requestedByUserId, ?array $accountConfig = null, int $quantity = 1): array
     {
         $positionMap = [
             'admin' => ['name' => 'Admin', 'department' => 'ADMIN', 'description' => 'Branch administrator role'],
@@ -84,7 +84,7 @@ class SuperAdminController extends Controller
             'position_id' => $position->id,
             'branch_id' => $branch->id,
             'requested_by_user_id' => $requestedByUserId,
-            'quantity' => 1,
+            'quantity' => $quantity,
             'notes' => 'Automatically broadcast during branch creation for ' . $branch->name . '.',
             'account_type' => $roleKey === 'custom' ? 'custom' : 'standard',
             'account_config' => $roleKey === 'custom' ? $accountConfig : null,
@@ -151,7 +151,7 @@ class SuperAdminController extends Controller
             return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
         }
 
-        $allowed = Permission::allowed($user, ['SUPER_ADMIN', 'SUPERADMIN', 'ADMIN', 'OWNER'], ['admin']);
+        $allowed = Permission::allowed($user, ['SUPER_ADMIN', 'SUPERADMIN', 'ADMIN', 'OWNER'], ['admin', 'logistics']);
         if (! $allowed) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
         }
@@ -1246,6 +1246,12 @@ class SuperAdminController extends Controller
             'accounts.finance' => 'nullable|boolean',
             'accounts.procurement' => 'nullable|boolean',
             'accounts.logistics' => 'nullable|boolean',
+            'account_quantities' => 'nullable|array',
+            'account_quantities.admin' => 'nullable|integer|min:1',
+            'account_quantities.hr' => 'nullable|integer|min:1',
+            'account_quantities.finance' => 'nullable|integer|min:1',
+            'account_quantities.procurement' => 'nullable|integer|min:1',
+            'account_quantities.logistics' => 'nullable|integer|min:1',
             'custom_account' => 'nullable|array',
             'custom_account.username' => 'nullable|string|max:60',
             'custom_account.password' => 'nullable|string|min:6|max:100',
@@ -1254,11 +1260,28 @@ class SuperAdminController extends Controller
             'custom_account.modules.*' => 'string',
             'custom_account.functions' => 'nullable|array',
             'custom_account.functions.*' => 'string',
+            'custom_accounts' => 'nullable|array|max:20',
+            'custom_accounts.*' => 'required|array',
+            'custom_accounts.*.username' => 'nullable|string|max:60',
+            'custom_accounts.*.full_name' => 'nullable|string|max:120',
+            'custom_accounts.*.modules' => 'nullable|array',
+            'custom_accounts.*.modules.*' => 'string',
+            'custom_accounts.*.functions' => 'nullable|array',
+            'custom_accounts.*.functions.*' => 'string',
         ]);
 
         $code = $request->input('code');
         $name = $request->input('name');
         $address = $request->input('address');
+        if (!is_string($address) || trim($address) === '') {
+            $addressParts = array_filter([
+                $request->input('barangay'),
+                $request->input('city'),
+                $request->input('province'),
+                $request->input('region'),
+            ], fn ($part) => is_string($part) && trim($part) !== '');
+            $address = implode(', ', $addressParts);
+        }
         $latitude = $request->input('latitude');
         $longitude = $request->input('longitude');
         $requestedBudget = (int) ($request->input('budget', 100000));
@@ -1272,16 +1295,30 @@ class SuperAdminController extends Controller
         $calculatedInvestment = collect($permitBills)->sum(fn ($item) => (float) ($item['amount'] ?? 0))
             + collect($constructionCosts)->sum(fn ($item) => (float) ($item['amount'] ?? 0))
             + collect($equipmentCosts)->sum(fn ($item) => (float) ($item['quantity'] ?? 0) * (float) ($item['unit_cost'] ?? 0));
-        $totalInvestment = max((float) ($request->input('total_investment') ?? 0), $calculatedInvestment);
-        // The branch must have enough available budget to cover its initial investment.
-        $requestedBudget = max($requestedBudget, (int) ceil($totalInvestment));
+        $totalInvestment = $calculatedInvestment;
+
+        if ($totalInvestment > $requestedBudget) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Initial budget must cover the total initial investment.',
+                'errors' => [
+                    'budget' => ['The initial budget must be greater than or equal to the total initial investment.'],
+                ],
+            ], 422);
+        }
 
         $defaultPassword = config('chikintayo.default_password', 'Chikintayo_123');
 
         // Allowed permission catalog for custom accounts
-        // Permission catalog (keep in sync with frontend templates)
+        // Keep this catalog aligned with the Custom sidebar feature choices.
         $allowedModules = [
-            'admin', 'finance', 'logistics', 'inventory', 'procurement', 'kitchen', 'cashier', 'hr', 'reports',
+            'budget-request-approvals', 'current-price-markup', 'receipt-approval',
+            'financial-overview', 'recent-transactions', 'manual-procurement',
+            'procurement-requests', 'add-supplier', 'supplier-products',
+            'stock-confirmation-history', 'product-barcodes', 'pending-stock',
+            'request-new-product', 'supplier-product-confirmations', 'inventory-monitor',
+            'product-disposal', 'landing-page-product-images', 'staff-activity',
+            'automatic-clock-out', 'staff-management',
         ];
         $allowedFunctions = [
             // Admin
@@ -1311,6 +1348,16 @@ class SuperAdminController extends Controller
             'finance' => array_key_exists('finance', $accountsInput) ? filter_var($accountsInput['finance'], FILTER_VALIDATE_BOOLEAN) : true,
             'procurement' => array_key_exists('procurement', $accountsInput) ? filter_var($accountsInput['procurement'], FILTER_VALIDATE_BOOLEAN) : true,
             'logistics' => array_key_exists('logistics', $accountsInput) ? filter_var($accountsInput['logistics'], FILTER_VALIDATE_BOOLEAN) : true,
+        ];
+        $accountQuantitiesInput = is_array($request->input('account_quantities'))
+            ? $request->input('account_quantities')
+            : [];
+        $accountQuantities = [
+            'admin' => max(1, (int) ($accountQuantitiesInput['admin'] ?? 1)),
+            'hr' => max(1, (int) ($accountQuantitiesInput['hr'] ?? 1)),
+            'finance' => max(1, (int) ($accountQuantitiesInput['finance'] ?? 1)),
+            'procurement' => max(1, (int) ($accountQuantitiesInput['procurement'] ?? 1)),
+            'logistics' => max(1, (int) ($accountQuantitiesInput['logistics'] ?? 1)),
         ];
 
         // If no code provided, auto-generate from name. Ensure uniqueness.
@@ -1350,9 +1397,9 @@ class SuperAdminController extends Controller
                 'approved_by' => $requiresOwnerApproval ? null : $user->id,
                 'approved_at' => $requiresOwnerApproval ? null : now(),
                 'rejected_at' => null,
-                // Use provided budget or default to 100000
+                // Budget and initial_budget both represent the approved allocation entered by the user.
                 'budget' => $requestedBudget,
-                'initial_budget' => (int) ($request->input('budget', 100000)),
+                'initial_budget' => $requestedBudget,
                 'square_meters' => $squareMeters,
                 'geofencing_radius' => $geofencingRadius,
                 // Cost details
@@ -1368,19 +1415,38 @@ class SuperAdminController extends Controller
             // so the HR application flow creates accounts only after a successful application.
             foreach (['admin', 'hr', 'finance', 'procurement', 'logistics'] as $roleKey) {
                 if (!empty($selectedAccounts[$roleKey])) {
-                    $broadcast = $this->createApprovedBranchPositionRequest($branch, $roleKey, (int) $user->id);
+                    $broadcast = $this->createApprovedBranchPositionRequest(
+                        $branch,
+                        $roleKey,
+                        (int) $user->id,
+                        null,
+                        $accountQuantities[$roleKey]
+                    );
                     $createdRoles[] = $broadcast['position_name'];
                 }
             }
 
-            // Broadcast custom accounts too; the user is created only after the applicant passes.
-            $customAccountInput = $request->input('custom_account', null);
-            if (is_array($customAccountInput)) {
+            // Broadcast custom accounts too; each applicant is created only after passing.
+            $customAccountInputs = $request->input('custom_accounts');
+            if (!is_array($customAccountInputs)) {
+                $legacyCustomAccount = $request->input('custom_account');
+                $customAccountInputs = is_array($legacyCustomAccount) ? [$legacyCustomAccount] : [];
+            }
+
+            foreach ($customAccountInputs as $customAccountInput) {
                 $rawModules = array_filter($customAccountInput['modules'] ?? [], fn ($m) => in_array(strtolower($m), $allowedModules, true));
                 $rawFunctions = array_filter($customAccountInput['functions'] ?? [], fn ($f) => in_array(strtolower($f), array_map('strtolower', $allowedFunctions), true));
 
                 $modules = array_values(array_unique(array_map('strtolower', $rawModules)));
                 $functions = array_values(array_unique(array_map('strtolower', $rawFunctions)));
+                $functionModules = array_map(
+                    fn ($function) => explode('.', strtolower($function), 2)[0],
+                    $functions
+                );
+                $modules = array_values(array_unique(array_merge(
+                    $modules,
+                    array_filter($functionModules, fn ($module) => in_array($module, $allowedModules, true))
+                )));
 
                 // Only create if there is at least one permission selected
                 if (!empty($modules) || !empty($functions)) {

@@ -726,8 +726,18 @@ class StaffInventoryController extends Controller
                     $modules = $perms;
                 }
                 foreach ($modules as $m) {
-                    $m = strtoupper(trim((string)$m));
-                    if ($m === 'LOGISTICS') { $hasLogistics = true; break; }
+                    $m = strtolower(trim((string) $m));
+                    if (in_array($m, [
+                        'logistics',
+                        'product-barcodes',
+                        'pending-stock',
+                        'stock-confirmation-history',
+                        'request-new-product',
+                        'supplier-product-confirmations',
+                    ], true)) {
+                        $hasLogistics = true;
+                        break;
+                    }
                 }
             } catch (\Throwable $_) { /* ignore */ }
         }

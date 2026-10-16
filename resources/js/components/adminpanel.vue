@@ -1,8 +1,8 @@
 <template>
-  <div class="admin-panel-shell min-h-screen bg-gradient-to-b from-[#F8F1E4] to-[#FFFFFF]">
+  <div class="admin-panel-shell min-h-screen bg-gradient-to-b from-[#F8F1E4] to-[#FFFFFF]" :class="{ 'admin-panel-shell--embedded': props.embeddedSection }">
     <div class="admin-page">
       <section class="admin-layout" :class="{ 'admin-sidebar-collapsed': adminSidebarCollapsed, 'admin-sidebar-resizing': adminSidebarResizing, 'admin-layout--dashboard': activeSection === 'dashboard', 'admin-layout--staff': activeSection === 'staff', 'admin-layout--announcements': activeSection === 'announcements', 'admin-layout--compact': activeSection !== 'dashboard' }" :style="{ '--admin-sidebar-width': `${adminSidebarWidth}px` }">
-        <div class="admin-topbar">
+        <div v-if="!props.embeddedSection" class="admin-topbar">
           <button
             v-if="adminSidebarCollapsed && !adminSidebarTransitioning"
             class="admin-hamburger"
@@ -28,7 +28,7 @@
             </div>
           </div>
         </div>
-        <aside class="admin-sidebar" aria-label="Admin sections" @pointerdown="startAdminSidebarSwipe" @transitionend="finishAdminSidebarTransition">
+        <aside v-if="!props.embeddedSection" class="admin-sidebar" aria-label="Admin sections" @pointerdown="startAdminSidebarSwipe" @transitionend="finishAdminSidebarTransition">
           <PanelSidebarBrand />
           <nav class="admin-sidebar__nav">
             <button type="button" class="admin-sidebar__item" :class="{ 'admin-sidebar__item--active': activeSection === 'dashboard' }" @click="activeSection = 'dashboard'">Dashboard</button>
@@ -44,6 +44,15 @@
               @click="activeSection = 'staff-management'"
             >
               Staff Management
+            </button>
+            <button
+              v-if="['OWNER', 'ADMIN', 'SUPER_ADMIN', 'SUPERADMIN'].includes((ownerProfile.role || '').toString().toUpperCase())"
+              type="button"
+              class="admin-sidebar__item"
+              :class="{ 'admin-sidebar__item--active': activeSection === 'custom-accounts' }"
+              @click="activeSection = 'custom-accounts'"
+            >
+              Custom Accounts
             </button>
             <label v-if="showBranchSelector && (branches.length || isSuperAdminBranchSelector)" class="admin-sidebar__branch-filter" :class="{ 'admin-sidebar__branch-filter--loading': branchSelectorLoading }">
               <span>Branch</span>
@@ -104,6 +113,7 @@
           <div v-if="activeSection === 'staff-management'" class="admin-staff-management-embedded">
             <StaffManagement :embedded="true" @back-to-dashboard="activeSection = 'dashboard'" />
           </div>
+          <CustomAccounts v-else-if="activeSection === 'custom-accounts'" />
 
           <Transition v-else name="admin-section" mode="out-in" appear>
             <div :key="activeSection" class="admin-section-view">
@@ -256,7 +266,7 @@
           </section>
 
           <!-- Request New Product (Branch Manager) -->
-          <section v-if="activeSection === 'inventory'" id="admin-inventory-procurement" class="panel-block admin-product-request-panel">
+          <section v-if="activeSection === 'inventory' || activeSection === 'product-request'" id="admin-inventory-procurement" class="panel-block admin-product-request-panel">
             <div class="panel-header">
               <h2>Request New Product</h2>
               <div class="admin-product-request-actions">
@@ -959,6 +969,7 @@ import LoadingOverlay from './LoadingOverlay.vue'
 import AdminAttendanceCard from './AdminAttendanceCard.vue'
 import AdminCustomerReports from './AdminCustomerReports.vue'
 import StaffManagement from './StaffManagement.vue'
+import CustomAccounts from './CustomAccounts.vue'
 import PanelNotificationMenu from './PanelNotificationMenu.vue'
 import PanelNotificationDetailsModal from './PanelNotificationDetailsModal.vue'
 import OwnerMessageMenu from './OwnerMessageMenu.vue'
@@ -980,6 +991,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  embeddedSection: {
+    type: String,
+    default: '',
+  },
 })
 
 const isSuperAdminBranchSelector = computed(() => Array.isArray(props.superAdminBranches))
@@ -987,7 +1002,13 @@ const branchSelectorLoading = computed(() => isSuperAdminBranchSelector.value &&
 
 const router = useRouter()
 const activeRange = ref('today')
-const activeSection = ref('dashboard')
+const activeSection = ref(
+  props.embeddedSection === 'landing-page-product-images'
+    ? 'landing-images'
+    : props.embeddedSection === 'product-request'
+      ? 'product-request'
+      : 'dashboard'
+)
 const adminSidebarCollapsed = ref(false)
 const adminSidebarWidth = ref(156)
 const adminSidebarResizing = ref(false)
@@ -1155,10 +1176,12 @@ const activeSectionTitle = computed(() => ({
   dashboard: panelTitle.value,
   orders: 'Orders & Production',
   inventory: 'Inventory & Procurement',
+  'product-request': 'Request New Product',
   'landing-images': 'Landing Page Images',
   reports: 'Reports & CRM',
   staff: 'Staff & Attendance',
   'staff-management': 'Staff Management',
+  'custom-accounts': 'Custom Accounts',
   announcements: 'Announcements',
 }[activeSection.value] || panelTitle.value))
 
@@ -1534,7 +1557,9 @@ function formatSupplierQuotePrice(value) {
 async function loadSupplierSubmissions() {
   supplierSubmissionsLoading.value = true
   try {
-    const res = await axios.get('/api/superadmin/logistics/supplier-orders', { withCredentials: true, params: { per_page: 100 } })
+    const params = { per_page: 100 }
+    if (selectedBranchId.value) params.branch_id = selectedBranchId.value
+    const res = await axios.get('/api/superadmin/logistics/supplier-orders', { withCredentials: true, params })
     const submissions = res.data?.data ?? res.data ?? []
     supplierSubmissions.value = Array.isArray(submissions)
       ? submissions.filter(order => order.product_id && order.supplier_id && (order.supplier?.full_name || order.supplier?.username) && order.product?.image_path && (order.product?.barcode || order.product?.sku))
@@ -1546,6 +1571,10 @@ async function loadSupplierSubmissions() {
     supplierSubmissionsLoading.value = false
   }
 }
+
+watch(selectedBranchId, () => {
+  loadSupplierSubmissions()
+})
 
 async function loadLandingProducts() {
   landingProductsLoading.value = true
@@ -3861,4 +3890,69 @@ h1, h2 {
 .dashboard-status-pill--off { background: #fbe9e7; color: #b42318; }
 .dashboard-danger-text { color: #c62828 !important; }
 .dashboard-ingredient { display: block; margin-bottom: 4px; }
+
+.admin-panel-shell--embedded {
+  min-height: 0 !important;
+  background: transparent !important;
+}
+
+.admin-panel-shell--embedded .admin-page,
+.admin-panel-shell--embedded .admin-layout {
+  min-height: 0 !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.admin-panel-shell--embedded .admin-layout {
+  display: block !important;
+}
+
+.admin-panel-shell--embedded .admin-main {
+  width: 100% !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.admin-panel-shell--embedded .admin-content-scroll {
+  position: static !important;
+  inset: auto !important;
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  overflow: visible !important;
+}
+
+.admin-panel-shell--embedded .admin-feature-header {
+  width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 0 12px !important;
+  padding: 18px 20px !important;
+  box-sizing: border-box !important;
+}
+
+.admin-panel-shell--embedded .admin-side {
+  width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.admin-panel-shell--embedded .landing-images-panel {
+  width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+}
+
+.admin-panel-shell--embedded .landing-product-item {
+  align-items: flex-start;
+  padding: 12px;
+}
+
+.admin-panel-shell--embedded .landing-product-details {
+  min-width: 0;
+}
 </style>

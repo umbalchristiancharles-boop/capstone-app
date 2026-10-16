@@ -9,8 +9,10 @@
     :enableProfileUpdate="true"
     :showProfileColumn="false"
     :ownerTwoColumnLayout="true"
-    :showOwnerSidebar="true"
-    :showOwnerTopbar="true"
+    :showOwnerSidebar="!props.embeddedSection"
+    :showOwnerTopbar="!props.embeddedSection"
+    :showHeader="!props.embeddedSection"
+    :embedded="Boolean(props.embeddedSection)"
     :enableDarkMode="false"
     :showAnnouncements="false"
     :announcementsInModal="true"
@@ -25,7 +27,7 @@
     </template>
 
     <template #ownerSidebar>
-      <nav class="owner-sidebar-nav inventory-sidebar-nav" aria-label="Inventory sections">
+      <nav v-if="!props.embeddedSection" class="owner-sidebar-nav inventory-sidebar-nav" aria-label="Inventory sections">
         <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': !isDisposalView && !isAttendanceView }" @click="isDisposalView = false; isAttendanceView = false">Inventory</button>
         <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': isDisposalView }" @click="isDisposalView = true; isAttendanceView = false">Product Disposal</button>
         <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': isAttendanceView }" @click="isDisposalView = false; isAttendanceView = true">Attendance</button>
@@ -574,8 +576,12 @@ const props = defineProps({
   products: { type: Array, default: () => [] },
   fetchUrl: { type: String, default: '/api/staff/inventory/products' },
   pageTitle: { type: String, default: 'Inventory' },
-  isSuperAdmin: { type: Boolean, default: false }
+  isSuperAdmin: { type: Boolean, default: false },
+  embeddedSection: { type: String, default: '' }
 });
+
+isDisposalView.value = props.embeddedSection === 'product-disposal';
+isAttendanceView.value = props.embeddedSection === 'attendance';
 
 // Internal products from parent (used when not fetching via API)
 const internalProducts = ref(props.products || [])

@@ -479,7 +479,17 @@
                     <label for="education" class="field-label">
                       Education <span class="req">*</span>
                     </label>
-                    <input id="education" v-model.trim="applyForm.education" type="text" placeholder="e.g., BSIT - University" />
+                    <select id="education" v-model="applyForm.education">
+                      <option value="" disabled>Select your highest education level</option>
+                      <option value="Elementary">Elementary</option>
+                      <option value="High School">High School</option>
+                      <option value="Senior High School">Senior High School</option>
+                      <option value="Vocational / Technical">Vocational / Technical</option>
+                      <option value="Associate Degree">Associate Degree</option>
+                      <option value="Bachelor's Degree">Bachelor's Degree</option>
+                      <option value="Master's Degree">Master's Degree</option>
+                      <option value="Doctorate Degree">Doctorate Degree</option>
+                    </select>
                     <div class="inline-error" v-if="applyFieldErrors.education">{{ applyFieldErrors.education }}</div>
                   </div>
                 </div>

@@ -71,7 +71,17 @@ class PanelNotificationController extends Controller
 
         $hasModule = function (string $module) use ($role, $dept, $configuredModules, $isGlobalRole): bool {
             if ($isGlobalRole) return true;
-            if ($role === 'CUSTOM') return in_array($module, $configuredModules, true);
+            if ($role === 'CUSTOM') {
+                if (in_array($module, $configuredModules, true)) return true;
+                $aliases = [
+                    'finance' => ['budget-request-approvals', 'current-price-markup', 'receipt-approval', 'financial-overview', 'recent-transactions'],
+                    'procurement' => ['manual-procurement', 'procurement-requests', 'add-supplier', 'supplier-products'],
+                    'logistics' => ['stock-confirmation-history', 'product-barcodes', 'pending-stock', 'request-new-product', 'supplier-product-confirmations'],
+                    'inventory' => ['inventory-monitor', 'product-disposal'],
+                    'hr' => ['staff-activity', 'automatic-clock-out', 'staff-management'],
+                ];
+                return count(array_intersect($aliases[$module] ?? [], $configuredModules)) > 0;
+            }
 
             $departmentModules = [
                 'ADMIN' => ['admin', 'cashier'],

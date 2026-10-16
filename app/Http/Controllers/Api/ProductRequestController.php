@@ -941,7 +941,9 @@ class ProductRequestController extends Controller
 
     private function broadcastApprovedProductRequest(ProductRequest $productRequest, Product $product): void
     {
-        $procurementRequest = ProcurementRequest::where('product_id', $product->id)->first();
+        $procurementRequest = ProcurementRequest::where('product_id', $product->id)
+            ->where('branch_id', $productRequest->branch_id)
+            ->first();
         if (!$procurementRequest) {
             throw new \RuntimeException('Cannot broadcast product request without a procurement request');
         }

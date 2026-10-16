@@ -289,6 +289,27 @@ class PositionApplicationController extends Controller
         $application = PositionApplication::findOrFail($id);
 
         try {
+            if (!$application->interview_date || !$application->interview_time) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'The applicant cannot be marked as passed until an interview is scheduled.',
+                ], 422);
+            }
+
+            $interviewAt = \Carbon\Carbon::createFromFormat(
+                'Y-m-d H:i:s',
+                $application->interview_date . ' ' . $application->interview_time,
+                config('app.timezone')
+            );
+            if (\Carbon\Carbon::now(config('app.timezone'))->lt($interviewAt)) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'The applicant can only be marked as passed after the scheduled interview date and time.',
+                    'interview_date' => $application->interview_date,
+                    'interview_time' => $application->interview_time,
+                ], 422);
+            }
+
             // Guard: only decrement the open position quantity if this application
             // was NOT already marked as passed (prevents double-decrementing).
             $wasAlreadyPassed = $application->status === 'Passed - Ready for Hiring';
@@ -581,4 +602,3 @@ class PositionApplicationController extends Controller
         ]);
     }
 }
-

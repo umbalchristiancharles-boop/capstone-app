@@ -79,8 +79,15 @@ class ManagerFinanceController extends Controller
             if (is_array($perms)) {
                 // Check for modules list
                 if (isset($perms['modules']) && is_array($perms['modules'])) {
+                    $financeFeatures = [
+                        'budget-request-approvals',
+                        'current-price-markup',
+                        'receipt-approval',
+                        'financial-overview',
+                        'recent-transactions',
+                    ];
                     foreach ($perms['modules'] as $m) {
-                        if (strtolower((string)$m) === 'finance') return true;
+                        if (in_array(strtolower((string) $m), $financeFeatures, true)) return true;
                     }
                 }
                 // Check for explicit finance flag

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AttendanceSettings;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Support\Permission;
 
 class AttendanceSettingsController extends Controller
 {
@@ -56,7 +57,8 @@ class AttendanceSettingsController extends Controller
         }
 
         // Check if user is OWNER or HR
-        if (!in_array(strtoupper((string) $user->role), ['OWNER', 'HR', 'ADMIN'])) {
+        if (!in_array(strtoupper((string) $user->role), ['OWNER', 'HR', 'ADMIN'])
+            && !Permission::hasPermissions($user, ['hr'])) {
             return response()->json([
                 'ok' => false,
                 'success' => false,
@@ -101,7 +103,8 @@ class AttendanceSettingsController extends Controller
         }
 
         // Check if user is OWNER or HR
-        if (!in_array(strtoupper((string) $user->role), ['OWNER', 'HR', 'ADMIN'])) {
+        if (!in_array(strtoupper((string) $user->role), ['OWNER', 'HR', 'ADMIN'])
+            && !Permission::hasPermissions($user, ['automatic-clock-out'])) {
             return response()->json([
                 'ok' => false,
                 'success' => false,

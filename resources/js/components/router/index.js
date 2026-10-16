@@ -254,7 +254,10 @@ router.beforeEach((to, from, next) => {
   if (to.path === '/' || to.path === '/login') {
     if (user) {
       const userRole = (user.role || '').toLowerCase();
-      if (userRole === 'custom') return next('/custom-panel');
+      const assignedModules = Array.isArray(user.permissions?.modules)
+        ? user.permissions.modules.filter(Boolean)
+        : [];
+      if (userRole === 'custom' || assignedModules.length > 0) return next('/custom-panel');
       if (userRole === 'owner') return next('/owner-panel');
       if (userRole === 'admin') return next('/admin-panel');
       if (userRole === 'manager') {
@@ -285,6 +288,9 @@ router.beforeEach((to, from, next) => {
 
   // === User is authenticated - normalize role to lowercase ===
   const userRole = (user.role || '').toLowerCase();
+  const assignedModules = Array.isArray(user.permissions?.modules)
+    ? user.permissions.modules.map(m => (m || '').toLowerCase()).filter(Boolean)
+    : [];
   console.log('[ROUTER] User role (normalized):', userRole);
 
   // === CHECK: Route requires specific role ===
@@ -293,16 +299,16 @@ router.beforeEach((to, from, next) => {
     console.log('[ROUTER] Required role:', requiredRole);
 
     // Custom accounts: if navigation came from Custom Panel, allow and continue
-    if (userRole === 'custom' && to.query && to.query.from === 'custom-panel') {
+    if ((userRole === 'custom' || assignedModules.length > 0) && to.query && to.query.from === 'custom-panel') {
       console.log('[ROUTER] CUSTOM account with from=custom-panel - allowing');
       return next();
     }
 
     // Allow 'custom' accounts to access routes based on assigned modules
-    if (userRole === 'custom') {
+    if (userRole === 'custom' || assignedModules.length > 0) {
       let modules = [];
       try {
-        modules = Array.isArray(user.permissions?.modules) ? user.permissions.modules.map(m => (m || '').toLowerCase()) : [];
+        modules = assignedModules;
       } catch (e) {
         modules = [];
       }
@@ -434,7 +440,7 @@ router.beforeEach((to, from, next) => {
 function getPanelRoute(user) {
   if (!user) return '/staff-landing';
   const userRole = (user.role || '').toLowerCase();
-  if (userRole === 'custom') return '/custom-panel';
+  if (userRole === 'custom' || (Array.isArray(user.permissions?.modules) && user.permissions.modules.length > 0)) return '/custom-panel';
   if (userRole === 'owner') return '/owner-panel';
   if (userRole === 'admin') return '/admin-panel';
   if (userRole === 'manager') {

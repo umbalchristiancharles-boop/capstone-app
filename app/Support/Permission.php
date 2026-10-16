@@ -49,24 +49,80 @@ class Permission
     }
 
     /**
-     * Custom accounts (role CUSTOM) are allowed if they have any required module/function.
+     * Check whether a user has any required module or function permission.
      */
-    public static function customHas(array $requiredModules = [], array $requiredFunctions = [], ?User $user = null): bool
+    public static function hasPermissions(
+        ?User $user,
+        array $requiredModules = [],
+        array $requiredFunctions = []
+    ): bool
     {
-        if (! $user || strtoupper($user->role ?? '') !== 'CUSTOM') return false;
+        if (! $user) return false;
+
         [$mods, $funcs] = [
             $requiredModules ? array_map('strtolower', $requiredModules) : [],
             $requiredFunctions ? array_map('strtolower', $requiredFunctions) : [],
         ];
+
         $perm = self::extractPermissions($user);
-        if ($mods && count(array_intersect($perm['modules'], $mods)) > 0) return true;
+        if ($mods) {
+            $moduleFeatureAliases = [
+                'finance' => [
+                    'budget-request-approvals',
+                    'current-price-markup',
+                    'receipt-approval',
+                    'financial-overview',
+                    'recent-transactions',
+                ],
+                'procurement' => [
+                    'manual-procurement',
+                    'procurement-requests',
+                    'add-supplier',
+                    'supplier-products',
+                ],
+                'logistics' => [
+                    'stock-confirmation-history',
+                    'product-barcodes',
+                    'pending-stock',
+                    'request-new-product',
+                    'supplier-product-confirmations',
+                ],
+                'inventory' => [
+                    'inventory-monitor',
+                    'product-disposal',
+                ],
+                'hr' => [
+                    'staff-activity',
+                    'automatic-clock-out',
+                    'staff-management',
+                ],
+            ];
+
+            foreach ($mods as $module) {
+                if (in_array($module, $perm['modules'], true)) return true;
+                if (count(array_intersect($moduleFeatureAliases[$module] ?? [], $perm['modules'])) > 0) {
+                    return true;
+                }
+            }
+        }
         if ($funcs && count(array_intersect($perm['functions'], $funcs)) > 0) return true;
-        if (!$mods && !$funcs) return true; // if nothing required, allow
+        if (!$mods && !$funcs) return true;
         return false;
     }
 
     /**
-     * Check if user is allowed via either roles or custom permissions.
+     * Backward-compatible alias for custom-account permission checks.
+     */
+    public static function customHas(
+        array $requiredModules = [],
+        array $requiredFunctions = [],
+        ?User $user = null
+    ): bool {
+        return self::hasPermissions($user, $requiredModules, $requiredFunctions);
+    }
+
+    /**
+     * Check if user is allowed via roles or assigned permissions.
      */
     public static function allowed(?User $user, array $roles = [], array $modules = [], array $functions = []): bool
     {
@@ -77,12 +133,7 @@ class Permission
             return true;
         }
         if ($roles && self::hasRole($user, $roles)) return true;
-        if (strtoupper($user->role ?? '') === 'CUSTOM') {
-            return self::customHas($modules, $functions, $user);
-        }
-        // If modules/functions required and user is not custom, allow only if a privileged role was provided and matched above.
-        if ($modules || $functions) return false;
-        // No extra requirements; fallback to existing role acceptance
-        return false;
+        if (!$modules && !$functions) return false;
+        return self::hasPermissions($user, $modules, $functions);
     }
 }

@@ -1,5 +1,5 @@
 <template>
-  <div class="manager-logistics-panel">
+  <div class="manager-logistics-panel" :class="{ 'manager-logistics-panel--embedded': props.embeddedSection }">
   <OwnerPanelLayout
     ref="ownerLayout"
     :userProfile="userProfile"
@@ -9,8 +9,10 @@
     :canChangePassword="true"
     :showProfileColumn="false"
     :ownerTwoColumnLayout="true"
-    :showOwnerSidebar="true"
-    :showOwnerTopbar="true"
+    :showOwnerSidebar="!props.embeddedSection"
+    :showOwnerTopbar="!props.embeddedSection"
+    :showHeader="!props.embeddedSection"
+    :embedded="Boolean(props.embeddedSection)"
     :announcementsInModal="true"
     :notificationDetailsInModal="true"
     :topbarLabel="logisticsTopbarLabel"
@@ -19,7 +21,7 @@
     @profile-updated="onProfileUpdated"
   >
     <template #ownerSidebar>
-      <nav class="manager-logistics-sidebar-nav" aria-label="Logistics sections">
+      <nav v-if="!props.embeddedSection" class="manager-logistics-sidebar-nav" aria-label="Logistics sections">
         <button type="button" class="manager-logistics-sidebar-link" :class="{ 'manager-logistics-sidebar-link--active': selectedSection === 'overview' }" :aria-current="selectedSection === 'overview' ? 'page' : undefined" @click="selectLogisticsSection('overview')">Overview</button>
         <button type="button" class="manager-logistics-sidebar-link" :class="{ 'manager-logistics-sidebar-link--active': selectedSection === 'barcodes' }" :aria-current="selectedSection === 'barcodes' ? 'page' : undefined" @click="selectLogisticsSection('barcodes')">Product Barcodes</button>
         <button type="button" class="manager-logistics-sidebar-link" :class="{ 'manager-logistics-sidebar-link--active': selectedSection === 'pending-stock' }" :aria-current="selectedSection === 'pending-stock' ? 'page' : undefined" @click="selectLogisticsSection('pending-stock')">Pending Stock</button>
@@ -371,7 +373,7 @@
       <!-- Pending Stock Section (moved to Logistics) -->
       </template>
 
-      <div v-if="selectedSection === 'overview' || selectedSection === 'barcodes'" id="logistics-barcodes" class="panel-section">
+      <div v-if="selectedSection === 'barcodes'" id="logistics-barcodes" class="panel-section">
         <h2 class="section-title">Product Barcodes</h2>
         <p class="section-description">Supplier barcodes are preserved. Products without one receive a temporary system barcode until their real barcode is scanned.</p>
         <div class="table-container">
@@ -659,6 +661,10 @@ import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import { showToast } from './toastStore'
 import { isCustomPanelOrigin, leaveToCustomPanel } from './customPanelNavigation.js'
 
+const props = defineProps({
+  embeddedSection: { type: String, default: '' },
+})
+
 // basic state
 const userProfile = ref({})
 const logisticsRoute = useRoute()
@@ -666,12 +672,13 @@ const logisticsRouter = useRouter()
 const superAdminEmbedded = inject('superAdminEmbedded', false)
 const superAdminBranchId = inject('superAdminBranchId', null)
 const superAdminBranchScoped = inject('superAdminBranchScoped', false)
-const selectedSection = ref('overview')
+const selectedSection = ref(props.embeddedSection || 'overview')
 const logisticsSections = ['overview', 'barcodes', 'pending-stock', 'confirmation-history']
 
 function routeLogisticsSection(section) {
   const value = Array.isArray(section) ? section[0] : section
-  return logisticsSections.includes(value) ? value : 'overview'
+  if (logisticsSections.includes(value)) return value
+  return logisticsSections.includes(props.embeddedSection) ? props.embeddedSection : 'overview'
 }
 
 watch(

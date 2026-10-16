@@ -47,7 +47,7 @@
             type="button"
             class="button button--success"
             @click="markPassed(application)"
-            :disabled="processingId === application.id"
+            :disabled="processingId === application.id || !isInterviewTimeReached(application)"
           >
             Mark as Passed
           </button>
@@ -110,6 +110,7 @@
           <dt>Position</dt><dd>{{ selectedApplication.job_title || '-' }}</dd>
           <dt>Experience</dt><dd>{{ selectedApplication.years_of_experience || 0 }} years</dd>
           <dt>Education</dt><dd>{{ selectedApplication.education || '-' }}</dd>
+          <dt>Ready to Work Date</dt><dd>{{ formatDate(selectedApplication.available_start_date) }}</dd>
           <dt>Cover Letter</dt><dd>{{ selectedApplication.cover_letter || '-' }}</dd>
         </dl>
       </div>
@@ -150,6 +151,12 @@ function isPassed(status) {
 
 function isNotPassed(status) {
   return normalizedStatus(status).includes('not passed')
+}
+
+function isInterviewTimeReached(application) {
+  if (!application?.interview_date || !application?.interview_time) return false
+  const interviewAt = new Date(`${application.interview_date}T${application.interview_time}`)
+  return !Number.isNaN(interviewAt.getTime()) && Date.now() >= interviewAt.getTime()
 }
 
 const getMinDate = new Date().toISOString().split('T')[0]

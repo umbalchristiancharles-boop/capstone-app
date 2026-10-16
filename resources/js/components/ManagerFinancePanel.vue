@@ -1,9 +1,10 @@
 <template>
   <div
     class="manager-finance finance-manager-layout"
-    :class="{ 'sidebar-collapsed': sidebarCollapsed, 'main-branch-finance': props.isMainBranchFinance }"
+    :class="{ 'sidebar-collapsed': sidebarCollapsed, 'main-branch-finance': props.isMainBranchFinance, 'embedded-finance-feature': props.embeddedSection }"
   >
     <aside
+      v-if="!props.embeddedSection"
       class="finance-sidebar"
       :aria-hidden="sidebarCollapsed"
       @pointerdown="startFinanceSidebarSwipe"
@@ -44,7 +45,7 @@
     </aside>
 
     <div class="finance-main-panel">
-      <header class="finance-main-header">
+      <header v-if="!props.embeddedSection" class="finance-main-header">
         <button
           v-if="sidebarCollapsed && !sidebarTransitioning"
           class="finance-hamburger"
@@ -651,6 +652,10 @@ const props = defineProps({
   isMainBranchFinance: {
     type: Boolean,
     default: false
+  },
+  embeddedSection: {
+    type: String,
+    default: ''
   }
 })
 
@@ -818,7 +823,7 @@ function closeFinanceTutorial() {
   })
 
   // Dashboard section navigation
-  const selectedSection = ref('overview')
+  const selectedSection = ref(props.embeddedSection || 'overview')
   const sidebarCollapsed = ref(false)
   const sidebarTransitioning = ref(false)
   let financeSidebarSwipeStart = null

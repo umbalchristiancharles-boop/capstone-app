@@ -153,6 +153,67 @@ class BranchOpenPositionBroadcastTest extends TestCase
         $this->assertSame('Approved', PositionOpenRequest::first()->status);
     }
 
+    public function test_branch_creation_keeps_budget_and_initial_budget_in_sync_with_total_investment(): void
+    {
+        $owner = User::create([
+            'username' => 'budget_owner',
+            'email' => 'budget-owner@example.com',
+            'password' => 'Password123!',
+            'full_name' => 'Budget Owner',
+            'role' => 'OWNER',
+            'is_active' => true,
+            'must_change_password' => false,
+        ]);
+
+        $this->actingAs($owner);
+
+        $response = $this->postJson('/api/superadmin/branches', [
+            'code' => 'BI01',
+            'name' => 'Budget Branch',
+            'budget' => 250000,
+            'permit_bills' => [['type' => 'Business Permit', 'amount' => 10000]],
+            'construction_costs' => [['category' => 'Materials', 'amount' => 50000]],
+            'equipment_costs' => [['name' => 'Freezer', 'type' => 'Kitchen', 'quantity' => 2, 'unit_cost' => 20000]],
+            'total_investment' => 1,
+            'accounts' => [],
+        ]);
+
+        $response->assertStatus(201)->assertJsonPath('ok', true);
+
+        $this->assertDatabaseHas('branches', [
+            'code' => 'BI01',
+            'budget' => 250000,
+            'initial_budget' => 250000,
+            'total_investment' => 100000,
+        ]);
+    }
+
+    public function test_branch_creation_rejects_investment_above_initial_budget(): void
+    {
+        $owner = User::create([
+            'username' => 'limited_owner',
+            'email' => 'limited-owner@example.com',
+            'password' => 'Password123!',
+            'full_name' => 'Limited Owner',
+            'role' => 'OWNER',
+            'is_active' => true,
+            'must_change_password' => false,
+        ]);
+
+        $this->actingAs($owner);
+
+        $response = $this->postJson('/api/superadmin/branches', [
+            'code' => 'BI02',
+            'name' => 'Over Budget Branch',
+            'budget' => 100000,
+            'construction_costs' => [['category' => 'Materials', 'amount' => 125000]],
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('message', 'Initial budget must cover the total initial investment.');
+        $this->assertDatabaseMissing('branches', ['code' => 'BI02']);
+    }
+
     public function test_main_branch_hr_sees_all_branch_applications_but_branch_hr_only_sees_own_branch(): void
     {
         $mainBranch = Branch::create([

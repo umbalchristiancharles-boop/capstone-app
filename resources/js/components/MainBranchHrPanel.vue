@@ -98,10 +98,10 @@
                 <div class="request-card__info"><span class="label">Contact:</span><span class="value">{{ application.applicant_email }} • {{ application.applicant_phone }}</span></div>
                 <div class="request-card__actions">
                   <button class="btn-success btn-sm" @click="openApplicationDetails(application)">View Application Details</button>
-                  <button v-if="!isReadyForInterview(application.status)" class="btn-primary btn-sm" @click="openInterviewScheduleModal(application)" :disabled="sendingInterviewEmail[application.id]">
+                  <button v-if="!isReadyForInterview(application.status) && !isPassedForHiring(application.status)" class="btn-primary btn-sm" @click="openInterviewScheduleModal(application)" :disabled="sendingInterviewEmail[application.id]">
                     {{ sendingInterviewEmail[application.id] ? 'Sending...' : 'Ready for Interview' }}
                   </button>
-                  <button v-if="isReadyForInterview(application.status) && !isPassedForHiring(application.status)" class="btn-success btn-sm" @click="markAsPassed(application)" :disabled="markingAsPassed[application.id]">
+                  <button v-if="isReadyForInterview(application.status) && !isPassedForHiring(application.status)" class="btn-success btn-sm" @click="markAsPassed(application)" :disabled="markingAsPassed[application.id] || !isInterviewTimeReached(application)">
                     {{ markingAsPassed[application.id] ? 'Processing...' : '✓ Mark as Passed' }}
                   </button>
                   <button v-if="isReadyForInterview(application.status) && !isPassedForHiring(application.status)" class="btn-danger btn-sm" @click="markAsNotPassed(application)" :disabled="markingAsNotPassed[application.id]">
@@ -337,7 +337,7 @@
                   View Application Details
                 </button>
                 <button
-                  v-if="!isReadyForInterview(a.status)"
+                  v-if="!isReadyForInterview(a.status) && !isPassedForHiring(a.status)"
                   class="btn-primary btn-sm"
                   @click="openInterviewScheduleModal(a)"
                   :disabled="sendingInterviewEmail[a.id]"
@@ -348,7 +348,7 @@
                   v-if="isReadyForInterview(a.status) && !isPassedForHiring(a.status)"
                   class="btn-success btn-sm"
                   @click="markAsPassed(a)"
-                  :disabled="markingAsPassed[a.id]"
+                  :disabled="markingAsPassed[a.id] || !isInterviewTimeReached(a)"
                 >
                   {{ markingAsPassed[a.id] ? 'Processing...' : '✓ Mark as Passed' }}
                 </button>
@@ -413,6 +413,7 @@
         <div class="request-card__info"><span class="label">Department:</span><span class="value">{{ selectedApplicationDetails.department || '-' }}</span></div>
         <div class="request-card__info"><span class="label">Experience:</span><span class="value">{{ selectedApplicationDetails.years_of_experience || '-' }}</span></div>
         <div class="request-card__info"><span class="label">Education:</span><span class="value">{{ selectedApplicationDetails.education || '-' }}</span></div>
+        <div class="request-card__info"><span class="label">Ready to Work Date:</span><span class="value">{{ formatDate(selectedApplicationDetails.available_start_date) }}</span></div>
         <div v-if="selectedApplicationDetails.cover_letter" class="request-card__notes"><span class="label">Cover Letter</span><p>{{ selectedApplicationDetails.cover_letter }}</p></div>
         <div class="request-card__actions">
           <a v-if="selectedApplicationDetails.resume_path" :href="getStorageUrl(selectedApplicationDetails.resume_path)" target="_blank" rel="noopener noreferrer" class="btn-primary">Open Resume</a>
@@ -605,6 +606,12 @@ function isReadyForInterview(status) {
 function isPassedForHiring(status) {
   const value = String(status || '').toLowerCase().trim()
   return ['passed - ready for hiring', 'passed_ready_for_hiring', 'passed'].includes(value)
+}
+
+function isInterviewTimeReached(application) {
+  if (!application?.interview_date || !application?.interview_time) return false
+  const interviewAt = new Date(`${application.interview_date}T${application.interview_time}`)
+  return !Number.isNaN(interviewAt.getTime()) && Date.now() >= interviewAt.getTime()
 }
 
 function openInterviewScheduleModal(application) {

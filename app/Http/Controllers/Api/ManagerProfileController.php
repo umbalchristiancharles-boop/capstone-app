@@ -172,7 +172,51 @@ class ManagerProfileController extends Controller
         }
 
         if ($role === 'CUSTOM') {
-            return $this->customHasModule($user, $department);
+            $customDepartmentFeatures = [
+                'finance' => [
+                    'budget-request-approvals',
+                    'current-price-markup',
+                    'receipt-approval',
+                    'financial-overview',
+                    'recent-transactions',
+                ],
+                'procurement' => [
+                    'manual-procurement',
+                    'procurement-requests',
+                    'add-supplier',
+                    'supplier-products',
+                ],
+                'logistics' => [
+                    'stock-confirmation-history',
+                    'product-barcodes',
+                    'pending-stock',
+                    'request-new-product',
+                    'supplier-product-confirmations',
+                ],
+                'inventory' => [
+                    'inventory-monitor',
+                    'product-disposal',
+                ],
+                'hr' => [
+                    'staff-activity',
+                    'automatic-clock-out',
+                    'staff-management',
+                ],
+            ];
+
+            return $this->customHasModule($user, $department)
+                || $this->customHasAnyModule($user, $customDepartmentFeatures[strtolower($department)] ?? []);
+        }
+
+        return false;
+    }
+
+    private function customHasAnyModule($user, array $modules): bool
+    {
+        foreach ($modules as $module) {
+            if ($this->customHasModule($user, $module)) {
+                return true;
+            }
         }
 
         return false;
@@ -673,7 +717,8 @@ class ManagerProfileController extends Controller
             // Fallback to modules/functions approach if custom_permissions not provided
             if (!$permissionsPayload) {
                 $allowedModules = [
-                    'admin', 'finance', 'logistics', 'inventory', 'procurement', 'kitchen', 'cashier', 'hr', 'reports',
+                    'admin', 'finance', 'logistics', 'inventory', 'inventory-monitor', 'product-disposal',
+                    'procurement', 'kitchen', 'cashier', 'hr', 'reports',
                 ];
                 $allowedFunctions = [
                     'admin.users', 'admin.branches', 'admin.settings',

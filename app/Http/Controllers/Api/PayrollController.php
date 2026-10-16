@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
+use App\Support\Permission;
 
 class PayrollController extends Controller
 {
@@ -18,7 +19,8 @@ class PayrollController extends Controller
     {
         $user = Auth::user();
         $userRole = strtoupper($user->role ?? '');
-        if (!$user || !in_array($userRole, ['HR', 'BRANCH_MANAGER', 'OWNER', 'ADMIN', 'SUPER_ADMIN', 'MANAGER_HR', 'MANAGER'])) {
+        $hasCustomHrAccess = $userRole === 'CUSTOM' && Permission::hasPermissions($user, ['hr']);
+        if (!$user || (!in_array($userRole, ['HR', 'BRANCH_MANAGER', 'OWNER', 'ADMIN', 'SUPER_ADMIN', 'MANAGER_HR', 'MANAGER']) && !$hasCustomHrAccess)) {
             return response()->json(['ok' => false, 'message' => 'Forbidden'], 403);
         }
 

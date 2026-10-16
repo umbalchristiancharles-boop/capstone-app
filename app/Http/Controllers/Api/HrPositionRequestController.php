@@ -172,8 +172,10 @@ class HrPositionRequestController extends Controller
                 return [
                     'id' => $r->id,
                     'position_id' => $r->position_id,
-                    'position_name' => $isCustom && !empty($moduleLabels)
-                        ? implode(' / ', $moduleLabels)
+                    // Keep the submitted job title within the applications table limit.
+                    // The selected custom modules remain available in the description.
+                    'position_name' => $isCustom
+                        ? 'Custom Account'
                         : optional($r->position)->name,
                     'department' => $isCustom ? null : optional($r->position)->department,
                     'description' => $isCustom
