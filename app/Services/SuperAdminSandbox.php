@@ -211,7 +211,7 @@ class SuperAdminSandbox
             || ! is_string($sandboxConfig['username'] ?? null)
             || $sandboxConfig['username'] === ''
             || ! is_string($sandboxConfig['password'] ?? null)
-            || $sandboxConfig['password'] === '') {
+            || ($sandboxConfig['password'] === '' && ! app()->environment('local'))) {
             throw new RuntimeException('The pre-created sandbox database connection is incomplete.');
         }
 
