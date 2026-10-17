@@ -56,5 +56,9 @@ class PositionApplication extends Model
     {
         return $this->belongsTo(PositionOpenRequest::class, 'position_open_request_id');
     }
-}
 
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class, 'branch_id');
+    }
+}

@@ -124,7 +124,7 @@ class PositionApplicationController extends Controller
             $isMainBranchHr = (bool) ($branch && !empty($branch->is_main_branch));
         }
 
-        $query = PositionApplication::query()->with([]);
+        $query = PositionApplication::query()->with('branch:id,name');
 
         if ($isMainBranchHr) {
             // Branch creation broadcasts approved openings for the new branch.
@@ -173,7 +173,12 @@ class PositionApplicationController extends Controller
                 'interview_time',
                 'interview_notes',
                 'created_at'
-            ]);
+            ])
+            ->map(function (PositionApplication $application) {
+                $application->branch_name = $application->branch?->name;
+
+                return $application;
+            });
 
         return response()->json([
             'ok' => true,
@@ -201,6 +206,7 @@ class PositionApplicationController extends Controller
             $interviewDate = $request->input('interview_date');
             $interviewTime = $request->input('interview_time');
             $notes = $request->input('notes', '');
+            $isReschedule = $application->interview_date && $application->interview_time;
             
             // Format interview date and time
             $interviewDateTime = '';
@@ -214,7 +220,9 @@ class PositionApplicationController extends Controller
 
             $interviewInstructions = "Dear {$applicantName},\n\n"
                 . "Thank you for your interest in joining CHIKIN TAYO and for applying for the {$jobTitle} position.\n\n"
-                . "We are pleased to inform you that your application has been reviewed and you have been shortlisted for an interview.\n\n"
+                . ($isReschedule
+                    ? "Please note that your interview schedule has been updated. The new date and time are listed below.\n\n"
+                    : "We are pleased to inform you that your application has been reviewed and you have been shortlisted for an interview.\n\n")
                 . "INTERVIEW DETAILS:\n"
                 . "- Date & Time: {$interviewDateTime}\n"
                 . "- Please bring a valid ID and a copy of your resume/CV\n"
@@ -238,7 +246,7 @@ class PositionApplicationController extends Controller
 
             \send_raw_mail_notification(
                 $application->applicant_email,
-                'CHIKIN TAYO - Interview Scheduled',
+                $isReschedule ? 'CHIKIN TAYO - Interview Schedule Updated' : 'CHIKIN TAYO - Interview Scheduled',
                 $interviewInstructions
             );
 

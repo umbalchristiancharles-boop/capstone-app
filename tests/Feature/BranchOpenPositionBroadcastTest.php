@@ -340,7 +340,8 @@ class BranchOpenPositionBroadcastTest extends TestCase
             ->getJson('/api/hr/positions/applications')
             ->assertOk()
             ->assertJsonCount(1, 'applications')
-            ->assertJsonPath('applications.0.branch_id', $branchA->id);
+            ->assertJsonPath('applications.0.branch_id', $branchA->id)
+            ->assertJsonPath('applications.0.branch_name', $branchA->name);
     }
 
     public function test_branch_budget_is_deducted_from_main_branch_only_after_owner_approval(): void

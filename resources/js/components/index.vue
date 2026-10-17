@@ -439,7 +439,7 @@
             <div v-if="applyErrorMessage" class="banner banner--error">{{ applyErrorMessage }}</div>
             <div v-if="applySuccessMessage" class="banner banner--success">{{ applySuccessMessage }}</div>
 
-            <form @submit.prevent="submitApplyNow" class="apply-modal-body">
+            <form v-else @submit.prevent="submitApplyNow" class="apply-modal-body">
               <div class="apply-grid">
                 <div class="apply-col">
                   <!-- Left Column -->
@@ -1875,10 +1875,9 @@ async function submitApplyNow() {
       return
     }
 
-    applySuccessMessage.value = payload?.message || 'Application submitted successfully.'
-    // Reset state after success
-    resetApplyForm()
-    // Keep modal visible momentarily? requirement says reset after successful submission.
+    applySuccessMessage.value = payload?.application_id
+      ? `Application submitted successfully. Reference ID: ${payload.application_id}.`
+      : payload?.message || 'Application submitted successfully.'
   } catch (e) {
     console.error('submitApplyNow error', e)
     applyErrorMessage.value = 'Something went wrong. Please try again.'

@@ -93,15 +93,17 @@
                   <div class="position-row__dept">{{ application.job_title }}</div>
                 </div>
                 <div class="request-card__info"><span class="label">Department:</span><span class="value">{{ application.department || '—' }}</span></div>
+                <div class="request-card__info"><span class="label">Branch:</span><span class="value">{{ application.branch_name || '—' }}</span></div>
                 <div class="request-card__info"><span class="label">Status:</span><span class="value">{{ application.status || 'Submitted' }}</span></div>
+                <div class="request-card__info"><span class="label">Interview:</span><span class="value">{{ formatInterviewSchedule(application) }}</span></div>
                 <div class="request-card__info"><span class="label">Applied On:</span><span class="value">{{ formatDate(application.created_at) }}</span></div>
                 <div class="request-card__info"><span class="label">Contact:</span><span class="value">{{ application.applicant_email }} • {{ application.applicant_phone }}</span></div>
                 <div class="request-card__actions">
                   <button class="btn-success btn-sm" @click="openApplicationDetails(application)">View Application Details</button>
-                  <button v-if="!isReadyForInterview(application.status) && !isPassedForHiring(application.status)" class="btn-primary btn-sm" @click="openInterviewScheduleModal(application)" :disabled="sendingInterviewEmail[application.id]">
-                    {{ sendingInterviewEmail[application.id] ? 'Sending...' : 'Ready for Interview' }}
+                  <button v-if="!isPassedForHiring(application.status)" class="btn-primary btn-sm" @click="openInterviewScheduleModal(application)" :disabled="sendingInterviewEmail[application.id]">
+                    {{ sendingInterviewEmail[application.id] ? 'Sending...' : (hasInterviewSchedule(application) ? 'Change Interview Schedule' : 'Schedule Interview') }}
                   </button>
-                  <button v-if="isReadyForInterview(application.status) && !isPassedForHiring(application.status)" class="btn-success btn-sm" @click="markAsPassed(application)" :disabled="markingAsPassed[application.id] || !isInterviewTimeReached(application)">
+                  <button v-if="isReadyForInterview(application.status) && !isPassedForHiring(application.status)" class="btn-success btn-sm" @click="markAsPassed(application)" :disabled="markingAsPassed[application.id] || !isInterviewTimeReached(application)" :title="!isInterviewTimeReached(application) ? 'Available at the scheduled interview time' : undefined">
                     {{ markingAsPassed[application.id] ? 'Processing...' : '✓ Mark as Passed' }}
                   </button>
                   <button v-if="isReadyForInterview(application.status) && !isPassedForHiring(application.status)" class="btn-danger btn-sm" @click="markAsNotPassed(application)" :disabled="markingAsNotPassed[application.id]">
@@ -318,8 +320,17 @@
                 <span class="value">{{ a.department || '—' }}</span>
               </div>
               <div class="request-card__info" style="margin-top: 6px;">
+                <span class="label">Branch:</span>
+                <span class="value">{{ a.branch_name || '—' }}</span>
+              </div>
+              <div class="request-card__info" style="margin-top: 6px;">
                 <span class="label">Status:</span>
                 <span class="value">{{ a.status || 'Submitted' }}</span>
+              </div>
+
+              <div class="request-card__info" style="margin-top: 6px;">
+                <span class="label">Interview:</span>
+                <span class="value">{{ formatInterviewSchedule(a) }}</span>
               </div>
 
               <div class="request-card__info" style="margin-top: 6px;">
@@ -337,18 +348,19 @@
                   View Application Details
                 </button>
                 <button
-                  v-if="!isReadyForInterview(a.status) && !isPassedForHiring(a.status)"
+                  v-if="!isPassedForHiring(a.status)"
                   class="btn-primary btn-sm"
                   @click="openInterviewScheduleModal(a)"
                   :disabled="sendingInterviewEmail[a.id]"
                 >
-                  {{ sendingInterviewEmail[a.id] ? 'Sending...' : 'Ready for Interview' }}
+                  {{ sendingInterviewEmail[a.id] ? 'Sending...' : (hasInterviewSchedule(a) ? 'Change Interview Schedule' : 'Schedule Interview') }}
                 </button>
                 <button
                   v-if="isReadyForInterview(a.status) && !isPassedForHiring(a.status)"
                   class="btn-success btn-sm"
                   @click="markAsPassed(a)"
                   :disabled="markingAsPassed[a.id] || !isInterviewTimeReached(a)"
+                  :title="!isInterviewTimeReached(a) ? 'Available at the scheduled interview time' : undefined"
                 >
                   {{ markingAsPassed[a.id] ? 'Processing...' : '✓ Mark as Passed' }}
                 </button>
@@ -378,8 +390,8 @@
     <div class="positions-modal interview-schedule-modal">
       <div class="positions-modal__header">
         <div>
-          <h3>Schedule Interview</h3>
-          <p class="muted">Select date and time for {{ selectedApplication?.applicant_full_name }}</p>
+          <h3>{{ hasInterviewSchedule(selectedApplication) ? 'Change Interview Schedule' : 'Schedule Interview' }}</h3>
+          <p class="muted">Select date and time for {{ selectedApplication?.applicant_full_name }}. The applicant will be emailed.</p>
         </div>
         <button class="modal-close" @click="closeInterviewScheduleModal" aria-label="Close">✕</button>
       </div>
@@ -391,7 +403,7 @@
       <div class="positions-modal__footer">
         <button class="btn-secondary" @click="closeInterviewScheduleModal">Cancel</button>
         <button class="btn-primary" @click="confirmInterviewSchedule" :disabled="!isInterviewScheduleValid() || sendingInterviewEmail[selectedApplication?.id]">
-          {{ sendingInterviewEmail[selectedApplication?.id] ? 'Sending...' : 'Send Interview Email' }}
+          {{ sendingInterviewEmail[selectedApplication?.id] ? 'Sending...' : (hasInterviewSchedule(selectedApplication) ? 'Send Updated Interview Email' : 'Send Interview Email') }}
         </button>
       </div>
     </div>
@@ -411,6 +423,7 @@
         <div class="request-card__info"><span class="label">Address:</span><span class="value">{{ selectedApplicationDetails.applicant_address || '-' }}</span></div>
         <div class="request-card__info"><span class="label">Position:</span><span class="value">{{ selectedApplicationDetails.job_title || '-' }}</span></div>
         <div class="request-card__info"><span class="label">Department:</span><span class="value">{{ selectedApplicationDetails.department || '-' }}</span></div>
+        <div class="request-card__info"><span class="label">Branch:</span><span class="value">{{ selectedApplicationDetails.branch_name || '-' }}</span></div>
         <div class="request-card__info"><span class="label">Experience:</span><span class="value">{{ selectedApplicationDetails.years_of_experience || '-' }}</span></div>
         <div class="request-card__info"><span class="label">Education:</span><span class="value">{{ selectedApplicationDetails.education || '-' }}</span></div>
         <div class="request-card__info"><span class="label">Ready to Work Date:</span><span class="value">{{ formatDate(selectedApplicationDetails.available_start_date) }}</span></div>
@@ -454,7 +467,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import axios from 'axios'
 import { swalAlert, swalConfirm } from '../sweet-alerts'
@@ -482,6 +495,10 @@ const accountStatusFilter = ref('all')
 const showApplicationsModal = ref(false)
 const loadingApplications = ref(false)
 const applications = ref([])
+const interviewClock = ref(Date.now())
+const interviewClockInterval = window.setInterval(() => {
+  interviewClock.value = Date.now()
+}, 15000)
 const applicationsCount = computed(() => {
   return Array.isArray(applications.value) ? applications.value.length : 0
 })
@@ -609,9 +626,46 @@ function isPassedForHiring(status) {
 }
 
 function isInterviewTimeReached(application) {
-  if (!application?.interview_date || !application?.interview_time) return false
-  const interviewAt = new Date(`${application.interview_date}T${application.interview_time}`)
-  return !Number.isNaN(interviewAt.getTime()) && Date.now() >= interviewAt.getTime()
+  const interviewAt = getInterviewDateTime(application)
+  return Boolean(interviewAt && interviewClock.value >= interviewAt.getTime())
+}
+
+function hasInterviewSchedule(application) {
+  return Boolean(getInterviewDateTime(application))
+}
+
+function getInterviewDateTime(application) {
+  if (!application?.interview_date || !application?.interview_time) return null
+
+  const dateParts = String(application.interview_date).slice(0, 10).split('-').map(Number)
+  const timeParts = String(application.interview_time).slice(0, 8).split(':').map(Number)
+  if (dateParts.length !== 3 || timeParts.length < 2 || [...dateParts, ...timeParts].some(part => !Number.isFinite(part))) return null
+
+  const [year, month, day] = dateParts
+  const [hours, minutes, seconds = 0] = timeParts
+  const interviewAt = new Date(year, month - 1, day, hours, minutes, seconds)
+  if (
+    interviewAt.getFullYear() !== year ||
+    interviewAt.getMonth() !== month - 1 ||
+    interviewAt.getDate() !== day ||
+    interviewAt.getHours() !== hours ||
+    interviewAt.getMinutes() !== minutes
+  ) return null
+
+  return interviewAt
+}
+
+function formatInterviewSchedule(application) {
+  const interviewAt = getInterviewDateTime(application)
+  if (!interviewAt) return 'Not scheduled'
+
+  return interviewAt.toLocaleString('en-PH', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
 }
 
 function openInterviewScheduleModal(application) {
@@ -620,7 +674,11 @@ function openInterviewScheduleModal(application) {
     return
   }
   selectedApplication.value = application
-  interviewSchedule.value = { date: '', time: '', notes: '' }
+  interviewSchedule.value = {
+    date: application.interview_date ? String(application.interview_date).slice(0, 10) : '',
+    time: application.interview_time ? String(application.interview_time).slice(0, 5) : '',
+    notes: application.interview_notes || '',
+  }
   showInterviewScheduleModal.value = true
 }
 
@@ -651,7 +709,12 @@ async function confirmInterviewSchedule() {
     }, { withCredentials: true })
     if (res.data?.ok) {
       const application = applications.value.find(item => item.id === applicationId)
-      if (application) application.status = 'Ready for Interview'
+      if (application) {
+        application.status = 'Ready for Interview'
+        application.interview_date = interviewSchedule.value.date
+        application.interview_time = interviewSchedule.value.time
+        application.interview_notes = interviewSchedule.value.notes
+      }
       alert(res.data.message || 'Interview email sent successfully!')
       closeInterviewScheduleModal()
     } else {
@@ -720,6 +783,8 @@ async function loadApplications() {
     loadingApplications.value = false
   }
 }
+
+onUnmounted(() => window.clearInterval(interviewClockInterval))
 
 async function openApplicationsModal() {
   showApplicationsModal.value = true
@@ -1141,6 +1206,17 @@ window.addEventListener('click', () => {
 .applications-section .btn-success:hover,
 .positions-modal .btn-success:hover {
   background: #873f14;
+}
+
+.request-card__actions .btn-success:disabled {
+  background: #9ca3af;
+  border-color: #9ca3af;
+  color: #fff;
+  opacity: 0.75;
+  cursor: not-allowed;
+  filter: grayscale(0.4);
+  transform: none;
+  box-shadow: none;
 }
 
 .applications-section .btn-primary,

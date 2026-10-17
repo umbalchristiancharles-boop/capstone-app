@@ -9,7 +9,7 @@
     :showHeader="false"
     :showProfileColumn="false"
     :ownerTwoColumnLayout="true"
-    :showOwnerSidebar="!props.embeddedSection"
+    :showOwnerSidebar="false"
     :showOwnerTopbar="!props.embeddedSection"
     :embedded="Boolean(props.embeddedSection)"
     :announcementsInModal="true"
@@ -118,6 +118,11 @@
                   </div>
 
                   <div class="request-card__info" style="margin-top: 6px;">
+                    <span class="label">Interview:</span>
+                    <span class="value">{{ formatInterviewSchedule(a) }}</span>
+                  </div>
+
+                  <div class="request-card__info" style="margin-top: 6px;">
                     <span class="label">Applied On:</span>
                     <span class="value">{{ formatDate(a.created_at) }}</span>
                   </div>
@@ -134,12 +139,12 @@
 
                       <!-- Show "Ready for Interview" button if status is NOT "Ready for Interview" -->
                       <button
-                        v-if="!isReadyForInterview(a.status) && !isPassedForHiring(a.status)"
+                        v-if="!isPassedForHiring(a.status)"
                         class="btn-primary btn-sm"
                         @click="openInterviewScheduleModal(a)"
                         :disabled="sendingInterviewEmail[a.id]"
                       >
-                        {{ sendingInterviewEmail[a.id] ? 'Sending...' : 'Ready for Interview' }}
+                        {{ sendingInterviewEmail[a.id] ? 'Sending...' : (hasInterviewSchedule(a) ? 'Change Interview Schedule' : 'Schedule Interview') }}
                       </button>
 
                        <!-- Show "Mark as Passed" and "Mark as Not Passed" buttons when status is "Ready for Interview" -->
@@ -148,6 +153,7 @@
                          class="btn-success btn-sm"
                          @click="markAsPassed(a)"
                          :disabled="markingAsPassed[a.id] || !isInterviewTimeReached(a)"
+                         :title="!isInterviewTimeReached(a) ? 'Available at the scheduled interview time' : undefined"
                        >
                          {{ markingAsPassed[a.id] ? 'Processing...' : '✓ Mark as Passed' }}
                        </button>
@@ -188,8 +194,8 @@
           <div class="positions-modal">
             <div class="positions-modal__header">
               <div>
-                <h3>Schedule Interview</h3>
-                <p class="muted">Select date and time for the interview with {{ selectedApplication?.applicant_full_name }}</p>
+                <h3>{{ hasInterviewSchedule(selectedApplication) ? 'Change Interview Schedule' : 'Schedule Interview' }}</h3>
+                <p class="muted">Select date and time for the interview with {{ selectedApplication?.applicant_full_name }}. The applicant will be emailed.</p>
               </div>
               <button class="modal-close" @click="closeInterviewScheduleModal" aria-label="Close">✕</button>
             </div>
@@ -241,7 +247,7 @@
                 @click="confirmInterviewSchedule"
                 :disabled="!isInterviewScheduleValid() || sendingInterviewEmail[selectedApplication?.id]"
               >
-                {{ sendingInterviewEmail[selectedApplication?.id] ? 'Sending...' : 'Send Interview Email' }}
+                {{ sendingInterviewEmail[selectedApplication?.id] ? 'Sending...' : (hasInterviewSchedule(selectedApplication) ? 'Send Updated Interview Email' : 'Send Interview Email') }}
               </button>
             </div>
           </div>
@@ -317,6 +323,10 @@
                     <div class="detail-item">
                       <span class="detail-label">Department:</span>
                       <span class="detail-value">{{ selectedApplicationDetails.department || '-' }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Branch:</span>
+                      <span class="detail-value">{{ selectedApplicationDetails.branch_name || '-' }}</span>
                     </div>
                     <div class="detail-item">
                       <span class="detail-label">Years of Experience:</span>
@@ -464,7 +474,7 @@
 
                   <div v-if="p.is_custom" class="custom-position-permissions">
                     <p class="custom-position-permissions__hint">
-                      Select which panels the hired applicant can access.
+                      Select which custom sidebar features the hired applicant can access.
                     </p>
                     <div class="permission-grid">
                       <label
@@ -1086,15 +1096,26 @@ const canRequestPositions = computed(() => {
 })
 
 const permissionTemplates = [
-  { key: 'admin', label: 'Admin' },
-  { key: 'finance', label: 'Finance' },
-  { key: 'logistics', label: 'Logistics' },
-  { key: 'inventory', label: 'Inventory' },
-  { key: 'procurement', label: 'Procurement' },
-  { key: 'kitchen', label: 'Kitchen Staff' },
-  { key: 'cashier', label: 'Cashier' },
-  { key: 'hr', label: 'HR' },
-  { key: 'reports', label: 'Reports' },
+  { key: 'budget-request-approvals', label: 'Budget Request Approvals' },
+  { key: 'current-price-markup', label: 'Current Price Markup' },
+  { key: 'receipt-approval', label: 'Receipt Approval' },
+  { key: 'financial-overview', label: 'Financial Overview' },
+  { key: 'recent-transactions', label: 'Recent Transactions' },
+  { key: 'manual-procurement', label: 'Manual Procurement' },
+  { key: 'procurement-requests', label: 'Procurement Requests' },
+  { key: 'add-supplier', label: 'Add Supplier' },
+  { key: 'supplier-products', label: 'Supplier Products' },
+  { key: 'stock-confirmation-history', label: 'Stock Confirmation History' },
+  { key: 'product-barcodes', label: 'Product Barcodes' },
+  { key: 'pending-stock', label: 'Pending Stock' },
+  { key: 'request-new-product', label: 'Request New Product' },
+  { key: 'supplier-product-confirmations', label: 'Supplier Product Confirmations' },
+  { key: 'inventory-monitor', label: 'Inventory Monitor' },
+  { key: 'product-disposal', label: 'Product Disposal List' },
+  { key: 'landing-page-product-images', label: 'Landing Page Product Images' },
+  { key: 'staff-activity', label: 'Staff Activity' },
+  { key: 'automatic-clock-out', label: 'Automatic Clock-Out' },
+  { key: 'staff-management', label: 'Staff Management' },
 ]
 
 const emptyCustomPositionModules = () => Object.fromEntries(
@@ -1105,6 +1126,10 @@ const emptyCustomPositionModules = () => Object.fromEntries(
 const showApplicationsModal = ref(false)
 const loadingApplications = ref(false)
 const applications = ref([])
+const interviewClock = ref(Date.now())
+const interviewClockInterval = window.setInterval(() => {
+  interviewClock.value = Date.now()
+}, 15000)
 const applicationsCount = computed(() => {
   return Array.isArray(applications.value) ? applications.value.length : 0
 })
@@ -1319,9 +1344,46 @@ function isPassedForHiring(status) {
 }
 
 function isInterviewTimeReached(application) {
-  if (!application?.interview_date || !application?.interview_time) return false
-  const interviewAt = new Date(`${application.interview_date}T${application.interview_time}`)
-  return !Number.isNaN(interviewAt.getTime()) && Date.now() >= interviewAt.getTime()
+  const interviewAt = getInterviewDateTime(application)
+  return Boolean(interviewAt && interviewClock.value >= interviewAt.getTime())
+}
+
+function hasInterviewSchedule(application) {
+  return Boolean(getInterviewDateTime(application))
+}
+
+function getInterviewDateTime(application) {
+  if (!application?.interview_date || !application?.interview_time) return null
+
+  const dateParts = String(application.interview_date).slice(0, 10).split('-').map(Number)
+  const timeParts = String(application.interview_time).slice(0, 8).split(':').map(Number)
+  if (dateParts.length !== 3 || timeParts.length < 2 || [...dateParts, ...timeParts].some(part => !Number.isFinite(part))) return null
+
+  const [year, month, day] = dateParts
+  const [hours, minutes, seconds = 0] = timeParts
+  const interviewAt = new Date(year, month - 1, day, hours, minutes, seconds)
+  if (
+    interviewAt.getFullYear() !== year ||
+    interviewAt.getMonth() !== month - 1 ||
+    interviewAt.getDate() !== day ||
+    interviewAt.getHours() !== hours ||
+    interviewAt.getMinutes() !== minutes
+  ) return null
+
+  return interviewAt
+}
+
+function formatInterviewSchedule(application) {
+  const interviewAt = getInterviewDateTime(application)
+  if (!interviewAt) return 'Not scheduled'
+
+  return interviewAt.toLocaleString('en-PH', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
 }
 
 function formatDate(date) {
@@ -1788,6 +1850,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  clearInterval(interviewClockInterval)
   clearTimeout(hrSidebarSwipeClickTimeout)
   cancelHrSidebarSwipe()
   document.removeEventListener('click', preventHrSidebarSwipeClick, true)
@@ -1854,9 +1917,9 @@ function openInterviewScheduleModal(application) {
 
   selectedApplication.value = application
   interviewSchedule.value = {
-    date: '',
-    time: '',
-    notes: ''
+    date: application.interview_date ? String(application.interview_date).slice(0, 10) : '',
+    time: application.interview_time ? String(application.interview_time).slice(0, 5) : '',
+    notes: application.interview_notes || ''
   }
   showInterviewScheduleModal.value = true
 }
@@ -1927,9 +1990,13 @@ async function confirmInterviewSchedule() {
 
     if (res.data && res.data.ok) {
       alert(res.data.message || 'Interview email sent successfully!')
-      // Update local status
       const app = applications.value.find(a => a.id === applicationId)
-      if (app) app.status = 'Ready for Interview'
+      if (app) {
+        app.status = 'Ready for Interview'
+        app.interview_date = interviewSchedule.value.date
+        app.interview_time = interviewSchedule.value.time
+        app.interview_notes = interviewSchedule.value.notes
+      }
       closeInterviewScheduleModal()
     } else {
       alert(res.data.message || 'Failed to send interview email')
@@ -2292,6 +2359,7 @@ defineExpose({ refreshAllData, onProfileUpdated })
 .btn-sm { padding: 0.35rem 0.7rem; font-size: 0.8rem; }
 .btn-info { background: #17a2b8; color: #fff; }
 .btn-success { background: #28a745; color: #fff; }
+.request-card__actions .btn-success:disabled { background: #9ca3af; border-color: #9ca3af; color: #fff; opacity: 0.75; cursor: not-allowed; filter: grayscale(0.4); transform: none; box-shadow: none; }
 .btn-danger { background: #dc3545; color: #fff; }
 .logout-confirm-backdrop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
 .logout-confirm-box { background: white; padding: 2rem; border-radius: 8px; text-align: center; max-width: 400px; }
@@ -2445,12 +2513,13 @@ defineExpose({ refreshAllData, onProfileUpdated })
 }
 .permission-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 0.5rem;
 }
 .permission-card {
   display: flex;
   align-items: center;
+  min-height: 2.8rem;
   gap: 0.45rem;
   padding: 0.55rem 0.65rem;
   border: 1px solid #eee;

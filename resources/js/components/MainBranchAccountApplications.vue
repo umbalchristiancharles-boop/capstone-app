@@ -20,7 +20,13 @@
         <div class="account-application-card__top">
           <div>
             <h3>{{ application.applicant_full_name }}</h3>
-            <p>{{ application.job_title || 'Account position' }} <span>•</span> {{ application.department || 'CUSTOM' }}</p>
+            <p>
+              {{ application.job_title || 'Account position' }}
+              <span>•</span>
+              {{ application.department || 'CUSTOM' }}
+              <span v-if="application.branch_name">•</span>
+              <strong v-if="application.branch_name">{{ application.branch_name }}</strong>
+            </p>
           </div>
           <span class="account-application-card__status">{{ application.status || 'Submitted' }}</span>
         </div>
@@ -108,6 +114,7 @@
           <dt>Phone</dt><dd>{{ selectedApplication.applicant_phone || '-' }}</dd>
           <dt>Address</dt><dd>{{ selectedApplication.applicant_address || '-' }}</dd>
           <dt>Position</dt><dd>{{ selectedApplication.job_title || '-' }}</dd>
+          <dt>Branch</dt><dd>{{ selectedApplication.branch_name || 'Branch not specified' }}</dd>
           <dt>Experience</dt><dd>{{ selectedApplication.years_of_experience || 0 }} years</dd>
           <dt>Education</dt><dd>{{ selectedApplication.education || '-' }}</dd>
           <dt>Ready to Work Date</dt><dd>{{ formatDate(selectedApplication.available_start_date) }}</dd>
