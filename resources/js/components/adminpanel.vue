@@ -3874,22 +3874,116 @@ h1, h2 {
     display: contents;
   }
 }
-.dashboard-detail-grid { display: grid; gap: 16px; margin-top: 16px; }
-.dashboard-detail-table-wrap { overflow-x: auto; }
-.dashboard-detail-caption { color: #7b6d63; font-size: 12px; }
-.dashboard-detail-summary { display: flex; flex-wrap: wrap; gap: 10px 18px; padding: 0 0 12px; color: #6d625b; font-size: 12px; }
-.dashboard-detail-summary strong { color: #1e293b; margin-left: 3px; }
-.dashboard-detail-table { width: 100%; min-width: 720px; border-collapse: collapse; font-size: 12px; }
-.dashboard-detail-table th { text-align: left; color: #6d625b; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; padding: 8px; border-bottom: 1px solid #eadfd7; white-space: nowrap; }
-.dashboard-detail-table td { padding: 9px 8px; border-bottom: 1px solid #f1e9e4; vertical-align: top; color: #3c342f; }
-.dashboard-detail-table td strong { display: block; color: #1e293b; }
-.dashboard-detail-table td small, .dashboard-ingredient small { display: block; color: #887b72; font-size: 11px; margin-top: 3px; }
-.dashboard-detail-empty { color: #887b72; padding: 12px 0; }
-.dashboard-status-pill { display: inline-block; border-radius: 999px; padding: 3px 7px; font-size: 10px; font-weight: 700; }
+.dashboard-detail-grid { display: grid; min-width: 0; gap: 16px; margin-top: 16px; }
+.dashboard-detail-table-wrap { min-width: 0; overflow-x: auto; overscroll-behavior-x: contain; }
+.dashboard-detail-caption { color: #64748b; font-size: 14px; line-height: 1.4; }
+.dashboard-detail-summary { display: flex; flex-wrap: wrap; gap: 10px 18px; padding: 0 0 14px; color: #5b514b; font-size: 14px; line-height: 1.5; }
+.dashboard-detail-summary strong { color: #1e293b; margin-left: 3px; font-weight: 700; }
+.dashboard-detail-table { width: 100%; min-width: 680px; border-collapse: collapse; font-size: 14px; line-height: 1.5; }
+.dashboard-detail-table th { text-align: left; color: #5b514b; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; padding: 10px; border-bottom: 1px solid #eadfd7; white-space: nowrap; }
+.dashboard-detail-table td { padding: 11px 10px; border-bottom: 1px solid #f1e9e4; vertical-align: top; color: #3c342f; }
+.dashboard-detail-table td strong { display: block; color: #1e293b; font-weight: 650; }
+.dashboard-detail-table td small, .dashboard-ingredient small { display: block; color: #6b625c; font-size: 13px; line-height: 1.45; margin-top: 3px; }
+.dashboard-detail-empty { color: #62574f; padding: 14px 0; font-size: 15px; line-height: 1.5; }
+.dashboard-status-pill { display: inline-block; border-radius: 999px; padding: 4px 8px; font-size: 12px; line-height: 1.3; font-weight: 700; }
 .dashboard-status-pill--ok { background: #e8f7ed; color: #217346; }
 .dashboard-status-pill--off { background: #fbe9e7; color: #b42318; }
 .dashboard-danger-text { color: #c62828 !important; }
 .dashboard-ingredient { display: block; margin-bottom: 4px; }
+
+.admin-panel-shell .admin-layout.admin-layout--dashboard .admin-main > .admin-section-view > .range-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-panel-shell .admin-layout.admin-layout--dashboard .admin-main > .admin-section-view > .range-tabs .range-tab {
+  min-height: 40px;
+  padding: 8px 13px;
+  border-radius: 9px;
+  font-size: .94rem;
+  line-height: 1.35;
+}
+
+.admin-panel-shell .admin-layout.admin-layout--dashboard .admin-main > .admin-section-view > .overview-grid > .overview-card {
+  gap: .35rem;
+  min-width: 0;
+  line-height: 1.45;
+}
+
+.admin-panel-shell .admin-layout.admin-layout--dashboard .overview-label {
+  color: #526071 !important;
+  font-size: .96rem;
+  line-height: 1.4;
+}
+
+.admin-panel-shell .admin-layout.admin-layout--dashboard .overview-value {
+  color: #1e293b;
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.admin-panel-shell .admin-layout.admin-layout--dashboard .dashboard-detail-grid > .panel-block {
+  min-width: 0;
+  padding: 16px 18px !important;
+  border-radius: 14px !important;
+}
+
+.admin-panel-shell .admin-layout.admin-layout--dashboard .dashboard-detail-grid > .panel-block > .panel-header {
+  margin-bottom: 12px !important;
+  padding: 10px 12px !important;
+}
+
+.admin-panel-shell .admin-layout.admin-layout--dashboard .dashboard-detail-grid > .panel-block > .panel-header h2,
+.admin-panel-shell .admin-layout.admin-layout--dashboard .admin-side > .dashboard-top-products-panel > .panel-header h2,
+.admin-panel-shell .admin-layout.admin-layout--dashboard .admin-side > .dashboard-low-stock-panel > .panel-header h2 {
+  font-size: 1.15rem;
+  line-height: 1.4;
+}
+
+.admin-panel-shell .admin-layout.admin-layout--dashboard .dashboard-detail-grid > .panel-block > .panel-body {
+  padding: 8px 10px 10px !important;
+}
+
+.admin-panel-shell .admin-layout.admin-layout--dashboard .admin-side > .dashboard-top-products-panel,
+.admin-panel-shell .admin-layout.admin-layout--dashboard .admin-side > .dashboard-low-stock-panel {
+  padding: 14px 16px !important;
+}
+
+.admin-panel-shell .admin-layout.admin-layout--dashboard .admin-side > .dashboard-top-products-panel > .panel-body,
+.admin-panel-shell .admin-layout.admin-layout--dashboard .admin-side > .dashboard-low-stock-panel > .panel-body {
+  padding: 6px 10px 8px !important;
+}
+
+.admin-panel-shell .admin-layout.admin-layout--dashboard .admin-side > .dashboard-top-products-panel .side-item,
+.admin-panel-shell .admin-layout.admin-layout--dashboard .admin-side > .dashboard-low-stock-panel .side-item {
+  min-height: 42px;
+  gap: 12px;
+  padding: 9px 6px !important;
+  color: #3c342f;
+  font-size: .98rem;
+  line-height: 1.45;
+}
+
+.admin-panel-shell .admin-layout.admin-layout--dashboard .admin-side > .dashboard-top-products-panel .side-value,
+.admin-panel-shell .admin-layout.admin-layout--dashboard .admin-side > .dashboard-low-stock-panel .side-value {
+  flex: 0 0 auto;
+  font-size: .96rem;
+}
+
+@media (max-width: 767px) {
+  .admin-panel-shell .admin-layout.admin-layout--dashboard .dashboard-detail-grid > .panel-block {
+    padding: 12px !important;
+  }
+
+  .admin-panel-shell .admin-layout.admin-layout--dashboard .dashboard-detail-grid > .panel-block > .panel-body {
+    padding: 6px !important;
+  }
+
+  .dashboard-detail-table { min-width: 640px; }
+}
 
 .admin-panel-shell--embedded {
   min-height: 0 !important;
