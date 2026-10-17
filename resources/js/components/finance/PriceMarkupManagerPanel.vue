@@ -73,7 +73,10 @@
           <div class="loading-spinner"></div>
         </div>
         <div v-else class="chart-wrapper">
-          <div class="chart-canvas-wrap">
+          <div
+            class="chart-canvas-wrap"
+            style="width: min(100%, 320px); max-width: 320px; max-height: 100%; aspect-ratio: 1;"
+          >
             <Chart type="doughnut" :data="markupChartData" :options="markupChartOptions" />
             <div class="chart-center-overlay">
               <p class="center-value" style="color: #8B5CF6;">{{ currentPercentage }}%</p>
@@ -350,6 +353,8 @@ const markupChartData = computed(() => ({
 const markupChartOptions = {
   responsive: true,
   maintainAspectRatio: true,
+  aspectRatio: 1,
+  radius: '85%',
   plugins: {
     legend: {
       display: false
