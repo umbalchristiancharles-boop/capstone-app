@@ -67,10 +67,10 @@
           </div>
 
           <div class="positions-top-actions manager-hr-hero__actions">
-            <button class="panel-action panel-action--primary" @click="openApplicationsModal" :disabled="loadingApplications">
+            <button class="panel-action panel-action--primary relative" @click="openApplicationsModal" :disabled="loadingApplications">
               {{ loadingApplications ? 'Loading...' : 'View Applications' }}
+              <span v-if="applicationsCount > 0" class="panel-badge">{{ applicationsCount }} total</span>
             </button>
-            <span v-if="applicationsCount > 0" class="panel-badge">{{ applicationsCount }} total</span>
             <button class="panel-action panel-action--primary" @click="openPositionsModal" :disabled="!canRequestPositions || positionsLoading">
               {{ positionsLoading ? 'Loading...' : 'Request Open Positions' }}
             </button>
@@ -88,7 +88,7 @@
       <!-- Job Applications (HR Manager View) -->
       <transition name="fade">
         <div v-if="showApplicationsModal" class="positions-modal-backdrop" @click.self="closeApplicationsModal">
-          <div class="positions-modal">
+          <div class="positions-modal hr-applications-modal">
             <div class="positions-modal__header">
               <div>
                 <h3>Job Applications (HR View)</h3>
@@ -102,45 +102,46 @@
               <div v-else-if="applications.length === 0" class="empty-box">No applications found.</div>
 
               <div v-else class="positions-list">
-                <div v-for="a in applications" :key="a.id" class="position-row">
-                  <div class="position-row__meta">
-                    <div class="position-row__name">{{ a.applicant_full_name }}</div>
-                    <div class="position-row__dept">{{ a.job_title }}</div>
+                <div v-for="a in applications" :key="a.id" class="position-row hr-application-card">
+                  <div class="hr-application-card__heading">
+                    <div>
+                      <div class="position-row__name">{{ a.applicant_full_name }}</div>
+                      <div class="position-row__dept">{{ a.job_title }}</div>
+                    </div>
                   </div>
 
-                  <div class="request-card__info" style="margin-bottom: 0;">
-                    <span class="label">Department:</span>
-                    <span class="value">{{ a.department || '—' }}</span>
-                  </div>
-                  <div class="request-card__info" style="margin-top: 6px;">
-                    <span class="label">Status:</span>
-                    <span class="value">{{ a.status || 'Submitted' }}</span>
+                  <div class="hr-application-card__details">
+                    <div class="hr-application-detail">
+                      <span class="hr-application-detail__label">Department</span>
+                      <span class="hr-application-detail__value">{{ a.department || '—' }}</span>
+                    </div>
+                    <div class="hr-application-detail">
+                      <span class="hr-application-detail__label">Status</span>
+                      <span class="hr-application-detail__value">{{ a.status || 'Submitted' }}</span>
+                    </div>
+                    <div class="hr-application-detail">
+                      <span class="hr-application-detail__label">Interview</span>
+                      <span class="hr-application-detail__value">{{ formatInterviewSchedule(a) }}</span>
+                    </div>
+                    <div class="hr-application-detail">
+                      <span class="hr-application-detail__label">Applied On</span>
+                      <span class="hr-application-detail__value">{{ formatDate(a.created_at) }}</span>
+                    </div>
+                    <div class="hr-application-detail hr-application-detail--contact">
+                      <span class="hr-application-detail__label">Contact</span>
+                      <span class="hr-application-detail__value">{{ a.applicant_email }} • {{ a.applicant_phone }}</span>
+                    </div>
                   </div>
 
-                  <div class="request-card__info" style="margin-top: 6px;">
-                    <span class="label">Interview:</span>
-                    <span class="value">{{ formatInterviewSchedule(a) }}</span>
-                  </div>
-
-                  <div class="request-card__info" style="margin-top: 6px;">
-                    <span class="label">Applied On:</span>
-                    <span class="value">{{ formatDate(a.created_at) }}</span>
-                  </div>
-
-                  <div class="request-card__info" style="margin-top: 6px;">
-                    <span class="label">Contact:</span>
-                    <span class="value">{{ a.applicant_email }} • {{ a.applicant_phone }}</span>
-                  </div>
-
-                   <div class="request-card__actions" style="margin-top: 12px; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                      <button class="btn-success btn-sm" @click="openApplicationDetails(a)">
+                   <div class="hr-application-card__actions">
+                      <button class="hr-application-action hr-application-action--details" @click="openApplicationDetails(a)">
                         View Application Details
                       </button>
 
                       <!-- Show "Ready for Interview" button if status is NOT "Ready for Interview" -->
                       <button
                         v-if="!isPassedForHiring(a.status)"
-                        class="btn-primary btn-sm"
+                        class="hr-application-action hr-application-action--schedule"
                         @click="openInterviewScheduleModal(a)"
                         :disabled="sendingInterviewEmail[a.id]"
                       >
@@ -150,7 +151,7 @@
                        <!-- Show "Mark as Passed" and "Mark as Not Passed" buttons when status is "Ready for Interview" -->
                        <button
                          v-if="isReadyForInterview(a.status) && !isPassedForHiring(a.status)"
-                         class="btn-success btn-sm"
+                         class="hr-application-action hr-application-action--pass"
                          @click="markAsPassed(a)"
                          :disabled="markingAsPassed[a.id] || !isInterviewTimeReached(a)"
                          :title="!isInterviewTimeReached(a) ? 'Available at the scheduled interview time' : undefined"
@@ -160,7 +161,7 @@
 
                        <button
                          v-if="isReadyForInterview(a.status) && !isPassedForHiring(a.status)"
-                         class="btn-danger btn-sm"
+                         class="hr-application-action hr-application-action--reject"
                          @click="markAsNotPassed(a)"
                          :disabled="markingAsNotPassed[a.id]"
                        >
@@ -168,12 +169,12 @@
                        </button>
 
                        <!-- Show indicator when status is "Passed - Ready for Hiring" -->
-                       <span v-else-if="isPassedForHiring(a.status)" class="badge badge--success" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">
+                       <span v-else-if="isPassedForHiring(a.status)" class="hr-application-status hr-application-status--passed">
                          ✓ Passed - Ready for Hiring
                        </span>
 
                        <!-- Show indicator when status is "Not Passed" -->
-                       <span v-else-if="(a.status || '').toString().toLowerCase().trim() === 'not passed'" class="badge badge--warning" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">
+                       <span v-else-if="(a.status || '').toString().toLowerCase().trim() === 'not passed'" class="hr-application-status hr-application-status--not-passed">
                          ✗ Not Passed
                        </span>
                     </div>
@@ -257,7 +258,7 @@
       <!-- Application Details Modal -->
       <transition name="fade">
         <div v-if="showApplicationDetailsModal && selectedApplicationDetails" class="positions-modal-backdrop" @click.self="closeApplicationDetailsModal">
-          <div class="positions-modal" style="max-width: 800px;">
+          <div class="positions-modal hr-application-details-modal">
             <div class="positions-modal__header">
               <div>
                 <h3>Application Details</h3>
@@ -379,7 +380,7 @@
                     <div class="detail-item" v-if="selectedApplicationDetails.supporting_documents_paths && selectedApplicationDetails.supporting_documents_paths.length > 0">
                       <span class="detail-label">Supporting Documents:</span>
                       <span class="detail-value">
-                        <div v-for="(doc, index) in selectedApplicationDetails.supporting_documents_paths" :key="index" style="margin-top: 0.25rem;">
+                        <div v-for="(doc, index) in selectedApplicationDetails.supporting_documents_paths" :key="index" class="application-document-link">
                           <a :href="getStorageUrl(doc)" target="_blank" rel="noopener noreferrer" class="btn-link">
                             📎 Supporting Document {{ index + 1 }}
                           </a>
@@ -433,13 +434,12 @@
             </div>
 
             <div class="positions-modal__footer">
-              <button class="btn-secondary" @click="closeApplicationDetailsModal">Close</button>
+              <button class="application-details-action application-details-action--secondary" @click="closeApplicationDetailsModal">Close</button>
               <a v-if="selectedApplicationDetails.resume_path"
                  :href="getStorageUrl(selectedApplicationDetails.resume_path)"
                  target="_blank"
                  rel="noopener noreferrer"
-                 class="btn-primary"
-                 style="text-decoration: none; display: inline-block; padding: 0.625rem 1.25rem; border-radius: 4px;"
+                 class="application-details-action application-details-action--primary"
                  @click.prevent="openResume(getStorageUrl(selectedApplicationDetails.resume_path))">
                 Open Resume in New Tab
               </a>
@@ -452,7 +452,7 @@
 
       <transition name="fade">
         <div v-if="showPositionsModal" class="positions-modal-backdrop" @click.self="closePositionsModal">
-          <div class="positions-modal">
+          <div class="positions-modal hr-position-request-modal">
             <div class="positions-modal__header">
               <div>
                 <h3>Request Open Positions</h3>
@@ -466,21 +466,21 @@
               <div v-else-if="positions.length === 0" class="empty-box">No active positions found.</div>
 
               <div v-else class="positions-list">
-                <div v-for="p in positions" :key="p.id" class="position-row">
+                <div v-for="p in positions" :key="p.id" class="position-row hr-position-request-card">
                   <div class="position-row__meta">
                     <div class="position-row__name">{{ p.name }}</div>
                     <div class="position-row__dept">{{ p.department || '—' }}</div>
                   </div>
 
-                  <div v-if="p.is_custom" class="custom-position-permissions">
+                  <div v-if="p.is_custom" class="custom-position-permissions hr-position-permissions">
                     <p class="custom-position-permissions__hint">
                       Select which custom sidebar features the hired applicant can access.
                     </p>
-                    <div class="permission-grid">
+                    <div class="permission-grid hr-position-permission-grid">
                       <label
                         v-for="module in permissionTemplates"
                         :key="module.key"
-                        class="permission-card"
+                        class="permission-card hr-position-permission-card"
                       >
                         <input
                           type="checkbox"
@@ -491,22 +491,22 @@
                     </div>
                   </div>
 
-                  <div class="position-row__inputs">
-                    <label class="field">
-                      <span class="field-label">Quantity</span>
+                  <div class="hr-position-request-card__fields">
+                    <label class="hr-position-request-field">
+                      <span class="hr-position-request-field__label">Quantity</span>
                       <input
                         type="number"
                         min="1"
-                        class="field-input"
+                        class="hr-position-request-field__input"
                         v-model.number="requestQuantities[p.id]"
                         :placeholder="'1'"
                       />
                     </label>
 
-                    <label class="field">
-                      <span class="field-label">Notes</span>
+                    <label class="hr-position-request-field">
+                      <span class="hr-position-request-field__label">Notes</span>
                       <textarea
-                        class="field-textarea"
+                        class="hr-position-request-field__input hr-position-request-field__textarea"
                         rows="2"
                         v-model.trim="requestNotes[p.id]"
                         placeholder="Optional"
@@ -518,9 +518,9 @@
             </div>
 
             <div class="positions-modal__footer">
-              <button class="btn-secondary" @click="closePositionsModal" :disabled="submittingPositions">Cancel</button>
+              <button class="hr-position-request-action hr-position-request-action--secondary" @click="closePositionsModal" :disabled="submittingPositions">Cancel</button>
               <button
-                class="btn-primary"
+                class="hr-position-request-action hr-position-request-action--primary"
                 @click="submitPositionsRequests"
                 :disabled="!canRequestPositions || submittingPositions || positionsLoading"
               >
@@ -3144,6 +3144,799 @@ defineExpose({ refreshAllData, onProfileUpdated })
 
   .manager-hr-account-info__footer {
     padding: 0.75rem 1rem 0.9rem;
+  }
+}
+
+.hr-applications-modal {
+  width: min(100%, 760px);
+  max-width: 760px;
+  max-height: min(88dvh, 800px);
+  border: 1px solid #e5eaf0;
+  border-radius: 16px;
+  color: #243447;
+}
+
+.hr-applications-modal .positions-modal__header {
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.hr-applications-modal .positions-modal__header h3 {
+  color: #243447;
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.hr-applications-modal .positions-modal__header .muted {
+  margin-top: .25rem;
+  color: #64748b;
+  font-size: .95rem;
+  line-height: 1.5;
+}
+
+.hr-applications-modal .positions-modal__body {
+  padding: 1.25rem 1.5rem;
+}
+
+.hr-applications-modal .positions-list {
+  gap: 1rem;
+}
+
+.hr-application-card {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  padding: 1.15rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+  box-shadow: 0 2px 8px rgb(36 52 71 / 5%);
+}
+
+.hr-application-card__heading {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: .75rem;
+  padding-bottom: .8rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.hr-application-card .position-row__name {
+  color: #1e293b;
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.hr-application-card .position-row__dept {
+  margin-top: .2rem;
+  color: #64748b;
+  font-size: .95rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.hr-application-card__details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .65rem;
+  min-width: 0;
+}
+
+.hr-application-detail {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: .25rem;
+  padding: .7rem .8rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.hr-application-detail--contact {
+  grid-column: 1 / -1;
+}
+
+.hr-application-detail__label {
+  color: #64748b;
+  font-size: .75rem;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+}
+
+.hr-application-detail__value {
+  min-width: 0;
+  color: #243447;
+  font-size: .95rem;
+  font-weight: 500;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.hr-application-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .6rem;
+  min-width: 0;
+  padding-top: .1rem;
+}
+
+.hr-application-action {
+  display: inline-flex;
+  min-height: 40px;
+  flex: 0 1 auto;
+  align-items: center;
+  justify-content: center;
+  padding: .6rem .9rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #fff;
+  font: inherit;
+  font-size: .9rem;
+  font-weight: 650;
+  line-height: 1.25;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.hr-application-action:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 12px rgb(15 23 42 / 15%);
+}
+
+.hr-application-action:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.hr-application-action:focus-visible,
+.hr-applications-modal .modal-close:focus-visible,
+.hr-applications-modal .positions-modal__footer .btn-secondary:focus-visible {
+  outline: 3px solid rgb(59 130 246 / 35%);
+  outline-offset: 2px;
+}
+
+.hr-application-action:disabled {
+  opacity: .58;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.hr-application-action--details {
+  border-color: #243447;
+  background: #243447;
+}
+
+.hr-application-action--details:hover:not(:disabled) {
+  border-color: #172536;
+  background: #172536;
+}
+
+.hr-application-action--schedule {
+  border-color: #c76b1c;
+  background: #d97721;
+}
+
+.hr-application-action--schedule:hover:not(:disabled) {
+  border-color: #a95112;
+  background: #b85e17;
+}
+
+.hr-application-action--pass {
+  border-color: #27734f;
+  background: #2f855a;
+}
+
+.hr-application-action--pass:hover:not(:disabled) {
+  border-color: #1f6343;
+  background: #246b49;
+}
+
+.hr-application-action--reject {
+  border-color: #a53838;
+  background: #b84141;
+}
+
+.hr-application-action--reject:hover:not(:disabled) {
+  border-color: #842d2d;
+  background: #963535;
+}
+
+.hr-application-status {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  padding: .45rem .75rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: .83rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.hr-application-status--passed {
+  border-color: #b7dfc6;
+  background: #e7f5ec;
+  color: #216342;
+}
+
+.hr-application-status--not-passed {
+  border-color: #f1c6c2;
+  background: #fdf0ef;
+  color: #9f3530;
+}
+
+.hr-applications-modal .positions-modal__footer {
+  padding: .85rem 1.5rem;
+}
+
+.hr-applications-modal .positions-modal__footer .btn-secondary {
+  min-width: 84px;
+  min-height: 40px;
+  padding: .55rem 1rem;
+  border: 1px solid #cbd5df;
+  border-radius: 8px;
+  background: #f7f9fa;
+  color: #344454;
+  font: inherit;
+  font-size: .9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  .hr-applications-modal {
+    max-height: 92dvh;
+    border-radius: 12px;
+  }
+
+  .hr-applications-modal .positions-modal__header,
+  .hr-applications-modal .positions-modal__body {
+    padding-right: 1rem;
+    padding-left: 1rem;
+  }
+
+  .hr-application-card {
+    gap: .8rem;
+    padding: .85rem;
+  }
+
+  .hr-application-card__details {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hr-application-detail--contact {
+    grid-column: auto;
+  }
+
+  .hr-application-card__actions {
+    align-items: stretch;
+  }
+
+  .hr-application-action {
+    flex: 1 1 100%;
+  }
+
+  .hr-application-status {
+    justify-content: center;
+  }
+
+  .hr-applications-modal .positions-modal__footer {
+    padding: .75rem 1rem;
+  }
+}
+
+.hr-application-details-modal {
+  width: min(100%, 900px);
+  max-width: 900px;
+  max-height: min(90dvh, 900px);
+  border: 1px solid #e1e7ee;
+  border-radius: 16px;
+  color: #243447;
+}
+
+.hr-application-details-modal .positions-modal__header {
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.hr-application-details-modal .positions-modal__header h3 {
+  color: #243447;
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.hr-application-details-modal .positions-modal__header .muted {
+  margin-top: .25rem;
+  color: #64748b;
+  font-size: .95rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.hr-application-details-modal .positions-modal__body {
+  min-height: 0;
+  padding: 1.25rem 1.5rem;
+  overscroll-behavior: contain;
+}
+
+.hr-application-details-modal .application-details-content {
+  display: grid;
+  gap: 1rem;
+}
+
+.hr-application-details-modal .details-section {
+  min-width: 0;
+  padding: 1.1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.hr-application-details-modal .details-section__title {
+  margin: 0 0 .9rem;
+  padding-bottom: .7rem;
+  border-bottom: 1px solid #dbe3eb;
+  color: #243447;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.hr-application-details-modal .details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .75rem;
+}
+
+.hr-application-details-modal .detail-item {
+  min-width: 0;
+  gap: .3rem;
+  padding: .75rem .85rem;
+  border: 1px solid #e5eaf0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.hr-application-details-modal .detail-label {
+  color: #64748b;
+  font-size: .75rem;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: .055em;
+}
+
+.hr-application-details-modal .detail-value {
+  min-width: 0;
+  color: #243447;
+  font-size: .95rem;
+  font-weight: 500;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.hr-application-details-modal .detail-value a,
+.hr-application-details-modal .btn-link {
+  color: #a95112;
+  font-size: .92rem;
+  font-weight: 650;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.hr-application-details-modal .detail-value a:hover,
+.hr-application-details-modal .btn-link:hover {
+  color: #843e0d;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.hr-application-details-modal .cover-letter-content {
+  padding: .9rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #334155;
+  font-size: .95rem;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.hr-application-details-modal .application-document-link + .application-document-link {
+  margin-top: .5rem;
+}
+
+.hr-application-details-modal .badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: .35rem .7rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: .8rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.hr-application-details-modal .badge--success {
+  border-color: #b7dfc6;
+  background: #e7f5ec;
+  color: #216342;
+}
+
+.hr-application-details-modal .badge--warning {
+  border-color: #f1d28e;
+  background: #fff7e6;
+  color: #855b12;
+}
+
+.hr-application-details-modal .positions-modal__footer {
+  flex-wrap: wrap;
+  padding: .85rem 1.5rem;
+}
+
+.application-details-action {
+  display: inline-flex;
+  min-width: 84px;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  padding: .6rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font: inherit;
+  font-size: .92rem;
+  font-weight: 650;
+  line-height: 1.3;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.application-details-action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 12px rgb(15 23 42 / 14%);
+}
+
+.application-details-action:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.application-details-action:focus-visible {
+  outline: 3px solid rgb(59 130 246 / 35%);
+  outline-offset: 2px;
+}
+
+.application-details-action--secondary {
+  border-color: #cbd5df;
+  background: #f7f9fa;
+  color: #344454;
+}
+
+.application-details-action--secondary:hover {
+  border-color: #8796a5;
+  background: #e9eef2;
+}
+
+.application-details-action--primary {
+  border-color: #c76b1c;
+  background: #d97721;
+  color: #fff;
+}
+
+.application-details-action--primary:hover {
+  border-color: #a95112;
+  background: #b85e17;
+}
+
+.hr-position-request-modal {
+  width: min(100%, 780px);
+  max-width: 780px;
+  max-height: min(90dvh, 860px);
+  border: 1px solid #e1e7ee;
+  border-radius: 16px;
+  color: #243447;
+}
+
+.hr-position-request-modal .positions-modal__header {
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+}
+
+.hr-position-request-modal .positions-modal__header h3 {
+  color: #243447;
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.hr-position-request-modal .positions-modal__header .muted {
+  margin-top: .25rem;
+  color: #64748b;
+  font-size: .95rem;
+  line-height: 1.5;
+}
+
+.hr-position-request-modal .positions-modal__body {
+  min-height: 0;
+  padding: 1.25rem 1.5rem;
+  overscroll-behavior: contain;
+}
+
+.hr-position-request-modal .positions-list {
+  gap: 1rem;
+}
+
+.hr-position-request-card {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  padding: 1.15rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+  box-shadow: 0 2px 8px rgb(36 52 71 / 5%);
+}
+
+.hr-position-request-card .position-row__meta {
+  margin: 0;
+  padding-bottom: .8rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.hr-position-request-card .position-row__name {
+  color: #1e293b;
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.hr-position-request-card .position-row__dept {
+  margin-top: .2rem;
+  color: #64748b;
+  font-size: .9rem;
+  line-height: 1.45;
+}
+
+.hr-position-permissions {
+  margin: 0;
+  padding: .9rem;
+  border-color: #dce4ec;
+  border-radius: 9px;
+  background: #fff;
+}
+
+.hr-position-permissions .custom-position-permissions__hint {
+  color: #526174;
+  font-size: .9rem;
+  line-height: 1.5;
+}
+
+.hr-position-permission-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+  gap: .6rem;
+}
+
+.hr-position-permission-card {
+  min-width: 0;
+  min-height: 44px;
+  padding: .65rem .75rem;
+  border-color: #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: .9rem;
+  line-height: 1.4;
+}
+
+.hr-position-permission-card span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.hr-position-permission-card input {
+  flex: 0 0 auto;
+}
+
+.hr-position-request-card__fields {
+  display: grid;
+  grid-template-columns: minmax(130px, .55fr) minmax(0, 1.45fr);
+  gap: 1rem;
+  min-width: 0;
+}
+
+.hr-position-request-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: .4rem;
+  color: #334155;
+}
+
+.hr-position-request-field__label {
+  color: #475569;
+  font-size: .88rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.hr-position-request-field__input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: .65rem .8rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #243447;
+  font: inherit;
+  font-size: .95rem;
+  line-height: 1.45;
+  box-shadow: inset 0 1px 2px rgb(15 23 42 / 3%);
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.hr-position-request-field__input:focus {
+  border-color: #d97721;
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(217 119 33 / 16%);
+}
+
+.hr-position-request-field__input:disabled {
+  background: #f1f5f9;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+.hr-position-request-field__textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.hr-position-request-modal .positions-modal__footer {
+  flex-wrap: wrap;
+  padding: .85rem 1.5rem;
+}
+
+.hr-position-request-action {
+  display: inline-flex;
+  min-width: 92px;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  padding: .6rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font: inherit;
+  font-size: .92rem;
+  font-weight: 650;
+  line-height: 1.3;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.hr-position-request-action:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 12px rgb(15 23 42 / 15%);
+}
+
+.hr-position-request-action:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.hr-position-request-action:focus-visible,
+.hr-position-request-modal .modal-close:focus-visible,
+.hr-position-request-field__input:focus-visible {
+  outline: 3px solid rgb(59 130 246 / 35%);
+  outline-offset: 2px;
+}
+
+.hr-position-request-action:disabled {
+  opacity: .58;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.hr-position-request-action--secondary {
+  border-color: #cbd5df;
+  background: #f7f9fa;
+  color: #344454;
+}
+
+.hr-position-request-action--secondary:hover:not(:disabled) {
+  border-color: #8796a5;
+  background: #e9eef2;
+}
+
+.hr-position-request-action--primary {
+  border-color: #c76b1c;
+  background: #d97721;
+  color: #fff;
+}
+
+.hr-position-request-action--primary:hover:not(:disabled) {
+  border-color: #a95112;
+  background: #b85e17;
+}
+
+@media (max-width: 600px) {
+  .hr-position-request-modal {
+    max-height: 92dvh;
+    border-radius: 12px;
+  }
+
+  .hr-position-request-modal .positions-modal__header,
+  .hr-position-request-modal .positions-modal__body {
+    padding-right: 1rem;
+    padding-left: 1rem;
+  }
+
+  .hr-position-request-card {
+    gap: .8rem;
+    padding: .85rem;
+  }
+
+  .hr-position-request-card__fields {
+    grid-template-columns: minmax(0, 1fr);
+    gap: .75rem;
+  }
+
+  .hr-position-request-modal .positions-modal__footer {
+    padding: .75rem 1rem;
+  }
+
+  .hr-position-request-action {
+    flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 600px) {
+  .hr-application-details-modal {
+    max-height: 92dvh;
+    border-radius: 12px;
+  }
+
+  .hr-application-details-modal .positions-modal__header,
+  .hr-application-details-modal .positions-modal__body {
+    padding-right: 1rem;
+    padding-left: 1rem;
+  }
+
+  .hr-application-details-modal .details-section {
+    padding: .85rem;
+  }
+
+  .hr-application-details-modal .details-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hr-application-details-modal .positions-modal__footer {
+    padding: .75rem 1rem;
+  }
+
+  .application-details-action {
+    flex: 1 1 auto;
   }
 }
 </style>
