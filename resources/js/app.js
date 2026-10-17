@@ -629,10 +629,7 @@ router.beforeEach(async (to, from, next) => {
         return mods.includes((m||'').toString().toLowerCase());
       } catch (e) { return false }
     }
-    const assignedModules = Array.isArray(user.permissions?.modules)
-      ? user.permissions.modules.filter(Boolean)
-      : []
-    if (to.path === '/custom-panel' && user.role !== 'custom' && assignedModules.length === 0) {
+    if (to.path === '/custom-panel' && user.role !== 'custom') {
       const branchId = Number(user.branch_id || user.branchId || user.branch || 0)
       const branchName = (user.branch_name || user.branch || '').toString().toUpperCase()
       const username = (user.username || '').toString().toUpperCase()

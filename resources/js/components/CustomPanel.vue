@@ -13,7 +13,10 @@
           :key="module"
           type="button"
           class="custom-sidebar__link"
-          :class="{ 'custom-sidebar__link--alert': pendingCount(module) > 0 }"
+          :class="{
+            'custom-sidebar__link--active': selectedFeature === module,
+            'custom-sidebar__link--alert': pendingCount(module) > 0
+          }"
           :title="moduleLabel(module)"
           :aria-current="selectedFeature === module ? 'page' : undefined"
           @click="selectFeature(module)"
@@ -78,9 +81,9 @@
         </div>
       </header>
 
-      <section class="panel-main">
+      <section ref="panelMainRef" class="panel-main">
       <div class="panel-main-inner">
-        <div class="dashboard-welcome">
+        <div v-if="!selectedFeature" class="dashboard-welcome">
           <div class="dashboard-welcome__copy">
             <h1>{{ greetingLabel }}</h1>
             <p class="dashboard-welcome__subtitle">Your tools and daily attendance, all in one place.</p>
@@ -177,6 +180,38 @@
             </div>
           </section>
 
+          <section class="custom-dashboard-section custom-dashboard-section--workspace" aria-labelledby="custom-applications-title">
+            <div class="modules-section-heading">
+              <div>
+                <p class="dashboard-eyebrow">YOUR WORKSPACE</p>
+                <h2 id="custom-applications-title">Applications</h2>
+                <p>Your assigned tools and modules.</p>
+              </div>
+              <span class="module-count">{{ modules.length }} modules</span>
+            </div>
+
+            <div v-if="modules.length" class="modules-grid">
+              <button
+                v-for="module in modules"
+                :key="module"
+                type="button"
+                class="module-tile"
+                :class="{ 'module-tile--alert': pendingCount(module) > 0 }"
+                @click="selectFeature(module)"
+              >
+                <span class="module-icon">{{ moduleLabel(module).charAt(0) }}</span>
+                <span class="module-info">
+                  <span class="module-name">{{ moduleLabel(module) }}</span>
+                  <span class="module-desc">{{ panelDescription(module) }}</span>
+                </span>
+                <span v-if="pendingCount(module) > 0" class="module-badge">
+                  {{ pendingCount(module) > 99 ? '99+' : pendingCount(module) }}
+                </span>
+              </button>
+            </div>
+            <p v-else class="empty-message">No applications are assigned to your account.</p>
+          </section>
+
         </div>
 
         <div v-if="showFaceCapture" class="face-capture-modal">
@@ -240,6 +275,7 @@ const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href;
 const router = useRouter();
 const modules = ref([]);
 const selectedFeature = ref('');
+const panelMainRef = ref(null);
 const moduleLabels = {
   'budget-request-approvals': 'Budget Request Approvals',
   'current-price-markup': 'Current Price Markup',
@@ -751,6 +787,10 @@ onMounted(() => {
       if (perms && Array.isArray(perms.modules)) {
         modules.value = perms.modules.map(m => (m || '').toLowerCase());
       }
+      if (normalized.role === 'supplier') {
+        router.replace('/supplier-panel');
+        return;
+      }
     }
 
     // Keep token bootstrap behavior if API returns a token payload.
@@ -881,9 +921,29 @@ const moduleLabel = (m) => moduleLabels[String(m || '').toLowerCase()] || pretty
 
 const selectedFeatureComponent = computed(() => featureComponents[selectedFeature.value] || null);
 
-const selectFeature = (feature) => {
+const resetFeatureScroll = () => {
+  window.scrollTo(0, 0);
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+
+  let ancestor = panelMainRef.value;
+  while (ancestor) {
+    const overflowY = window.getComputedStyle(ancestor).overflowY;
+    if (/(auto|scroll|overlay)/.test(overflowY)) ancestor.scrollTop = 0;
+    ancestor = ancestor.parentElement;
+  }
+
+  panelMainRef.value?.querySelectorAll('*').forEach(element => {
+    const overflowY = window.getComputedStyle(element).overflowY;
+    if (/(auto|scroll|overlay)/.test(overflowY)) element.scrollTop = 0;
+  });
+};
+
+const selectFeature = async (feature) => {
   selectedFeature.value = selectedFeature.value === feature ? '' : feature;
   if (isMobileViewport.value) sidebarCollapsed.value = true;
+  await nextTick();
+  resetFeatureScroll();
 };
 
 const panelDescription = (m) => {
@@ -1746,6 +1806,9 @@ const logout = async () => {
   min-height: 142px;
   gap: 12px;
   padding: 17px;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 .custom-dashboard-section--workspace .module-tile:hover,
@@ -1947,6 +2010,15 @@ const logout = async () => {
   color: #a65327;
   background: #fffaf6;
 }
+.custom-sidebar__link--active,
+.custom-sidebar__link--active:hover,
+.custom-sidebar__link--active:focus-visible {
+  border-color: #e7b99d;
+  outline: none;
+  color: #8f431f;
+  background: #fff3e9;
+  box-shadow: inset 3px 0 #c85a2c;
+}
 .custom-sidebar__link-icon {
   display: grid;
   width: 27px;
@@ -1976,6 +2048,11 @@ const logout = async () => {
 .custom-sidebar__link--alert .custom-sidebar__link-icon {
   border-color: #edc6ad;
   background: #fff0e5;
+}
+.custom-sidebar__link--active .custom-sidebar__link-icon {
+  border-color: #e7b99d;
+  color: #8f431f;
+  background: #ffe6d5;
 }
 .custom-sidebar__empty { margin: 5px 9px; color: #806f62; font-size: 11px; }
 
@@ -2017,7 +2094,10 @@ const logout = async () => {
 .custom-sidebar__logout:hover:not(:disabled) { border-color: #d98b78; background: #fff0eb; }
 .custom-sidebar__logout:disabled { cursor: wait; opacity: .65; }
 
-.custom-panel-main { min-width: 0; }
+.custom-panel-main {
+  min-width: 0;
+  align-self: start;
+}
 .custom-panel-main .panel-header {
   position: sticky;
   top: 0;
@@ -2120,12 +2200,87 @@ const logout = async () => {
 .sidebar-mobile.sidebar-collapsed .custom-sidebar { transform: translateX(-105%); }
 .sidebar-mobile .custom-panel-main { min-height: 100vh; }
 
+.custom-panel-main .panel-main {
+  flex: none;
+  min-height: 0;
+  padding: clamp(18px, 2.4vw, 32px) clamp(16px, 2.6vw, 38px) 32px;
+}
+
+.custom-panel-main .panel-main-inner {
+  width: 100%;
+  max-width: 1560px;
+  margin: 0 auto;
+}
+
+.custom-panel-main .custom-dashboard-grid { gap: 20px; }
+
+.custom-panel-main .custom-feature-view {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  min-height: 0;
+  height: auto;
+  align-self: start;
+  margin: 0;
+  padding: clamp(16px, 1.6vw, 22px);
+}
+
+.custom-panel-main .custom-feature-view__header {
+  min-width: 0;
+  margin: 0;
+}
+
+.custom-panel-main .custom-feature-view > :deep(*) {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  min-height: 0;
+  height: auto;
+}
+
+.custom-panel-main .custom-feature-view > :deep(.manager-procurement-panel--embedded),
+.custom-panel-main .custom-feature-view > :deep(.manager-logistics-panel--embedded),
+.custom-panel-main .custom-feature-view > :deep(.embedded-finance-feature),
+.custom-panel-main .custom-feature-view > :deep(.inventory-staff-panel-shell),
+.custom-panel-main .custom-feature-view > :deep(.owner-panel-layout--embedded),
+.custom-panel-main .custom-feature-view > :deep(.admin-panel-shell--embedded) {
+  box-sizing: border-box;
+  padding: clamp(10px, 1.1vw, 16px);
+}
+
+.custom-panel-main .custom-feature-view :deep(.owner-panel-layout--embedded),
+.custom-panel-main .custom-feature-view :deep(.owner-panel-layout--embedded .admin-page),
+.custom-panel-main .custom-feature-view :deep(.owner-panel-layout--embedded .admin-layout),
+.custom-panel-main .custom-feature-view :deep(.owner-panel-layout--embedded .admin-main) {
+  min-height: 0 !important;
+  height: auto !important;
+}
+
 @media (max-width: 820px) {
+  .custom-panel-main .panel-main { padding: 20px 20px 28px; }
+  .custom-panel-main .custom-dashboard-grid { gap: 16px; }
+  .custom-panel-main .custom-feature-view { gap: 14px; }
+  .custom-panel-main .custom-feature-view > :deep(.manager-procurement-panel--embedded),
+  .custom-panel-main .custom-feature-view > :deep(.manager-logistics-panel--embedded),
+  .custom-panel-main .custom-feature-view > :deep(.embedded-finance-feature),
+  .custom-panel-main .custom-feature-view > :deep(.inventory-staff-panel-shell),
+  .custom-panel-main .custom-feature-view > :deep(.owner-panel-layout--embedded),
+  .custom-panel-main .custom-feature-view > :deep(.admin-panel-shell--embedded) { padding: 10px; }
   .custom-panel-main .header-inner { min-height: 66px; }
   .topbar-user-pill { max-width: 160px; }
 }
 
 @media (max-width: 520px) {
+  .custom-panel-main .panel-main { padding: 16px 14px 24px; }
+  .custom-panel-main .custom-dashboard-grid { gap: 14px; }
+  .custom-panel-main .custom-feature-view { gap: 12px; padding: 14px; }
+  .custom-panel-main .custom-feature-view > :deep(.manager-procurement-panel--embedded),
+  .custom-panel-main .custom-feature-view > :deep(.manager-logistics-panel--embedded),
+  .custom-panel-main .custom-feature-view > :deep(.embedded-finance-feature),
+  .custom-panel-main .custom-feature-view > :deep(.inventory-staff-panel-shell),
+  .custom-panel-main .custom-feature-view > :deep(.owner-panel-layout--embedded),
+  .custom-panel-main .custom-feature-view > :deep(.admin-panel-shell--embedded) { padding: 8px; }
+  .custom-panel-main .custom-feature-view__header { gap: 10px; }
   .custom-panel-main .header-inner { gap: 9px; padding: 9px 12px 9px 8px; }
   .custom-sidebar-toggle { width: 36px; height: 36px; flex-basis: 36px; }
   .topbar-context__eyebrow { font-size: 8px; }

@@ -72,7 +72,7 @@ class StaffController extends Controller
         }
 
         $query = User::query()
-            ->whereNotIn('role', ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN'])
+            ->whereIn('role', [...self::EDITABLE_ACCOUNT_ROLES, 'CUSTOM'])
             ->whereNull('deleted_at')
             ->with('branch:id,name')
             ->orderBy('full_name');
@@ -126,7 +126,7 @@ class StaffController extends Controller
         }
 
         $account = User::whereNull('deleted_at')->find($id);
-        if (! $account || in_array(strtoupper((string) $account->role), ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN'], true)) {
+        if (! $account || ! in_array(strtoupper((string) $account->role), [...self::EDITABLE_ACCOUNT_ROLES, 'CUSTOM'], true)) {
             return response()->json(['success' => false, 'message' => 'Account not found or cannot be modified'], 404);
         }
 

@@ -27,7 +27,7 @@ const routes = [
     path: '/super-admin-panel',
     name: 'SuperAdminPanel',
     component: () => import('../components/SuperAdmin.vue'),
-    meta: { requiresAuth: true, role: 'superadmin' }
+    meta: { requiresAuth: true, role: 'super_admin' }
   },
   {
     path: '/super-admin/dashboard',
@@ -37,31 +37,31 @@ const routes = [
     path: '/super-admin/logistics',
     name: 'SuperAdminLogistics',
     component: () => import('../components/SuperAdminLogisticsPanel.vue'),
-    meta: { requiresAuth: true, role: 'superadmin' }
+    meta: { requiresAuth: true, role: 'super_admin' }
   },
   {
     path: '/super-admin/procurement',
     name: 'SuperAdminProcurement',
     component: () => import('../components/SuperAdminProcurement.vue'),
-    meta: { requiresAuth: true, role: 'superadmin' }
+    meta: { requiresAuth: true, role: 'super_admin' }
   },
   {
     path: '/super-admin/finance',
     name: 'SuperAdminFinance',
     component: () => import('../components/SuperAdminFinance.vue'),
-    meta: { requiresAuth: true, role: 'superadmin' }
+    meta: { requiresAuth: true, role: 'super_admin' }
   },
   {
     path: '/super-admin/hr',
     name: 'SuperAdminHRStaffManagement',
     component: () => import('../components/HRStaffManagement.vue'),
-    meta: { requiresAuth: true, role: 'superadmin' }
+    meta: { requiresAuth: true, role: 'super_admin' }
   },
   {
     path: '/super-admin/staff-management',
     name: 'SuperAdminStaffManagement',
     component: () => import('../components/SuperAdminStaffManagement.vue'),
-    meta: { requiresAuth: true, role: 'superadmin' }
+    meta: { requiresAuth: true, role: 'super_admin' }
   },
   {
     path: '/owner-panel',
@@ -254,10 +254,7 @@ router.beforeEach((to, from, next) => {
   if (to.path === '/' || to.path === '/login') {
     if (user) {
       const userRole = (user.role || '').toLowerCase();
-      const assignedModules = Array.isArray(user.permissions?.modules)
-        ? user.permissions.modules.filter(Boolean)
-        : [];
-      if (userRole === 'custom' || assignedModules.length > 0) return next('/custom-panel');
+      if (userRole === 'custom') return next('/custom-panel');
       if (userRole === 'owner') return next('/owner-panel');
       if (userRole === 'admin') return next('/admin-panel');
       if (userRole === 'manager') {
@@ -291,6 +288,7 @@ router.beforeEach((to, from, next) => {
   const assignedModules = Array.isArray(user.permissions?.modules)
     ? user.permissions.modules.map(m => (m || '').toLowerCase()).filter(Boolean)
     : [];
+  const isCustomAccount = userRole === 'custom';
   console.log('[ROUTER] User role (normalized):', userRole);
 
   // === CHECK: Route requires specific role ===
@@ -299,13 +297,13 @@ router.beforeEach((to, from, next) => {
     console.log('[ROUTER] Required role:', requiredRole);
 
     // Custom accounts: if navigation came from Custom Panel, allow and continue
-    if ((userRole === 'custom' || assignedModules.length > 0) && to.query && to.query.from === 'custom-panel') {
+    if (isCustomAccount && to.query && to.query.from === 'custom-panel') {
       console.log('[ROUTER] CUSTOM account with from=custom-panel - allowing');
       return next();
     }
 
     // Allow 'custom' accounts to access routes based on assigned modules
-    if (userRole === 'custom' || assignedModules.length > 0) {
+    if (isCustomAccount) {
       let modules = [];
       try {
         modules = assignedModules;
@@ -440,7 +438,7 @@ router.beforeEach((to, from, next) => {
 function getPanelRoute(user) {
   if (!user) return '/staff-landing';
   const userRole = (user.role || '').toLowerCase();
-  if (userRole === 'custom' || (Array.isArray(user.permissions?.modules) && user.permissions.modules.length > 0)) return '/custom-panel';
+  if (userRole === 'custom') return '/custom-panel';
   if (userRole === 'owner') return '/owner-panel';
   if (userRole === 'admin') return '/admin-panel';
   if (userRole === 'manager') {
