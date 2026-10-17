@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 17, 2026 at 10:29 AM
+-- Generation Time: Oct 17, 2026 at 07:09 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -967,7 +967,10 @@ INSERT INTO `panel_notification_reads` (`id`, `user_id`, `category`, `read_at`, 
 (9, 160, 'announcements', '2026-10-12 16:09:23', '2026-10-12 16:09:23', '2026-10-12 16:09:23'),
 (10, 266, 'announcements', '2026-10-12 16:32:40', '2026-10-12 16:32:40', '2026-10-12 16:32:40'),
 (11, 31, 'branchPendingOwner', '2026-10-16 08:30:31', '2026-10-16 08:30:31', '2026-10-16 08:30:31'),
-(12, 159, 'announcements', '2026-10-16 10:40:05', '2026-10-16 10:40:05', '2026-10-16 10:40:05');
+(12, 159, 'announcements', '2026-10-16 10:40:05', '2026-10-16 10:40:05', '2026-10-16 10:40:05'),
+(13, 149, 'announcements', '2026-10-17 15:04:50', '2026-10-17 15:04:50', '2026-10-17 15:04:50'),
+(14, 153, 'announcements', '2026-10-17 15:08:50', '2026-10-17 15:08:50', '2026-10-17 15:08:50'),
+(15, 147, 'announcements', '2026-10-17 15:15:15', '2026-10-17 15:15:15', '2026-10-17 15:15:15');
 
 -- --------------------------------------------------------
 
@@ -2138,7 +2141,11 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (3637, 'App\\Models\\User', 147, 'auth-token', 'ae079cfc91712b2dda4531dced9cd801bef92a9f0030db7c18612e34dcdf6962', '[\"*\"]', NULL, NULL, '2026-10-17 05:19:02', '2026-10-17 05:19:02'),
 (3641, 'App\\Models\\User', 31, 'auth-token', 'd96a7a46ea71febe8bd41f2b908ed5f40e330060feaf7c137277e7af31bf310f', '[\"*\"]', NULL, NULL, '2026-10-17 05:51:53', '2026-10-17 05:51:53'),
 (3645, 'App\\Models\\User', 31, 'auth-token', '5fa8e7e239de838209a8a23b865ea9e1b407461ae810179a9eca7b6cc8d2e4c8', '[\"*\"]', NULL, NULL, '2026-10-17 06:56:54', '2026-10-17 06:56:54'),
-(3646, 'App\\Models\\User', 31, 'auth-token', '348d7cee1377bbbf7fe46a4ec18baae473e70dcd9c9a1f46eb4387068ba0078e', '[\"*\"]', NULL, NULL, '2026-10-17 06:57:31', '2026-10-17 06:57:31');
+(3646, 'App\\Models\\User', 31, 'auth-token', '348d7cee1377bbbf7fe46a4ec18baae473e70dcd9c9a1f46eb4387068ba0078e', '[\"*\"]', NULL, NULL, '2026-10-17 06:57:31', '2026-10-17 06:57:31'),
+(3661, 'App\\Models\\User', 267, 'auth-token', '3cd7808689b027a68b17cac4a657739d290d300cded326ab0f0e3984f77b3a2f', '[\"*\"]', NULL, NULL, '2026-10-17 15:11:01', '2026-10-17 15:11:01'),
+(3662, 'App\\Models\\User', 147, 'auth-token', '2a1297ebd24be7504760f04916ce17cb160149723841efb3ef8ff0ef593cd991', '[\"*\"]', NULL, NULL, '2026-10-17 15:11:32', '2026-10-17 15:11:32'),
+(3663, 'App\\Models\\User', 147, 'auth-token', 'c1dbd1e98cc9019c469b65b5cfefe0fb6b8a286af95725d1b7cb9671947862e3', '[\"*\"]', NULL, NULL, '2026-10-17 15:29:30', '2026-10-17 15:29:30'),
+(3681, 'App\\Models\\User', 28, 'auth-token', 'f6dd74f28d24cb8e8cb8481c9a379820e10b70ec106b32e45003abb9bfed37e0', '[\"*\"]', NULL, NULL, '2026-10-17 17:05:15', '2026-10-17 17:05:15');
 
 -- --------------------------------------------------------
 
@@ -2595,7 +2602,10 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('7829sZ8jJ06BesXDOqwG2pcLJulWX91eEWDijNyE', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoieUhpRml1Z3JUTnkxUUYzcHR6WXVJdThGcnRQckxhR1YwSW12VkZ6TSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9fQ==', 1792225774);
+('DCiGXQgCkJ7UjhDIhrVr98lCuz69p4gtWfgpAxib', 28, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36', 'YTo5OntzOjY6Il90b2tlbiI7czo0MDoiTXRZeUxaQTBRNndKd2RxSDVHQTkxT09SUmxSNzRRVGRPaFhobUtBQiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9zdGFmZi1sYW5kaW5nIjtzOjU6InJvdXRlIjtOO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToyODtzOjc6InVzZXJfaWQiO2k6Mjg7czo5OiJ1c2VyX3JvbGUiO3M6MTE6IlNVUEVSX0FETUlOIjtzOjk6InVzZXJfbmFtZSI7czoyMDoiU3VwZXIgQWRtaW5pc3RyYXRvcnMiO3M6MTM6InJlZGlyZWN0X3BhdGgiO3M6MjI6Ii9zdXBlci1hZG1pbi9kYXNoYm9hcmQiO3M6Mjc6InN1cGVyYWRtaW5fc2FuZGJveF9kYXRhYmFzZSI7czoxODoiY2hpa2ludGF5b19zYW5kYm94Ijt9', 1792256945),
+('GmgQA9rdu9eqTok6ZFQGHKmp16NtHkCDzkKVESTD', 152, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiYzBVbjFMa2V4ZUJ4dzlXd2IxMG9ZUzFKeDF3RGFPd2RvZkNwOXBReiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzM6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hZG1pbi1sb2dpbiI7czo1OiJyb3V0ZSI7czoxNjoiYWRtaW4ubG9naW4ucGFnZSI7fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE1MjtzOjc6InVzZXJfaWQiO2k6MTUyO3M6OToidXNlcl9yb2xlIjtzOjg6IlNVUFBMSUVSIjtzOjk6InVzZXJfbmFtZSI7czoxODoiVW1iZXJ0byBCYXR1bWJha2FsIjtzOjEzOiJyZWRpcmVjdF9wYXRoIjtzOjE1OiIvc3VwcGxpZXItcGFuZWwiO30=', 1792255333),
+('lWNd2RB7u8zSY4FIPZD41Oj7iSmSEWa7dzGCh7xN', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiZlRGbTlJODZQODVRSkxjYUdaMFV2N21PaVFkQmNtclVLakk5TTBuUCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzM6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hZG1pbi1sb2dpbiI7czo1OiJyb3V0ZSI7czoxNjoiYWRtaW4ubG9naW4ucGFnZSI7fX0=', 1792255139),
+('RrgLyUM7UnRhJbGo2a80JWceZvMU7GMdL7HqyNrx', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoiTW5TNldzMzVnVDEzVFV0VW4xT1dUSW92OHJQc0wyb1JtYnBGY25KaiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1792255410);
 
 -- --------------------------------------------------------
 
@@ -2776,19 +2786,19 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `email`, `username`, `full_name`, `name`, `password`, `email_verified_at`, `role`, `department`, `permissions`, `branch_id`, `remember_token`, `created_at`, `updated_at`, `deleted_at`, `must_change_password`, `requires_setup`, `is_active`, `address`, `latitude`, `longitude`, `avatar_url`, `phone_number`, `required_setup_type`, `last_login_at`) VALUES
-(28, 'superadmin@example.com', 'superadmin', 'Super Administrators', NULL, '$2y$12$f67akYY/xm/H9KJoqytmXeblCxSgZ786slMmHkmqzlMozGUn3Ew7G', '2026-03-05 15:03:55', 'SUPER_ADMIN', NULL, NULL, NULL, NULL, '2026-03-05 15:03:55', '2026-10-14 08:36:13', NULL, 0, 1, 1, NULL, NULL, NULL, '/storage/avatars/avatar_28_1775232518.jpg', NULL, NULL, '2026-10-14 08:36:13'),
+(28, 'superadmin@example.com', 'superadmin', 'Super Administrators', NULL, '$2y$12$f67akYY/xm/H9KJoqytmXeblCxSgZ786slMmHkmqzlMozGUn3Ew7G', '2026-03-05 15:03:55', 'SUPER_ADMIN', NULL, NULL, NULL, NULL, '2026-03-05 15:03:55', '2026-10-17 17:05:15', NULL, 0, 1, 1, NULL, NULL, NULL, '/storage/avatars/avatar_28_1775232518.jpg', NULL, NULL, '2026-10-17 17:05:15'),
 (31, 'fowal15977@pmdeal.com', 'Parks', 'Mr.parks', NULL, '$2y$12$/jjxezfu4JAW55dvduVkVu7hpmk5CBXg2GWKtlT17A8jEMfJFpY8y', NULL, 'OWNER', NULL, NULL, NULL, NULL, '2026-03-07 04:30:58', '2026-10-17 06:57:31', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, 'admin', NULL, '2026-10-17 06:57:31'),
-(147, 'biteyag645@onbap.com', 'admin_br743957', 'Admin - Dasma Branch', NULL, '$2y$12$8RJHYsL5dHsXJc9.XiEUSuHL8F2DAPRGug1ED5uYU6tZylZwpcjGa', '2026-03-22 11:35:00', 'ADMIN', NULL, NULL, 31, NULL, '2026-03-22 10:19:22', '2026-10-17 05:19:02', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-17 05:19:02'),
-(148, 'yawilog234@lxbeta.com', 'hr_br743957', 'HR Manager - Dasma Branch', NULL, '$2y$12$1AUNIAaO6IsU.NgPHyVqfuZmrI7EbeUTnHrku.w9douNkI7STbjfW', '2026-03-22 10:21:24', 'MANAGER', 'HR', NULL, 31, NULL, '2026-03-22 10:19:22', '2026-10-17 08:07:31', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-17 08:07:31'),
-(149, 'jiveda9771@lxbeta.com', 'finance_br743957', 'Finance Manager - Dasma Branch', NULL, '$2y$12$9tGgivqfWOXFzZjHh./TNeQnKFXsrvyMHitvfpjtnRH9ctUwYKA5S', '2026-03-22 10:27:01', 'MANAGER', 'FINANCE', NULL, 31, NULL, '2026-03-22 10:19:22', '2026-10-16 12:44:03', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-16 12:44:03'),
+(147, 'biteyag645@onbap.com', 'admin_br743957', 'Admin - Dasma Branch', NULL, '$2y$12$8RJHYsL5dHsXJc9.XiEUSuHL8F2DAPRGug1ED5uYU6tZylZwpcjGa', '2026-03-22 11:35:00', 'ADMIN', NULL, NULL, 31, NULL, '2026-03-22 10:19:22', '2026-10-17 15:29:30', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-17 15:29:30'),
+(148, 'yawilog234@lxbeta.com', 'hr_br743957', 'HR Manager - Dasma Branch', NULL, '$2y$12$1AUNIAaO6IsU.NgPHyVqfuZmrI7EbeUTnHrku.w9douNkI7STbjfW', '2026-03-22 10:21:24', 'MANAGER', 'HR', NULL, 31, NULL, '2026-03-22 10:19:22', '2026-10-17 15:40:20', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-17 15:40:20'),
+(149, 'jiveda9771@lxbeta.com', 'finance_br743957', 'Finance Manager - Dasma Branch', NULL, '$2y$12$9tGgivqfWOXFzZjHh./TNeQnKFXsrvyMHitvfpjtnRH9ctUwYKA5S', '2026-03-22 10:27:01', 'MANAGER', 'FINANCE', NULL, 31, NULL, '2026-03-22 10:19:22', '2026-10-17 14:58:20', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-17 14:58:20'),
 (150, 'yenater279@onbap.com', 'procurement_br743957', 'Procurement Manager - Dasma Branch', NULL, '$2y$12$kF..QIb.DvV18ylucsDIHuPPnLwxXpZe4R5/VcwiI5CCZ2XpkCYx.', '2026-03-22 10:33:29', 'MANAGER', 'PROCUREMENT', NULL, 31, NULL, '2026-03-22 10:19:22', '2026-10-16 12:45:47', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-16 12:45:47'),
 (151, 'rogogaj619@onbap.com', 'logistics_br743957', 'Logistics Manager - Dasma Branch', NULL, '$2y$12$OGJ.SPNyGXorcgKCa/EAaOmnaeqm4sLmZtx6dpGJiijay1uXA6LXq', '2026-03-22 11:37:41', 'MANAGER', 'LOGISTICS', NULL, 31, NULL, '2026-03-22 10:19:22', '2026-10-16 12:47:55', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-16 12:47:55'),
-(152, 'xidaya9674@bncinema.com', 'Umberto', 'Umberto Batumbakal', NULL, '$2y$12$eym3kh1XoBRy0Ibjr3qrR.fLvvYUL9bimjdYe.f867drHAYjMURWa', NULL, 'CUSTOM', NULL, '{\"modules\":[],\"functions\":[\"inventory.products\"]}', 31, NULL, '2026-03-22 10:37:58', '2026-10-16 12:18:44', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, '', NULL, '2026-10-16 09:11:31'),
-(153, 'mecepey855@lxbeta.com', 'janne', 'Janne De Guzman', NULL, '$2y$12$JnVEw48I2r6afT4JqGJiNuk2awucGvPFRKrb6faEkMFuDmvDLbBKG', '2026-03-22 10:58:41', 'STAFF', 'CASHIER', NULL, 31, NULL, '2026-03-22 10:49:07', '2026-10-16 15:42:18', NULL, 0, 1, 1, '213', NULL, NULL, NULL, '09156818822', NULL, '2026-10-16 15:39:50'),
-(154, 'lalaher611@lxbeta.com', 'vince', 'Vince Hannibal Bido', NULL, '$2y$12$.9o2LKOIrQQWcrtHTKCtKOxdGGgLVs41Xr.eaY9OqHDe/iNtJwnUi', '2026-03-22 10:55:12', 'STAFF', 'INVENTORY', NULL, 31, NULL, '2026-03-22 10:50:09', '2026-10-16 15:42:39', NULL, 0, 1, 1, '213', NULL, NULL, NULL, '09156818811', NULL, '2026-10-16 15:38:01'),
-(157, 'sevof40551@pmdeal.com', 'charles', 'christian Umbal', NULL, '$2y$12$puxmFYNzX6Yg0Olks0Sa5OWMIPeX6g3H1.RoyJMMkK80b6jdRTe62', '2026-03-23 05:10:23', 'STAFF', 'KITCHEN', NULL, 31, NULL, '2026-03-23 05:07:32', '2026-05-23 09:43:11', NULL, 0, 1, 1, '123', NULL, NULL, NULL, '09156818831', NULL, NULL),
-(158, 'xiralih141@lxbeta.com', 'John', 'John Stalone', NULL, '$2y$12$LOUp7zlefTxO05AmE6OCAuQtq3vFSVkgFjMUSa2LAyD57UwtF85uC', '2026-03-24 08:58:36', 'SUPPLIER', NULL, NULL, 31, NULL, '2026-03-24 08:57:40', '2026-03-24 08:58:36', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, '', NULL, NULL),
-(159, 'xecof21486@fun4k.com', 'admin_main_branch', 'Admin Main Branch', NULL, '$2y$12$0mEgYuYslnBkJs79fi7H0OjiH3uTrkDbe2Kvas21ltIJ9BExNMm0C', '2026-03-25 07:07:57', 'ADMIN', NULL, NULL, 32, NULL, '2026-03-25 06:56:11', '2026-10-17 06:36:08', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-17 06:36:08'),
+(152, 'xidaya9674@bncinema.com', 'Umberto', 'Umberto Batumbakal', NULL, '$2y$12$eym3kh1XoBRy0Ibjr3qrR.fLvvYUL9bimjdYe.f867drHAYjMURWa', NULL, 'SUPPLIER', NULL, '{\"modules\":[],\"functions\":[\"inventory.products\"]}', 31, NULL, '2026-03-22 10:37:58', '2026-10-17 16:42:21', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, '', NULL, '2026-10-17 16:42:21'),
+(153, 'mecepey855@lxbeta.com', 'janne', 'Janne De Guzman', NULL, '$2y$12$JnVEw48I2r6afT4JqGJiNuk2awucGvPFRKrb6faEkMFuDmvDLbBKG', '2026-03-22 10:58:41', 'STAFF', 'CASHIER', NULL, 31, NULL, '2026-03-22 10:49:07', '2026-10-17 16:32:43', NULL, 0, 1, 1, '213', NULL, NULL, NULL, '09156818822', NULL, '2026-10-17 16:32:43'),
+(154, 'lalaher611@lxbeta.com', 'vince', 'Vince Hannibal Bido', NULL, '$2y$12$.9o2LKOIrQQWcrtHTKCtKOxdGGgLVs41Xr.eaY9OqHDe/iNtJwnUi', '2026-03-22 10:55:12', 'STAFF', 'INVENTORY', NULL, 31, NULL, '2026-03-22 10:50:09', '2026-10-17 16:43:21', NULL, 0, 1, 1, '213', NULL, NULL, NULL, '09156818811', NULL, '2026-10-17 16:43:21'),
+(157, 'sevof40551@pmdeal.com', 'charles', 'christian Umbal', NULL, '$2y$12$puxmFYNzX6Yg0Olks0Sa5OWMIPeX6g3H1.RoyJMMkK80b6jdRTe62', '2026-03-23 05:10:23', 'STAFF', 'KITCHEN', NULL, 31, NULL, '2026-03-23 05:07:32', '2026-10-17 16:32:23', NULL, 0, 1, 1, '123', NULL, NULL, NULL, '09156818831', NULL, '2026-10-17 16:32:23'),
+(158, 'xiralih141@lxbeta.com', 'John', 'John Stalone', NULL, '$2y$12$LOUp7zlefTxO05AmE6OCAuQtq3vFSVkgFjMUSa2LAyD57UwtF85uC', '2026-03-24 08:58:36', 'SUPPLIER', NULL, NULL, 31, NULL, '2026-03-24 08:57:40', '2026-10-17 16:40:31', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, '', NULL, '2026-10-17 16:40:31'),
+(159, 'xecof21486@fun4k.com', 'admin_main_branch', 'Admin Main Branch', NULL, '$2y$12$0mEgYuYslnBkJs79fi7H0OjiH3uTrkDbe2Kvas21ltIJ9BExNMm0C', '2026-03-25 07:07:57', 'ADMIN', NULL, NULL, 32, NULL, '2026-03-25 06:56:11', '2026-10-17 15:30:34', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-17 15:30:34'),
 (160, 'radalol730@fun4k.com', 'hr_main_branch', 'HR Main Branch', NULL, '$2y$12$7XE7ggeRv7J3xUcTOgf6qOvZEPs4A8ppDdHk8zb3VxzTggE3EUI2i', '2026-03-25 07:17:25', 'MANAGER', 'HR', NULL, 32, NULL, '2026-03-25 06:56:12', '2026-10-17 07:59:27', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-17 07:59:27'),
 (161, 'tavej98512@fabaos.com', 'finance_main_branch', 'Finance Main Branch', NULL, '$2y$12$Hb8m1H0Iau3u0jFJ0Spr5uqsg2Fl0kk.2QbHUAKQ.iMtZ9zKuBpra', '2026-03-25 07:20:21', 'MANAGER', 'FINANCE', NULL, 32, NULL, '2026-03-25 06:56:12', '2026-10-17 06:51:02', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-17 06:51:02'),
 (162, 'lefet30141@fun4k.com', 'logistics_main_branch', 'Logistics Main Branch', NULL, '$2y$12$5jgXzzPw90ASb/4TuQnmreNk6jVKcPGX6ELJy6C9yfDFNv67u2j6u', '2026-03-25 07:22:05', 'MANAGER', 'LOGISTICS', NULL, 32, NULL, '2026-03-25 06:56:12', '2026-10-14 04:38:48', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-14 04:38:48'),
@@ -2814,10 +2824,10 @@ INSERT INTO `users` (`id`, `email`, `username`, `full_name`, `name`, `password`,
 (263, 'kojoso2111@abowned.com', 'custom_br522771', 'Kojo', NULL, '$2y$12$CbqYfHiywX5/mi8QUS6zc.bfmbYCUWsd.yB64XfOM24Ka8uEaKUlu', NULL, 'CUSTOM', NULL, '{\"modules\":[\"finance\",\"logistics\",\"inventory\",\"procurement\",\"kitchen\",\"cashier\",\"hr\"],\"functions\":[]}', 55, NULL, '2026-10-02 10:48:09', '2026-10-02 10:48:09', NULL, 1, 1, 1, 'Pinned location: 14.333100, 120.950900', NULL, NULL, NULL, '09156818854', NULL, NULL),
 (265, 'bogogah562@abowned.com', 'custom_br762667', 'bogo', NULL, '$2y$12$YMCNyfKdWam8m8ejnupJjOPO5TwyEPnJDgTPEoYUu5XpQ63W7SqhS', '2026-10-02 11:07:08', 'CUSTOM', NULL, '{\"modules\":[\"finance\",\"logistics\",\"inventory\",\"procurement\",\"kitchen\",\"cashier\",\"hr\"],\"functions\":[]}', 56, NULL, '2026-10-02 11:05:51', '2026-10-12 17:52:11', NULL, 0, 1, 1, 'Pinned location: 14.333100, 120.950900', NULL, NULL, NULL, '09156818857', NULL, '2026-10-12 17:52:11'),
 (266, 'ripiko8014@18lover.com', 'custom_br458977', 'ripiko', NULL, '$2y$12$A28w6PsqNp/g2RSsUZ.v2.uMstjBCfksq/S6GI/99fPlmTEPYEdou', '2026-10-09 12:30:56', 'CUSTOM', NULL, '{\"modules\":[\"admin\",\"finance\",\"logistics\",\"inventory\",\"procurement\",\"kitchen\",\"cashier\",\"hr\"],\"functions\":[]}', 57, NULL, '2026-10-09 12:24:21', '2026-10-14 08:37:36', NULL, 0, 1, 1, 'Pinned location: 14.333100, 120.950900', NULL, NULL, NULL, '09156811234', NULL, '2026-10-14 08:37:36'),
-(267, 'vokila2011@backyr.com', 'vokila2011', 'Julius Calica', NULL, '$2y$12$shC.pujLq2HrwK/2LKe3n.QtTqun/eIpMvE8zwKaiLH4aSm3QeG7C', '2026-10-16 08:50:13', 'ADMIN', NULL, NULL, 59, NULL, '2026-10-16 08:47:43', '2026-10-16 08:52:22', NULL, 0, 1, 1, 'Pinned location: 14.330000, 120.940000', NULL, NULL, NULL, '09948334118', NULL, '2026-10-16 08:52:22'),
+(267, 'vokila2011@backyr.com', 'vokila2011', 'Julius Calica', NULL, '$2y$12$shC.pujLq2HrwK/2LKe3n.QtTqun/eIpMvE8zwKaiLH4aSm3QeG7C', '2026-10-16 08:50:13', 'ADMIN', NULL, NULL, 59, NULL, '2026-10-16 08:47:43', '2026-10-17 15:11:01', NULL, 0, 1, 1, 'Pinned location: 14.330000, 120.940000', NULL, NULL, NULL, '09948334118', NULL, '2026-10-17 15:11:01'),
 (270, 'kalawe3742@betshubs.com', 'custom_br432199_1', 'test', NULL, '$2y$12$hvZaVNlgej0cIGlPAhX0kerH0xsjocy.0O5Z/.mFh1hmYIeidqLs.', '2026-10-16 15:18:46', 'CUSTOM', NULL, '{\"modules\":[\"budget-request-approvals\",\"current-price-markup\",\"receipt-approval\",\"financial-overview\",\"recent-transactions\",\"manual-procurement\",\"procurement-requests\",\"add-supplier\",\"supplier-products\",\"stock-confirmation-history\",\"product-barcodes\",\"pending-stock\",\"request-new-product\",\"supplier-product-confirmations\"],\"functions\":[]}', 62, NULL, '2026-10-16 15:14:04', '2026-10-16 15:35:32', NULL, 0, 1, 1, 'Pinned location: 14.330000, 120.940000', NULL, NULL, NULL, '091568181212', NULL, '2026-10-16 15:35:32'),
 (272, 'dehifoc846@betshubs.com', 'custom_br980971_1', 'asdf', NULL, '$2y$12$NLaOs2eqMzg5/k8pv9bNCeCl1byFGBUtvfEeU4qyQghM67mMYJ56.', '2026-10-17 07:42:01', 'CUSTOM', NULL, '{\"modules\":[\"budget-request-approvals\",\"current-price-markup\",\"receipt-approval\",\"financial-overview\",\"recent-transactions\",\"manual-procurement\",\"procurement-requests\",\"add-supplier\",\"supplier-products\",\"stock-confirmation-history\",\"product-barcodes\",\"pending-stock\",\"request-new-product\",\"supplier-product-confirmations\",\"inventory-monitor\",\"product-disposal\",\"landing-page-product-images\",\"staff-activity\",\"automatic-clock-out\",\"staff-management\"],\"functions\":[]}', 64, NULL, '2026-10-17 07:39:14', '2026-10-17 07:44:29', NULL, 0, 1, 1, 'Pinned location: 14.330000, 120.940000', NULL, NULL, NULL, '09151818857', NULL, '2026-10-17 07:44:29'),
-(273, 'wirade3201@betshubs.com', 'wirade3201', 'asdf', NULL, '$2y$12$coITRdGeCWUnNxDbhsV8y.KOib0hspV0k6pJY5CHI2YBT1eWpFoO2', '2026-10-17 08:29:02', 'CUSTOM', NULL, '{\"modules\":[\"budget-request-approvals\",\"current-price-markup\",\"receipt-approval\",\"financial-overview\",\"recent-transactions\",\"manual-procurement\",\"procurement-requests\",\"add-supplier\",\"supplier-products\",\"stock-confirmation-history\",\"product-barcodes\",\"pending-stock\",\"request-new-product\",\"supplier-product-confirmations\",\"inventory-monitor\",\"product-disposal\",\"landing-page-product-images\",\"staff-activity\",\"automatic-clock-out\",\"staff-management\"],\"functions\":[]}', 31, NULL, '2026-10-17 08:28:05', '2026-10-17 08:29:02', NULL, 0, 1, 1, 'Pinned location: 14.330000, 120.940000', NULL, NULL, NULL, '09156816854', NULL, '2026-10-17 08:28:45');
+(273, 'wirade3201@betshubs.com', 'wirade3201', 'asdf', NULL, '$2y$12$coITRdGeCWUnNxDbhsV8y.KOib0hspV0k6pJY5CHI2YBT1eWpFoO2', '2026-10-17 08:29:02', 'CUSTOM', NULL, '{\"modules\":[\"budget-request-approvals\",\"current-price-markup\",\"receipt-approval\",\"financial-overview\",\"recent-transactions\",\"manual-procurement\",\"procurement-requests\",\"add-supplier\",\"supplier-products\",\"stock-confirmation-history\",\"product-barcodes\",\"pending-stock\",\"request-new-product\",\"supplier-product-confirmations\",\"inventory-monitor\",\"product-disposal\",\"landing-page-product-images\",\"staff-activity\",\"automatic-clock-out\",\"staff-management\"],\"functions\":[]}', 31, NULL, '2026-10-17 08:28:05', '2026-10-17 16:44:54', NULL, 0, 1, 1, 'Pinned location: 14.330000, 120.940000', NULL, NULL, NULL, '09156816854', NULL, '2026-10-17 16:44:54');
 
 --
 -- Indexes for dumped tables
@@ -3365,7 +3375,7 @@ ALTER TABLE `order_items`
 -- AUTO_INCREMENT for table `panel_notification_reads`
 --
 ALTER TABLE `panel_notification_reads`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `payrolls`
@@ -3377,7 +3387,7 @@ ALTER TABLE `payrolls`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3658;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3682;
 
 --
 -- AUTO_INCREMENT for table `positions`
@@ -3505,219 +3515,12 @@ ALTER TABLE `attendance`
   ADD CONSTRAINT `attendance_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
--- Constraints for table `attendance_settings`
---
-ALTER TABLE `attendance_settings`
-  ADD CONSTRAINT `attendance_settings_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE;
-
---
 -- Constraints for table `budget_requests`
 --
 ALTER TABLE `budget_requests`
   ADD CONSTRAINT `budget_requests_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `budget_requests_processed_by_foreign` FOREIGN KEY (`processed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `budget_requests_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `customer_accounts`
---
-ALTER TABLE `customer_accounts`
-  ADD CONSTRAINT `customer_accounts_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `customer_reports`
---
-ALTER TABLE `customer_reports`
-  ADD CONSTRAINT `customer_reports_assigned_to_foreign` FOREIGN KEY (`assigned_to`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `customer_reports_customer_account_id_foreign` FOREIGN KEY (`customer_account_id`) REFERENCES `customer_accounts` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `dishes`
---
-ALTER TABLE `dishes`
-  ADD CONSTRAINT `dishes_approved_by_foreign` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `email_communications`
---
-ALTER TABLE `email_communications`
-  ADD CONSTRAINT `email_communications_customer_report_id_foreign` FOREIGN KEY (`customer_report_id`) REFERENCES `customer_reports` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `email_communications_sent_by_foreign` FOREIGN KEY (`sent_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `expenses`
---
-ALTER TABLE `expenses`
-  ADD CONSTRAINT `expenses_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `expenses_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `expired_product_reports`
---
-ALTER TABLE `expired_product_reports`
-  ADD CONSTRAINT `expired_product_reports_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `expired_product_reports_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `expired_product_reports_reported_by_foreign` FOREIGN KEY (`reported_by`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `expired_product_reports_reviewed_by_foreign` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `logistics_transactions`
---
-ALTER TABLE `logistics_transactions`
-  ADD CONSTRAINT `logistics_transactions_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `logistics_transactions_destination_branch_id_foreign` FOREIGN KEY (`destination_branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `logistics_transactions_procurement_request_id_foreign` FOREIGN KEY (`procurement_request_id`) REFERENCES `procurement_requests` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `logistics_transactions_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `logistics_transactions_source_branch_id_foreign` FOREIGN KEY (`source_branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `logistics_transactions_supplier_order_id_foreign` FOREIGN KEY (`supplier_order_id`) REFERENCES `supplier_orders` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `messages`
---
-ALTER TABLE `messages`
-  ADD CONSTRAINT `messages_from_user_id_foreign` FOREIGN KEY (`from_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `messages_to_user_id_foreign` FOREIGN KEY (`to_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `orders`
---
-ALTER TABLE `orders`
-  ADD CONSTRAINT `orders_approved_by_foreign` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`);
-
---
--- Constraints for table `order_items`
---
-ALTER TABLE `order_items`
-  ADD CONSTRAINT `order_items_order_id_foreign` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `order_items_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `panel_notification_reads`
---
-ALTER TABLE `panel_notification_reads`
-  ADD CONSTRAINT `panel_notification_reads_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `payrolls`
---
-ALTER TABLE `payrolls`
-  ADD CONSTRAINT `payrolls_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `payrolls_confirmed_by_foreign` FOREIGN KEY (`confirmed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `payrolls_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `position_applications`
---
-ALTER TABLE `position_applications`
-  ADD CONSTRAINT `position_applications_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `position_applications_position_id_foreign` FOREIGN KEY (`position_id`) REFERENCES `positions` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `position_applications_position_open_request_id_foreign` FOREIGN KEY (`position_open_request_id`) REFERENCES `position_open_requests` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `position_open_requests`
---
-ALTER TABLE `position_open_requests`
-  ADD CONSTRAINT `fk_pos_open_req_position` FOREIGN KEY (`position_id`) REFERENCES `positions` (`id`),
-  ADD CONSTRAINT `fk_pos_open_req_user` FOREIGN KEY (`requested_by_user_id`) REFERENCES `users` (`id`),
-  ADD CONSTRAINT `position_open_requests_approved_by_user_id_foreign` FOREIGN KEY (`approved_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `position_open_requests_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `price_markup_percentages`
---
-ALTER TABLE `price_markup_percentages`
-  ADD CONSTRAINT `price_markup_percentages_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `price_markup_percentages_set_by_foreign` FOREIGN KEY (`set_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `price_markup_requests`
---
-ALTER TABLE `price_markup_requests`
-  ADD CONSTRAINT `price_markup_requests_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `price_markup_requests_main_finance_approved_by_foreign` FOREIGN KEY (`main_finance_approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `price_markup_requests_owner_approved_by_foreign` FOREIGN KEY (`owner_approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `price_markup_requests_requested_by_foreign` FOREIGN KEY (`requested_by`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `procurement_requests`
---
-ALTER TABLE `procurement_requests`
-  ADD CONSTRAINT `procurement_requests_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `procurement_requests_finance_user_id_foreign` FOREIGN KEY (`finance_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `procurement_requests_logistics_user_id_foreign` FOREIGN KEY (`logistics_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `procurement_requests_procurement_user_id_foreign` FOREIGN KEY (`procurement_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `procurement_requests_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `procurement_requests_supplier_id_foreign` FOREIGN KEY (`supplier_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `products`
---
-ALTER TABLE `products`
-  ADD CONSTRAINT `1` FOREIGN KEY (`supplier_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `products_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `product_comments`
---
-ALTER TABLE `product_comments`
-  ADD CONSTRAINT `product_comments_parent_comment_id_foreign` FOREIGN KEY (`parent_comment_id`) REFERENCES `product_comments` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `product_comments_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `product_comments_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `product_comment_flags`
---
-ALTER TABLE `product_comment_flags`
-  ADD CONSTRAINT `product_comment_flags_admin_user_id_foreign` FOREIGN KEY (`admin_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `product_comment_flags_product_comment_id_foreign` FOREIGN KEY (`product_comment_id`) REFERENCES `product_comments` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `product_requests`
---
-ALTER TABLE `product_requests`
-  ADD CONSTRAINT `product_requests_approved_by_foreign` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `product_requests_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `product_requests_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `product_requests_requested_by_foreign` FOREIGN KEY (`requested_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `purchase_orders`
---
-ALTER TABLE `purchase_orders`
-  ADD CONSTRAINT `purchase_orders_purchase_request_id_foreign` FOREIGN KEY (`purchase_request_id`) REFERENCES `purchase_requests` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `purchase_requests`
---
-ALTER TABLE `purchase_requests`
-  ADD CONSTRAINT `purchase_requests_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `purchase_requests_requester_id_foreign` FOREIGN KEY (`requester_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `settlements`
---
-ALTER TABLE `settlements`
-  ADD CONSTRAINT `settlements_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `settlements_processed_by_foreign` FOREIGN KEY (`processed_by`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `staff_documents`
---
-ALTER TABLE `staff_documents`
-  ADD CONSTRAINT `staff_documents_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `supplier_audit_logs`
---
-ALTER TABLE `supplier_audit_logs`
-  ADD CONSTRAINT `supplier_audit_logs_supplier_id_foreign` FOREIGN KEY (`supplier_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `supplier_audit_logs_triggered_by_user_id_foreign` FOREIGN KEY (`triggered_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `supplier_orders`
---
-ALTER TABLE `supplier_orders`
-  ADD CONSTRAINT `supplier_orders_admin_confirmed_by_foreign` FOREIGN KEY (`admin_confirmed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
