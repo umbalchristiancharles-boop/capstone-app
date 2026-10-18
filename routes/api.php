@@ -219,6 +219,7 @@ Route::middleware('web')->group(function () {
     Route::prefix('hr')->middleware('auth:sanctum,web')->group(function () {
         Route::get('/messages/users', [\App\Http\Controllers\HRMessageController::class, 'users']);
         Route::get('/messages/conversation/{userId}', [\App\Http\Controllers\HRMessageController::class, 'conversation']);
+        Route::post('/messages/conversation/{userId}/read', [\App\Http\Controllers\HRMessageController::class, 'markConversationRead']);
         Route::post('/messages/send', [\App\Http\Controllers\HRMessageController::class, 'send']);
         Route::post('/messages/send-employee-report', [\App\Http\Controllers\HRMessageController::class, 'sendEmployeeReport']);
 

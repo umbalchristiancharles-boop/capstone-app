@@ -66,11 +66,51 @@ class HRMessageController extends Controller
             ];
         });
 
-        // mark unread messages to me as read
-        Message::where('to_user_id', $me->id)->where('from_user_id', $other->id)->whereNull('read_at')
-            ->update(['read_at' => now()]);
-
         return response()->json(['messages' => $messages]);
+    }
+
+    public function markConversationRead(Request $request, $otherUserId)
+    {
+        $validated = $request->validate([
+            'message_ids' => 'required|array|min:1|max:500',
+            'message_ids.*' => 'required|integer|distinct',
+        ]);
+
+        $me = $this->currentUser();
+        if (! $me) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        $other = User::findOrFail($otherUserId);
+        if (! $this->canChatWith($me, $other)) {
+            return response()->json(['error' => 'User not in same branch'], 403);
+        }
+
+        $messages = Message::whereIn('id', $validated['message_ids'])
+            ->where('to_user_id', $me->id)
+            ->where('from_user_id', $other->id)
+            ->whereNull('read_at');
+        $readIds = $messages->pluck('id');
+        $readAt = now();
+
+        if ($readIds->isNotEmpty()) {
+            $messages->update(['read_at' => $readAt]);
+        }
+
+        $conversationUnreadCount = Message::where('to_user_id', $me->id)
+            ->where('from_user_id', $other->id)
+            ->whereNull('read_at')
+            ->count();
+        $totalUnreadCount = Message::where('to_user_id', $me->id)
+            ->whereNull('read_at')
+            ->count();
+
+        return response()->json([
+            'read_ids' => $readIds,
+            'read_at' => $readAt,
+            'unread_count' => $conversationUnreadCount,
+            'total_unread_count' => $totalUnreadCount,
+        ]);
     }
 
     public function users()

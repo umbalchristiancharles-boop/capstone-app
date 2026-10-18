@@ -30,7 +30,7 @@
             <div v-else-if="filteredUsers.length === 0" class="msg-list-state">No matching conversations.</div>
           </div>
         </div>
-        <div class="msg-right">
+        <div class="msg-right" @click="markVisibleMessagesRead">
           <div class="msg-right-header">
             <div class="msg-right-title">
               <div class="msg-right-avatar" v-if="selected && selected.avatar"><img :src="selected.avatar" alt="" /></div>
@@ -71,8 +71,11 @@
                 class="msg-date-divider"
                 role="separator"
               >{{ formatMessageDivider(m.created_at) }}</div>
-              <div :class="['msg-row', m.from_user_id === meId ? 'row-mine' : 'row-theirs']">
-                <div v-if="m.from_user_id !== meId" class="msg-avatar-small">
+              <div
+                :class="['msg-row', isOwnMessage(m) ? 'row-mine' : 'row-theirs', { 'msg-row--unread': isUnreadIncomingMessage(m) }]"
+                :data-message-id="m.id"
+              >
+                <div v-if="!isOwnMessage(m)" class="msg-avatar-small">
                   <img v-if="m.from_user && m.from_user.avatar" :src="m.from_user.avatar" />
                   <div v-else class="avatar-initial">{{ (m.from_user?.name||'').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase() }}</div>
                 </div>
@@ -83,6 +86,7 @@
                       <div class="employee-report-title">Employee Report</div>
                       <div class="employee-report-subtitle">Confidential HR submission</div>
                     </div>
+                    <span v-if="isUnreadIncomingMessage(m)" class="msg-unread-indicator">New</span>
                   </div>
                   <div class="employee-report-divider"></div>
                   <div class="employee-report-field">
@@ -95,19 +99,20 @@
                   </div>
                   <div class="employee-report-footer">
                     <span>Submitted by {{ m.from_user?.name || 'User' }}</span>
-                    <span><template v-if="!ownerMode">{{ formatDate(m.created_at) }}<br></template><em v-if="m.from_user_id === meId">{{ messageStatus(m) }}</em></span>
+                    <span><template v-if="!ownerMode">{{ formatDate(m.created_at) }}<br></template><em v-if="isOwnMessage(m)">{{ messageStatus(m) }}</em></span>
                   </div>
                 </div>
-                <div v-else :class="['msg-bubble', m.from_user_id === meId ? 'mine' : 'theirs', { 'msg-bubble--image': ownerMode && isImageAttachment(m) }]">
-                  <div v-if="m.from_user?.name || m.from_user_id === meId" class="msg-sender">
-                    <strong class="msg-sender-name">{{ m.from_user_id === meId ? currentUserName : m.from_user.name }}</strong>
-                    <span v-if="m.from_user_id !== meId" class="msg-sender-role">({{ roleLabel(m.from_user.role) }})</span>
+                <div v-else :class="['msg-bubble', isOwnMessage(m) ? 'mine' : 'theirs', { 'msg-bubble--image': ownerMode && isImageAttachment(m) }]">
+                  <span v-if="isUnreadIncomingMessage(m)" class="msg-unread-indicator">New</span>
+                  <div v-if="m.from_user?.name || isOwnMessage(m)" class="msg-sender">
+                    <strong class="msg-sender-name">{{ isOwnMessage(m) ? currentUserName : m.from_user.name }}</strong>
+                    <span v-if="!isOwnMessage(m)" class="msg-sender-role">({{ roleLabel(m.from_user.role) }})</span>
                   </div>
                   <div v-if="m.body" class="msg-body" v-html="escapeHtml(m.body)"></div>
                   <img v-if="isImageAttachment(m)" class="msg-attachment-image" :src="m.attachment_url" :alt="m.attachment_name" @click="openAttachment(m)" />
                   <a v-else-if="m.attachment_url" class="msg-attachment-link" :href="m.attachment_url" target="_blank" rel="noopener">View {{ m.attachment_name }}</a>
                   <div v-if="!ownerMode" class="msg-ts">{{ formatDate(m.created_at) }}</div>
-                  <div v-if="m.from_user_id === meId" class="msg-status">{{ messageStatus(m) }}</div>
+                  <div v-if="isOwnMessage(m)" class="msg-status">{{ messageStatus(m) }}</div>
                 </div>
               </div>
               </template>
@@ -143,6 +148,7 @@
                 placeholder="Aa"
                 aria-label="Write a message"
                 :disabled="!selected || sending"
+                ref="ownerMessageInput"
                 @keydown.enter.exact.prevent="send"
               ></textarea>
             </div>
@@ -169,7 +175,13 @@
                 <span class="attachment-preview-name" :title="attachment.name">{{ attachment.name }}</span>
                 <button type="button" class="attachment-remove" @click="clearAttachment" aria-label="Remove attachment">×</button>
               </div>
-              <textarea v-model="body" placeholder="Write a message..."></textarea>
+              <textarea
+                ref="messageInput"
+                v-model="body"
+                placeholder="Write a message..."
+                :disabled="!selected || sending"
+                @keydown.enter.exact.prevent="send"
+              ></textarea>
             </div>
             <div class="composer-actions">
               <input ref="attachmentInput" class="attachment-input" type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" @change="selectAttachment" />
@@ -234,6 +246,7 @@ export default {
       attachment: null,
       attachmentPreviewUrl: '',
       sending: false,
+      readingMessageIds: [],
       reportOpen: false,
       reportBody: '',
       reportSending: false,
@@ -247,6 +260,7 @@ export default {
         csrfRetriedOnce: false,
         fetchUsersInProgress: false,
         stoppedUnauthenticated: false,
+        fetchUsersRequested: false,
       pollTimer: null,
         pendingOwnerUserId: null,
     }
@@ -525,10 +539,28 @@ export default {
       }
     },
     messageStatus(message){
-      return message.read_at ? 'Read' : 'Delivered'
+      if (message.read_at) return 'Seen'
+      if (message.delivered_at) return 'Delivered'
+      return 'Sent'
+    },
+    isOwnMessage(message){
+      return String(message.from_user_id) === String(this.meId)
+    },
+    isUnreadIncomingMessage(message){
+      return String(message.to_user_id) === String(this.meId) && !message.read_at
+    },
+    focusMessageInput(){
+      this.$nextTick(() => {
+        const input = this.ownerMode ? this.$refs.ownerMessageInput : this.$refs.messageInput
+        if (input && !input.disabled) input.focus()
+      })
     },
     fetchUsers(){
-      if (this.fetchUsersInProgress || this.stoppedUnauthenticated) return
+      if (this.stoppedUnauthenticated) return
+      if (this.fetchUsersInProgress) {
+        this.fetchUsersRequested = true
+        return
+      }
       this.fetchUsersInProgress = true
       this.usersLoading = this.users.length === 0
 
@@ -561,23 +593,85 @@ export default {
       }).finally(() => {
         this.fetchUsersInProgress = false
         this.usersLoading = false
+        if (this.fetchUsersRequested) {
+          this.fetchUsersRequested = false
+          this.fetchUsers()
+        }
       })
     },
     selectUser(u){
       this.selected = u
       this.closeReportForm()
-      this.loadConversation(u.id)
+      this.loadConversation(u.id, true)
     },
     closeReportForm(){
       this.reportOpen = false
       this.reportBody = ''
     },
-    loadConversation(userId){
+    markVisibleMessagesRead(){
+      if (!this.selected || !this.$refs.messagesPane) return
+      const pane = this.$refs.messagesPane
+      const paneBounds = pane.getBoundingClientRect()
+      const messageIds = [...pane.querySelectorAll('[data-message-id]')]
+        .filter(row => {
+          const bounds = row.getBoundingClientRect()
+          return bounds.bottom > paneBounds.top && bounds.top < paneBounds.bottom
+        })
+        .map(row => this.messages.find(message => String(message.id) === row.dataset.messageId))
+        .filter(message => message
+          && String(message.to_user_id) === String(this.meId)
+          && !message.read_at
+          && !this.readingMessageIds.includes(message.id))
+        .map(message => message.id)
+      if (!messageIds.length) return
+
+      const userId = this.selected.id
+      this.readingMessageIds.push(...messageIds)
+      axios.post(`/api/hr/messages/conversation/${userId}/read`, { message_ids: messageIds }).then(response => {
+        const readAt = response.data.read_at
+        const readIds = new Set((response.data.read_ids || []).map(String))
+        const unreadCount = Number(response.data.unread_count || 0)
+        this.unreadCount = Number(response.data.total_unread_count || 0)
+        this.users = this.users.map(user => String(user.id) === String(userId)
+          ? { ...user, unread_count: unreadCount }
+          : user)
+        if (String(this.selected?.id) === String(userId)) {
+          this.selected = this.users.find(user => String(user.id) === String(userId)) || this.selected
+        }
+        if (String(this.selected?.id) === String(userId)) {
+          this.messages = this.messages.map(message => readIds.has(String(message.id))
+            ? { ...message, read_at: readAt }
+            : message)
+        }
+        window.dispatchEvent(new CustomEvent('owner-message-users-updated', { detail: { users: this.users } }))
+        this.fetchUsers()
+      }).catch(err => {
+        if (err && err.response && err.response.status === 401) {
+          this.hasSession = false
+          return
+        }
+        console.error('Could not mark viewed messages as read', err)
+      }).finally(() => {
+        const processedIds = new Set(messageIds)
+        this.readingMessageIds = this.readingMessageIds.filter(id => !processedIds.has(id))
+      })
+    },
+    loadConversation(userId, forceScrollToBottom = false){
       axios.get(`/api/hr/messages/conversation/${userId}`).then(resp => {
-        this.messages = resp.data.messages || []
+        const pane = this.$refs.messagesPane
+        const wasNearBottom = !pane || pane.scrollHeight - pane.clientHeight - pane.scrollTop <= 40
+        const knownReadAt = new Map(this.messages
+          .filter(message => message.read_at)
+          .map(message => [String(message.id), message.read_at]))
+        this.messages = (resp.data.messages || []).map(message => knownReadAt.has(String(message.id))
+          ? { ...message, read_at: knownReadAt.get(String(message.id)) }
+          : message)
         this.fetchUsers()
         this.$nextTick(() => {
-          try { this.$refs.messagesPane.scrollTop = this.$refs.messagesPane.scrollHeight } catch(e) {}
+          const messagesPane = this.$refs.messagesPane
+          if ((forceScrollToBottom || wasNearBottom) && messagesPane) {
+            messagesPane.scrollTop = messagesPane.scrollHeight
+          }
         })
       }).catch(err => {
         if (err && err.response && err.response.status === 403) {
@@ -596,6 +690,7 @@ export default {
     },
     send(){
       if (!this.selected || (!this.body.trim() && !this.attachment)) return
+      this.markVisibleMessagesRead()
       this.sending = true
       const form = new FormData()
       form.append('to_user_id', this.selected.id)
@@ -604,7 +699,7 @@ export default {
       axios.post('/api/hr/messages/send', form).then(resp => {
         this.body = ''
         this.clearAttachment()
-        this.loadConversation(this.selected.id)
+        this.loadConversation(this.selected.id, true)
       }).catch(err => {
         const status = err && err.response && err.response.status
         const errorMessage = err?.response?.data?.error
@@ -617,7 +712,10 @@ export default {
         } else {
           alert(errorMessage)
         }
-      }).finally(() => { this.sending = false })
+      }).finally(() => {
+        this.sending = false
+        this.focusMessageInput()
+      })
     },
     sendEmployeeReport(){
       if (!this.canSubmitEmployeeReport || !this.isHrManager(this.selected) || !this.reportBody.trim()) return
@@ -627,7 +725,7 @@ export default {
         report_body: this.reportBody,
       }).then(() => {
         this.closeReportForm()
-        this.loadConversation(this.selected.id)
+        this.loadConversation(this.selected.id, true)
       }).catch(err => {
         if (err && err.response && err.response.status === 401) {
           alert('Session expired. Please login again.')
@@ -659,7 +757,7 @@ export default {
 .msg-user-name{font-weight:500;color:#0f172a}
 .msg-user-name.unread{font-weight:800}
 .msg-user-role{font-size:12px;color:#64748b;margin-top:4px}
-.msg-right{flex:1;display:flex;flex-direction:column;background:transparent}
+.msg-right{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;background:transparent}
 .msg-right-header{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid rgba(15,23,42,0.04)}
 .msg-right-title{display:flex;align-items:center;gap:12px}
 .msg-right-avatar{width:40px;height:40px;border-radius:999px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#f3f4f6;color:#374151;font-weight:700}
@@ -668,7 +766,7 @@ export default {
 .msg-header-actions{display:flex;gap:8px;align-items:center}
 .report-btn{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;padding:7px 10px;border-radius:8px;font-weight:700;cursor:pointer}
 .close-btn{background:#ef4444;color:#fff;border:none;padding:6px 10px;border-radius:8px}
-.msg-messages{flex:1;padding:18px;overflow:auto;background:transparent;display:flex;flex-direction:column;gap:12px}
+.msg-messages{flex:1;min-height:0;padding:18px;overflow:auto;background:transparent;display:flex;flex-direction:column;gap:12px}
 .msg-thread{display:flex;flex-direction:column;gap:12px}
 .msg-row{display:flex;align-items:flex-end;gap:10px}
 .row-mine{justify-content:flex-end}
@@ -680,15 +778,19 @@ export default {
 .msg-bubble.mine{background:#ea580c;color:#fff;align-self:flex-end;margin-left:auto;border:none}
 .msg-bubble.mine .msg-body{color:#fff}
 .msg-bubble.theirs{background:#f8fafc;color:#0f172a;align-self:flex-start;margin-right:auto}
+.msg-row--unread .msg-bubble.theirs{border-color:rgba(234,88,12,.22);background:#fff7ed}
+.msg-unread-indicator{display:inline-flex;align-items:center;margin:0 0 6px;padding:2px 7px;border-radius:999px;background:#ffedd5;color:#9a3412;font-size:9px;font-weight:800;line-height:1.4}
+.msg-row--unread .employee-report-card{border-color:#fdba74;box-shadow:0 8px 22px rgba(124,45,18,.14)}
 .msg-sender{font-size:12px;color:#0f172a;font-weight:700;margin-bottom:6px}
 .msg-sender-name{font-weight:800}
 .msg-sender-role{font-weight:600;color:#6b7280;font-size:11px;margin-left:6px}
 .msg-ts{font-size:11px;color:rgba(15,23,42,0.45);margin-top:8px;text-align:right}
 .msg-status{font-size:10px;color:rgba(15,23,42,0.55);margin-top:3px;text-align:right}
 .msg-bubble.mine .msg-ts,.msg-bubble.mine .msg-status{color:rgba(255,255,255,0.9)}
-.msg-composer{padding:12px;border-top:1px solid rgba(15,23,42,0.04);background:linear-gradient(180deg,#fff,#fbfdff);display:flex;gap:12px;align-items:flex-end}
+.msg-composer{flex:0 0 auto;padding:12px;border-top:1px solid rgba(15,23,42,0.04);background:linear-gradient(180deg,#fff,#fbfdff);display:flex;gap:12px;align-items:flex-end}
 .msg-compose-input{flex:1;min-width:0;padding:8px;border:1px solid rgba(15,23,42,0.08);border-radius:12px;background:#fff}
-.msg-composer textarea{display:block;width:100%;min-height:32px;max-height:160px;padding:4px 2px;border:0;border-radius:8px;resize:vertical;outline:none;box-sizing:border-box}
+.msg-composer textarea{display:block;width:100%;min-height:32px;max-height:160px;padding:4px 2px;border:0;border-radius:8px;resize:none;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;outline:none;box-sizing:border-box}
+.msg-composer textarea::-webkit-scrollbar{display:none}
 .attachment-preview{display:flex;align-items:center;gap:8px;margin-bottom:6px;padding:5px 7px;border-radius:8px;background:#f8fafc;min-width:0}
 .attachment-preview-image{width:42px;height:42px;flex:0 0 42px;border-radius:6px;object-fit:cover}
 .attachment-preview-file{display:grid;width:42px;height:42px;flex:0 0 42px;place-items:center;border-radius:6px;background:#ff853b;color:#fff;font-size:10px;font-weight:800}
