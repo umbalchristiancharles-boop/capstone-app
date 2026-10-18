@@ -1465,6 +1465,9 @@ async function openAdminNotifications(type) {
 
 watch(activeSection, async (section) => {
   loadAdminNotifications()
+  if (section === 'inventory') {
+    loadSupplierSubmissions()
+  }
   if (section === 'announcements' && await fetchAnnouncements()) {
     await markAdminNotificationRead('announcements')
   }
@@ -1573,7 +1576,9 @@ async function loadSupplierSubmissions() {
 }
 
 watch(selectedBranchId, () => {
-  loadSupplierSubmissions()
+  if (!props.embeddedSection && activeSection.value === 'inventory') {
+    loadSupplierSubmissions()
+  }
 })
 
 async function loadLandingProducts() {
@@ -1942,10 +1947,6 @@ onMounted(async () => {
   } catch (err) {
     console.error('Dashboard load failed:', err)
   }
-
-  await loadSupplierSubmissions()
-
-
 
   // Remove loading overlay after content is loaded
   clearTemporaryOverlay()
