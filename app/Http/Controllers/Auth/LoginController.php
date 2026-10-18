@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 
 class LoginController extends Controller
@@ -94,11 +95,19 @@ class LoginController extends Controller
 
     public function logout(\Illuminate\Http\Request $request)
     {
-        // Clear session data and prevent session fixation
-        $request->session()->flush();
+        $role = strtoupper((string) $request->session()->get('user_role'));
+        $redirectPath = in_array($role, ['ADMIN', 'SUPER_ADMIN', 'SUPERADMIN'], true)
+            ? '/admin-login'
+            : '/staff-landing';
+
+        Auth::guard('web')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/staff-landing')->with('success', 'Logged out successfully.');
+        return redirect($redirectPath)
+            ->with('success', 'Logged out successfully.')
+            ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 }

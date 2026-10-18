@@ -623,8 +623,12 @@ router.beforeEach(async (to, from, next) => {
   if (isProtectedRoute) {
     // If no user in localStorage, redirect to login
     if (!user) {
-      console.warn('[ROUTER] No user in localStorage, redirecting to staff landing');
-      return next('/staff-landing');
+      const adminPanelPath = to.path === '/admin-panel'
+        || to.path === '/super-admin-panel'
+        || to.path.startsWith('/super-admin/')
+      const loginPath = adminPanelPath ? '/admin-login' : '/staff-landing'
+      console.warn(`[ROUTER] No user in localStorage, redirecting to ${loginPath}`);
+      return next(loginPath);
     }
 
     const hasModule = (m) => {

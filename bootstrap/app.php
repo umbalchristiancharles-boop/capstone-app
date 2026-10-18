@@ -4,6 +4,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\EnsurePermission;
 use App\Http\Middleware\SuperAdminSandboxMiddleware;
@@ -32,6 +33,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'permission' => EnsurePermission::class,
         ]);
+        $middleware->redirectGuestsTo(function (Request $request): string {
+            if ($request->is('admin-panel', 'super-admin-panel', 'super-admin/*')) {
+                return '/admin-login';
+            }
+
+            return route('login');
+        });
         $middleware->appendToGroup('web', SuperAdminSandboxMiddleware::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -1960,34 +1960,13 @@ async function confirmLogout() {
   isLoggingOut.value = true
 
   try {
-    // Use server GET logout endpoint to avoid CSRF token issues (server redirects to landing)
-    // Clear client storage then navigate to server logout which will invalidate session
     try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
+    showLogoutConfirm.value = false
     window.location.replace('/logout')
-  } catch (e) {}
-
-  // Show CHIKIN TAYO overlay + page blur, then navigate via router
-  overlayText.value = 'Logging out...'
-  try { if (window.pageBlur && typeof window.pageBlur.show === 'function') window.pageBlur.show() } catch (e) {}
-  showOverlay.value = true
-
-  // close the confirm modal immediately
-  showLogoutConfirm.value = false
-
-  // wait a short moment for the overlay to appear, then use SPA navigation
-    setTimeout(() => {
-      // Clear any client-side state to prevent SPA from showing protected pages
-      try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
-
-      // Use full-page navigation so the browser requests the server (which has invalidated session)
-      // and receives no-cache headers. Use replace to avoid adding a new history entry.
-      try {
-        window.location.replace('/admin-login')
-      } catch (e) {
-        // fallback to router navigation if replace fails
-        router.push('/admin-login').catch(() => {})
-      }
-    }, 600)
+  } catch (error) {
+    console.error('Admin logout navigation failed:', error)
+    isLoggingOut.value = false
+  }
 }
 
 function cancelLogout() {

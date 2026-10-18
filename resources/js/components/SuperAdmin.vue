@@ -1109,12 +1109,10 @@ async function confirmLogout() {
   try {
     localStorage.clear()
     sessionStorage.clear()
-    window.location.replace('/logout')
   } catch (e) {
-    localStorage.clear()
-    sessionStorage.clear()
-    window.location.replace('/admin-login')
+    console.error('Super Admin client state could not be cleared:', e)
   }
+  window.location.replace('/logout')
 }
 
 function cancelLogout() {
