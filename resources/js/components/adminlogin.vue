@@ -131,6 +131,7 @@ function normalizeUserRole(role = '') {
         'manager_hr': 'manager',
         'manager_finance': 'manager',
         'manager_logistics': 'manager',
+        'logistics_manager': 'manager',
         'manager_inventory': 'manager',
         'manager_procurement': 'manager',
         'manager_cashier': 'manager',
@@ -140,6 +141,21 @@ function normalizeUserRole(role = '') {
     };
 
     return aliasMap[normalized] || normalized;
+}
+
+function normalizeUserDepartment(department = '', role = '') {
+    const normalizedDepartment = String(department || '').trim().toLowerCase();
+    const departmentKey = normalizedDepartment.replace(/[\s-]+/g, '_');
+    if (departmentKey === 'manager_logistics' || departmentKey === 'logistics_manager') {
+        return 'logistics';
+    }
+    if (normalizedDepartment) return normalizedDepartment;
+
+    const normalizedRole = String(role || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+    if (normalizedRole === 'manager_logistics' || normalizedRole === 'logistics_manager') {
+        return 'logistics';
+    }
+    return '';
 }
 
 async function getCurrentLocation() {
@@ -217,7 +233,7 @@ async function handleLogin() {
                 id: res.data.user?.id,
                 username: res.data.user?.username,
                 role: normalizeUserRole(res.data.user?.role),
-                department: (res.data.user?.department || '').toLowerCase(),
+                department: normalizeUserDepartment(res.data.user?.department, res.data.user?.role),
                 full_name: res.data.user?.full_name,
                 branch_id: res.data.user?.branch_id,
                 branch_name: res.data.user?.branch_name,

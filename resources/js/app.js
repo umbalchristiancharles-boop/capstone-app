@@ -520,6 +520,7 @@ const managerDepartmentByRole = {
   manager_hr: 'hr',
   manager_finance: 'finance',
   manager_logistics: 'logistics',
+  logistics_manager: 'logistics',
   manager_inventory: 'inventory',
   manager_procurement: 'procurement',
   manager_cashier: 'cashier',
@@ -534,7 +535,11 @@ function normalizePanelUser(user) {
   if (!user) return user
 
   const rawRole = String(user.role || '').trim().toLowerCase()
-  const department = String(user.department || '').trim().toLowerCase()
+  const rawDepartment = String(user.department || '').trim().toLowerCase()
+  const departmentKey = rawDepartment.replace(/[\s-]+/g, '_')
+  const department = ['manager_logistics', 'logistics_manager'].includes(departmentKey)
+    ? 'logistics'
+    : rawDepartment
 
   let role = rawRole
   let normalizedDepartment = department
