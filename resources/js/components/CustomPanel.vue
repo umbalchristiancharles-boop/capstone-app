@@ -1060,6 +1060,17 @@ const logout = async () => {
   margin: 0 !important;
   padding: 0 !important;
 }
+
+.custom-feature-view > :deep(.owner-panel-layout--embedded .manager-hr-page) {
+  padding-left: 1.3rem !important;
+}
+
+@media (max-width: 767px) {
+  .custom-feature-view > :deep(.owner-panel-layout--embedded .manager-hr-page) {
+    padding-left: 0.85rem !important;
+  }
+}
+
 .panel-logo { display:block; width:58px; height:auto; flex-shrink: 0 }
 .cards-greeting-row { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; margin: 0 0 52px 0 }
 .cards-greeting-text { font-size: 18px; font-weight: 700; color: #1F2937 }
