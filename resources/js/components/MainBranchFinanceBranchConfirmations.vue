@@ -47,7 +47,12 @@
         <div class="request-card__body">
           <div class="address-block">
             <div class="label">Address</div>
-            <div class="value">{{ branch.address || 'No address provided' }}</div>
+            <div class="value">
+              {{ isCoordinateFallback(branch.address) ? 'Pinned location' : (branch.address || 'No address provided') }}
+              <a v-if="hasCoordinates(branch)" :href="mapUrl(branch)" target="_blank" rel="noopener noreferrer">
+                View on map
+              </a>
+            </div>
           </div>
           <div class="request-meta-grid request-details-grid">
             <div class="request-meta"><span>Store area</span><strong>{{ branch.square_meters || 'N/A' }} m²</strong></div>
@@ -95,6 +100,14 @@ const error = ref('')
 const approvingId = ref(null)
 const rejectingId = ref(null)
 const hasNotified = ref(false)
+const rejectionReasonOptions = [
+  'Incomplete or inaccurate branch information',
+  'Insufficient budget or financial justification',
+  'Location does not meet branch requirements',
+  'Missing or invalid supporting documents',
+  'Does not meet branch approval criteria',
+  'Other',
+]
 
 function formatDate(dateString) {
   if (!dateString) return 'N/A'
@@ -113,6 +126,19 @@ function formatCurrency(amount) {
   } catch (e) {
     return 'PHP ' + (amount || 0)
   }
+}
+
+function isCoordinateFallback(address) {
+  return /^Pinned location:\s*-?\d+(?:\.\d+)?,\s*-?\d+(?:\.\d+)?$/i.test(address || '')
+}
+
+function hasCoordinates(branch) {
+  return Number.isFinite(Number(branch.latitude)) && Number.isFinite(Number(branch.longitude))
+    && branch.latitude !== null && branch.longitude !== null
+}
+
+function mapUrl(branch) {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${branch.latitude},${branch.longitude}`)}`
 }
 
 async function loadPending() {
@@ -173,6 +199,39 @@ async function rejectBranch(branch) {
   const result = await Swal.fire({
     title: 'Reject branch request?',
     text: `This will reject the budget allocation for ${branch.name}.`,
+    html: `
+      <label for="branch-rejection-reason" style="display:block;margin:0 0 8px;text-align:left;font-weight:600">Reason for rejection</label>
+      <select id="branch-rejection-reason" class="swal2-select" style="display:flex;width:100%;margin:0 0 12px">
+        <option value="">Choose a reason</option>
+        ${rejectionReasonOptions.map(reason => `<option value="${reason}">${reason}</option>`).join('')}
+      </select>
+      <textarea id="branch-rejection-details" class="swal2-textarea" maxlength="1000" placeholder="Please explain the reason for rejection..." aria-label="Other rejection reason" style="display:none;margin:0;width:100%;box-sizing:border-box"></textarea>
+    `,
+    didOpen: () => {
+      const popup = Swal.getPopup()
+      const reasonSelect = popup?.querySelector('#branch-rejection-reason')
+      const otherDetails = popup?.querySelector('#branch-rejection-details')
+      reasonSelect?.addEventListener('change', () => {
+        if (otherDetails) {
+          otherDetails.style.display = reasonSelect.value === 'Other' ? 'block' : 'none'
+          if (reasonSelect.value !== 'Other') otherDetails.value = ''
+        }
+      })
+    },
+    preConfirm: () => {
+      const popup = Swal.getPopup()
+      const reason = popup?.querySelector('#branch-rejection-reason')?.value
+      const details = popup?.querySelector('#branch-rejection-details')?.value?.trim()
+      if (!reason) {
+        Swal.showValidationMessage('Choose a reason before rejecting this request.')
+        return false
+      }
+      if (reason === 'Other' && !details) {
+        Swal.showValidationMessage('Please explain the reason for rejection.')
+        return false
+      }
+      return { reason, reason_details: reason === 'Other' ? details : null }
+    },
     icon: 'warning',
     showCancelButton: true,
     confirmButtonText: 'Reject',
@@ -184,7 +243,7 @@ async function rejectBranch(branch) {
 
   rejectingId.value = branch.id
   try {
-    const res = await axios.post(`/api/main-branch/finance/branch-requests/${branch.id}/reject`, {}, { withCredentials: true })
+    const res = await axios.post(`/api/main-branch/finance/branch-requests/${branch.id}/reject`, result.value, { withCredentials: true })
     if (res.data?.ok) {
       await loadPending()
     } else {

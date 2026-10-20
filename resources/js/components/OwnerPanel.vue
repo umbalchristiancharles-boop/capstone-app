@@ -19,22 +19,48 @@
     :announcementsInModal="true"
     :notificationDetailsInModal="true"
     accountInfoStyle="finance"
-    profileEndpoint="/api/profile"
-    updateEndpoint="/api/profile/update"
-    avatarEndpoint="/api/profile/avatar"
+    profileEndpoint="/api/owner-profile"
+    updateEndpoint="/api/owner-profile"
+    avatarEndpoint="/api/upload-avatar"
     @logout="handleLogout"
   >
     <template #ownerSidebar>
       <nav class="owner-sidebar-nav" aria-label="Owner sections">
-        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'dashboard' }" @click="selectSection('dashboard')">Dashboard</button>
-        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'dishApproval' }" @click="selectSection('dishApproval')">Dish Approval</button>
-        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'staffManagement' }" @click="selectSection('staffManagement')">Staff Management</button>
-        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'permissions' }" @click="selectSection('permissions')">Permissions</button>
-        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'branchConfirmations' }" @click="selectSection('branchConfirmations')">Branch Confirmations</button>
-        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'branchAnalytics' }" @click="selectSection('branchAnalytics')">Branch Analytics</button>
-        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'priceMarkups' }" @click="selectSection('priceMarkups')">Price Markups</button>
-        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'announcements' }" @click="selectSection('announcements')">Announcements</button>
+        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'dashboard' }" @click="selectSection('dashboard')">
+          <span class="owner-sidebar-link__icon" aria-hidden="true">⌂</span><span class="owner-sidebar-link__label">Dashboard</span>
+        </button>
+        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'dishApproval' }" @click="selectSection('dishApproval')">
+          <span class="owner-sidebar-link__icon" aria-hidden="true">✓</span><span class="owner-sidebar-link__label">Dish Approval</span>
+        </button>
+        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'staffManagement' }" @click="selectSection('staffManagement')">
+          <span class="owner-sidebar-link__icon" aria-hidden="true">♙</span><span class="owner-sidebar-link__label">Staff Management</span>
+        </button>
+        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'permissions' }" @click="selectSection('permissions')">
+          <span class="owner-sidebar-link__icon" aria-hidden="true">⚙</span><span class="owner-sidebar-link__label">Permissions</span>
+        </button>
+        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'branchConfirmations' }" @click="selectSection('branchConfirmations')">
+          <span class="owner-sidebar-link__icon" aria-hidden="true">⌂</span><span class="owner-sidebar-link__label">Branch Confirmations</span>
+        </button>
+        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'branchAnalytics' }" @click="selectSection('branchAnalytics')">
+          <span class="owner-sidebar-link__icon" aria-hidden="true">↗</span><span class="owner-sidebar-link__label">Branch Analytics</span>
+        </button>
+        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'priceMarkups' }" @click="selectSection('priceMarkups')">
+          <span class="owner-sidebar-link__icon" aria-hidden="true">₱</span><span class="owner-sidebar-link__label">Price Markups</span>
+        </button>
+        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'announcements' }" @click="selectSection('announcements')">
+          <span class="owner-sidebar-link__icon" aria-hidden="true">✉</span><span class="owner-sidebar-link__label">Announcements</span>
+        </button>
       </nav>
+    </template>
+
+    <template #ownerTopbarActions>
+      <button
+        type="button"
+        class="owner-tutorial-trigger"
+        aria-label="Open owner panel tutorial"
+        title="Owner panel tutorial"
+        @click="openOwnerTutorial"
+      >?</button>
     </template>
 
     <template #ownerSidebarFooter>
@@ -310,6 +336,78 @@
         :is="sectionComponents[selectedSection]"
         :embedded="true"
       />
+      <Teleport to="body">
+        <Transition name="owner-tutorial-fade">
+          <div
+            v-if="showOwnerTutorial"
+            class="owner-tutorial-backdrop"
+            role="presentation"
+            @click.self="closeOwnerTutorial"
+            @keydown.esc="closeOwnerTutorial"
+          >
+            <section
+              class="owner-tutorial-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="owner-tutorial-title"
+              tabindex="-1"
+            >
+              <header class="owner-tutorial-header">
+                <div>
+                  <p class="owner-tutorial-eyebrow">Owner panel guide</p>
+                  <h2 id="owner-tutorial-title">How to use this panel</h2>
+                </div>
+                <button
+                  class="owner-tutorial-close"
+                  type="button"
+                  aria-label="Close owner panel tutorial"
+                  @click="closeOwnerTutorial"
+                >✕</button>
+              </header>
+
+              <div class="owner-tutorial-progress" aria-live="polite">
+                <span
+                  v-for="(step, index) in ownerTutorialSteps"
+                  :key="step.title"
+                  class="owner-tutorial-progress__dot"
+                  :class="{ active: index === ownerTutorialStep }"
+                  :aria-label="`Step ${index + 1}: ${step.title}`"
+                ></span>
+                <span>Step {{ ownerTutorialStep + 1 }} of {{ ownerTutorialSteps.length }}</span>
+              </div>
+
+              <div class="owner-tutorial-body">
+                <div class="owner-tutorial-icon" aria-hidden="true">{{ ownerTutorialSteps[ownerTutorialStep].icon }}</div>
+                <h3>{{ ownerTutorialSteps[ownerTutorialStep].title }}</h3>
+                <p>{{ ownerTutorialSteps[ownerTutorialStep].description }}</p>
+                <ul>
+                  <li v-for="item in ownerTutorialSteps[ownerTutorialStep].items" :key="item">{{ item }}</li>
+                </ul>
+              </div>
+
+              <footer class="owner-tutorial-footer">
+                <button
+                  class="owner-tutorial-button owner-tutorial-button--secondary"
+                  type="button"
+                  :disabled="ownerTutorialStep === 0"
+                  @click="ownerTutorialStep -= 1"
+                >Previous</button>
+                <button
+                  v-if="ownerTutorialSteps[ownerTutorialStep].section"
+                  class="owner-tutorial-button owner-tutorial-button--section"
+                  type="button"
+                  @click="openOwnerTutorialSection(ownerTutorialSteps[ownerTutorialStep].section)"
+                >Open {{ ownerTutorialSteps[ownerTutorialStep].sectionLabel }}</button>
+                <button
+                  class="owner-tutorial-button owner-tutorial-button--primary"
+                  type="button"
+                  @click="ownerTutorialStep === ownerTutorialSteps.length - 1 ? closeOwnerTutorial() : ownerTutorialStep += 1"
+                >{{ ownerTutorialStep === ownerTutorialSteps.length - 1 ? 'Done' : 'Next' }}</button>
+              </footer>
+            </section>
+          </div>
+        </Transition>
+      </Teleport>
     </template>
 
     <template #profileBottom="{ announcements, loadingAnnouncements }">
@@ -426,6 +524,147 @@ import Swal from 'sweetalert2'
 
 const ownerLayout = ref(null)
 const userProfile = ref({})
+const showOwnerTutorial = ref(false)
+const ownerTutorialStep = ref(0)
+const ownerTutorialSteps = [
+  {
+    icon: '⌂',
+    title: 'Dashboard and navigation',
+    section: 'dashboard',
+    sectionLabel: 'Dashboard',
+    description: 'The dashboard is your starting point for owner tasks and cross-branch actions.',
+    items: [
+      'The three summary cards show pending dish/product approvals, branch confirmations, and price markup approvals. Select the matching sidebar section to review them.',
+      'Use the left sidebar to switch sections. The top-left menu button collapses or restores it; when visible, drag its divider to resize it.',
+      'The dashboard also contains Create New Dish and Create New Product forms. Both apply created items across branches as described in their forms.',
+    ],
+  },
+  {
+    icon: '＋',
+    title: 'Create a dish',
+    section: 'dashboard',
+    sectionLabel: 'Dashboard',
+    description: 'Use Create New Dish to create a dish and define its ingredient recipe.',
+    items: [
+      'Enter a dish name, then add one row per ingredient. Choose an existing stock product or leave it unselected and type a new ingredient name.',
+      'For each row, optionally enter a brand, the amount used per serving, and a unit (pcs, g, kg, ml, l, or pack).',
+      'Use Add Ingredient or Remove to manage recipe rows. A stock product cannot be selected in more than one row.',
+      'Select Create Dish (All Branches). The form reports success or an error and reloads products after creation.',
+    ],
+  },
+  {
+    icon: '▣',
+    title: 'Create a product',
+    section: 'dashboard',
+    sectionLabel: 'Dashboard',
+    description: 'Use Create New Product to add a shared product record for active branches.',
+    items: [
+      'Enter the product name and choose a category: Beverage, Meat, Vegetable, Grain, Condiment, Dairy, Egg, Spice, or Other.',
+      'Brand and Description are optional. The product is created immediately for all active branches without an approval step.',
+      'Select Create Product (All Branches). The form reports the result and clears after a successful submission.',
+    ],
+  },
+  {
+    icon: '✓',
+    title: 'Dish Approval: product requests',
+    section: 'dishApproval',
+    sectionLabel: 'Dish Approval',
+    description: 'This section reviews product requests submitted by branch teams and keeps a list of approved requests.',
+    items: [
+      'Pending cards show the requester, date, category, brand, reason, audience, storage needs, perishability, supplier, price, order quantity, markup, and expected selling price/profit when available.',
+      'Select Refresh to reload pending requests. Add optional approval notes, then choose Approve to accept the request.',
+      'To reject, choose Reject, enter a rejection reason, then confirm. Cancel closes the rejection form without submitting.',
+      'The Approved Product Requests list records the product, unit, requester, approver, and approval date; use its Refresh button to reload it.',
+    ],
+  },
+  {
+    icon: '♙',
+    title: 'Staff Management',
+    section: 'staffManagement',
+    sectionLabel: 'Staff Management',
+    description: 'Find and review staff records across branches.',
+    items: [
+      'Search with Search staff..., then narrow the list by branch, role, or department. Filters can be combined.',
+      'Select Refresh to reload the staff and branch lists. The page shows the filtered total and groups staff into branch tables.',
+      'Each row displays name, role, department, username, email, phone, status, and join date. This view is for searching and reviewing records; it does not expose row actions.',
+    ],
+  },
+  {
+    icon: '⚙',
+    title: 'Permissions',
+    section: 'permissions',
+    sectionLabel: 'Permissions',
+    description: 'Control which owner-level request types branch managers can submit and which branches those settings cover.',
+    items: [
+      'Toggle Price Markups to allow or disable manager price-markup requests.',
+      'Toggle Request New Product to control product requests, and Request New Position to control open-position requests.',
+      'For each enabled permission, choose All branches or Specific branches. In Specific branches mode, select one or more branches from the list.',
+      'Changes save automatically when you change a checkbox, scope option, or branch selection.',
+    ],
+  },
+  {
+    icon: '⌂',
+    title: 'Branch Confirmations',
+    section: 'branchConfirmations',
+    sectionLabel: 'Branch Confirmations',
+    description: 'Make the final owner decision on branch requests after finance confirmation.',
+    items: [
+      'Review the branch name and code, requester, request date, initial/effective budget, address, area, geofence radius, coordinates, and investment costs.',
+      'If coordinates are available, choose View on map to inspect the pinned location in a new tab.',
+      'Choose Approve & Activate to approve the request and activate the branch, or Reject to decline it. Use Refresh to reload pending requests.',
+    ],
+  },
+  {
+    icon: '↗',
+    title: 'Branch Analytics',
+    section: 'branchAnalytics',
+    sectionLabel: 'Branch Analytics',
+    description: 'Compare branch performance over a selectable reporting period.',
+    items: [
+      'Choose Today, Yesterday, This week, This month, Last month, or All time from Period; analytics reload for the selected range.',
+      'Combined totals include sales/orders, completed orders and completion rate, expenses, net profit and margin, average order value/pending orders, and refunds/refund rate.',
+      'Review top sales and profit branches, the completed-sales comparison bars, and the detailed per-branch table for status, orders, expenses, refunds, margin, and net profit.',
+    ],
+  },
+  {
+    icon: '₱',
+    title: 'Price Markup Approvals',
+    section: 'priceMarkups',
+    sectionLabel: 'Price Markups',
+    description: 'Give the final owner decision on branch markup changes that have already passed main finance review.',
+    items: [
+      'Each request shows the branch, requester, date, current and requested percentages, reason, and the approval timeline.',
+      'Add optional Final Approval Notes, then choose Approve & Activate to apply the requested markup.',
+      'To decline a request, choose Reject, enter the required rejection reason, then Confirm Rejection. Cancel exits without rejecting.',
+      'Only requests already approved by the Main Finance Manager appear here. Use Refresh to reload them.',
+    ],
+  },
+  {
+    icon: '✉',
+    title: 'Announcements',
+    section: 'announcements',
+    sectionLabel: 'Announcements',
+    description: 'Send a broadcast to the intended group of people.',
+    items: [
+      'Enter a required title (up to 255 characters) and message.',
+      'Choose the audience: All Branches (Everyone), All Staff, or Managers Only.',
+      'Select Send Announcement and wait for the success or error message. Successful sends clear the form.',
+    ],
+  },
+  {
+    icon: '☰',
+    title: 'Messages, notifications, account, and logout',
+    section: 'dashboard',
+    sectionLabel: 'Dashboard',
+    description: 'Use the topbar and sidebar controls to access communication, alerts, and your account.',
+    items: [
+      'Open the message icon to view panel conversations. Open the notification bell to review alerts and notification details.',
+      'The topbar ? button reopens this tutorial at step 1. The account pill identifies the signed-in owner.',
+      'Choose Account Info at the bottom of the sidebar to review or update profile details and password where available.',
+      'Choose Logout to confirm ending your session. The top-left menu button collapses the sidebar; drag the sidebar edge to resize it when expanded.',
+    ],
+  },
+]
 const pendingCounts = ref({
   kitchen: 0,
   branchOwner: 0,
@@ -526,6 +765,20 @@ const announcementMessageType = ref('')
 
 function selectSection(section) {
   selectedSection.value = section
+}
+
+function openOwnerTutorial() {
+  ownerTutorialStep.value = 0
+  showOwnerTutorial.value = true
+}
+
+function openOwnerTutorialSection(section) {
+  selectedSection.value = section
+  closeOwnerTutorial()
+}
+
+function closeOwnerTutorial() {
+  showOwnerTutorial.value = false
 }
 
 async function sendAnnouncement() {
@@ -745,21 +998,45 @@ const handleLogout = async () => {
 }
 
 .owner-sidebar-link {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
   width: 100%;
   box-sizing: border-box;
   background: transparent;
   text-align: left;
   cursor: pointer;
-  padding: 0.6rem 0.75rem;
+  padding: 0.5rem 0.4rem;
   border: 1px solid transparent;
   border-radius: 0.75rem;
   color: #334155;
-  font-size: 0.8rem;
+  font-size: 0.76rem;
   font-weight: 700;
-  line-height: 1.25;
+  line-height: 1.2;
   text-decoration: none;
+  white-space: normal;
   transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.owner-sidebar-link__icon {
+  display: grid;
+  width: 1.8rem;
+  height: 1.8rem;
+  flex: 0 0 1.8rem;
+  place-items: center;
+  border-radius: 0.7rem;
+  color: #f97316;
+  background: #fff1e6;
+  font-size: 0.95rem;
+  font-weight: 800;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+
+.owner-sidebar-link__label {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: normal;
 }
 
 .owner-sidebar-link:hover,
@@ -767,6 +1044,12 @@ const handleLogout = async () => {
   color: #9a3412;
   background: #fff7ed;
   border-color: #fed7aa;
+}
+
+.owner-sidebar-link:hover .owner-sidebar-link__icon,
+.owner-sidebar-link--active .owner-sidebar-link__icon {
+  color: #ffffff;
+  background: #f97316;
 }
 
 .owner-sidebar-actions {
@@ -2122,6 +2405,236 @@ const handleLogout = async () => {
 @media (max-width: 767px) {
   .owner-product-section .form-actions button[type="submit"] {
     width: 100%;
+  }
+}
+
+.owner-tutorial-trigger {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 50%;
+  color: #9a3412;
+  background: rgba(255, 255, 255, 0.82);
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.owner-tutorial-trigger:hover,
+.owner-tutorial-trigger:focus-visible {
+  border-color: #ff9f43;
+  color: #ffffff;
+  background: #ff9f43;
+  transform: translateY(-1px);
+}
+
+.owner-tutorial-trigger:focus-visible,
+.owner-tutorial-close:focus-visible,
+.owner-tutorial-button:focus-visible {
+  outline: 3px solid rgba(249, 115, 22, 0.3);
+  outline-offset: 2px;
+}
+
+.owner-tutorial-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.52);
+}
+
+.owner-tutorial-modal {
+  display: flex;
+  width: min(92vw, 620px);
+  max-height: min(86vh, 720px);
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 28px 90px rgba(15, 23, 42, 0.28);
+}
+
+.owner-tutorial-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.4rem 1rem;
+  border-bottom: 1px solid #f1e5dc;
+  background: linear-gradient(135deg, #fff7ed, #fffbeb);
+}
+
+.owner-tutorial-eyebrow {
+  margin: 0 0 0.3rem;
+  color: #c2410c;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.owner-tutorial-header h2 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.owner-tutorial-close {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  border: 1px solid #f1d5c3;
+  border-radius: 10px;
+  color: #7c2d12;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.owner-tutorial-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.9rem 1.4rem 0;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.owner-tutorial-progress__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.owner-tutorial-progress__dot.active {
+  width: 20px;
+  background: #f97316;
+}
+
+.owner-tutorial-progress > span:last-child {
+  margin-left: auto;
+}
+
+.owner-tutorial-body {
+  overflow-y: auto;
+  padding: 1.4rem;
+}
+
+.owner-tutorial-icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  margin-bottom: 0.9rem;
+  border-radius: 15px;
+  color: #c2410c;
+  background: #fff1e6;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.owner-tutorial-body h3 {
+  margin: 0 0 0.45rem;
+  color: #1f2937;
+  font-size: 1.1rem;
+}
+
+.owner-tutorial-body p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.owner-tutorial-body ul {
+  display: grid;
+  gap: 0.65rem;
+  margin: 1rem 0 0;
+  padding-left: 1.2rem;
+  color: #475569;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.owner-tutorial-body li::marker {
+  color: #f97316;
+}
+
+.owner-tutorial-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.4rem 1.2rem;
+  border-top: 1px solid #f1e5dc;
+  background: #fffdfa;
+}
+
+.owner-tutorial-button {
+  min-width: 96px;
+  padding: 0.65rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font-size: 0.84rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.owner-tutorial-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.owner-tutorial-button--secondary {
+  border-color: #e2e8f0;
+  color: #475569;
+  background: #ffffff;
+}
+
+.owner-tutorial-button--section {
+  border-color: #fed7aa;
+  color: #9a3412;
+  background: #fff7ed;
+}
+
+.owner-tutorial-button--primary {
+  color: #ffffff;
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  box-shadow: 0 8px 18px rgba(234, 88, 12, 0.2);
+}
+
+.owner-tutorial-fade-enter-active,
+.owner-tutorial-fade-leave-active {
+  transition: opacity 160ms ease;
+}
+
+.owner-tutorial-fade-enter-from,
+.owner-tutorial-fade-leave-to {
+  opacity: 0;
+}
+
+@media (max-width: 520px) {
+  .owner-tutorial-modal {
+    width: min(100%, 620px);
+  }
+
+  .owner-tutorial-header,
+  .owner-tutorial-body,
+  .owner-tutorial-footer {
+    padding-right: 1rem;
+    padding-left: 1rem;
   }
 }
 

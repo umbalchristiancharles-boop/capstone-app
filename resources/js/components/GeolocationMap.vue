@@ -337,6 +337,9 @@ async function reverseGeocode(lat, lng) {
     
     // Build formatted address string
     const addressString = [barangay, city, region].filter(Boolean).join(', ')
+      || data.name
+      || data.display_name
+      || ''
     selectedLocation.value.address = addressString
     selectedLocation.value.addressComponents = {
       region: region,

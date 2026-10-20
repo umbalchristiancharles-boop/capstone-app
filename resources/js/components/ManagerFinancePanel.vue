@@ -14,22 +14,28 @@
       <PanelSidebarBrand />
       <nav class="finance-sidebar__nav">
         <button class="finance-sidebar__item" :class="{ active: selectedSection === 'overview' }" @click="selectedSection = 'overview'">
+          <span class="finance-sidebar__icon" aria-hidden="true">⌂</span>
           <span class="finance-sidebar__label">Financial Overview</span>
         </button>
         <button class="finance-sidebar__item" :class="{ active: selectedSection === 'markup' }" @click="selectedSection = 'markup'">
+          <span class="finance-sidebar__icon" aria-hidden="true">%</span>
           <span class="finance-sidebar__label">Price Markup</span>
         </button>
         <button class="finance-sidebar__item" :class="{ active: selectedSection === 'approvals' }" @click="selectedSection = 'approvals'">
+          <span class="finance-sidebar__icon" aria-hidden="true">✓</span>
           <span class="finance-sidebar__label">Approvals</span>
         </button>
         <button class="finance-sidebar__item" :class="{ active: selectedSection === 'receipt-approvals' }" @click="selectedSection = 'receipt-approvals'">
+          <span class="finance-sidebar__icon" aria-hidden="true">▤</span>
           <span class="finance-sidebar__label">Receipt Approval</span>
           <span v-if="receiptSubmissions.length" class="finance-sidebar__badge">{{ receiptSubmissions.length }}</span>
         </button>
         <button class="finance-sidebar__item" :class="{ active: selectedSection === 'transactions' }" @click="selectedSection = 'transactions'">
+          <span class="finance-sidebar__icon" aria-hidden="true">≡</span>
           <span class="finance-sidebar__label">Transactions</span>
         </button>
         <button class="finance-sidebar__item" :class="{ active: selectedSection === 'attendance' }" @click="selectedSection = 'attendance'">
+          <span class="finance-sidebar__icon" aria-hidden="true">◷</span>
           <span class="finance-sidebar__label">Attendance</span>
         </button>
       </nav>
@@ -467,6 +473,12 @@
               @click="financeTutorialStep -= 1"
             >Previous</button>
             <button
+              v-if="financeTutorialSteps[financeTutorialStep].section"
+              class="finance-tutorial-button finance-tutorial-button--section"
+              type="button"
+              @click="openFinanceTutorialSection(financeTutorialSteps[financeTutorialStep].section)"
+            >Open {{ financeTutorialSteps[financeTutorialStep].sectionLabel }}</button>
+            <button
               class="finance-tutorial-button finance-tutorial-button--primary"
               type="button"
               @click="financeTutorialStep === financeTutorialSteps.length - 1 ? closeFinanceTutorial() : financeTutorialStep += 1"
@@ -536,52 +548,96 @@
       <div v-if="showAccountInfoModal" class="account-info-backdrop" @click.self="showAccountInfoModal = false">
         <div class="account-info-modal">
           <div class="account-info-header">
-            <h3>Account Information</h3>
-            <button class="account-info-close" @click="showAccountInfoModal = false">✕</button>
+            <div>
+              <p class="account-info-eyebrow">Your profile</p>
+              <h3>Account Information</h3>
+            </div>
+            <button class="account-info-close" aria-label="Close account information" @click="showAccountInfoModal = false">✕</button>
           </div>
           <div class="account-info-body">
-            <div class="info-section">
-              <div class="info-row">
-                <span class="info-label">Name:</span>
-                <span class="info-value">{{ userProfile?.fullName || userProfile?.full_name || 'N/A' }}</span>
+            <section class="account-profile-summary" aria-label="Profile summary">
+              <div class="account-profile-avatar">{{ financeAccountInitials }}</div>
+              <div class="account-profile-copy">
+                <h4>{{ financeAccountName }}</h4>
+                <p>{{ formatFinanceRole(userProfile?.role, userProfile?.department) }}<span v-if="userProfile?.department"> · {{ userProfile.department }}</span></p>
+                <span class="account-status-badge" :class="userProfile?.is_active === true ? 'is-active' : userProfile?.is_active === false ? 'is-inactive' : 'is-unavailable'">
+                  {{ userProfile?.is_active === true ? 'Active account' : userProfile?.is_active === false ? 'Inactive account' : 'Status unavailable' }}
+                </span>
               </div>
-              <div class="info-row">
-                <span class="info-label">Email:</span>
-                <span class="info-value">{{ userProfile?.email || 'N/A' }}</span>
+            </section>
+
+            <section class="account-info-section" aria-labelledby="account-contact-heading">
+              <h4 id="account-contact-heading">Contact information</h4>
+              <div class="account-info-grid">
+                <div class="account-info-item">
+                  <span class="info-label">Email address</span>
+                  <a v-if="userProfile?.email" class="info-value" :href="`mailto:${userProfile.email}`">{{ userProfile.email }}</a>
+                  <span v-else class="info-value info-value--empty">Not provided</span>
+                  <small v-if="userProfile?.email" :class="['account-verification', userProfile?.email_verified_at ? 'is-verified' : 'is-unverified']">
+                    {{ userProfile?.email_verified_at ? 'Verified' : 'Not verified' }}
+                  </small>
+                </div>
+                <div class="account-info-item">
+                  <span class="info-label">Phone number</span>
+                  <a v-if="userProfile?.phone_number || userProfile?.phone || userProfile?.contact" class="info-value" :href="`tel:${userProfile.phone_number || userProfile.phone || userProfile.contact}`">
+                    {{ userProfile.phone_number || userProfile.phone || userProfile.contact }}
+                  </a>
+                  <span v-else class="info-value info-value--empty">Not provided</span>
+                </div>
+                <div v-if="userProfile?.address" class="account-info-item account-info-item--wide">
+                  <span class="info-label">Address</span>
+                  <span class="info-value">{{ userProfile.address }}</span>
+                </div>
               </div>
-              <div class="info-row">
-                <span class="info-label">Role:</span>
-                <span class="info-value">{{ userProfile?.role || userProfile?.position || 'N/A' }}</span>
+            </section>
+
+            <section class="account-info-section" aria-labelledby="account-work-heading">
+              <h4 id="account-work-heading">Work information</h4>
+              <div class="account-info-grid">
+                <div class="account-info-item">
+                  <span class="info-label">Department</span>
+                  <span class="info-value">{{ userProfile?.department || 'Not provided' }}</span>
+                </div>
+                <div class="account-info-item">
+                  <span class="info-label">Position</span>
+                  <span class="info-value">{{ userProfile?.position || formatFinanceRole(userProfile?.role, userProfile?.department) }}</span>
+                </div>
+                <div class="account-info-item">
+                  <span class="info-label">Assigned branch</span>
+                  <span class="info-value">{{ financeAccountBranch }}</span>
+                </div>
+                <div class="account-info-item">
+                  <span class="info-label">Branch ID</span>
+                  <span class="info-value">{{ userProfile?.branch_id ?? 'Not assigned' }}</span>
+                </div>
               </div>
-              <div class="info-row">
-                <span class="info-label">Department:</span>
-                <span class="info-value">{{ userProfile?.department || 'N/A' }}</span>
+            </section>
+
+            <section class="account-info-section" aria-labelledby="account-security-heading">
+              <h4 id="account-security-heading">Account details</h4>
+              <div class="account-info-grid">
+                <div class="account-info-item">
+                  <span class="info-label">Username</span>
+                  <span class="info-value">{{ userProfile?.username || 'Not provided' }}</span>
+                </div>
+                <div class="account-info-item">
+                  <span class="info-label">Account ID</span>
+                  <span class="info-value">{{ userProfile?.id ?? 'Unavailable' }}</span>
+                </div>
+                <div class="account-info-item">
+                  <span class="info-label">Member since</span>
+                  <span class="info-value">{{ formatAccountDate(userProfile?.created_at) }}</span>
+                </div>
+                <div class="account-info-item">
+                  <span class="info-label">Last sign-in</span>
+                  <span class="info-value">{{ formatAccountDate(userProfile?.last_login_at) }}</span>
+                </div>
+                <div class="account-info-item">
+                  <span class="info-label">Password update</span>
+                  <span class="info-value">{{ userProfile?.must_change_password ? 'Update required at next sign-in' : 'No update required' }}</span>
+                </div>
               </div>
-              <div class="info-row">
-                <span class="info-label">Branch:</span>
-                <span class="info-value">{{ userProfile?.branch_name || userProfile?.branch || 'N/A' }}</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Phone:</span>
-                <span class="info-value">{{ userProfile?.phone || userProfile?.contact || 'N/A' }}</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Position:</span>
-                <span class="info-value">{{ userProfile?.position || 'N/A' }}</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Start Date:</span>
-                <span class="info-value">{{ formatDate(userProfile?.hire_date || userProfile?.created_at) }}</span>
-              </div>
-              <div class="info-row" v-if="userProfile?.employment_status">
-                <span class="info-label">Employment Status:</span>
-                <span class="info-value">{{ userProfile?.employment_status }}</span>
-              </div>
-              <div class="info-row" v-if="userProfile?.address">
-                <span class="info-label">Address:</span>
-                <span class="info-value">{{ userProfile?.address }}</span>
-              </div>
-            </div>
+            </section>
           </div>
           <div class="account-info-footer">
             <button class="btn-close" @click="showAccountInfoModal = false">Close</button>
@@ -728,72 +784,92 @@ const financeTutorialStep = ref(0)
 const financeTutorialSteps = [
   {
     icon: '⌂',
-    title: 'Finance dashboard overview',
-    description: 'Start here for a quick view of your branch financial health.',
+    title: 'Financial Overview',
+    section: 'overview',
+    sectionLabel: 'Financial Overview',
+    description: 'Use the overview to check key figures, explore reports, and adjust the reporting scope.',
     items: [
-      'Use Branch and Date Range filters to change the reporting scope.',
-      'Review Total Sales, Total Orders, Pending Approvals, and Net Revenue.',
-      'Read the Income, Expenses, and Profit reports, then use Refresh for the latest figures.',
+      'Choose a branch and date range. Available ranges include today, yesterday, this week, this month, last month, a custom range, or all time. Custom dates cannot be later than today.',
+      'Review Total Sales, Total Orders, Pending Approvals, and Net Revenue. The Pending Approvals card includes a count when there are finance requests to review.',
+      'Review income, expenses, and profit charts below the KPI cards. Use the chart refresh control to reload chart data.',
+      'Use the panel Refresh button to reload the finance data for the current filters.',
     ],
   },
   {
     icon: '↗',
     title: 'Price Markup',
+    section: 'markup',
+    sectionLabel: 'Price Markup',
     description: 'Manage proposed product price changes for your branch.',
     items: [
-      'Review current prices and markup requests.',
-      'Create or request a markup when product pricing needs to change.',
-      'Track each request status and the approval history shown in the module.',
+      'Review the current markup percentage and its multiplier. Refresh the current-percentage card if needed.',
+      'Branch Finance Managers can submit a requested percentage (1–100%) and an optional reason. The multiplier preview updates as you enter a percentage.',
+      'A pending request or an owner-disabled permission prevents submitting another request; review the displayed status and wait for the approval workflow.',
+      'Main Branch Finance Managers see the markup request approvals workflow instead of the branch request form.',
     ],
   },
   {
     icon: '✓',
-    title: 'Approvals',
-    description: 'Process budget and procurement requests that need your decision.',
+    title: 'Budget Request Approvals',
+    section: 'approvals',
+    sectionLabel: 'Approvals',
+    description: 'Review budget requests and complete each decision in the correct funding stage.',
     items: [
-      'Open a request to review its product, supplier, quantity, and amount.',
-      'Choose Approve or Reject for pending requests.',
-      'Use Budget Given when an approved request has been funded, and monitor the status afterward.',
+      'Review each row’s request date, requester, purpose, amount, and current status before taking action.',
+      'For Pending requests, choose Approve or Reject. Bulk procurement groups are handled together by the bulk action button.',
+      'For an approved procurement request, use Budget Given after the funds have actually been issued; do not mark it given before funding.',
+      'Processed rows show the status, approver, and processing date. Use Refresh to load the latest requests.',
     ],
   },
   {
     icon: '▣',
     title: 'Receipt Approval',
+    section: 'receipt-approvals',
+    sectionLabel: 'Receipt Approval',
     description: 'Verify supplier receipts before a delivery is marked on the way.',
     items: [
-      'Use View Receipt to inspect the uploaded proof and open it in a new tab.',
-      'Confirm valid receipts or reject receipts that need correction.',
-      'The badge in the sidebar shows how many receipt submissions are waiting for review.',
+      'The sidebar badge shows how many supplier receipts are awaiting review.',
+      'Check the request, product, branch, and upload date, then select View Receipt to inspect the uploaded proof.',
+      'Select Confirm Receipt when the proof is valid. Select Reject if it needs correction; the procurement team will need to upload a replacement.',
+      'Use Refresh to reload submissions. Actions show a processing state while they are being saved.',
     ],
   },
   {
     icon: '₱',
     title: 'Transactions',
+    section: 'transactions',
+    sectionLabel: 'Transactions',
     description: 'Review recent finance activity and transaction reports.',
     items: [
-      'Use the reports to compare income, expenses, and profit.',
-      'Review transaction details to understand recorded sales and expenses.',
-      'Return to Financial Overview when you need the KPI summary and filters.',
+      'Review the revenue-versus-expenses report to compare recorded performance over time.',
+      'The transactions table lists order ID, cashier/branch, customer, total, paid amount, status, and date.',
+      'Select Details beside an order code to inspect its items, subtotal, discount, VAT, total, payment/change, approval details, or cancellation/refund reason when available. Select Hide to collapse the details.',
+      'Return to Financial Overview for branch/date filters and the headline KPIs.',
     ],
   },
   {
     icon: '◷',
     title: 'Attendance',
+    section: 'attendance',
+    sectionLabel: 'Attendance',
     description: 'Record your manager attendance from the finance panel.',
     items: [
-      'Use Clock In when you arrive and Clock Out when your shift ends.',
-      'Location permission and the attendance rules must allow clock-in or clock-out.',
-      'The card shows today’s status, timestamps, and hours worked.',
+      'Review today’s On Duty/Off Duty status, clock-in/out times, and hours worked.',
+      'Allow location access and wait for location verification before clocking in or out. The panel explains geofencing restrictions when location is unavailable or outside the allowed area.',
+      'Select Clock In when starting a shift and Clock Out when ending it. Buttons are disabled while processing or when the current attendance rules do not allow the action.',
+      'If a clock-out restriction is active, follow the displayed scheduled time before trying again.',
     ],
   },
   {
     icon: '?',
-    title: 'Header tools and account',
-    description: 'Use the top bar to access communication, alerts, and your profile.',
+    title: 'Topbar, account, and navigation',
+    section: 'overview',
+    sectionLabel: 'Financial Overview',
+    description: 'Use the shared controls to navigate, get help, communicate, and manage your account.',
     items: [
-      'Open Messages to communicate with the relevant team or owner.',
-      'Open Notifications to review approvals, receipt alerts, announcements, and updates.',
-      'Select Account Info in the sidebar to view your profile, or use Logout to end the session.',
+      'Select the ? button at any time to restart this tutorial. Use the sidebar items to switch finance sections.',
+      'When the sidebar is collapsed, select the menu button to show it again. The message icon opens conversations; the bell opens notifications and announcements.',
+      'Select Account Info at the bottom of the sidebar to review account details. Select Logout to leave the panel or end the session, depending on how you opened it.',
     ],
   },
 ]
@@ -801,6 +877,11 @@ const financeTutorialSteps = [
 function openFinanceTutorial() {
   financeTutorialStep.value = 0
   showFinanceTutorial.value = true
+}
+
+function openFinanceTutorialSection(section) {
+  selectedSection.value = section
+  closeFinanceTutorial()
 }
 
 function closeFinanceTutorial() {
@@ -1066,6 +1147,30 @@ const editingBudgetId = ref(null)
 const editBudgetValue = ref(null)
 const financeReports = ref([])
 const transactions = ref([])
+const financeAccountName = computed(() => (
+  userProfile.value?.fullName
+  || userProfile.value?.full_name
+  || userProfile.value?.username
+  || 'Finance account'
+))
+const financeAccountInitials = computed(() => (
+  financeAccountName.value
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => part.charAt(0).toUpperCase())
+    .join('')
+  || 'F'
+))
+const financeAccountBranch = computed(() => {
+  const profileBranch = userProfile.value?.branch
+  if (typeof profileBranch === 'string' && profileBranch.trim()) return profileBranch
+  if (profileBranch?.name) return profileBranch.name
+  if (userProfile.value?.branch_name) return userProfile.value.branch_name
+
+  const branch = branches.value.find(item => Number(item.id) === Number(userProfile.value?.branch_id))
+  return branch?.name || (userProfile.value?.branch_id ? 'Branch name unavailable' : 'Not assigned')
+})
 
 // Chart data computed from financeReports
 const managerChartData = computed(() => {
@@ -1446,6 +1551,42 @@ function formatDate(dateString) {
     month: 'short',
     day: 'numeric'
   })
+}
+
+function formatAccountDate(dateString) {
+  if (!dateString) return 'Unavailable'
+  const date = new Date(dateString)
+  if (Number.isNaN(date.getTime())) return 'Unavailable'
+  return date.toLocaleString('en-PH', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
+function formatFinanceRole(role, department = '') {
+  if (!role) return 'Role unavailable'
+  const normalizedRole = String(role).trim().toUpperCase()
+  if (normalizedRole === 'MANAGER' && String(department).trim().toUpperCase() === 'FINANCE') return 'Finance Manager'
+  const roleLabels = {
+    FINANCE_MANAGER: 'Finance Manager',
+    MANAGER_FINANCE: 'Finance Manager',
+    BRANCH_MANAGER: 'Branch Manager',
+    MANAGER: 'Manager',
+    OWNER: 'Owner',
+    SUPER_ADMIN: 'Super Admin',
+    SUPERADMIN: 'Super Admin',
+    CUSTOM: 'Custom Role',
+  }
+  if (roleLabels[normalizedRole]) return roleLabels[normalizedRole]
+  return normalizedRole
+    .toLowerCase()
+    .split(/[_\s]+/)
+    .filter(Boolean)
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
 }
 
 function getStatusClass(status) {

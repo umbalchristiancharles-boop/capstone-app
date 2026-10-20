@@ -36,6 +36,7 @@ class BranchOpenPositionBroadcastTest extends TestCase
             $table->unsignedBigInteger('approved_by')->nullable();
             $table->timestamp('approved_at')->nullable();
             $table->timestamp('rejected_at')->nullable();
+            $table->text('rejection_reason')->nullable();
             $table->integer('budget')->nullable();
             $table->integer('initial_budget')->nullable();
             $table->string('default_password')->nullable();
@@ -212,6 +213,34 @@ class BranchOpenPositionBroadcastTest extends TestCase
         $response->assertStatus(422)
             ->assertJsonPath('message', 'Initial budget must cover the total initial investment.');
         $this->assertDatabaseMissing('branches', ['code' => 'BI02']);
+    }
+
+    public function test_pending_finance_branch_requests_include_initial_budget(): void
+    {
+        $financeUser = User::create([
+            'username' => 'finance_admin',
+            'email' => 'finance-admin@example.com',
+            'password' => 'Password123!',
+            'full_name' => 'Finance Admin',
+            'role' => 'SUPER_ADMIN',
+            'is_active' => true,
+            'must_change_password' => false,
+        ]);
+
+        $branch = Branch::create([
+            'code' => 'FIN01',
+            'name' => 'Finance Branch',
+            'budget' => 100000,
+            'initial_budget' => 250000,
+            'approval_status' => 'pending_finance',
+            'requested_by' => $financeUser->id,
+        ]);
+
+        $this->actingAs($financeUser)
+            ->getJson('/api/main-branch/finance/branch-requests')
+            ->assertOk()
+            ->assertJsonPath('branches.0.budget', 100000)
+            ->assertJsonPath('branches.0.initial_budget', 250000);
     }
 
     public function test_main_branch_hr_sees_all_branch_applications_but_branch_hr_only_sees_own_branch(): void
@@ -400,5 +429,145 @@ class BranchOpenPositionBroadcastTest extends TestCase
         $this->assertSame(200000, (int) $mainBranch->fresh()->budget);
         $this->assertSame('approved', $branch->fresh()->approval_status);
         $this->assertTrue((bool) $branch->fresh()->is_active);
+    }
+
+    public function test_finance_branch_rejection_requires_a_reason_and_exposes_it_to_main_branch_admin(): void
+    {
+        $mainBranch = Branch::create([
+            'code' => 'HQ',
+            'name' => 'Main Branch',
+            'is_main_branch' => true,
+            'is_active' => true,
+            'approval_status' => 'approved',
+            'budget' => 300000,
+        ]);
+
+        $financeUser = User::create([
+            'username' => 'finance_rejector',
+            'email' => 'finance-rejector@example.com',
+            'password' => 'Password123!',
+            'role' => 'MANAGER',
+            'department' => 'FINANCE',
+            'branch_id' => $mainBranch->id,
+            'is_active' => true,
+        ]);
+
+        $mainBranchAdmin = User::create([
+            'username' => 'main_admin',
+            'email' => 'main-admin@example.com',
+            'password' => 'Password123!',
+            'role' => 'ADMIN',
+            'branch_id' => $mainBranch->id,
+            'is_active' => true,
+        ]);
+
+        $branch = Branch::create([
+            'code' => 'FR01',
+            'name' => 'Finance Rejected Branch',
+            'is_active' => false,
+            'approval_status' => 'pending_finance',
+            'budget' => 100000,
+        ]);
+
+        $this->actingAs($financeUser)
+            ->postJson("/api/main-branch/finance/branch-requests/{$branch->id}/reject")
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['reason']);
+
+        $reason = 'Insufficient budget or financial justification';
+        $this->actingAs($financeUser)
+            ->postJson("/api/main-branch/finance/branch-requests/{$branch->id}/reject", ['reason' => $reason])
+            ->assertOk()
+            ->assertJsonPath('ok', true);
+
+        $this->assertDatabaseHas('branches', [
+            'id' => $branch->id,
+            'approval_status' => 'rejected',
+            'rejection_reason' => $reason,
+        ]);
+
+        $this->actingAs($mainBranchAdmin)
+            ->getJson('/api/superadmin/branches')
+            ->assertOk()
+            ->assertJsonFragment([
+                'id' => $branch->id,
+                'rejection_reason' => $reason,
+            ]);
+    }
+
+    public function test_owner_branch_rejection_requires_and_stores_a_reason(): void
+    {
+        $owner = User::create([
+            'username' => 'branch_reject_owner',
+            'email' => 'branch-reject-owner@example.com',
+            'password' => 'Password123!',
+            'role' => 'OWNER',
+            'is_active' => true,
+        ]);
+
+        $branch = Branch::create([
+            'code' => 'OR01',
+            'name' => 'Owner Rejected Branch',
+            'is_active' => false,
+            'approval_status' => 'pending_owner',
+            'budget' => 100000,
+        ]);
+
+        $this->actingAs($owner)
+            ->postJson("/api/owner/branch-requests/{$branch->id}/reject", ['reason' => 'Other'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['reason_details']);
+
+        $this->actingAs($owner)
+            ->postJson("/api/owner/branch-requests/{$branch->id}/reject", [
+                'reason' => 'Other',
+                'reason_details' => 'The proposed location is not suitable.',
+            ])
+            ->assertOk()
+            ->assertJsonPath('ok', true);
+
+        $this->assertDatabaseHas('branches', [
+            'id' => $branch->id,
+            'approval_status' => 'rejected',
+            'rejection_reason' => 'Other: The proposed location is not suitable.',
+        ]);
+    }
+
+    public function test_branch_cannot_be_reactivated_before_finance_and_owner_approval(): void
+    {
+        $mainBranch = Branch::create([
+            'code' => 'HQ',
+            'name' => 'Main Branch',
+            'is_main_branch' => true,
+            'is_active' => true,
+            'approval_status' => 'approved',
+            'budget' => 300000,
+        ]);
+
+        $mainBranchAdmin = User::create([
+            'username' => 'approval_gate_admin',
+            'email' => 'approval-gate-admin@example.com',
+            'password' => 'Password123!',
+            'role' => 'ADMIN',
+            'branch_id' => $mainBranch->id,
+            'is_active' => true,
+        ]);
+
+        foreach (['pending_finance', 'pending_owner', 'rejected'] as $status) {
+            $branch = Branch::create([
+                'code' => strtoupper(substr($status, 0, 3)) . '01',
+                'name' => ucfirst(str_replace('_', ' ', $status)),
+                'is_active' => false,
+                'approval_status' => $status,
+                'budget' => 100000,
+            ]);
+
+            $this->actingAs($mainBranchAdmin)
+                ->patchJson("/api/superadmin/branches/{$branch->id}/reactivate")
+                ->assertStatus(422)
+                ->assertJsonPath('ok', false);
+
+            $this->assertFalse((bool) $branch->fresh()->is_active);
+        }
     }
 }

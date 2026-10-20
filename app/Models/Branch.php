@@ -29,6 +29,7 @@ class Branch extends Model
         'approved_by',
         'approved_at',
         'rejected_at',
+        'rejection_reason',
         'budget',
         'initial_budget',
         'default_password',

@@ -355,14 +355,17 @@
                   <span v-else-if="branch.approval_status === 'rejected'" class="badge badge-rejected">
                     Rejected
                   </span>
-                  <span v-else :class="['badge', branch.is_active ? 'badge-online' : 'badge-offline']">
+                  <small v-if="branch.approval_status === 'rejected' && branch.rejection_reason" class="branch-rejection-reason">
+                    Reason: {{ branch.rejection_reason }}
+                  </small>
+                  <span v-else-if="branch.approval_status !== 'rejected'" :class="['badge', branch.is_active ? 'badge-online' : 'badge-offline']">
                     {{ branch.is_active ? 'Active' : 'Inactive' }}
                   </span>
                 </td>
                 <td>{{ branch.staff_count || 0 }}</td>
                 <td>
                   <button
-                    v-if="branch.can_delete !== false && !branch.is_main_branch && branch.approval_status !== 'pending'"
+                    v-if="branch.can_delete !== false && !branch.is_main_branch && branch.approval_status === 'approved'"
                     :class="['btn-status', branch.is_active ? 'btn-deactivate' : 'btn-reactivate']"
                     @click="branch.is_active ? confirmDeactivateBranch(branch) : confirmReactivateBranch(branch)"
                     :disabled="isDeleting"
@@ -374,8 +377,8 @@
                     </svg>
                     {{ branch.is_active ? 'Deactivate' : 'Reactivate' }}
                   </button>
-                  <span v-else class="btn-status btn-protected" :title="branch.is_main_branch ? 'Main branch is protected' : 'Not available'">
-                    {{ branch.is_main_branch ? 'Protected' : (branch.approval_status === 'pending' ? 'Pending' : '—') }}
+                    <span v-else class="btn-status btn-protected" :title="branch.is_main_branch ? 'Main branch is protected' : (branch.approval_status === 'approved' ? 'Not available' : 'Branch requires finance and owner approval')">
+                      {{ branch.is_main_branch ? 'Protected' : (branch.approval_status === 'approved' ? '—' : 'Approval Required') }}
                   </span>
                 </td>
               </tr>
@@ -868,13 +871,13 @@ function onBranchAddressSaved(payload) {
    branchForm.value.longitude = payload.lng
    
    // Generate saved address display
-   const parts = []
-   if (payload.address && payload.address.trim() !== '') parts.push(payload.address.trim())
-   if (addressComponents.barangay) parts.push(addressComponents.barangay)
-   if (addressComponents.city) parts.push(addressComponents.city)
-   if (addressComponents.province) parts.push(addressComponents.province)
-   if (addressComponents.region) parts.push(addressComponents.region)
-   savedAddress.value = parts.join(', ') || `Pinned location: ${Number(payload.lat).toFixed(6)}, ${Number(payload.lng).toFixed(6)}`
+   const parts = [
+     addressComponents.barangay,
+     addressComponents.city,
+     addressComponents.province,
+     addressComponents.region,
+   ].filter(Boolean)
+   savedAddress.value = payload.address?.trim() || parts.join(', ') || 'Pinned location'
    
    // CRITICAL: Set the address field that gets sent to the backend
    branchForm.value.address = savedAddress.value
@@ -911,13 +914,13 @@ function onBranchLocationUpdate(location) {
      branchForm.value.barangay = location.addressComponents.barangay || branchForm.value.barangay
      
      // Update the address string
-     const parts = []
-     if (location.address) parts.push(location.address)
-     if (branchForm.value.barangay) parts.push(branchForm.value.barangay)
-     if (branchForm.value.city) parts.push(branchForm.value.city)
-     if (branchForm.value.province) parts.push(branchForm.value.province)
-     if (branchForm.value.region) parts.push(branchForm.value.region)
-     branchForm.value.address = parts.join(', ')
+     const parts = [
+       branchForm.value.barangay,
+       branchForm.value.city,
+       branchForm.value.province,
+       branchForm.value.region,
+     ].filter(Boolean)
+     branchForm.value.address = location.address?.trim() || parts.join(', ')
      savedAddress.value = branchForm.value.address
    }
    
@@ -1145,6 +1148,7 @@ function formatCurrency(amount) {
 .badge-offline { background: #f8d7da; color: #721c24; }
 .badge-pending { background: #fff3cd; color: #7c2d12; }
 .badge-rejected { background: #fee2e2; color: #991b1b; }
+.branch-rejection-reason { display: block; max-width: 240px; margin-top: 0.35rem; color: #991b1b; line-height: 1.4; white-space: normal; }
 
 /* Modal */
 .modal-backdrop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(4px); }

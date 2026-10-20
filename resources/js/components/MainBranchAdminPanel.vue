@@ -7,7 +7,7 @@
       :panelDescription="'Main Branch management and configuration'"
       :fullWidth="true"
       :enableProfileUpdate="!monitoringOnly"
-      :canEditProfile="false"
+      :canEditProfile="!monitoringOnly"
       :canChangePassword="true"
       :showHeader="false"
       :showProfileColumn="false"
@@ -18,6 +18,8 @@
       :showAttendanceCard="false"
       :notificationDetailsInModal="true"
       accountInfoStyle="finance"
+      updateEndpoint="/api/superadmin-profile"
+      avatarEndpoint="/api/upload-avatar"
       @logout="askLogout"
       @profile-updated="onProfileUpdated"
     >

@@ -22,6 +22,15 @@ use App\Services\BranchPasswordService;
 
 class SuperAdminController extends Controller
 {
+    private const BRANCH_REJECTION_REASONS = [
+        'Incomplete or inaccurate branch information',
+        'Insufficient budget or financial justification',
+        'Location does not meet branch requirements',
+        'Missing or invalid supporting documents',
+        'Does not meet branch approval criteria',
+        'Other',
+    ];
+
     /**
      * Get authenticated user - same approach as AuthController
      */
@@ -1136,6 +1145,7 @@ class SuperAdminController extends Controller
                     'is_active' => (bool) $branch->is_active,
                     'is_main_branch' => (bool) ($branch->is_main_branch ?? false),
                     'approval_status' => $branch->approval_status ?? 'approved',
+                    'rejection_reason' => $branch->rejection_reason,
                     'requested_by' => $branch->requested_by,
                     'approved_at' => $branch->approved_at,
                     'rejected_at' => $branch->rejected_at,
@@ -1619,12 +1629,21 @@ class SuperAdminController extends Controller
             return response()->json(['ok' => false, 'message' => 'Branch is not pending approval'], 409);
         }
 
+        $validated = $request->validate([
+            'reason' => ['required', 'string', \Illuminate\Validation\Rule::in(self::BRANCH_REJECTION_REASONS)],
+            'reason_details' => ['required_if:reason,Other', 'nullable', 'string', 'max:1000'],
+        ]);
+        $rejectionReason = $validated['reason'] === 'Other'
+            ? 'Other: ' . trim($validated['reason_details'])
+            : $validated['reason'];
+
         DB::beginTransaction();
         try {
             $branch->approval_status = 'rejected';
             $branch->approved_by = $user->id;
             $branch->approved_at = null;
             $branch->rejected_at = now();
+            $branch->rejection_reason = $rejectionReason;
             $branch->is_active = 0;
             $branch->save();
 
@@ -1675,6 +1694,7 @@ class SuperAdminController extends Controller
                 'name' => $branch->name,
                 'address' => $branch->address,
                 'budget' => isset($branch->budget) ? (int) $branch->budget : 0,
+                'initial_budget' => isset($branch->initial_budget) ? (int) $branch->initial_budget : (int) ($branch->budget ?? 0),
                 'latitude' => $branch->latitude,
                 'longitude' => $branch->longitude,
                 'square_meters' => $branch->square_meters,
@@ -1770,12 +1790,21 @@ class SuperAdminController extends Controller
             return response()->json(['ok' => false, 'message' => 'Branch is not pending finance confirmation'], 409);
         }
 
+        $validated = $request->validate([
+            'reason' => ['required', 'string', \Illuminate\Validation\Rule::in(self::BRANCH_REJECTION_REASONS)],
+            'reason_details' => ['required_if:reason,Other', 'nullable', 'string', 'max:1000'],
+        ]);
+        $rejectionReason = $validated['reason'] === 'Other'
+            ? 'Other: ' . trim($validated['reason_details'])
+            : $validated['reason'];
+
         DB::beginTransaction();
         try {
             $branch->approval_status = 'rejected';
             $branch->approved_by = null;
             $branch->approved_at = null;
             $branch->rejected_at = now();
+            $branch->rejection_reason = $rejectionReason;
             $branch->is_active = 0;
             $branch->save();
 
@@ -2045,6 +2074,13 @@ class SuperAdminController extends Controller
             return response()->json([
                 'ok' => false,
                 'message' => 'Main Branch (HQ) is protected and cannot be managed.',
+            ], 422);
+        }
+
+        if (($branch->approval_status ?? 'approved') !== 'approved') {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Branch must be approved by main branch finance and the owner before it can be reactivated.',
             ], 422);
         }
 

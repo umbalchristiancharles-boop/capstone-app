@@ -13,6 +13,7 @@
             @click.prevent.stop="toggleTopbarSidebar"
           >☰</button>
           <div class="owner-panel-topbar-spacer"></div>
+          <slot name="ownerTopbarActions"></slot>
           <OwnerMessageMenu />
           <PanelNotificationMenu
             :notification-items="panelNotificationMenuItems"
@@ -304,7 +305,102 @@
           <h3>{{ accountInfoStyle === 'finance' ? 'Account Information' : 'Info' }}</h3>
           <p class="info-sub">Your account information.</p>
 
-          <div class="info-grid">
+          <div v-if="accountInfoStyle === 'finance'" class="finance-account-info">
+            <section class="finance-account-summary" aria-label="Profile summary">
+              <div class="finance-account-avatar">
+                <img v-if="localProfile.avatarUrl" :src="localProfile.avatarUrl" alt="Profile photo" />
+                <span v-else>{{ (localProfile.fullName || localProfile.full_name || localProfile.username || 'U').charAt(0).toUpperCase() }}</span>
+              </div>
+              <div class="finance-account-summary__copy">
+                <h4>{{ localProfile.fullName || localProfile.full_name || localProfile.username || 'Account' }}</h4>
+                <p>{{ localProfile.role || 'Role unavailable' }}<span v-if="localProfile.department"> · {{ localProfile.department }}</span></p>
+                <span class="finance-account-status" :class="localProfile.is_active === true ? 'is-active' : localProfile.is_active === false ? 'is-inactive' : 'is-unavailable'">
+                  {{ localProfile.is_active === true ? 'Active account' : localProfile.is_active === false ? 'Inactive account' : 'Account information' }}
+                </span>
+                <button v-if="enableProfileUpdate && isEditingInfo" class="btn-outline finance-account-photo" type="button" @click.prevent="$refs.avatarInputModal.click()">Change Photo</button>
+              </div>
+              <input ref="avatarInputModal" id="avatar-input-modal" type="file" accept="image/*" @change="onAvatarChange" hidden />
+            </section>
+
+            <section class="finance-account-section" aria-labelledby="finance-account-contact">
+              <h4 id="finance-account-contact">Contact information</h4>
+              <div class="finance-account-grid">
+                <label class="finance-account-item">
+                  <span class="info-label">Full name</span>
+                  <input v-if="canEditProfile && isEditingInfo" v-model="localProfile.fullName" class="finance-account-input" autocomplete="name" />
+                  <span v-else class="info-value">{{ localProfile.fullName || localProfile.full_name || 'Not provided' }}</span>
+                </label>
+                <label class="finance-account-item">
+                  <span class="info-label">Email address</span>
+                  <input v-if="canEditProfile && isEditingInfo" v-model="localProfile.email" class="finance-account-input" type="email" autocomplete="email" />
+                  <a v-else-if="localProfile.email" class="info-value" :href="`mailto:${localProfile.email}`">{{ localProfile.email }}</a>
+                  <span v-else class="info-value info-value--empty">Not provided</span>
+                  <small v-if="localProfile.email && localProfile.email_verified_at !== undefined" :class="['finance-account-verification', localProfile.email_verified_at ? 'is-verified' : 'is-unverified']">
+                    {{ localProfile.email_verified_at ? 'Verified' : 'Not verified' }}
+                  </small>
+                </label>
+                <label class="finance-account-item">
+                  <span class="info-label">Phone number</span>
+                  <input v-if="canEditProfile && isEditingInfo" v-model="localProfile.contact" class="finance-account-input" type="tel" autocomplete="tel" />
+                  <a v-else-if="localProfile.contact || localProfile.phone_number" class="info-value" :href="`tel:${localProfile.contact || localProfile.phone_number}`">{{ localProfile.contact || localProfile.phone_number }}</a>
+                  <span v-else class="info-value info-value--empty">Not provided</span>
+                </label>
+              </div>
+            </section>
+
+            <section class="finance-account-section" aria-labelledby="finance-account-work">
+              <h4 id="finance-account-work">Work information</h4>
+              <div class="finance-account-grid">
+                <div class="finance-account-item">
+                  <span class="info-label">Role</span>
+                  <span class="info-value">{{ localProfile.role || 'Not provided' }}</span>
+                </div>
+                <div class="finance-account-item">
+                  <span class="info-label">Department</span>
+                  <span class="info-value">{{ localProfile.department || 'Not provided' }}</span>
+                </div>
+                <div class="finance-account-item">
+                  <span class="info-label">Assigned branch</span>
+                  <span class="info-value">{{ localProfile.branch?.name || localProfile.branch_name || (typeof localProfile.branch === 'string' ? localProfile.branch : '') || 'Not assigned' }}</span>
+                </div>
+                <div class="finance-account-item">
+                  <span class="info-label">Account ID</span>
+                  <span class="info-value">{{ formatAccountId(localProfile.accountId) }}</span>
+                </div>
+              </div>
+            </section>
+
+            <section class="finance-account-section" aria-labelledby="finance-account-details">
+              <h4 id="finance-account-details">Account details</h4>
+              <div class="finance-account-grid">
+                <label class="finance-account-item">
+                  <span class="info-label">Username</span>
+                  <input v-if="canEditProfile && isEditingInfo" v-model="localProfile.username" class="finance-account-input" autocomplete="username" />
+                  <span v-else class="info-value">{{ localProfile.username || 'Not provided' }}</span>
+                </label>
+                <div class="finance-account-item">
+                  <span class="info-label">Member since</span>
+                  <span class="info-value">{{ formatProfileDate(localProfile.created_at) }}</span>
+                </div>
+              </div>
+            </section>
+
+            <section v-if="canChangePassword && isEditingInfo" class="finance-account-section" aria-labelledby="finance-account-security">
+              <h4 id="finance-account-security">Change password</h4>
+              <div class="finance-account-grid">
+                <label class="finance-account-item">
+                  <span class="info-label">New password</span>
+                  <input v-model="localProfile.password" class="finance-account-input" type="password" autocomplete="new-password" placeholder="Enter new password" />
+                </label>
+                <label class="finance-account-item">
+                  <span class="info-label">Confirm password</span>
+                  <input v-model="localProfile.password_confirmation" class="finance-account-input" type="password" autocomplete="new-password" placeholder="Confirm new password" />
+                </label>
+              </div>
+            </section>
+          </div>
+
+          <div v-else class="info-grid">
             <!-- Avatar preview + change control (appears when editing and profile updates enabled) -->
             <div v-if="enableProfileUpdate && isEditingInfo" class="info-avatar-row">
               <div class="info-avatar">
@@ -382,7 +478,7 @@
 
             <!-- Show Change Password button for Owner/HR roles -->
             <button
-              v-if="canChangePassword && !isEditingInfo"
+              v-if="canChangePassword && !canEditProfile && !isEditingInfo"
               class="btn-primary"
               @click="isEditingInfo = true"
               :disabled="isSavingProfile"
@@ -392,7 +488,7 @@
 
             <!-- Show Save button when editing and canChangePassword -->
             <button
-              v-if="canChangePassword && isEditingInfo"
+              v-if="canChangePassword && !canEditProfile && isEditingInfo"
               class="btn-primary"
               @click="saveProfile"
               :disabled="isSavingProfile"
@@ -1260,6 +1356,12 @@ function formatAccountId(val) {
   return 'id' + padded
 }
 
+function formatProfileDate(value) {
+  if (!value) return 'Not provided'
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? 'Not provided' : date.toLocaleDateString()
+}
+
 function handleInfoClose() {
   if (isEditingInfo.value) {
     isEditingInfo.value = false
@@ -1697,8 +1799,8 @@ async function onAvatarChange(event) {
 
 .info-modal--finance-style {
   position: relative;
-  width: min(90vw, 520px);
-  max-height: 80vh;
+  width: min(92vw, 720px);
+  max-height: min(88vh, 820px);
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -1739,6 +1841,165 @@ async function onAvatarChange(event) {
   background: transparent;
 }
 
+.finance-account-info {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1.25rem 1.5rem;
+}
+
+.finance-account-summary {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.3rem;
+  padding: 1rem;
+  border: 1px solid #fed7aa;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #fff7ed, #fffbeb);
+}
+
+.finance-account-avatar {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  flex: 0 0 58px;
+  place-items: center;
+  overflow: hidden;
+  border: 3px solid rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+  color: #fff;
+  background: linear-gradient(135deg, #fb923c, #ea580c);
+  box-shadow: 0 7px 16px rgba(234, 88, 12, 0.2);
+  font-size: 1.1rem;
+  font-weight: 850;
+}
+
+.finance-account-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.finance-account-summary__copy {
+  min-width: 0;
+}
+
+.finance-account-summary__copy h4 {
+  margin: 0;
+  color: #292524;
+  font-size: 1.05rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.finance-account-summary__copy p {
+  margin: 0.2rem 0 0.55rem;
+  color: #78716c;
+  font-size: 0.83rem;
+}
+
+.finance-account-status,
+.finance-account-verification {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 750;
+}
+
+.finance-account-status {
+  padding: 0.25rem 0.6rem;
+  color: #57534e;
+  background: #e7e5e4;
+}
+
+.finance-account-status.is-active,
+.finance-account-verification.is-verified {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.finance-account-status.is-inactive,
+.finance-account-verification.is-unverified {
+  color: #9a3412;
+  background: #ffedd5;
+}
+
+.finance-account-photo {
+  display: block;
+  margin-top: 0.65rem;
+}
+
+.finance-account-section + .finance-account-section {
+  margin-top: 1.1rem;
+}
+
+.finance-account-section > h4 {
+  margin: 0 0 0.65rem;
+  color: #5c4a3f;
+  font-size: 0.82rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.finance-account-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.finance-account-item {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 calc(50% - 0.65rem);
+  flex-direction: column;
+  gap: 0.28rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(219, 188, 160, 0.35);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.finance-account-input {
+  width: 100%;
+  min-width: 0;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid rgba(148, 113, 88, 0.35);
+  border-radius: 8px;
+  background: #fff;
+  color: #3d2a1f;
+  font: inherit;
+}
+
+.finance-account-input:focus {
+  outline: 2px solid rgba(234, 88, 12, 0.25);
+  border-color: #ea580c;
+}
+
+.finance-account-verification {
+  padding: 0.18rem 0.5rem;
+}
+
+@media (max-width: 560px) {
+  .info-modal--finance-style {
+    width: min(94vw, 720px);
+    max-height: 90vh;
+    border-radius: 16px;
+  }
+
+  .finance-account-info {
+    padding: 1rem;
+  }
+
+  .finance-account-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .info-modal--finance-style .info-row {
   display: flex;
   align-items: center;
@@ -1770,6 +2031,12 @@ async function onAvatarChange(event) {
   margin: 0;
   padding: 0.75rem 1.5rem 1rem;
   border-top: 1px solid rgba(219, 188, 160, 0.3);
+}
+
+.info-modal--finance-style .info-error,
+.info-modal--finance-style .info-success {
+  flex: 0 0 auto;
+  margin: 0 1.5rem 0.75rem;
 }
 
 .info-modal-close {

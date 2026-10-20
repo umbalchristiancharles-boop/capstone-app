@@ -12,6 +12,11 @@ export function showToast(message, type = 'success', duration = 4000) {
   }, duration)
 }
 
+export function clearToast(id) {
+  const idx = toastState.toasts.findIndex(x => x.id === id)
+  if (idx !== -1) toastState.toasts.splice(idx, 1)
+}
+
 export function clearToasts() {
   toastState.toasts.splice(0, toastState.toasts.length)
 }
