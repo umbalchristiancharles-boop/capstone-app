@@ -39,28 +39,38 @@
         <aside v-if="!props.embeddedSection" class="admin-sidebar" aria-label="Admin sections" @pointerdown="startAdminSidebarSwipe" @transitionend="finishAdminSidebarTransition">
           <PanelSidebarBrand />
           <nav class="admin-sidebar__nav">
-            <button type="button" class="admin-sidebar__item" :class="{ 'admin-sidebar__item--active': activeSection === 'dashboard' }" @click="activeSection = 'dashboard'">Dashboard</button>
-            <button type="button" class="admin-sidebar__item" :class="{ 'admin-sidebar__item--active': activeSection === 'inventory' }" @click="activeSection = 'inventory'">Inventory &amp; Procurement</button>
-            <button type="button" class="admin-sidebar__item" :class="{ 'admin-sidebar__item--active': activeSection === 'landing-images' }" @click="activeSection = 'landing-images'">Landing Page Images</button>
-            <button type="button" class="admin-sidebar__item" :class="{ 'admin-sidebar__item--active': activeSection === 'reports' }" @click="activeSection = 'reports'">Reports &amp; CRM</button>
-            <button type="button" class="admin-sidebar__item" :class="{ 'admin-sidebar__item--active': activeSection === 'staff' }" @click="activeSection = 'staff'">Staff &amp; Attendance</button>
+            <button type="button" class="admin-sidebar__item" style="display: flex !important; align-items: center; gap: 0.45rem; text-align: left !important;" :style="adminSidebarItemStyle('dashboard')" :class="{ 'admin-sidebar__item--active': activeSection === 'dashboard' }" :aria-current="activeSection === 'dashboard' ? 'page' : undefined" @mouseenter="hoveredAdminSection = 'dashboard'" @mouseleave="hoveredAdminSection = ''" @click="activeSection = 'dashboard'"><span :style="adminSidebarIconStyle('dashboard')" aria-hidden="true">⌂</span><span style="flex: 1; min-width: 0;">Dashboard</span></button>
+            <button type="button" class="admin-sidebar__item" style="display: flex !important; align-items: center; gap: 0.45rem; text-align: left !important;" :style="adminSidebarItemStyle('inventory')" :class="{ 'admin-sidebar__item--active': activeSection === 'inventory' }" :aria-current="activeSection === 'inventory' ? 'page' : undefined" @mouseenter="hoveredAdminSection = 'inventory'" @mouseleave="hoveredAdminSection = ''" @click="activeSection = 'inventory'"><span :style="adminSidebarIconStyle('inventory')" aria-hidden="true">▤</span><span style="flex: 1; min-width: 0;">Inventory &amp; Procurement</span></button>
+            <button type="button" class="admin-sidebar__item" style="display: flex !important; align-items: center; gap: 0.45rem; text-align: left !important;" :style="adminSidebarItemStyle('landing-images')" :class="{ 'admin-sidebar__item--active': activeSection === 'landing-images' }" :aria-current="activeSection === 'landing-images' ? 'page' : undefined" @mouseenter="hoveredAdminSection = 'landing-images'" @mouseleave="hoveredAdminSection = ''" @click="activeSection = 'landing-images'"><span :style="adminSidebarIconStyle('landing-images')" aria-hidden="true">▧</span><span style="flex: 1; min-width: 0;">Landing Page Images</span></button>
+            <button type="button" class="admin-sidebar__item" style="display: flex !important; align-items: center; gap: 0.45rem; text-align: left !important;" :style="adminSidebarItemStyle('reports')" :class="{ 'admin-sidebar__item--active': activeSection === 'reports' }" :aria-current="activeSection === 'reports' ? 'page' : undefined" @mouseenter="hoveredAdminSection = 'reports'" @mouseleave="hoveredAdminSection = ''" @click="activeSection = 'reports'"><span :style="adminSidebarIconStyle('reports')" aria-hidden="true">↗</span><span style="flex: 1; min-width: 0;">Reports &amp; CRM</span></button>
+            <button type="button" class="admin-sidebar__item" style="display: flex !important; align-items: center; gap: 0.45rem; text-align: left !important;" :style="adminSidebarItemStyle('staff')" :class="{ 'admin-sidebar__item--active': activeSection === 'staff' }" :aria-current="activeSection === 'staff' ? 'page' : undefined" @mouseenter="hoveredAdminSection = 'staff'" @mouseleave="hoveredAdminSection = ''" @click="activeSection = 'staff'"><span :style="adminSidebarIconStyle('staff')" aria-hidden="true">◷</span><span style="flex: 1; min-width: 0;">Staff &amp; Attendance</span></button>
             <button
               v-if="(ownerProfile.role || '').toString().toUpperCase() !== 'STAFF'"
               type="button"
               class="admin-sidebar__item"
+              style="display: flex !important; align-items: center; gap: 0.45rem; text-align: left !important;"
+              :style="adminSidebarItemStyle('staff-management')"
               :class="{ 'admin-sidebar__item--active': activeSection === 'staff-management' }"
+              :aria-current="activeSection === 'staff-management' ? 'page' : undefined"
+              @mouseenter="hoveredAdminSection = 'staff-management'"
+              @mouseleave="hoveredAdminSection = ''"
               @click="activeSection = 'staff-management'"
             >
-              Staff Management
+              <span :style="adminSidebarIconStyle('staff-management')" aria-hidden="true">♙</span><span style="flex: 1; min-width: 0;">Staff Management</span>
             </button>
             <button
               v-if="['OWNER', 'ADMIN', 'SUPER_ADMIN', 'SUPERADMIN'].includes((ownerProfile.role || '').toString().toUpperCase())"
               type="button"
               class="admin-sidebar__item"
+              style="display: flex !important; align-items: center; gap: 0.45rem; text-align: left !important;"
+              :style="adminSidebarItemStyle('custom-accounts')"
               :class="{ 'admin-sidebar__item--active': activeSection === 'custom-accounts' }"
+              :aria-current="activeSection === 'custom-accounts' ? 'page' : undefined"
+              @mouseenter="hoveredAdminSection = 'custom-accounts'"
+              @mouseleave="hoveredAdminSection = ''"
               @click="activeSection = 'custom-accounts'"
             >
-              Custom Accounts
+              <span :style="adminSidebarIconStyle('custom-accounts')" aria-hidden="true">♧</span><span style="flex: 1; min-width: 0;">Custom Accounts</span>
             </button>
             <label v-if="showBranchSelector && (branches.length || isSuperAdminBranchSelector)" class="admin-sidebar__branch-filter" :class="{ 'admin-sidebar__branch-filter--loading': branchSelectorLoading }">
               <span>Branch</span>
@@ -1174,6 +1184,34 @@ const activeSection = ref(
       ? 'product-request'
       : 'dashboard'
 )
+const hoveredAdminSection = ref('')
+const adminSidebarItemStyle = section => {
+  const active = activeSection.value === section
+  const highlighted = active || hoveredAdminSection.value === section
+  return {
+    background: active ? '#fffaf5' : highlighted ? 'rgba(255, 255, 255, 0.68)' : 'transparent',
+    borderColor: active ? '#efb47f' : highlighted ? 'rgba(215, 125, 61, 0.22)' : 'transparent',
+    color: active ? '#a34f21' : highlighted ? '#9b4e21' : '#29384a',
+    boxShadow: active ? '0 5px 12px rgba(184, 111, 61, 0.08)' : 'none',
+    transition: 'all 160ms ease',
+  }
+}
+const adminSidebarIconStyle = section => {
+  const highlighted = activeSection.value === section || hoveredAdminSection.value === section
+  return {
+    display: 'grid',
+    width: '1.8rem',
+    height: '1.8rem',
+    flex: '0 0 1.8rem',
+    placeItems: 'center',
+    borderRadius: '0.7rem',
+    background: highlighted ? '#f97316' : '#fff1e6',
+    color: highlighted ? '#ffffff' : '#f97316',
+    fontSize: '0.95rem',
+    fontWeight: 800,
+    transition: 'color 160ms ease, background-color 160ms ease',
+  }
+}
 function openAdminTutorial() {
   adminTutorialStep.value = 0
   showAdminTutorial.value = true

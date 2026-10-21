@@ -25,11 +25,11 @@
     >
       <template #ownerSidebar>
         <nav class="owner-sidebar-nav" aria-label="Administration sections">
-          <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': activeSection === 'finance-overview' }" @click="showFinanceSection('branch-financial-reports')">Branch Financial Reports</button>
-          <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': activeSection === 'transactions' }" @click="showFinanceSection('recent-transactions')">Recent Transactions</button>
-          <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': activeSection === 'crm' }" @click="activeSection = 'crm'">CRM</button>
-          <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': activeSection === 'branches' }" @click="activeSection = 'branches'">Add Branch</button>
-          <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': activeSection === 'applications' }" @click="activeSection = 'applications'">Account Applications</button>
+          <button type="button" class="owner-sidebar-link" style="display: flex !important; align-items: center; gap: 0.45rem; text-align: left !important;" :style="adminSidebarItemStyle('finance-overview')" :class="{ 'owner-sidebar-link--active': activeSection === 'finance-overview' }" :aria-current="activeSection === 'finance-overview' ? 'page' : undefined" @mouseenter="hoveredAdminSection = 'finance-overview'" @mouseleave="hoveredAdminSection = ''" @click="showFinanceSection('branch-financial-reports')"><span :style="adminSidebarIconStyle('finance-overview')" aria-hidden="true">₱</span><span style="flex: 1; min-width: 0;">Branch Financial Reports</span></button>
+          <button type="button" class="owner-sidebar-link" style="display: flex !important; align-items: center; gap: 0.45rem; text-align: left !important;" :style="adminSidebarItemStyle('transactions')" :class="{ 'owner-sidebar-link--active': activeSection === 'transactions' }" :aria-current="activeSection === 'transactions' ? 'page' : undefined" @mouseenter="hoveredAdminSection = 'transactions'" @mouseleave="hoveredAdminSection = ''" @click="showFinanceSection('recent-transactions')"><span :style="adminSidebarIconStyle('transactions')" aria-hidden="true">≡</span><span style="flex: 1; min-width: 0;">Recent Transactions</span></button>
+          <button type="button" class="owner-sidebar-link" style="display: flex !important; align-items: center; gap: 0.45rem; text-align: left !important;" :style="adminSidebarItemStyle('crm')" :class="{ 'owner-sidebar-link--active': activeSection === 'crm' }" :aria-current="activeSection === 'crm' ? 'page' : undefined" @mouseenter="hoveredAdminSection = 'crm'" @mouseleave="hoveredAdminSection = ''" @click="activeSection = 'crm'"><span :style="adminSidebarIconStyle('crm')" aria-hidden="true">▤</span><span style="flex: 1; min-width: 0;">CRM</span></button>
+          <button type="button" class="owner-sidebar-link" style="display: flex !important; align-items: center; gap: 0.45rem; text-align: left !important;" :style="adminSidebarItemStyle('branches')" :class="{ 'owner-sidebar-link--active': activeSection === 'branches' }" :aria-current="activeSection === 'branches' ? 'page' : undefined" @mouseenter="hoveredAdminSection = 'branches'" @mouseleave="hoveredAdminSection = ''" @click="activeSection = 'branches'"><span :style="adminSidebarIconStyle('branches')" aria-hidden="true">⌂</span><span style="flex: 1; min-width: 0;">Add Branch</span></button>
+          <button type="button" class="owner-sidebar-link" style="display: flex !important; align-items: center; gap: 0.45rem; text-align: left !important;" :style="adminSidebarItemStyle('applications')" :class="{ 'owner-sidebar-link--active': activeSection === 'applications' }" :aria-current="activeSection === 'applications' ? 'page' : undefined" @mouseenter="hoveredAdminSection = 'applications'" @mouseleave="hoveredAdminSection = ''" @click="activeSection = 'applications'"><span :style="adminSidebarIconStyle('applications')" aria-hidden="true">✉</span><span style="flex: 1; min-width: 0;">Account Applications</span></button>
         </nav>
       </template>
 
@@ -239,6 +239,34 @@ const monitoringOnly = props.monitoringOnly
 const userProfile = ref({})
 const ownerLayout = ref(null)
 const activeSection = ref('finance-overview')
+const hoveredAdminSection = ref('')
+const adminSidebarItemStyle = section => {
+  const active = activeSection.value === section
+  const highlighted = active || hoveredAdminSection.value === section
+  return {
+    background: active ? '#fffaf5' : highlighted ? 'rgba(255, 255, 255, 0.68)' : 'transparent',
+    borderColor: active ? '#efb47f' : highlighted ? 'rgba(215, 125, 61, 0.22)' : 'transparent',
+    color: active ? '#a34f21' : highlighted ? '#9b4e21' : '#29384a',
+    boxShadow: active ? '0 5px 12px rgba(184, 111, 61, 0.08)' : 'none',
+    transition: 'all 160ms ease',
+  }
+}
+const adminSidebarIconStyle = section => {
+  const highlighted = activeSection.value === section || hoveredAdminSection.value === section
+  return {
+    display: 'grid',
+    width: '1.8rem',
+    height: '1.8rem',
+    flex: '0 0 1.8rem',
+    placeItems: 'center',
+    borderRadius: '0.7rem',
+    background: highlighted ? '#f97316' : '#fff1e6',
+    color: highlighted ? '#ffffff' : '#f97316',
+    fontSize: '0.95rem',
+    fontWeight: 800,
+    transition: 'color 160ms ease, background-color 160ms ease',
+  }
+}
 const profileDropdownVisible = ref(false)
 const showLogoutOverlay = ref(false)
 const showAdminTutorial = ref(false)
