@@ -19,10 +19,18 @@
   >
     <template #ownerSidebar>
       <nav class="supplier-sidebar-nav" aria-label="Supplier sections">
-        <button type="button" class="supplier-sidebar-link" :class="{ 'supplier-sidebar-link--active': selectedModule === 'overview' }" @click="selectModule('overview')">Overview</button>
-        <button type="button" class="supplier-sidebar-link" :class="{ 'supplier-sidebar-link--active': selectedModule === 'orders' }" @click="selectModule('orders')">Orders</button>
-        <button type="button" class="supplier-sidebar-link" :class="{ 'supplier-sidebar-link--active': selectedModule === 'deliveries' }" @click="selectModule('deliveries')">Deliveries</button>
-        <button type="button" class="supplier-sidebar-link" :class="{ 'supplier-sidebar-link--active': selectedModule === 'products' }" @click="selectModule('products')">Products</button>
+        <button type="button" class="supplier-sidebar-link" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="supplierSidebarItemStyle('overview')" :class="{ 'supplier-sidebar-link--active': selectedModule === 'overview' }" :aria-current="selectedModule === 'overview' ? 'page' : undefined" @mouseenter="hoveredSupplierModule = 'overview'" @mouseleave="hoveredSupplierModule = ''" @click="selectModule('overview')">
+          <span :style="supplierSidebarIconStyle('overview')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V10Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Overview</span>
+        </button>
+        <button type="button" class="supplier-sidebar-link" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="supplierSidebarItemStyle('orders')" :class="{ 'supplier-sidebar-link--active': selectedModule === 'orders' }" :aria-current="selectedModule === 'orders' ? 'page' : undefined" @mouseenter="hoveredSupplierModule = 'orders'" @mouseleave="hoveredSupplierModule = ''" @click="selectModule('orders')">
+          <span :style="supplierSidebarIconStyle('orders')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none"><path d="M4 7h16l-1 13H5L4 7ZM8 7a4 4 0 0 1 8 0M9 11v1M15 11v1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Orders</span>
+        </button>
+        <button type="button" class="supplier-sidebar-link" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="supplierSidebarItemStyle('deliveries')" :class="{ 'supplier-sidebar-link--active': selectedModule === 'deliveries' }" :aria-current="selectedModule === 'deliveries' ? 'page' : undefined" @mouseenter="hoveredSupplierModule = 'deliveries'" @mouseleave="hoveredSupplierModule = ''" @click="selectModule('deliveries')">
+          <span :style="supplierSidebarIconStyle('deliveries')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none"><path d="M3 6h11v12H3zM14 10h4l3 3v5h-7z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" /><circle cx="7.5" cy="19" r="1.5" stroke="currentColor" stroke-width="1.6" /><circle cx="17.5" cy="19" r="1.5" stroke="currentColor" stroke-width="1.6" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Deliveries</span>
+        </button>
+        <button type="button" class="supplier-sidebar-link" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="supplierSidebarItemStyle('products')" :class="{ 'supplier-sidebar-link--active': selectedModule === 'products' }" :aria-current="selectedModule === 'products' ? 'page' : undefined" @mouseenter="hoveredSupplierModule = 'products'" @mouseleave="hoveredSupplierModule = ''" @click="selectModule('products')">
+          <span :style="supplierSidebarIconStyle('products')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none"><path d="m12 3 9 5-9 5-9-5 9-5ZM3 12l9 5 9-5M3 16l9 5 9-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Products</span>
+        </button>
       </nav>
     </template>
 
@@ -714,6 +722,31 @@ import { isCustomPanelOrigin, leaveToCustomPanel } from './customPanelNavigation
 
 const userProfile = ref({})
 const selectedModule = ref('overview')
+const hoveredSupplierModule = ref('')
+const supplierSidebarItemStyle = section => {
+  const active = selectedModule.value === section
+  const highlighted = active || hoveredSupplierModule.value === section
+  return {
+    background: active ? '#fffaf5' : highlighted ? 'rgba(255, 255, 255, 0.68)' : 'transparent',
+    borderColor: active ? '#efb47f' : highlighted ? 'rgba(215, 125, 61, 0.22)' : 'transparent',
+    color: active ? '#a34f21' : highlighted ? '#9b4e21' : '#29384a',
+    boxShadow: active ? '0 5px 12px rgba(184, 111, 61, 0.08)' : 'none',
+    transition: 'all 160ms ease',
+  }
+}
+const supplierSidebarIconStyle = section => {
+  const highlighted = selectedModule.value === section || hoveredSupplierModule.value === section
+  return {
+    display: 'grid',
+    width: '1.8rem',
+    height: '1.8rem',
+    placeItems: 'center',
+    borderRadius: '0.7rem',
+    background: highlighted ? '#f97316' : '#fff1e6',
+    color: highlighted ? '#ffffff' : '#f97316',
+    transition: 'color 160ms ease, background-color 160ms ease',
+  }
+}
 const supplierTutorialTrigger = ref(null)
 const supplierTutorialDialog = ref(null)
 const showSupplierTutorial = ref(false)

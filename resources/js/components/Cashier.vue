@@ -9,9 +9,15 @@
         @click="cashierSidebarCollapsed = !cashierSidebarCollapsed"
       >☰</button>
       <nav class="cashier-right-sidebar__nav">
-        <button type="button" class="cashier-right-sidebar__item" :class="{ 'cashier-right-sidebar__item--active': activeCashierSection === 'products' }" @click="selectCashierSection('products')">Products</button>
-        <button type="button" class="cashier-right-sidebar__item" :class="{ 'cashier-right-sidebar__item--active': activeCashierSection === 'order' }" @click="selectCashierSection('order')">Current Order</button>
-        <button type="button" class="cashier-right-sidebar__item" :class="{ 'cashier-right-sidebar__item--active': activeCashierSection === 'transactions' }" @click="selectCashierSection('transactions')">Transactions</button>
+        <button type="button" class="cashier-right-sidebar__item" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="cashierSidebarItemStyle('products')" :class="{ 'cashier-right-sidebar__item--active': activeCashierSection === 'products' }" :aria-current="activeCashierSection === 'products' ? 'page' : undefined" @mouseenter="hoveredCashierSection = 'products'" @mouseleave="hoveredCashierSection = ''" @click="selectCashierSection('products')">
+          <span :style="cashierSidebarIconStyle('products')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none"><path d="M4 4h16v16H4zM8 8h8M8 12h8M8 16h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Products</span>
+        </button>
+        <button type="button" class="cashier-right-sidebar__item" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="cashierSidebarItemStyle('order')" :class="{ 'cashier-right-sidebar__item--active': activeCashierSection === 'order' }" :aria-current="activeCashierSection === 'order' ? 'page' : undefined" @mouseenter="hoveredCashierSection = 'order'" @mouseleave="hoveredCashierSection = ''" @click="selectCashierSection('order')">
+          <span :style="cashierSidebarIconStyle('order')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none"><path d="M4 7h16l-1 13H5L4 7ZM8 7a4 4 0 0 1 8 0M9 11v1M15 11v1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Current Order</span>
+        </button>
+        <button type="button" class="cashier-right-sidebar__item" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="cashierSidebarItemStyle('transactions')" :class="{ 'cashier-right-sidebar__item--active': activeCashierSection === 'transactions' }" :aria-current="activeCashierSection === 'transactions' ? 'page' : undefined" @mouseenter="hoveredCashierSection = 'transactions'" @mouseleave="hoveredCashierSection = ''" @click="selectCashierSection('transactions')">
+          <span :style="cashierSidebarIconStyle('transactions')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none"><path d="M5 6h14M5 12h14M5 18h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /><circle cx="8" cy="6" r="1" fill="currentColor" /><circle cx="15" cy="12" r="1" fill="currentColor" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Transactions</span>
+        </button>
       </nav>
     </aside>
     <button
@@ -252,6 +258,31 @@ const superAdminBranchId = inject('superAdminBranchId', null)
 const superAdminBranchScoped = inject('superAdminBranchScoped', false)
 const cashierSidebarCollapsed = ref(false)
 const activeCashierSection = ref('products')
+const hoveredCashierSection = ref('')
+const cashierSidebarItemStyle = section => {
+  const active = activeCashierSection.value === section
+  const highlighted = active || hoveredCashierSection.value === section
+  return {
+    background: active ? '#fffaf5' : highlighted ? 'rgba(255, 255, 255, 0.68)' : 'transparent',
+    borderColor: active ? '#efb47f' : highlighted ? 'rgba(215, 125, 61, 0.22)' : 'transparent',
+    color: active ? '#a34f21' : highlighted ? '#9b4e21' : '#29384a',
+    boxShadow: active ? '0 5px 12px rgba(184, 111, 61, 0.08)' : 'none',
+    transition: 'all 160ms ease',
+  }
+}
+const cashierSidebarIconStyle = section => {
+  const highlighted = activeCashierSection.value === section || hoveredCashierSection.value === section
+  return {
+    display: 'grid',
+    width: '1.8rem',
+    height: '1.8rem',
+    placeItems: 'center',
+    borderRadius: '0.7rem',
+    background: highlighted ? '#f97316' : '#fff1e6',
+    color: highlighted ? '#ffffff' : '#f97316',
+    transition: 'color 160ms ease, background-color 160ms ease',
+  }
+}
 
 // State
 const branches = ref([])

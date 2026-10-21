@@ -33,10 +33,18 @@
     </template>
     <template #ownerSidebar>
       <nav v-if="!props.embeddedSection" class="manager-logistics-sidebar-nav" aria-label="Logistics sections">
-        <button type="button" class="manager-logistics-sidebar-link" :class="{ 'manager-logistics-sidebar-link--active': selectedSection === 'overview' }" :aria-current="selectedSection === 'overview' ? 'page' : undefined" @click="selectLogisticsSection('overview')">Overview</button>
-        <button type="button" class="manager-logistics-sidebar-link" :class="{ 'manager-logistics-sidebar-link--active': selectedSection === 'barcodes' }" :aria-current="selectedSection === 'barcodes' ? 'page' : undefined" @click="selectLogisticsSection('barcodes')">Product Barcodes</button>
-        <button type="button" class="manager-logistics-sidebar-link" :class="{ 'manager-logistics-sidebar-link--active': selectedSection === 'pending-stock' }" :aria-current="selectedSection === 'pending-stock' ? 'page' : undefined" @click="selectLogisticsSection('pending-stock')">Pending Stock</button>
-        <button type="button" class="manager-logistics-sidebar-link" :class="{ 'manager-logistics-sidebar-link--active': selectedSection === 'confirmation-history' }" :aria-current="selectedSection === 'confirmation-history' ? 'page' : undefined" @click="selectLogisticsSection('confirmation-history')">Confirmation History</button>
+        <button type="button" class="manager-logistics-sidebar-link" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="logisticsSidebarItemStyle('overview')" :class="{ 'manager-logistics-sidebar-link--active': selectedSection === 'overview' }" :aria-current="selectedSection === 'overview' ? 'page' : undefined" @mouseenter="hoveredLogisticsSection = 'overview'" @mouseleave="hoveredLogisticsSection = ''" @click="selectLogisticsSection('overview')">
+          <span :style="logisticsSidebarIconStyle('overview')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V10Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Overview</span>
+        </button>
+        <button type="button" class="manager-logistics-sidebar-link" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="logisticsSidebarItemStyle('barcodes')" :class="{ 'manager-logistics-sidebar-link--active': selectedSection === 'barcodes' }" :aria-current="selectedSection === 'barcodes' ? 'page' : undefined" @mouseenter="hoveredLogisticsSection = 'barcodes'" @mouseleave="hoveredLogisticsSection = ''" @click="selectLogisticsSection('barcodes')">
+          <span :style="logisticsSidebarIconStyle('barcodes')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none"><path d="M4 5v14M7 5v14M10 5v14M14 5v14M16 5v14M20 5v14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Product Barcodes</span>
+        </button>
+        <button type="button" class="manager-logistics-sidebar-link" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="logisticsSidebarItemStyle('pending-stock')" :class="{ 'manager-logistics-sidebar-link--active': selectedSection === 'pending-stock' }" :aria-current="selectedSection === 'pending-stock' ? 'page' : undefined" @mouseenter="hoveredLogisticsSection = 'pending-stock'" @mouseleave="hoveredLogisticsSection = ''" @click="selectLogisticsSection('pending-stock')">
+          <span :style="logisticsSidebarIconStyle('pending-stock')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none"><path d="m4 7 8-4 8 4-8 4-8-4ZM4 12l8 4 8-4M4 17l8 4 8-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Pending Stock</span>
+        </button>
+        <button type="button" class="manager-logistics-sidebar-link" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="logisticsSidebarItemStyle('confirmation-history')" :class="{ 'manager-logistics-sidebar-link--active': selectedSection === 'confirmation-history' }" :aria-current="selectedSection === 'confirmation-history' ? 'page' : undefined" @mouseenter="hoveredLogisticsSection = 'confirmation-history'" @mouseleave="hoveredLogisticsSection = ''" @click="selectLogisticsSection('confirmation-history')">
+          <span :style="logisticsSidebarIconStyle('confirmation-history')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.7" /><path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Confirmation History</span>
+        </button>
       </nav>
     </template>
 
@@ -751,6 +759,31 @@ const superAdminEmbedded = inject('superAdminEmbedded', false)
 const superAdminBranchId = inject('superAdminBranchId', null)
 const superAdminBranchScoped = inject('superAdminBranchScoped', false)
 const selectedSection = ref(props.embeddedSection || 'overview')
+const hoveredLogisticsSection = ref('')
+const logisticsSidebarItemStyle = section => {
+  const active = selectedSection.value === section
+  const highlighted = active || hoveredLogisticsSection.value === section
+  return {
+    background: active ? '#fffaf5' : highlighted ? 'rgba(255, 255, 255, 0.68)' : 'transparent',
+    borderColor: active ? '#efb47f' : highlighted ? 'rgba(215, 125, 61, 0.22)' : 'transparent',
+    color: active ? '#a34f21' : highlighted ? '#9b4e21' : '#29384a',
+    boxShadow: active ? '0 5px 12px rgba(184, 111, 61, 0.08)' : 'none',
+    transition: 'all 160ms ease',
+  }
+}
+const logisticsSidebarIconStyle = section => {
+  const highlighted = selectedSection.value === section || hoveredLogisticsSection.value === section
+  return {
+    display: 'grid',
+    width: '1.8rem',
+    height: '1.8rem',
+    placeItems: 'center',
+    borderRadius: '0.7rem',
+    background: highlighted ? '#f97316' : '#fff1e6',
+    color: highlighted ? '#ffffff' : '#f97316',
+    transition: 'color 160ms ease, background-color 160ms ease',
+  }
+}
 const logisticsSections = ['overview', 'barcodes', 'pending-stock', 'confirmation-history']
 const showLogisticsTutorial = ref(false)
 const logisticsTutorialStep = ref(0)

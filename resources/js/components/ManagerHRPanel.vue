@@ -51,13 +51,21 @@
     </template>
     <template #main>
       <div class="manager-hr-page" :class="{ 'manager-hr-sidebar-collapsed': hrSidebarCollapsed }" @manager-hr-sidebar-collapse="collapseHrSidebar">
-        <aside v-if="!props.embeddedSection" ref="hrSidebar" class="manager-hr-sidebar" :aria-hidden="hrSidebarCollapsed" @pointerdown="startHrSidebarSwipe">
+        <aside v-if="!props.embeddedSection" ref="hrSidebar" class="manager-hr-sidebar" style="overflow-x: hidden;" :aria-hidden="hrSidebarCollapsed" @pointerdown="startHrSidebarSwipe">
           <PanelSidebarBrand />
           <nav class="manager-hr-sidebar__nav" aria-label="HR sections">
-            <button class="manager-hr-sidebar__item" :class="{ 'manager-hr-sidebar__item--active': selectedHrSection === 'overview' }" :aria-current="selectedHrSection === 'overview' ? 'page' : undefined" @click="scrollToHrSection('overview')">HR Overview</button>
-            <button class="manager-hr-sidebar__item" :class="{ 'manager-hr-sidebar__item--active': selectedHrSection === 'confirmations' }" :aria-current="selectedHrSection === 'confirmations' ? 'page' : undefined" @click="scrollToHrSection('confirmations')">Confirmations</button>
-            <button class="manager-hr-sidebar__item" :class="{ 'manager-hr-sidebar__item--active': selectedHrSection === 'attendance' }" :aria-current="selectedHrSection === 'attendance' ? 'page' : undefined" @click="scrollToHrSection('attendance')">Attendance</button>
-            <button class="manager-hr-sidebar__item" :class="{ 'manager-hr-sidebar__item--active': selectedHrSection === 'payroll' }" :aria-current="selectedHrSection === 'payroll' ? 'page' : undefined" @click="scrollToHrSection('payroll')">Payroll</button>
+            <button class="manager-hr-sidebar__item" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="hrSidebarItemStyle('overview')" :class="{ 'manager-hr-sidebar__item--active': selectedHrSection === 'overview' }" :aria-current="selectedHrSection === 'overview' ? 'page' : undefined" @mouseenter="hoveredHrSection = 'overview'" @mouseleave="hoveredHrSection = ''" @click="scrollToHrSection('overview')">
+              <span :style="hrSidebarIconStyle('overview')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 32 32" fill="none"><path d="m8.5 15 7.5-6 7.5 6v8.5h-5v-5h-5v5h-5V15Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">HR Overview</span>
+            </button>
+            <button class="manager-hr-sidebar__item" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="hrSidebarItemStyle('confirmations')" :class="{ 'manager-hr-sidebar__item--active': selectedHrSection === 'confirmations' }" :aria-current="selectedHrSection === 'confirmations' ? 'page' : undefined" @mouseenter="hoveredHrSection = 'confirmations'" @mouseleave="hoveredHrSection = ''" @click="scrollToHrSection('confirmations')">
+              <span :style="hrSidebarIconStyle('confirmations')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 32 32" fill="none"><path d="m9 16.5 4.5 4.5L23 11.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Confirmations</span>
+            </button>
+            <button class="manager-hr-sidebar__item" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="hrSidebarItemStyle('attendance')" :class="{ 'manager-hr-sidebar__item--active': selectedHrSection === 'attendance' }" :aria-current="selectedHrSection === 'attendance' ? 'page' : undefined" @mouseenter="hoveredHrSection = 'attendance'" @mouseleave="hoveredHrSection = ''" @click="scrollToHrSection('attendance')">
+              <span :style="hrSidebarIconStyle('attendance')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="7.5" stroke="currentColor" stroke-width="1.8" /><path d="M16 11.5v5l3.5 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Attendance</span>
+            </button>
+            <button class="manager-hr-sidebar__item" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="hrSidebarItemStyle('payroll')" :class="{ 'manager-hr-sidebar__item--active': selectedHrSection === 'payroll' }" :aria-current="selectedHrSection === 'payroll' ? 'page' : undefined" @mouseenter="hoveredHrSection = 'payroll'" @mouseleave="hoveredHrSection = ''" @click="scrollToHrSection('payroll')">
+              <span :style="hrSidebarIconStyle('payroll')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 32 32" fill="none"><rect x="8.5" y="10.5" width="15" height="11" rx="2" stroke="currentColor" stroke-width="1.8" /><path d="M17.5 14h6M17.5 18h3M12 14.5h2.5v3H12z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Payroll</span>
+            </button>
           </nav>
           <div class="manager-hr-sidebar__footer">
             <button class="manager-hr-sidebar__account" type="button" @click="openInfo">Account Info</button>
@@ -1237,6 +1245,31 @@ let expandedHrSidebarWidth = 180
 let hrSidebarSwipeStart = null
 let hrSidebarSwipeClickTimeout
 const selectedHrSection = ref(props.embeddedSection || 'overview')
+const hoveredHrSection = ref('')
+const hrSidebarItemStyle = section => {
+  const active = selectedHrSection.value === section
+  const highlighted = active || hoveredHrSection.value === section
+  return {
+    background: active ? '#fffaf5' : highlighted ? 'rgba(255, 255, 255, 0.68)' : 'transparent',
+    borderColor: active ? '#efb47f' : highlighted ? 'rgba(215, 125, 61, 0.22)' : 'transparent',
+    color: active ? '#a34f21' : highlighted ? '#9b4e21' : '#29384a',
+    boxShadow: active ? '0 5px 12px rgba(184, 111, 61, 0.08)' : 'none',
+    transition: 'all 160ms ease',
+  }
+}
+const hrSidebarIconStyle = section => {
+  const highlighted = selectedHrSection.value === section || hoveredHrSection.value === section
+  return {
+    display: 'grid',
+    width: '1.8rem',
+    height: '1.8rem',
+    placeItems: 'center',
+    borderRadius: '0.7rem',
+    background: highlighted ? '#f97316' : '#fff1e6',
+    color: highlighted ? '#ffffff' : '#f97316',
+    transition: 'color 160ms ease, background-color 160ms ease',
+  }
+}
 const hrSectionTitle = computed(() => {
   const titles = {
     confirmations: 'Confirmations',
@@ -1368,6 +1401,18 @@ function collapseHrSidebar(event) {
   hrSidebarCollapsed.value = true
 }
 
+function setHrSidebarWidth(width) {
+  const sidebar = hrSidebar.value
+  const page = sidebar?.parentElement
+  const layout = page?.closest('.admin-layout')
+  if (!sidebar || !page || !layout) return
+
+  sidebar.style.width = `${width}px`
+  sidebar.style.minWidth = `${width}px`
+  page.style.setProperty('--manager-hr-sidebar-width', `${width}px`)
+  layout.style.setProperty('--manager-hr-sidebar-width', `${width}px`)
+}
+
 function toggleHrSidebar() {
   if (!hrSidebarCollapsed.value) {
     hrSidebarCollapsed.value = true
@@ -1377,14 +1422,7 @@ function toggleHrSidebar() {
   const sidebar = hrSidebar.value
   const width = Number.parseFloat(sidebar?.dataset.managerExpandedWidth || '')
   if (Number.isFinite(width) && width > 0) expandedHrSidebarWidth = width
-  if (sidebar) {
-    sidebar.style.width = `${expandedHrSidebarWidth}px`
-    sidebar.style.minWidth = `${expandedHrSidebarWidth}px`
-    const page = sidebar.parentElement
-    const layout = page?.closest('.admin-layout')
-    page?.style.setProperty('--manager-hr-sidebar-width', `${expandedHrSidebarWidth}px`)
-    layout?.style.setProperty('--manager-hr-sidebar-width', `${expandedHrSidebarWidth}px`)
-  }
+  setHrSidebarWidth(expandedHrSidebarWidth)
   hrSidebarCollapsed.value = false
 }
 
@@ -2031,6 +2069,7 @@ function formatNumber(num) {
 }
 
 onMounted(async () => {
+  setHrSidebarWidth(expandedHrSidebarWidth)
   document.addEventListener('click', onDocumentClick)
   readOwnerPermissions()
   window.addEventListener('storage', handleOwnerPermissionsStorage)

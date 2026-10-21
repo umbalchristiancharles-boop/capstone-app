@@ -30,9 +30,15 @@
       </template>
       <template #ownerSidebar>
         <nav class="main-branch-hr-sidebar-nav" aria-label="HR sections">
-          <button type="button" class="main-branch-hr-sidebar-link" :class="{ 'main-branch-hr-sidebar-link--active': activeHrSection === 'overview' }" @click="showHrSection('overview')">HR Overview</button>
-          <button type="button" class="main-branch-hr-sidebar-link" :class="{ 'main-branch-hr-sidebar-link--active': activeHrSection === 'requests' }" @click="showHrSection('requests')">Position Requests</button>
-          <button type="button" class="main-branch-hr-sidebar-link" :class="{ 'main-branch-hr-sidebar-link--active': activeHrSection === 'accounts' }" @click="showHrSection('accounts')">Branch Accounts</button>
+          <button type="button" class="main-branch-hr-sidebar-link" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="hrSidebarItemStyle('overview')" :class="{ 'main-branch-hr-sidebar-link--active': activeHrSection === 'overview' }" :aria-current="activeHrSection === 'overview' ? 'page' : undefined" @mouseenter="hoveredHrSection = 'overview'" @mouseleave="hoveredHrSection = ''" @click="showHrSection('overview')">
+            <span :style="hrSidebarIconStyle('overview')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 32 32" fill="none"><path d="m8.5 15 7.5-6 7.5 6v8.5h-5v-5h-5v5h-5V15Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">HR Overview</span>
+          </button>
+          <button type="button" class="main-branch-hr-sidebar-link" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="hrSidebarItemStyle('requests')" :class="{ 'main-branch-hr-sidebar-link--active': activeHrSection === 'requests' }" :aria-current="activeHrSection === 'requests' ? 'page' : undefined" @mouseenter="hoveredHrSection = 'requests'" @mouseleave="hoveredHrSection = ''" @click="showHrSection('requests')">
+            <span :style="hrSidebarIconStyle('requests')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 32 32" fill="none"><path d="M11 8.5h7l4 4v11H11z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" /><path d="M18 8.5v4h4M16 15.5v5M13.5 18h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Position Requests</span>
+          </button>
+          <button type="button" class="main-branch-hr-sidebar-link" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="hrSidebarItemStyle('accounts')" :class="{ 'main-branch-hr-sidebar-link--active': activeHrSection === 'accounts' }" :aria-current="activeHrSection === 'accounts' ? 'page' : undefined" @mouseenter="hoveredHrSection = 'accounts'" @mouseleave="hoveredHrSection = ''" @click="showHrSection('accounts')">
+            <span :style="hrSidebarIconStyle('accounts')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 32 32" fill="none"><circle cx="13" cy="13" r="3" stroke="currentColor" stroke-width="1.7" /><path d="M7.5 23c.7-3 2.5-4.5 5.5-4.5s4.8 1.5 5.5 4.5M20 11a3 3 0 0 1 0 5.9M21 19c1.9.4 3.1 1.7 3.5 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Branch Accounts</span>
+          </button>
         </nav>
       </template>
 
@@ -638,6 +644,31 @@ const interviewSchedule = ref({ date: '', time: '', notes: '' })
 const showApplicationDetailsModal = ref(false)
 const selectedApplicationDetails = ref(null)
 const activeHrSection = ref('overview')
+const hoveredHrSection = ref('')
+const hrSidebarItemStyle = section => {
+  const active = activeHrSection.value === section
+  const highlighted = active || hoveredHrSection.value === section
+  return {
+    background: active ? '#fffaf5' : highlighted ? 'rgba(255, 255, 255, 0.68)' : 'transparent',
+    borderColor: active ? '#efb47f' : highlighted ? 'rgba(215, 125, 61, 0.22)' : 'transparent',
+    color: active ? '#a34f21' : highlighted ? '#9b4e21' : '#29384a',
+    boxShadow: active ? '0 5px 12px rgba(184, 111, 61, 0.08)' : 'none',
+    transition: 'all 160ms ease',
+  }
+}
+const hrSidebarIconStyle = section => {
+  const highlighted = activeHrSection.value === section || hoveredHrSection.value === section
+  return {
+    display: 'grid',
+    width: '1.8rem',
+    height: '1.8rem',
+    placeItems: 'center',
+    borderRadius: '0.7rem',
+    background: highlighted ? '#f97316' : '#fff1e6',
+    color: highlighted ? '#ffffff' : '#f97316',
+    transition: 'color 160ms ease, background-color 160ms ease',
+  }
+}
 const showHrTutorial = ref(false)
 const hrTutorialStep = ref(0)
 const hrTutorialDialog = ref(null)

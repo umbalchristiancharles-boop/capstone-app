@@ -8,11 +8,21 @@
     <aside ref="logisticsSidebar" class="logistics-sidebar" @pointerdown.capture="startSidebarSwipe" @touchstart.passive="startSidebarTouchSwipe" @touchend.passive="finishSidebarTouchSwipe" @touchcancel="cancelSidebarSwipe">
       <PanelSidebarBrand />
       <nav class="logistics-sidebar__nav" aria-label="Logistics navigation">
-        <a class="logistics-sidebar__item" :class="{ active: selectedSection === 'overview' }" href="#logistics-overview" @click.prevent="selectedSection = 'overview'">Logistics Overview</a>
-        <a class="logistics-sidebar__item" :class="{ active: selectedSection === 'inventory' }" href="#inventory-monitor" @click.prevent="selectedSection = 'inventory'">Inventory Monitor</a>
-        <a class="logistics-sidebar__item" :class="{ active: selectedSection === 'product-requests' }" href="#product-requests" @click.prevent="selectedSection = 'product-requests'">Product Requests</a>
-        <a class="logistics-sidebar__item" :class="{ active: selectedSection === 'suppliers' }" href="#suppliers" @click.prevent="selectedSection = 'suppliers'">Suppliers</a>
-        <a class="logistics-sidebar__item" :class="{ active: selectedSection === 'attendance' }" href="#attendance" @click.prevent="selectedSection = 'attendance'">Attendance</a>
+        <a class="logistics-sidebar__item" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="logisticsSidebarItemStyle('overview')" :class="{ active: selectedSection === 'overview' }" href="#logistics-overview" @mouseenter="hoveredLogisticsSection = 'overview'" @mouseleave="hoveredLogisticsSection = ''" @click.prevent="selectedSection = 'overview'">
+          <span :style="logisticsSidebarIconStyle('overview')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V10Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Logistics Overview</span>
+        </a>
+        <a class="logistics-sidebar__item" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="logisticsSidebarItemStyle('inventory')" :class="{ active: selectedSection === 'inventory' }" href="#inventory-monitor" @mouseenter="hoveredLogisticsSection = 'inventory'" @mouseleave="hoveredLogisticsSection = ''" @click.prevent="selectedSection = 'inventory'">
+          <span :style="logisticsSidebarIconStyle('inventory')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v14H4zM8 9h8M8 12h8M8 15h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Inventory Monitor</span>
+        </a>
+        <a class="logistics-sidebar__item" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="logisticsSidebarItemStyle('product-requests')" :class="{ active: selectedSection === 'product-requests' }" href="#product-requests" @mouseenter="hoveredLogisticsSection = 'product-requests'" @mouseleave="hoveredLogisticsSection = ''" @click.prevent="selectedSection = 'product-requests'">
+          <span :style="logisticsSidebarIconStyle('product-requests')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none"><path d="M6 3h8l4 4v14H6zM14 3v5h5M12 12v6M9 15h6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Product Requests</span>
+        </a>
+        <a class="logistics-sidebar__item" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="logisticsSidebarItemStyle('suppliers')" :class="{ active: selectedSection === 'suppliers' }" href="#suppliers" @mouseenter="hoveredLogisticsSection = 'suppliers'" @mouseleave="hoveredLogisticsSection = ''" @click.prevent="selectedSection = 'suppliers'">
+          <span :style="logisticsSidebarIconStyle('suppliers')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.7" /><path d="M3.5 20c.6-3 2.4-4.5 5.5-4.5 2.3 0 3.9.9 4.8 2.8M16 5.5a3 3 0 0 1 0 5.8M16 15.5c2.5.4 3.9 1.8 4.5 4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Suppliers</span>
+        </a>
+        <a class="logistics-sidebar__item" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="logisticsSidebarItemStyle('attendance')" :class="{ active: selectedSection === 'attendance' }" href="#attendance" @mouseenter="hoveredLogisticsSection = 'attendance'" @mouseleave="hoveredLogisticsSection = ''" @click.prevent="selectedSection = 'attendance'">
+          <span :style="logisticsSidebarIconStyle('attendance')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.7" /><path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Attendance</span>
+        </a>
       </nav>
       <div class="logistics-sidebar__footer">
         <button class="logistics-sidebar__account" type="button" @click="openProfileInfo">Account Info</button>
@@ -466,6 +476,31 @@ const pageLayout = ref(null)
 const logisticsSidebar = ref(null)
 const profile = ref({})
 const selectedSection = ref('overview')
+const hoveredLogisticsSection = ref('')
+const logisticsSidebarItemStyle = section => {
+  const active = selectedSection.value === section
+  const highlighted = active || hoveredLogisticsSection.value === section
+  return {
+    background: active ? '#fffaf5' : highlighted ? 'rgba(255, 255, 255, 0.68)' : 'transparent',
+    borderColor: active ? '#efb47f' : highlighted ? 'rgba(215, 125, 61, 0.22)' : 'transparent',
+    color: active ? '#a34f21' : highlighted ? '#9b4e21' : '#29384a',
+    boxShadow: active ? '0 5px 12px rgba(184, 111, 61, 0.08)' : 'none',
+    transition: 'all 160ms ease',
+  }
+}
+const logisticsSidebarIconStyle = section => {
+  const highlighted = selectedSection.value === section || hoveredLogisticsSection.value === section
+  return {
+    display: 'grid',
+    width: '1.8rem',
+    height: '1.8rem',
+    placeItems: 'center',
+    borderRadius: '0.7rem',
+    background: highlighted ? '#f97316' : '#fff1e6',
+    color: highlighted ? '#ffffff' : '#f97316',
+    transition: 'color 160ms ease, background-color 160ms ease',
+  }
+}
 const showLogisticsTutorial = ref(false)
 const logisticsTutorialStep = ref(0)
 const logisticsTutorialDialog = ref(null)

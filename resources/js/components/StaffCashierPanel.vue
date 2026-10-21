@@ -3,9 +3,15 @@
         <aside class="staff-cashier-sidebar" :aria-hidden="cashierSidebarCollapsed" :style="{ '--cashier-sidebar-width': `${cashierSidebarWidth}px` }" @pointerdown="startCashierSidebarSwipe">
           <PanelSidebarBrand />
           <nav class="staff-cashier-sidebar__nav" aria-label="Cashier sections">
-            <button class="staff-cashier-sidebar__item" :class="{ 'staff-cashier-sidebar__item--active': activeCashierSection === 'cashier' }" type="button" @click="selectCashierSection('cashier')">Cashier</button>
-            <button class="staff-cashier-sidebar__item" :class="{ 'staff-cashier-sidebar__item--active': activeCashierSection === 'transactions' }" type="button" @click="selectCashierSection('transactions')">Transactions</button>
-            <button class="staff-cashier-sidebar__item" :class="{ 'staff-cashier-sidebar__item--active': activeCashierSection === 'attendance' }" type="button" @click="selectCashierSection('attendance')">Attendance</button>
+            <button class="staff-cashier-sidebar__item" type="button" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="cashierSidebarItemStyle('cashier')" :class="{ 'staff-cashier-sidebar__item--active': activeCashierSection === 'cashier' }" :aria-current="activeCashierSection === 'cashier' ? 'page' : undefined" @mouseenter="hoveredCashierSection = 'cashier'" @mouseleave="hoveredCashierSection = ''" @click="selectCashierSection('cashier')">
+              <span :style="cashierSidebarIconStyle('cashier')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none"><path d="M4 4h16v16H4zM8 8h8M8 12h8M8 16h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Cashier</span>
+            </button>
+            <button class="staff-cashier-sidebar__item" type="button" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="cashierSidebarItemStyle('transactions')" :class="{ 'staff-cashier-sidebar__item--active': activeCashierSection === 'transactions' }" :aria-current="activeCashierSection === 'transactions' ? 'page' : undefined" @mouseenter="hoveredCashierSection = 'transactions'" @mouseleave="hoveredCashierSection = ''" @click="selectCashierSection('transactions')">
+              <span :style="cashierSidebarIconStyle('transactions')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none"><path d="M5 6h14M5 12h14M5 18h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /><circle cx="8" cy="6" r="1" fill="currentColor" /><circle cx="15" cy="12" r="1" fill="currentColor" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Transactions</span>
+            </button>
+            <button class="staff-cashier-sidebar__item" type="button" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="cashierSidebarItemStyle('attendance')" :class="{ 'staff-cashier-sidebar__item--active': activeCashierSection === 'attendance' }" :aria-current="activeCashierSection === 'attendance' ? 'page' : undefined" @mouseenter="hoveredCashierSection = 'attendance'" @mouseleave="hoveredCashierSection = ''" @click="selectCashierSection('attendance')">
+              <span :style="cashierSidebarIconStyle('attendance')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.7" /><path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Attendance</span>
+            </button>
           </nav>
           <div class="staff-cashier-sidebar__footer">
             <button class="staff-cashier-sidebar__account-info" type="button" @click="showAccountInfoModal = true">Account Info</button>
@@ -520,6 +526,31 @@ const cashierSidebarCollapsed = ref(false)
 const cashierSidebarWidth = ref(156)
 const isResizingSidebar = ref(false)
 const activeCashierSection = ref('cashier')
+const hoveredCashierSection = ref('')
+const cashierSidebarItemStyle = section => {
+  const active = activeCashierSection.value === section
+  const highlighted = active || hoveredCashierSection.value === section
+  return {
+    background: active ? '#fffaf5' : highlighted ? 'rgba(255, 255, 255, 0.68)' : 'transparent',
+    borderColor: active ? '#efb47f' : highlighted ? 'rgba(215, 125, 61, 0.22)' : 'transparent',
+    color: active ? '#a34f21' : highlighted ? '#9b4e21' : '#29384a',
+    boxShadow: active ? '0 5px 12px rgba(184, 111, 61, 0.08)' : 'none',
+    transition: 'all 160ms ease',
+  }
+}
+const cashierSidebarIconStyle = section => {
+  const highlighted = activeCashierSection.value === section || hoveredCashierSection.value === section
+  return {
+    display: 'grid',
+    width: '1.8rem',
+    height: '1.8rem',
+    placeItems: 'center',
+    borderRadius: '0.7rem',
+    background: highlighted ? '#f97316' : '#fff1e6',
+    color: highlighted ? '#ffffff' : '#f97316',
+    transition: 'color 160ms ease, background-color 160ms ease',
+  }
+}
 const cashierTutorialTrigger = ref(null)
 const cashierTutorialDialog = ref(null)
 const showCashierTutorial = ref(false)

@@ -36,10 +36,18 @@
 
     <template #ownerSidebar>
       <nav v-if="!props.embeddedSection" class="manager-procurement-sidebar-nav" aria-label="Procurement sections">
-        <button type="button" class="manager-procurement-sidebar-link" :class="{ 'manager-procurement-sidebar-link--active': selectedSection === 'overview' }" @click="selectSection('overview')">Overview</button>
-        <button type="button" class="manager-procurement-sidebar-link" :class="{ 'manager-procurement-sidebar-link--active': selectedSection === 'suppliers' }" @click="selectSection('suppliers')">Suppliers</button>
-        <button type="button" class="manager-procurement-sidebar-link" :class="{ 'manager-procurement-sidebar-link--active': selectedSection === 'budget-requests' }" @click="selectSection('budget-requests')">Budget Requests</button>
-        <button type="button" class="manager-procurement-sidebar-link" :class="{ 'manager-procurement-sidebar-link--active': selectedSection === 'history' }" @click="selectSection('history')">History</button>
+        <button type="button" class="manager-procurement-sidebar-link" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="procurementSidebarItemStyle('overview')" :class="{ 'manager-procurement-sidebar-link--active': selectedSection === 'overview' }" :aria-current="selectedSection === 'overview' ? 'page' : undefined" @mouseenter="hoveredProcurementSection = 'overview'" @mouseleave="hoveredProcurementSection = ''" @click="selectSection('overview')">
+          <span :style="procurementSidebarIconStyle('overview')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V10Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Overview</span>
+        </button>
+        <button type="button" class="manager-procurement-sidebar-link" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="procurementSidebarItemStyle('suppliers')" :class="{ 'manager-procurement-sidebar-link--active': selectedSection === 'suppliers' }" :aria-current="selectedSection === 'suppliers' ? 'page' : undefined" @mouseenter="hoveredProcurementSection = 'suppliers'" @mouseleave="hoveredProcurementSection = ''" @click="selectSection('suppliers')">
+          <span :style="procurementSidebarIconStyle('suppliers')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.7" /><path d="M3.5 20c.6-3 2.4-4.5 5.5-4.5 2.3 0 3.9.9 4.8 2.8M16 5.5a3 3 0 0 1 0 5.8M16 15.5c2.5.4 3.9 1.8 4.5 4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Suppliers</span>
+        </button>
+        <button type="button" class="manager-procurement-sidebar-link" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="procurementSidebarItemStyle('budget-requests')" :class="{ 'manager-procurement-sidebar-link--active': selectedSection === 'budget-requests' }" :aria-current="selectedSection === 'budget-requests' ? 'page' : undefined" @mouseenter="hoveredProcurementSection = 'budget-requests'" @mouseleave="hoveredProcurementSection = ''" @click="selectSection('budget-requests')">
+          <span :style="procurementSidebarIconStyle('budget-requests')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none"><path d="M12 3v18M17 7.5c-.7-1-2-1.5-4.2-1.5-2.4 0-3.8 1-3.8 2.7 0 4.6 8 1.8 8 6.4 0 1.8-1.6 2.9-4.2 2.9-2 0-3.6-.6-4.6-1.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Budget Requests</span>
+        </button>
+        <button type="button" class="manager-procurement-sidebar-link" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="procurementSidebarItemStyle('history')" :class="{ 'manager-procurement-sidebar-link--active': selectedSection === 'history' }" :aria-current="selectedSection === 'history' ? 'page' : undefined" @mouseenter="hoveredProcurementSection = 'history'" @mouseleave="hoveredProcurementSection = ''" @click="selectSection('history')">
+          <span :style="procurementSidebarIconStyle('history')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.7" /><path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">History</span>
+        </button>
       </nav>
     </template>
 
@@ -693,6 +701,31 @@ const procurementTopbarLabel = computed(() => {
   return `PROCUREMENT MANAGER - ${branchName || 'DASMA BRANCH'}`
 })
 const selectedSection = ref(props.embeddedSection || 'overview')
+const hoveredProcurementSection = ref('')
+const procurementSidebarItemStyle = section => {
+  const active = selectedSection.value === section
+  const highlighted = active || hoveredProcurementSection.value === section
+  return {
+    background: active ? '#fffaf5' : highlighted ? 'rgba(255, 255, 255, 0.68)' : 'transparent',
+    borderColor: active ? '#efb47f' : highlighted ? 'rgba(215, 125, 61, 0.22)' : 'transparent',
+    color: active ? '#a34f21' : highlighted ? '#9b4e21' : '#29384a',
+    boxShadow: active ? '0 5px 12px rgba(184, 111, 61, 0.08)' : 'none',
+    transition: 'all 160ms ease',
+  }
+}
+const procurementSidebarIconStyle = section => {
+  const highlighted = selectedSection.value === section || hoveredProcurementSection.value === section
+  return {
+    display: 'grid',
+    width: '1.8rem',
+    height: '1.8rem',
+    placeItems: 'center',
+    borderRadius: '0.7rem',
+    background: highlighted ? '#f97316' : '#fff1e6',
+    color: highlighted ? '#ffffff' : '#f97316',
+    transition: 'color 160ms ease, background-color 160ms ease',
+  }
+}
 const procurementTutorialTrigger = ref(null)
 const procurementTutorialDialog = ref(null)
 const showProcurementTutorial = ref(false)

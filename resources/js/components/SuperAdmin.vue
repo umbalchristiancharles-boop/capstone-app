@@ -3,21 +3,21 @@
     <aside id="super-admin-sidebar" class="super-admin-sidebar" :aria-hidden="sidebarCollapsed" :style="{ width: `${sidebarWidth}px` }">
       <PanelSidebarBrand />
       <nav class="super-admin-sidebar__nav" aria-label="Website panels">
-        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'dashboard' }" :aria-current="activeModule === 'dashboard' ? 'page' : undefined" @click="openModule('dashboard')">Dashboard</button>
-        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'owner' }" @click="openModule('owner')">Owner Panel</button>
-        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'mainBranchAdmin' }" @click="openModule('mainBranchAdmin')">Admin Main Branch</button>
-        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'admin' }" @click="openModule('admin')">Admin Panel</button>
-        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'mainBranchLogistics' }" @click="openModule('mainBranchLogistics')">Logistics Main Branch</button>
-        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'mainBranchHr' }" @click="openModule('mainBranchHr')">HR Main Branch</button>
-        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'mainBranchFinance' }" @click="openModule('mainBranchFinance')">Finance Manager Main Branch</button>
-        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'logisticsManager' }" @click="openModule('logisticsManager')">Logistics Manager</button>
-        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'procurementManager' }" @click="openModule('procurementManager')">Procurement Manager</button>
-        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'hrManager' }" @click="openModule('hrManager')">HR Manager</button>
-        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'financeManager' }" @click="openModule('financeManager')">Finance Manager</button>
-        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'kitchenStaff' }" @click="openModule('kitchenStaff')">Kitchen Staff</button>
-        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'cashierStaff' }" @click="openModule('cashierStaff')">Cashier Staff</button>
-        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'inventoryStaff' }" @click="openModule('inventoryStaff')">Inventory Staff</button>
-        <button class="super-admin-sidebar__item" :class="{ active: activeModule === 'supplier' }" @click="openModule('supplier')">Supplier Panel</button>
+        <button class="super-admin-sidebar__item" style="display: flex !important; align-items: center; gap: 0.45rem; text-align: left !important;" :style="superAdminSidebarItemStyle('dashboard')" :class="{ active: activeModule === 'dashboard' }" :aria-current="activeModule === 'dashboard' ? 'page' : undefined" @mouseenter="hoveredSuperAdminModule = 'dashboard'" @mouseleave="hoveredSuperAdminModule = ''" @click="openModule('dashboard')"><span :style="superAdminSidebarIconStyle('dashboard')" aria-hidden="true">⌂</span><span style="flex: 1; min-width: 0;">Dashboard</span></button>
+        <button class="super-admin-sidebar__item" style="display: flex !important; align-items: center; gap: 0.45rem; text-align: left !important;" :style="superAdminSidebarItemStyle('owner')" :class="{ active: activeModule === 'owner' }" :aria-current="activeModule === 'owner' ? 'page' : undefined" @mouseenter="hoveredSuperAdminModule = 'owner'" @mouseleave="hoveredSuperAdminModule = ''" @click="openModule('owner')"><span :style="superAdminSidebarIconStyle('owner')" aria-hidden="true">♙</span><span style="flex: 1; min-width: 0;">Owner Panel</span></button>
+        <button class="super-admin-sidebar__item" style="display: flex !important; align-items: center; gap: 0.45rem; text-align: left !important;" :style="superAdminSidebarItemStyle('mainBranchAdmin')" :class="{ active: activeModule === 'mainBranchAdmin' }" :aria-current="activeModule === 'mainBranchAdmin' ? 'page' : undefined" @mouseenter="hoveredSuperAdminModule = 'mainBranchAdmin'" @mouseleave="hoveredSuperAdminModule = ''" @click="openModule('mainBranchAdmin')"><span :style="superAdminSidebarIconStyle('mainBranchAdmin')" aria-hidden="true">▦</span><span style="flex: 1; min-width: 0;">Admin Main Branch</span></button>
+        <button class="super-admin-sidebar__item" style="display: flex !important; align-items: center; gap: 0.45rem; text-align: left !important;" :style="superAdminSidebarItemStyle('admin')" :class="{ active: activeModule === 'admin' }" :aria-current="activeModule === 'admin' ? 'page' : undefined" @mouseenter="hoveredSuperAdminModule = 'admin'" @mouseleave="hoveredSuperAdminModule = ''" @click="openModule('admin')"><span :style="superAdminSidebarIconStyle('admin')" aria-hidden="true">⚙</span><span style="flex: 1; min-width: 0;">Admin Panel</span></button>
+        <button class="super-admin-sidebar__item" style="display: flex !important; align-items: center; gap: 0.45rem; text-align: left !important;" :style="superAdminSidebarItemStyle('mainBranchLogistics')" :class="{ active: activeModule === 'mainBranchLogistics' }" :aria-current="activeModule === 'mainBranchLogistics' ? 'page' : undefined" @mouseenter="hoveredSuperAdminModule = 'mainBranchLogistics'" @mouseleave="hoveredSuperAdminModule = ''" @click="openModule('mainBranchLogistics')"><span :style="superAdminSidebarIconStyle('mainBranchLogistics')" aria-hidden="true">⇄</span><span style="flex: 1; min-width: 0;">Logistics Main Branch</span></button>
+        <button class="super-admin-sidebar__item" style="display: flex !important; align-items: center; gap: 0.45rem; text-align: left !important;" :style="superAdminSidebarItemStyle('mainBranchHr')" :class="{ active: activeModule === 'mainBranchHr' }" :aria-current="activeModule === 'mainBranchHr' ? 'page' : undefined" @mouseenter="hoveredSuperAdminModule = 'mainBranchHr'" @mouseleave="hoveredSuperAdminModule = ''" @click="openModule('mainBranchHr')"><span :style="superAdminSidebarIconStyle('mainBranchHr')" aria-hidden="true">♙</span><span style="flex: 1; min-width: 0;">HR Main Branch</span></button>
+        <button class="super-admin-sidebar__item" style="display: flex !important; align-items: center; gap: 0.45rem; text-align: left !important;" :style="superAdminSidebarItemStyle('mainBranchFinance')" :class="{ active: activeModule === 'mainBranchFinance' }" :aria-current="activeModule === 'mainBranchFinance' ? 'page' : undefined" @mouseenter="hoveredSuperAdminModule = 'mainBranchFinance'" @mouseleave="hoveredSuperAdminModule = ''" @click="openModule('mainBranchFinance')"><span :style="superAdminSidebarIconStyle('mainBranchFinance')" aria-hidden="true">₱</span><span style="flex: 1; min-width: 0;">Finance Manager Main Branch</span></button>
+        <button class="super-admin-sidebar__item" style="display: flex !important; align-items: center; gap: 0.45rem; text-align: left !important;" :style="superAdminSidebarItemStyle('logisticsManager')" :class="{ active: activeModule === 'logisticsManager' }" :aria-current="activeModule === 'logisticsManager' ? 'page' : undefined" @mouseenter="hoveredSuperAdminModule = 'logisticsManager'" @mouseleave="hoveredSuperAdminModule = ''" @click="openModule('logisticsManager')"><span :style="superAdminSidebarIconStyle('logisticsManager')" aria-hidden="true">↗</span><span style="flex: 1; min-width: 0;">Logistics Manager</span></button>
+        <button class="super-admin-sidebar__item" style="display: flex !important; align-items: center; gap: 0.45rem; text-align: left !important;" :style="superAdminSidebarItemStyle('procurementManager')" :class="{ active: activeModule === 'procurementManager' }" :aria-current="activeModule === 'procurementManager' ? 'page' : undefined" @mouseenter="hoveredSuperAdminModule = 'procurementManager'" @mouseleave="hoveredSuperAdminModule = ''" @click="openModule('procurementManager')"><span :style="superAdminSidebarIconStyle('procurementManager')" aria-hidden="true">▤</span><span style="flex: 1; min-width: 0;">Procurement Manager</span></button>
+        <button class="super-admin-sidebar__item" style="display: flex !important; align-items: center; gap: 0.45rem; text-align: left !important;" :style="superAdminSidebarItemStyle('hrManager')" :class="{ active: activeModule === 'hrManager' }" :aria-current="activeModule === 'hrManager' ? 'page' : undefined" @mouseenter="hoveredSuperAdminModule = 'hrManager'" @mouseleave="hoveredSuperAdminModule = ''" @click="openModule('hrManager')"><span :style="superAdminSidebarIconStyle('hrManager')" aria-hidden="true">♙</span><span style="flex: 1; min-width: 0;">HR Manager</span></button>
+        <button class="super-admin-sidebar__item" style="display: flex !important; align-items: center; gap: 0.45rem; text-align: left !important;" :style="superAdminSidebarItemStyle('financeManager')" :class="{ active: activeModule === 'financeManager' }" :aria-current="activeModule === 'financeManager' ? 'page' : undefined" @mouseenter="hoveredSuperAdminModule = 'financeManager'" @mouseleave="hoveredSuperAdminModule = ''" @click="openModule('financeManager')"><span :style="superAdminSidebarIconStyle('financeManager')" aria-hidden="true">₱</span><span style="flex: 1; min-width: 0;">Finance Manager</span></button>
+        <button class="super-admin-sidebar__item" style="display: flex !important; align-items: center; gap: 0.45rem; text-align: left !important;" :style="superAdminSidebarItemStyle('kitchenStaff')" :class="{ active: activeModule === 'kitchenStaff' }" :aria-current="activeModule === 'kitchenStaff' ? 'page' : undefined" @mouseenter="hoveredSuperAdminModule = 'kitchenStaff'" @mouseleave="hoveredSuperAdminModule = ''" @click="openModule('kitchenStaff')"><span :style="superAdminSidebarIconStyle('kitchenStaff')" aria-hidden="true">♨</span><span style="flex: 1; min-width: 0;">Kitchen Staff</span></button>
+        <button class="super-admin-sidebar__item" style="display: flex !important; align-items: center; gap: 0.45rem; text-align: left !important;" :style="superAdminSidebarItemStyle('cashierStaff')" :class="{ active: activeModule === 'cashierStaff' }" :aria-current="activeModule === 'cashierStaff' ? 'page' : undefined" @mouseenter="hoveredSuperAdminModule = 'cashierStaff'" @mouseleave="hoveredSuperAdminModule = ''" @click="openModule('cashierStaff')"><span :style="superAdminSidebarIconStyle('cashierStaff')" aria-hidden="true">▣</span><span style="flex: 1; min-width: 0;">Cashier Staff</span></button>
+        <button class="super-admin-sidebar__item" style="display: flex !important; align-items: center; gap: 0.45rem; text-align: left !important;" :style="superAdminSidebarItemStyle('inventoryStaff')" :class="{ active: activeModule === 'inventoryStaff' }" :aria-current="activeModule === 'inventoryStaff' ? 'page' : undefined" @mouseenter="hoveredSuperAdminModule = 'inventoryStaff'" @mouseleave="hoveredSuperAdminModule = ''" @click="openModule('inventoryStaff')"><span :style="superAdminSidebarIconStyle('inventoryStaff')" aria-hidden="true">▤</span><span style="flex: 1; min-width: 0;">Inventory Staff</span></button>
+        <button class="super-admin-sidebar__item" style="display: flex !important; align-items: center; gap: 0.45rem; text-align: left !important;" :style="superAdminSidebarItemStyle('supplier')" :class="{ active: activeModule === 'supplier' }" :aria-current="activeModule === 'supplier' ? 'page' : undefined" @mouseenter="hoveredSuperAdminModule = 'supplier'" @mouseleave="hoveredSuperAdminModule = ''" @click="openModule('supplier')"><span :style="superAdminSidebarIconStyle('supplier')" aria-hidden="true">♧</span><span style="flex: 1; min-width: 0;">Supplier Panel</span></button>
       </nav>
 
       <button
@@ -41,6 +41,16 @@
           @click="sidebarCollapsed = false"
         >☰</button>
         <div class="super-admin-topbar__spacer"></div>
+        <button
+          ref="tutorialTrigger"
+          class="super-admin-tutorial-trigger"
+          type="button"
+          aria-label="Open Super Admin tutorial"
+          title="Super Admin tutorial"
+          aria-haspopup="dialog"
+          :aria-expanded="showTutorial"
+          @click="openTutorial"
+        >?</button>
         <div ref="accountMenuRef" class="super-admin-account-menu">
           <button
             id="super-admin-account-toggle"
@@ -412,6 +422,38 @@
         </div>
       </transition>
 
+      <transition name="fade">
+        <div v-if="showTutorial" class="super-admin-tutorial-backdrop" role="presentation" @click.self="closeTutorial">
+          <section
+            class="super-admin-tutorial-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="super-admin-tutorial-title"
+            tabindex="-1"
+            @keydown.esc="closeTutorial"
+          >
+            <header class="super-admin-tutorial-dialog__header">
+              <div>
+                <p>SUPER ADMIN GUIDE</p>
+                <h2 id="super-admin-tutorial-title">Using the Super Admin panel</h2>
+              </div>
+              <button type="button" aria-label="Close tutorial" autofocus @click="closeTutorial">✕</button>
+            </header>
+            <div class="super-admin-tutorial-dialog__body">
+              <p>Choose a panel from the sidebar to view its dashboard and tools.</p>
+              <ul>
+                <li>Use the branch selector when viewing a branch-scoped panel.</li>
+                <li>Super Admin panel views are read-only; operational actions are disabled.</li>
+                <li>Use the account menu for profile information, announcements, terms, and logout.</li>
+              </ul>
+            </div>
+            <footer class="super-admin-tutorial-dialog__footer">
+              <button type="button" @click="closeTutorial">Got it</button>
+            </footer>
+          </section>
+        </div>
+      </transition>
+
       <!-- LOGOUT CONFIRM MODAL -->
       <transition name="fade">
         <div v-if="showLogoutConfirm" class="logout-confirm-backdrop">
@@ -466,10 +508,47 @@ const isLoggingOut = ref(false)
 const isAccountMenuOpen = ref(false)
 const accountMenuRef = ref(null)
 const monitoringViewRef = ref(null)
+const tutorialTrigger = ref(null)
+const showTutorial = ref(false)
 const sidebarCollapsed = ref(false)
 const sidebarWidth = ref(220)
 const sidebarResizing = ref(false)
 const activeModule = ref('dashboard')
+const hoveredSuperAdminModule = ref('')
+const superAdminSidebarItemStyle = module => {
+  const active = activeModule.value === module
+  const highlighted = active || hoveredSuperAdminModule.value === module
+  return {
+    background: active ? '#fffaf5' : highlighted ? 'rgba(255, 255, 255, 0.68)' : 'transparent',
+    borderColor: active ? '#efb47f' : highlighted ? 'rgba(215, 125, 61, 0.22)' : 'transparent',
+    color: active ? '#a34f21' : highlighted ? '#9b4e21' : '#29384a',
+    boxShadow: active ? '0 5px 12px rgba(184, 111, 61, 0.08)' : 'none',
+    transition: 'all 160ms ease',
+  }
+}
+const superAdminSidebarIconStyle = module => {
+  const highlighted = activeModule.value === module || hoveredSuperAdminModule.value === module
+  return {
+    display: 'grid',
+    width: '1.8rem',
+    height: '1.8rem',
+    flex: '0 0 1.8rem',
+    placeItems: 'center',
+    borderRadius: '0.7rem',
+    background: highlighted ? '#f97316' : '#fff1e6',
+    color: highlighted ? '#ffffff' : '#f97316',
+    fontSize: '0.95rem',
+    fontWeight: 800,
+    transition: 'color 160ms ease, background-color 160ms ease',
+  }
+}
+function openTutorial() {
+  showTutorial.value = true
+}
+function closeTutorial() {
+  showTutorial.value = false
+  tutorialTrigger.value?.focus()
+}
 const selectedBranchId = ref('')
 const availableBranches = ref([])
 const isBranchOptionsLoading = ref(true)
@@ -1681,6 +1760,130 @@ watch(() => route.path, (p) => {
 }
 
 .super-admin-topbar__spacer { flex: 1; }
+
+.super-admin-tutorial-trigger {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid #e3d6cd;
+  border-radius: 50%;
+  background: #fffaf5;
+  color: #593b2a;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.super-admin-tutorial-trigger:hover,
+.super-admin-tutorial-trigger:focus-visible {
+  border-color: #f2a45f;
+  background: #fff0df;
+  color: #a84b19;
+  transform: translateY(-1px);
+}
+
+.super-admin-tutorial-trigger:focus-visible,
+.super-admin-tutorial-dialog button:focus-visible {
+  outline: 3px solid #ff9f43;
+  outline-offset: 3px;
+}
+
+.super-admin-tutorial-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(31, 35, 41, 0.58);
+  backdrop-filter: blur(5px);
+}
+
+.super-admin-tutorial-dialog {
+  width: min(560px, 100%);
+  overflow: hidden;
+  border: 1px solid #dec8b7;
+  border-radius: 18px;
+  background: #fffaf5;
+  color: #493629;
+  box-shadow: 0 24px 70px rgba(22, 25, 29, 0.28);
+}
+
+.super-admin-tutorial-dialog__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid #f0e4da;
+}
+
+.super-admin-tutorial-dialog__header p {
+  margin: 0 0 6px;
+  color: #bd6334;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+}
+
+.super-admin-tutorial-dialog__header h2 {
+  margin: 0;
+  color: #3d2a1f;
+  font-size: 1.3rem;
+}
+
+.super-admin-tutorial-dialog__header button {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: #f7f1ec;
+  color: #8c6e5b;
+  cursor: pointer;
+}
+
+.super-admin-tutorial-dialog__body {
+  padding: 20px 24px;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.super-admin-tutorial-dialog__body p {
+  margin: 0;
+}
+
+.super-admin-tutorial-dialog__body ul {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0 0;
+  padding-left: 1.25rem;
+}
+
+.super-admin-tutorial-dialog__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 14px 24px 20px;
+  border-top: 1px solid #f0e4da;
+}
+
+.super-admin-tutorial-dialog__footer button {
+  min-width: 100px;
+  padding: 0.65rem 1rem;
+  border: 1px solid #e6a16c;
+  border-radius: 9px;
+  background: #f97316;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
 
 .super-admin-branch-filter {
   display: inline-flex;

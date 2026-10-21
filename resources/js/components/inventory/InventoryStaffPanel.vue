@@ -40,9 +40,15 @@
 
     <template #ownerSidebar>
       <nav v-if="!props.embeddedSection" class="owner-sidebar-nav inventory-sidebar-nav" aria-label="Inventory sections">
-        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': !isDisposalView && !isAttendanceView }" @click="isDisposalView = false; isAttendanceView = false">Inventory</button>
-        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': isDisposalView }" @click="isDisposalView = true; isAttendanceView = false">Product Disposal</button>
-        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': isAttendanceView }" @click="isDisposalView = false; isAttendanceView = true">Attendance</button>
+        <button type="button" class="owner-sidebar-link" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="inventorySidebarItemStyle('inventory')" :class="{ 'owner-sidebar-link--active': !isDisposalView && !isAttendanceView }" :aria-current="!isDisposalView && !isAttendanceView ? 'page' : undefined" @mouseenter="hoveredInventorySection = 'inventory'" @mouseleave="hoveredInventorySection = ''" @click="isDisposalView = false; isAttendanceView = false">
+          <span :style="inventorySidebarIconStyle('inventory')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v14H4zM8 9h8M8 12h8M8 15h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Inventory</span>
+        </button>
+        <button type="button" class="owner-sidebar-link" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="inventorySidebarItemStyle('disposal')" :class="{ 'owner-sidebar-link--active': isDisposalView }" :aria-current="isDisposalView ? 'page' : undefined" @mouseenter="hoveredInventorySection = 'disposal'" @mouseleave="hoveredInventorySection = ''" @click="isDisposalView = true; isAttendanceView = false">
+          <span :style="inventorySidebarIconStyle('disposal')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Product Disposal</span>
+        </button>
+        <button type="button" class="owner-sidebar-link" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="inventorySidebarItemStyle('attendance')" :class="{ 'owner-sidebar-link--active': isAttendanceView }" :aria-current="isAttendanceView ? 'page' : undefined" @mouseenter="hoveredInventorySection = 'attendance'" @mouseleave="hoveredInventorySection = ''" @click="isDisposalView = false; isAttendanceView = true">
+          <span :style="inventorySidebarIconStyle('attendance')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.7" /><path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Attendance</span>
+        </button>
       </nav>
     </template>
 
@@ -510,6 +516,40 @@ const inventoryTutorialStep = ref(0);
 
 const isDisposalView = ref(false);
 const isAttendanceView = ref(false);
+const hoveredInventorySection = ref('');
+const inventorySidebarItemStyle = section => {
+  const active = section === 'inventory'
+    ? !isDisposalView.value && !isAttendanceView.value
+    : section === 'disposal'
+      ? isDisposalView.value
+      : isAttendanceView.value
+  const highlighted = active || hoveredInventorySection.value === section
+  return {
+    background: active ? '#fffaf5' : highlighted ? 'rgba(255, 255, 255, 0.68)' : 'transparent',
+    borderColor: active ? '#efb47f' : highlighted ? 'rgba(215, 125, 61, 0.22)' : 'transparent',
+    color: active ? '#a34f21' : highlighted ? '#9b4e21' : '#29384a',
+    boxShadow: active ? '0 5px 12px rgba(184, 111, 61, 0.08)' : 'none',
+    transition: 'all 160ms ease',
+  }
+}
+const inventorySidebarIconStyle = section => {
+  const active = section === 'inventory'
+    ? !isDisposalView.value && !isAttendanceView.value
+    : section === 'disposal'
+      ? isDisposalView.value
+      : isAttendanceView.value
+  const highlighted = active || hoveredInventorySection.value === section
+  return {
+    display: 'grid',
+    width: '1.8rem',
+    height: '1.8rem',
+    placeItems: 'center',
+    borderRadius: '0.7rem',
+    background: highlighted ? '#f97316' : '#fff1e6',
+    color: highlighted ? '#ffffff' : '#f97316',
+    transition: 'color 160ms ease, background-color 160ms ease',
+  }
+}
 
 // Back button logic
 const showBackButton = computed(() => {
