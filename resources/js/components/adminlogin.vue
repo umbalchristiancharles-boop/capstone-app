@@ -124,6 +124,17 @@ const defaultPassword = ref("");
 
 const logoImg = new URL("../assets/chikinlogo.png", import.meta.url).href;
 
+const managerDepartmentByRole = {
+    manager_hr: 'hr',
+    manager_finance: 'finance',
+    manager_logistics: 'logistics',
+    logistics_manager: 'logistics',
+    manager_inventory: 'inventory',
+    manager_procurement: 'procurement',
+    manager_cashier: 'cashier',
+    manager_kitchen: 'kitchen',
+};
+
 function normalizeUserRole(role = '') {
     const normalized = String(role || '').trim().toLowerCase();
     const aliasMap = {
@@ -146,15 +157,16 @@ function normalizeUserRole(role = '') {
 function normalizeUserDepartment(department = '', role = '') {
     const normalizedDepartment = String(department || '').trim().toLowerCase();
     const departmentKey = normalizedDepartment.replace(/[\s-]+/g, '_');
-    if (departmentKey === 'manager_logistics' || departmentKey === 'logistics_manager') {
-        return 'logistics';
+    const roleKey = String(role || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+
+    if (managerDepartmentByRole[roleKey]) {
+        return managerDepartmentByRole[roleKey];
+    }
+    if (managerDepartmentByRole[departmentKey]) {
+        return managerDepartmentByRole[departmentKey];
     }
     if (normalizedDepartment) return normalizedDepartment;
 
-    const normalizedRole = String(role || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
-    if (normalizedRole === 'manager_logistics' || normalizedRole === 'logistics_manager') {
-        return 'logistics';
-    }
     return '';
 }
 
@@ -490,7 +502,7 @@ function resolveRedirectPath(role, department, permissions = {}, user = {}) {
     if (r === "HR") return "/hr-panel";
     if (r === "OWNER") return "/owner-panel";
     if (r === "ADMIN") return "/admin-panel";
-    if (r === "SUPER_ADMIN" || r === "SUPERADMIN") return "/super-admin/procurement";
+    if (r === "SUPER_ADMIN" || r === "SUPERADMIN") return "/super-admin/dashboard";
 
     // Invalid role - return to login with error
     console.error('Invalid role detected in redirect:', role);

@@ -810,7 +810,7 @@ router.beforeEach(async (to, from, next) => {
       }
     }
     if (to.path.startsWith('/main-branch/finance')) {
-      const isMainBranchUser = (Number(user.branch_id || user.branchId || user.branch || 0) === 32 || Number(user.branch_id || user.branchId || user.branch || 0) === 1)
+      const isMainBranchUser = user.is_main_branch === true || Number(user.is_main_branch) === 1 || Number(user.branch_id || user.branchId || user.branch || 0) === 32 || Number(user.branch_id || user.branchId || user.branch || 0) === 1
       const branchName = (user.branch_name || user.branch || '').toString().toUpperCase()
       const username = (user.username || '').toString().toUpperCase()
       const isMainBranchByName = branchName.includes('MAIN') || username.includes('MAIN_BRANCH') || username.includes('MAINBRANCH')
@@ -820,7 +820,7 @@ router.beforeEach(async (to, from, next) => {
       }
     }
     if (to.path.startsWith('/main-branch/logistics')) {
-      const isMainBranchUser = (Number(user.branch_id || user.branchId || user.branch || 0) === 32 || Number(user.branch_id || user.branchId || user.branch || 0) === 1)
+      const isMainBranchUser = user.is_main_branch === true || Number(user.is_main_branch) === 1 || Number(user.branch_id || user.branchId || user.branch || 0) === 32 || Number(user.branch_id || user.branchId || user.branch || 0) === 1
       const branchName = (user.branch_name || user.branch || '').toString().toUpperCase()
       const username = (user.username || '').toString().toUpperCase()
       const isMainBranchByName = branchName.includes('MAIN') || username.includes('MAIN_BRANCH') || username.includes('MAINBRANCH')

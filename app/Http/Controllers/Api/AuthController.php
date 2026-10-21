@@ -134,7 +134,7 @@ class AuthController extends Controller
         // Validate role exists and is valid
         // Include all expected roles: SUPER_ADMIN, ADMIN, OWNER, MANAGER, MANAGER_HR, HR, STAFF, CUSTOM, SUPPLIER, BRANCH_MANAGER
         // Also include combined roles for backward compatibility (MANAGER_LOGISTICS, MANAGER_FINANCE, etc.)
-        $validRoles = ['SUPER_ADMIN', 'ADMIN', 'OWNER', 'MANAGER', 'MANAGER_HR', 'HR', 'STAFF', 'CUSTOM', 'SUPPLIER', 'BRANCH_MANAGER', 
+        $validRoles = ['SUPER_ADMIN', 'SUPERADMIN', 'ADMIN', 'OWNER', 'MANAGER', 'MANAGER_HR', 'HR', 'STAFF', 'CUSTOM', 'SUPPLIER', 'BRANCH_MANAGER',
                        'MANAGER_LOGISTICS', 'MANAGER_FINANCE', 'MANAGER_INVENTORY', 'MANAGER_PROCUREMENT', 'MANAGER_CASHIER', 'MANAGER_KITCHEN'];
         $roleUpper = strtoupper(trim($user->role ?? ''));
 
@@ -325,6 +325,9 @@ class AuthController extends Controller
     {
         $role = strtoupper(trim($user->role ?? ''));
         $department = strtoupper(trim($user->department ?? ''));
+        if ($role === 'SUPERADMIN') {
+            $role = 'SUPER_ADMIN';
+        }
         $isMainBranchUser = false;
 
         try {
@@ -376,9 +379,9 @@ class AuthController extends Controller
             return '/hr-panel';
         }
 
-        // BRANCH_MANAGER - redirect to manager dashboard
+        // BRANCH_MANAGER - use the registered manager panel route
         if ($role === 'BRANCH_MANAGER') {
-            return '/manager/dashboard';
+            return '/manager-panel';
         }
 
         // MANAGER - check department for specific panel
