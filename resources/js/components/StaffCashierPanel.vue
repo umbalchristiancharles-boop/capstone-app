@@ -33,6 +33,14 @@
               {{ customerDisplayBlocked ? 'Open Customer Display' : 'Customer Display' }}
             </button>
             <div class="staff-cashier-header__actions">
+              <button
+                ref="cashierTutorialTrigger"
+                class="staff-cashier-tutorial-trigger"
+                type="button"
+                aria-label="Open Cashier tutorial"
+                title="Cashier tutorial"
+                @click="openCashierTutorial"
+              >?</button>
               <OwnerMessageMenu />
               <PanelNotificationMenu
                 :notification-items="cashierNotificationItems"
@@ -59,7 +67,7 @@
           <div :key="activeCashierSection" class="staff-cashier-section-view" :class="{ 'staff-cashier-section-view--cashier': activeCashierSection === 'cashier', 'staff-cashier-section-view--attendance': activeCashierSection === 'attendance' }">
       <div v-if="!branchId" class="loading-text">Loading branch information...</div>
         <div v-else class="cashier-body" :class="{ 'staff-cashier-body--hidden': activeCashierSection !== 'cashier' }">
-        <section v-if="activeCashierSection === 'cashier'" class="product-lookup-section">
+        <section v-if="activeCashierSection === 'cashier'" id="cashier-workspace" class="product-lookup-section">
           <div v-if="scannerOpen" class="cashier-inline-scanner">
             <div class="cashier-inline-scanner__header">
               <h2>Scan Product Barcode</h2>
@@ -116,7 +124,7 @@
       </div>
 
       <!-- Recent Transactions -->
-      <section v-if="branchId && activeCashierSection === 'transactions'" class="transactions-section">
+      <section v-if="branchId && activeCashierSection === 'transactions'" id="cashier-transactions" class="transactions-section">
         <h2>
           Recent Transactions
           <span v-if="pendingTransactionsCount > 0" class="panel-badge">{{ pendingTransactionsCount }}</span>
@@ -163,7 +171,7 @@
         </div>
       </section>
       <aside v-if="['cashier', 'attendance'].includes(activeCashierSection)" class="staff-cashier-order-rail">
-      <section v-if="!hideAttendanceCard && activeCashierSection === 'attendance'" class="attendance-card cashier-attendance-card">
+      <section v-if="!hideAttendanceCard && activeCashierSection === 'attendance'" id="cashier-attendance" class="attendance-card cashier-attendance-card">
         <header class="cashier-attendance-card__header">
           <div class="cashier-attendance-card__heading">
             <h2>Today's Attendance</h2>
@@ -423,6 +431,60 @@
     @close="showCashierNotificationModal = false"
   />
 
+  <transition name="fade">
+    <div v-if="showCashierTutorial" class="staff-cashier-tutorial-backdrop" role="presentation" @click.self="closeCashierTutorial">
+      <section
+        ref="cashierTutorialDialog"
+        class="staff-cashier-tutorial-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cashier-tutorial-title"
+        tabindex="-1"
+        @keydown.esc="closeCashierTutorial"
+      >
+        <header class="staff-cashier-tutorial-header">
+          <div>
+            <p class="staff-cashier-tutorial-eyebrow">Cashier guide</p>
+            <h2 id="cashier-tutorial-title">How to use the cashier panel</h2>
+          </div>
+          <button class="staff-cashier-tutorial-close" type="button" aria-label="Close Cashier tutorial" @click="closeCashierTutorial">✕</button>
+        </header>
+        <div class="staff-cashier-tutorial-progress" aria-live="polite">
+          <span
+            v-for="(step, index) in cashierTutorialSteps"
+            :key="step.title"
+            class="staff-cashier-tutorial-progress__dot"
+            :class="{ 'staff-cashier-tutorial-progress__dot--active': index === cashierTutorialStep }"
+            aria-hidden="true"
+          ></span>
+          <span>Step {{ cashierTutorialStep + 1 }} of {{ cashierTutorialSteps.length }}</span>
+        </div>
+        <div class="staff-cashier-tutorial-body">
+          <div class="staff-cashier-tutorial-icon" aria-hidden="true">{{ cashierTutorialSteps[cashierTutorialStep].icon }}</div>
+          <h3>{{ cashierTutorialSteps[cashierTutorialStep].title }}</h3>
+          <p>{{ cashierTutorialSteps[cashierTutorialStep].description }}</p>
+          <ul>
+            <li v-for="item in cashierTutorialSteps[cashierTutorialStep].items" :key="item">{{ item }}</li>
+          </ul>
+        </div>
+        <footer class="staff-cashier-tutorial-footer">
+          <button class="staff-cashier-tutorial-button staff-cashier-tutorial-button--secondary" type="button" :disabled="cashierTutorialStep === 0" @click="cashierTutorialStep -= 1">Previous</button>
+          <button
+            v-if="cashierTutorialSteps[cashierTutorialStep].section"
+            class="staff-cashier-tutorial-button staff-cashier-tutorial-button--section"
+            type="button"
+            @click="openCashierTutorialSection(cashierTutorialSteps[cashierTutorialStep].section)"
+          >{{ cashierTutorialSteps[cashierTutorialStep].actionLabel }}</button>
+          <button
+            class="staff-cashier-tutorial-button staff-cashier-tutorial-button--primary"
+            type="button"
+            @click="cashierTutorialStep === cashierTutorialSteps.length - 1 ? closeCashierTutorial() : cashierTutorialStep += 1"
+          >{{ cashierTutorialStep === cashierTutorialSteps.length - 1 ? 'Done' : 'Next' }}</button>
+        </footer>
+      </section>
+    </div>
+  </transition>
+
 </template>
 
 <style scoped>
@@ -458,6 +520,60 @@ const cashierSidebarCollapsed = ref(false)
 const cashierSidebarWidth = ref(156)
 const isResizingSidebar = ref(false)
 const activeCashierSection = ref('cashier')
+const cashierTutorialTrigger = ref(null)
+const cashierTutorialDialog = ref(null)
+const showCashierTutorial = ref(false)
+const cashierTutorialStep = ref(0)
+const cashierTutorialSteps = [
+  {
+    icon: '▦',
+    title: 'Find products and dishes',
+    section: 'cashier',
+    actionLabel: 'Open Cashier',
+    description: 'Use the Cashier section to find available branch items and build a customer order.',
+    items: [
+      'Search by product name or barcode, or select Scan to use the camera. Stop Scan closes the scanner.',
+      'Select an in-stock dish or product to add it to the current order. Unavailable or out-of-stock items cannot be selected.',
+      'Use Customer Display to open the customer-facing display when needed.',
+    ],
+  },
+  {
+    icon: '🛒',
+    title: 'Review cart and check out',
+    section: 'cashier',
+    actionLabel: 'Open Cashier',
+    description: 'Check the order, apply any eligible discount, enter the payment, and complete checkout.',
+    items: [
+      'Adjust item quantities with the plus/minus controls or quantity field, and remove items with the remove button.',
+      'Review subtotal, discount, taxable amount, VAT, and grand total. Choose a discount option and enter the custom percentage when applicable.',
+      'Enter an amount paid that is at least the grand total. Checkout becomes available when the cart and payment are valid; use Clear to empty the cart when no checkout is processing.',
+    ],
+  },
+  {
+    icon: '▤',
+    title: 'Transactions and refunds',
+    section: 'transactions',
+    actionLabel: 'Open Transactions',
+    description: 'Review recent sales and use the refund control for eligible completed transactions.',
+    items: [
+      'The table lists order code, customer, items, total, payment, change, status, and date.',
+      'Refund is shown for completed or approved transactions that are not cancelled. The action is disabled while a refund is processing.',
+      'Use the status and transaction details to confirm you have selected the intended order.',
+    ],
+  },
+  {
+    icon: '◷',
+    title: 'Attendance',
+    section: 'attendance',
+    actionLabel: 'Open Attendance',
+    description: 'Review your shift and use the attendance actions when they are enabled.',
+    items: [
+      'Check on-duty status, recorded clock-in/out times, and hours worked.',
+      'Clock In may require location permission and a face photo through the camera prompt.',
+      'Clock Out is available only when you are clocked in and the scheduled time or an applicable override allows it.',
+    ],
+  },
+]
 let cashierSidebarSwipeStart = null
 let cashierSidebarSwipeClickTimeout = null
 let cashierSidebarResizeStart = null
@@ -475,6 +591,22 @@ const cashierSectionTitle = computed(() => {
 
 function selectCashierSection(section) {
   activeCashierSection.value = section
+}
+
+function openCashierTutorial() {
+  cashierTutorialStep.value = 0
+  showCashierTutorial.value = true
+  nextTick(() => cashierTutorialDialog.value?.focus())
+}
+
+function closeCashierTutorial(restoreFocus = true) {
+  showCashierTutorial.value = false
+  if (restoreFocus) nextTick(() => cashierTutorialTrigger.value?.focus())
+}
+
+function openCashierTutorialSection(section) {
+  closeCashierTutorial(false)
+  selectCashierSection(section)
 }
 
 function startSidebarResize(event) {
@@ -2806,5 +2938,223 @@ async function performLogout() {
   font-size: 0.75rem;
   color: rgba(66,33,11,0.7);
   margin-top: 6px;
+}
+</style>
+<style scoped>
+.staff-cashier-tutorial-trigger {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  padding: 0;
+  border: 1px solid #e5b78b;
+  border-radius: 50%;
+  background: #fffaf5;
+  color: #713918;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.staff-cashier-tutorial-trigger:hover {
+  border-color: #f2a45f;
+  background: #fff0df;
+  color: #a84b19;
+  transform: translateY(-1px);
+}
+
+.staff-cashier-tutorial-trigger:focus-visible,
+.staff-cashier-tutorial-button:focus-visible,
+.staff-cashier-tutorial-close:focus-visible {
+  outline: 3px solid #ff9f43;
+  outline-offset: 3px;
+}
+
+.staff-cashier-tutorial-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 6000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(31, 35, 41, 0.58);
+  backdrop-filter: blur(5px);
+}
+
+.staff-cashier-tutorial-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(620px, 100%);
+  max-height: min(88vh, 760px);
+  overflow: hidden;
+  border: 1px solid rgba(222, 200, 183, 0.9);
+  border-radius: 24px;
+  background: linear-gradient(180deg, #fff 0%, #fffaf5 100%);
+  box-shadow: 0 28px 80px rgba(22, 25, 29, 0.28);
+  color: #4a3325;
+}
+
+.staff-cashier-tutorial-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid #f0e4da;
+}
+
+.staff-cashier-tutorial-eyebrow {
+  margin: 0 0 6px;
+  color: #bd6334;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.staff-cashier-tutorial-header h2 {
+  margin: 0;
+  color: #3d2a1f;
+  font-size: clamp(1.25rem, 3vw, 1.55rem);
+  font-weight: 850;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+}
+
+.staff-cashier-tutorial-close {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #f7f1ec;
+  color: #8c6e5b;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.staff-cashier-tutorial-close:hover { background: #f3e4d8; color: #593b2a; }
+
+.staff-cashier-tutorial-progress {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 16px 24px 0;
+  color: #593b2a;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.staff-cashier-tutorial-progress__dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: #e8ded7;
+}
+
+.staff-cashier-tutorial-progress__dot--active {
+  width: 22px;
+  flex-basis: 22px;
+  border-radius: 999px;
+  background: #ff9f43;
+}
+
+.staff-cashier-tutorial-body {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px 24px 20px;
+  scrollbar-color: #d9bda7 transparent;
+  scrollbar-width: thin;
+}
+
+.staff-cashier-tutorial-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 15px;
+  border-radius: 16px;
+  background: #fff0dc;
+  color: #e77b22;
+  font-size: 1.4rem;
+  font-weight: 750;
+}
+
+.staff-cashier-tutorial-body h3 {
+  margin: 0 0 8px;
+  color: #3d2a1f;
+  font-size: 1.2rem;
+  font-weight: 850;
+  line-height: 1.3;
+}
+
+.staff-cashier-tutorial-body > p {
+  margin: 0;
+  color: #826c5c;
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+.staff-cashier-tutorial-body ul {
+  display: grid;
+  gap: 9px;
+  margin: 18px 0 0;
+  padding: 0 0 0 19px;
+}
+
+.staff-cashier-tutorial-body li {
+  padding-left: 1px;
+  color: #523a2a;
+  font-size: 0.94rem;
+  line-height: 1.5;
+}
+
+.staff-cashier-tutorial-body li::marker { color: #ff983e; }
+
+.staff-cashier-tutorial-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 16px 24px 20px;
+  border-top: 1px solid #f0e4da;
+}
+
+.staff-cashier-tutorial-button {
+  min-height: 42px;
+  padding: 0 17px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, opacity 160ms ease;
+}
+
+.staff-cashier-tutorial-button:disabled { opacity: 0.45; cursor: not-allowed; }
+.staff-cashier-tutorial-button--secondary { border-color: #eadfd6; background: #fffaf5; color: #745d4d; }
+.staff-cashier-tutorial-button--secondary:hover:not(:disabled) { border-color: #dbc5b4; background: #f9f0e8; }
+.staff-cashier-tutorial-button--section { border-color: #ffd0a4; background: transparent; color: #a8441d; }
+.staff-cashier-tutorial-button--section:hover { background: #fff0df; }
+.staff-cashier-tutorial-button--primary { min-width: 100px; background: #ff9f43; color: #fff; }
+.staff-cashier-tutorial-button--primary:hover { background: #ed872a; }
+
+@media (max-width: 540px) {
+  .staff-cashier-tutorial-backdrop { padding: 12px; }
+  .staff-cashier-tutorial-header { padding: 18px 18px 15px; }
+  .staff-cashier-tutorial-progress { padding: 14px 18px 0; }
+  .staff-cashier-tutorial-body { padding: 20px 18px; }
+  .staff-cashier-tutorial-footer { flex-wrap: wrap; padding: 14px 18px 18px; }
+  .staff-cashier-tutorial-button--section { order: 3; width: 100%; }
 }
 </style>

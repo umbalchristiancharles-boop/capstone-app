@@ -25,6 +25,14 @@
         <button v-if="sidebarCollapsed" class="logistics-menu-button" type="button" aria-label="Show logistics menu" aria-expanded="false" @click="reopenSidebar">☰</button>
         <div class="logistics-topbar__spacer"></div>
         <div class="logistics-topbar__actions">
+          <button
+            ref="logisticsTutorialTrigger"
+            class="main-branch-logistics-tutorial-trigger"
+            type="button"
+            aria-label="Open Main Branch Logistics tutorial"
+            title="Main Branch Logistics tutorial"
+            @click="openLogisticsTutorial"
+          >?</button>
           <OwnerMessageMenu />
           <PanelNotificationMenu
             :notification-items="logisticsNotificationItems"
@@ -371,11 +379,78 @@
         </div>
       </div>
     </transition>
+
+    <transition name="fade">
+      <div
+        v-if="showLogisticsTutorial"
+        class="main-branch-logistics-tutorial-backdrop"
+        role="presentation"
+        @click.self="closeLogisticsTutorial"
+      >
+        <section
+          ref="logisticsTutorialDialog"
+          class="main-branch-logistics-tutorial-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="main-branch-logistics-tutorial-title"
+          tabindex="-1"
+          @keydown.esc="closeLogisticsTutorial"
+        >
+          <header class="main-branch-logistics-tutorial-header">
+            <div>
+              <p class="main-branch-logistics-tutorial-eyebrow">Main Branch Logistics guide</p>
+              <h2 id="main-branch-logistics-tutorial-title">How to use this panel</h2>
+            </div>
+            <button class="main-branch-logistics-tutorial-close" type="button" aria-label="Close Main Branch Logistics tutorial" @click="closeLogisticsTutorial">✕</button>
+          </header>
+
+          <div class="main-branch-logistics-tutorial-progress" aria-live="polite">
+            <span
+              v-for="(step, index) in logisticsTutorialSteps"
+              :key="step.title"
+              class="main-branch-logistics-tutorial-progress__dot"
+              :class="{ 'main-branch-logistics-tutorial-progress__dot--active': index === logisticsTutorialStep }"
+              aria-hidden="true"
+            ></span>
+            <span>Step {{ logisticsTutorialStep + 1 }} of {{ logisticsTutorialSteps.length }}</span>
+          </div>
+
+          <div class="main-branch-logistics-tutorial-body">
+            <div class="main-branch-logistics-tutorial-icon" aria-hidden="true">{{ logisticsTutorialSteps[logisticsTutorialStep].icon }}</div>
+            <h3>{{ logisticsTutorialSteps[logisticsTutorialStep].title }}</h3>
+            <p>{{ logisticsTutorialSteps[logisticsTutorialStep].description }}</p>
+            <ul>
+              <li v-for="item in logisticsTutorialSteps[logisticsTutorialStep].items" :key="item">{{ item }}</li>
+            </ul>
+          </div>
+
+          <footer class="main-branch-logistics-tutorial-footer">
+            <button
+              class="main-branch-logistics-tutorial-button main-branch-logistics-tutorial-button--secondary"
+              type="button"
+              :disabled="logisticsTutorialStep === 0"
+              @click="logisticsTutorialStep -= 1"
+            >Previous</button>
+            <button
+              v-if="logisticsTutorialSteps[logisticsTutorialStep].section"
+              class="main-branch-logistics-tutorial-button main-branch-logistics-tutorial-button--section"
+              type="button"
+              @click="openLogisticsTutorialSection(logisticsTutorialSteps[logisticsTutorialStep].section)"
+            >{{ logisticsTutorialSteps[logisticsTutorialStep].actionLabel }}</button>
+            <button
+              class="main-branch-logistics-tutorial-button main-branch-logistics-tutorial-button--primary"
+              type="button"
+              @click="logisticsTutorialStep === logisticsTutorialSteps.length - 1 ? closeLogisticsTutorial() : logisticsTutorialStep += 1"
+            >{{ logisticsTutorialStep === logisticsTutorialSteps.length - 1 ? 'Done' : 'Next' }}</button>
+          </footer>
+        </section>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup>
-import { onMounted, onBeforeUnmount, ref, watch, computed } from 'vue'
+import { onMounted, onBeforeUnmount, ref, watch, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { showToast } from './toastStore'
@@ -391,6 +466,84 @@ const pageLayout = ref(null)
 const logisticsSidebar = ref(null)
 const profile = ref({})
 const selectedSection = ref('overview')
+const showLogisticsTutorial = ref(false)
+const logisticsTutorialStep = ref(0)
+const logisticsTutorialDialog = ref(null)
+const logisticsTutorialTrigger = ref(null)
+const logisticsTutorialSteps = [
+  {
+    icon: '⌂',
+    title: 'Main Branch Logistics overview',
+    section: 'overview',
+    actionLabel: 'Open Overview',
+    description: 'Use the overview to monitor stock, deliveries, suppliers, and product requests across branches.',
+    items: [
+      'Summary cards show Active Products, Low Stock, Pending Deliveries, and Suppliers.',
+      'The overview includes the Inventory Monitor, Product Requests awaiting logistics approval, and Suppliers for the selected branch.',
+      'Use Refresh in the dashboard header to reload dashboard data. Use the sidebar to focus on Inventory Monitor, Product Requests, Suppliers, or Attendance.',
+    ],
+  },
+  {
+    icon: '▦',
+    title: 'Inventory monitor',
+    section: 'inventory',
+    actionLabel: 'Open Inventory Monitor',
+    description: 'Review current stock across branches. This Main Branch inventory view is read-only.',
+    items: [
+      'Choose a branch from the Branch selector to filter the inventory list.',
+      'Review product name, stock count, minimum stock, and status.',
+      'The Action column is view-only here; use branch-level workflows for operational stock changes.',
+    ],
+  },
+  {
+    icon: '✓',
+    title: 'Product request approvals',
+    section: 'product-requests',
+    actionLabel: 'Open Product Requests',
+    description: 'Review product requests submitted by branches for Main Branch Logistics approval.',
+    items: [
+      'Review the product, requester, branch, and request date before deciding.',
+      'Select View details to inspect category, description, reason, storage needs, product type, and available supplier/pricing information.',
+      'Select Approve or Reject for the request. Use Retry if the panel reports a loading error.',
+    ],
+  },
+  {
+    icon: '♙',
+    title: 'Suppliers',
+    section: 'suppliers',
+    actionLabel: 'Open Suppliers',
+    description: 'Review suppliers available for the currently selected branch.',
+    items: [
+      'Use the branch selector to choose which branch’s supplier list to inspect.',
+      'The supplier table shows supplier name, contact details when available, and active status.',
+      'This view is read-only; supplier administration is not performed from this panel.',
+    ],
+  },
+  {
+    icon: '◷',
+    title: 'Attendance',
+    section: 'attendance',
+    actionLabel: 'Open Attendance',
+    description: 'Review your shift status and record your own attendance from Main Branch Logistics.',
+    items: [
+      'Review the on-duty status, clock-in/out times, and hours worked in Today’s Attendance.',
+      'Allow location verification before clocking in or out. The panel displays location or geofencing feedback when an action is unavailable.',
+      'Select Clock In to start your shift or Clock Out to end it when enabled by the attendance rules.',
+    ],
+  },
+  {
+    icon: '?',
+    title: 'Navigation and account controls',
+    section: 'overview',
+    actionLabel: 'Return to Overview',
+    description: 'Use the sidebar and topbar controls to navigate and manage the current session.',
+    items: [
+      'Select the ? icon at any time to restart this guide. The menu button reopens a collapsed sidebar.',
+      'The message and notification controls are available in the topbar. Account Info and Logout are at the bottom of the sidebar.',
+      'If a list fails to load, use the section’s Retry or Refresh control and review any displayed error message.',
+    ],
+  },
+]
 const sidebarCollapsed = ref(false)
 const sidebarResizing = ref(false)
 let sidebarStyleObserver
@@ -402,6 +555,23 @@ const showLogoutConfirm = ref(false)
 const isLoggingOut = ref(false)
 const showLogoutOverlay = ref(false)
 const metrics = ref({ active_products: 0, low_stock: 0, pending_deliveries: 0, suppliers: 0 })
+
+function openLogisticsTutorial() {
+  logisticsTutorialStep.value = 0
+  showLogisticsTutorial.value = true
+  nextTick(() => logisticsTutorialDialog.value?.focus())
+}
+
+function closeLogisticsTutorial(restoreFocus = true) {
+  showLogisticsTutorial.value = false
+  if (restoreFocus) nextTick(() => logisticsTutorialTrigger.value?.focus())
+}
+
+function openLogisticsTutorialSection(section) {
+  closeLogisticsTutorial(false)
+  selectedSection.value = section
+}
+
 // Inventory / procurement state (read-only on Main Branch)
 const inventory = ref([])
 const inventoryLoading = ref(false)
@@ -1108,6 +1278,214 @@ watch(selectedBranch, async () => {
 </script>
 
 <style scoped>
+.main-branch-logistics-tutorial-trigger {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  padding: 0;
+  border: 1px solid #e3d6cd;
+  border-radius: 50%;
+  background: #fffaf5;
+  color: #593b2a;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.main-branch-logistics-tutorial-trigger:hover {
+  border-color: #f2a45f;
+  background: #fff0df;
+  color: #a84b19;
+  transform: translateY(-1px);
+}
+
+.main-branch-logistics-tutorial-trigger:focus-visible,
+.main-branch-logistics-tutorial-button:focus-visible,
+.main-branch-logistics-tutorial-close:focus-visible {
+  outline: 3px solid #ff9f43;
+  outline-offset: 3px;
+}
+
+.main-branch-logistics-tutorial-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(31, 35, 41, 0.58);
+  backdrop-filter: blur(5px);
+}
+
+.main-branch-logistics-tutorial-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(620px, 100%);
+  max-height: min(88vh, 760px);
+  overflow: hidden;
+  border: 1px solid rgba(222, 200, 183, 0.9);
+  border-radius: 24px;
+  background: linear-gradient(180deg, #fff 0%, #fffaf5 100%);
+  box-shadow: 0 28px 80px rgba(22, 25, 29, 0.28);
+  color: #4a3325;
+}
+
+.main-branch-logistics-tutorial-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid #f0e4da;
+}
+
+.main-branch-logistics-tutorial-eyebrow {
+  margin: 0 0 6px;
+  color: #bd6334;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.main-branch-logistics-tutorial-header h2 {
+  margin: 0;
+  color: #3d2a1f;
+  font-size: clamp(1.25rem, 3vw, 1.55rem);
+  font-weight: 850;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+}
+
+.main-branch-logistics-tutorial-close {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #f7f1ec;
+  color: #8c6e5b;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.main-branch-logistics-tutorial-close:hover { background: #f3e4d8; color: #593b2a; }
+
+.main-branch-logistics-tutorial-progress {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 16px 24px 0;
+  color: #593b2a;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.main-branch-logistics-tutorial-progress__dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: #e8ded7;
+}
+
+.main-branch-logistics-tutorial-progress__dot--active {
+  width: 22px;
+  flex-basis: 22px;
+  border-radius: 999px;
+  background: #ff9f43;
+}
+
+.main-branch-logistics-tutorial-body {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px 24px 20px;
+  scrollbar-color: #d9bda7 transparent;
+  scrollbar-width: thin;
+}
+
+.main-branch-logistics-tutorial-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 15px;
+  border-radius: 16px;
+  background: #fff0dc;
+  color: #e77b22;
+  font-size: 1.4rem;
+  font-weight: 750;
+}
+
+.main-branch-logistics-tutorial-body h3 {
+  margin: 0 0 8px;
+  color: #3d2a1f;
+  font-size: 1.2rem;
+  font-weight: 850;
+  line-height: 1.3;
+}
+
+.main-branch-logistics-tutorial-body > p {
+  margin: 0;
+  color: #826c5c;
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+.main-branch-logistics-tutorial-body ul {
+  display: grid;
+  gap: 9px;
+  margin: 18px 0 0;
+  padding: 0 0 0 19px;
+}
+
+.main-branch-logistics-tutorial-body li {
+  padding-left: 1px;
+  color: #523a2a;
+  font-size: 0.94rem;
+  line-height: 1.5;
+}
+
+.main-branch-logistics-tutorial-body li::marker { color: #ff983e; }
+
+.main-branch-logistics-tutorial-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 16px 24px 20px;
+  border-top: 1px solid #f0e4da;
+}
+
+.main-branch-logistics-tutorial-button {
+  min-height: 42px;
+  padding: 0 17px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, opacity 160ms ease;
+}
+
+.main-branch-logistics-tutorial-button:disabled { opacity: 0.45; cursor: not-allowed; }
+.main-branch-logistics-tutorial-button--secondary { border-color: #eadfd6; background: #fffaf5; color: #745d4d; }
+.main-branch-logistics-tutorial-button--secondary:hover:not(:disabled) { border-color: #dbc5b4; background: #f9f0e8; }
+.main-branch-logistics-tutorial-button--section { border-color: #ffd0a4; background: transparent; color: #a8441d; }
+.main-branch-logistics-tutorial-button--section:hover { background: #fff0df; }
+.main-branch-logistics-tutorial-button--primary { min-width: 100px; background: #ff9f43; color: #fff; }
+.main-branch-logistics-tutorial-button--primary:hover { background: #ed872a; }
+
 /* Match MainBranchAdminPanel color scheme, typography and spacing */
 .main-branch-page {
   min-height: 100vh;
@@ -1411,6 +1789,13 @@ watch(selectedBranch, async () => {
 .panel-layout { grid-template-columns: minmax(0, 1fr); }
 
 @media (max-width: 768px) {
+  .main-branch-logistics-tutorial-backdrop { padding: 12px; }
+  .main-branch-logistics-tutorial-modal { max-height: 92vh; border-radius: 18px; }
+  .main-branch-logistics-tutorial-header,
+  .main-branch-logistics-tutorial-body { padding-right: 18px; padding-left: 18px; }
+  .main-branch-logistics-tutorial-progress { gap: 5px; padding-right: 18px; padding-left: 18px; }
+  .main-branch-logistics-tutorial-footer { flex-wrap: wrap; padding: 14px 18px 18px; }
+  .main-branch-logistics-tutorial-button--section { order: 3; width: 100%; }
   .logistics-sidebar {
     position: static;
     width: auto;

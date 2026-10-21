@@ -20,6 +20,17 @@
     @logout="askLogout"
     @profile-updated="onProfileUpdated"
   >
+    <template #ownerTopbarActions>
+      <button
+        v-if="!props.embeddedSection"
+        ref="logisticsTutorialTrigger"
+        class="manager-logistics-tutorial-trigger"
+        type="button"
+        aria-label="Open Logistics Manager tutorial"
+        title="Logistics Manager tutorial"
+        @click="openLogisticsTutorial"
+      >?</button>
+    </template>
     <template #ownerSidebar>
       <nav v-if="!props.embeddedSection" class="manager-logistics-sidebar-nav" aria-label="Logistics sections">
         <button type="button" class="manager-logistics-sidebar-link" :class="{ 'manager-logistics-sidebar-link--active': selectedSection === 'overview' }" :aria-current="selectedSection === 'overview' ? 'page' : undefined" @click="selectLogisticsSection('overview')">Overview</button>
@@ -607,6 +618,73 @@
 
   </OwnerPanelLayout>
 
+  <transition name="fade">
+    <div
+      v-if="showLogisticsTutorial"
+      class="manager-logistics-tutorial-backdrop"
+      role="presentation"
+      @click.self="closeLogisticsTutorial"
+    >
+      <section
+        ref="logisticsTutorialDialog"
+        class="manager-logistics-tutorial-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="manager-logistics-tutorial-title"
+        tabindex="-1"
+        @keydown.esc="closeLogisticsTutorial"
+      >
+        <header class="manager-logistics-tutorial-header">
+          <div>
+            <p class="manager-logistics-tutorial-eyebrow">Logistics manager guide</p>
+            <h2 id="manager-logistics-tutorial-title">How to use this panel</h2>
+          </div>
+          <button class="manager-logistics-tutorial-close" type="button" aria-label="Close Logistics Manager tutorial" @click="closeLogisticsTutorial">✕</button>
+        </header>
+
+        <div class="manager-logistics-tutorial-progress" aria-live="polite">
+          <span
+            v-for="(step, index) in logisticsTutorialSteps"
+            :key="step.title"
+            class="manager-logistics-tutorial-progress__dot"
+            :class="{ 'manager-logistics-tutorial-progress__dot--active': index === logisticsTutorialStep }"
+            aria-hidden="true"
+          ></span>
+          <span>Step {{ logisticsTutorialStep + 1 }} of {{ logisticsTutorialSteps.length }}</span>
+        </div>
+
+        <div class="manager-logistics-tutorial-body">
+          <div class="manager-logistics-tutorial-icon" aria-hidden="true">{{ logisticsTutorialSteps[logisticsTutorialStep].icon }}</div>
+          <h3>{{ logisticsTutorialSteps[logisticsTutorialStep].title }}</h3>
+          <p>{{ logisticsTutorialSteps[logisticsTutorialStep].description }}</p>
+          <ul>
+            <li v-for="item in logisticsTutorialSteps[logisticsTutorialStep].items" :key="item">{{ item }}</li>
+          </ul>
+        </div>
+
+        <footer class="manager-logistics-tutorial-footer">
+          <button
+            class="manager-logistics-tutorial-button manager-logistics-tutorial-button--secondary"
+            type="button"
+            :disabled="logisticsTutorialStep === 0"
+            @click="logisticsTutorialStep -= 1"
+          >Previous</button>
+          <button
+            v-if="logisticsTutorialSteps[logisticsTutorialStep].section"
+            class="manager-logistics-tutorial-button manager-logistics-tutorial-button--section"
+            type="button"
+            @click="openLogisticsTutorialSection(logisticsTutorialSteps[logisticsTutorialStep].section)"
+          >{{ logisticsTutorialSteps[logisticsTutorialStep].actionLabel }}</button>
+          <button
+            class="manager-logistics-tutorial-button manager-logistics-tutorial-button--primary"
+            type="button"
+            @click="logisticsTutorialStep === logisticsTutorialSteps.length - 1 ? closeLogisticsTutorial() : logisticsTutorialStep += 1"
+          >{{ logisticsTutorialStep === logisticsTutorialSteps.length - 1 ? 'Done' : 'Next' }}</button>
+        </footer>
+      </section>
+    </div>
+  </transition>
+
   </div>
 
   <!-- LOGOUT CONFIRM -->
@@ -674,6 +752,100 @@ const superAdminBranchId = inject('superAdminBranchId', null)
 const superAdminBranchScoped = inject('superAdminBranchScoped', false)
 const selectedSection = ref(props.embeddedSection || 'overview')
 const logisticsSections = ['overview', 'barcodes', 'pending-stock', 'confirmation-history']
+const showLogisticsTutorial = ref(false)
+const logisticsTutorialStep = ref(0)
+const logisticsTutorialDialog = ref(null)
+const logisticsTutorialTrigger = ref(null)
+const logisticsTutorialSteps = [
+  {
+    icon: '⌂',
+    title: 'Logistics overview',
+    section: 'overview',
+    actionLabel: 'Open Overview',
+    description: 'Use the overview to check product levels and current logistics workload.',
+    items: [
+      'Total Products and Low Stock summarize inventory; Pending Requests shows position requests that need attention.',
+      'The overview contains My Product Requests and Pending Stock. Use the section navigation to open dedicated barcode and confirmation-history views.',
+      'Use the topbar message and notification controls for conversations and panel updates.',
+    ],
+  },
+  {
+    icon: '＋',
+    title: 'Product requests',
+    section: 'overview',
+    actionLabel: 'Open Overview',
+    description: 'Submit a request when your branch needs a product not currently available.',
+    items: [
+      'Select Request New Product and complete the required product name, category, description, reason, target audience, storage requirements, and product type.',
+      'Unit of Measurement is optional. Select Submit Request to send it, or Cancel to close the form.',
+      'My Product Requests lists request status, request date, approver, and approval notes when available. Request controls may be unavailable if procurement requests are disabled.',
+    ],
+  },
+  {
+    icon: '▦',
+    title: 'Product barcodes',
+    section: 'barcodes',
+    actionLabel: 'Open Product Barcodes',
+    description: 'Review barcode values associated with products in the logistics view.',
+    items: [
+      'The table shows the product, its barcode variants, and whether each code came from the supplier or was generated by the system.',
+      'Supplier barcodes are preserved. A temporary system barcode may be used until the real barcode is scanned.',
+      'This section is a barcode reference; use Pending Stock when confirming delivered items.',
+    ],
+  },
+  {
+    icon: '✓',
+    title: 'Pending stock confirmation',
+    section: 'pending-stock',
+    actionLabel: 'Open Pending Stock',
+    description: 'Confirm delivered stock after checking the request and counting the received items.',
+    items: [
+      'Choose Review beside a pending request to load its product, requested quantity, delivery details, and supplier information when available.',
+      'Scan the product barcode using Scan. Enter Counted Stock, compare the displayed variance with the requested quantity, and attach a product image as proof.',
+      'Add optional variance notes when useful, then select Confirm Stock. Use Clear to deselect the request; use Retry if the panel reports a loading error.',
+    ],
+  },
+  {
+    icon: '▤',
+    title: 'Confirmation history',
+    section: 'confirmation-history',
+    actionLabel: 'Open Confirmation History',
+    description: 'Review completed stock confirmations for this branch.',
+    items: [
+      'The history lists confirmation time, product, requested and counted quantities, variance, confirmer, notes, and proof when provided.',
+      'Select View proof to open an attached image in a new tab.',
+      'Use Refresh to load the latest confirmation records.',
+    ],
+  },
+  {
+    icon: '?',
+    title: 'Navigation and account controls',
+    section: 'overview',
+    actionLabel: 'Return to Overview',
+    description: 'Use the sidebar and persistent topbar controls while working in the Logistics panel.',
+    items: [
+      'Select the ? icon at any time to restart this guide. Use the sidebar to switch between Overview, Product Barcodes, Pending Stock, and Confirmation History.',
+      'Account Info is available from the sidebar. Select Logout, or Leave when this panel is embedded in a custom panel, to exit.',
+      'The panel may show different controls based on your role and enabled permissions.',
+    ],
+  },
+]
+
+function openLogisticsTutorial() {
+  logisticsTutorialStep.value = 0
+  showLogisticsTutorial.value = true
+  nextTick(() => logisticsTutorialDialog.value?.focus())
+}
+
+function closeLogisticsTutorial(restoreFocus = true) {
+  showLogisticsTutorial.value = false
+  if (restoreFocus) nextTick(() => logisticsTutorialTrigger.value?.focus())
+}
+
+function openLogisticsTutorialSection(section) {
+  closeLogisticsTutorial(false)
+  selectLogisticsSection(section)
+}
 
 function routeLogisticsSection(section) {
   const value = Array.isArray(section) ? section[0] : section

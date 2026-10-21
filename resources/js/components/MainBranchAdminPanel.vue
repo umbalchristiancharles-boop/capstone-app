@@ -40,7 +40,29 @@
         </div>
       </template>
 
+      <template #ownerTopbarActions>
+        <button
+          v-if="!monitoringOnly"
+          ref="adminTutorialTrigger"
+          class="main-branch-admin-tutorial-trigger"
+          type="button"
+          aria-label="Open Main Branch Admin tutorial"
+          title="Main Branch Admin tutorial"
+          @click="openAdminTutorial"
+        >?</button>
+      </template>
+
       <template #main>
+        <div v-if="monitoringOnly" class="main-branch-admin-monitoring-help">
+          <button
+            ref="adminTutorialTrigger"
+            class="main-branch-admin-tutorial-trigger"
+            type="button"
+            aria-label="Open Main Branch Admin tutorial"
+            title="Main Branch Admin tutorial"
+            @click="openAdminTutorial"
+          >?</button>
+        </div>
         <Transition name="main-branch-section" mode="out-in">
         <div :key="activeSection" class="main-branch-section-view">
         <template v-if="activeSection === 'finance-overview' || activeSection === 'transactions'">
@@ -123,6 +145,73 @@
 
     </OwnerPanelLayout>
 
+    <transition name="fade">
+      <div
+        v-if="showAdminTutorial"
+        class="main-branch-admin-tutorial-backdrop"
+        role="presentation"
+        @click.self="closeAdminTutorial"
+      >
+        <section
+          ref="adminTutorialDialog"
+          class="main-branch-admin-tutorial-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="main-branch-admin-tutorial-title"
+          tabindex="-1"
+          @keydown.esc="closeAdminTutorial"
+        >
+          <header class="main-branch-admin-tutorial-header">
+            <div>
+              <p class="main-branch-admin-tutorial-eyebrow">Main Branch Admin guide</p>
+              <h2 id="main-branch-admin-tutorial-title">How to use this panel</h2>
+            </div>
+            <button class="main-branch-admin-tutorial-close" type="button" aria-label="Close Main Branch Admin tutorial" @click="closeAdminTutorial">✕</button>
+          </header>
+
+          <div class="main-branch-admin-tutorial-progress" aria-live="polite">
+            <span
+              v-for="(step, index) in adminTutorialSteps"
+              :key="step.title"
+              class="main-branch-admin-tutorial-progress__dot"
+              :class="{ 'main-branch-admin-tutorial-progress__dot--active': index === adminTutorialStep }"
+              aria-hidden="true"
+            ></span>
+            <span>Step {{ adminTutorialStep + 1 }} of {{ adminTutorialSteps.length }}</span>
+          </div>
+
+          <div class="main-branch-admin-tutorial-body">
+            <div class="main-branch-admin-tutorial-icon" aria-hidden="true">{{ adminTutorialSteps[adminTutorialStep].icon }}</div>
+            <h3>{{ adminTutorialSteps[adminTutorialStep].title }}</h3>
+            <p>{{ adminTutorialSteps[adminTutorialStep].description }}</p>
+            <ul>
+              <li v-for="item in adminTutorialSteps[adminTutorialStep].items" :key="item">{{ item }}</li>
+            </ul>
+          </div>
+
+          <footer class="main-branch-admin-tutorial-footer">
+            <button
+              class="main-branch-admin-tutorial-button main-branch-admin-tutorial-button--secondary"
+              type="button"
+              :disabled="adminTutorialStep === 0"
+              @click="adminTutorialStep -= 1"
+            >Previous</button>
+            <button
+              v-if="adminTutorialSteps[adminTutorialStep].section"
+              class="main-branch-admin-tutorial-button main-branch-admin-tutorial-button--section"
+              type="button"
+              @click="openAdminTutorialSection(adminTutorialSteps[adminTutorialStep].section)"
+            >{{ adminTutorialSteps[adminTutorialStep].actionLabel }}</button>
+            <button
+              class="main-branch-admin-tutorial-button main-branch-admin-tutorial-button--primary"
+              type="button"
+              @click="adminTutorialStep === adminTutorialSteps.length - 1 ? closeAdminTutorial() : adminTutorialStep += 1"
+            >{{ adminTutorialStep === adminTutorialSteps.length - 1 ? 'Done' : 'Next' }}</button>
+          </footer>
+        </section>
+      </div>
+    </transition>
+
     <div v-if="showLogoutOverlay" class="main-branch-logout-overlay">
       <div class="main-branch-logout-box">
         <img :src="logoImg" alt="Chikin Tayo" class="main-branch-logout-logo" />
@@ -152,8 +241,110 @@ const ownerLayout = ref(null)
 const activeSection = ref('finance-overview')
 const profileDropdownVisible = ref(false)
 const showLogoutOverlay = ref(false)
+const showAdminTutorial = ref(false)
+const adminTutorialStep = ref(0)
+const adminTutorialDialog = ref(null)
+const adminTutorialTrigger = ref(null)
+const adminTutorialSteps = [
+  {
+    icon: '▤',
+    title: 'Branch financial reports',
+    section: 'finance-overview',
+    actionLabel: 'Open Branch Financial Reports',
+    description: 'Review financial performance across branches or focus on one branch.',
+    items: [
+      'Use the branch selector to choose All Branches or a specific branch. The report view updates for the selected branch.',
+      'Select Refresh Finance or Refresh Dashboard to reload the financial reports and recent transaction data.',
+      'The dashboard refreshes finance data automatically every 30 seconds while the panel is open.',
+    ],
+  },
+  {
+    icon: '↗',
+    title: 'Recent transactions',
+    section: 'transactions',
+    actionLabel: 'Open Recent Transactions',
+    description: 'Switch to Recent Transactions to review transaction activity with the same branch scope.',
+    items: [
+      'Choose a branch from the selector in the reports area to filter the finance data.',
+      'Use Refresh Finance to reload the transaction data when needed; the automatic refresh also runs periodically.',
+      'Use the Branch Financial Reports section to return to the branch KPI view.',
+    ],
+  },
+  {
+    icon: '⌕',
+    title: 'CRM',
+    section: 'crm',
+    actionLabel: 'Open CRM',
+    description: 'Review customer reports and comments in the CRM dashboard.',
+    items: [
+      'Review the CRM summary cards for comment counts, average rating, recent comments, and unique customers.',
+      'Filter customer reports by status or search reports; use Refresh to reload the report list.',
+      'Expand a report to review its details. Use Edit to update a report or Delete when removal is appropriate.',
+      'Search customer comments or filter them by star rating. The CRM also provides a customer email workflow when available.',
+    ],
+  },
+  {
+    icon: '＋',
+    title: 'Branch management',
+    section: 'branches',
+    actionLabel: 'Open Add Branch',
+    description: 'Use Add Branch to review the branch list or begin setting up a branch.',
+    items: [
+      'Select + Add Branch to open the branch form. Complete required branch code and name fields.',
+      'The form can include branch location, initial budget, area and geofencing radius, permit bills, construction and equipment costs, and open positions.',
+      'Review the form before submitting. The page also provides a Refresh control for the branch list.',
+    ],
+  },
+  {
+    icon: '✓',
+    title: 'Account applications',
+    section: 'applications',
+    actionLabel: 'Open Account Applications',
+    description: 'Review applications for account positions broadcast by Main Branch.',
+    items: [
+      'Each application shows applicant contact information, position, department, branch, status, and application date.',
+      'Select View Details to review the applicant’s information. Use Ready for Interview to set a date and time and send the interview email.',
+      'For applicants Ready for Interview, Mark as Passed becomes available at the scheduled interview time; Mark as Not Passed is also available.',
+      'Use Refresh to reload applications.',
+    ],
+  },
+  {
+    icon: '?',
+    title: 'Account and panel controls',
+    section: 'finance-overview',
+    actionLabel: 'Return to Financial Reports',
+    description: 'Use the topbar and sidebar controls to navigate and manage your session.',
+    items: [
+      'Select the ? icon at any time to restart this guide. Use the sidebar to switch sections.',
+      'The message and notification controls are available in the topbar. Account Info is in the sidebar, and profile options are beside the account name.',
+      'The monitoring-only view does not include the management topbar or account actions.',
+    ],
+  },
+]
 const logoImg = new URL('../assets/chikinlogo.png', import.meta.url).href
 const router = useRouter()
+
+function openAdminTutorial() {
+  adminTutorialStep.value = 0
+  showAdminTutorial.value = true
+  nextTick(() => adminTutorialDialog.value?.focus())
+}
+
+function closeAdminTutorial(restoreFocus = true) {
+  showAdminTutorial.value = false
+  if (restoreFocus) nextTick(() => adminTutorialTrigger.value?.focus())
+}
+
+function openAdminTutorialSection(section) {
+  closeAdminTutorial(false)
+  if (section === 'finance-overview') {
+    showFinanceSection('branch-financial-reports')
+  } else if (section === 'transactions') {
+    showFinanceSection('recent-transactions')
+  } else {
+    activeSection.value = section
+  }
+}
 
 const financeReports = ref([])
 const financeTransactions = ref([])
@@ -352,6 +543,253 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.main-branch-admin-tutorial-trigger {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  padding: 0;
+  border: 1px solid #e3d6cd;
+  border-radius: 50%;
+  background: #fffaf5;
+  color: #593b2a;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.main-branch-admin-tutorial-trigger:hover {
+  border-color: #f2a45f;
+  background: #fff0df;
+  color: #a84b19;
+  transform: translateY(-1px);
+}
+
+.main-branch-admin-monitoring-help {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 10px;
+}
+
+.main-branch-admin-tutorial-trigger:focus-visible,
+.main-branch-admin-tutorial-button:focus-visible,
+.main-branch-admin-tutorial-close:focus-visible {
+  outline: 3px solid #ff9f43;
+  outline-offset: 3px;
+}
+
+.main-branch-admin-tutorial-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(31, 35, 41, 0.58);
+  backdrop-filter: blur(5px);
+}
+
+.main-branch-admin-tutorial-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(620px, 100%);
+  max-height: min(88vh, 760px);
+  overflow: hidden;
+  border: 1px solid rgba(222, 200, 183, 0.9);
+  border-radius: 24px;
+  background: linear-gradient(180deg, #fff 0%, #fffaf5 100%);
+  box-shadow: 0 28px 80px rgba(22, 25, 29, 0.28);
+  color: #4a3325;
+}
+
+.main-branch-admin-tutorial-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid #f0e4da;
+}
+
+.main-branch-admin-tutorial-eyebrow {
+  margin: 0 0 6px;
+  color: #bd6334;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.main-branch-admin-tutorial-header h2 {
+  margin: 0;
+  color: #3d2a1f;
+  font-size: clamp(1.25rem, 3vw, 1.55rem);
+  font-weight: 850;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+}
+
+.main-branch-admin-tutorial-close {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #f7f1ec;
+  color: #8c6e5b;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.main-branch-admin-tutorial-close:hover {
+  background: #f3e4d8;
+  color: #593b2a;
+}
+
+.main-branch-admin-tutorial-progress {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 16px 24px 0;
+  color: #593b2a;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.main-branch-admin-tutorial-progress__dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: #e8ded7;
+}
+
+.main-branch-admin-tutorial-progress__dot--active {
+  width: 22px;
+  flex-basis: 22px;
+  border-radius: 999px;
+  background: #ff9f43;
+}
+
+.main-branch-admin-tutorial-body {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px 24px 20px;
+  scrollbar-color: #d9bda7 transparent;
+  scrollbar-width: thin;
+}
+
+.main-branch-admin-tutorial-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 15px;
+  border-radius: 16px;
+  background: #fff0dc;
+  color: #e77b22;
+  font-size: 1.4rem;
+  font-weight: 750;
+}
+
+.main-branch-admin-tutorial-body h3 {
+  margin: 0 0 8px;
+  color: #3d2a1f;
+  font-size: 1.2rem;
+  font-weight: 850;
+  line-height: 1.3;
+}
+
+.main-branch-admin-tutorial-body > p {
+  margin: 0;
+  color: #826c5c;
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+.main-branch-admin-tutorial-body ul {
+  display: grid;
+  gap: 9px;
+  margin: 18px 0 0;
+  padding: 0 0 0 19px;
+}
+
+.main-branch-admin-tutorial-body li {
+  padding-left: 1px;
+  color: #523a2a;
+  font-size: 0.94rem;
+  line-height: 1.5;
+}
+
+.main-branch-admin-tutorial-body li::marker {
+  color: #ff983e;
+}
+
+.main-branch-admin-tutorial-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 16px 24px 20px;
+  border-top: 1px solid #f0e4da;
+}
+
+.main-branch-admin-tutorial-button {
+  min-height: 42px;
+  padding: 0 17px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, opacity 160ms ease;
+}
+
+.main-branch-admin-tutorial-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.main-branch-admin-tutorial-button--secondary {
+  border-color: #eadfd6;
+  background: #fffaf5;
+  color: #745d4d;
+}
+
+.main-branch-admin-tutorial-button--secondary:hover:not(:disabled) {
+  border-color: #dbc5b4;
+  background: #f9f0e8;
+}
+
+.main-branch-admin-tutorial-button--section {
+  border-color: #ffd0a4;
+  background: transparent;
+  color: #a8441d;
+}
+
+.main-branch-admin-tutorial-button--section:hover {
+  background: #fff0df;
+}
+
+.main-branch-admin-tutorial-button--primary {
+  min-width: 100px;
+  background: #ff9f43;
+  color: #fff;
+}
+
+.main-branch-admin-tutorial-button--primary:hover {
+  background: #ed872a;
+}
+
 .main-branch-admin-panel {
   width: 100%;
 }
@@ -799,6 +1237,13 @@ onUnmounted(() => {
 }
 
 @media (max-width: 800px) {
+  .main-branch-admin-tutorial-backdrop { padding: 12px; }
+  .main-branch-admin-tutorial-modal { max-height: 92vh; border-radius: 18px; }
+  .main-branch-admin-tutorial-header,
+  .main-branch-admin-tutorial-body { padding-right: 18px; padding-left: 18px; }
+  .main-branch-admin-tutorial-progress { gap: 5px; padding-right: 18px; padding-left: 18px; }
+  .main-branch-admin-tutorial-footer { flex-wrap: wrap; padding: 14px 18px 18px; }
+  .main-branch-admin-tutorial-button--section { order: 3; width: 100%; }
   .main-branch-admin-hero { flex-direction: column; gap: 12px; }
   .main-branch-admin-hero__action { width: 100%; }
   .finance-header { flex-direction: column; align-items: stretch }

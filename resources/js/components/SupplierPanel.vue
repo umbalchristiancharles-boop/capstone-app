@@ -33,6 +33,17 @@
       </div>
     </template>
 
+    <template #ownerTopbarActions>
+      <button
+        ref="supplierTutorialTrigger"
+        class="supplier-tutorial-trigger"
+        type="button"
+        aria-label="Open Supplier tutorial"
+        title="Supplier tutorial"
+        @click="openSupplierTutorial"
+      >?</button>
+    </template>
+
     <template #main>
       <div class="supplier-page">
         <header v-if="selectedModule === 'overview'" class="supplier-hero">
@@ -249,6 +260,60 @@
 
 
   </OwnerPanelLayout>
+
+  <transition name="fade">
+    <div v-if="showSupplierTutorial" class="supplier-tutorial-backdrop" role="presentation" @click.self="closeSupplierTutorial">
+      <section
+        ref="supplierTutorialDialog"
+        class="supplier-tutorial-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="supplier-tutorial-title"
+        tabindex="-1"
+        @keydown.esc="closeSupplierTutorial"
+      >
+        <header class="supplier-tutorial-header">
+          <div>
+            <p class="supplier-tutorial-eyebrow">Supplier guide</p>
+            <h2 id="supplier-tutorial-title">How to use this panel</h2>
+          </div>
+          <button class="supplier-tutorial-close" type="button" aria-label="Close Supplier tutorial" @click="closeSupplierTutorial">✕</button>
+        </header>
+        <div class="supplier-tutorial-progress" aria-live="polite">
+          <span
+            v-for="(step, index) in supplierTutorialSteps"
+            :key="step.title"
+            class="supplier-tutorial-progress__dot"
+            :class="{ 'supplier-tutorial-progress__dot--active': index === supplierTutorialStep }"
+            aria-hidden="true"
+          ></span>
+          <span>Step {{ supplierTutorialStep + 1 }} of {{ supplierTutorialSteps.length }}</span>
+        </div>
+        <div class="supplier-tutorial-body">
+          <div class="supplier-tutorial-icon" aria-hidden="true">{{ supplierTutorialSteps[supplierTutorialStep].icon }}</div>
+          <h3>{{ supplierTutorialSteps[supplierTutorialStep].title }}</h3>
+          <p>{{ supplierTutorialSteps[supplierTutorialStep].description }}</p>
+          <ul>
+            <li v-for="item in supplierTutorialSteps[supplierTutorialStep].items" :key="item">{{ item }}</li>
+          </ul>
+        </div>
+        <footer class="supplier-tutorial-footer">
+          <button class="supplier-tutorial-button supplier-tutorial-button--secondary" type="button" :disabled="supplierTutorialStep === 0" @click="supplierTutorialStep -= 1">Previous</button>
+          <button
+            v-if="supplierTutorialSteps[supplierTutorialStep].section"
+            class="supplier-tutorial-button supplier-tutorial-button--section"
+            type="button"
+            @click="openSupplierTutorialSection(supplierTutorialSteps[supplierTutorialStep].section)"
+          >{{ supplierTutorialSteps[supplierTutorialStep].actionLabel }}</button>
+          <button
+            class="supplier-tutorial-button supplier-tutorial-button--primary"
+            type="button"
+            @click="supplierTutorialStep === supplierTutorialSteps.length - 1 ? closeSupplierTutorial() : supplierTutorialStep += 1"
+          >{{ supplierTutorialStep === supplierTutorialSteps.length - 1 ? 'Done' : 'Next' }}</button>
+        </footer>
+      </section>
+    </div>
+  </transition>
 
   <!-- LOGOUT CONFIRM -->
   <!-- RECEIPT MODAL -->
@@ -649,6 +714,60 @@ import { isCustomPanelOrigin, leaveToCustomPanel } from './customPanelNavigation
 
 const userProfile = ref({})
 const selectedModule = ref('overview')
+const supplierTutorialTrigger = ref(null)
+const supplierTutorialDialog = ref(null)
+const showSupplierTutorial = ref(false)
+const supplierTutorialStep = ref(0)
+const supplierTutorialSteps = [
+  {
+    icon: '⌂',
+    title: 'Supplier overview',
+    section: 'overview',
+    actionLabel: 'Open Overview',
+    description: 'Use the overview to monitor orders and deliveries, and to reach your product catalog.',
+    items: [
+      'Summary cards show active deliveries, pending orders, and supplier totals.',
+      'Select Refresh Orders to reload the order list.',
+      'Use the sidebar to focus on Orders, Deliveries, or Products.',
+    ],
+  },
+  {
+    icon: '▤',
+    title: 'Orders and product submission',
+    section: 'orders',
+    actionLabel: 'Open Orders',
+    description: 'Review individual and bulk orders, then respond when an order allows an action.',
+    items: [
+      'Review the product, branch, quantity, total, expiry date, and current status for each order.',
+      'When Product available is enabled, complete the Add Product form with the requested pricing type, price, required barcode or SKU, and product image. For per-pack pricing, enter the pack quantity and unit.',
+      'Use Transaction complete only when that action is available. The status column indicates orders waiting for procurement, on delivery, completed, or cancelled.',
+    ],
+  },
+  {
+    icon: '⇢',
+    title: 'Delivery updates',
+    section: 'deliveries',
+    actionLabel: 'Open Deliveries',
+    description: 'Track active delivery updates provided to your supplier panel.',
+    items: [
+      'Each delivery card shows its title or reference, current status, most recent update date, and any delivery note.',
+      'This section is for monitoring delivery information; it does not provide delivery editing controls.',
+      'If no deliveries are listed, new updates will appear here when available.',
+    ],
+  },
+  {
+    icon: '▦',
+    title: 'Product catalog',
+    section: 'products',
+    actionLabel: 'Open Products',
+    description: 'Review your listed products and edit supported pricing details.',
+    items: [
+      'Review each product’s category, pricing type, price, and real stock.',
+      'Select the edit icon on a product to change its pricing type or price, then save the selected change.',
+      'Order expiry dates are shown with orders; they are not edited from the product catalog.',
+    ],
+  },
+]
 const dashboardTotals = ref({ totalSuppliers: 0, activeDeliveries: 0, pendingOrders: 0 })
 const deliveries = ref([])
 const products = ref([])
@@ -738,6 +857,22 @@ const ownerLayout = ref(null)
 
 function selectModule(module) {
   selectedModule.value = module
+}
+
+function openSupplierTutorial() {
+  supplierTutorialStep.value = 0
+  showSupplierTutorial.value = true
+  nextTick(() => supplierTutorialDialog.value?.focus())
+}
+
+function closeSupplierTutorial(restoreFocus = true) {
+  showSupplierTutorial.value = false
+  if (restoreFocus) nextTick(() => supplierTutorialTrigger.value?.focus())
+}
+
+function openSupplierTutorialSection(section) {
+  closeSupplierTutorial(false)
+  selectModule(section)
 }
 
 function toggleProfileDropdown() { profileDropdownVisible.value = !profileDropdownVisible.value }
@@ -3434,6 +3569,223 @@ html.dark-mode .overview-card {
     max-width: 100% !important;
     min-width: 0 !important;
   }
+}
+
+.supplier-tutorial-trigger {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  padding: 0;
+  border: 1px solid #e3d6cd;
+  border-radius: 50%;
+  background: #fffaf5;
+  color: #593b2a;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.supplier-tutorial-trigger:hover {
+  border-color: #f2a45f;
+  background: #fff0df;
+  color: #a84b19;
+  transform: translateY(-1px);
+}
+
+.supplier-tutorial-trigger:focus-visible,
+.supplier-tutorial-button:focus-visible,
+.supplier-tutorial-close:focus-visible {
+  outline: 3px solid #ff9f43;
+  outline-offset: 3px;
+}
+
+.supplier-tutorial-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 6000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(31, 35, 41, 0.58);
+  backdrop-filter: blur(5px);
+}
+
+.supplier-tutorial-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(620px, 100%);
+  max-height: min(88vh, 760px);
+  overflow: hidden;
+  border: 1px solid rgba(222, 200, 183, 0.9);
+  border-radius: 24px;
+  background: linear-gradient(180deg, #fff 0%, #fffaf5 100%);
+  box-shadow: 0 28px 80px rgba(22, 25, 29, 0.28);
+  color: #4a3325;
+}
+
+.supplier-tutorial-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid #f0e4da;
+}
+
+.supplier-tutorial-eyebrow {
+  margin: 0 0 6px;
+  color: #bd6334;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.supplier-tutorial-header h2 {
+  margin: 0;
+  color: #3d2a1f;
+  font-size: clamp(1.25rem, 3vw, 1.55rem);
+  font-weight: 850;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+}
+
+.supplier-tutorial-close {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #f7f1ec;
+  color: #8c6e5b;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.supplier-tutorial-close:hover { background: #f3e4d8; color: #593b2a; }
+
+.supplier-tutorial-progress {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 16px 24px 0;
+  color: #593b2a;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.supplier-tutorial-progress__dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: #e8ded7;
+}
+
+.supplier-tutorial-progress__dot--active {
+  width: 22px;
+  flex-basis: 22px;
+  border-radius: 999px;
+  background: #ff9f43;
+}
+
+.supplier-tutorial-body {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px 24px 20px;
+  scrollbar-color: #d9bda7 transparent;
+  scrollbar-width: thin;
+}
+
+.supplier-tutorial-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 15px;
+  border-radius: 16px;
+  background: #fff0dc;
+  color: #e77b22;
+  font-size: 1.4rem;
+  font-weight: 750;
+}
+
+.supplier-tutorial-body h3 {
+  margin: 0 0 8px;
+  color: #3d2a1f;
+  font-size: 1.2rem;
+  font-weight: 850;
+  line-height: 1.3;
+}
+
+.supplier-tutorial-body > p {
+  margin: 0;
+  color: #826c5c;
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+.supplier-tutorial-body ul {
+  display: grid;
+  gap: 9px;
+  margin: 18px 0 0;
+  padding: 0 0 0 19px;
+}
+
+.supplier-tutorial-body li {
+  padding-left: 1px;
+  color: #523a2a;
+  font-size: 0.94rem;
+  line-height: 1.5;
+}
+
+.supplier-tutorial-body li::marker { color: #ff983e; }
+
+.supplier-tutorial-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 16px 24px 20px;
+  border-top: 1px solid #f0e4da;
+}
+
+.supplier-tutorial-button {
+  min-height: 42px;
+  padding: 0 17px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, opacity 160ms ease;
+}
+
+.supplier-tutorial-button:disabled { opacity: 0.45; cursor: not-allowed; }
+.supplier-tutorial-button--secondary { border-color: #eadfd6; background: #fffaf5; color: #745d4d; }
+.supplier-tutorial-button--secondary:hover:not(:disabled) { border-color: #dbc5b4; background: #f9f0e8; }
+.supplier-tutorial-button--section { border-color: #ffd0a4; background: transparent; color: #a8441d; }
+.supplier-tutorial-button--section:hover { background: #fff0df; }
+.supplier-tutorial-button--primary { min-width: 100px; background: #ff9f43; color: #fff; }
+.supplier-tutorial-button--primary:hover { background: #ed872a; }
+
+@media (max-width: 540px) {
+  .supplier-tutorial-backdrop { padding: 12px; }
+  .supplier-tutorial-header { padding: 18px 18px 15px; }
+  .supplier-tutorial-progress { padding: 14px 18px 0; }
+  .supplier-tutorial-body { padding: 20px 18px; }
+  .supplier-tutorial-footer { flex-wrap: wrap; padding: 14px 18px 18px; }
+  .supplier-tutorial-button--section { order: 3; width: 100%; }
 }
 
 </style>

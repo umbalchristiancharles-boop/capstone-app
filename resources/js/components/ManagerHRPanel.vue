@@ -20,6 +20,16 @@
     @profile-updated="onProfileUpdated"
     @toggle-sidebar="toggleHrSidebar"
   >
+    <template #ownerTopbarActions>
+      <button
+        ref="hrTutorialTrigger"
+        class="manager-hr-tutorial-trigger"
+        type="button"
+        aria-label="Open HR manager tutorial"
+        title="HR manager tutorial"
+        @click="openHrTutorial"
+      >?</button>
+    </template>
     <template #sideTop>
       <div ref="profileWrapper" class="header-profile-wrapper manager-hr-compact-profile">
         <button class="header-profile-btn" type="button" @click.stop="toggleProfileDropdown">
@@ -894,7 +904,77 @@
     </template>
   </OwnerPanelLayout>
 
+  <transition name="fade">
+    <div
+      v-if="showHrTutorial"
+      class="manager-hr-tutorial-backdrop"
+      role="presentation"
+      @click.self="closeHrTutorial"
+    >
+      <section
+        ref="hrTutorialDialog"
+        class="manager-hr-tutorial-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="manager-hr-tutorial-title"
+        tabindex="-1"
+        @keydown.esc="closeHrTutorial"
+      >
+        <header class="manager-hr-tutorial-header">
+          <div>
+            <p class="manager-hr-tutorial-eyebrow">HR manager guide</p>
+            <h2 id="manager-hr-tutorial-title">How to use this panel</h2>
+          </div>
+          <button
+            class="manager-hr-tutorial-close"
+            type="button"
+            aria-label="Close HR manager tutorial"
+            @click="closeHrTutorial"
+          >✕</button>
+        </header>
 
+        <div class="manager-hr-tutorial-progress" aria-live="polite">
+          <span
+            v-for="(step, index) in hrTutorialSteps"
+            :key="step.title"
+            class="manager-hr-tutorial-progress__dot"
+            :class="{ 'manager-hr-tutorial-progress__dot--active': index === hrTutorialStep }"
+            aria-hidden="true"
+          ></span>
+          <span>Step {{ hrTutorialStep + 1 }} of {{ hrTutorialSteps.length }}</span>
+        </div>
+
+        <div class="manager-hr-tutorial-body">
+          <div class="manager-hr-tutorial-icon" aria-hidden="true">{{ hrTutorialSteps[hrTutorialStep].icon }}</div>
+          <h3>{{ hrTutorialSteps[hrTutorialStep].title }}</h3>
+          <p>{{ hrTutorialSteps[hrTutorialStep].description }}</p>
+          <ul>
+            <li v-for="item in hrTutorialSteps[hrTutorialStep].items" :key="item">{{ item }}</li>
+          </ul>
+        </div>
+
+        <footer class="manager-hr-tutorial-footer">
+          <button
+            class="manager-hr-tutorial-button manager-hr-tutorial-button--secondary"
+            type="button"
+            :disabled="hrTutorialStep === 0"
+            @click="hrTutorialStep -= 1"
+          >Previous</button>
+          <button
+            v-if="hrTutorialSteps[hrTutorialStep].action"
+            class="manager-hr-tutorial-button manager-hr-tutorial-button--section"
+            type="button"
+            @click="openHrTutorialAction(hrTutorialSteps[hrTutorialStep])"
+          >{{ hrTutorialSteps[hrTutorialStep].actionLabel }}</button>
+          <button
+            class="manager-hr-tutorial-button manager-hr-tutorial-button--primary"
+            type="button"
+            @click="hrTutorialStep === hrTutorialSteps.length - 1 ? closeHrTutorial() : hrTutorialStep += 1"
+          >{{ hrTutorialStep === hrTutorialSteps.length - 1 ? 'Done' : 'Next' }}</button>
+        </footer>
+      </section>
+    </div>
+  </transition>
 
   <transition name="fade">
 
@@ -1032,7 +1112,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import AdminAttendanceCard from './AdminAttendanceCard.vue'
@@ -1165,6 +1245,121 @@ const hrSectionTitle = computed(() => {
   }
   return titles[selectedHrSection.value] || 'HR Overview'
 })
+const showHrTutorial = ref(false)
+const hrTutorialStep = ref(0)
+const hrTutorialDialog = ref(null)
+const hrTutorialTrigger = ref(null)
+const hrTutorialSteps = [
+  {
+    icon: '⌂',
+    title: 'HR Overview and navigation',
+    description: 'Start with a snapshot of branch staffing, then use the sidebar to move between HR workflows.',
+    action: 'section',
+    section: 'overview',
+    actionLabel: 'Open HR Overview',
+    items: [
+      'The overview cards show Total Staff, Active Staff, and On Leave counts.',
+      'Use the sidebar to open Confirmations, Attendance, or Payroll. The overview also includes pending clock-in confirmations and payroll information.',
+      'Open your profile menu for Account Info or Staff Management. The topbar message and notification controls remain available while you work.',
+    ],
+  },
+  {
+    icon: '▣',
+    title: 'Job applications',
+    description: 'Review applications submitted for positions on your branch from the overview.',
+    action: 'applications',
+    actionLabel: 'Open Applications',
+    items: [
+      'Select View Applications. The button badge shows the total count after applications have loaded.',
+      'Each application card shows the applicant, position, department, status, interview schedule, submission date, and contact details.',
+      'Use the application actions to open details or continue with interview review.',
+    ],
+  },
+  {
+    icon: '⌕',
+    title: 'Application details',
+    description: 'Open View Application Details on an applicant card to inspect their submitted information.',
+    action: 'applications',
+    actionLabel: 'Open Applications',
+    items: [
+      'Review the applicant’s contact information, position details, experience, education, availability, and privacy consent.',
+      'The details view includes the cover letter and interview information when provided.',
+      'Use the document links to open the resume and any supporting documents. Close the details view to return to the application list.',
+    ],
+  },
+  {
+    icon: '✓',
+    title: 'Interview and applicant status',
+    description: 'Use the actions on each application card to move the applicant through the available review steps.',
+    action: 'applications',
+    actionLabel: 'Open Applications',
+    items: [
+      'Select Schedule Interview, or Change Interview Schedule when one already exists. Choose a date and time, add optional notes, then send the interview email.',
+      'When an application is Ready for Interview, Mark as Passed becomes available at the scheduled interview time; Mark as Not Passed is also available.',
+      'The card displays the resulting status, including Passed - Ready for Hiring or Not Passed. Review the schedule and details before changing an applicant’s status.',
+    ],
+  },
+  {
+    icon: '＋',
+    title: 'Request open positions',
+    description: 'Request hiring capacity for active positions through the overview action.',
+    action: 'positions',
+    actionLabel: 'Open Request Open Positions',
+    items: [
+      'Select Request Open Positions, set the quantity for each position, and add optional notes before submitting the request.',
+      'For a custom position, select the custom sidebar features the hired applicant should be able to access.',
+      'If position requests are disabled or unavailable for your branch, the panel displays the owner’s restriction and the request action cannot be used.',
+    ],
+  },
+  {
+    icon: '◷',
+    title: 'Confirmations and attendance',
+    description: 'Review pending clock-ins and monitor staff attendance from the dedicated sections.',
+    action: 'section',
+    section: 'confirmations',
+    actionLabel: 'Open Confirmations',
+    items: [
+      'In Confirmations, review the staff member, branch, time, date, and status. Select Review Photo before confirming a clock-in.',
+      'Select Confirm for a valid clock-in or Reject if the staff member needs to clock in again. A clock-in without a photo cannot be confirmed.',
+      'In Attendance, use the range selector (All Records, Today, This Week, or This Month) and Refresh to review attendance records and confirmation status.',
+    ],
+  },
+  {
+    icon: '₱',
+    title: 'Payroll and staff tools',
+    description: 'Review payroll cycles and use the HR account tools for staff-related tasks.',
+    action: 'section',
+    section: 'payroll',
+    actionLabel: 'Open Payroll',
+    items: [
+      'Use Salary History to switch between current cycles and historical records. In history, filter by staff member or payment status; use Refresh to reload payroll data.',
+      'Select Details to inspect attendance totals, salary breakdown, and payment record. Pending rows can be marked paid; attach an image payment proof (JPEG, PNG, or WebP, up to 5 MB) in the confirmation form.',
+      'The profile menu’s Staff Management option opens the separate staff management screen. Account Info is available from the profile menu and sidebar.',
+    ],
+  },
+]
+
+function openHrTutorial() {
+  hrTutorialStep.value = 0
+  showHrTutorial.value = true
+  nextTick(() => hrTutorialDialog.value?.focus())
+}
+
+function closeHrTutorial(restoreFocus = true) {
+  showHrTutorial.value = false
+  if (restoreFocus) nextTick(() => hrTutorialTrigger.value?.focus())
+}
+
+function openHrTutorialAction(step) {
+  closeHrTutorial(false)
+  if (step.action === 'section') {
+    scrollToHrSection(step.section)
+  } else if (step.action === 'applications') {
+    openApplicationsModal()
+  } else if (step.action === 'positions') {
+    openPositionsModal()
+  }
+}
 const managerHrTopbarLabel = computed(() => `HR Manager - ${userProfile.value.branch || userProfile.value.branch_name || 'Dasma Branch'}`)
 
 function collapseHrSidebar(event) {

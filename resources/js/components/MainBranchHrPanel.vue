@@ -18,6 +18,16 @@
       @logout="askLogout"
       @profile-updated="onProfileUpdated"
     >
+      <template #ownerTopbarActions>
+        <button
+          ref="hrTutorialTrigger"
+          class="main-branch-hr-tutorial-trigger"
+          type="button"
+          aria-label="Open Main Branch HR tutorial"
+          title="Main Branch HR tutorial"
+          @click="openHrTutorial"
+        >?</button>
+      </template>
       <template #ownerSidebar>
         <nav class="main-branch-hr-sidebar-nav" aria-label="HR sections">
           <button type="button" class="main-branch-hr-sidebar-link" :class="{ 'main-branch-hr-sidebar-link--active': activeHrSection === 'overview' }" @click="showHrSection('overview')">HR Overview</button>
@@ -288,6 +298,78 @@
       </template>
     </OwnerPanelLayout>
 
+    <transition name="fade">
+      <div
+        v-if="showHrTutorial"
+        class="main-branch-hr-tutorial-backdrop"
+        role="presentation"
+        @click.self="closeHrTutorial"
+      >
+        <section
+          ref="hrTutorialDialog"
+          class="main-branch-hr-tutorial-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="main-branch-hr-tutorial-title"
+          tabindex="-1"
+          @keydown.esc="closeHrTutorial"
+        >
+          <header class="main-branch-hr-tutorial-header">
+            <div>
+              <p class="main-branch-hr-tutorial-eyebrow">Main Branch HR guide</p>
+              <h2 id="main-branch-hr-tutorial-title">How to use this panel</h2>
+            </div>
+            <button
+              class="main-branch-hr-tutorial-close"
+              type="button"
+              aria-label="Close Main Branch HR tutorial"
+              @click="closeHrTutorial"
+            >✕</button>
+          </header>
+
+          <div class="main-branch-hr-tutorial-progress" aria-live="polite">
+            <span
+              v-for="(step, index) in hrTutorialSteps"
+              :key="step.title"
+              class="main-branch-hr-tutorial-progress__dot"
+              :class="{ 'main-branch-hr-tutorial-progress__dot--active': index === hrTutorialStep }"
+              aria-hidden="true"
+            ></span>
+            <span>Step {{ hrTutorialStep + 1 }} of {{ hrTutorialSteps.length }}</span>
+          </div>
+
+          <div class="main-branch-hr-tutorial-body">
+            <div class="main-branch-hr-tutorial-icon" aria-hidden="true">{{ hrTutorialSteps[hrTutorialStep].icon }}</div>
+            <h3>{{ hrTutorialSteps[hrTutorialStep].title }}</h3>
+            <p>{{ hrTutorialSteps[hrTutorialStep].description }}</p>
+            <ul>
+              <li v-for="item in hrTutorialSteps[hrTutorialStep].items" :key="item">{{ item }}</li>
+            </ul>
+          </div>
+
+          <footer class="main-branch-hr-tutorial-footer">
+            <button
+              class="main-branch-hr-tutorial-button main-branch-hr-tutorial-button--secondary"
+              type="button"
+              :disabled="hrTutorialStep === 0"
+              @click="hrTutorialStep -= 1"
+            >Previous</button>
+            <button
+              v-if="hrTutorialSteps[hrTutorialStep].section"
+              class="main-branch-hr-tutorial-button main-branch-hr-tutorial-button--section"
+              type="button"
+              @click="openHrTutorialSection(hrTutorialSteps[hrTutorialStep].section)"
+            >{{ hrTutorialSteps[hrTutorialStep].actionLabel }}</button>
+            <button
+              class="main-branch-hr-tutorial-button main-branch-hr-tutorial-button--primary"
+              type="button"
+              @click="hrTutorialStep === hrTutorialSteps.length - 1 ? closeHrTutorial() : hrTutorialStep += 1"
+            >{{ hrTutorialStep === hrTutorialSteps.length - 1 ? 'Done' : 'Next' }}</button>
+          </footer>
+        </section>
+      </div>
+    </transition>
+
     <div v-if="showLogoutOverlay" class="main-branch-hr-logout-overlay">
       <div class="main-branch-hr-logout-box">
         <img :src="logoImg" alt="Chikin Tayo" class="main-branch-hr-logout-logo" />
@@ -510,7 +592,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onUnmounted } from 'vue'
+import { ref, computed, nextTick, onUnmounted } from 'vue'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import axios from 'axios'
 import { swalAlert, swalConfirm } from '../sweet-alerts'
@@ -556,9 +638,104 @@ const interviewSchedule = ref({ date: '', time: '', notes: '' })
 const showApplicationDetailsModal = ref(false)
 const selectedApplicationDetails = ref(null)
 const activeHrSection = ref('overview')
+const showHrTutorial = ref(false)
+const hrTutorialStep = ref(0)
+const hrTutorialDialog = ref(null)
+const hrTutorialTrigger = ref(null)
+const hrTutorialSteps = [
+  {
+    icon: '⌂',
+    title: 'Main Branch HR overview',
+    description: 'Use the overview to monitor workforce totals and review branch-level hiring activity.',
+    section: 'overview',
+    actionLabel: 'Open HR Overview',
+    items: [
+      'Pending Requests shows position requests awaiting review. Branches, Total Accounts, and Active Accounts summarize workforce coverage.',
+      'Job Applications are listed directly on the overview. Use the sidebar to switch between HR Overview, Position Requests, and Branch Accounts.',
+      'Refresh Requests reloads the position request data. The message and notification controls remain available in the topbar.',
+    ],
+  },
+  {
+    icon: '▣',
+    title: 'Job applications',
+    description: 'Review applicants listed on the HR Overview and follow their interview progress.',
+    section: 'overview',
+    actionLabel: 'View Job Applications',
+    items: [
+      'Each application shows the applicant, job title, department, branch, current status, interview schedule, submission date, and contact information.',
+      'Select View Application Details to inspect the submitted application and available resume.',
+      'Use Schedule Interview or Change Interview Schedule to set an interview date and time, add optional notes, and send the applicant an email.',
+    ],
+  },
+  {
+    icon: '✓',
+    title: 'Applicant review and status',
+    description: 'Application actions are available on each applicant row in the HR Overview.',
+    section: 'overview',
+    actionLabel: 'Open HR Overview',
+    items: [
+      'Review the application details and interview schedule before making a decision.',
+      'For applicants Ready for Interview, Mark as Passed is enabled at the scheduled interview time. Mark as Not Passed is also available.',
+      'The row shows Passed - Ready for Hiring after a pass. Use the displayed status and interview information to track the next step.',
+    ],
+  },
+  {
+    icon: '＋',
+    title: 'Position request approvals',
+    description: 'Main Branch HR reviews requests for open positions submitted by branches.',
+    section: 'requests',
+    actionLabel: 'Open Position Requests',
+    items: [
+      'Open Position Requests to review each request’s position, branch, quantity, requester, date, notes, and current status.',
+      'For Pending requests, select Approve to approve the request or Reject to provide an optional rejection reason.',
+      'Use Refresh to load the latest requests. The pending count on this page updates from the requests currently loaded.',
+    ],
+  },
+  {
+    icon: '⌕',
+    title: 'Branch accounts',
+    description: 'Review staff accounts grouped by branch and narrow the list with the available filters.',
+    section: 'accounts',
+    actionLabel: 'Open Branch Accounts',
+    items: [
+      'Use the search box to match an account by name, username, role, department, or branch.',
+      'Use the status selector to show all accounts, active accounts only, or inactive accounts only.',
+      'Select View details on an account row to review its contact details, role, department, branch, status, presence, verification, and account dates.',
+      'Refresh reloads the branch account data.',
+    ],
+  },
+  {
+    icon: '?',
+    title: 'Account and panel controls',
+    description: 'Use the persistent topbar and sidebar controls to get help and manage your session.',
+    section: 'overview',
+    actionLabel: 'Return to HR Overview',
+    items: [
+      'Select the ? icon at any time to restart this Main Branch HR guide.',
+      'Use Account Info in the sidebar or Info in the profile menu to view account information.',
+      'Use the message and notification controls in the topbar for communications and updates. Select Logout from the sidebar or profile menu to end the session.',
+    ],
+  },
+]
 
 function showHrSection(section) {
   activeHrSection.value = section
+}
+
+function openHrTutorial() {
+  hrTutorialStep.value = 0
+  showHrTutorial.value = true
+  nextTick(() => hrTutorialDialog.value?.focus())
+}
+
+function closeHrTutorial(restoreFocus = true) {
+  showHrTutorial.value = false
+  if (restoreFocus) nextTick(() => hrTutorialTrigger.value?.focus())
+}
+
+function openHrTutorialSection(section) {
+  closeHrTutorial(false)
+  showHrSection(section)
 }
 
 const positionRequestsPendingCount = computed(() => {
@@ -980,6 +1157,249 @@ window.addEventListener('click', () => {
 </script>
 
 <style scoped>
+.main-branch-hr-tutorial-trigger {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  padding: 0;
+  border: 1px solid #e3d6cd;
+  border-radius: 50%;
+  background: #fffaf5;
+  color: #593b2a;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.main-branch-hr-tutorial-trigger:hover {
+  border-color: #f2a45f;
+  background: #fff0df;
+  color: #a84b19;
+  transform: translateY(-1px);
+}
+
+.main-branch-hr-tutorial-trigger:focus-visible,
+.main-branch-hr-tutorial-button:focus-visible,
+.main-branch-hr-tutorial-close:focus-visible {
+  outline: 3px solid #ff9f43;
+  outline-offset: 3px;
+}
+
+.main-branch-hr-tutorial-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(31, 35, 41, 0.58);
+  backdrop-filter: blur(5px);
+}
+
+.main-branch-hr-tutorial-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(620px, 100%);
+  max-height: min(88vh, 760px);
+  overflow: hidden;
+  border: 1px solid rgba(222, 200, 183, 0.9);
+  border-radius: 24px;
+  background: linear-gradient(180deg, #fff 0%, #fffaf5 100%);
+  box-shadow: 0 28px 80px rgba(22, 25, 29, 0.28);
+  color: #4a3325;
+}
+
+.main-branch-hr-tutorial-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid #f0e4da;
+}
+
+.main-branch-hr-tutorial-eyebrow {
+  margin: 0 0 6px;
+  color: #bd6334;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.main-branch-hr-tutorial-header h2 {
+  margin: 0;
+  color: #3d2a1f;
+  font-size: clamp(1.25rem, 3vw, 1.55rem);
+  font-weight: 850;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+}
+
+.main-branch-hr-tutorial-close {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #f7f1ec;
+  color: #8c6e5b;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.main-branch-hr-tutorial-close:hover {
+  background: #f3e4d8;
+  color: #593b2a;
+}
+
+.main-branch-hr-tutorial-progress {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 16px 24px 0;
+  color: #593b2a;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.main-branch-hr-tutorial-progress__dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: #e8ded7;
+}
+
+.main-branch-hr-tutorial-progress__dot--active {
+  width: 22px;
+  flex-basis: 22px;
+  border-radius: 999px;
+  background: #ff9f43;
+}
+
+.main-branch-hr-tutorial-body {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px 24px 20px;
+  scrollbar-color: #d9bda7 transparent;
+  scrollbar-width: thin;
+}
+
+.main-branch-hr-tutorial-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 15px;
+  border-radius: 16px;
+  background: #fff0dc;
+  color: #e77b22;
+  font-size: 1.4rem;
+  font-weight: 750;
+}
+
+.main-branch-hr-tutorial-body h3 {
+  margin: 0 0 8px;
+  color: #3d2a1f;
+  font-size: 1.2rem;
+  font-weight: 850;
+  letter-spacing: -0.025em;
+  line-height: 1.3;
+}
+
+.main-branch-hr-tutorial-body > p {
+  margin: 0;
+  color: #826c5c;
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+.main-branch-hr-tutorial-body ul {
+  display: grid;
+  gap: 9px;
+  margin: 18px 0 0;
+  padding: 0 0 0 19px;
+}
+
+.main-branch-hr-tutorial-body li {
+  padding-left: 1px;
+  color: #523a2a;
+  font-size: 0.94rem;
+  line-height: 1.5;
+}
+
+.main-branch-hr-tutorial-body li::marker {
+  color: #ff983e;
+}
+
+.main-branch-hr-tutorial-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 16px 24px 20px;
+  border-top: 1px solid #f0e4da;
+}
+
+.main-branch-hr-tutorial-button {
+  min-height: 42px;
+  padding: 0 17px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, opacity 160ms ease;
+}
+
+.main-branch-hr-tutorial-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.main-branch-hr-tutorial-button--secondary {
+  border-color: #eadfd6;
+  background: #fffaf5;
+  color: #745d4d;
+}
+
+.main-branch-hr-tutorial-button--secondary:hover:not(:disabled) {
+  border-color: #dbc5b4;
+  background: #f9f0e8;
+}
+
+.main-branch-hr-tutorial-button--section {
+  border-color: #ffd0a4;
+  background: transparent;
+  color: #a8441d;
+}
+
+.main-branch-hr-tutorial-button--section:hover {
+  background: #fff0df;
+}
+
+.main-branch-hr-tutorial-button--primary {
+  min-width: 100px;
+  background: #ff9f43;
+  color: #fff;
+}
+
+.main-branch-hr-tutorial-button--primary:hover {
+  background: #ed872a;
+}
+
 .main-branch-hr-logout-overlay {
   position: fixed;
   inset: 0;
@@ -2154,6 +2574,13 @@ window.addEventListener('click', () => {
 }
 
 @media (max-width: 768px) {
+  .main-branch-hr-tutorial-backdrop { padding: 12px; }
+  .main-branch-hr-tutorial-modal { max-height: 92vh; border-radius: 18px; }
+  .main-branch-hr-tutorial-header,
+  .main-branch-hr-tutorial-body { padding-right: 18px; padding-left: 18px; }
+  .main-branch-hr-tutorial-progress { gap: 5px; padding-right: 18px; padding-left: 18px; }
+  .main-branch-hr-tutorial-footer { flex-wrap: wrap; padding: 14px 18px 18px; }
+  .main-branch-hr-tutorial-button--section { order: 3; width: 100%; }
   .main-branch-hr-panel { padding: 0; }
   .main-branch-hr-hero { flex-direction: column; gap: 12px; }
   .main-branch-hr-hero__action { width: 100%; }

@@ -13,6 +13,14 @@
           >☰</button>
           <div class="admin-header__spacer"></div>
           <div class="admin-header__actions">
+            <button
+              ref="adminTutorialTrigger"
+              class="admin-tutorial-trigger"
+              type="button"
+              aria-label="Open admin panel tutorial"
+              title="Admin panel tutorial"
+              @click="openAdminTutorial"
+            >?</button>
             <OwnerMessageMenu />
             <PanelNotificationMenu
               :notification-items="adminNotificationItems"
@@ -958,11 +966,78 @@
       <!-- FULLSCREEN LOADING OVERLAY -->
       <LoadingOverlay :show="showOverlay" :text="overlayText" :logo-src="logoImg" />
     </div>
+
+    <transition name="fade">
+      <div
+        v-if="showAdminTutorial"
+        class="admin-tutorial-backdrop"
+        role="presentation"
+        @click.self="closeAdminTutorial"
+      >
+        <section
+          ref="adminTutorialDialog"
+          class="admin-tutorial-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="admin-tutorial-title"
+          tabindex="-1"
+          @keydown.esc="closeAdminTutorial"
+        >
+          <header class="admin-tutorial-header">
+            <div>
+              <p class="admin-tutorial-eyebrow">Admin panel guide</p>
+              <h2 id="admin-tutorial-title">How to use this panel</h2>
+            </div>
+            <button class="admin-tutorial-close" type="button" aria-label="Close admin tutorial" @click="closeAdminTutorial">✕</button>
+          </header>
+
+          <div class="admin-tutorial-progress" aria-live="polite">
+            <span
+              v-for="(step, index) in adminTutorialSteps"
+              :key="step.title"
+              class="admin-tutorial-progress__dot"
+              :class="{ 'admin-tutorial-progress__dot--active': index === adminTutorialStep }"
+              aria-hidden="true"
+            ></span>
+            <span>Step {{ adminTutorialStep + 1 }} of {{ adminTutorialSteps.length }}</span>
+          </div>
+
+          <div class="admin-tutorial-body">
+            <div class="admin-tutorial-icon" aria-hidden="true">{{ adminTutorialSteps[adminTutorialStep].icon }}</div>
+            <h3>{{ adminTutorialSteps[adminTutorialStep].title }}</h3>
+            <p>{{ adminTutorialSteps[adminTutorialStep].description }}</p>
+            <ul>
+              <li v-for="item in adminTutorialSteps[adminTutorialStep].items" :key="item">{{ item }}</li>
+            </ul>
+          </div>
+
+          <footer class="admin-tutorial-footer">
+            <button
+              class="admin-tutorial-button admin-tutorial-button--secondary"
+              type="button"
+              :disabled="adminTutorialStep === 0"
+              @click="adminTutorialStep -= 1"
+            >Previous</button>
+            <button
+              v-if="adminTutorialSteps[adminTutorialStep].section"
+              class="admin-tutorial-button admin-tutorial-button--section"
+              type="button"
+              @click="openAdminTutorialSection(adminTutorialSteps[adminTutorialStep].section)"
+            >{{ adminTutorialSteps[adminTutorialStep].actionLabel }}</button>
+            <button
+              class="admin-tutorial-button admin-tutorial-button--primary"
+              type="button"
+              @click="adminTutorialStep === adminTutorialSteps.length - 1 ? closeAdminTutorial() : adminTutorialStep += 1"
+            >{{ adminTutorialStep === adminTutorialSteps.length - 1 ? 'Done' : 'Next' }}</button>
+          </footer>
+        </section>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup>
-import { createApp, h, ref, onMounted, onUnmounted, computed, watch } from 'vue'
+import { createApp, h, ref, onMounted, onUnmounted, computed, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import LoadingOverlay from './LoadingOverlay.vue'
@@ -1002,6 +1077,96 @@ const branchSelectorLoading = computed(() => isSuperAdminBranchSelector.value &&
 
 const router = useRouter()
 const activeRange = ref('today')
+const showAdminTutorial = ref(false)
+const adminTutorialStep = ref(0)
+const adminTutorialDialog = ref(null)
+const adminTutorialTrigger = ref(null)
+const adminTutorialSteps = [
+  {
+    icon: '⌂',
+    title: 'Dashboard overview',
+    section: 'dashboard',
+    actionLabel: 'Open Dashboard',
+    description: 'Use the dashboard to review sales and operational activity for the selected reporting period.',
+    items: [
+      'Choose Today, Yesterday, This Week, Last Week, This Month, or Last Month to change the reporting range.',
+      'Review Orders, Completed Orders, Sales, and Pending Orders in the summary cards.',
+      'Product Performance & Inventory and Dish Performance & Recipes show stock, visibility, sales, revenue, and ingredient information. The side panels show top products and low-stock items.',
+    ],
+  },
+  {
+    icon: '▣',
+    title: 'Inventory and procurement',
+    section: 'inventory',
+    actionLabel: 'Open Inventory & Procurement',
+    description: 'Review product requests and supplier submissions from the Inventory & Procurement section.',
+    items: [
+      'Request New Product shows submitted requests and their status. Use + Request New Product to open the request form; required fields are marked with an asterisk.',
+      'Select Refresh to reload requests. If requests are disabled by the owner, the panel displays a warning and disables the request action.',
+      'Supplier Product Confirmations displays supplier pricing and product details. Review the quote before confirming; product requests can be sent to Main Branch Logistics from the confirmation action.',
+    ],
+  },
+  {
+    icon: '▧',
+    title: 'Landing page images',
+    section: 'landing-images',
+    actionLabel: 'Open Landing Page Images',
+    description: 'Choose the image customers see for each published product.',
+    items: [
+      'Use the product list to find the item whose landing-page image you want to change.',
+      'Select an image file in the product row, then choose Save image. Supported file types are JPEG, PNG, GIF, and WebP.',
+      'Use Refresh to reload the product list. The panel shows a preview when an image is already available.',
+    ],
+  },
+  {
+    icon: '⌕',
+    title: 'Reports and CRM',
+    section: 'reports',
+    actionLabel: 'Open Reports & CRM',
+    description: 'Review customer reports and reported expired products in one section.',
+    items: [
+      'Select View Reports in Customer Reports / CRM to display the customer report module; select Hide to collapse it.',
+      'Select View Reports in Expired Products Review to load reports, notes, images, and inventory-lot information when available.',
+      'For a pending expired-product report, use Mark as Resolved after reviewing the report.',
+    ],
+  },
+  {
+    icon: '◷',
+    title: 'Staff and attendance',
+    section: 'staff',
+    actionLabel: 'Open Staff & Attendance',
+    description: 'Monitor staff attendance and activity from the Staff & Attendance section.',
+    items: [
+      'The attendance table lists staff, branch, clock-in/out times, hours worked, and status. Use Refresh to reload attendance records.',
+      'The Staff Activity panel summarizes staff activity, and the attendance card provides its own attendance controls when shown.',
+      'Authorized OWNER, HR, and ADMIN roles may see the Automatic Clock-Out setting. Change it only when the intended attendance policy requires it.',
+    ],
+  },
+  {
+    icon: '☷',
+    title: 'Staff and custom accounts',
+    section: 'staff-management',
+    actionLabel: 'Open Staff Management',
+    description: 'Use the role-appropriate account tools available in the sidebar.',
+    items: [
+      'Staff Management opens the embedded staff management screen. Use its controls to review and manage staff accounts.',
+      'Custom Accounts is available to OWNER, ADMIN, SUPER_ADMIN, and SUPERADMIN roles; it is not shown for other roles.',
+      'When the panel includes a Branch filter, select All Branches or a specific branch to scope the available panel data.',
+    ],
+  },
+  {
+    icon: '?',
+    title: 'Navigation and notifications',
+    section: 'dashboard',
+    actionLabel: 'Return to Dashboard',
+    description: 'Use the persistent controls to get help and move around the panel.',
+    items: [
+      'Select the ? icon at any time to restart this tutorial. Use the sidebar to switch sections; the menu button reopens a collapsed sidebar.',
+      'The message control opens conversations. The notification bell shows available pending-order, inventory, supplier-confirmation, or announcement updates.',
+      'Use Account Info to review the account details, or Logout (Leave when opened from a custom panel) to exit.',
+    ],
+  },
+]
 const activeSection = ref(
   props.embeddedSection === 'landing-page-product-images'
     ? 'landing-images'
@@ -1009,6 +1174,22 @@ const activeSection = ref(
       ? 'product-request'
       : 'dashboard'
 )
+function openAdminTutorial() {
+  adminTutorialStep.value = 0
+  showAdminTutorial.value = true
+  nextTick(() => adminTutorialDialog.value?.focus())
+}
+
+function closeAdminTutorial(restoreFocus = true) {
+  showAdminTutorial.value = false
+  if (restoreFocus) nextTick(() => adminTutorialTrigger.value?.focus())
+}
+
+function openAdminTutorialSection(section) {
+  closeAdminTutorial(false)
+  activeSection.value = section
+}
+
 const adminSidebarCollapsed = ref(false)
 const adminSidebarWidth = ref(156)
 const adminSidebarResizing = ref(false)
@@ -2234,6 +2415,247 @@ function formatDate(dateString) {
 </script>
 
 <style scoped>
+.admin-tutorial-trigger {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  padding: 0;
+  border: 1px solid #e3d6cd;
+  border-radius: 50%;
+  background: #fffaf5;
+  color: #593b2a;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.admin-tutorial-trigger:hover {
+  border-color: #f2a45f;
+  background: #fff0df;
+  color: #a84b19;
+  transform: translateY(-1px);
+}
+
+.admin-tutorial-trigger:focus-visible,
+.admin-tutorial-button:focus-visible,
+.admin-tutorial-close:focus-visible {
+  outline: 3px solid #ff9f43;
+  outline-offset: 3px;
+}
+
+.admin-tutorial-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(31, 35, 41, 0.58);
+  backdrop-filter: blur(5px);
+}
+
+.admin-tutorial-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(620px, 100%);
+  max-height: min(88vh, 760px);
+  overflow: hidden;
+  border: 1px solid rgba(222, 200, 183, 0.9);
+  border-radius: 24px;
+  background: linear-gradient(180deg, #fff 0%, #fffaf5 100%);
+  box-shadow: 0 28px 80px rgba(22, 25, 29, 0.28);
+  color: #4a3325;
+}
+
+.admin-tutorial-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid #f0e4da;
+}
+
+.admin-tutorial-eyebrow {
+  margin: 0 0 6px;
+  color: #bd6334;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.admin-tutorial-header h2 {
+  margin: 0;
+  color: #3d2a1f;
+  font-size: clamp(1.25rem, 3vw, 1.55rem);
+  font-weight: 850;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+}
+
+.admin-tutorial-close {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #f7f1ec;
+  color: #8c6e5b;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.admin-tutorial-close:hover {
+  background: #f3e4d8;
+  color: #593b2a;
+}
+
+.admin-tutorial-progress {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 16px 24px 0;
+  color: #593b2a;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.admin-tutorial-progress__dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: #e8ded7;
+}
+
+.admin-tutorial-progress__dot--active {
+  width: 22px;
+  flex-basis: 22px;
+  border-radius: 999px;
+  background: #ff9f43;
+}
+
+.admin-tutorial-body {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px 24px 20px;
+  scrollbar-color: #d9bda7 transparent;
+  scrollbar-width: thin;
+}
+
+.admin-tutorial-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 15px;
+  border-radius: 16px;
+  background: #fff0dc;
+  color: #e77b22;
+  font-size: 1.4rem;
+  font-weight: 750;
+}
+
+.admin-tutorial-body h3 {
+  margin: 0 0 8px;
+  color: #3d2a1f;
+  font-size: 1.2rem;
+  font-weight: 850;
+  line-height: 1.3;
+}
+
+.admin-tutorial-body > p {
+  margin: 0;
+  color: #826c5c;
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+.admin-tutorial-body ul {
+  display: grid;
+  gap: 9px;
+  margin: 18px 0 0;
+  padding: 0 0 0 19px;
+}
+
+.admin-tutorial-body li {
+  padding-left: 1px;
+  color: #523a2a;
+  font-size: 0.94rem;
+  line-height: 1.5;
+}
+
+.admin-tutorial-body li::marker {
+  color: #ff983e;
+}
+
+.admin-tutorial-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 16px 24px 20px;
+  border-top: 1px solid #f0e4da;
+}
+
+.admin-tutorial-button {
+  min-height: 42px;
+  padding: 0 17px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, opacity 160ms ease;
+}
+
+.admin-tutorial-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.admin-tutorial-button--secondary {
+  border-color: #eadfd6;
+  background: #fffaf5;
+  color: #745d4d;
+}
+
+.admin-tutorial-button--secondary:hover:not(:disabled) {
+  border-color: #dbc5b4;
+  background: #f9f0e8;
+}
+
+.admin-tutorial-button--section {
+  border-color: #ffd0a4;
+  background: transparent;
+  color: #a8441d;
+}
+
+.admin-tutorial-button--section:hover {
+  background: #fff0df;
+}
+
+.admin-tutorial-button--primary {
+  min-width: 100px;
+  background: #ff9f43;
+  color: #fff;
+}
+
+.admin-tutorial-button--primary:hover {
+  background: #ed872a;
+}
+
 /* Keep the admin navigation close to its brand, matching the reference
    manager sidebars without changing the shared brand component. */
 .admin-panel-shell .admin-sidebar {
@@ -3253,6 +3675,13 @@ h1, h2 {
 }
 
 @media (max-width: 767px) {
+  .admin-tutorial-backdrop { padding: 12px; }
+  .admin-tutorial-modal { max-height: 92vh; border-radius: 18px; }
+  .admin-tutorial-header,
+  .admin-tutorial-body { padding-right: 18px; padding-left: 18px; }
+  .admin-tutorial-progress { gap: 5px; padding-right: 18px; padding-left: 18px; }
+  .admin-tutorial-footer { flex-wrap: wrap; padding: 14px 18px 18px; }
+  .admin-tutorial-button--section { order: 3; width: 100%; }
   .admin-main > .overview-grid {
     grid-template-columns: 1fr;
   }

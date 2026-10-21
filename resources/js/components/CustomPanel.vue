@@ -65,6 +65,14 @@
             <strong>Workspace</strong>
           </div>
           <div class="topbar-actions">
+            <button
+              ref="customTutorialTrigger"
+              type="button"
+              class="custom-tutorial-trigger"
+              aria-label="Open Custom Panel tutorial"
+              title="Custom Panel tutorial"
+              @click="openCustomTutorial"
+            >?</button>
             <OwnerMessageMenu />
             <PanelNotificationMenu
               :notification-items="customNotificationItems"
@@ -110,7 +118,7 @@
         </section>
 
         <div v-if="!selectedFeature" class="custom-dashboard-grid">
-          <section class="custom-dashboard-section custom-dashboard-section--attendance" aria-label="Attendance">
+          <section id="custom-attendance" class="custom-dashboard-section custom-dashboard-section--attendance" aria-label="Attendance">
             <div class="attendance-card">
               <div class="attendance-header">
                 <div class="attendance-heading">
@@ -180,7 +188,7 @@
             </div>
           </section>
 
-          <section class="custom-dashboard-section custom-dashboard-section--workspace" aria-labelledby="custom-applications-title">
+          <section id="custom-workspace" class="custom-dashboard-section custom-dashboard-section--workspace" aria-labelledby="custom-applications-title">
             <div class="modules-section-heading">
               <div>
                 <p class="dashboard-eyebrow">YOUR WORKSPACE</p>
@@ -242,6 +250,60 @@
       </section>
     </div>
 
+    <transition name="fade">
+      <div v-if="showCustomTutorial" class="custom-tutorial-backdrop" role="presentation" @click.self="closeCustomTutorial">
+      <section
+        ref="customTutorialDialog"
+        class="custom-tutorial-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="custom-tutorial-title"
+        tabindex="-1"
+        @keydown.esc="closeCustomTutorial"
+      >
+        <header class="custom-tutorial-header">
+          <div>
+            <p class="custom-tutorial-eyebrow">Custom account guide</p>
+            <h2 id="custom-tutorial-title">How to use your workspace</h2>
+          </div>
+          <button class="custom-tutorial-close" type="button" aria-label="Close Custom Panel tutorial" @click="closeCustomTutorial">✕</button>
+        </header>
+        <div class="custom-tutorial-progress" aria-live="polite">
+          <span
+            v-for="(step, index) in customTutorialSteps"
+            :key="step.title"
+            class="custom-tutorial-progress__dot"
+            :class="{ 'custom-tutorial-progress__dot--active': index === customTutorialStep }"
+            aria-hidden="true"
+          ></span>
+          <span>Step {{ customTutorialStep + 1 }} of {{ customTutorialSteps.length }}</span>
+        </div>
+        <div class="custom-tutorial-body">
+          <div class="custom-tutorial-icon" aria-hidden="true">{{ customTutorialSteps[customTutorialStep].icon }}</div>
+          <h3>{{ customTutorialSteps[customTutorialStep].title }}</h3>
+          <p>{{ customTutorialSteps[customTutorialStep].description }}</p>
+          <ul>
+            <li v-for="item in customTutorialSteps[customTutorialStep].items" :key="item">{{ item }}</li>
+          </ul>
+        </div>
+        <footer class="custom-tutorial-footer">
+          <button class="custom-tutorial-button custom-tutorial-button--secondary" type="button" :disabled="customTutorialStep === 0" @click="customTutorialStep -= 1">Previous</button>
+          <button
+            v-if="customTutorialSteps[customTutorialStep].section"
+            class="custom-tutorial-button custom-tutorial-button--section"
+            type="button"
+            @click="openCustomTutorialSection(customTutorialSteps[customTutorialStep].section)"
+          >{{ customTutorialSteps[customTutorialStep].actionLabel }}</button>
+          <button
+            class="custom-tutorial-button custom-tutorial-button--primary"
+            type="button"
+            @click="customTutorialStep === customTutorialSteps.length - 1 ? closeCustomTutorial() : customTutorialStep += 1"
+          >{{ customTutorialStep === customTutorialSteps.length - 1 ? 'Done' : 'Next' }}</button>
+        </footer>
+      </section>
+      </div>
+    </transition>
+
     <PanelNotificationDetailsModal
       :show="activeNotificationPanel === 'announcements'"
       title="Announcements"
@@ -276,6 +338,58 @@ const router = useRouter();
 const modules = ref([]);
 const selectedFeature = ref('');
 const panelMainRef = ref(null);
+const customTutorialTrigger = ref(null);
+const customTutorialDialog = ref(null);
+const showCustomTutorial = ref(false);
+const customTutorialStep = ref(0);
+const customTutorialSteps = [
+  {
+    icon: '⌂',
+    title: 'Your Custom Panel dashboard',
+    section: 'workspace',
+    actionLabel: 'View Workspace',
+    description: 'The dashboard brings together your attendance summary and the tools assigned to your account.',
+    items: [
+      'The greeting and Applications area are specific to your account; only assigned modules appear as workspace tiles and sidebar links.',
+      'Module tiles show a short description and may display a badge when that module has pending notifications.',
+      'Use the menu button in the top bar to open or collapse the sidebar, especially on smaller screens.',
+    ],
+  },
+  {
+    icon: '▦',
+    title: 'Open an assigned module',
+    section: 'workspace',
+    actionLabel: 'Browse Modules',
+    description: 'Open an application from a workspace tile or the matching item in the sidebar.',
+    items: [
+      'Selecting a tile opens its assigned feature inside the Custom Panel when that feature is available here.',
+      'Use Close at the top of the selected feature view to return to the dashboard. The feature keeps its own panel controls and workflows.',
+      'A feature marked as unavailable does not have an embedded screen in this workspace yet; the sidebar notification menu can also take you to a module when you select its alert.',
+    ],
+  },
+  {
+    icon: '◷',
+    title: 'Attendance and shift actions',
+    section: 'attendance',
+    actionLabel: 'View Attendance',
+    description: 'Check your shift summary and use the attendance controls when they are enabled.',
+    items: [
+      'Review your on-duty status, clock-in and clock-out times, and hours worked.',
+      'Clock in opens the camera step. Capture a face photo and allow location access; the clock-in action requires both.',
+      'Clock out also requires location access and may stay disabled until the scheduled time unless an early clock-out override applies. Read any location or attendance message shown on the page.',
+    ],
+  },
+  {
+    icon: '◉',
+    title: 'Notifications and account',
+    description: 'Use the top bar to review updates and manage your session.',
+    items: [
+      'Open the notification menu to review module alerts or announcements. Selecting a module alert navigates to that panel; selecting announcements opens their details.',
+      'The account pill identifies the signed-in user. Use Logout at the bottom of the sidebar when you are ready to end your session.',
+      'If a tile or action is absent, it may not be assigned or enabled for your account.',
+    ],
+  },
+]
 const moduleLabels = {
   'budget-request-approvals': 'Budget Request Approvals',
   'current-price-markup': 'Current Price Markup',
@@ -946,6 +1060,25 @@ const selectFeature = async (feature) => {
   resetFeatureScroll();
 };
 
+const openCustomTutorial = () => {
+  customTutorialStep.value = 0;
+  showCustomTutorial.value = true;
+  nextTick(() => customTutorialDialog.value?.focus());
+};
+
+const closeCustomTutorial = (restoreFocus = true) => {
+  showCustomTutorial.value = false;
+  if (restoreFocus) nextTick(() => customTutorialTrigger.value?.focus());
+};
+
+const openCustomTutorialSection = async (section) => {
+  closeCustomTutorial(false);
+  selectedFeature.value = '';
+  await nextTick();
+  const targetId = section === 'attendance' ? 'custom-attendance' : 'custom-workspace';
+  document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
 const panelDescription = (m) => {
   const fallbackDescriptions = {
     admin: 'View operational KPIs, monitor orders and sales, manage staff access, and handle approvals like dishes, announcements, and price markups.',
@@ -997,6 +1130,223 @@ const logout = async () => {
 </script>
 
 <style scoped>
+.custom-tutorial-trigger {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  padding: 0;
+  border: 1px solid #e3d6cd;
+  border-radius: 50%;
+  background: #fffaf5;
+  color: #593b2a;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.custom-tutorial-trigger:hover {
+  border-color: #f2a45f;
+  background: #fff0df;
+  color: #a84b19;
+  transform: translateY(-1px);
+}
+
+.custom-tutorial-trigger:focus-visible,
+.custom-tutorial-button:focus-visible,
+.custom-tutorial-close:focus-visible {
+  outline: 3px solid #ff9f43;
+  outline-offset: 3px;
+}
+
+.custom-tutorial-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 6000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(31, 35, 41, 0.58);
+  backdrop-filter: blur(5px);
+}
+
+.custom-tutorial-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(620px, 100%);
+  max-height: min(88vh, 760px);
+  overflow: hidden;
+  border: 1px solid rgba(222, 200, 183, 0.9);
+  border-radius: 24px;
+  background: linear-gradient(180deg, #fff 0%, #fffaf5 100%);
+  box-shadow: 0 28px 80px rgba(22, 25, 29, 0.28);
+  color: #4a3325;
+}
+
+.custom-tutorial-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid #f0e4da;
+}
+
+.custom-tutorial-eyebrow {
+  margin: 0 0 6px;
+  color: #bd6334;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.custom-tutorial-header h2 {
+  margin: 0;
+  color: #3d2a1f;
+  font-size: clamp(1.25rem, 3vw, 1.55rem);
+  font-weight: 850;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+}
+
+.custom-tutorial-close {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #f7f1ec;
+  color: #8c6e5b;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.custom-tutorial-close:hover { background: #f3e4d8; color: #593b2a; }
+
+.custom-tutorial-progress {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 16px 24px 0;
+  color: #593b2a;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.custom-tutorial-progress__dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: #e8ded7;
+}
+
+.custom-tutorial-progress__dot--active {
+  width: 22px;
+  flex-basis: 22px;
+  border-radius: 999px;
+  background: #ff9f43;
+}
+
+.custom-tutorial-body {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px 24px 20px;
+  scrollbar-color: #d9bda7 transparent;
+  scrollbar-width: thin;
+}
+
+.custom-tutorial-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 15px;
+  border-radius: 16px;
+  background: #fff0dc;
+  color: #e77b22;
+  font-size: 1.4rem;
+  font-weight: 750;
+}
+
+.custom-tutorial-body h3 {
+  margin: 0 0 8px;
+  color: #3d2a1f;
+  font-size: 1.2rem;
+  font-weight: 850;
+  line-height: 1.3;
+}
+
+.custom-tutorial-body > p {
+  margin: 0;
+  color: #826c5c;
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+.custom-tutorial-body ul {
+  display: grid;
+  gap: 9px;
+  margin: 18px 0 0;
+  padding: 0 0 0 19px;
+}
+
+.custom-tutorial-body li {
+  padding-left: 1px;
+  color: #523a2a;
+  font-size: 0.94rem;
+  line-height: 1.5;
+}
+
+.custom-tutorial-body li::marker { color: #ff983e; }
+
+.custom-tutorial-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 16px 24px 20px;
+  border-top: 1px solid #f0e4da;
+}
+
+.custom-tutorial-button {
+  min-height: 42px;
+  padding: 0 17px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, opacity 160ms ease;
+}
+
+.custom-tutorial-button:disabled { opacity: 0.45; cursor: not-allowed; }
+.custom-tutorial-button--secondary { border-color: #eadfd6; background: #fffaf5; color: #745d4d; }
+.custom-tutorial-button--secondary:hover:not(:disabled) { border-color: #dbc5b4; background: #f9f0e8; }
+.custom-tutorial-button--section { border-color: #ffd0a4; background: transparent; color: #a8441d; }
+.custom-tutorial-button--section:hover { background: #fff0df; }
+.custom-tutorial-button--primary { min-width: 100px; background: #ff9f43; color: #fff; }
+.custom-tutorial-button--primary:hover { background: #ed872a; }
+
+@media (max-width: 540px) {
+  .custom-tutorial-backdrop { padding: 12px; }
+  .custom-tutorial-header { padding: 18px 18px 15px; }
+  .custom-tutorial-progress { padding: 14px 18px 0; }
+  .custom-tutorial-body { padding: 20px 18px; }
+  .custom-tutorial-footer { flex-wrap: wrap; padding: 14px 18px 18px; }
+  .custom-tutorial-button--section { order: 3; width: 100%; }
+}
+
 .custom-panel-container {
   min-height: 100vh;
   width: 100%;

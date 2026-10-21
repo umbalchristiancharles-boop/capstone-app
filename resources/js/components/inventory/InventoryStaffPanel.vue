@@ -26,6 +26,18 @@
       </button>
     </template>
 
+    <template #ownerTopbarActions>
+      <button
+        v-if="!props.embeddedSection"
+        ref="inventoryTutorialTrigger"
+        class="inventory-tutorial-trigger"
+        type="button"
+        aria-label="Open Inventory tutorial"
+        title="Inventory tutorial"
+        @click="openInventoryTutorial"
+      >?</button>
+    </template>
+
     <template #ownerSidebar>
       <nav v-if="!props.embeddedSection" class="owner-sidebar-nav inventory-sidebar-nav" aria-label="Inventory sections">
         <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': !isDisposalView && !isAttendanceView }" @click="isDisposalView = false; isAttendanceView = false">Inventory</button>
@@ -65,6 +77,16 @@
     </template>
 
     <template #main>
+      <div v-if="props.embeddedSection" class="inventory-embedded-help">
+        <button
+          ref="inventoryTutorialTrigger"
+          class="inventory-tutorial-trigger"
+          type="button"
+          aria-label="Open Inventory tutorial"
+          title="Inventory tutorial"
+          @click="openInventoryTutorial"
+        >?</button>
+      </div>
       <Transition name="inventory-section" mode="out-in">
         <div :key="isAttendanceView ? 'attendance' : (isDisposalView ? 'product-disposal' : 'inventory-monitor')" class="inventory-section-view">
       <!-- Dashboard stats (match manager panel) -->
@@ -248,6 +270,60 @@
   </OwnerPanelLayout>
   </div>
 
+  <transition name="fade">
+    <div v-if="showInventoryTutorial" class="inventory-tutorial-backdrop" role="presentation" @click.self="closeInventoryTutorial">
+      <section
+        ref="inventoryTutorialDialog"
+        class="inventory-tutorial-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="inventory-tutorial-title"
+        tabindex="-1"
+        @keydown.esc="closeInventoryTutorial"
+      >
+        <header class="inventory-tutorial-header">
+          <div>
+            <p class="inventory-tutorial-eyebrow">Inventory staff guide</p>
+            <h2 id="inventory-tutorial-title">How to use this panel</h2>
+          </div>
+          <button class="inventory-tutorial-close" type="button" aria-label="Close Inventory tutorial" @click="closeInventoryTutorial">✕</button>
+        </header>
+        <div class="inventory-tutorial-progress" aria-live="polite">
+          <span
+            v-for="(step, index) in inventoryTutorialSteps"
+            :key="step.title"
+            class="inventory-tutorial-progress__dot"
+            :class="{ 'inventory-tutorial-progress__dot--active': index === inventoryTutorialStep }"
+            aria-hidden="true"
+          ></span>
+          <span>Step {{ inventoryTutorialStep + 1 }} of {{ inventoryTutorialSteps.length }}</span>
+        </div>
+        <div class="inventory-tutorial-body">
+          <div class="inventory-tutorial-icon" aria-hidden="true">{{ inventoryTutorialSteps[inventoryTutorialStep].icon }}</div>
+          <h3>{{ inventoryTutorialSteps[inventoryTutorialStep].title }}</h3>
+          <p>{{ inventoryTutorialSteps[inventoryTutorialStep].description }}</p>
+          <ul>
+            <li v-for="item in inventoryTutorialSteps[inventoryTutorialStep].items" :key="item">{{ item }}</li>
+          </ul>
+        </div>
+        <footer class="inventory-tutorial-footer">
+          <button class="inventory-tutorial-button inventory-tutorial-button--secondary" type="button" :disabled="inventoryTutorialStep === 0" @click="inventoryTutorialStep -= 1">Previous</button>
+          <button
+            v-if="inventoryTutorialSteps[inventoryTutorialStep].section"
+            class="inventory-tutorial-button inventory-tutorial-button--section"
+            type="button"
+            @click="openInventoryTutorialSection(inventoryTutorialSteps[inventoryTutorialStep].section)"
+          >{{ inventoryTutorialSteps[inventoryTutorialStep].actionLabel }}</button>
+          <button
+            class="inventory-tutorial-button inventory-tutorial-button--primary"
+            type="button"
+            @click="inventoryTutorialStep === inventoryTutorialSteps.length - 1 ? closeInventoryTutorial() : inventoryTutorialStep += 1"
+          >{{ inventoryTutorialStep === inventoryTutorialSteps.length - 1 ? 'Done' : 'Next' }}</button>
+        </footer>
+      </section>
+    </div>
+  </transition>
+
   <!-- INFO MODAL -->
   <transition name="fade">
     <div v-if="showInfoModal" class="info-backdrop">
@@ -427,6 +503,10 @@ import { swalPrompt } from '../../sweet-alerts'
 
 const router = useRouter();
 const ownerLayout = ref(null);
+const inventoryTutorialTrigger = ref(null);
+const inventoryTutorialDialog = ref(null);
+const showInventoryTutorial = ref(false);
+const inventoryTutorialStep = ref(0);
 
 const isDisposalView = ref(false);
 const isAttendanceView = ref(false);
@@ -580,6 +660,57 @@ const props = defineProps({
   embeddedSection: { type: String, default: '' }
 });
 
+const inventoryTutorialSteps = [
+  {
+    icon: '▦',
+    title: 'Inventory monitor',
+    section: 'inventory',
+    actionLabel: 'Open Inventory',
+    description: 'Review the branch stock list and use the available product tools.',
+    items: [
+      'The summary cards show product totals, low-stock items, and pending requests. The inventory list itself is read-only for stock quantities.',
+      'Search by product or SKU, filter by stock level or category, sort table columns, change page size, and export the list to CSV.',
+      'Select View Details to inspect a product. When available, Request Procurement or Order Selected lets you request replenishment; the panel’s guidance states low-stock requests use a minimum of 10 units.',
+    ],
+  },
+  {
+    icon: '⇧',
+    title: 'Request procurement',
+    section: 'inventory',
+    actionLabel: 'Open Inventory',
+    description: 'Use the procurement controls in the product list when stock needs replenishment.',
+    items: [
+      'Use Request Procurement on an eligible product, or select products and choose Order Selected when bulk selection is available.',
+      'The control is shown only when the product is eligible; follow any confirmation or form prompts shown by the panel.',
+      'The inventory monitor is read-only for stock counts. Procurement requests are the available way in this panel to ask for additional stock.',
+    ],
+  },
+  {
+    icon: '⚠',
+    title: 'Expired products and disposal reports',
+    section: 'disposal',
+    actionLabel: 'Open Product Disposal',
+    description: 'Report expired stock from the inventory list, then review submitted reports in Product Disposal.',
+    items: [
+      'In Inventory, select the EXPIRED status on an expired product to open its report form.',
+      'Enter the expired quantity, add notes, attach the required product image, and submit the report. Auto-Fill can use the expired-lot quantity when available.',
+      'In Product Disposal, search by product/SKU, filter by status or date range, refresh or export records, and click an available image to view it larger. This list displays report statuses for review.',
+    ],
+  },
+  {
+    icon: '◷',
+    title: 'Attendance',
+    section: 'attendance',
+    actionLabel: 'Open Attendance',
+    description: 'Review your shift summary and use attendance actions when they are enabled.',
+    items: [
+      'Check on-duty status, clock-in/out times, and hours worked. Select Refresh in the page header to reload attendance status.',
+      'Clock In and Clock Out require location verification. Clock In also opens a camera prompt to capture a face photo.',
+      'Clock Out may be unavailable until the scheduled time unless an early clock-out override applies; heed any location or attendance message shown.',
+    ],
+  },
+]
+
 isDisposalView.value = props.embeddedSection === 'product-disposal';
 isAttendanceView.value = props.embeddedSection === 'attendance';
 
@@ -593,6 +724,23 @@ watch(() => props.products, (newProducts) => {
 
 // Computed title
 const pageTitle = computed(() => isAttendanceView.value ? 'Attendance' : props.pageTitle)
+
+function openInventoryTutorial() {
+  inventoryTutorialStep.value = 0
+  showInventoryTutorial.value = true
+  nextTick(() => inventoryTutorialDialog.value?.focus())
+}
+
+function closeInventoryTutorial(restoreFocus = true) {
+  showInventoryTutorial.value = false
+  if (restoreFocus) nextTick(() => inventoryTutorialTrigger.value?.focus())
+}
+
+function openInventoryTutorialSection(section) {
+  closeInventoryTutorial(false)
+  isDisposalView.value = section === 'disposal'
+  isAttendanceView.value = section === 'attendance'
+}
 
 // Compute API endpoints based on whether it's superadmin or not
 const endpoints = computed(() => {
@@ -3172,5 +3320,229 @@ ProductList[compact] { width:100% }
   .admin-side .announcements-panel {
     margin-top: 60px !important;
   }
+}
+</style>
+<style scoped>
+.inventory-tutorial-trigger {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  padding: 0;
+  border: 1px solid rgba(115, 93, 84, 0.24);
+  border-radius: 50%;
+  background: #fffaf5;
+  color: #593b2a;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.inventory-embedded-help {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 0.75rem;
+}
+
+.inventory-tutorial-trigger:hover {
+  border-color: #d77d3d;
+  background: #fff0df;
+  color: #9b4e21;
+  transform: translateY(-1px);
+}
+
+.inventory-tutorial-trigger:focus-visible,
+.inventory-tutorial-button:focus-visible,
+.inventory-tutorial-close:focus-visible {
+  outline: 3px solid #d77d3d;
+  outline-offset: 3px;
+}
+
+.inventory-tutorial-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 6000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(31, 35, 41, 0.58);
+  backdrop-filter: blur(5px);
+}
+
+.inventory-tutorial-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(620px, 100%);
+  max-height: min(88vh, 760px);
+  overflow: hidden;
+  border: 1px solid rgba(222, 200, 183, 0.9);
+  border-radius: 24px;
+  background: linear-gradient(180deg, #fff 0%, #fffaf5 100%);
+  box-shadow: 0 28px 80px rgba(22, 25, 29, 0.28);
+  color: #4a3325;
+}
+
+.inventory-tutorial-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid #f0e4da;
+}
+
+.inventory-tutorial-eyebrow {
+  margin: 0 0 6px;
+  color: #bd6334;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.inventory-tutorial-header h2 {
+  margin: 0;
+  color: #3d2a1f;
+  font-size: clamp(1.25rem, 3vw, 1.55rem);
+  font-weight: 850;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+}
+
+.inventory-tutorial-close {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #f7f1ec;
+  color: #8c6e5b;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.inventory-tutorial-close:hover { background: #f3e4d8; color: #593b2a; }
+
+.inventory-tutorial-progress {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 16px 24px 0;
+  color: #593b2a;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.inventory-tutorial-progress__dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: #e8ded7;
+}
+
+.inventory-tutorial-progress__dot--active {
+  width: 22px;
+  flex-basis: 22px;
+  border-radius: 999px;
+  background: #d77d3d;
+}
+
+.inventory-tutorial-body {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px 24px 20px;
+  scrollbar-color: #d9bda7 transparent;
+  scrollbar-width: thin;
+}
+
+.inventory-tutorial-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 15px;
+  border-radius: 16px;
+  background: #f9e7d9;
+  color: #c66b31;
+  font-size: 1.4rem;
+  font-weight: 750;
+}
+
+.inventory-tutorial-body h3 {
+  margin: 0 0 8px;
+  color: #3d2a1f;
+  font-size: 1.2rem;
+  font-weight: 850;
+  line-height: 1.3;
+}
+
+.inventory-tutorial-body > p {
+  margin: 0;
+  color: #826c5c;
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+.inventory-tutorial-body ul {
+  display: grid;
+  gap: 9px;
+  margin: 18px 0 0;
+  padding: 0 0 0 19px;
+}
+
+.inventory-tutorial-body li {
+  padding-left: 1px;
+  color: #523a2a;
+  font-size: 0.94rem;
+  line-height: 1.5;
+}
+
+.inventory-tutorial-body li::marker { color: #d77d3d; }
+
+.inventory-tutorial-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 16px 24px 20px;
+  border-top: 1px solid #f0e4da;
+}
+
+.inventory-tutorial-button {
+  min-height: 42px;
+  padding: 0 17px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, opacity 160ms ease;
+}
+
+.inventory-tutorial-button:disabled { opacity: 0.45; cursor: not-allowed; }
+.inventory-tutorial-button--secondary { border-color: #eadfd6; background: #fffaf5; color: #745d4d; }
+.inventory-tutorial-button--secondary:hover:not(:disabled) { border-color: #dbc5b4; background: #f9f0e8; }
+.inventory-tutorial-button--section { border-color: #ffd0a4; background: transparent; color: #a8441d; }
+.inventory-tutorial-button--section:hover { background: #fff0df; }
+.inventory-tutorial-button--primary { min-width: 100px; background: #d77d3d; color: #fff; }
+.inventory-tutorial-button--primary:hover { background: #b96028; }
+
+@media (max-width: 540px) {
+  .inventory-tutorial-backdrop { padding: 12px; }
+  .inventory-tutorial-header { padding: 18px 18px 15px; }
+  .inventory-tutorial-progress { padding: 14px 18px 0; }
+  .inventory-tutorial-body { padding: 20px 18px; }
+  .inventory-tutorial-footer { flex-wrap: wrap; padding: 14px 18px 18px; }
+  .inventory-tutorial-button--section { order: 3; width: 100%; }
 }
 </style>

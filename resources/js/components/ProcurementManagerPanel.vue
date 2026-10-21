@@ -22,6 +22,18 @@
     @logout="askLogout"
     @profile-updated="onProfileUpdated"
   >
+    <template #ownerTopbarActions>
+      <button
+        v-if="!props.embeddedSection"
+        ref="procurementTutorialTrigger"
+        class="procurement-tutorial-trigger"
+        type="button"
+        aria-label="Open Procurement Manager tutorial"
+        title="Procurement Manager tutorial"
+        @click="openProcurementTutorial"
+      >?</button>
+    </template>
+
     <template #ownerSidebar>
       <nav v-if="!props.embeddedSection" class="manager-procurement-sidebar-nav" aria-label="Procurement sections">
         <button type="button" class="manager-procurement-sidebar-link" :class="{ 'manager-procurement-sidebar-link--active': selectedSection === 'overview' }" @click="selectSection('overview')">Overview</button>
@@ -510,6 +522,60 @@
 
   </OwnerPanelLayout>
 
+  <transition name="fade">
+    <div v-if="showProcurementTutorial" class="procurement-tutorial-backdrop" role="presentation" @click.self="closeProcurementTutorial">
+      <section
+        ref="procurementTutorialDialog"
+        class="procurement-tutorial-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="procurement-tutorial-title"
+        tabindex="-1"
+        @keydown.esc="closeProcurementTutorial"
+      >
+        <header class="procurement-tutorial-header">
+          <div>
+            <p class="procurement-tutorial-eyebrow">Procurement Manager guide</p>
+            <h2 id="procurement-tutorial-title">How to use this panel</h2>
+          </div>
+          <button class="procurement-tutorial-close" type="button" aria-label="Close Procurement Manager tutorial" @click="closeProcurementTutorial">✕</button>
+        </header>
+        <div class="procurement-tutorial-progress" aria-live="polite">
+          <span
+            v-for="(step, index) in procurementTutorialSteps"
+            :key="step.title"
+            class="procurement-tutorial-progress__dot"
+            :class="{ 'procurement-tutorial-progress__dot--active': index === procurementTutorialStep }"
+            aria-hidden="true"
+          ></span>
+          <span>Step {{ procurementTutorialStep + 1 }} of {{ procurementTutorialSteps.length }}</span>
+        </div>
+        <div class="procurement-tutorial-body">
+          <div class="procurement-tutorial-icon" aria-hidden="true">{{ procurementTutorialSteps[procurementTutorialStep].icon }}</div>
+          <h3>{{ procurementTutorialSteps[procurementTutorialStep].title }}</h3>
+          <p>{{ procurementTutorialSteps[procurementTutorialStep].description }}</p>
+          <ul>
+            <li v-for="item in procurementTutorialSteps[procurementTutorialStep].items" :key="item">{{ item }}</li>
+          </ul>
+        </div>
+        <footer class="procurement-tutorial-footer">
+          <button class="procurement-tutorial-button procurement-tutorial-button--secondary" type="button" :disabled="procurementTutorialStep === 0" @click="procurementTutorialStep -= 1">Previous</button>
+          <button
+            v-if="procurementTutorialSteps[procurementTutorialStep].section"
+            class="procurement-tutorial-button procurement-tutorial-button--section"
+            type="button"
+            @click="openProcurementTutorialSection(procurementTutorialSteps[procurementTutorialStep].section)"
+          >{{ procurementTutorialSteps[procurementTutorialStep].actionLabel }}</button>
+          <button
+            class="procurement-tutorial-button procurement-tutorial-button--primary"
+            type="button"
+            @click="procurementTutorialStep === procurementTutorialSteps.length - 1 ? closeProcurementTutorial() : procurementTutorialStep += 1"
+          >{{ procurementTutorialStep === procurementTutorialSteps.length - 1 ? 'Done' : 'Next' }}</button>
+        </footer>
+      </section>
+    </div>
+  </transition>
+
   <LoadingOverlay :show="isLoggingOut" text="Logging out..." />
 
   <transition name="fade">
@@ -609,7 +675,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, onUnmounted, watch } from 'vue'
+import { ref, onMounted, computed, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
 import LoadingOverlay from './LoadingOverlay.vue'
@@ -627,12 +693,93 @@ const procurementTopbarLabel = computed(() => {
   return `PROCUREMENT MANAGER - ${branchName || 'DASMA BRANCH'}`
 })
 const selectedSection = ref(props.embeddedSection || 'overview')
+const procurementTutorialTrigger = ref(null)
+const procurementTutorialDialog = ref(null)
+const showProcurementTutorial = ref(false)
+const procurementTutorialStep = ref(0)
+const procurementTutorialSteps = [
+  {
+    icon: '⌂',
+    title: 'Procurement overview',
+    section: 'overview',
+    actionLabel: 'Open Overview',
+    description: 'Use the overview to review supplier and request totals, create manual procurement, and address pending requests.',
+    items: [
+      'The summary cards show supplier and pending-request totals for this branch.',
+      'Select Custom Procurement Request to choose a product and quantity, attach the required receipt and product image, and optionally request a budget from Finance.',
+      'Use the pending procurement cards to review requests and their supplier quotes or current status.',
+    ],
+  },
+  {
+    icon: '♙',
+    title: 'Suppliers and products',
+    section: 'suppliers',
+    actionLabel: 'Open Suppliers',
+    description: 'Review supplier products available to this branch and manage supplier accounts.',
+    items: [
+      'Published Products are grouped by category and show supplier, price, stock, and expiry when available.',
+      'Select Change Supplier on an eligible product to open supplier selection and review available supplier information.',
+      'Use Add Supplier to create a supplier account; the form requests contact and account details.',
+    ],
+  },
+  {
+    icon: '✓',
+    title: 'Pending procurement requests',
+    section: 'overview',
+    actionLabel: 'Open Requests',
+    description: 'Process logistics requests and confirmed supplier quotes from the overview.',
+    items: [
+      'Review the requested product, quantity, supplier quote, estimated profit, and current status before taking action.',
+      'Use Acknowledge or Acknowledge Bulk Order when available; when a supplier is needed, use Request Supplier for Product and select from the available suppliers.',
+      'Continue eligible requests using the displayed Place Order, Upload Receipt, or Complete Order actions. Some actions remain unavailable while awaiting budget, supplier, or receipt confirmation.',
+    ],
+  },
+  {
+    icon: '₱',
+    title: 'Budget requests',
+    section: 'budget-requests',
+    actionLabel: 'Open Budget Requests',
+    description: 'Submit a branch budget request and track its status.',
+    items: [
+      'Select New Budget Request, describe the purpose, and enter an amount greater than zero.',
+      'Select Submit Request to send it, or Cancel to close the form without submitting.',
+      'Review the date, purpose, requested amount, and status in My Budget Requests.',
+    ],
+  },
+  {
+    icon: '▤',
+    title: 'Requests history',
+    section: 'history',
+    actionLabel: 'Open History',
+    description: 'Use the history section to review procurement requests over time.',
+    items: [
+      'Review each request’s date, product or purpose, quantity, variance, total, status, and last-updated date.',
+      'The history table is for reviewing past requests; use the Overview to work on requests that still need action.',
+    ],
+  },
+]
 const dashboardTotals = ref({ totalSuppliers: 0, activeSuppliers: 0, pendingRequests: 0 })
 const showLogoutConfirm = ref(false)
 const isLoggingOut = ref(false)
 
 function selectSection(section) {
   selectedSection.value = section
+}
+
+function openProcurementTutorial() {
+  procurementTutorialStep.value = 0
+  showProcurementTutorial.value = true
+  nextTick(() => procurementTutorialDialog.value?.focus())
+}
+
+function closeProcurementTutorial(restoreFocus = true) {
+  showProcurementTutorial.value = false
+  if (restoreFocus) nextTick(() => procurementTutorialTrigger.value?.focus())
+}
+
+function openProcurementTutorialSection(section) {
+  closeProcurementTutorial(false)
+  selectSection(section)
 }
 
 // Budget request state
@@ -2031,6 +2178,223 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.procurement-tutorial-trigger {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  padding: 0;
+  border: 1px solid #e3d6cd;
+  border-radius: 50%;
+  background: #fffaf5;
+  color: #593b2a;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.procurement-tutorial-trigger:hover {
+  border-color: #f2a45f;
+  background: #fff0df;
+  color: #a84b19;
+  transform: translateY(-1px);
+}
+
+.procurement-tutorial-trigger:focus-visible,
+.procurement-tutorial-button:focus-visible,
+.procurement-tutorial-close:focus-visible {
+  outline: 3px solid #ff9f43;
+  outline-offset: 3px;
+}
+
+.procurement-tutorial-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 6000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(31, 35, 41, 0.58);
+  backdrop-filter: blur(5px);
+}
+
+.procurement-tutorial-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(620px, 100%);
+  max-height: min(88vh, 760px);
+  overflow: hidden;
+  border: 1px solid rgba(222, 200, 183, 0.9);
+  border-radius: 24px;
+  background: linear-gradient(180deg, #fff 0%, #fffaf5 100%);
+  box-shadow: 0 28px 80px rgba(22, 25, 29, 0.28);
+  color: #4a3325;
+}
+
+.procurement-tutorial-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid #f0e4da;
+}
+
+.procurement-tutorial-eyebrow {
+  margin: 0 0 6px;
+  color: #bd6334;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.procurement-tutorial-header h2 {
+  margin: 0;
+  color: #3d2a1f;
+  font-size: clamp(1.25rem, 3vw, 1.55rem);
+  font-weight: 850;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+}
+
+.procurement-tutorial-close {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #f7f1ec;
+  color: #8c6e5b;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.procurement-tutorial-close:hover { background: #f3e4d8; color: #593b2a; }
+
+.procurement-tutorial-progress {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 16px 24px 0;
+  color: #593b2a;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.procurement-tutorial-progress__dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: #e8ded7;
+}
+
+.procurement-tutorial-progress__dot--active {
+  width: 22px;
+  flex-basis: 22px;
+  border-radius: 999px;
+  background: #ff9f43;
+}
+
+.procurement-tutorial-body {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px 24px 20px;
+  scrollbar-color: #d9bda7 transparent;
+  scrollbar-width: thin;
+}
+
+.procurement-tutorial-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 15px;
+  border-radius: 16px;
+  background: #fff0dc;
+  color: #e77b22;
+  font-size: 1.4rem;
+  font-weight: 750;
+}
+
+.procurement-tutorial-body h3 {
+  margin: 0 0 8px;
+  color: #3d2a1f;
+  font-size: 1.2rem;
+  font-weight: 850;
+  line-height: 1.3;
+}
+
+.procurement-tutorial-body > p {
+  margin: 0;
+  color: #826c5c;
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+.procurement-tutorial-body ul {
+  display: grid;
+  gap: 9px;
+  margin: 18px 0 0;
+  padding: 0 0 0 19px;
+}
+
+.procurement-tutorial-body li {
+  padding-left: 1px;
+  color: #523a2a;
+  font-size: 0.94rem;
+  line-height: 1.5;
+}
+
+.procurement-tutorial-body li::marker { color: #ff983e; }
+
+.procurement-tutorial-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 16px 24px 20px;
+  border-top: 1px solid #f0e4da;
+}
+
+.procurement-tutorial-button {
+  min-height: 42px;
+  padding: 0 17px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, opacity 160ms ease;
+}
+
+.procurement-tutorial-button:disabled { opacity: 0.45; cursor: not-allowed; }
+.procurement-tutorial-button--secondary { border-color: #eadfd6; background: #fffaf5; color: #745d4d; }
+.procurement-tutorial-button--secondary:hover:not(:disabled) { border-color: #dbc5b4; background: #f9f0e8; }
+.procurement-tutorial-button--section { border-color: #ffd0a4; background: transparent; color: #a8441d; }
+.procurement-tutorial-button--section:hover { background: #fff0df; }
+.procurement-tutorial-button--primary { min-width: 100px; background: #ff9f43; color: #fff; }
+.procurement-tutorial-button--primary:hover { background: #ed872a; }
+
+@media (max-width: 540px) {
+  .procurement-tutorial-backdrop { padding: 12px; }
+  .procurement-tutorial-header { padding: 18px 18px 15px; }
+  .procurement-tutorial-progress { padding: 14px 18px 0; }
+  .procurement-tutorial-body { padding: 20px 18px; }
+  .procurement-tutorial-footer { flex-wrap: wrap; padding: 14px 18px 18px; }
+  .procurement-tutorial-button--section { order: 3; width: 100%; }
+}
+
 .manager-procurement-panel {
   min-height: 100vh;
   background: #e7d9cf;
