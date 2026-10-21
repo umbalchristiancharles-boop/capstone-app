@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
 
 class PriceMarkupPercentage extends Model
 {
@@ -44,5 +45,10 @@ class PriceMarkupPercentage extends Model
     public function getMultiplier(): float
     {
         return 1 + ((float) $this->percentage / 100);
+    }
+
+    public static function defaultPercentage(): float
+    {
+        return (float) (DB::table('price_markup_settings')->where('id', 1)->value('default_percentage') ?? 20.00);
     }
 }

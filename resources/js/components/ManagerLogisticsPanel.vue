@@ -479,7 +479,7 @@
                 <div class="form-group barcode-group">
                   <label for="stock-barcode">Scan product barcode<span v-if="selectedPending.product_is_kitchen_ingredient"> (optional for kitchen ingredients)</span></label>
                   <div class="barcode-input-row">
-                    <input id="stock-barcode" v-model.trim="confirmForm.barcode" type="text" inputmode="numeric" autocomplete="off" placeholder="Scan or enter barcode" @keyup.enter="submitPendingConfirmation" />
+                    <input id="stock-barcode" v-model.trim="confirmForm.barcode" type="text" autocomplete="off" placeholder="Use Scan to scan barcode" readonly />
                     <button class="btn-secondary" type="button" @click="openBarcodeScanner">Scan</button>
                   </div>
                   <div v-if="confirmForm.barcode" :class="['barcode-status', barcodeStatusClass]">{{ barcodeStatus }}</div>
@@ -1346,7 +1346,7 @@ async function submitPendingConfirmation() {
 
   const barcode = String(confirmForm.value.barcode || '').trim()
   if (!barcode && !selectedPending.value.product_is_kitchen_ingredient) {
-    confirmError.value = 'Scan or enter the product barcode'
+    confirmError.value = 'Scan the product barcode'
     return
   }
 

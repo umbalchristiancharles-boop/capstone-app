@@ -390,7 +390,9 @@ class ManagerProfileController extends Controller
 
         $isSuperAdmin = in_array(strtoupper($user->role ?? ''), ['SUPER_ADMIN', 'SUPERADMIN']);
         $isMainBranchHr = $this->isMainBranchHrManager($user) || $isSuperAdmin;
-        $branchId = $isSuperAdmin ? $request->query('branch_id') : $user->branch_id;
+        $branchId = $isSuperAdmin
+            ? $request->query('branch_id')
+            : ($isMainBranchHr ? null : $user->branch_id);
 
         if ($isMainBranchHr) {
             $branches = Branch::query()
@@ -517,7 +519,9 @@ class ManagerProfileController extends Controller
 
         $isSuperAdmin = in_array(strtoupper($user->role ?? ''), ['SUPER_ADMIN', 'SUPERADMIN']);
         $isMainBranchHr = $this->isMainBranchHrManager($user) || $isSuperAdmin;
-        $branchId = $isSuperAdmin ? $request->query('branch_id') : $user->branch_id;
+        $branchId = $isSuperAdmin
+            ? $request->query('branch_id')
+            : ($isMainBranchHr ? null : $user->branch_id);
 
         $branchNames = Branch::pluck('name', 'id');
 
@@ -541,6 +545,7 @@ class ManagerProfileController extends Controller
                 'full_name' => $s->full_name,
                 'email' => $s->email,
                 'phone_number' => $s->phone_number,
+                'address' => $s->address,
                 'role' => $s->role,
                 'department' => $s->department,
                 'is_active' => $s->is_active,
@@ -548,6 +553,9 @@ class ManagerProfileController extends Controller
                 'status' => $status,
                 'branch_id' => $s->branch_id,
                 'branch_name' => $branchNames[$s->branch_id] ?? null,
+                'avatar_url' => $s->avatar_url,
+                'email_verified_at' => $s->email_verified_at,
+                'last_login_at' => $s->last_login_at,
                 'created_at' => $s->created_at,
             ];
         });
@@ -1569,7 +1577,8 @@ public function logisticsProducts(Request $request)
 
         $query = Product::where('is_active', 1)
             ->where('branch_id', $branchId)
-            ->select('id', 'name', 'slug', 'price', 'stock', 'sku', 'branch_id', 'supplier_name', 'supplier_id', 'is_published', 'created_at', 'updated_at');
+            ->with('supplier:id,full_name,username')
+            ->select('id', 'name', 'slug', 'price', 'stock', 'real_stock', 'sku', 'branch_id', 'supplier_name', 'supplier_id', 'is_published', 'created_at', 'updated_at');
 
         Log::info('procurementProducts: filtering by branch_id', ['branch_id' => $branchId]);
 
@@ -1583,10 +1592,32 @@ public function logisticsProducts(Request $request)
         };
 
         $products = $products->groupBy($normalizeProductKey)->map(function ($group) use ($branchId) {
-            $group = $group->sortByDesc(function ($product) {
-                return ((int) ($product->real_stock ?? 0) * 1000) + (int) ($product->stock ?? 0);
+            $groupIds = $group->pluck('id')->all();
+            $proc = ProcurementRequest::whereIn('product_id', $groupIds)
+                ->where('branch_id', $branchId)
+                ->whereIn('status', [
+                    'pending',
+                    'budget_pending',
+                    'pending_order_to_supplier',
+                    'awaiting_inventory_confirmation',
+                    'cash_in_transit',
+                    'delivery_pending',
+                    'ongoing_delivery',
+                    'receipt_submitted',
+                    'pending_receipt',
+                    'pending_receipt_check',
+                ])
+                ->orderByDesc('created_at')
+                ->first(['id', 'status', 'budget_approved']);
+
+            $group = $group->sort(function ($left, $right) {
+                return ((int) ($right->real_stock ?? 0) <=> (int) ($left->real_stock ?? 0))
+                    ?: ((int) ($right->stock ?? 0) <=> (int) ($left->stock ?? 0))
+                    ?: ((int) $right->is_published <=> (int) $left->is_published);
             })->values();
 
+            // Supplier ownership comes from the supplier-specific row holding stock,
+            // not the group's aggregated real_stock value or a possibly stale request.
             $primary = $group->first();
 
             // default: needs supplier input until supplier+price present
@@ -1594,13 +1625,6 @@ public function logisticsProducts(Request $request)
             if (!empty($primary->supplier_id) && (float)($primary->price ?? 0) > 0) {
                 $primary->needs_supplier = false;
             }
-
-            $groupIds = $group->pluck('id')->all();
-            $proc = ProcurementRequest::whereIn('product_id', $groupIds)
-                ->where('branch_id', $branchId)
-                ->where('status', 'pending')
-                ->orderByDesc('created_at')
-                ->first(['id', 'status', 'budget_approved', 'product_id']);
 
             $supplierCount = $group->filter(function ($product) {
                 return !empty($product->supplier_id) && (float) ($product->price ?? 0) > 0;
@@ -1614,7 +1638,9 @@ public function logisticsProducts(Request $request)
 
             // Keep the representative card aligned with the logical group.
             $primary->real_stock = (int) $group->sum('stock');
-            $primary->supplier_name = $primary->supplier_name ?: ($primary->supplier?->full_name ?? $primary->supplier?->username ?? null);
+            $primary->supplier_name = $primary->supplier?->full_name
+                ?? $primary->supplier?->username
+                ?? $primary->supplier_name;
 
             // Acknowledge should be allowed only when a pending request exists AND supplier/price present
             $primary->acknowledge_allowed = $primary->procurement_request_id && !$primary->needs_supplier;

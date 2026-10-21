@@ -491,7 +491,7 @@ class ProductRequestController extends Controller
 
         $requests->getCollection()->transform(function ($productRequest) use ($branchMarkups) {
             $supplierPrice = (float) ($productRequest->procurementRequest?->price ?? 0);
-            $markupPercentage = (float) ($branchMarkups->get($productRequest->branch_id) ?? 20);
+            $markupPercentage = (float) ($branchMarkups->get($productRequest->branch_id) ?? PriceMarkupPercentage::defaultPercentage());
             $productRequest->supplier_price = $supplierPrice > 0 ? $supplierPrice : null;
             $productRequest->markup_percentage = $markupPercentage;
             $productRequest->expected_selling_price = $supplierPrice > 0
@@ -539,7 +539,7 @@ class ProductRequestController extends Controller
 
         $requests->getCollection()->transform(function ($productRequest) use ($branchMarkups) {
             $supplierPrice = (float) ($productRequest->procurementRequest?->price ?? 0);
-            $markupPercentage = (float) ($branchMarkups->get($productRequest->branch_id) ?? 20);
+            $markupPercentage = (float) ($branchMarkups->get($productRequest->branch_id) ?? PriceMarkupPercentage::defaultPercentage());
             $productRequest->supplier_price = $supplierPrice > 0 ? $supplierPrice : null;
             $productRequest->markup_percentage = $markupPercentage;
             $productRequest->expected_selling_price = $supplierPrice > 0

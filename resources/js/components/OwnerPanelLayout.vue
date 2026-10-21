@@ -577,7 +577,7 @@ const props = defineProps({
 const superAdminEmbedded = inject('superAdminEmbedded', false)
 const isEmbedded = computed(() => props.embedded || superAdminEmbedded)
 
-const emit = defineEmits(['logout', 'profile-updated', 'back', 'toggle-sidebar'])
+const emit = defineEmits(['logout', 'profile-updated', 'back', 'toggle-sidebar', 'notification-select'])
 const route = useRoute()
 const router = useRouter()
 const ownerSidebarCollapsed = ref(false)
@@ -1076,7 +1076,9 @@ const moduleNotificationDefinitions = [
 
 const currentPanelModuleKeys = computed(() => {
   const title = String(props.panelTitle || '').toLowerCase()
-  if (title.includes('owner panel')) return moduleNotificationDefinitions.map(item => item.key)
+  if (title.includes('owner panel')) {
+    return ['kitchen', 'ownerProductRequests', 'branchPendingOwner', 'priceMarkupPending']
+  }
   if (title.includes('price markup')) return ['priceMarkupPending']
   if (title.includes('branch confirmation')) return ['branchPendingOwner', 'branchPendingFinance']
   if (title.includes('main branch administration')) return ['admin', 'logistics', 'supplier', 'branchPendingOwner']
@@ -1139,7 +1141,7 @@ async function loadNotificationSummary() {
 async function markNotificationRead(key) {
   if (!props.notificationDetailsInModal) return
 
-  const readableCategories = ['announcements', 'logistics', 'supplier', 'branchPendingOwner']
+  const readableCategories = ['announcements', 'logistics', 'supplier']
   if (!readableCategories.includes(key)) return
 
   try {
@@ -1151,6 +1153,19 @@ async function markNotificationRead(key) {
 }
 
 async function handleNotificationClick(key) {
+  const ownerSectionByNotification = {
+    kitchen: 'dishApproval',
+    ownerProductRequests: 'dishApproval',
+    branchPendingOwner: 'branchConfirmations',
+    priceMarkupPending: 'priceMarkups',
+  }
+  const ownerSection = ownerSectionByNotification[key]
+  if (String(props.panelTitle || '').toLowerCase().includes('owner panel') && ownerSection) {
+    activeNotificationPanel.value = ''
+    emit('notification-select', key)
+    return
+  }
+
   if (props.notificationDetailsInModal) {
     await loadNotificationSummary()
   }

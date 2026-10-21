@@ -1357,6 +1357,18 @@ async function refreshFinanceNotificationCounts() {
 }
 
 function handleFinanceNotificationClick(key) {
+  const sectionByNotification = {
+    approvals: 'approvals',
+    'receipt-approvals': 'receipt-approvals',
+  }
+  const section = sectionByNotification[key]
+  if (section) {
+    selectedSection.value = section
+    activeNotificationPanel.value = ''
+    if (key === 'receipt-approvals') loadReceiptSubmissions()
+    return
+  }
+
   activeNotificationPanel.value = key
   if (key === 'announcements') {
     Promise.all([
@@ -1365,8 +1377,6 @@ function handleFinanceNotificationClick(key) {
     ]).catch((error) => {
       console.error('Unable to open Finance announcements:', error)
     })
-  } else if (key === 'receipt-approvals') {
-    loadReceiptSubmissions()
   }
 }
 

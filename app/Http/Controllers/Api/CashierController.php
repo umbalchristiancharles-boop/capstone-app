@@ -28,8 +28,7 @@ class CashierController extends Controller
             ->first();
 
         if (!$markup) {
-            // Default to 20% if not configured
-            return 1.20;
+            return 1 + (PriceMarkupPercentage::defaultPercentage() / 100);
         }
 
         return $markup->getMultiplier();

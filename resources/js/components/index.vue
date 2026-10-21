@@ -421,7 +421,7 @@
   <!-- Apply Now Modal -->
   <teleport to="body">
     <transition name="modal">
-      <div v-if="showApplyModal" class="modal-overlay" @click.self="closeApplyModal">
+      <div v-if="showApplyModal" class="modal-overlay">
         <div class="apply-modal">
           <div class="apply-modal-header">
             <div class="apply-modal-title">
@@ -471,7 +471,7 @@
                     <label for="years_of_experience" class="field-label">
                       Years of Experience <span class="req">*</span>
                     </label>
-                    <input id="years_of_experience" v-model.trim.number="applyForm.years_of_experience" type="number" min="0" step="1" />
+                    <input id="years_of_experience" v-model.trim.number="applyForm.years_of_experience" type="number" min="0" max="80" step="1" />
                     <div class="inline-error" v-if="applyFieldErrors.years_of_experience">{{ applyFieldErrors.years_of_experience }}</div>
                   </div>
 
@@ -531,7 +531,7 @@
                     <label for="available_start_date" class="field-label">
                       Available Start Date <span class="req">*</span>
                     </label>
-                    <input id="available_start_date" v-model="applyForm.available_start_date" type="date" />
+                    <input id="available_start_date" v-model="applyForm.available_start_date" type="date" :min="todayDate" />
                     <div class="inline-error" v-if="applyFieldErrors.available_start_date">{{ applyFieldErrors.available_start_date }}</div>
                   </div>
 
@@ -630,8 +630,9 @@
 
                 <div class="apply-actions">
                   <button type="button" class="btn btn-cancel" @click="closeApplyModal" :disabled="applyLoading">Cancel</button>
-                  <button type="submit" class="btn btn-primary" :disabled="applyLoading">
-                    {{ applyLoading ? 'Submitting...' : 'Submit Application' }}
+                  <button type="submit" class="btn btn-primary" :disabled="applyLoading" :aria-busy="applyLoading">
+                    <span v-if="applyLoading" class="apply-submit-spinner" aria-hidden="true"></span>
+                    <span>{{ applyLoading ? 'Submitting...' : 'Submit Application' }}</span>
                   </button>
                 </div>
               </div>
@@ -961,6 +962,13 @@ const approvedPositions = ref([])
 // Apply modal state
 const showApplyModal = ref(false)
 const applyLoading = ref(false)
+function getTodayDate() {
+  const today = new Date()
+  const month = String(today.getMonth() + 1).padStart(2, '0')
+  const day = String(today.getDate()).padStart(2, '0')
+  return `${today.getFullYear()}-${month}-${day}`
+}
+const todayDate = getTodayDate()
 const applySuccessMessage = ref('')
 const applyErrorMessage = ref('')
 const applyFieldErrors = ref({})
@@ -1752,12 +1760,19 @@ function validateClientSideBeforeSubmit() {
   if (!applyForm.value.address.trim()) errors.address = 'Address is required.'
   if (!applyForm.value.cover_letter.trim()) errors.cover_letter = 'Cover letter is required.'
 
-  if (applyForm.value.years_of_experience === '' || applyForm.value.years_of_experience === null) {
+  const yearsOfExperience = applyForm.value.years_of_experience
+  if (yearsOfExperience === '' || yearsOfExperience === null) {
     errors.years_of_experience = 'Years of experience is required.'
+  } else if (!Number.isInteger(yearsOfExperience) || yearsOfExperience < 0 || yearsOfExperience > 80) {
+    errors.years_of_experience = 'Years of experience must be a whole number between 0 and 80.'
   }
 
   if (!String(applyForm.value.education).trim()) errors.education = 'Education is required.'
-  if (!applyForm.value.available_start_date) errors.available_start_date = 'Available start date is required.'
+  if (!applyForm.value.available_start_date) {
+    errors.available_start_date = 'Available start date is required.'
+  } else if (applyForm.value.available_start_date < getTodayDate()) {
+    errors.available_start_date = 'Available start date cannot be before today.'
+  }
 
   if (!resumeCvFile.value) errors.resume_cv = 'Resume/CV is required.'
 

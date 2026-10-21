@@ -1163,10 +1163,11 @@ onUnmounted(() => {
   document.removeEventListener('click', preventAdminSidebarSwipeClick, true)
 })
 
-const adminNotificationCounts = ref({ orders: 0, inventory: 0, announcements: 0 })
+const adminNotificationCounts = ref({ orders: 0, inventory: 0, supplierConfirmations: 0, announcements: 0 })
 const adminNotificationItems = computed(() => [
   { key: 'orders', label: 'Pending orders', count: adminNotificationCounts.value.orders },
   { key: 'inventory', label: 'Inventory confirmations', count: adminNotificationCounts.value.inventory },
+  { key: 'supplierConfirmations', label: 'Supplier confirmations', count: adminNotificationCounts.value.supplierConfirmations },
   { key: 'announcements', label: 'Announcements', count: adminNotificationCounts.value.announcements },
 ].filter(item => item.count > 0))
 const adminNotificationCount = computed(() => adminNotificationItems.value.reduce((total, item) => total + item.count, 0))
@@ -1426,6 +1427,7 @@ async function loadAdminNotifications() {
     adminNotificationCounts.value = {
       orders: Number(res.data.counts?.admin || 0),
       inventory: Number(res.data.counts?.inventory || 0),
+      supplierConfirmations: Number(res.data.counts?.supplierConfirmations || 0),
       announcements: Number(res.data.summary?.announcements || 0),
     }
   } catch (e) {
@@ -1445,6 +1447,11 @@ async function markAdminNotificationRead(category) {
 }
 
 async function openAdminNotifications(type) {
+  if (type === 'supplierConfirmations') {
+    activeSection.value = 'inventory'
+    return
+  }
+
   const categoryByType = {
     orders: 'admin',
     inventory: 'inventory',

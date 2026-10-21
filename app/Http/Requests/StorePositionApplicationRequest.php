@@ -32,7 +32,7 @@ class StorePositionApplicationRequest extends FormRequest
             'cover_letter' => ['required', 'string', 'max:5000'],
             'years_of_experience' => ['required', 'numeric', 'integer', 'min:0', 'max:80'],
             'education' => ['required', 'string', 'max:255'],
-            'available_start_date' => ['required', 'date'],
+            'available_start_date' => ['required', 'date', 'after_or_equal:today'],
 
             // Optional
             'linkedin_url' => ['nullable', 'url', 'max:500'],
@@ -68,4 +68,3 @@ class StorePositionApplicationRequest extends FormRequest
         ];
     }
 }
-

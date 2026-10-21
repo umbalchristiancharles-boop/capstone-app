@@ -1204,9 +1204,10 @@ async function submitProductForm() {
     const res = await axios.post(`/api/supplier-orders/${currentSubmitOrderId.value}/submit-product`, payload, { withCredentials: true, headers: { 'Content-Type': 'multipart/form-data' } })
     if (res && res.data && res.data.ok) {
       showToast('Product submitted and linked to order', 'success')
+      submitSubmitting.value = false
+      closeSupplierSubmitModal()
       await loadOrders()
       await loadProducts()
-      closeSupplierSubmitModal()
     } else {
       const msg = res.data?.error || res.data?.message || 'Failed to submit product'
       submitError.value = msg

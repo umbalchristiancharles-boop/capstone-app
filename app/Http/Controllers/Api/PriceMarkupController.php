@@ -12,6 +12,74 @@ use Illuminate\Support\Facades\DB;
 
 class PriceMarkupController extends Controller
 {
+    public function getDefaultPercentage(Request $request)
+    {
+        if (strtoupper($request->user()->role ?? '') !== 'OWNER') {
+            return response()->json(['ok' => false, 'message' => 'Only the owner can view the default price markup'], 403);
+        }
+
+        $setting = DB::table('price_markup_settings')->where('id', 1)->first();
+
+        return response()->json([
+            'ok' => true,
+            'default_percentage' => (float) ($setting->default_percentage ?? PriceMarkupPercentage::defaultPercentage()),
+        ]);
+    }
+
+    public function setDefaultPercentage(Request $request)
+    {
+        if (strtoupper($request->user()->role ?? '') !== 'OWNER') {
+            return response()->json(['ok' => false, 'message' => 'Only the owner can set the default price markup'], 403);
+        }
+
+        $validated = $request->validate([
+            'percentage' => 'required|numeric|min:1|max:100',
+        ]);
+        $percentage = round((float) $validated['percentage'], 2);
+        $user = $request->user();
+
+        $branches = Branch::where('is_active', true)
+            ->whereRaw('UPPER(name) <> ?', ['MAIN BRANCH'])
+            ->get();
+
+        if ($branches->isEmpty()) {
+            return response()->json(['ok' => false, 'message' => 'No active branches are available to update'], 422);
+        }
+
+        DB::transaction(function () use ($branches, $percentage, $user) {
+            DB::table('price_markup_settings')->updateOrInsert(
+                ['id' => 1],
+                [
+                    'default_percentage' => $percentage,
+                    'updated_by' => $user->id,
+                    'updated_at' => now(),
+                ]
+            );
+
+            foreach ($branches as $branch) {
+                PriceMarkupPercentage::where('branch_id', $branch->id)
+                    ->lockForUpdate()
+                    ->update(['is_active' => false]);
+
+                PriceMarkupPercentage::create([
+                    'branch_id' => $branch->id,
+                    'percentage' => $percentage,
+                    'is_active' => true,
+                    'set_by' => $user->id,
+                    'set_at' => now(),
+                    'notes' => 'Default price markup applied to all active branches',
+                ]);
+            }
+        });
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'Default price markup applied to all active branches.',
+            'default_percentage' => $percentage,
+            'branches_updated' => $branches->count(),
+        ]);
+    }
+
     /**
      * Get current price markup percentage for a branch
      */
@@ -68,7 +136,7 @@ class PriceMarkupController extends Controller
             // Default to 20% if not set
             $current = PriceMarkupPercentage::create([
                 'branch_id' => $branchId,
-                'percentage' => 20.00,
+                'percentage' => PriceMarkupPercentage::defaultPercentage(),
                 'is_active' => true,
             ]);
         }
@@ -124,7 +192,7 @@ class PriceMarkupController extends Controller
             if (!$current) {
                 $current = PriceMarkupPercentage::create([
                     'branch_id' => $branchId,
-                    'percentage' => 20.00,
+                    'percentage' => PriceMarkupPercentage::defaultPercentage(),
                     'is_active' => true,
                 ]);
             }

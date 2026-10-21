@@ -45,6 +45,7 @@ class PanelNotificationController extends Controller
             'admin' => 0,
             'finance' => 0,
             'inventory' => 0,
+            'supplierConfirmations' => 0,
             'hr' => 0,
             'logistics' => 0,
             'procurement' => 0,
@@ -116,6 +117,24 @@ class PanelNotificationController extends Controller
                 $orderPendingQuery->where('updated_at', '>', $adminReadAt);
             }
             $counts['admin'] = (int) $orderPendingQuery->count();
+
+            $supplierConfirmationsQuery = SupplierOrder::where('admin_confirmed', false)
+                ->whereNotNull('supplier_id')
+                ->whereNotNull('product_id')
+                ->whereHas('product', function ($productQuery) {
+                    $productQuery->whereNotNull('image_path')
+                        ->where(function ($identifierQuery) {
+                            $identifierQuery->where(function ($barcodeQuery) {
+                                $barcodeQuery->whereNotNull('barcode')->where('barcode', '!=', '');
+                            })->orWhere(function ($skuQuery) {
+                                $skuQuery->whereNotNull('sku')->where('sku', '!=', '');
+                            });
+                        });
+                });
+            if ($branchId) {
+                $supplierConfirmationsQuery->where('branch_id', $branchId);
+            }
+            $counts['supplierConfirmations'] = (int) $supplierConfirmationsQuery->count();
         }
 
         $cashierPendingQuery = Order::where('status', 'pending');
@@ -227,9 +246,6 @@ class PanelNotificationController extends Controller
         // Owner + main branch finance approvals
         if ($role === 'OWNER' || $role === 'SUPER_ADMIN' || $role === 'SUPERADMIN') {
             $branchApprovalQuery = Branch::where('approval_status', 'pending_owner');
-            if ($branchApprovalReadAt = $readAt('branchPendingOwner')) {
-                $branchApprovalQuery->where('updated_at', '>', $branchApprovalReadAt);
-            }
             $extras['branchPendingOwner'] = (int) $branchApprovalQuery->count();
 
             $ownerProductRequestsQuery = ProductRequest::where('status', 'pending_owner');
@@ -275,6 +291,7 @@ class PanelNotificationController extends Controller
             + $counts['inventory']
             + $counts['logistics']
             + $counts['procurement']
+            + $counts['supplierConfirmations']
             + $counts['supplier']
             + $counts['cashier'];
 

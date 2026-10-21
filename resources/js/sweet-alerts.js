@@ -27,7 +27,10 @@ export async function swalConfirm(message, title = 'Are you sure?') {
     cancelButtonText: 'Cancel',
     confirmButtonColor: THEME.confirmButtonColor,
     cancelButtonColor: THEME.cancelButtonColor,
-    reverseButtons: true
+    reverseButtons: true,
+    didOpen: () => {
+      Swal.getContainer()?.style.setProperty('z-index', '200000', 'important')
+    }
   })
   return !!res.isConfirmed
 }

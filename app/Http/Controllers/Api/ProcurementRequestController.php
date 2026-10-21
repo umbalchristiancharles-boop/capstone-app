@@ -755,7 +755,7 @@ public function requestedProducts(Request $request)
         try {
             $markupPercentage = (float) (PriceMarkupPercentage::where('branch_id', $branchId)
                 ->where('is_active', true)
-                ->value('percentage') ?? 20);
+                ->value('percentage') ?? PriceMarkupPercentage::defaultPercentage());
 
             $requests = ProcurementRequest::with(['product:id,name,price,sku,branch_id,supplier_id,logistics_request_available,status'])
                 ->where('branch_id', $branchId)

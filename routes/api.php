@@ -199,6 +199,8 @@ Route::middleware('web')->group(function () {
     // PRICE MARKUP PERCENTAGE MANAGEMENT
     // Finance manager requests, main finance approves, owner approves
     // ==========================================
+    Route::get('/price-markup/default', [\App\Http\Controllers\Api\PriceMarkupController::class, 'getDefaultPercentage'])->middleware('auth');
+    Route::put('/price-markup/default', [\App\Http\Controllers\Api\PriceMarkupController::class, 'setDefaultPercentage'])->middleware('auth');
     Route::get('/price-markup/current/{branchId?}', [\App\Http\Controllers\Api\PriceMarkupController::class, 'getCurrentPercentage'])->middleware('auth');
     Route::post('/price-markup/request', [\App\Http\Controllers\Api\PriceMarkupController::class, 'requestPercentageChange'])->middleware('auth');
     Route::get('/price-markup/pending/{branchId?}', [\App\Http\Controllers\Api\PriceMarkupController::class, 'getPendingRequests'])->middleware('auth');

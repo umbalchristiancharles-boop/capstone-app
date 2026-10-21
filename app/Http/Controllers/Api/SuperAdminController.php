@@ -566,7 +566,7 @@ class SuperAdminController extends Controller
                 ->pluck('percentage', 'branch_id');
             $orders->getCollection()->transform(function ($order) use ($branchMarkups, $adminRequestProductIds) {
                 $supplierPrice = (float) ($order->product?->price ?? $order->procurementRequest?->price ?? 0);
-                $markupPercentage = (float) ($branchMarkups->get($order->branch_id) ?? 20);
+                $markupPercentage = (float) ($branchMarkups->get($order->branch_id) ?? PriceMarkupPercentage::defaultPercentage());
                 $procurementProduct = $order->procurementRequest?->product;
                 $isAdminProductRequest = $procurementProduct
                     && $adminRequestProductIds->has($procurementProduct->id);

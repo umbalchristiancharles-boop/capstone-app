@@ -33,6 +33,7 @@ class ProductSupplierTransferTest extends BaseTestCase
             $table->string('supplier_name')->nullable();
             $table->integer('stock')->default(0);
             $table->integer('real_stock')->default(0);
+            $table->boolean('is_published')->default(false);
             $table->timestamps();
         });
     }
@@ -53,6 +54,7 @@ class ProductSupplierTransferTest extends BaseTestCase
             'supplier_name' => 'Old Supplier',
             'stock' => 10,
             'real_stock' => 10,
+            'is_published' => true,
         ]);
 
         $destination = Product::create([
@@ -63,6 +65,18 @@ class ProductSupplierTransferTest extends BaseTestCase
             'supplier_name' => 'Other Supplier',
             'stock' => 5,
             'real_stock' => 5,
+            'is_published' => false,
+        ]);
+
+        $otherSupplierProduct = Product::create([
+            'name' => 'water',
+            'sku' => 'SKU-1',
+            'branch_id' => 31,
+            'supplier_id' => 97,
+            'supplier_name' => 'Unselected Supplier',
+            'stock' => 7,
+            'real_stock' => 7,
+            'is_published' => false,
         ]);
 
         $result = Product::transferInventoryForSupplierChange($source, $supplier, $destination);
@@ -71,10 +85,13 @@ class ProductSupplierTransferTest extends BaseTestCase
         $this->assertSame(15, $result->real_stock);
         $this->assertSame(0, $source->fresh()->stock);
         $this->assertSame(0, $source->fresh()->real_stock);
+        $this->assertSame(0, $otherSupplierProduct->fresh()->stock);
+        $this->assertSame(0, $otherSupplierProduct->fresh()->real_stock);
         $this->assertSame($supplier->id, $result->supplier_id);
         $this->assertSame(99, $source->fresh()->supplier_id);
         $this->assertSame('Old Supplier', $source->fresh()->supplier_name);
         $this->assertSame($supplier->id, $destination->fresh()->supplier_id);
+        $this->assertTrue($destination->fresh()->is_published);
     }
 
     public function test_supplier_change_keeps_source_when_supplier_is_already_assigned(): void
@@ -101,6 +118,41 @@ class ProductSupplierTransferTest extends BaseTestCase
         $this->assertSame(10, $result->stock);
         $this->assertSame(10, $result->real_stock);
         $this->assertSame('Umberto Batumbakal', $result->supplier_name);
+    }
+
+    public function test_real_stock_is_aggregated_only_for_the_same_supplier(): void
+    {
+        $selectedSupplierProduct = Product::create([
+            'name' => 'Water',
+            'branch_id' => 31,
+            'supplier_id' => 152,
+            'stock' => 4,
+        ]);
+        $selectedSupplierDuplicate = Product::create([
+            'name' => 'water',
+            'branch_id' => 31,
+            'supplier_id' => 152,
+            'stock' => 6,
+        ]);
+        $otherSupplierProduct = Product::create([
+            'name' => 'Water',
+            'branch_id' => 31,
+            'supplier_id' => 158,
+            'stock' => 3,
+        ]);
+        $otherSupplierDuplicate = Product::create([
+            'name' => 'water',
+            'branch_id' => 31,
+            'supplier_id' => 158,
+            'stock' => 2,
+        ]);
+
+        Product::recomputeRealStockForGroup(31, null, 'Water');
+
+        $this->assertSame(10, $selectedSupplierProduct->fresh()->real_stock);
+        $this->assertSame(10, $selectedSupplierDuplicate->fresh()->real_stock);
+        $this->assertSame(5, $otherSupplierProduct->fresh()->real_stock);
+        $this->assertSame(5, $otherSupplierDuplicate->fresh()->real_stock);
     }
 
     public function test_manager_change_supplier_route_accepts_post_requests(): void

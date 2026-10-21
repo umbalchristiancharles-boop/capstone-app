@@ -83,9 +83,9 @@ class Product extends Model
         'approved_at' => 'datetime',
     ];
 
-    // Expose aggregated real stock (sum across supplier/product duplicates) to API consumers
-    // When persisted, `real_stock` column will be used. The accessor falls back to computing
-    // the sum when the column is not available.
+    // Expose aggregated real stock for products belonging to the same supplier.
+    // When persisted, `real_stock` column will be used. The accessor falls back
+    // to computing the supplier-specific sum when the column is not available.
     protected $appends = ['real_stock', 'image_url'];
 
     public function getImageUrlAttribute(): ?string
@@ -116,10 +116,9 @@ class Product extends Model
     }
 
     /**
-     * Get the aggregated stock for this logical product.
-     * If the product has an SKU, sum stock across products with the same SKU in the same branch.
-     * Otherwise, fall back to exact name match (case-insensitive).
-     * This helps surface the "real" available stock when supplier-specific product rows exist.
+     * Get the aggregated stock for this logical product and supplier.
+     * If the product has an SKU, sum stock across products with the same SKU,
+     * branch, and supplier. Otherwise, fall back to an exact name match.
      */
     public function getRealStockAttribute()
     {
@@ -138,6 +137,12 @@ class Product extends Model
                 $query->whereRaw('TRIM(UPPER(name)) = ?', [$name]);
             }
 
+            if ($this->supplier_id === null) {
+                $query->whereNull('supplier_id');
+            } else {
+                $query->where('supplier_id', $this->supplier_id);
+            }
+
             return (int) $query->sum('stock');
         } catch (\Exception $e) {
             return (int) ($this->attributes['stock'] ?? 0);
@@ -145,8 +150,9 @@ class Product extends Model
     }
 
     /**
-     * Recompute and persist `real_stock` for all product rows in the same group.
-     * Grouping is by `branch_id` + `sku` when SKU is present, otherwise by normalized name.
+     * Recompute and persist `real_stock` per supplier within a product group.
+     * Product grouping is by `branch_id` + `sku` when SKU is present, otherwise
+     * by normalized name.
      *
      * @param int $branchId
      * @param string|null $sku
@@ -155,19 +161,22 @@ class Product extends Model
      */
     public static function recomputeRealStockForGroup(int $branchId, ?string $sku, ?string $name): void
     {
+        $query = self::where('branch_id', $branchId);
         if (!empty($sku)) {
-            $sum = (int) self::where('branch_id', $branchId)->where('sku', $sku)->sum('stock');
-            self::where('branch_id', $branchId)->where('sku', $sku)->update(['real_stock' => $sum]);
-            return;
+            $query->where('sku', $sku);
+        } else {
+            if (empty($name)) return;
+            $normalized = trim(strtoupper($name));
+            $query->whereRaw('TRIM(UPPER(name)) = ?', [$normalized]);
         }
 
-        if (empty($name)) return;
-
-        $normalized = trim(strtoupper($name));
-        $ids = self::where('branch_id', $branchId)->whereRaw('TRIM(UPPER(name)) = ?', [$normalized])->pluck('id')->toArray();
-        if (empty($ids)) return;
-        $sum = (int) self::whereIn('id', $ids)->sum('stock');
-        self::whereIn('id', $ids)->update(['real_stock' => $sum]);
+        $products = $query->get(['id', 'supplier_id', 'stock']);
+        foreach ($products->groupBy(fn (Product $product) => $product->supplier_id === null
+            ? 'unassigned'
+            : 'supplier:' . $product->supplier_id) as $supplierProducts) {
+            $sum = (int) $supplierProducts->sum('stock');
+            self::whereIn('id', $supplierProducts->pluck('id'))->update(['real_stock' => $sum]);
+        }
     }
 
     public static function transferInventoryForSupplierChange(Product $sourceProduct, User $newSupplier, ?Product $targetProduct = null): Product
@@ -184,6 +193,8 @@ class Product extends Model
                     $source->save();
                 }
 
+                self::clearOtherSupplierStock($source);
+                self::recomputeRealStockForGroup($source->branch_id, $source->sku, $source->name);
                 return $source->fresh();
             }
 
@@ -204,23 +215,47 @@ class Product extends Model
 
             if ($destination && $destination->id !== $source->id) {
                 $sourceStock = (int) $source->stock;
-                $sourceRealStock = (int) $source->real_stock;
 
                 $destination->stock = (int) $destination->stock + $sourceStock;
-                $destination->real_stock = (int) $destination->real_stock + $sourceRealStock;
                 $destination->supplier_id = $newSupplier->id;
                 $destination->supplier_name = $supplierName;
+                $destination->is_published = true;
                 $destination->save();
 
                 $source->stock = 0;
                 $source->real_stock = 0;
                 $source->save();
 
+                self::clearOtherSupplierStock($destination);
+                self::recomputeRealStockForGroup($destination->branch_id, $destination->sku, $destination->name);
                 return $destination->fresh();
             }
 
             throw new \RuntimeException('No product row exists for the selected supplier');
         });
+    }
+
+    private static function clearOtherSupplierStock(Product $selectedProduct): void
+    {
+        $query = self::where('branch_id', $selectedProduct->branch_id)
+            ->where('id', '<>', $selectedProduct->id);
+
+        if (!empty($selectedProduct->sku)) {
+            $query->where('sku', $selectedProduct->sku);
+        } else {
+            $query->whereRaw('TRIM(UPPER(name)) = ?', [trim(strtoupper((string) $selectedProduct->name))]);
+        }
+
+        if ($selectedProduct->supplier_id === null) {
+            $query->whereNotNull('supplier_id');
+        } else {
+            $query->where(function ($supplierQuery) use ($selectedProduct) {
+                $supplierQuery->whereNull('supplier_id')
+                    ->orWhere('supplier_id', '<>', $selectedProduct->supplier_id);
+            });
+        }
+
+        $query->update(['stock' => 0, 'real_stock' => 0]);
     }
 
     public function supplier(): BelongsTo

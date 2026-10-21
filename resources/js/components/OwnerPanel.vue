@@ -23,6 +23,7 @@
     updateEndpoint="/api/owner-profile"
     avatarEndpoint="/api/upload-avatar"
     @logout="handleLogout"
+    @notification-select="handleOwnerNotificationSelect"
   >
     <template #ownerSidebar>
       <nav class="owner-sidebar-nav" aria-label="Owner sections">
@@ -252,7 +253,7 @@
         <div class="panel-body">
           <p class="owner-permissions-summary">Set which owner-level controls are available in this workspace.</p>
           <div class="owner-permissions-grid">
-            <label v-for="permission in ownerPermissionList" :key="permission.key" class="owner-permission-item">
+            <div v-for="permission in ownerPermissionList" :key="permission.key" class="owner-permission-item">
               <div class="owner-permission-copy">
                 <span class="owner-permission-name">{{ permission.label }}</span>
                 <small>{{ permission.description }}</small>
@@ -265,24 +266,65 @@
                     <input v-model="ownerPermissions[permission.scopeKey].mode" type="radio" value="specific" @change="saveOwnerPermissions" />
                     <span>Specific branches</span>
                   </label>
-                  <select
+                  <div
                     v-if="ownerPermissions[permission.scopeKey].mode === 'specific'"
-                    v-model="ownerPermissions[permission.scopeKey].branchIds"
-                    class="owner-permission-scope__select"
-                    multiple
-                    @change="saveOwnerPermissions"
+                    class="owner-permission-scope__branches"
+                    :aria-label="`${permission.label} branches`"
                   >
-                    <option v-for="branch in ownerBranches" :key="branch.id" :value="branch.id">
+                    <button
+                      v-for="branch in ownerBranches"
+                      :key="branch.id"
+                      type="button"
+                      class="owner-permission-scope__branch"
+                      :class="{ 'owner-permission-scope__branch--selected': ownerPermissions[permission.scopeKey].branchIds.includes(Number(branch.id)) }"
+                      :aria-pressed="ownerPermissions[permission.scopeKey].branchIds.includes(Number(branch.id))"
+                      @click="toggleOwnerBranch(permission.scopeKey, branch.id)"
+                    >
                       {{ branch.name }}
-                    </option>
-                  </select>
+                    </button>
+                  </div>
                   <small v-if="ownerPermissions[permission.scopeKey].mode === 'specific' && ownerBranches.length === 0">
                     No active branches found.
                   </small>
+                  <small v-else-if="ownerPermissions[permission.scopeKey].mode === 'specific' && ownerPermissions[permission.scopeKey].branchIds.length === 0">
+                    Select at least one branch to allow requests from specific branches.
+                  </small>
                 </div>
+                <form
+                  v-if="permission.key === 'priceMarkups' && !ownerPermissions.priceMarkups"
+                  class="owner-default-markup"
+                  @submit.prevent="applyDefaultMarkupToAllBranches"
+                >
+                  <label for="owner-default-markup-percentage">Default markup for all active branches except Main Branch (%)</label>
+                  <div class="owner-default-markup__controls">
+                    <input
+                      id="owner-default-markup-percentage"
+                      v-model.number="defaultPriceMarkup"
+                      type="number"
+                      min="1"
+                      max="100"
+                      step="0.01"
+                      required
+                    />
+                    <button type="submit" :disabled="defaultMarkupSubmitting">
+                      {{ defaultMarkupSubmitting ? 'Applying...' : 'Apply to all branches' }}
+                    </button>
+                  </div>
+                  <small v-if="defaultMarkupMessage" :class="`owner-default-markup__message owner-default-markup__message--${defaultMarkupMessageType}`" role="status">
+                    {{ defaultMarkupMessage }}
+                  </small>
+                </form>
               </div>
-              <input v-model="ownerPermissions[permission.key]" type="checkbox" @change="saveOwnerPermissions" />
-            </label>
+              <button
+                type="button"
+                class="owner-permission-toggle"
+                :class="{ 'owner-permission-toggle--enabled': ownerPermissions[permission.key] }"
+                :aria-pressed="ownerPermissions[permission.key]"
+                @click="toggleOwnerPermission(permission.key)"
+              >
+                {{ ownerPermissions[permission.key] ? 'Disable' : 'Enable' }}
+              </button>
+            </div>
           </div>
         </div>
       </section>
@@ -596,10 +638,10 @@ const ownerTutorialSteps = [
     sectionLabel: 'Permissions',
     description: 'Control which owner-level request types branch managers can submit and which branches those settings cover.',
     items: [
-      'Toggle Price Markups to allow or disable manager price-markup requests.',
-      'Toggle Request New Product to control product requests, and Request New Position to control open-position requests.',
-      'For each enabled permission, choose All branches or Specific branches. In Specific branches mode, select one or more branches from the list.',
-      'Changes save automatically when you change a checkbox, scope option, or branch selection.',
+      'Use the Price Markups button to allow or disable manager price-markup requests.',
+      'Use the Request New Product and Request New Position buttons to control those requests.',
+      'For each enabled permission, choose All branches or Specific branches. In Specific branches mode, click one or more branch buttons to select them.',
+      'Changes save automatically when you change a permission button, scope option, or branch selection.',
     ],
   },
   {
@@ -685,6 +727,10 @@ const ownerPermissions = ref({
   },
 })
 const ownerBranches = ref([])
+const defaultPriceMarkup = ref(20)
+const defaultMarkupSubmitting = ref(false)
+const defaultMarkupMessage = ref('')
+const defaultMarkupMessageType = ref('success')
 const ownerPermissionList = [
   { key: 'priceMarkups', scopeKey: 'priceMarkupScope', label: 'Price Markups', description: 'Review and validate price updates.' },
   { key: 'productRequests', scopeKey: 'productRequestScope', label: 'Request New Product', description: 'Allow branch managers to request products for approval.' },
@@ -732,6 +778,20 @@ function saveOwnerPermissions() {
   }
 }
 
+function toggleOwnerPermission(key) {
+  ownerPermissions.value[key] = !ownerPermissions.value[key]
+  saveOwnerPermissions()
+}
+
+function toggleOwnerBranch(scopeKey, branchId) {
+  const scope = ownerPermissions.value[scopeKey]
+  const id = Number(branchId)
+  scope.branchIds = scope.branchIds.includes(id)
+    ? scope.branchIds.filter(selectedId => selectedId !== id)
+    : [...scope.branchIds, id]
+  saveOwnerPermissions()
+}
+
 async function loadOwnerBranches() {
   try {
     const response = await axios.get('/api/admin/branches', { withCredentials: true })
@@ -744,6 +804,54 @@ async function loadOwnerBranches() {
     for (const scopeKey of ['priceMarkupScope', 'productRequestScope', 'positionRequestScope']) {
       ownerPermissions.value[scopeKey].branchIds =
         ownerPermissions.value[scopeKey].branchIds.filter(id => availableBranchIds.has(Number(id)))
+    }
+
+    async function loadDefaultPriceMarkup() {
+      try {
+        const response = await axios.get('/api/price-markup/default', { withCredentials: true })
+        if (!response.data?.ok) {
+          throw new Error(response.data?.message || 'Unable to load the default price markup.')
+        }
+        defaultPriceMarkup.value = Number(response.data.default_percentage)
+      } catch (error) {
+        console.warn('OwnerPanel: failed to load default price markup', error)
+        defaultMarkupMessage.value = error.response?.data?.message || error.message || 'Unable to load the default markup.'
+        defaultMarkupMessageType.value = 'error'
+      }
+    }
+
+    async function applyDefaultMarkupToAllBranches() {
+      const confirmation = await Swal.fire({
+        title: 'Apply markup to all active branches?',
+        text: `This will replace the current markup with ${defaultPriceMarkup.value}% for every active branch except Main Branch.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Apply to all branches',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#f97316',
+      })
+      if (!confirmation.isConfirmed) return
+
+      defaultMarkupSubmitting.value = true
+      defaultMarkupMessage.value = ''
+      try {
+        const response = await axios.put('/api/price-markup/default', {
+          percentage: defaultPriceMarkup.value,
+        }, { withCredentials: true })
+        if (!response.data?.ok) {
+          throw new Error(response.data?.message || 'Unable to apply the default markup.')
+        }
+        defaultPriceMarkup.value = Number(response.data.default_percentage)
+        defaultMarkupMessage.value = `${defaultPriceMarkup.value}% applied to ${response.data.branches_updated} active branches.`
+        defaultMarkupMessageType.value = 'success'
+        showToast(defaultMarkupMessage.value, 'success')
+      } catch (error) {
+        console.error('OwnerPanel: failed to apply default price markup', error)
+        defaultMarkupMessage.value = error.response?.data?.message || error.message || 'Unable to apply the default markup.'
+        defaultMarkupMessageType.value = 'error'
+      } finally {
+        defaultMarkupSubmitting.value = false
+      }
     }
     saveOwnerPermissions()
   } catch (error) {
@@ -765,6 +873,17 @@ const announcementMessageType = ref('')
 
 function selectSection(section) {
   selectedSection.value = section
+}
+
+function handleOwnerNotificationSelect(key) {
+  const sectionByNotification = {
+    kitchen: 'dishApproval',
+    ownerProductRequests: 'dishApproval',
+    branchPendingOwner: 'branchConfirmations',
+    priceMarkupPending: 'priceMarkups',
+  }
+  const section = sectionByNotification[key]
+  if (section) selectSection(section)
 }
 
 function openOwnerTutorial() {
@@ -807,6 +926,7 @@ async function sendAnnouncement() {
 onMounted(async () => {
   loadOwnerPermissions()
   loadOwnerBranches()
+  loadDefaultPriceMarkup()
 
   try {
     const local = JSON.parse(localStorage.getItem('user') || 'null')
@@ -2316,7 +2436,7 @@ const handleLogout = async () => {
 }
 
 .owner-permission-item {
-  align-items: center;
+  align-items: flex-start;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 0.9rem;
@@ -2345,6 +2465,92 @@ const handleLogout = async () => {
   line-height: 1.45;
 }
 
+.owner-default-markup {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.75rem;
+  max-width: 32rem;
+}
+
+.owner-default-markup > label {
+  color: #334155;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.owner-default-markup__controls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.owner-default-markup__controls input {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  color: #334155;
+  font: inherit;
+  min-height: 2.25rem;
+  padding: 0.35rem 0.55rem;
+  width: 7rem;
+}
+
+.owner-default-markup__controls button {
+  background: #f97316;
+  border: 1px solid #f97316;
+  border-radius: 999px;
+  color: #ffffff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 0.5rem 0.8rem;
+}
+
+.owner-default-markup__controls button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.owner-default-markup__message--success {
+  color: #15803d !important;
+}
+
+.owner-default-markup__message--error {
+  color: #b91c1c !important;
+}
+
+.owner-permission-toggle {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  color: #475569;
+  cursor: pointer;
+  flex-shrink: 0;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  min-width: 5.5rem;
+  padding: 0.45rem 0.8rem;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.owner-permission-toggle:hover {
+  border-color: #f97316;
+}
+
+.owner-permission-toggle:focus-visible {
+  outline: 3px solid rgba(249, 115, 22, 0.25);
+  outline-offset: 2px;
+}
+
+.owner-permission-toggle--enabled {
+  background: #f97316;
+  border-color: #f97316;
+  color: #ffffff;
+}
+
 .owner-permission-scope {
   display: flex;
   flex-wrap: wrap;
@@ -2364,21 +2570,39 @@ const handleLogout = async () => {
   accent-color: #f97316;
 }
 
-.owner-permission-scope__select {
-  border: 1px solid #cbd5e1;
-  border-radius: 0.45rem;
-  color: #334155;
+.owner-permission-scope__branches {
+  align-items: center;
+  display: flex;
   flex-basis: 100%;
-  min-height: 4.5rem;
-  padding: 0.35rem;
+  flex-wrap: wrap;
+  gap: 0.45rem;
 }
 
-.owner-permission-item input[type='checkbox'] {
-  height: 1.15rem;
-  width: 1.15rem;
-  accent-color: #f97316;
+.owner-permission-scope__branch {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
   cursor: pointer;
-  flex-shrink: 0;
+  color: #334155;
+  font: inherit;
+  font-size: 0.76rem;
+  padding: 0.35rem 0.7rem;
+}
+
+.owner-permission-scope__branch:hover {
+  border-color: #f97316;
+}
+
+.owner-permission-scope__branch:focus-visible {
+  outline: 3px solid rgba(249, 115, 22, 0.25);
+  outline-offset: 2px;
+}
+
+.owner-permission-scope__branch--selected {
+  background: #fff7ed;
+  border-color: #f97316;
+  color: #c2410c;
+  font-weight: 700;
 }
 
 @media (max-width: 900px) {

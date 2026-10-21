@@ -500,10 +500,7 @@ function isProductNearExpiry(product) {
 function showProcurementButton(product) {
   const stock = product?.stock == null ? 0 : Number(product.stock)
   const threshold = Number(product?.low_stock_threshold ?? 10)
-  // Supplier quotes remain hidden from the procurement-request action until
-  // Procurement has selected a supplier and published the product.
-  const supplierSelected = Boolean(product?.supplier_id) && Number(product?.price ?? 0) > 0
-  return Boolean(product?.is_published) && supplierSelected && stock <= threshold
+  return Number.isFinite(stock) && Number.isFinite(threshold) && stock <= threshold
 }
 
 // Pagination

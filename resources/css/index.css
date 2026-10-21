@@ -771,6 +771,21 @@
   cursor: not-allowed;
 }
 
+.apply-submit-spinner {
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: apply-submit-spin 0.7s linear infinite;
+}
+
+@keyframes apply-submit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .btn-cancel {
   background: rgba(66, 33, 11, 0.08);
   color: rgba(66, 33, 11, 0.92);
@@ -782,6 +797,10 @@
 }
 
 .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   background: linear-gradient(135deg, rgba(255, 107, 28, 0.95), rgba(255, 140, 50, 0.95));
   color: white;
 }
@@ -839,5 +858,3 @@
   font-size: 0.93rem;
   line-height: 1.35;
 }
-
-

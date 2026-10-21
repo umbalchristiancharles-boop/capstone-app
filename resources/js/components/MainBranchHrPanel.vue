@@ -233,6 +233,7 @@
                         <th class="col-role">Role</th>
                         <th class="col-dept">Department</th>
                         <th class="col-status">Status</th>
+                        <th class="col-account-action">Details</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -253,6 +254,9 @@
                             <span class="status-dot" :class="member.is_active ? 'dot-active' : 'dot-inactive'"></span>
                             {{ member.is_active ? 'Active' : 'Inactive' }}
                           </span>
+                        </td>
+                        <td class="col-account-action">
+                          <button type="button" class="btn-account-details" @click="openAccountDetails(member)">View details</button>
                         </td>
                       </tr>
                     </tbody>
@@ -436,6 +440,45 @@
     </div>
   </div>
 
+  <!-- Account Details Modal -->
+  <div v-if="showAccountDetailsModal && selectedAccountDetails" class="positions-modal-backdrop" @click.self="closeAccountDetails">
+    <section class="positions-modal account-details-modal" role="dialog" aria-modal="true" aria-labelledby="account-details-title">
+      <div class="positions-modal__header">
+        <div class="account-details-heading">
+          <img v-if="selectedAccountDetails.avatar_url" :src="selectedAccountDetails.avatar_url" alt="" class="account-details-avatar" />
+          <span v-else class="account-details-avatar account-details-avatar--fallback">
+            {{ (selectedAccountDetails.full_name || selectedAccountDetails.username || '?').charAt(0).toUpperCase() }}
+          </span>
+          <div>
+            <h3 id="account-details-title">{{ selectedAccountDetails.full_name || selectedAccountDetails.username || 'Account details' }}</h3>
+            <p class="muted">{{ displayRole(selectedAccountDetails.role) }}<span v-if="selectedAccountDetails.department"> · {{ selectedAccountDetails.department }}</span></p>
+          </div>
+        </div>
+        <button type="button" class="modal-close" @click="closeAccountDetails" aria-label="Close account details">✕</button>
+      </div>
+      <div class="positions-modal__body account-details-body">
+        <div class="account-details-grid">
+          <div class="account-detail"><span>Account ID</span><strong>{{ selectedAccountDetails.id }}</strong></div>
+          <div class="account-detail"><span>Username</span><strong>{{ selectedAccountDetails.username || '—' }}</strong></div>
+          <div class="account-detail"><span>Email</span><strong>{{ selectedAccountDetails.email || '—' }}</strong></div>
+          <div class="account-detail"><span>Phone</span><strong>{{ selectedAccountDetails.phone_number || '—' }}</strong></div>
+          <div class="account-detail"><span>Address</span><strong>{{ selectedAccountDetails.address || '—' }}</strong></div>
+          <div class="account-detail"><span>Role</span><strong>{{ displayRole(selectedAccountDetails.role) }}</strong></div>
+          <div class="account-detail"><span>Department</span><strong>{{ selectedAccountDetails.department || '—' }}</strong></div>
+          <div class="account-detail"><span>Branch</span><strong>{{ selectedAccountDetails.branch_name || 'Unassigned Branch' }}<span v-if="selectedAccountDetails.branch_id"> (#{{ selectedAccountDetails.branch_id }})</span></strong></div>
+          <div class="account-detail"><span>Account status</span><strong>{{ selectedAccountDetails.is_active ? 'Active' : 'Inactive' }}</strong></div>
+          <div class="account-detail"><span>Presence</span><strong>{{ selectedAccountDetails.is_online ? 'Online' : 'Offline' }}</strong></div>
+          <div class="account-detail"><span>Email verified</span><strong>{{ selectedAccountDetails.email_verified_at ? formatAccountDate(selectedAccountDetails.email_verified_at) : 'Not verified' }}</strong></div>
+          <div class="account-detail"><span>Last login</span><strong>{{ formatAccountDate(selectedAccountDetails.last_login_at) }}</strong></div>
+          <div class="account-detail"><span>Account created</span><strong>{{ formatAccountDate(selectedAccountDetails.created_at) }}</strong></div>
+        </div>
+      </div>
+      <div class="positions-modal__footer">
+        <button type="button" class="btn-secondary" @click="closeAccountDetails">Close</button>
+      </div>
+    </section>
+  </div>
+
   <!-- Reject Reason Modal -->
   <div v-if="showRejectModal" class="reject-modal-backdrop" @click.self="closeRejectModal">
 
@@ -490,6 +533,8 @@ const rejectingRequest = ref(null)
 const rejectReason = ref('')
 const accountSearch = ref('')
 const accountStatusFilter = ref('all')
+const showAccountDetailsModal = ref(false)
+const selectedAccountDetails = ref(null)
 
 // Job Applications modal state
 const showApplicationsModal = ref(false)
@@ -599,6 +644,22 @@ function displayRole(r) {
   if (role === 'STAFF') return 'Staff'
   if (role === 'HR') return 'HR'
   return role.replace(/_/g, ' ')
+}
+
+function openAccountDetails(account) {
+  selectedAccountDetails.value = account
+  showAccountDetailsModal.value = true
+}
+
+function closeAccountDetails() {
+  showAccountDetailsModal.value = false
+  selectedAccountDetails.value = null
+}
+
+function formatAccountDate(value) {
+  if (!value) return '—'
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString()
 }
 
 function closeApplicationsModal() {
@@ -2000,11 +2061,67 @@ window.addEventListener('click', () => {
 .staff-row { transition: background-color 0.2s ease; }
 .staff-row:hover { background-color: #fffaf5; }
 
-.col-name { width: 32%; }
-.col-username { width: 23%; }
-.col-role { width: 16%; }
-.col-dept { width: 16%; }
+.col-name { width: 27%; }
+.col-username { width: 19%; }
+.col-role { width: 14%; }
+.col-dept { width: 14%; }
 .col-status { width: 13%; }
+.col-account-action { width: 13%; }
+
+.btn-account-details {
+  border: 1px solid #e6c5a8;
+  border-radius: 7px;
+  padding: 5px 9px;
+  background: #fff8f1;
+  color: #8f4514;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn-account-details:hover,
+.btn-account-details:focus-visible {
+  border-color: #c8773b;
+  background: #fff0e2;
+  outline: none;
+}
+
+.account-details-modal { max-width: 720px; }
+.account-details-heading { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.account-details-heading h3 { overflow-wrap: anywhere; }
+.account-details-avatar {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #fce7d5;
+}
+.account-details-avatar--fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #9a4c17;
+  font-size: 18px;
+  font-weight: 800;
+}
+.account-details-body { padding-top: 18px; }
+.account-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.account-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid #f0e4d9;
+  border-radius: 9px;
+  background: #fffaf5;
+}
+.account-detail span { color: #8a705e; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+.account-detail strong { color: #382b21; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
 
 .name-badge { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 7px; background: #fce7d5; color: #9a4c17; font-weight: 700; font-size: 11px; margin-right: 7px; vertical-align: middle; }
 .code-text { background: #f0f1f3; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace; font-size: 11px; color: #6b7280; }
@@ -2051,6 +2168,7 @@ window.addEventListener('click', () => {
   .col-dept { display: none; }
   .branch-card { padding: 0; }
   .staff-table th, .staff-table td { padding: 7px 6px; font-size: 11px; }
+  .account-details-grid { grid-template-columns: 1fr; }
   .name-badge { width: 22px; height: 22px; font-size: 10px; margin-right: 4px; }
   .header-top { flex-direction: column; align-items: flex-start; gap: 2px; }
   .branch-grid { gap: 2px; }
