@@ -847,6 +847,19 @@ class AuthController extends Controller
 
         $email = $request->input('email');
 
+        $user = $this->resolveAuthenticatedUser($request);
+        $existingUser = User::whereRaw('LOWER(email) = ?', [strtolower(trim($email))])->first();
+
+        if ($existingUser) {
+            if (! $user || (int) $user->id !== (int) $existingUser->id || $existingUser->email_verified_at) {
+                return response()->json([
+                    'message' => 'Email already exists. Please sign in instead.'
+                ], 409);
+            }
+
+            $email = $existingUser->email;
+        }
+
         // Rate limiting: max 3 requests per 10 minutes per email
         $rateLimitKey = 'verification_rate_limit_' . $email;
         $requestCount = Cache::get($rateLimitKey, 0);
@@ -855,12 +868,6 @@ class AuthController extends Controller
             return response()->json([
                 'message' => 'Too many verification requests. Please try again in 10 minutes.'
             ], 429);
-        }
-
-        if (User::where('email', '=', $email)->exists()) {
-            return response()->json([
-                'message' => 'Email already exists. Please sign in instead.'
-            ], 409);
         }
 
         // Generate 6-digit code
@@ -872,8 +879,7 @@ class AuthController extends Controller
         // Increment rate limit counter
         Cache::put($rateLimitKey, $requestCount + 1, 600);
 
-        // Log verification code for debugging (never expose to client)
-        Log::info("Verification code generated for {$email}: {$code}");
+        Log::info('Verification code generated', ['email' => $email]);
 
         // Send email with verification code
         try {
@@ -905,39 +911,41 @@ class AuthController extends Controller
 
     private function resolveAuthenticatedUser($request)
     {
-        if (Auth::check()) {
-            return Auth::user();
-        }
-
-        // Try Sanctum guard (token-based) if available
-        try {
-            $sanctumUser = auth('sanctum')->user();
-            if ($sanctumUser) return $sanctumUser;
-        } catch (\Throwable $e) {}
-
-        // Try Personal Access Token lookup (plain bearer token)
-        try {
-            $bearer = $request->bearerToken();
-            if ($bearer) {
-                // 1) Try Sanctum personal access tokens if available
+        $bearer = $request->bearerToken();
+        if ($bearer) {
+            try {
                 if (class_exists(\Laravel\Sanctum\PersonalAccessToken::class)) {
                     $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($bearer);
-                    if ($tokenModel && $tokenModel->tokenable) return $tokenModel->tokenable;
+                    if ($tokenModel && $tokenModel->tokenable) {
+                        return $tokenModel->tokenable;
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Continue to legacy token and session authentication.
+            }
+            try {
+                $cachedUserId = Cache::get('user_token_' . $bearer);
+                if ($cachedUserId) {
+                    return User::find($cachedUserId);
+                }
+            } catch (\Throwable $e) {
+                // Continue to session authentication.
+            }
+        }
+
+        if ($request->hasSession()) {
+            try {
+                if (Auth::guard('web')->check()) {
+                    return Auth::guard('web')->user();
                 }
 
-                // 2) Try legacy/cache-based token stored by registerPublic/loginPublic
-                try {
-                    $cachedUserId = \Illuminate\Support\Facades\Cache::get('user_token_' . $bearer);
-                    if ($cachedUserId) {
-                        return User::find($cachedUserId);
-                    }
-                } catch (\Throwable $_) {}
+                $sessionUserId = $request->session()->get('user_id');
+                if ($sessionUserId) {
+                    return User::find($sessionUserId);
+                }
+            } catch (\Throwable $e) {
+                // Stateless API requests may not have a session store.
             }
-        } catch (\Throwable $e) {}
-
-        $sessionUserId = $request->session()->get('user_id');
-        if ($sessionUserId) {
-            return User::find($sessionUserId);
         }
 
         return null;

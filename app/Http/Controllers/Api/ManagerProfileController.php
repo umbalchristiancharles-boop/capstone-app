@@ -274,7 +274,9 @@ class ManagerProfileController extends Controller
         }
 
         $branchName = strtoupper(trim((string) ($branch->name ?? '')));
-        return (int) $branch->id === 1 || str_contains($branchName, 'MAIN BRANCH');
+        return (bool) $branch->is_main_branch
+            || in_array((int) $branch->id, [1, 32], true)
+            || str_contains($branchName, 'MAIN');
     }
 
     /**

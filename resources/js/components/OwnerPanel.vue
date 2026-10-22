@@ -805,60 +805,61 @@ async function loadOwnerBranches() {
       ownerPermissions.value[scopeKey].branchIds =
         ownerPermissions.value[scopeKey].branchIds.filter(id => availableBranchIds.has(Number(id)))
     }
-
-    async function loadDefaultPriceMarkup() {
-      try {
-        const response = await axios.get('/api/price-markup/default', { withCredentials: true })
-        if (!response.data?.ok) {
-          throw new Error(response.data?.message || 'Unable to load the default price markup.')
-        }
-        defaultPriceMarkup.value = Number(response.data.default_percentage)
-      } catch (error) {
-        console.warn('OwnerPanel: failed to load default price markup', error)
-        defaultMarkupMessage.value = error.response?.data?.message || error.message || 'Unable to load the default markup.'
-        defaultMarkupMessageType.value = 'error'
-      }
-    }
-
-    async function applyDefaultMarkupToAllBranches() {
-      const confirmation = await Swal.fire({
-        title: 'Apply markup to all active branches?',
-        text: `This will replace the current markup with ${defaultPriceMarkup.value}% for every active branch except Main Branch.`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Apply to all branches',
-        cancelButtonText: 'Cancel',
-        confirmButtonColor: '#f97316',
-      })
-      if (!confirmation.isConfirmed) return
-
-      defaultMarkupSubmitting.value = true
-      defaultMarkupMessage.value = ''
-      try {
-        const response = await axios.put('/api/price-markup/default', {
-          percentage: defaultPriceMarkup.value,
-        }, { withCredentials: true })
-        if (!response.data?.ok) {
-          throw new Error(response.data?.message || 'Unable to apply the default markup.')
-        }
-        defaultPriceMarkup.value = Number(response.data.default_percentage)
-        defaultMarkupMessage.value = `${defaultPriceMarkup.value}% applied to ${response.data.branches_updated} active branches.`
-        defaultMarkupMessageType.value = 'success'
-        showToast(defaultMarkupMessage.value, 'success')
-      } catch (error) {
-        console.error('OwnerPanel: failed to apply default price markup', error)
-        defaultMarkupMessage.value = error.response?.data?.message || error.message || 'Unable to apply the default markup.'
-        defaultMarkupMessageType.value = 'error'
-      } finally {
-        defaultMarkupSubmitting.value = false
-      }
-    }
     saveOwnerPermissions()
   } catch (error) {
     console.warn('OwnerPanel: failed to load branches', error)
     ownerBranches.value = []
   }
 }
+
+async function loadDefaultPriceMarkup() {
+  try {
+    const response = await axios.get('/api/price-markup/default', { withCredentials: true })
+    if (!response.data?.ok) {
+      throw new Error(response.data?.message || 'Unable to load the default price markup.')
+    }
+    defaultPriceMarkup.value = Number(response.data.default_percentage)
+  } catch (error) {
+    console.warn('OwnerPanel: failed to load default price markup', error)
+    defaultMarkupMessage.value = error.response?.data?.message || error.message || 'Unable to load the default markup.'
+    defaultMarkupMessageType.value = 'error'
+  }
+}
+
+async function applyDefaultMarkupToAllBranches() {
+  const confirmation = await Swal.fire({
+    title: 'Apply markup to all active branches?',
+    text: `This will replace the current markup with ${defaultPriceMarkup.value}% for every active branch except Main Branch.`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Apply to all branches',
+    cancelButtonText: 'Cancel',
+    confirmButtonColor: '#f97316',
+  })
+  if (!confirmation.isConfirmed) return
+
+  defaultMarkupSubmitting.value = true
+  defaultMarkupMessage.value = ''
+  try {
+    const response = await axios.put('/api/price-markup/default', {
+      percentage: defaultPriceMarkup.value,
+    }, { withCredentials: true })
+    if (!response.data?.ok) {
+      throw new Error(response.data?.message || 'Unable to apply the default markup.')
+    }
+    defaultPriceMarkup.value = Number(response.data.default_percentage)
+    defaultMarkupMessage.value = `${defaultPriceMarkup.value}% applied to ${response.data.branches_updated} active branches.`
+    defaultMarkupMessageType.value = 'success'
+    showToast(defaultMarkupMessage.value, 'success')
+  } catch (error) {
+    console.error('OwnerPanel: failed to apply default price markup', error)
+    defaultMarkupMessage.value = error.response?.data?.message || error.message || 'Unable to apply the default markup.'
+    defaultMarkupMessageType.value = 'error'
+  } finally {
+    defaultMarkupSubmitting.value = false
+  }
+}
+
 const sectionComponents = {
   dishApproval: OwnerDishApprovalPanel,
   staffManagement: OwnerStaffManagement,

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class PriceMarkupPercentage extends Model
 {
@@ -49,6 +50,10 @@ class PriceMarkupPercentage extends Model
 
     public static function defaultPercentage(): float
     {
+        if (! Schema::hasTable('price_markup_settings')) {
+            return 20.00;
+        }
+
         return (float) (DB::table('price_markup_settings')->where('id', 1)->value('default_percentage') ?? 20.00);
     }
 }

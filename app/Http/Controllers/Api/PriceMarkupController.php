@@ -9,6 +9,7 @@ use App\Models\Branch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class PriceMarkupController extends Controller
 {
@@ -18,11 +19,9 @@ class PriceMarkupController extends Controller
             return response()->json(['ok' => false, 'message' => 'Only the owner can view the default price markup'], 403);
         }
 
-        $setting = DB::table('price_markup_settings')->where('id', 1)->first();
-
         return response()->json([
             'ok' => true,
-            'default_percentage' => (float) ($setting->default_percentage ?? PriceMarkupPercentage::defaultPercentage()),
+            'default_percentage' => PriceMarkupPercentage::defaultPercentage(),
         ]);
     }
 
@@ -30,6 +29,15 @@ class PriceMarkupController extends Controller
     {
         if (strtoupper($request->user()->role ?? '') !== 'OWNER') {
             return response()->json(['ok' => false, 'message' => 'Only the owner can set the default price markup'], 403);
+        }
+
+        if (! Schema::hasTable('price_markup_settings')) {
+            Log::error('Cannot update default price markup because the settings table is missing');
+
+            return response()->json([
+                'ok' => false,
+                'message' => 'Price markup settings are unavailable. Please run the pending database migrations.',
+            ], 503);
         }
 
         $validated = $request->validate([
