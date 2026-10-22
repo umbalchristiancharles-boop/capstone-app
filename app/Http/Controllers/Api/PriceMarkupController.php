@@ -15,8 +15,8 @@ class PriceMarkupController extends Controller
 {
     public function getDefaultPercentage(Request $request)
     {
-        if (strtoupper($request->user()->role ?? '') !== 'OWNER') {
-            return response()->json(['ok' => false, 'message' => 'Only the owner can view the default price markup'], 403);
+        if (! in_array(strtoupper($request->user()->role ?? ''), ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN'], true)) {
+            return response()->json(['ok' => false, 'message' => 'Only the owner or superadmin can view the default price markup'], 403);
         }
 
         return response()->json([
@@ -27,8 +27,8 @@ class PriceMarkupController extends Controller
 
     public function setDefaultPercentage(Request $request)
     {
-        if (strtoupper($request->user()->role ?? '') !== 'OWNER') {
-            return response()->json(['ok' => false, 'message' => 'Only the owner can set the default price markup'], 403);
+        if (! in_array(strtoupper($request->user()->role ?? ''), ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN'], true)) {
+            return response()->json(['ok' => false, 'message' => 'Only the owner or superadmin can set the default price markup'], 403);
         }
 
         if (! Schema::hasTable('price_markup_settings')) {

@@ -141,4 +141,27 @@ class OwnerDefaultPriceMarkupTest extends TestCase
             ->putJson('/api/price-markup/default', ['percentage' => 30])
             ->assertForbidden();
     }
+
+    public function test_superadmin_can_view_and_update_the_default_markup(): void
+    {
+        $this->withoutMiddleware(\App\Http\Middleware\SuperAdminSandboxMiddleware::class);
+
+        $superadmin = User::create([
+            'username' => 'markup-superadmin',
+            'password' => 'password',
+            'role' => 'SUPER_ADMIN',
+        ]);
+        Branch::create(['code' => 'A', 'name' => 'Branch A', 'is_active' => true]);
+
+        $this->actingAs($superadmin)
+            ->getJson('/api/price-markup/default')
+            ->assertOk()
+            ->assertJsonPath('default_percentage', 20);
+
+        $this->actingAs($superadmin)
+            ->putJson('/api/price-markup/default', ['percentage' => 25])
+            ->assertOk()
+            ->assertJsonPath('default_percentage', 25)
+            ->assertJsonPath('branches_updated', 1);
+    }
 }
