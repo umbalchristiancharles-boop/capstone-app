@@ -46,6 +46,79 @@ class CashierController extends Controller
         return app(DishIngredientInventory::class)->calculate($dish, (int) $branchId);
     }
 
+    private function cashierProductStockRows(Product $product)
+    {
+        $query = Product::query()
+            ->where('branch_id', $product->branch_id)
+            ->where('is_active', 1);
+
+        if ($product->supplier_id === null) {
+            $query->whereNull('supplier_id');
+        } else {
+            $query->where('supplier_id', $product->supplier_id);
+        }
+
+        if (!empty($product->sku)) {
+            $query->where('sku', $product->sku);
+        } else {
+            $query->whereRaw('TRIM(UPPER(name)) = ?', [trim(strtoupper((string) $product->name))]);
+        }
+
+        return $query->orderBy('id')->lockForUpdate()->get();
+    }
+
+    private function consumeCashierProductStock(Product $product, float $sellingPieces): void
+    {
+        $perPackMode = in_array($product->per_pack_or_individual, ['per_pack', 'both']);
+        $packQty = (float) ($product->pack_quantity ?? 0);
+        $remainingPieces = $sellingPieces;
+        $stockRows = $this->cashierProductStockRows($product);
+
+        foreach ($stockRows as $stockRow) {
+            if ($remainingPieces <= 0) {
+                break;
+            }
+
+            if ($perPackMode && $packQty > 0) {
+                $openPackUsed = (float) ($stockRow->open_pack_used ?? 0);
+                $availablePieces = ((float) $stockRow->stock * $packQty) - $openPackUsed;
+                $piecesToConsume = min($remainingPieces, max(0, $availablePieces));
+                if ($piecesToConsume <= 0) {
+                    continue;
+                }
+
+                $totalOpenPieces = $openPackUsed + $piecesToConsume;
+                $packsToConsume = min(
+                    (int) $stockRow->stock,
+                    (int) floor($totalOpenPieces / $packQty)
+                );
+                $stockRow->stock = max(0, (int) $stockRow->stock - $packsToConsume);
+                $stockRow->open_pack_used = $totalOpenPieces - ($packsToConsume * $packQty);
+                $stockRow->save();
+            } else {
+                $piecesToConsume = min($remainingPieces, (float) $stockRow->stock);
+                if ($piecesToConsume <= 0) {
+                    continue;
+                }
+
+                $stockRow->stock = max(0, (int) $stockRow->stock - (int) $piecesToConsume);
+                $stockRow->save();
+            }
+
+            $remainingPieces -= $piecesToConsume;
+        }
+
+        if ($remainingPieces > 0) {
+            abort(422, "Insufficient stock for {$product->name}.");
+        }
+
+        Product::recomputeRealStockForGroup(
+            (int) $product->branch_id,
+            $product->sku,
+            $product->name
+        );
+    }
+
     /**
      * List active branches.
      */
@@ -266,17 +339,23 @@ class CashierController extends Controller
                 $packQty = (float) ($product->pack_quantity ?? 0);
                 $sellingPieces = (float) $item['quantity'];
 
-                if ($perPackMode && $packQty > 0) {
-                    $availablePieces = ((float) $product->stock * $packQty) - (float) ($product->open_pack_used ?? 0);
-                    if ($availablePieces < $sellingPieces) {
-                        abort(422, "Insufficient stock for {$product->name}. Available: {$availablePieces} pieces");
+                if (!$product->is_kitchen_dish) {
+                    $stockRows = $this->cashierProductStockRows($product);
+                    if ($perPackMode && $packQty > 0) {
+                        $availablePieces = $stockRows->sum(fn (Product $stockRow) =>
+                            max(0, ((float) $stockRow->stock * $packQty) - (float) ($stockRow->open_pack_used ?? 0))
+                        );
+                        if ($availablePieces < $sellingPieces) {
+                            abort(422, "Insufficient stock for {$product->name}. Available: " . max(0, $availablePieces) . " pieces");
+                        }
+                        $unitPrice = (float) $product->price / $packQty;
+                    } else {
+                        $availablePieces = (float) $stockRows->sum('stock');
+                        if ($availablePieces < $sellingPieces) {
+                            abort(422, "Insufficient stock for {$product->name}. Available: {$availablePieces}");
+                        }
+                        $unitPrice = (float) $product->price;
                     }
-                    $unitPrice = (float) $product->price / $packQty;
-                } else {
-                    if ($product->stock < $sellingPieces) {
-                        abort(422, "Insufficient stock for {$product->name}. Available: {$product->stock}");
-                    }
-                    $unitPrice = (float) $product->price;
                 }
 
                 // If this is a kitchen dish, compute availability and cost using shared helper
@@ -471,35 +550,7 @@ class CashierController extends Controller
                         }
                     }
                 } else {
-                    // Regular product sold directly: apply pack-aware consumption
-                    $perPackMode = in_array($prod->per_pack_or_individual, ['per_pack', 'both']);
-                    $packQty = (float) ($prod->pack_quantity ?? 0);
-
-                    if ($perPackMode && $packQty > 0) {
-                        $openUsed = (float) ($prod->open_pack_used ?? 0);
-                        $requiredPieces = (float) $it->quantity;
-                        $totalPiecesAvailable = ($prod->stock * $packQty) - $openUsed;
-
-                        if ($totalPiecesAvailable >= $requiredPieces) {
-                            $totalAfter = $openUsed + $requiredPieces;
-                            $packsToConsume = (int) floor($totalAfter / $packQty);
-                            $remainingOpenUsed = $totalAfter - ($packsToConsume * $packQty);
-
-                            if ($packsToConsume > 0) {
-                                $prod->decrement('stock', $packsToConsume);
-                            }
-
-                            $prod->open_pack_used = $remainingOpenUsed;
-                            $prod->save();
-                        } else {
-                            // insufficient pieces across packs
-                            $prod->update(['logistics_request_available' => true]);
-                        }
-                    } else {
-                        $newStock = max(0, $prod->stock - $it->quantity);
-                        $prod->stock = $newStock;
-                        $prod->save();
-                    }
+                    $this->consumeCashierProductStock($prod, (float) $it->quantity);
                 }
             }
 

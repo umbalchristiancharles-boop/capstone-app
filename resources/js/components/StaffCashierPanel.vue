@@ -511,7 +511,7 @@ import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import Swal from 'sweetalert2'
-import { BrowserMultiFormatReader } from '@zxing/browser'
+import { BrowserMultiFormatOneDReader } from '@zxing/browser'
 import { BarcodeFormat, DecodeHintType } from '@zxing/library'
 import PanelSidebarBrand from './PanelSidebarBrand.vue'
 import OwnerMessageMenu from './OwnerMessageMenu.vue'
@@ -767,6 +767,7 @@ let scannerControls = null
 let scannerStream = null
 let lastScannedBarcode = ''
 let lastScannedAt = 0
+let scannerBarcodeResetTimer = null
 let scannerAudioContext = null
 let scannerBeepBuffer = null
 let scannerBeepBufferPromise = null
@@ -1050,16 +1051,49 @@ function cashierStock(product) {
   return Number(product?.is_kitchen_dish ? product.stock : (product?.real_stock ?? product?.stock)) || 0
 }
 
+function cashierAvailableQuantity(product) {
+  const stock = cashierStock(product)
+  if (product?.is_kitchen_dish) return stock
+
+  const packQuantity = Number(product?.pack_quantity) || 0
+  const isPackPriced = ['per_pack', 'both'].includes(product?.per_pack_or_individual)
+  return isPackPriced && packQuantity > 0 ? stock * packQuantity : stock
+}
+
+function findInStockBarcodeProduct(barcode) {
+  const normalizedBarcode = String(barcode || '').trim().toLowerCase()
+  if (!normalizedBarcode) return null
+
+  return products.value
+    .filter(product => (product.barcode || '').trim().toLowerCase() === normalizedBarcode)
+    .filter(product => cashierAvailableQuantity(product) > 0)
+    .sort((a, b) => cashierAvailableQuantity(b) - cashierAvailableQuantity(a))[0] || null
+}
+
 function findProductByLookup() {
   const q = (productSearch.value || '').trim()
   if (!q) return
+
+  const exactBarcodeMatches = products.value.filter(
+    product => (product.barcode || '').trim().toLowerCase() === q.toLowerCase()
+  )
+  if (exactBarcodeMatches.length > 0) {
+    const barcodeProduct = findInStockBarcodeProduct(q)
+    if (barcodeProduct) {
+      addToCart(barcodeProduct)
+      productSearch.value = ''
+    } else {
+      showToast(`No stock available for barcode ${q}.`, 'warning')
+    }
+    return
+  }
 
   const matches = products.value.filter(p => {
     const name = (p.name || '').toLowerCase()
     const sku = (p.sku || '').toLowerCase()
     const barcode = (p.barcode || '').toLowerCase()
     const lookup = q.toLowerCase()
-    return name === lookup || sku === lookup || barcode === lookup || name.includes(lookup) || sku.includes(lookup) || barcode.includes(lookup)
+    return name === lookup || sku === lookup || name.includes(lookup) || sku.includes(lookup) || barcode.includes(lookup)
   })
 
   if (matches.length === 1) {
@@ -1105,13 +1139,11 @@ async function openBarcodeScanner() {
       BarcodeFormat.ITF,
       BarcodeFormat.UPC_A,
       BarcodeFormat.UPC_E,
-      BarcodeFormat.QR_CODE,
     ]
     const hints = new Map([
       [DecodeHintType.POSSIBLE_FORMATS, formats],
-      [DecodeHintType.TRY_HARDER, true],
     ])
-    const reader = new BrowserMultiFormatReader(hints)
+    const reader = new BrowserMultiFormatOneDReader(hints)
     if (!navigator.mediaDevices?.getUserMedia) {
       throw new Error('Camera access is not supported by this browser.')
     }
@@ -1127,23 +1159,35 @@ async function openBarcodeScanner() {
     scannerVideo.value.srcObject = scannerStream
     await scannerVideo.value.play()
 
-    scannerControls = await reader.decodeFromStream(scannerStream, scannerVideo.value, (result, error) => {
+    scannerControls = await reader.decodeFromStream(scannerStream, scannerVideo.value, (result) => {
+        if (!scannerOpen.value) return
+
         if (result?.getText()) {
+          if (scannerBarcodeResetTimer) {
+            clearTimeout(scannerBarcodeResetTimer)
+            scannerBarcodeResetTimer = null
+          }
+
           const scanned = result.getText().trim()
           const now = Date.now()
-          if (scanned === lastScannedBarcode && now - lastScannedAt < 600) return
+          if (scanned === lastScannedBarcode && now - lastScannedAt < 1200) return
           lastScannedBarcode = scanned
           lastScannedAt = now
           productSearch.value = scanned
-          const matched = products.value.find(p => {
-            const barcode = (p.barcode || '').trim().toLowerCase()
-            return barcode && barcode === scanned.toLowerCase()
-          })
+          const matched = findInStockBarcodeProduct(scanned)
           if (matched) {
             playScannerBeep()
             addToCart(matched)
             productSearch.value = ''
+          } else {
+            showToast(`No stock available for barcode ${scanned}.`, 'warning')
           }
+        } else if (lastScannedBarcode && !scannerBarcodeResetTimer) {
+          scannerBarcodeResetTimer = window.setTimeout(() => {
+            lastScannedBarcode = ''
+            lastScannedAt = 0
+            scannerBarcodeResetTimer = null
+          }, 350)
         }
       })
   } catch (error) {
@@ -1158,6 +1202,12 @@ async function openBarcodeScanner() {
 function closeBarcodeScanner() {
   scannerOpen.value = false
   try { sessionStorage.removeItem(scannerStorageKey) } catch (e) {}
+  if (scannerBarcodeResetTimer) {
+    clearTimeout(scannerBarcodeResetTimer)
+    scannerBarcodeResetTimer = null
+  }
+  lastScannedBarcode = ''
+  lastScannedAt = 0
   if (scannerControls) {
     scannerControls.stop()
     scannerControls = null
@@ -1686,6 +1736,8 @@ async function addToCart(product) {
     if (existing.quantity < existing.max_sale_quantity) {
       existing.quantity++
       existing.subtotal = existing.quantity * existing.unit_price
+    } else {
+      showToast(`No more stock available for ${chosen.name}.`, 'warning')
     }
   } else {
     cart.value.push({
