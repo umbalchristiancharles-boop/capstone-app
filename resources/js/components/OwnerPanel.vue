@@ -36,6 +36,9 @@
         <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'staffManagement' }" @click="selectSection('staffManagement')">
           <span class="owner-sidebar-link__icon" aria-hidden="true">♙</span><span class="owner-sidebar-link__label">Staff Management</span>
         </button>
+        <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'customAccounts' }" @click="selectSection('customAccounts')">
+          <span class="owner-sidebar-link__icon" aria-hidden="true">♧</span><span class="owner-sidebar-link__label">Custom Accounts</span>
+        </button>
         <button type="button" class="owner-sidebar-link" :class="{ 'owner-sidebar-link--active': selectedSection === 'permissions' }" @click="selectSection('permissions')">
           <span class="owner-sidebar-link__icon" aria-hidden="true">⚙</span><span class="owner-sidebar-link__label">Permissions</span>
         </button>
@@ -560,6 +563,7 @@ import OwnerStaffManagement from './OwnerStaffManagement.vue'
 import OwnerBranchConfirmations from './OwnerBranchConfirmations.vue'
 import OwnerBranchAnalytics from './OwnerBranchAnalytics.vue'
 import OwnerPriceMarkupPanel from './OwnerPriceMarkupPanel.vue'
+import CustomAccounts from './CustomAccounts.vue'
 import axios from 'axios'
 import { showToast } from './toastStore'
 import Swal from 'sweetalert2'
@@ -629,6 +633,18 @@ const ownerTutorialSteps = [
       'Search with Search staff..., then narrow the list by branch, role, or department. Filters can be combined.',
       'Select Refresh to reload the staff and branch lists. The page shows the filtered total and groups staff into branch tables.',
       'Each row displays name, role, department, username, email, phone, status, and join date. This view is for searching and reviewing records; it does not expose row actions.',
+    ],
+  },
+  {
+    icon: '♧',
+    title: 'Custom Accounts',
+    section: 'customAccounts',
+    sectionLabel: 'Custom Accounts',
+    description: 'Choose which sidebar modules appear for eligible staff and manager accounts.',
+    items: [
+      'Owners can manage eligible accounts across branches, except accounts assigned to the main branch. Super-admin accounts cannot be changed.',
+      'Choose an account, enable Custom sidebar account, select its permitted features, then choose Save permissions.',
+      'Turn off the custom sidebar to restore the account to a regular staff or manager role and department.',
     ],
   },
   {
@@ -863,6 +879,7 @@ async function applyDefaultMarkupToAllBranches() {
 const sectionComponents = {
   dishApproval: OwnerDishApprovalPanel,
   staffManagement: OwnerStaffManagement,
+  customAccounts: CustomAccounts,
   branchConfirmations: OwnerBranchConfirmations,
   branchAnalytics: OwnerBranchAnalytics,
   priceMarkups: OwnerPriceMarkupPanel,

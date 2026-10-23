@@ -94,17 +94,17 @@
               <div v-if="branch.cost_attachments?.permit_bills?.length || branch.cost_attachments?.construction_costs?.length || branch.cost_attachments?.equipment_costs?.length || branch.permit_bills?.length || branch.construction_costs?.length || branch.equipment_costs?.length" class="cost-details">
                 <div v-if="branch.cost_attachments?.permit_bills?.length || branch.permit_bills?.length">
                   <strong>Permit bills</strong>
-                  <a v-for="(file, index) in branch.cost_attachments?.permit_bills || []" :key="`permit-file-${index}`" :href="file.url" target="_blank" rel="noopener noreferrer">{{ file.name }}<template v-if="file.amount != null"> — {{ formatCurrency(file.amount) }}</template></a>
+                  <button v-for="(file, index) in branch.cost_attachments?.permit_bills || []" :key="`permit-file-${index}`" class="attachment-link" type="button" @click="viewCostAttachment(file, 'Permit bill')">{{ file.name }}<template v-if="file.amount != null"> — {{ formatCurrency(file.amount) }}</template></button>
                   <span v-for="(item, index) in branch.permit_bills || []" :key="`permit-${index}`">{{ item.type || 'Permit' }}: {{ formatCurrency(item.amount || 0) }}</span>
                 </div>
                 <div v-if="branch.cost_attachments?.construction_costs?.length || branch.construction_costs?.length">
                   <strong>Construction costs</strong>
-                  <a v-for="(file, index) in branch.cost_attachments?.construction_costs || []" :key="`construction-file-${index}`" :href="file.url" target="_blank" rel="noopener noreferrer">{{ file.name }}<template v-if="file.amount != null"> — {{ formatCurrency(file.amount) }}</template></a>
+                  <button v-for="(file, index) in branch.cost_attachments?.construction_costs || []" :key="`construction-file-${index}`" class="attachment-link" type="button" @click="viewCostAttachment(file, 'Construction cost')">{{ file.name }}<template v-if="file.amount != null"> — {{ formatCurrency(file.amount) }}</template></button>
                   <span v-for="(item, index) in branch.construction_costs || []" :key="`construction-${index}`">{{ item.category || 'Construction' }}: {{ formatCurrency(item.amount || 0) }}</span>
                 </div>
                 <div v-if="branch.cost_attachments?.equipment_costs?.length || branch.equipment_costs?.length">
                   <strong>Equipment costs</strong>
-                  <a v-for="(file, index) in branch.cost_attachments?.equipment_costs || []" :key="`equipment-file-${index}`" :href="file.url" target="_blank" rel="noopener noreferrer">{{ file.name }}<template v-if="file.amount != null"> — {{ formatCurrency(file.amount) }}</template></a>
+                  <button v-for="(file, index) in branch.cost_attachments?.equipment_costs || []" :key="`equipment-file-${index}`" class="attachment-link" type="button" @click="viewCostAttachment(file, 'Equipment cost')">{{ file.name }}<template v-if="file.amount != null"> — {{ formatCurrency(file.amount) }}</template></button>
                   <span v-for="(item, index) in branch.equipment_costs || []" :key="`equipment-${index}`">{{ item.name || 'Equipment' }} ({{ item.quantity || 0 }}): {{ formatCurrency((item.quantity || 0) * (item.unit_cost || 0)) }}</span>
                 </div>
               </div>
@@ -128,6 +128,41 @@
             </div>
           </article>
         </div>
+
+        <div v-if="previewAttachment" class="preview-overlay" role="presentation" @click.self="closeCostAttachmentPreview">
+          <section class="preview-dialog" role="dialog" aria-modal="true" :aria-label="`${previewCategory} preview: ${previewAttachment.name}`" @keydown.esc.prevent="closeCostAttachmentPreview">
+            <header class="preview-header">
+              <div>
+                <h3>{{ previewCategory }}</h3>
+                <p>{{ previewAttachment.name }}</p>
+              </div>
+              <button class="preview-close" type="button" aria-label="Close preview" @click="closeCostAttachmentPreview">&times;</button>
+            </header>
+            <div class="preview-content">
+              <p v-if="previewLoading" class="preview-message">Loading attachment...</p>
+              <p v-else-if="previewError" class="preview-message preview-error">{{ previewError }}</p>
+              <iframe
+                v-else-if="previewKind === 'pdf'"
+                class="preview-frame"
+                :src="previewUrl"
+                :title="`Preview of ${previewAttachment.name}`"
+              />
+              <img
+                v-else-if="previewKind === 'image'"
+                class="preview-image"
+                :src="previewUrl"
+                :alt="`Preview of ${previewAttachment.name}`"
+              />
+              <p v-else class="preview-message">
+                This file type cannot be previewed in the browser. Download it to view the attachment.
+              </p>
+            </div>
+            <footer class="preview-footer">
+              <a v-if="previewUrl" class="preview-download" :href="previewUrl" :download="previewAttachment.name">Download file</a>
+              <button class="preview-done" type="button" @click="closeCostAttachmentPreview">Close</button>
+            </footer>
+          </section>
+        </div>
       </section>
       </div>
     </template>
@@ -135,7 +170,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import OwnerPanelLayout from './OwnerPanelLayout.vue'
@@ -154,6 +189,19 @@ const error = ref('')
 const approvingId = ref(null)
 const rejectingId = ref(null)
 const hasNotified = ref(false)
+const previewAttachment = ref(null)
+const previewCategory = ref('')
+const previewUrl = ref('')
+const previewLoading = ref(false)
+const previewError = ref('')
+const previewRequestId = ref(0)
+const previewKind = computed(() => {
+  const mimeType = previewAttachment.value?.mime || ''
+  const fileName = previewAttachment.value?.name || ''
+  if (mimeType === 'application/pdf' || /\.pdf$/i.test(fileName)) return 'pdf'
+  if (mimeType.startsWith('image/') || /\.(jpe?g|png|webp)$/i.test(fileName)) return 'image'
+  return 'other'
+})
 const rejectionReasonOptions = [
   'Incomplete or inaccurate branch information',
   'Insufficient budget or financial justification',
@@ -193,6 +241,52 @@ function hasCoordinates(branch) {
 
 function mapUrl(branch) {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${branch.latitude},${branch.longitude}`)}`
+}
+
+function releasePreviewUrl() {
+  if (!previewUrl.value) return
+  URL.revokeObjectURL(previewUrl.value)
+  previewUrl.value = ''
+}
+
+async function viewCostAttachment(file, category) {
+  previewRequestId.value += 1
+  const requestId = previewRequestId.value
+  releasePreviewUrl()
+  previewAttachment.value = file
+  previewCategory.value = category
+  previewLoading.value = true
+  previewError.value = ''
+
+  try {
+    const response = await axios.get(file.url, { responseType: 'blob', withCredentials: true })
+    if (requestId !== previewRequestId.value) return
+    const blob = response.data
+    if (!(blob instanceof Blob)) {
+      throw new Error('The server returned an invalid attachment.')
+    }
+    if (!previewAttachment.value.mime && blob.type) {
+      previewAttachment.value = { ...file, mime: blob.type }
+    }
+    previewUrl.value = URL.createObjectURL(blob)
+  } catch (e) {
+    if (requestId === previewRequestId.value) {
+      previewError.value = e.response?.status === 404
+        ? 'This attachment could not be found.'
+        : 'Unable to load this attachment. Please try again.'
+    }
+  } finally {
+    if (requestId === previewRequestId.value) previewLoading.value = false
+  }
+}
+
+function closeCostAttachmentPreview() {
+  previewRequestId.value += 1
+  releasePreviewUrl()
+  previewAttachment.value = null
+  previewCategory.value = ''
+  previewLoading.value = false
+  previewError.value = ''
 }
 
 async function loadProfile() {
@@ -357,6 +451,7 @@ const confirmLogout = async () => {
 onMounted(async () => {
   await Promise.all([loadProfile(), loadPending()])
 })
+onBeforeUnmount(releasePreviewUrl)
 </script>
 
 <style scoped>
@@ -625,6 +720,140 @@ onMounted(async () => {
 .cost-details span {
   color: #4b5563;
   font-size: 0.85rem;
+}
+
+.attachment-link {
+  width: fit-content;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #174ea6;
+  font: inherit;
+  text-align: left;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.preview-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.72);
+}
+
+.preview-dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 1000px);
+  height: min(90vh, 850px);
+  overflow: hidden;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.preview-header,
+.preview-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+}
+
+.preview-header {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.preview-header h3,
+.preview-header p {
+  margin: 0;
+}
+
+.preview-header h3 {
+  color: #1f2937;
+  font-size: 1rem;
+}
+
+.preview-header p {
+  margin-top: 3px;
+  color: #6b7280;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.preview-close {
+  border: 0;
+  background: transparent;
+  color: #4b5563;
+  font-size: 1.8rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.preview-content {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  background: #f3f4f6;
+}
+
+.preview-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fff;
+}
+
+.preview-image {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.preview-message {
+  padding: 24px;
+  color: #4b5563;
+  text-align: center;
+}
+
+.preview-error {
+  color: #991b1b;
+}
+
+.preview-footer {
+  justify-content: flex-end;
+  border-top: 1px solid #e5e7eb;
+}
+
+.preview-download,
+.preview-done {
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.preview-download {
+  background: #f3f4f6;
+  color: #374151;
+  text-decoration: none;
+}
+
+.preview-done {
+  background: #f97316;
+  color: #fff;
 }
 
 .dot {

@@ -372,6 +372,43 @@ class BranchOpenPositionBroadcastTest extends TestCase
             ->assertOk();
     }
 
+    public function test_branch_cost_attachment_can_be_viewed_inline_when_preview_is_requested(): void
+    {
+        Storage::fake('local');
+
+        $owner = User::create([
+            'username' => 'preview_owner',
+            'email' => 'preview-owner@example.com',
+            'password' => 'Password123!',
+            'full_name' => 'Preview Owner',
+            'role' => 'OWNER',
+            'is_active' => true,
+            'must_change_password' => false,
+        ]);
+
+        $image = UploadedFile::fake()->image('business-permit.jpg');
+        $path = $image->store('branch-cost-attachments', 'local');
+        $branch = Branch::create([
+            'code' => 'PV01',
+            'name' => 'Preview Branch',
+            'approval_status' => 'pending_finance',
+            'cost_attachments' => [
+                'permit_bills' => [[
+                    'name' => 'business-permit.jpg',
+                    'path' => $path,
+                    'mime' => 'image/jpeg',
+                ]],
+            ],
+        ]);
+
+        $this->actingAs($owner)
+            ->get("/api/superadmin/branches/{$branch->id}/cost-attachments/permit_bills/0?preview=1")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'image/jpeg')
+            ->assertHeader('Content-Disposition', 'inline')
+            ->assertHeader('X-Content-Type-Options', 'nosniff');
+    }
+
     public function test_pending_finance_branch_requests_include_initial_budget(): void
     {
         $financeUser = User::create([
@@ -569,12 +606,20 @@ class BranchOpenPositionBroadcastTest extends TestCase
             'description' => 'Custom account with assigned module access',
             'is_active' => true,
         ]);
+        $adminPosition = \App\Models\Position::create([
+            'name' => 'Admin',
+            'department' => 'ADMIN',
+            'is_active' => true,
+        ]);
 
         $this->actingAs($hr)
             ->getJson('/api/hr/positions/branches/awaiting-open-positions')
             ->assertOk()
             ->assertJsonCount(1, 'branches')
-            ->assertJsonPath('branches.0.id', $branch->id);
+            ->assertJsonPath('branches.0.id', $branch->id)
+            ->assertJsonPath('branches.0.covered_module_count', 0)
+            ->assertJsonPath('branches.0.total_module_count', 20)
+            ->assertJsonPath('branches.0.remaining_module_count', 20);
 
         $this->postJson("/api/hr/positions/branches/{$branch->id}/open-positions", [
             'positions' => [
@@ -588,12 +633,10 @@ class BranchOpenPositionBroadcastTest extends TestCase
                     'position_id' => $position->id,
                     'quantity' => 1,
                     'account_type' => 'custom',
-                    'account_config' => ['modules' => ['financial-overview', 'recent-transactions']],
+                    'account_config' => ['modules' => ['staff-activity']],
                 ],
             ],
-        ])
-            ->assertCreated()
-            ->assertJsonPath('ok', true);
+        ])->assertCreated();
 
         $openRequests = PositionOpenRequest::where('branch_id', $branch->id)->orderBy('id')->get();
         $this->assertCount(2, $openRequests);
@@ -602,11 +645,74 @@ class BranchOpenPositionBroadcastTest extends TestCase
         $this->assertSame($hr->id, $openRequests[0]->approved_by_user_id);
         $this->assertSame('custom', $openRequests[0]->account_type);
         $this->assertSame(['staff-management'], $openRequests[0]->account_config['modules']);
-        $this->assertSame(['financial-overview', 'recent-transactions'], $openRequests[1]->account_config['modules']);
+        $this->assertSame(['staff-activity'], $openRequests[1]->account_config['modules']);
+
+        $this->getJson('/api/hr/positions/branches/awaiting-open-positions')
+            ->assertOk()
+            ->assertJsonCount(1, 'branches')
+            ->assertJsonPath('branches.0.id', $branch->id)
+            ->assertJsonPath('branches.0.covered_module_count', 2)
+            ->assertJsonPath('branches.0.covered_modules.0.key', 'staff-management')
+            ->assertJsonPath('branches.0.covered_modules.0.panel', 'Staff Management')
+            ->assertJsonPath('branches.0.remaining_module_count', 18)
+            ->assertJsonPath('branches.0.remaining_modules.0.key', 'budget-request-approvals')
+            ->assertJsonPath('branches.0.remaining_modules.0.panel', 'Finance');
+
+        $this->postJson("/api/hr/positions/branches/{$branch->id}/open-positions", [
+            'positions' => [[
+                'position_id' => $adminPosition->id,
+                'quantity' => 1,
+                'account_type' => 'standard',
+            ]],
+        ])->assertCreated();
+
+        $this->getJson('/api/hr/positions/branches/awaiting-open-positions')
+            ->assertOk()
+            ->assertJsonCount(1, 'branches')
+            ->assertJsonPath('branches.0.id', $branch->id)
+            ->assertJsonPath('branches.0.covered_module_count', 6)
+            ->assertJsonPath('branches.0.remaining_module_count', 14);
+
+        $remainingModules = [
+            'budget-request-approvals',
+            'current-price-markup',
+            'receipt-approval',
+            'financial-overview',
+            'recent-transactions',
+            'manual-procurement',
+            'procurement-requests',
+            'add-supplier',
+            'supplier-products',
+            'stock-confirmation-history',
+            'product-barcodes',
+            'pending-stock',
+            'inventory-monitor',
+            'product-disposal',
+        ];
+
+        $this->postJson("/api/hr/positions/branches/{$branch->id}/open-positions", [
+            'positions' => [[
+                'position_id' => $position->id,
+                'quantity' => 1,
+                'account_type' => 'custom',
+                'account_config' => ['modules' => $remainingModules],
+            ]],
+        ])->assertCreated();
 
         $this->getJson('/api/hr/positions/branches/awaiting-open-positions')
             ->assertOk()
             ->assertJsonCount(0, 'branches');
+
+        $this->postJson("/api/hr/positions/branches/{$branch->id}/open-positions", [
+            'positions' => [[
+                'position_id' => $position->id,
+                'quantity' => 1,
+                'account_type' => 'custom',
+                'account_config' => ['modules' => ['staff-management']],
+            ]],
+        ])->assertStatus(409);
+
+        $this->assertDatabaseCount('position_open_requests', 4);
 
         $branchHr = User::create([
             'username' => 'branch_hr_openings',
@@ -623,6 +729,49 @@ class BranchOpenPositionBroadcastTest extends TestCase
         $this->actingAs($branchHr)
             ->getJson('/api/hr/positions/branches/awaiting-open-positions')
             ->assertForbidden();
+    }
+
+    public function test_inactive_positions_are_not_listed_or_requestable(): void
+    {
+        $hr = User::create([
+            'username' => 'hr_inactive_position',
+            'email' => 'hr-inactive-position@example.com',
+            'password' => 'Password123!',
+            'full_name' => 'HR User',
+            'role' => 'HR',
+            'department' => 'HR',
+            'is_active' => true,
+            'must_change_password' => false,
+        ]);
+
+        $inactivePosition = \App\Models\Position::create([
+            'name' => 'Branch Manager',
+            'department' => null,
+            'is_active' => false,
+        ]);
+        \App\Models\Position::create([
+            'name' => 'Server/Staff',
+            'department' => null,
+            'is_active' => false,
+        ]);
+        \App\Models\Position::create([
+            'name' => 'Cashier',
+            'department' => 'CASHIER',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($hr)
+            ->getJson('/api/hr/positions')
+            ->assertOk()
+            ->assertJsonCount(1, 'positions')
+            ->assertJsonPath('positions.0.name', 'Cashier');
+
+        $this->postJson('/api/hr/positions/requests', [
+            'position_id' => $inactivePosition->id,
+            'quantity' => 1,
+        ])->assertUnprocessable();
+
+        $this->assertDatabaseCount('position_open_requests', 0);
     }
 
     public function test_branch_budget_and_invoice_total_are_deducted_after_owner_approval(): void

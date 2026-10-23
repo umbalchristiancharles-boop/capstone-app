@@ -590,12 +590,15 @@ Route::prefix('manager')->middleware('auth:sanctum,web')->group(function () {
     // ==========================================
     Route::prefix('payroll')->middleware('auth:sanctum,web')->group(function () {
         Route::get('/', [\App\Http\Controllers\Api\PayrollController::class, 'index']);
+        Route::get('/my', [\App\Http\Controllers\Api\PayrollController::class, 'myPayroll']);
+        Route::get('/dashboard', [\App\Http\Controllers\Api\PayrollController::class, 'dashboard']);
         Route::get('/{id}', [\App\Http\Controllers\Api\PayrollController::class, 'show']);
         Route::post('/generate', [\App\Http\Controllers\Api\PayrollController::class, 'generate']);
         Route::post('/{id}/approve', [\App\Http\Controllers\Api\PayrollController::class, 'approve']);
+        Route::post('/{id}/hr-confirm', [\App\Http\Controllers\Api\PayrollController::class, 'confirmSalary']);
         Route::post('/{id}/mark-paid', [\App\Http\Controllers\Api\PayrollController::class, 'markAsPaid']);
+        Route::post('/{id}/employee-confirm', [\App\Http\Controllers\Api\PayrollController::class, 'confirmReceipt']);
         Route::post('/{id}/reject', [\App\Http\Controllers\Api\PayrollController::class, 'reject']);
-        Route::get('/dashboard', [\App\Http\Controllers\Api\PayrollController::class, 'dashboard']);
     });
 
     // ==========================================

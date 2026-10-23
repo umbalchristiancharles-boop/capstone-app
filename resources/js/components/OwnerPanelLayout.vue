@@ -1061,6 +1061,7 @@ let notificationSummaryRequestId = 0
 const moduleNotificationDefinitions = [
   { key: 'admin', label: 'Orders', tone: 'warning' },
   { key: 'finance', label: 'Finance approvals', tone: 'warning' },
+  { key: 'payroll', label: 'Payslips to confirm', tone: 'warning' },
   { key: 'inventory', label: 'Inventory confirmations', tone: 'success' },
   { key: 'logistics', label: 'Logistics', tone: 'success' },
   { key: 'procurement', label: 'Procurement', tone: 'success' },
@@ -1085,6 +1086,7 @@ const currentPanelModuleKeys = computed(() => {
   if (title.includes('procurement')) return ['procurement']
   if (title.includes('inventory')) return ['inventory']
   if (title.includes('supplier')) return ['supplier']
+  if (title.includes('my payroll')) return ['payroll']
   if (title.includes('finance')) return ['finance']
   if (title.includes('kitchen') || title.includes('dish approval')) return ['kitchen']
   if (title.includes('admin') || title.includes('administration')) return ['admin', 'cashier']
@@ -1152,6 +1154,16 @@ async function markNotificationRead(key) {
 }
 
 async function handleNotificationClick(key) {
+  if (key === 'payroll') {
+    activeNotificationPanel.value = ''
+    if (route.path === '/staff/payroll') {
+      window.dispatchEvent(new Event('payroll-notification-selected'))
+    } else {
+      await router.push('/staff/payroll')
+    }
+    return
+  }
+
   const ownerSectionByNotification = {
     kitchen: 'dishApproval',
     ownerProductRequests: 'dishApproval',

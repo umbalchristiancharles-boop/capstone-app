@@ -70,7 +70,7 @@ class SuperAdminController extends Controller
         foreach (['permit_bills', 'construction_costs', 'equipment_costs'] as $category) {
             $result[$category] = array_map(
                 fn (array $attachment, int $index) => array_merge($attachment, [
-                    'url' => "/api/superadmin/branches/{$branch->id}/cost-attachments/{$category}/{$index}",
+                    'url' => "/api/superadmin/branches/{$branch->id}/cost-attachments/{$category}/{$index}?preview=1",
                 ]),
                 $attachments[$category] ?? [],
                 array_keys($attachments[$category] ?? [])
@@ -116,11 +116,23 @@ class SuperAdminController extends Controller
 
         $attachment = $branch->cost_attachments[$category][$index] ?? null;
         $path = is_array($attachment) ? ($attachment['path'] ?? null) : null;
-        if ($index < 0 || ! is_string($path) || ! str_starts_with($path, 'branch-cost-attachments/') || ! Storage::disk('local')->exists($path)) {
+        $disk = Storage::disk('local');
+        if ($index < 0 || ! is_string($path) || ! str_starts_with($path, 'branch-cost-attachments/') || ! $disk->exists($path)) {
             return response()->json(['ok' => false, 'message' => 'Attachment not found'], 404);
         }
 
-        return Storage::disk('local')->download($path, basename($attachment['name'] ?? 'attachment'));
+        if ($request->boolean('preview')) {
+            $mimeType = $disk->mimeType($path);
+            if (in_array($mimeType, ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'], true)) {
+                return response()->file($disk->path($path), [
+                    'Content-Type' => $mimeType,
+                    'Content-Disposition' => 'inline',
+                    'X-Content-Type-Options' => 'nosniff',
+                ]);
+            }
+        }
+
+        return $disk->download($path, basename($attachment['name'] ?? 'attachment'));
     }
 
     /**

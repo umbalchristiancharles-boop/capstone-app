@@ -25,6 +25,7 @@
         <button type="button" class="kitchen-sidebar-link" :class="{ 'kitchen-sidebar-link--active': activeKitchenSection === 'kitchen-overview' }" @click="scrollKitchenSection('kitchen-overview')">Overview</button>
         <button type="button" class="kitchen-sidebar-link" :class="{ 'kitchen-sidebar-link--active': activeKitchenSection === 'kitchen-tasks' }" @click="scrollKitchenSection('kitchen-tasks')">Kitchen Tasks</button>
         <button type="button" class="kitchen-sidebar-link" :class="{ 'kitchen-sidebar-link--active': activeKitchenSection === 'kitchen-orders' }" @click="scrollKitchenSection('kitchen-orders')">Orders Queue</button>
+        <button type="button" class="kitchen-sidebar-link" @click="goToPayroll">Payroll</button>
       </nav>
     </template>
 
@@ -198,6 +199,7 @@ import { isCustomPanelOrigin, leaveToCustomPanel } from './customPanelNavigation
 const userProfile = ref({})
 const ownerLayout = ref(null)
 const activeKitchenSection = ref('kitchen-overview')
+const goToPayroll = () => window.location.assign('/staff/payroll')
 const kitchenTopbarLabel = computed(() => {
   const branchName = userProfile.value?.branch?.name || userProfile.value?.branch_name || userProfile.value?.branch || ''
   return `KITCHEN STAFF - ${(branchName || 'DASMA BRANCH').toString().toUpperCase()}`

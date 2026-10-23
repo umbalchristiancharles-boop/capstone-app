@@ -139,7 +139,7 @@
             <div class="section-header">
               <div>
                 <h3>New Branch Open Position</h3>
-                <p class="muted">Choose an approved branch, then select the roles and number of openings to publish.</p>
+                <p class="muted">Choose an approved branch and publish accounts until all modules are covered. The branch stays here while coverage is incomplete.</p>
               </div>
               <button class="pill-btn" @click="loadBranchesAwaitingOpenPositions" :disabled="loadingBranchesAwaitingOpenPositions">
                 {{ loadingBranchesAwaitingOpenPositions ? 'Loading...' : 'Refresh' }}
@@ -163,6 +163,7 @@
                   <strong>{{ branch.name }}</strong>
                   <span>{{ branch.code || 'No branch code' }}</span>
                   <small>Confirmed {{ formatDate(branch.approved_at) }}</small>
+                  <small class="new-branch-open-positions__branch-counter">{{ branch.remaining_module_count }} modules left</small>
                 </button>
               </div>
 
@@ -173,6 +174,36 @@
                     <p>Select roles and set the number of open positions for each role.</p>
                   </div>
                 </div>
+
+                <section
+                  v-if="selectedBranchForOpenPositions.remaining_modules"
+                  class="new-branch-open-positions__coverage"
+                  aria-live="polite"
+                >
+                  <div class="new-branch-open-positions__coverage-heading">
+                    <strong>Module coverage</strong>
+                    <span class="new-branch-open-positions__coverage-counter">
+                      {{ selectedBranchForOpenPositions.covered_module_count }} / {{ selectedBranchForOpenPositions.total_module_count }} covered
+                    </span>
+                  </div>
+                  <p>{{ selectedBranchForOpenPositions.remaining_module_count }} modules still need coverage:</p>
+                  <ol v-if="selectedBranchForOpenPositions.remaining_modules.length" class="new-branch-open-positions__missing-modules">
+                    <li v-for="module in selectedBranchMissingModules" :key="module.key">
+                      <strong>{{ module.label }}</strong>
+                      <small>{{ module.panel }} panel</small>
+                    </li>
+                  </ol>
+                  <p v-else class="new-branch-open-positions__coverage-complete">All modules are covered.</p>
+                  <div v-if="selectedBranchCoveredModules.length" class="new-branch-open-positions__covered">
+                    <strong>Already covered</strong>
+                    <ul class="new-branch-open-positions__covered-modules">
+                      <li v-for="module in selectedBranchCoveredModules" :key="module.key">
+                        <span>{{ module.label }}</span>
+                        <small>{{ module.panel }} panel</small>
+                      </li>
+                    </ul>
+                  </div>
+                </section>
 
                 <div v-if="loadingBranchPositionCatalog" class="loading-box">Loading available roles...</div>
                 <div v-else-if="branchPositionCatalog.length === 0" class="empty-box">There are no active positions available.</div>
@@ -226,7 +257,7 @@
                 </div>
 
                 <div class="new-branch-open-positions__actions">
-                  <span>Published openings become visible on the public Open Positions page.</span>
+                  <span>Standard and custom accounts together must cover every module before this branch is removed from the list.</span>
                   <button type="button" class="pill-btn" :disabled="savingBranchOpenPositions || loadingBranchPositionCatalog" @click="publishBranchOpenPositions">
                     {{ savingBranchOpenPositions ? 'Publishing...' : 'Publish Open Positions' }}
                   </button>
@@ -749,6 +780,20 @@ const branchPositionPermissionModules = [
   { key: 'automatic-clock-out', label: 'Automatic Clock-Out' },
   { key: 'staff-management', label: 'Staff Management' },
 ]
+const selectedBranchMissingModules = computed(() => {
+  const remainingModules = selectedBranchForOpenPositions.value?.remaining_modules || []
+  return remainingModules.map(module => ({
+    ...module,
+    ...(branchPositionPermissionModules.find(item => item.key === module.key) || { label: module.key }),
+  }))
+})
+const selectedBranchCoveredModules = computed(() => {
+  const coveredModules = selectedBranchForOpenPositions.value?.covered_modules || []
+  return coveredModules.map(module => ({
+    ...module,
+    ...(branchPositionPermissionModules.find(item => item.key === module.key) || { label: module.key }),
+  }))
+})
 let nextCustomAccountId = 1
 const showRejectModal = ref(false)
 const rejectingRequest = ref(null)
@@ -2406,6 +2451,11 @@ window.addEventListener('click', () => {
   font-size: 0.78rem;
 }
 
+.new-branch-open-positions__branch-counter {
+  color: #9a3412 !important;
+  font-weight: 700;
+}
+
 .new-branch-open-positions__form {
   min-width: 0;
   padding: 14px;
@@ -2425,6 +2475,84 @@ window.addEventListener('click', () => {
 
 .new-branch-open-positions__form-heading p {
   margin: 0;
+}
+
+.new-branch-open-positions__coverage {
+  margin-bottom: 12px;
+  padding: 12px;
+  border: 1px solid #fed7aa;
+  border-radius: 9px;
+  background: #fff7ed;
+  color: #7c2d12;
+  font-size: 0.8rem;
+}
+
+.new-branch-open-positions__coverage-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.new-branch-open-positions__coverage-counter {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #ffedd5;
+  color: #9a3412;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.new-branch-open-positions__coverage > p {
+  margin: 8px 0 0;
+}
+
+.new-branch-open-positions__missing-modules {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+  gap: 5px 20px;
+  margin: 8px 0 0;
+  padding-left: 24px;
+}
+
+.new-branch-open-positions__missing-modules li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 2px;
+}
+
+.new-branch-open-positions__missing-modules small,
+.new-branch-open-positions__covered-modules small {
+  color: #64748b;
+  font-size: 0.7rem;
+}
+
+.new-branch-open-positions__covered {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #fed7aa;
+}
+
+.new-branch-open-positions__covered-modules {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+  gap: 7px 20px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.new-branch-open-positions__covered-modules li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: #166534;
+}
+
+.new-branch-open-positions__coverage .new-branch-open-positions__coverage-complete {
+  color: #166534;
+  font-weight: 700;
 }
 
 .new-branch-open-positions__role {

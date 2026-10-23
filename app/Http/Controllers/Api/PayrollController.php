@@ -9,7 +9,6 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 use App\Support\Permission;
 
@@ -19,8 +18,9 @@ class PayrollController extends Controller
     {
         $user = Auth::user();
         $userRole = strtoupper($user->role ?? '');
-        $hasCustomHrAccess = $userRole === 'CUSTOM' && Permission::hasPermissions($user, ['hr']);
-        if (!$user || (!in_array($userRole, ['HR', 'BRANCH_MANAGER', 'OWNER', 'ADMIN', 'SUPER_ADMIN', 'MANAGER_HR', 'MANAGER']) && !$hasCustomHrAccess)) {
+        $isHr = $this->canManagePayroll($user, 'hr');
+        $isFinance = $this->canManagePayroll($user, 'finance');
+        if (!$user || (!$isHr && !$isFinance)) {
             return response()->json(['ok' => false, 'message' => 'Forbidden'], 403);
         }
 
@@ -29,11 +29,18 @@ class PayrollController extends Controller
         $payrollType = $request->query('payroll_type', 'all');
         $period = $request->query('period', 'current_month');
 
-        $this->ensureAutomaticPayroll($branchId);
+        if ($isHr) {
+            $this->ensureAutomaticPayroll($branchId);
+        }
 
-        $query = Payroll::with(['user:id,full_name,username', 'confirmedBy:id,full_name']);
+        $query = Payroll::with([
+            'user:id,full_name,username',
+            'branch:id,name',
+            'financeConfirmer:id,full_name',
+            'hrConfirmer:id,full_name',
+        ]);
 
-        if (in_array($userRole, ['HR', 'BRANCH_MANAGER', 'MANAGER_HR', 'MANAGER'])) {
+        if (!in_array($userRole, ['OWNER', 'ADMIN', 'SUPER_ADMIN', 'SUPERADMIN'])) {
             $query->where('branch_id', $branchId);
         }
 
@@ -93,6 +100,22 @@ class PayrollController extends Controller
         ]);
     }
 
+    public function myPayroll()
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['ok' => false, 'message' => 'Forbidden'], 403);
+        }
+
+        return response()->json([
+            'ok' => true,
+            'data' => Payroll::with(['branch:id,name', 'financeConfirmer:id,full_name'])
+                ->where('user_id', $user->id)
+                ->orderByDesc('pay_date')
+                ->get(),
+        ]);
+    }
+
     public function show($id)
     {
         $user = Auth::user();
@@ -101,7 +124,11 @@ class PayrollController extends Controller
             return response()->json(['ok' => false, 'message' => 'Forbidden'], 403);
         }
 
-        $payroll = Payroll::with(['user:id,full_name,username', 'confirmedBy:id,full_name'])->find($id);
+        $payroll = Payroll::with([
+            'user:id,full_name,username',
+            'financeConfirmer:id,full_name',
+            'hrConfirmer:id,full_name',
+        ])->find($id);
 
         if (!$payroll) {
             return response()->json(['ok' => false, 'message' => 'Payroll not found'], 404);
@@ -121,7 +148,7 @@ class PayrollController extends Controller
     {
         $user = Auth::user();
         $userRole = strtoupper($user->role ?? '');
-        if (!$user || !in_array($userRole, ['HR', 'BRANCH_MANAGER', 'OWNER', 'ADMIN', 'SUPER_ADMIN', 'MANAGER_HR', 'MANAGER'])) {
+        if (!$this->canManagePayroll($user, 'hr')) {
             return response()->json(['ok' => false, 'message' => 'Forbidden'], 403);
         }
 
@@ -132,7 +159,8 @@ class PayrollController extends Controller
             'branch_id' => 'nullable|exists:branches,id',
         ]);
 
-        $branchId = $request->input('branch_id', $user->branch_id);
+        $canChooseBranch = in_array($userRole, ['OWNER', 'ADMIN', 'SUPER_ADMIN', 'SUPERADMIN'], true);
+        $branchId = $canChooseBranch ? $request->input('branch_id', $user->branch_id) : $user->branch_id;
         $payPeriodStart = Carbon::parse($request->pay_period_start);
         $payPeriodEnd = Carbon::parse($request->pay_period_end);
         $payrollType = $request->payroll_type;
@@ -188,6 +216,15 @@ class PayrollController extends Controller
 
     private function recalculatePayroll(User $staffMember, Carbon $payPeriodStart, Carbon $payPeriodEnd, string $payrollType, Carbon $payDate): Payroll
     {
+        $existingPayroll = Payroll::where('user_id', $staffMember->id)
+            ->whereDate('pay_period_start', $payPeriodStart)
+            ->whereDate('pay_period_end', $payPeriodEnd)
+            ->first();
+
+        if ($existingPayroll && ($existingPayroll->hr_confirmed_at || $existingPayroll->status === 'paid')) {
+            return $existingPayroll;
+        }
+
         $attendances = Attendance::where('user_id', $staffMember->id)
             ->whereBetween('date', [$payPeriodStart, $payPeriodEnd])
             ->get();
@@ -210,8 +247,9 @@ class PayrollController extends Controller
         return Payroll::updateOrCreate(
             [
                 'user_id' => $staffMember->id,
-                'pay_period_start' => $payPeriodStart,
-                'pay_period_end' => $payPeriodEnd,
+                'pay_period_start' => $payPeriodStart->toDateString(),
+                'pay_period_end' => $payPeriodEnd->toDateString(),
+                'payroll_type' => $payrollType,
             ],
             [
                 'branch_id' => $staffMember->branch_id,
@@ -237,15 +275,14 @@ class PayrollController extends Controller
     {
         return response()->json([
             'ok' => false,
-            'message' => 'Payroll approval is no longer used. Attach payment proof to mark it as paid.'
+            'message' => 'HR confirms salaries before Finance confirms payment.'
         ], 410);
     }
 
-    public function markAsPaid(Request $request, $id)
+    public function confirmSalary(Request $request, $id)
     {
         $user = Auth::user();
-        $userRole = strtoupper($user->role ?? '');
-        if (!$user || !in_array($userRole, ['HR', 'BRANCH_MANAGER', 'OWNER', 'ADMIN', 'SUPER_ADMIN', 'FINANCE', 'MANAGER_HR', 'MANAGER'])) {
+        if (!$this->canManagePayroll($user, 'hr')) {
             return response()->json(['ok' => false, 'message' => 'Forbidden'], 403);
         }
 
@@ -254,34 +291,96 @@ class PayrollController extends Controller
             return response()->json(['ok' => false, 'message' => 'Payroll not found'], 404);
         }
 
-        if ($payroll->status !== 'pending') {
-            return response()->json(['ok' => false, 'message' => 'Payroll is not eligible to be marked as paid'], 400);
+        if (!$this->canAccessPayrollBranch($user, $payroll)) {
+            return response()->json(['ok' => false, 'message' => 'Forbidden'], 403);
+        }
+
+        if ($payroll->status !== 'pending' || $payroll->hr_confirmed_at) {
+            return response()->json(['ok' => false, 'message' => 'Salary is not awaiting HR confirmation'], 400);
+        }
+
+        $payroll->hr_confirmed_by = $user->id;
+        $payroll->hr_confirmed_at = Carbon::now();
+        $payroll->save();
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'Salary confirmed and sent to Finance',
+            'data' => $payroll->load(['user:id,full_name,username', 'hrConfirmer:id,full_name']),
+        ]);
+    }
+
+    public function markAsPaid(Request $request, $id)
+    {
+        $user = Auth::user();
+        if (!$this->canManagePayroll($user, 'finance')) {
+            return response()->json(['ok' => false, 'message' => 'Forbidden'], 403);
+        }
+
+        $payroll = Payroll::find($id);
+        if (!$payroll) {
+            return response()->json(['ok' => false, 'message' => 'Payroll not found'], 404);
+        }
+
+        if (!$this->canAccessPayrollBranch($user, $payroll)) {
+            return response()->json(['ok' => false, 'message' => 'Forbidden'], 403);
         }
 
         $request->validate([
-            'payment_proof' => 'required|image|mimes:jpeg,png,jpg,webp|max:5120',
             'finance_notes' => 'nullable|string|max:2000',
         ]);
+
+        if ($payroll->status !== 'pending' || !$payroll->hr_confirmed_at) {
+            return response()->json(['ok' => false, 'message' => 'Payroll must be confirmed by HR before Finance can confirm payment'], 400);
+        }
 
         $payroll->status = 'paid';
         $payroll->confirmed_by = $user->id;
         $payroll->confirmed_at = Carbon::now();
         $payroll->finance_notes = $request->input('finance_notes', $payroll->finance_notes);
-        $payroll->payment_proof_path = $request->file('payment_proof')->store('payroll-proofs', 'public');
         $payroll->save();
 
         return response()->json([
             'ok' => true,
-            'message' => 'Payroll marked as paid successfully',
-            'data' => $payroll
+            'message' => 'Salary payment confirmed successfully',
+            'data' => $payroll->load(['user:id,full_name,username', 'branch:id,name', 'financeConfirmer:id,full_name']),
+        ]);
+    }
+
+    public function confirmReceipt(Request $request, $id)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['ok' => false, 'message' => 'Forbidden'], 403);
+        }
+
+        $payroll = Payroll::where('user_id', $user->id)->find($id);
+        if (!$payroll) {
+            return response()->json(['ok' => false, 'message' => 'Payroll not found'], 404);
+        }
+
+        if ($payroll->status !== 'paid') {
+            return response()->json(['ok' => false, 'message' => 'Payroll must be confirmed by Finance before receipt can be acknowledged'], 400);
+        }
+
+        if ($payroll->employee_confirmed_at) {
+            return response()->json(['ok' => false, 'message' => 'Payroll receipt has already been confirmed'], 400);
+        }
+
+        $payroll->employee_confirmed_at = Carbon::now();
+        $payroll->save();
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'Payroll receipt confirmed',
+            'data' => $payroll,
         ]);
     }
 
     public function reject(Request $request, $id)
     {
         $user = Auth::user();
-        $userRole = strtoupper($user->role ?? '');
-        if (!$user || !in_array($userRole, ['HR', 'BRANCH_MANAGER', 'OWNER', 'ADMIN', 'SUPER_ADMIN', 'MANAGER_HR', 'MANAGER'])) {
+        if (!$this->canManagePayroll($user, 'hr')) {
             return response()->json(['ok' => false, 'message' => 'Forbidden'], 403);
         }
 
@@ -290,8 +389,12 @@ class PayrollController extends Controller
             return response()->json(['ok' => false, 'message' => 'Payroll not found'], 404);
         }
 
-        if (in_array($userRole, ['HR', 'BRANCH_MANAGER', 'MANAGER_HR', 'MANAGER']) && $payroll->branch_id !== $user->branch_id) {
+        if (!$this->canAccessPayrollBranch($user, $payroll)) {
             return response()->json(['ok' => false, 'message' => 'Forbidden'], 403);
+        }
+
+        if ($payroll->status !== 'pending' || $payroll->hr_confirmed_at) {
+            return response()->json(['ok' => false, 'message' => 'Only unconfirmed payrolls can be rejected'], 400);
         }
 
         $payroll->status = 'rejected';
@@ -353,6 +456,37 @@ class PayrollController extends Controller
         $department = strtoupper((string) $department);
 
         return $rates[$role] ?? $rates[$department] ?? 600.00;
+    }
+
+    private function canManagePayroll(?User $user, string $module): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        $role = strtoupper($user->role ?? '');
+        $department = strtoupper($user->department ?? '');
+        $privilegedRoles = ['OWNER', 'ADMIN', 'SUPER_ADMIN', 'SUPERADMIN'];
+
+        if (in_array($role, $privilegedRoles, true)) {
+            return true;
+        }
+
+        if ($module === 'hr') {
+            return in_array($role, ['HR', 'BRANCH_MANAGER', 'MANAGER_HR'], true)
+                || ($role === 'MANAGER' && $department === 'HR')
+                || ($role === 'CUSTOM' && Permission::hasPermissions($user, ['hr']));
+        }
+
+        return in_array($role, ['FINANCE', 'FINANCE_MANAGER', 'MANAGER_FINANCE'], true)
+            || ($role === 'MANAGER' && $department === 'FINANCE')
+            || ($role === 'CUSTOM' && Permission::hasPermissions($user, ['finance']));
+    }
+
+    private function canAccessPayrollBranch(User $user, Payroll $payroll): bool
+    {
+        return in_array(strtoupper($user->role ?? ''), ['OWNER', 'ADMIN', 'SUPER_ADMIN', 'SUPERADMIN'], true)
+            || $payroll->branch_id === $user->branch_id;
     }
 
     private function payrollEligibleUsers($branchId)

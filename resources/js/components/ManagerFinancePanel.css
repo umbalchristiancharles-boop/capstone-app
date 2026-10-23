@@ -2993,6 +2993,138 @@ a.info-value:hover {
   max-width: 100%;
 }
 
+.payroll-slip-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  overflow: auto;
+  background: rgba(15, 23, 42, 0.65);
+}
+
+.payroll-slip-modal {
+  width: min(720px, 100%);
+  padding: 1.25rem;
+  border-radius: 14px;
+  background: #fff;
+  color: #1f2937;
+}
+
+.payroll-slip-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: .6rem;
+  margin-bottom: 1rem;
+}
+
+.payroll-slip {
+  padding: 2rem;
+  border: 1px solid #e5e7eb;
+}
+
+.payroll-slip__header {
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #1f2937;
+  text-align: center;
+}
+
+.payroll-slip__header p {
+  margin: 0;
+  color: #f97316;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.payroll-slip__header h2 {
+  margin: .35rem 0;
+  font-size: 1.5rem;
+}
+
+.payroll-slip__header span,
+.payroll-slip__employee span,
+.payroll-slip__footer {
+  color: #64748b;
+  font-size: .8rem;
+}
+
+.payroll-slip__employee {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  padding: 1.25rem 0;
+}
+
+.payroll-slip__employee div span,
+.payroll-slip__employee div strong {
+  display: block;
+}
+
+.payroll-slip__employee div strong {
+  margin-top: .25rem;
+}
+
+.payroll-slip__breakdown {
+  border-top: 1px solid #cbd5e1;
+}
+
+.payroll-slip__breakdown div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .75rem 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.payroll-slip__breakdown .payroll-slip__total {
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.payroll-slip__footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+@media print {
+  :global(body *) {
+    visibility: hidden !important;
+  }
+
+  :global(.payroll-slip-modal-backdrop),
+  :global(.payroll-slip-modal-backdrop *) {
+    visibility: visible !important;
+  }
+
+  :global(.payroll-slip-modal-backdrop) {
+    position: fixed !important;
+    inset: 0 !important;
+    display: block !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  :global(.payroll-slip-modal) {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  :global(.payroll-slip-actions) {
+    display: none !important;
+  }
+
+  .payroll-slip {
+    border: 0;
+  }
+}
+
 @media (max-width: 640px) {
   .finance-manager-layout.main-branch-finance .finance-dashboard-body {
     padding: 0.85rem;

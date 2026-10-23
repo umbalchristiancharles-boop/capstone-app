@@ -18,12 +18,15 @@ class CustomAccountRoleIsolationTest extends TestCase
         Schema::create('branches', function (Blueprint $table) {
             $table->id();
             $table->string('name')->nullable();
+            $table->boolean('is_main_branch')->default(false);
             $table->timestamps();
         });
 
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('username')->unique();
+            $table->string('full_name')->nullable();
+            $table->string('email')->nullable();
             $table->string('password');
             $table->string('role');
             $table->string('department')->nullable();
@@ -98,6 +101,98 @@ class CustomAccountRoleIsolationTest extends TestCase
 
         $this->assertSame('SUPPLIER', $supplier->fresh()->role);
         $this->assertSame(['modules' => ['supplier-products']], $supplier->fresh()->permissions);
+    }
+
+    public function test_owner_can_manage_accounts_across_branches_but_not_main_branch_or_super_admin(): void
+    {
+        $owner = User::create([
+            'username' => 'owner',
+            'password' => 'password',
+            'role' => 'OWNER',
+        ]);
+        $mainBranch = \App\Models\Branch::create([
+            'name' => 'Main Branch',
+            'is_main_branch' => true,
+        ]);
+        $otherBranch = \App\Models\Branch::create([
+            'name' => 'Other Branch',
+            'is_main_branch' => false,
+        ]);
+        $anotherBranch = \App\Models\Branch::create([
+            'name' => 'Another Branch',
+            'is_main_branch' => false,
+        ]);
+        $mainStaff = User::create([
+            'username' => 'main-staff',
+            'password' => 'password',
+            'role' => 'STAFF',
+            'branch_id' => $mainBranch->id,
+        ]);
+        $branchManager = User::create([
+            'username' => 'other-manager',
+            'password' => 'password',
+            'role' => 'MANAGER',
+            'department' => 'FINANCE',
+            'branch_id' => $otherBranch->id,
+        ]);
+        User::create([
+            'username' => 'another-branch-staff',
+            'password' => 'password',
+            'role' => 'STAFF',
+            'branch_id' => $anotherBranch->id,
+        ]);
+        $superAdmin = User::create([
+            'username' => 'super-admin',
+            'password' => 'password',
+            'role' => 'SUPER_ADMIN',
+        ]);
+
+        $this->actingAs($owner)
+            ->getJson('/api/admin/custom-accounts')
+            ->assertOk()
+            ->assertJsonCount(2, 'accounts')
+            ->assertJsonCount(2, 'branches')
+            ->assertJsonMissing(['name' => 'Main Branch']);
+
+        $this->actingAs($owner)
+            ->getJson("/api/admin/custom-accounts?branch_id={$otherBranch->id}")
+            ->assertOk()
+            ->assertJsonCount(1, 'accounts')
+            ->assertJsonPath('accounts.0.id', $branchManager->id);
+
+        $this->actingAs($owner)
+            ->getJson("/api/admin/custom-accounts?branch_id={$mainBranch->id}")
+            ->assertUnprocessable();
+
+        $this->actingAs($owner)
+            ->putJson("/api/admin/custom-accounts/{$branchManager->id}", [
+                'is_custom' => true,
+                'role' => 'CUSTOM',
+                'department' => null,
+                'modules' => ['recent-transactions'],
+            ])
+            ->assertOk();
+
+        $this->actingAs($owner)
+            ->putJson("/api/admin/custom-accounts/{$mainStaff->id}", [
+                'is_custom' => true,
+                'role' => 'CUSTOM',
+                'department' => null,
+                'modules' => ['recent-transactions'],
+            ])
+            ->assertNotFound();
+
+        $this->actingAs($owner)
+            ->putJson("/api/admin/custom-accounts/{$superAdmin->id}", [
+                'is_custom' => true,
+                'role' => 'CUSTOM',
+                'department' => null,
+                'modules' => ['recent-transactions'],
+            ])
+            ->assertNotFound();
+
+        $this->assertSame('STAFF', $mainStaff->fresh()->role);
+        $this->assertSame('SUPER_ADMIN', $superAdmin->fresh()->role);
     }
 
     private function redirectPathFor(User $user): string

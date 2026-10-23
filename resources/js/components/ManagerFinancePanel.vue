@@ -47,6 +47,10 @@
           <span class="finance-sidebar__icon" aria-hidden="true">◷</span>
           <span class="finance-sidebar__label">Attendance</span>
         </button>
+        <button class="finance-sidebar__item" :class="{ active: selectedSection === 'payroll' }" @click="selectFinanceSection('payroll')">
+          <span class="finance-sidebar__icon" aria-hidden="true">₱</span>
+          <span class="finance-sidebar__label">Payroll</span>
+        </button>
       </nav>
 
       <div class="finance-sidebar__footer">
@@ -320,6 +324,52 @@
           <MainBranchFinanceBranchConfirmations />
         </template>
 
+        <template v-if="selectedSection === 'payroll'">
+          <section class="finance-card finance-card--section-full">
+            <div class="finance-table-header">
+              <div>
+                <h3>Payroll Confirmation</h3>
+                <p class="finance-section-description">Confirm HR-approved salaries and print the employee payslip.</p>
+              </div>
+              <button class="finance-refresh-button" @click="loadPayrolls" :disabled="payrollLoading">
+                {{ payrollLoading ? 'Loading...' : 'Refresh' }}
+              </button>
+            </div>
+            <div v-if="payrollLoading" class="loading-container"><p>Loading payroll...</p></div>
+            <div v-else class="table-container">
+              <table class="branch-table data-table">
+                <thead>
+                  <tr>
+                    <th>Employee</th>
+                    <th>Pay Period</th>
+                    <th>Net Salary</th>
+                    <th>Status</th>
+                    <th>Employee Confirmation</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="payroll in payrolls" :key="payroll.id">
+                    <td>{{ payroll.user?.full_name || payroll.user?.username || 'Employee' }}</td>
+                    <td>{{ formatPayrollPeriod(payroll.pay_period_start, payroll.pay_period_end) }}</td>
+                    <td>₱{{ formatPayrollAmount(payroll.net_salary) }}</td>
+                    <td>{{ payroll.status === 'rejected' ? 'Rejected' : (payroll.status === 'paid' ? 'Paid' : (payroll.hr_confirmed_at ? 'Awaiting Finance' : 'Awaiting HR')) }}</td>
+                    <td>{{ payroll.employee_confirmed_at ? formatPayrollDate(payroll.employee_confirmed_at) : (payroll.status === 'paid' ? 'Awaiting employee' : '—') }}</td>
+                    <td>
+                      <button v-if="payroll.status === 'pending' && payroll.hr_confirmed_at" class="btn-approve" :disabled="confirmingPayrollId === payroll.id" @click="confirmPayrollPayment(payroll)">
+                        {{ confirmingPayrollId === payroll.id ? 'Confirming...' : 'Confirm Salary' }}
+                      </button>
+                      <button v-else-if="payroll.status === 'paid'" class="btn-secondary btn-small" @click="openPayrollSlip(payroll)">Print Payslip</button>
+                      <span v-else class="processed-info">{{ payroll.status === 'rejected' ? 'Rejected' : 'Waiting for HR' }}</span>
+                    </td>
+                  </tr>
+                  <tr v-if="payrolls.length === 0"><td colspan="6" class="empty-message">No payroll records found.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </template>
+
         <!-- BUDGET APPROVALS SECTION -->
         <template v-if="selectedSection === 'approvals'">
           <section class="finance-card finance-card--section-full">
@@ -439,6 +489,39 @@
         </div>
         </Transition>
       </main>
+    </div>
+
+    <div v-if="showPayrollSlip && selectedPayrollSlip" class="payroll-slip-modal-backdrop" role="presentation" @click.self="showPayrollSlip = false">
+      <section class="payroll-slip-modal" role="dialog" aria-modal="true" aria-labelledby="payroll-slip-title">
+        <div class="payroll-slip-actions">
+          <button class="finance-refresh-button" @click="printPayrollSlip">Print Payslip</button>
+          <button class="finance-refresh-button" @click="showPayrollSlip = false">Close</button>
+        </div>
+        <article class="payroll-slip">
+          <header class="payroll-slip__header">
+            <p>CHIKIN TAYO</p>
+            <h2 id="payroll-slip-title">PAYSLIP</h2>
+            <span>Payment confirmed</span>
+          </header>
+          <div class="payroll-slip__employee">
+            <div><span>Employee</span><strong>{{ selectedPayrollSlip.user?.full_name || selectedPayrollSlip.user?.username || 'Employee' }}</strong></div>
+            <div><span>Branch</span><strong>{{ selectedPayrollSlip.branch?.name || '—' }}</strong></div>
+            <div><span>Pay period</span><strong>{{ formatPayrollPeriod(selectedPayrollSlip.pay_period_start, selectedPayrollSlip.pay_period_end) }}</strong></div>
+            <div><span>Pay date</span><strong>{{ formatPayrollDate(selectedPayrollSlip.pay_date) }}</strong></div>
+          </div>
+          <div class="payroll-slip__breakdown">
+            <div><span>Base salary</span><strong>₱{{ formatPayrollAmount(selectedPayrollSlip.base_salary) }}</strong></div>
+            <div><span>Overtime pay</span><strong>₱{{ formatPayrollAmount(selectedPayrollSlip.overtime_pay) }}</strong></div>
+            <div><span>Gross salary</span><strong>₱{{ formatPayrollAmount(selectedPayrollSlip.gross_salary) }}</strong></div>
+            <div><span>Late deductions</span><strong>- ₱{{ formatPayrollAmount(selectedPayrollSlip.late_deductions) }}</strong></div>
+            <div class="payroll-slip__total"><span>Net salary paid</span><strong>₱{{ formatPayrollAmount(selectedPayrollSlip.net_salary) }}</strong></div>
+          </div>
+          <footer class="payroll-slip__footer">
+            <span>Confirmed by Finance: {{ selectedPayrollSlip.finance_confirmer?.full_name || 'Finance' }}</span>
+            <span>{{ selectedPayrollSlip.confirmed_at ? formatPayrollDate(selectedPayrollSlip.confirmed_at) : '' }}</span>
+          </footer>
+        </article>
+      </section>
     </div>
 
     <transition name="fade">
@@ -760,8 +843,9 @@ const notificationCounts = ref({
   inventory: 0,
   logistics: 0,
   procurement: 0,
+  payrollConfirmations: 0,
 })
-const financeNotificationSummary = ref({ approvals: 0, announcements: 0, updates: 0 })
+const financeNotificationSummary = ref({ approvals: 0, announcements: 0, updates: 0, payrollConfirmations: 0 })
 const activeNotificationPanel = ref('')
 const announcements = ref([])
 const announcementsLoading = ref(false)
@@ -770,6 +854,7 @@ const hasNotified = ref(false)
 const financeNotificationItems = computed(() => [
   { key: 'approvals', label: 'Pending approvals', count: financeNotificationSummary.value.approvals },
   { key: 'receipt-approvals', label: 'Receipt approvals', count: receiptSubmissions.value.length },
+  { key: 'payroll-confirmations', label: 'Employee payroll confirmations', count: financeNotificationSummary.value.payrollConfirmations },
   { key: 'announcements', label: 'Announcements', count: financeNotificationSummary.value.announcements },
   { key: 'updates', label: 'Updates', count: financeNotificationSummary.value.updates },
 ].filter(item => item.count > 0))
@@ -942,6 +1027,11 @@ function closeFinanceTutorial() {
 
   // Dashboard section navigation
   const selectedSection = ref(props.embeddedSection || 'overview')
+  const payrolls = ref([])
+  const payrollLoading = ref(false)
+  const confirmingPayrollId = ref(null)
+  const selectedPayrollSlip = ref(null)
+  const showPayrollSlip = ref(false)
   const sidebarCollapsed = ref(false)
   const sidebarTransitioning = ref(false)
   let financeSidebarSwipeStart = null
@@ -1293,10 +1383,73 @@ const getSectionTitle = computed(() => {
     approvals: 'Budget Request Approvals',
     'receipt-approvals': 'Receipt Approval',
     transactions: 'Recent Transactions',
-    attendance: 'Attendance'
+    attendance: 'Attendance',
+    payroll: 'Payroll',
   }
   return titles[selectedSection.value] || 'Finance Overview'
 })
+
+function selectFinanceSection(section) {
+  selectedSection.value = section
+  if (section === 'payroll') loadPayrolls()
+}
+
+async function loadPayrolls() {
+  payrollLoading.value = true
+  try {
+    const response = await axios.get('/api/payroll', {
+      params: { period: 'all' },
+      withCredentials: true
+    })
+    if (!response.data?.ok) throw new Error(response.data?.message || 'Unable to load payroll')
+    payrolls.value = response.data.data || []
+  } catch (error) {
+    console.error('Unable to load payroll:', error)
+    showToast(error.response?.data?.message || error.message || 'Unable to load payroll', 'error')
+  } finally {
+    payrollLoading.value = false
+  }
+}
+
+async function confirmPayrollPayment(payroll) {
+  confirmingPayrollId.value = payroll.id
+  try {
+    const response = await axios.post(`/api/payroll/${payroll.id}/mark-paid`, {}, { withCredentials: true })
+    if (!response.data?.ok) throw new Error(response.data?.message || 'Unable to confirm salary')
+    selectedPayrollSlip.value = response.data.data
+    showPayrollSlip.value = true
+    await loadPayrolls()
+  } catch (error) {
+    console.error('Unable to confirm salary:', error)
+    showToast(error.response?.data?.message || error.message || 'Unable to confirm salary', 'error')
+  } finally {
+    confirmingPayrollId.value = null
+  }
+}
+
+function openPayrollSlip(payroll) {
+  selectedPayrollSlip.value = payroll
+  showPayrollSlip.value = true
+}
+
+function printPayrollSlip() {
+  window.print()
+}
+
+function formatPayrollAmount(amount) {
+  return Number(amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function formatPayrollDate(date) {
+  if (!date) return '—'
+  const parsedDate = new Date(date)
+  return Number.isNaN(parsedDate.getTime()) ? '—' : parsedDate.toLocaleDateString('en-PH')
+}
+
+function formatPayrollPeriod(start, end) {
+  if (!start || !end) return '—'
+  return `${formatPayrollDate(start)} - ${formatPayrollDate(end)}`
+}
 
 // UI filter state (used by new layout controls)
 const selectedRange = ref('all')
@@ -1376,15 +1529,18 @@ async function loadPanelNotifications() {
         inventory: Number(res.data.counts?.inventory || 0),
         logistics: Number(res.data.counts?.logistics || 0),
         procurement: Number(res.data.counts?.procurement || 0),
+        payrollConfirmations: Number(res.data.counts?.payrollConfirmations || 0),
       }
       financeNotificationSummary.value = {
         approvals: Number(res.data.summary?.approvals || 0),
         announcements: Number(res.data.summary?.announcements || 0),
         updates: Number(res.data.summary?.updates || 0),
+        payrollConfirmations: Number(res.data.counts?.payrollConfirmations || 0),
       }
     }
   } catch (e) {
-    notificationCounts.value = { finance: 0, admin: 0, inventory: 0, logistics: 0, procurement: 0 }
+    notificationCounts.value = { finance: 0, admin: 0, inventory: 0, logistics: 0, procurement: 0, payrollConfirmations: 0 }
+    financeNotificationSummary.value = { approvals: 0, announcements: 0, updates: 0, payrollConfirmations: 0 }
   }
 }
 
@@ -1399,12 +1555,19 @@ function handleFinanceNotificationClick(key) {
   const sectionByNotification = {
     approvals: 'approvals',
     'receipt-approvals': 'receipt-approvals',
+    'payroll-confirmations': 'payroll',
   }
   const section = sectionByNotification[key]
   if (section) {
     selectedSection.value = section
     activeNotificationPanel.value = ''
     if (key === 'receipt-approvals') loadReceiptSubmissions()
+    if (key === 'payroll-confirmations') {
+      loadPayrolls()
+      axios.post('/api/panel-notifications/read', { category: 'payrollConfirmations' }, { withCredentials: true })
+        .then(() => loadPanelNotifications())
+        .catch((error) => console.error('Unable to mark payroll notifications read:', error))
+    }
     return
   }
 

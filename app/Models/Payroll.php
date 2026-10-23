@@ -35,6 +35,9 @@ class Payroll extends Model
         'notes',
         'confirmed_by',
         'confirmed_at',
+        'hr_confirmed_by',
+        'hr_confirmed_at',
+        'employee_confirmed_at',
         'finance_notes',
         'payment_proof_path',
     ];
@@ -44,6 +47,8 @@ class Payroll extends Model
         'pay_period_end' => 'date',
         'pay_date' => 'date',
         'confirmed_at' => 'datetime',
+        'hr_confirmed_at' => 'datetime',
+        'employee_confirmed_at' => 'datetime',
         'daily_rate' => 'decimal:2',
         'hourly_rate' => 'decimal:2',
         'base_salary' => 'decimal:2',
@@ -81,9 +86,14 @@ class Payroll extends Model
     }
 
     
-    public function confirmedBy(): BelongsTo
+    public function financeConfirmer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'confirmed_by');
+    }
+
+    public function hrConfirmer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'hr_confirmed_by');
     }
 
     /**

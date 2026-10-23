@@ -12,6 +12,9 @@
             <button class="staff-cashier-sidebar__item" type="button" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="cashierSidebarItemStyle('attendance')" :class="{ 'staff-cashier-sidebar__item--active': activeCashierSection === 'attendance' }" :aria-current="activeCashierSection === 'attendance' ? 'page' : undefined" @mouseenter="hoveredCashierSection = 'attendance'" @mouseleave="hoveredCashierSection = ''" @click="selectCashierSection('attendance')">
               <span :style="cashierSidebarIconStyle('attendance')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.7" /><path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Attendance</span>
             </button>
+            <button class="staff-cashier-sidebar__item" type="button" @click="router.push('/staff/payroll')">
+              <span class="staff-cashier-sidebar__icon" aria-hidden="true">₱</span><span>Payroll</span>
+            </button>
           </nav>
           <div class="staff-cashier-sidebar__footer">
             <button class="staff-cashier-sidebar__account-info" type="button" @click="showAccountInfoModal = true">Account Info</button>

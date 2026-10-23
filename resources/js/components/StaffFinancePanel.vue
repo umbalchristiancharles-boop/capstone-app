@@ -9,6 +9,9 @@
     @profile-updated="onProfileUpdated"
   >
     <template #main>
+      <div class="panel-section">
+        <a class="staff-payroll-link" href="/staff/payroll">My Payroll</a>
+      </div>
       <div class="panel-section" style="position: relative;">
         <h2 class="section-title" style="margin: 0 0 10px 0; position: relative;">
           Finance Logs
@@ -66,6 +69,17 @@ async function loadPanelNotifications() {
 </script>
 
 <style scoped>
+.staff-payroll-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.65rem 1rem;
+  border-radius: 8px;
+  background: #f97316;
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+}
+
 .panel-badge {
   position: absolute;
   top: -8px;

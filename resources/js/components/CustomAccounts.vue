@@ -5,7 +5,16 @@
         <h2>Custom Accounts</h2>
         <p>Choose an account and control which features appear in its custom sidebar.</p>
       </div>
-      <button type="button" class="btn-primary" @click="loadAccounts" :disabled="loading">Refresh</button>
+      <div class="custom-accounts-panel__actions">
+        <label v-if="branchOptions.length" class="custom-account-branch-filter">
+          <span>Branch</span>
+          <select v-model="selectedBranchId" aria-label="Filter custom accounts by branch" @change="loadAccounts">
+            <option value="">All branches</option>
+            <option v-for="branch in branchOptions" :key="branch.id" :value="String(branch.id)">{{ branch.name }}</option>
+          </select>
+        </label>
+        <button type="button" class="btn-primary" @click="loadAccounts" :disabled="loading">Refresh</button>
+      </div>
     </div>
 
     <div v-if="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
@@ -85,6 +94,8 @@ import { ref, computed, onMounted, watch } from 'vue'
 import axios from 'axios'
 
 const accounts = ref([])
+const branchOptions = ref([])
+const selectedBranchId = ref('')
 const moduleOptions = ref([])
 const selectedAccount = ref(null)
 const selectedModules = ref([])
@@ -137,8 +148,12 @@ async function loadAccounts() {
   loading.value = true
   errorMessage.value = ''
   try {
-    const response = await axios.get('/api/admin/custom-accounts', { withCredentials: true })
+    const response = await axios.get('/api/admin/custom-accounts', {
+      withCredentials: true,
+      params: selectedBranchId.value ? { branch_id: selectedBranchId.value } : {},
+    })
     accounts.value = response.data.accounts || []
+    branchOptions.value = response.data.branches || []
     moduleOptions.value = response.data.modules || []
     roleOptions.value = (response.data.roles || [])
       .filter(role => ['STAFF', 'MANAGER'].includes(role))
@@ -152,7 +167,13 @@ async function loadAccounts() {
     }))
     if (selectedAccount.value) {
       const refreshed = accounts.value.find(account => account.id === selectedAccount.value.id)
-      if (refreshed) selectAccount(refreshed)
+      if (refreshed) {
+        selectAccount(refreshed)
+      } else {
+        selectedAccount.value = null
+        selectedModules.value = []
+        if (accounts.value.length) selectAccount(accounts.value[0])
+      }
     } else if (accounts.value.length) {
       selectAccount(accounts.value[0])
     }
@@ -224,6 +245,32 @@ onMounted(loadAccounts)
   margin: .35rem 0 0;
   color: var(--custom-accounts-muted);
   line-height: 1.5;
+}
+
+.custom-accounts-panel__actions {
+  display: flex;
+  align-items: flex-end;
+  gap: .75rem;
+}
+
+.custom-account-branch-filter {
+  display: grid;
+  gap: .3rem;
+  min-width: 12rem;
+  color: #334155;
+  font-size: .8rem;
+  font-weight: 650;
+}
+
+.custom-account-branch-filter select {
+  min-height: 2.5rem;
+  padding: .5rem .75rem;
+  border: 1px solid var(--custom-accounts-border);
+  border-radius: .6rem;
+  background: #fff;
+  color: #334155;
+  font: inherit;
+  font-weight: 500;
 }
 
 .custom-accounts-panel .btn-primary {
@@ -509,7 +556,16 @@ onMounted(loadAccounts)
     gap: .75rem;
   }
 
-  .custom-accounts-panel__header .btn-primary {
+  .custom-accounts-panel__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .custom-account-branch-filter {
+    min-width: 0;
+  }
+
+  .custom-accounts-panel__actions .btn-primary {
     align-self: flex-start;
   }
 

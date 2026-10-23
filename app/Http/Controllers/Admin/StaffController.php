@@ -67,9 +67,14 @@ class StaffController extends Controller
     public function customAccounts(Request $request)
     {
         $actor = Auth::user();
-        if (! $actor || ! in_array(strtoupper((string) $actor->role), ['OWNER', 'ADMIN', 'SUPER_ADMIN', 'SUPERADMIN'], true)) {
+        $actorRole = strtoupper((string) ($actor->role ?? ''));
+        if (! $actor || ! in_array($actorRole, ['OWNER', 'ADMIN', 'SUPER_ADMIN', 'SUPERADMIN'], true)) {
             return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
         }
+
+        $validated = $request->validate([
+            'branch_id' => ['nullable', 'integer'],
+        ]);
 
         $query = User::query()
             ->whereIn('role', [...self::EDITABLE_ACCOUNT_ROLES, 'CUSTOM'])
@@ -77,8 +82,30 @@ class StaffController extends Controller
             ->with('branch:id,name')
             ->orderBy('full_name');
 
-        if (strtoupper((string) $actor->role) === 'ADMIN' && $actor->branch_id) {
+        if ($actorRole === 'ADMIN' && $actor->branch_id) {
             $query->where('branch_id', $actor->branch_id);
+        }
+
+        $branches = collect();
+        if ($actorRole === 'OWNER') {
+            $branches = Branch::query()
+                ->where(function ($branchQuery) {
+                    $branchQuery->where('is_main_branch', false)->orWhereNull('is_main_branch');
+                })
+                ->orderBy('name')
+                ->get(['id', 'name']);
+
+            $query->whereDoesntHave('branch', function ($branchQuery) {
+                $branchQuery->where('is_main_branch', true);
+            });
+
+            if (isset($validated['branch_id'])) {
+                if (! $branches->contains('id', (int) $validated['branch_id'])) {
+                    return response()->json(['success' => false, 'message' => 'The selected branch is unavailable.'], 422);
+                }
+
+                $query->where('branch_id', (int) $validated['branch_id']);
+            }
         }
 
         $accounts = $query->get([
@@ -115,6 +142,10 @@ class StaffController extends Controller
                 ->values(),
             'roles' => self::EDITABLE_ACCOUNT_ROLES,
             'departments' => self::EDITABLE_ACCOUNT_DEPARTMENTS,
+            'branches' => $branches->map(fn (Branch $branch) => [
+                'id' => $branch->id,
+                'name' => $branch->name,
+            ])->values(),
         ]);
     }
 
@@ -125,7 +156,14 @@ class StaffController extends Controller
             return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
         }
 
-        $account = User::whereNull('deleted_at')->find($id);
+        $accountQuery = User::whereNull('deleted_at');
+        if (strtoupper((string) $actor->role) === 'OWNER') {
+            $accountQuery->whereDoesntHave('branch', function ($branchQuery) {
+                $branchQuery->where('is_main_branch', true);
+            });
+        }
+
+        $account = $accountQuery->find($id);
         if (! $account || ! in_array(strtoupper((string) $account->role), [...self::EDITABLE_ACCOUNT_ROLES, 'CUSTOM'], true)) {
             return response()->json(['success' => false, 'message' => 'Account not found or cannot be modified'], 404);
         }

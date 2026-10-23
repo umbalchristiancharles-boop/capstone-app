@@ -24,6 +24,77 @@ class HrPositionRequestController extends Controller
         'automatic-clock-out', 'staff-management',
     ];
 
+    private const STANDARD_ACCOUNT_MODULES = [
+        'FINANCE' => [
+            'budget-request-approvals', 'current-price-markup', 'receipt-approval',
+            'financial-overview', 'recent-transactions',
+        ],
+        'PROCUREMENT' => [
+            'manual-procurement', 'procurement-requests', 'add-supplier', 'supplier-products',
+        ],
+        'LOGISTICS' => [
+            'stock-confirmation-history', 'product-barcodes', 'pending-stock',
+            'request-new-product', 'supplier-product-confirmations',
+        ],
+        'INVENTORY' => ['inventory-monitor', 'product-disposal'],
+        'HR' => ['staff-activity', 'automatic-clock-out', 'staff-management'],
+        'ADMIN' => [
+            'request-new-product',
+            'supplier-product-confirmations',
+            'landing-page-product-images',
+            'staff-activity',
+            'automatic-clock-out',
+            'staff-management',
+        ],
+    ];
+
+    private const MODULE_PANELS = [
+        'budget-request-approvals' => 'Finance',
+        'current-price-markup' => 'Finance',
+        'receipt-approval' => 'Finance',
+        'financial-overview' => 'Finance',
+        'recent-transactions' => 'Finance',
+        'manual-procurement' => 'Procurement',
+        'procurement-requests' => 'Procurement',
+        'add-supplier' => 'Procurement',
+        'supplier-products' => 'Procurement',
+        'stock-confirmation-history' => 'Logistics',
+        'product-barcodes' => 'Logistics',
+        'pending-stock' => 'Logistics',
+        'request-new-product' => 'Inventory & Procurement',
+        'supplier-product-confirmations' => 'Inventory & Procurement',
+        'inventory-monitor' => 'Inventory',
+        'product-disposal' => 'Inventory',
+        'landing-page-product-images' => 'Landing Page Images',
+        'staff-activity' => 'Staff & Attendance',
+        'automatic-clock-out' => 'Staff & Attendance',
+        'staff-management' => 'Staff Management',
+    ];
+
+    private function coveredModules(iterable $requests): array
+    {
+        $coveredModules = [];
+
+        foreach ($requests as $positionRequest) {
+            if ($positionRequest->account_type === 'custom') {
+                $modules = $positionRequest->account_config['modules'] ?? [];
+                $modules = is_array($modules) ? $modules : [];
+            } else {
+                $department = strtoupper((string) optional($positionRequest->position)->department);
+                $modules = self::STANDARD_ACCOUNT_MODULES[$department] ?? [];
+            }
+
+            $coveredModules = array_merge($coveredModules, $modules);
+        }
+
+        return array_values(array_unique($coveredModules));
+    }
+
+    private function hasCompleteModuleCoverage(iterable $requests): bool
+    {
+        return array_diff(self::CUSTOM_ACCOUNT_MODULES, $this->coveredModules($requests)) === [];
+    }
+
     private function isMainBranchHr($user): bool
     {
         if (! $user || ! in_array(strtoupper((string) $user->role), ['MANAGER', 'MANAGER_HR', 'HR'], true)
@@ -50,15 +121,37 @@ class HrPositionRequestController extends Controller
             ->where('is_active', true)
             ->where('approval_status', 'approved')
             ->whereNotNull('approved_at')
-            ->whereNotExists(function ($query) {
-                $query->selectRaw('1')
-                    ->from('position_open_requests')
-                    ->whereColumn('position_open_requests.branch_id', 'branches.id')
-                    ->whereIn('position_open_requests.status', ['Pending', 'Approved']);
-            })
             ->orderBy('approved_at')
             ->orderBy('name')
             ->get(['id', 'code', 'name', 'address', 'approved_at']);
+
+        if ($branches->isNotEmpty()) {
+            $requestsByBranch = PositionOpenRequest::query()
+                ->with('position:id,department')
+                ->whereIn('branch_id', $branches->pluck('id'))
+                ->whereIn('status', ['Pending', 'Approved'])
+                ->get()
+                ->groupBy('branch_id');
+
+            $branches = $branches->map(function (Branch $branch) use ($requestsByBranch) {
+                $coveredModules = $this->coveredModules($requestsByBranch->get($branch->id, []));
+                $remainingModuleKeys = array_values(array_diff(self::CUSTOM_ACCOUNT_MODULES, $coveredModules));
+                $formatModule = fn (string $module) => [
+                    'key' => $module,
+                    'panel' => self::MODULE_PANELS[$module] ?? 'Other',
+                ];
+
+                $branch->setAttribute('covered_module_count', count($coveredModules));
+                $branch->setAttribute('total_module_count', count(self::CUSTOM_ACCOUNT_MODULES));
+                $branch->setAttribute('covered_modules', array_map($formatModule, $coveredModules));
+                $branch->setAttribute('remaining_modules', array_map($formatModule, $remainingModuleKeys));
+                $branch->setAttribute('remaining_module_count', count($remainingModuleKeys));
+
+                return $branch;
+            })->reject(function (Branch $branch) {
+                return $branch->remaining_module_count === 0;
+            })->values();
+        }
 
         return response()->json(['ok' => true, 'branches' => $branches]);
     }
@@ -132,14 +225,26 @@ class HrPositionRequestController extends Controller
         }
 
         $requests = DB::transaction(function () use ($branch, $validated, $positions, $user) {
-            $hasExistingOpenings = PositionOpenRequest::query()
-                ->where('branch_id', $branch->id)
-                ->whereIn('status', ['Pending', 'Approved'])
+            $lockedBranch = Branch::query()
+                ->whereKey($branch->id)
+                ->where('is_main_branch', false)
+                ->where('is_active', true)
+                ->where('approval_status', 'approved')
                 ->lockForUpdate()
-                ->exists();
+                ->first();
 
-            if ($hasExistingOpenings) {
-                return null;
+            if (! $lockedBranch) {
+                return ['error' => 'not_found'];
+            }
+
+            $existingRequests = PositionOpenRequest::query()
+                ->with('position:id,department')
+                ->where('branch_id', $lockedBranch->id)
+                ->whereIn('status', ['Pending', 'Approved'])
+                ->get();
+
+            if ($this->hasCompleteModuleCoverage($existingRequests)) {
+                return ['error' => 'complete'];
             }
 
             return collect($validated['positions'])->map(function (array $item) use ($branch, $positions, $user) {
@@ -160,8 +265,12 @@ class HrPositionRequestController extends Controller
             });
         });
 
-        if ($requests === null) {
-            return response()->json(['ok' => false, 'message' => 'This branch already has open-position requests.'], 409);
+        if (is_array($requests) && ($requests['error'] ?? null) === 'not_found') {
+            return response()->json(['ok' => false, 'message' => 'Approved branch not found.'], 404);
+        }
+
+        if (is_array($requests) && ($requests['error'] ?? null) === 'complete') {
+            return response()->json(['ok' => false, 'message' => 'All access modules are already covered for this branch.'], 409);
         }
 
         return response()->json([
@@ -229,7 +338,7 @@ class HrPositionRequestController extends Controller
         $user = Auth::user();
 
         $request->validate([
-            'position_id' => ['required', 'integer', 'exists:positions,id'],
+            'position_id' => ['required', 'integer', Rule::exists('positions', 'id')->where('is_active', true)],
             'quantity' => ['required', 'integer', 'min:1'],
             'notes' => ['nullable', 'string', 'max:5000'],
             'account_type' => ['nullable', Rule::in(['standard', 'custom'])],

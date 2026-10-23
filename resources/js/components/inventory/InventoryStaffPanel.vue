@@ -49,6 +49,7 @@
         <button type="button" class="owner-sidebar-link" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="inventorySidebarItemStyle('attendance')" :class="{ 'owner-sidebar-link--active': isAttendanceView }" :aria-current="isAttendanceView ? 'page' : undefined" @mouseenter="hoveredInventorySection = 'attendance'" @mouseleave="hoveredInventorySection = ''" @click="isDisposalView = false; isAttendanceView = true">
           <span :style="inventorySidebarIconStyle('attendance')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.7" /><path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Attendance</span>
         </button>
+        <button type="button" class="owner-sidebar-link" @click="router.push('/staff/payroll')">Payroll</button>
       </nav>
     </template>
 

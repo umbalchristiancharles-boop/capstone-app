@@ -768,16 +768,18 @@
             <span>{{ payroll.days_overtime }} days ({{ payroll.total_overtime_hours }} hrs)</span>
             <span>₱{{ formatNumber(payroll.net_salary) }}</span>
             <span>
-              <span class="badge" :class="getPayrollStatusClass(payroll.status)">{{ formatPayrollStatus(payroll.status) }}</span>
+              <span class="badge" :class="getPayrollStatusClass(payroll.status)">
+                {{ payroll.status === 'rejected' ? 'Rejected' : (payroll.status === 'paid' ? (payroll.employee_confirmed_at ? 'Employee Confirmed' : 'Awaiting Employee') : (payroll.hr_confirmed_at ? 'Awaiting Finance' : 'Awaiting HR Confirmation')) }}
+              </span>
             </span>
             <span>
-              <button v-if="payroll.status === 'pending'" class="btn-sm btn-primary" @click="openMarkPaidModal(payroll)">
-                Mark Paid
+              <button v-if="payroll.status === 'pending' && !payroll.hr_confirmed_at" class="btn-sm btn-primary" :disabled="confirmingSalaryId === payroll.id" @click="confirmSalary(payroll)">
+                {{ confirmingSalaryId === payroll.id ? 'Confirming...' : 'Confirm Pay' }}
               </button>
               <a v-if="payroll.payment_proof_url" class="text-muted" :href="payroll.payment_proof_url" target="_blank" rel="noopener">View proof</a>
               <button class="btn-sm btn-secondary" @click="openPayrollDetails(payroll)">Details</button>
               <span v-if="payroll.confirmed_by" class="text-muted" style="font-size: 0.75rem;">
-                by {{ payroll.confirmedBy?.full_name }}
+                Finance: {{ payroll.finance_confirmer?.full_name }}
               </span>
             </span>
           </div>
@@ -812,42 +814,17 @@
               </div>
               <div class="payroll-detail-group payroll-detail-group--full">
                 <h4>Payment Record</h4>
-                <p><span>Status</span><strong>{{ formatPayrollStatus(selectedPayrollDetails.status) }}</strong></p>
+                <p><span>Status</span><strong>{{ selectedPayrollDetails.status === 'rejected' ? 'Rejected' : (selectedPayrollDetails.status === 'paid' ? (selectedPayrollDetails.employee_confirmed_at ? 'Employee Confirmed' : 'Awaiting Employee Confirmation') : (selectedPayrollDetails.hr_confirmed_at ? 'Awaiting Finance Confirmation' : 'Awaiting HR Confirmation')) }}</strong></p>
+                <p><span>HR confirmed</span><strong>{{ selectedPayrollDetails.hr_confirmer?.full_name || (selectedPayrollDetails.hr_confirmed_at ? 'Confirmed' : 'Not yet confirmed') }}</strong></p>
                 <p><span>Pay date</span><strong>{{ formatDate(selectedPayrollDetails.pay_date) }}</strong></p>
-                <p><span>Confirmed at</span><strong>{{ selectedPayrollDetails.confirmed_at ? formatDate(selectedPayrollDetails.confirmed_at) : 'Not yet paid' }}</strong></p>
-                <p><span>Confirmed by</span><strong>{{ selectedPayrollDetails.confirmedBy?.full_name || 'Not yet paid' }}</strong></p>
+                <p><span>Finance confirmed at</span><strong>{{ selectedPayrollDetails.confirmed_at ? formatDate(selectedPayrollDetails.confirmed_at) : 'Not yet paid' }}</strong></p>
+                <p><span>Finance confirmed by</span><strong>{{ selectedPayrollDetails.finance_confirmer?.full_name || 'Not yet paid' }}</strong></p>
+                <p><span>Employee confirmation</span><strong>{{ selectedPayrollDetails.employee_confirmed_at ? formatDate(selectedPayrollDetails.employee_confirmed_at) : 'Not yet confirmed' }}</strong></p>
                 <p><span>Proof</span><a v-if="selectedPayrollDetails.payment_proof_url" :href="selectedPayrollDetails.payment_proof_url" target="_blank" rel="noopener">Open payment proof</a><strong v-else>Not attached</strong></p>
               </div>
             </div>
             <div class="positions-modal__footer">
               <button class="btn-secondary" @click="closePayrollDetails">Close</button>
-            </div>
-          </div>
-        </div>
-      </transition>
-
-      <transition name="fade">
-        <div v-if="showMarkPaidModal" class="positions-modal-backdrop" @click.self="closeMarkPaidModal">
-          <div class="positions-modal">
-            <div class="positions-modal__header">
-              <div>
-                <h3>Mark Payroll as Paid</h3>
-                <p class="muted">Attach an image of the payment receipt or transfer confirmation.</p>
-              </div>
-              <button class="modal-close" @click="closeMarkPaidModal" aria-label="Close">✕</button>
-            </div>
-            <div class="positions-modal__body">
-              <div class="form-group">
-                <label class="field-label" for="payment-proof">Payment Proof</label>
-                <input id="payment-proof" class="field-input" type="file" accept="image/jpeg,image/png,image/webp" @change="handleProofChange" />
-                <small class="muted">Image files only, up to 5 MB.</small>
-              </div>
-            </div>
-            <div class="positions-modal__footer">
-              <button class="btn-secondary" @click="closeMarkPaidModal">Cancel</button>
-              <button class="btn-primary" @click="markAsPaid" :disabled="isMarkingPaid">
-                {{ isMarkingPaid ? 'Saving...' : 'Confirm Payment' }}
-              </button>
             </div>
           </div>
         </div>
@@ -1850,10 +1827,7 @@ const isLoadingPayroll = ref(false)
 const showPayrollModal = ref(false)
 const isGeneratingPayroll = ref(false)
 const showPayrollHistory = ref(false)
-const showMarkPaidModal = ref(false)
-const isMarkingPaid = ref(false)
-const selectedPayroll = ref(null)
-const paymentProof = ref(null)
+const confirmingSalaryId = ref(null)
 const showPayrollDetailsModal = ref(false)
 const selectedPayrollDetails = ref(null)
 const payrollHistoryFilters = ref({ userId: '', status: '' })
@@ -1964,47 +1938,19 @@ function closePayrollDetails() {
   selectedPayrollDetails.value = null
 }
 
-function openMarkPaidModal(payroll) {
-  selectedPayroll.value = payroll
-  paymentProof.value = null
-  showMarkPaidModal.value = true
-}
-
-function closeMarkPaidModal() {
-  showMarkPaidModal.value = false
-  selectedPayroll.value = null
-  paymentProof.value = null
-}
-
-function handleProofChange(event) {
-  paymentProof.value = event.target.files?.[0] || null
-}
-
-async function markAsPaid() {
-  if (!selectedPayroll.value || !paymentProof.value) {
-    alert('Please attach an image as payment proof')
-    return
-  }
-
-  const formData = new FormData()
-  formData.append('payment_proof', paymentProof.value)
-  isMarkingPaid.value = true
+async function confirmSalary(payroll) {
+  confirmingSalaryId.value = payroll.id
   try {
-    const res = await axios.post(`/api/payroll/${selectedPayroll.value.id}/mark-paid`, formData, {
-      withCredentials: true,
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
+    const res = await axios.post(`/api/payroll/${payroll.id}/hr-confirm`, {}, { withCredentials: true })
     if (res.data && res.data.ok) {
-      alert('Payroll marked as paid successfully')
-      closeMarkPaidModal()
-      loadPayrolls()
+      await loadPayrolls()
     } else {
-      alert(res.data.message || 'Failed to mark payroll as paid')
+      alert(res.data.message || 'Failed to confirm salary')
     }
   } catch (e) {
-    alert(e.response?.data?.message || 'Failed to mark payroll as paid')
+    alert(e.response?.data?.message || 'Failed to confirm salary')
   } finally {
-    isMarkingPaid.value = false
+    confirmingSalaryId.value = null
   }
 }
 

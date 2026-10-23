@@ -16,6 +16,7 @@ use App\Models\Message;
 use App\Models\Announcement;
 use App\Models\ProductRequest;
 use App\Models\Attendance;
+use App\Models\Payroll;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
@@ -51,6 +52,8 @@ class PanelNotificationController extends Controller
             'procurement' => 0,
             'kitchen' => 0,
             'cashier' => 0,
+            'payroll' => 0,
+            'payrollConfirmations' => 0,
             'reports' => 0,
             'supplier' => 0,
         ];
@@ -106,6 +109,23 @@ class PanelNotificationController extends Controller
                 || in_array($module, $roleModules[$role] ?? [], true)
                 || ($role === 'SUPPLIER' && $module === 'supplier');
         };
+
+        $counts['payroll'] = (int) Payroll::where('user_id', $user->id)
+            ->where('status', 'paid')
+            ->whereNull('employee_confirmed_at')
+            ->count();
+
+        $financePayrollRoles = ['FINANCE', 'FINANCE_MANAGER', 'MANAGER_FINANCE'];
+        if ($hasModule('finance') || in_array($role, $financePayrollRoles, true) || ($role === 'MANAGER' && $dept === 'FINANCE')) {
+            $payrollConfirmationsQuery = Payroll::whereNotNull('employee_confirmed_at');
+            if ($branchId) {
+                $payrollConfirmationsQuery->where('branch_id', $branchId);
+            }
+            if ($payrollConfirmationsReadAt = $readAt('payrollConfirmations')) {
+                $payrollConfirmationsQuery->where('employee_confirmed_at', '>', $payrollConfirmationsReadAt);
+            }
+            $counts['payrollConfirmations'] = (int) $payrollConfirmationsQuery->count();
+        }
 
         // Admin + Cashier pending orders
         $orderPendingQuery = Order::whereIn('status', ['pending', 'in_kitchen', 'preparing', 'ready']);
@@ -311,7 +331,7 @@ class PanelNotificationController extends Controller
     public function markRead(Request $request)
     {
         $validated = $request->validate([
-            'category' => ['required', Rule::in(['admin', 'inventory', 'announcements', 'logistics', 'supplier', 'branchPendingOwner'])],
+            'category' => ['required', Rule::in(['admin', 'inventory', 'announcements', 'logistics', 'supplier', 'branchPendingOwner', 'payrollConfirmations'])],
         ]);
 
         $now = now();

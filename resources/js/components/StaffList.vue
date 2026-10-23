@@ -34,6 +34,7 @@
           <option v-for="d in availableDepartments" :key="d" :value="d">{{ d }}</option>
         </select>
         <button @click="refreshStaff" class="btn-primary">Refresh</button>
+        <button @click="$router.push('/staff/payroll')" class="btn-secondary">My Payroll</button>
         <button @click="openCreateModal()" class="btn-success">+ Add Staff</button>
       </div>
     </div>
