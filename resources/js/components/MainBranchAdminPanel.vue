@@ -319,7 +319,7 @@ const adminTutorialSteps = [
     description: 'Use Add Branch to review the branch list or begin setting up a branch.',
     items: [
       'Select + Add Branch to open the branch form. Complete required branch code and name fields.',
-      'The form can include branch location, initial budget, area and geofencing radius, permit bills, construction and equipment costs, and open positions.',
+      'The form can include branch location, initial budget, area and geofencing radius, permit bills, construction and equipment costs.',
       'Review the form before submitting. The page also provides a Refresh control for the branch list.',
     ],
   },

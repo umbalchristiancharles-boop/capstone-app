@@ -3,7 +3,7 @@
     :embedded="embedded"
     :userProfile="userProfile"
     :panelTitle="'Branch Confirmations'"
-    :panelDescription="'Approve or reject new branch requests after finance confirmation'"
+    :panelDescription="'Approve or reject new branch requests'"
     :enableProfileUpdate="true"
     :canEditProfile="false"
     :showHeader="false"
@@ -30,7 +30,7 @@
           <div class="branch-approval-header owner-section-header-surface">
             <div>
               <h1>Branch Confirmations</h1>
-              <p>Approve or reject new branch requests after finance confirmation</p>
+              <p>Review branch requests after Main Branch Finance confirms the invoice and assigns a budget.</p>
             </div>
             <div class="header-actions">
               <button class="refresh-btn" @click="loadPending" :disabled="loading">
@@ -42,7 +42,7 @@
           <div v-if="loading" class="muted">Loading pending requests...</div>
         <div v-else-if="error" class="alert-error">Warning: {{ error }}</div>
         <div v-else-if="pendingBranches.length === 0" class="empty-state">
-          <p>No pending branch requests right now.</p>
+          <p>No branch requests are awaiting Owner approval. New requests appear here after Finance confirms them.</p>
         </div>
 
         <div v-else class="request-grid">
@@ -59,12 +59,8 @@
                     <strong>{{ branch.code }}</strong>
                   </div>
                   <div class="request-meta">
-                    <span>Initial budget</span>
-                    <strong>{{ formatCurrency(branch.initial_budget || 0) }}</strong>
-                  </div>
-                  <div class="request-meta">
-                    <span>Effective budget</span>
-                    <strong>{{ formatCurrency(branch.budget || 0) }}</strong>
+                    <span>Finance-assigned budget</span>
+                    <strong>{{ branch.budget ? formatCurrency(branch.budget) : 'Awaiting Finance' }}</strong>
                   </div>
                   <div class="request-meta">
                     <span>Requested by</span>
@@ -93,12 +89,24 @@
                 <div class="request-meta"><span>Store area</span><strong>{{ branch.square_meters || 'N/A' }} m²</strong></div>
                 <div class="request-meta"><span>Geofence radius</span><strong>{{ branch.geofencing_radius || 'N/A' }} m</strong></div>
                 <div class="request-meta"><span>Coordinates</span><strong>{{ branch.latitude ?? 'N/A' }}, {{ branch.longitude ?? 'N/A' }}</strong></div>
-                <div class="request-meta"><span>Total investment</span><strong>{{ formatCurrency(branch.total_investment || 0) }}</strong></div>
+                <div class="request-meta"><span>Total investment</span><strong>{{ branch.total_investment == null ? 'N/A' : formatCurrency(branch.total_investment) }}</strong></div>
               </div>
-              <div v-if="branch.permit_bills?.length || branch.construction_costs?.length || branch.equipment_costs?.length" class="cost-details">
-                <div v-if="branch.permit_bills?.length"><strong>Permit bills</strong><span v-for="(item, index) in branch.permit_bills" :key="`permit-${index}`">{{ item.type || 'Permit' }}: {{ formatCurrency(item.amount || 0) }}</span></div>
-                <div v-if="branch.construction_costs?.length"><strong>Construction costs</strong><span v-for="(item, index) in branch.construction_costs" :key="`construction-${index}`">{{ item.category || 'Construction' }}: {{ formatCurrency(item.amount || 0) }}</span></div>
-                <div v-if="branch.equipment_costs?.length"><strong>Equipment costs</strong><span v-for="(item, index) in branch.equipment_costs" :key="`equipment-${index}`">{{ item.name || 'Equipment' }} ({{ item.quantity || 0 }}): {{ formatCurrency((item.quantity || 0) * (item.unit_cost || 0)) }}</span></div>
+              <div v-if="branch.cost_attachments?.permit_bills?.length || branch.cost_attachments?.construction_costs?.length || branch.cost_attachments?.equipment_costs?.length || branch.permit_bills?.length || branch.construction_costs?.length || branch.equipment_costs?.length" class="cost-details">
+                <div v-if="branch.cost_attachments?.permit_bills?.length || branch.permit_bills?.length">
+                  <strong>Permit bills</strong>
+                  <a v-for="(file, index) in branch.cost_attachments?.permit_bills || []" :key="`permit-file-${index}`" :href="file.url" target="_blank" rel="noopener noreferrer">{{ file.name }}<template v-if="file.amount != null"> — {{ formatCurrency(file.amount) }}</template></a>
+                  <span v-for="(item, index) in branch.permit_bills || []" :key="`permit-${index}`">{{ item.type || 'Permit' }}: {{ formatCurrency(item.amount || 0) }}</span>
+                </div>
+                <div v-if="branch.cost_attachments?.construction_costs?.length || branch.construction_costs?.length">
+                  <strong>Construction costs</strong>
+                  <a v-for="(file, index) in branch.cost_attachments?.construction_costs || []" :key="`construction-file-${index}`" :href="file.url" target="_blank" rel="noopener noreferrer">{{ file.name }}<template v-if="file.amount != null"> — {{ formatCurrency(file.amount) }}</template></a>
+                  <span v-for="(item, index) in branch.construction_costs || []" :key="`construction-${index}`">{{ item.category || 'Construction' }}: {{ formatCurrency(item.amount || 0) }}</span>
+                </div>
+                <div v-if="branch.cost_attachments?.equipment_costs?.length || branch.equipment_costs?.length">
+                  <strong>Equipment costs</strong>
+                  <a v-for="(file, index) in branch.cost_attachments?.equipment_costs || []" :key="`equipment-file-${index}`" :href="file.url" target="_blank" rel="noopener noreferrer">{{ file.name }}<template v-if="file.amount != null"> — {{ formatCurrency(file.amount) }}</template></a>
+                  <span v-for="(item, index) in branch.equipment_costs || []" :key="`equipment-${index}`">{{ item.name || 'Equipment' }} ({{ item.quantity || 0 }}): {{ formatCurrency((item.quantity || 0) * (item.unit_cost || 0)) }}</span>
+                </div>
               </div>
             </div>
 
@@ -168,7 +176,7 @@ function formatDate(dateString) {
 
 function formatCurrency(amount) {
   try {
-    return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 }).format(amount)
+    return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 2 }).format(amount)
   } catch (e) {
     return 'PHP ' + (amount || 0)
   }
@@ -225,9 +233,14 @@ function notifyIfPending() {
 }
 
 async function approveBranch(branch) {
+  if (!branch.finance_confirmed_at || Number(branch.budget) < 1) {
+    error.value = 'Main Branch Finance must confirm the invoice and assign a budget before Owner approval.'
+    return
+  }
+
   const result = await Swal.fire({
-    title: 'Approve branch? ',
-    text: `This will activate ${branch.name} and enable all accounts.`,
+    title: 'Approve branch?',
+    text: `Finance has confirmed the invoice and assigned a budget. Approving ${branch.name} will activate the branch, enable its accounts, and deduct both the invoice total and assigned budget from the Main Branch budget.`,
     icon: 'question',
     showCancelButton: true,
     confirmButtonText: 'Approve',

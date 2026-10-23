@@ -21,6 +21,15 @@
           <span class="finance-sidebar__icon" aria-hidden="true">%</span>
           <span class="finance-sidebar__label">Price Markup</span>
         </button>
+        <button
+          v-if="props.isMainBranchFinance"
+          class="finance-sidebar__item"
+          :class="{ active: selectedSection === 'branch-invoices' }"
+          @click="selectedSection = 'branch-invoices'"
+        >
+          <span class="finance-sidebar__icon" aria-hidden="true">▣</span>
+          <span class="finance-sidebar__label">New Branch Invoice</span>
+        </button>
         <button class="finance-sidebar__item" :class="{ active: selectedSection === 'approvals' }" @click="selectedSection = 'approvals'">
           <span class="finance-sidebar__icon" aria-hidden="true">✓</span>
           <span class="finance-sidebar__label">Approvals</span>
@@ -233,6 +242,18 @@
                 </div>
               </div>
 
+              <div v-if="props.isMainBranchFinance || isMainBranchFinanceManager" class="kpi-card">
+                <div class="kpi-icon revenue-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" role="img" aria-label="Peso">
+                    <text x="12" y="16" text-anchor="middle" font-size="14" fill="currentColor" font-family="Segoe UI Symbol, Noto Sans Symbols, Arial Unicode MS">₱</text>
+                  </svg>
+                </div>
+                <div class="kpi-content">
+                  <span class="kpi-label">Main Branch Budget</span>
+                  <span class="kpi-value">{{ dashboardTotals.mainBranchBudget ?? 'Loading...' }}</span>
+                </div>
+              </div>
+
               <div class="kpi-card" :class="{ 'stat-alert': financePendingCount > 0 }">
                 <div class="kpi-icon expenses-icon">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -295,9 +316,12 @@
           </section>
         </template>
 
+        <template v-if="selectedSection === 'branch-invoices' && props.isMainBranchFinance">
+          <MainBranchFinanceBranchConfirmations />
+        </template>
+
         <!-- BUDGET APPROVALS SECTION -->
         <template v-if="selectedSection === 'approvals'">
-          <MainBranchFinanceBranchConfirmations v-if="props.isMainBranchFinance || isMainBranchFinanceManager" />
           <section class="finance-card finance-card--section-full">
             <div class="finance-table-header">
               <h3>Budget Request Approvals</h3>
@@ -823,6 +847,19 @@ const financeTutorialSteps = [
   },
   {
     icon: '▣',
+    title: 'New Branch Invoice',
+    section: 'branch-invoices',
+    sectionLabel: 'New Branch Invoice',
+    description: 'Review branch cost details and supporting invoice documents, then set the budget before the request goes to Owner approval.',
+    items: [
+      'Open each permit, construction, or equipment attachment to verify the submitted invoice documents.',
+      'Compare the itemized costs and submitted total investment.',
+      'Select Confirm Invoice & Set Budget, enter a budget that covers the submitted investment, then confirm. The branch will continue to Owner approval.',
+      'Use Reject if the invoice or branch request should not proceed.',
+    ],
+  },
+  {
+    icon: '▣',
     title: 'Receipt Approval',
     section: 'receipt-approvals',
     sectionLabel: 'Receipt Approval',
@@ -1138,7 +1175,8 @@ const canRequestPriceMarkups = computed(() => {
 const dashboardTotals = ref({
   totalSales: '₱0',
   pendingApprovals: 0,
-  revenue: '₱0'
+  revenue: '₱0',
+  mainBranchBudget: null
 })
 // Branch budgets
 const branches = ref([])
@@ -1251,6 +1289,7 @@ const getSectionTitle = computed(() => {
   const titles = {
     overview: 'Financial Overview',
     markup: 'Current Price Markup',
+    'branch-invoices': 'New Branch Invoice & Budget Review',
     approvals: 'Budget Request Approvals',
     'receipt-approvals': 'Receipt Approval',
     transactions: 'Recent Transactions',
@@ -1982,7 +2021,10 @@ async function loadInitialData() {
       totalSales: dashRes.data.totalRevenue ? '₱' + Number(dashRes.data.totalRevenue).toLocaleString('en-PH', { minimumFractionDigits: 2 }) : '₱0',
       pendingApprovals: dashRes.data.pendingApprovals || 0,
       revenue: dashRes.data.netProfit ? '₱' + Number(dashRes.data.netProfit).toLocaleString('en-PH', { minimumFractionDigits: 2 }) : '₱0',
-      totalOrders: dashRes.data.totalOrders || 0
+      totalOrders: dashRes.data.totalOrders || 0,
+      mainBranchBudget: dashRes.data.mainBranchBudget == null
+        ? 'N/A'
+        : '₱' + Number(dashRes.data.mainBranchBudget).toLocaleString('en-PH', { minimumFractionDigits: 2 })
     }
 
     console.log('Reports API Response:', reportsRes.data)
@@ -2114,7 +2156,10 @@ async function refreshDashboard() {
       totalSales: dashRes.data.totalRevenue ? '₱' + Number(dashRes.data.totalRevenue).toLocaleString('en-PH', { minimumFractionDigits: 2 }) : '₱0',
       pendingApprovals: dashRes.data.pendingApprovals || 0,
       revenue: dashRes.data.netProfit ? '₱' + Number(dashRes.data.netProfit).toLocaleString('en-PH', { minimumFractionDigits: 2 }) : '₱0',
-      totalOrders: dashRes.data.totalOrders || 0
+      totalOrders: dashRes.data.totalOrders || 0,
+      mainBranchBudget: dashRes.data.mainBranchBudget == null
+        ? 'N/A'
+        : '₱' + Number(dashRes.data.mainBranchBudget).toLocaleString('en-PH', { minimumFractionDigits: 2 })
     }
     transactions.value = extractArray(txRes.data, 'transactions')
 

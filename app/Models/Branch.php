@@ -37,6 +37,7 @@ class Branch extends Model
         'permit_bills',
         'construction_costs',
         'equipment_costs',
+        'cost_attachments',
         'total_investment',
     ];
 
@@ -58,6 +59,7 @@ class Branch extends Model
             'permit_bills' => 'array',
             'construction_costs' => 'array',
             'equipment_costs' => 'array',
+            'cost_attachments' => 'array',
             'total_investment' => 'decimal:2',
         ];
     }

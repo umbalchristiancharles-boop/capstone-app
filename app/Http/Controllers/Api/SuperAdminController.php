@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\Log;
 use App\Models\User;
 use App\Models\Branch;
 use App\Models\Order;
-use App\Models\Position;
 use App\Models\PositionOpenRequest;
 use App\Models\StaffDocument;
 use App\Models\PriceMarkupPercentage;
@@ -63,49 +62,65 @@ class SuperAdminController extends Controller
         return null;
     }
 
-    /**
-     * Create a default branch-role position record that can be applied to by candidates.
-     * This mirrors the HR flow where accounts are created only after a successful application.
-     */
-    private function createApprovedBranchPositionRequest(Branch $branch, string $roleKey, int $requestedByUserId, ?array $accountConfig = null, int $quantity = 1): array
+    private function costAttachmentsForResponse(Branch $branch): array
     {
-        $positionMap = [
-            'admin' => ['name' => 'Admin', 'department' => 'ADMIN', 'description' => 'Branch administrator role'],
-            'hr' => ['name' => 'HR Manager', 'department' => 'HR', 'description' => 'Manages human resources and staff affairs'],
-            'finance' => ['name' => 'Finance Manager', 'department' => 'FINANCE', 'description' => 'Oversees financial operations and budgets'],
-            'procurement' => ['name' => 'Procurement Manager', 'department' => 'PROCUREMENT', 'description' => 'Handles purchasing and supplier relations'],
-            'logistics' => ['name' => 'Logistics Manager', 'department' => 'LOGISTICS', 'description' => 'Manages deliveries and logistics operations'],
-            'custom' => ['name' => 'Custom Account', 'department' => 'CUSTOM', 'description' => 'Custom account with assigned module access'],
-        ];
+        $attachments = $branch->cost_attachments ?? [];
+        $result = [];
 
-        $config = $positionMap[$roleKey] ?? ['name' => ucfirst($roleKey), 'department' => strtoupper($roleKey), 'description' => 'Branch role'];
+        foreach (['permit_bills', 'construction_costs', 'equipment_costs'] as $category) {
+            $result[$category] = array_map(
+                fn (array $attachment, int $index) => array_merge($attachment, [
+                    'url' => "/api/superadmin/branches/{$branch->id}/cost-attachments/{$category}/{$index}",
+                ]),
+                $attachments[$category] ?? [],
+                array_keys($attachments[$category] ?? [])
+            );
+        }
 
-        $position = Position::query()->firstOrCreate(
-            ['name' => $config['name']],
-            [
-                'description' => $config['description'],
-                'department' => $config['department'],
-                'is_active' => 1,
-            ]
-        );
+        return $result;
+    }
 
-        $request = PositionOpenRequest::create([
-            'position_id' => $position->id,
-            'branch_id' => $branch->id,
-            'requested_by_user_id' => $requestedByUserId,
-            'quantity' => $quantity,
-            'notes' => 'Automatically broadcast during branch creation for ' . $branch->name . '.',
-            'account_type' => $roleKey === 'custom' ? 'custom' : 'standard',
-            'account_config' => $roleKey === 'custom' ? $accountConfig : null,
-            'status' => 'Approved',
-            'approved_by_user_id' => $requestedByUserId,
-            'approved_at' => now(),
-        ]);
+    public function downloadBranchCostAttachment(Request $request, int $id, string $category, int $index)
+    {
+        $user = $this->resolveAuthenticatedUser($request);
+        if (! $user) {
+            return response()->json(['ok' => false, 'message' => 'Not authenticated'], 401);
+        }
 
-        return [
-            'position_name' => $position->name,
-            'request_id' => $request->id,
-        ];
+        $branch = Branch::find($id);
+        if (! $branch) {
+            return response()->json(['ok' => false, 'message' => 'Branch not found'], 404);
+        }
+
+        $roleUpper = strtoupper($user->role ?? '');
+        $isMainBranchAdmin = false;
+        if ($roleUpper === 'ADMIN') {
+            $userBranch = Branch::find($user->branch_id);
+            $isMainBranchAdmin = (bool) ($userBranch && ($userBranch->is_main_branch ?? false));
+        }
+
+        $isMainBranchFinance = in_array($roleUpper, ['SUPER_ADMIN', 'SUPERADMIN'], true);
+        if (! $isMainBranchFinance && in_array($roleUpper, ['MANAGER', 'MANAGER_FINANCE'], true) && strtoupper($user->department ?? '') === 'FINANCE') {
+            $userBranch = Branch::find($user->branch_id);
+            $isMainBranchFinance = (bool) ($userBranch && ($userBranch->is_main_branch ?? false));
+        }
+
+        $isOwner = Permission::allowed($user, ['OWNER', 'SUPER_ADMIN', 'SUPERADMIN'], ['admin', 'admin.branches']);
+        if (! $isOwner && ! $isMainBranchAdmin && ! $isMainBranchFinance) {
+            return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        if (! in_array($category, ['permit_bills', 'construction_costs', 'equipment_costs'], true)) {
+            return response()->json(['ok' => false, 'message' => 'Attachment not found'], 404);
+        }
+
+        $attachment = $branch->cost_attachments[$category][$index] ?? null;
+        $path = is_array($attachment) ? ($attachment['path'] ?? null) : null;
+        if ($index < 0 || ! is_string($path) || ! str_starts_with($path, 'branch-cost-attachments/') || ! Storage::disk('local')->exists($path)) {
+            return response()->json(['ok' => false, 'message' => 'Attachment not found'], 404);
+        }
+
+        return Storage::disk('local')->download($path, basename($attachment['name'] ?? 'attachment'));
     }
 
     /**
@@ -1140,8 +1155,8 @@ class SuperAdminController extends Controller
                     'code' => $branch->code,
                     'name' => $branch->name,
                     'address' => $branch->address,
-                    'budget' => isset($branch->budget) ? (int) $branch->budget : 0,
-                    'initial_budget' => isset($branch->initial_budget) ? (int) $branch->initial_budget : (int) ($branch->budget ?? 0),
+                    'budget' => round((float) ($branch->budget ?? 0), 2),
+                    'initial_budget' => round((float) ($branch->initial_budget ?? $branch->budget ?? 0), 2),
                     'is_active' => (bool) $branch->is_active,
                     'is_main_branch' => (bool) ($branch->is_main_branch ?? false),
                     'approval_status' => $branch->approval_status ?? 'approved',
@@ -1213,21 +1228,14 @@ class SuperAdminController extends Controller
             $b = Branch::find($user->branch_id);
             $isMainBranchAdmin = (bool) ($b && ($b->is_main_branch ?? false));
         }
-        $isMainBranchFinance = in_array($roleUpper, ['SUPER_ADMIN', 'SUPERADMIN'], true);
-        if (! $isMainBranchFinance && in_array($roleUpper, ['MANAGER', 'MANAGER_FINANCE'], true) && strtoupper($user->department ?? '') === 'FINANCE') {
-            $b = Branch::find($user->branch_id);
-            $isMainBranchFinance = (bool) ($b && ($b->is_main_branch ?? false));
-        }
         $allowed = Permission::allowed($user, ['SUPER_ADMIN', 'SUPERADMIN', 'OWNER'], ['admin', 'admin.branches']);
         if (! $allowed && ! $isMainBranchAdmin) {
             return response()->json(['ok' => false, 'message' => 'Unauthorized'], 403);
         }
 
         $requiresOwnerApproval = $isMainBranchAdmin && ! $allowed;
-        $requiresFinanceApproval = $isMainBranchAdmin && ! $allowed;
-        $approvalStatus = $requiresFinanceApproval ? 'pending_finance' : 'approved';
-        $branchIsActive = $requiresFinanceApproval ? 0 : 1;
-        $accountIsActive = $requiresFinanceApproval ? 0 : 1;
+        $approvalStatus = $requiresOwnerApproval ? 'pending_finance' : 'approved';
+        $branchIsActive = $requiresOwnerApproval ? 0 : 1;
 
         $request->validate([
             'code' => 'nullable|string|max:20',
@@ -1235,50 +1243,33 @@ class SuperAdminController extends Controller
             'address' => 'nullable|string|max:255',
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
-            'budget' => 'nullable|integer|min:100000|max:1000000',
             'square_meters' => 'nullable|numeric|min:0',
             'geofencing_radius' => 'nullable|numeric|min:0',
-            'permit_bills' => 'nullable|array',
-            'permit_bills.*.type' => 'nullable|string|max:100',
-            'permit_bills.*.amount' => 'nullable|numeric|min:0',
-            'construction_costs' => 'nullable|array',
-            'construction_costs.*.category' => 'nullable|string|max:100',
-            'construction_costs.*.amount' => 'nullable|numeric|min:0',
-            'equipment_costs' => 'nullable|array',
-            'equipment_costs.*.name' => 'nullable|string|max:150',
-            'equipment_costs.*.type' => 'nullable|string|max:100',
-            'equipment_costs.*.quantity' => 'nullable|integer|min:1',
-            'equipment_costs.*.unit_cost' => 'nullable|numeric|min:0',
-            'total_investment' => 'nullable|numeric|min:0',
-            'accounts' => 'nullable|array',
-            'accounts.admin' => 'nullable|boolean',
-            'accounts.hr' => 'nullable|boolean',
-            'accounts.finance' => 'nullable|boolean',
-            'accounts.procurement' => 'nullable|boolean',
-            'accounts.logistics' => 'nullable|boolean',
-            'account_quantities' => 'nullable|array',
-            'account_quantities.admin' => 'nullable|integer|min:1',
-            'account_quantities.hr' => 'nullable|integer|min:1',
-            'account_quantities.finance' => 'nullable|integer|min:1',
-            'account_quantities.procurement' => 'nullable|integer|min:1',
-            'account_quantities.logistics' => 'nullable|integer|min:1',
-            'custom_account' => 'nullable|array',
-            'custom_account.username' => 'nullable|string|max:60',
-            'custom_account.password' => 'nullable|string|min:6|max:100',
-            'custom_account.full_name' => 'nullable|string|max:120',
-            'custom_account.modules' => 'nullable|array',
-            'custom_account.modules.*' => 'string',
-            'custom_account.functions' => 'nullable|array',
-            'custom_account.functions.*' => 'string',
-            'custom_accounts' => 'nullable|array|max:20',
-            'custom_accounts.*' => 'required|array',
-            'custom_accounts.*.username' => 'nullable|string|max:60',
-            'custom_accounts.*.full_name' => 'nullable|string|max:120',
-            'custom_accounts.*.modules' => 'nullable|array',
-            'custom_accounts.*.modules.*' => 'string',
-            'custom_accounts.*.functions' => 'nullable|array',
-            'custom_accounts.*.functions.*' => 'string',
+            'cost_attachments' => 'nullable|array',
+            'cost_attachments.permit_bills' => 'nullable|array|max:10',
+            'cost_attachments.permit_bills.*' => 'file|mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx|max:10240',
+            'cost_attachments.construction_costs' => 'nullable|array|max:10',
+            'cost_attachments.construction_costs.*' => 'file|mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx|max:10240',
+            'cost_attachments.equipment_costs' => 'nullable|array|max:10',
+            'cost_attachments.equipment_costs.*' => 'file|mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx|max:10240',
+            'cost_attachment_amounts' => 'nullable|array',
+            'cost_attachment_amounts.permit_bills' => 'nullable|array',
+            'cost_attachment_amounts.permit_bills.*' => 'required|numeric|min:0|max:9999999999999.99',
+            'cost_attachment_amounts.construction_costs' => 'nullable|array',
+            'cost_attachment_amounts.construction_costs.*' => 'required|numeric|min:0|max:9999999999999.99',
+            'cost_attachment_amounts.equipment_costs' => 'nullable|array',
+            'cost_attachment_amounts.equipment_costs.*' => 'required|numeric|min:0|max:9999999999999.99',
         ]);
+
+        foreach (['permit_bills', 'construction_costs', 'equipment_costs'] as $category) {
+            $fileCount = count((array) $request->file("cost_attachments.{$category}", []));
+            $amountCount = count((array) $request->input("cost_attachment_amounts.{$category}", []));
+            if ($fileCount !== $amountCount) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    "cost_attachment_amounts.{$category}" => 'Enter an amount for every attached file.',
+                ]);
+            }
+        }
 
         $code = $request->input('code');
         $name = $request->input('name');
@@ -1294,81 +1285,22 @@ class SuperAdminController extends Controller
         }
         $latitude = $request->input('latitude');
         $longitude = $request->input('longitude');
-        $requestedBudget = (int) ($request->input('budget', 100000));
         $squareMeters = $request->input('square_meters');
         $geofencingRadius = $request->input('geofencing_radius');
         
         // Cost details
-        $permitBills = $request->input('permit_bills', []);
-        $constructionCosts = $request->input('construction_costs', []);
-        $equipmentCosts = $request->input('equipment_costs', []);
-        $calculatedInvestment = collect($permitBills)->sum(fn ($item) => (float) ($item['amount'] ?? 0))
-            + collect($constructionCosts)->sum(fn ($item) => (float) ($item['amount'] ?? 0))
-            + collect($equipmentCosts)->sum(fn ($item) => (float) ($item['quantity'] ?? 0) * (float) ($item['unit_cost'] ?? 0));
-        $totalInvestment = $calculatedInvestment;
-
-        if ($totalInvestment > $requestedBudget) {
-            return response()->json([
-                'ok' => false,
-                'message' => 'Initial budget must cover the total initial investment.',
-                'errors' => [
-                    'budget' => ['The initial budget must be greater than or equal to the total initial investment.'],
-                ],
-            ], 422);
+        $calculatedInvestment = collect(['permit_bills', 'construction_costs', 'equipment_costs'])
+            ->sum(fn ($category) => collect($request->input("cost_attachment_amounts.{$category}", []))
+                ->sum(fn ($amount) => (float) $amount));
+        $calculatedInvestment = round($calculatedInvestment, 2);
+        if ($calculatedInvestment > 9999999999999.99) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'cost_attachment_amounts' => 'The total attachment amount exceeds the maximum supported investment.',
+            ]);
         }
+        $totalInvestment = $calculatedInvestment > 0 ? $calculatedInvestment : null;
 
         $defaultPassword = config('chikintayo.default_password', 'Chikintayo_123');
-
-        // Allowed permission catalog for custom accounts
-        // Keep this catalog aligned with the Custom sidebar feature choices.
-        $allowedModules = [
-            'budget-request-approvals', 'current-price-markup', 'receipt-approval',
-            'financial-overview', 'recent-transactions', 'manual-procurement',
-            'procurement-requests', 'add-supplier', 'supplier-products',
-            'stock-confirmation-history', 'product-barcodes', 'pending-stock',
-            'request-new-product', 'supplier-product-confirmations', 'inventory-monitor',
-            'product-disposal', 'landing-page-product-images', 'staff-activity',
-            'automatic-clock-out', 'staff-management',
-        ];
-        $allowedFunctions = [
-            // Admin
-            'admin.users', 'admin.branches', 'admin.settings',
-            // Finance
-            'finance.dashboard', 'finance.budget', 'finance.reports', 'finance.expenses',
-            // Logistics
-            'logistics.dispatch', 'logistics.receiving', 'logistics.transfers',
-            // Inventory
-            'inventory.products', 'inventory.counts', 'inventory.adjustments',
-            // Procurement
-            'procurement.purchase_orders', 'procurement.suppliers', 'procurement.approvals',
-            // Kitchen
-            'kitchen.orders', 'kitchen.production', 'kitchen.waste',
-            // Cashier
-            'cashier.pos', 'cashier.refunds', 'cashier.shifts',
-            // HR
-            'hr.attendance', 'hr.scheduling', 'hr.payroll',
-            // Reports
-            'reports.sales', 'reports.inventory', 'reports.finance',
-        ];
-
-        $accountsInput = is_array($request->input('accounts')) ? $request->input('accounts') : [];
-        $selectedAccounts = [
-            'admin' => true,
-            'hr' => array_key_exists('hr', $accountsInput) ? filter_var($accountsInput['hr'], FILTER_VALIDATE_BOOLEAN) : true,
-            'finance' => array_key_exists('finance', $accountsInput) ? filter_var($accountsInput['finance'], FILTER_VALIDATE_BOOLEAN) : true,
-            'procurement' => array_key_exists('procurement', $accountsInput) ? filter_var($accountsInput['procurement'], FILTER_VALIDATE_BOOLEAN) : true,
-            'logistics' => array_key_exists('logistics', $accountsInput) ? filter_var($accountsInput['logistics'], FILTER_VALIDATE_BOOLEAN) : true,
-        ];
-        $accountQuantitiesInput = is_array($request->input('account_quantities'))
-            ? $request->input('account_quantities')
-            : [];
-        $accountQuantities = [
-            'admin' => max(1, (int) ($accountQuantitiesInput['admin'] ?? 1)),
-            'hr' => max(1, (int) ($accountQuantitiesInput['hr'] ?? 1)),
-            'finance' => max(1, (int) ($accountQuantitiesInput['finance'] ?? 1)),
-            'procurement' => max(1, (int) ($accountQuantitiesInput['procurement'] ?? 1)),
-            'logistics' => max(1, (int) ($accountQuantitiesInput['logistics'] ?? 1)),
-        ];
 
         // If no code provided, auto-generate from name. Ensure uniqueness.
         if (empty($code)) {
@@ -1390,7 +1322,28 @@ class SuperAdminController extends Controller
         $codeSlug = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $code));
 
         DB::beginTransaction();
+        $storedAttachmentPaths = [];
         try {
+            $costAttachments = [];
+            foreach (['permit_bills', 'construction_costs', 'equipment_costs'] as $category) {
+                $costAttachments[$category] = [];
+                $attachmentAmounts = array_values((array) $request->input("cost_attachment_amounts.{$category}", []));
+                foreach (array_values((array) $request->file("cost_attachments.{$category}", [])) as $index => $file) {
+                    $path = $file->store('branch-cost-attachments', 'local');
+                    if (! is_string($path)) {
+                        throw new \RuntimeException('Failed to store a branch cost attachment.');
+                    }
+                    $storedAttachmentPaths[] = $path;
+                    $costAttachments[$category][] = [
+                        'name' => $file->getClientOriginalName(),
+                        'amount' => (float) $attachmentAmounts[$index],
+                        'path' => $path,
+                        'mime' => $file->getMimeType(),
+                        'size' => $file->getSize(),
+                    ];
+                }
+            }
+
             // Create the branch
             $branch = Branch::create([
                 'code' => $code,
@@ -1407,83 +1360,27 @@ class SuperAdminController extends Controller
                 'approved_by' => $requiresOwnerApproval ? null : $user->id,
                 'approved_at' => $requiresOwnerApproval ? null : now(),
                 'rejected_at' => null,
-                // Budget and initial_budget both represent the approved allocation entered by the user.
-                'budget' => $requestedBudget,
-                'initial_budget' => $requestedBudget,
                 'square_meters' => $squareMeters,
                 'geofencing_radius' => $geofencingRadius,
-                // Cost details
-                'permit_bills' => !empty($permitBills) ? $permitBills : null,
-                'construction_costs' => !empty($constructionCosts) ? $constructionCosts : null,
-                'equipment_costs' => !empty($equipmentCosts) ? $equipmentCosts : null,
+                'cost_attachments' => collect($costAttachments)->flatten(1)->isNotEmpty() ? $costAttachments : null,
                 'total_investment' => $totalInvestment,
             ]);
-
-            $createdRoles = [];
-
-            // Instead of creating real user accounts immediately, broadcast approved job openings
-            // so the HR application flow creates accounts only after a successful application.
-            foreach (['admin', 'hr', 'finance', 'procurement', 'logistics'] as $roleKey) {
-                if (!empty($selectedAccounts[$roleKey])) {
-                    $broadcast = $this->createApprovedBranchPositionRequest(
-                        $branch,
-                        $roleKey,
-                        (int) $user->id,
-                        null,
-                        $accountQuantities[$roleKey]
-                    );
-                    $createdRoles[] = $broadcast['position_name'];
-                }
-            }
-
-            // Broadcast custom accounts too; each applicant is created only after passing.
-            $customAccountInputs = $request->input('custom_accounts');
-            if (!is_array($customAccountInputs)) {
-                $legacyCustomAccount = $request->input('custom_account');
-                $customAccountInputs = is_array($legacyCustomAccount) ? [$legacyCustomAccount] : [];
-            }
-
-            foreach ($customAccountInputs as $customAccountInput) {
-                $rawModules = array_filter($customAccountInput['modules'] ?? [], fn ($m) => in_array(strtolower($m), $allowedModules, true));
-                $rawFunctions = array_filter($customAccountInput['functions'] ?? [], fn ($f) => in_array(strtolower($f), array_map('strtolower', $allowedFunctions), true));
-
-                $modules = array_values(array_unique(array_map('strtolower', $rawModules)));
-                $functions = array_values(array_unique(array_map('strtolower', $rawFunctions)));
-                $functionModules = array_map(
-                    fn ($function) => explode('.', strtolower($function), 2)[0],
-                    $functions
-                );
-                $modules = array_values(array_unique(array_merge(
-                    $modules,
-                    array_filter($functionModules, fn ($module) => in_array($module, $allowedModules, true))
-                )));
-
-                // Only create if there is at least one permission selected
-                if (!empty($modules) || !empty($functions)) {
-                    $customUsername = trim($customAccountInput['username'] ?? '');
-                    $customFullName = trim($customAccountInput['full_name'] ?? '') ?: ('Custom Account - ' . $name);
-                    $broadcast = $this->createApprovedBranchPositionRequest($branch, 'custom', (int) $user->id, [
-                        'username' => $customUsername,
-                        'full_name' => $customFullName,
-                        'modules' => $modules,
-                        'functions' => $functions,
-                    ]);
-                    $createdRoles[] = $broadcast['position_name'];
-                }
-            }
 
             DB::commit();
 
             return response()->json([
                 'ok' => true,
-                'message' => $requiresFinanceApproval
-                    ? "Branch '{$name}' created and awaiting finance confirmation."
-                    : "Branch '{$name}' created" . (!empty($createdRoles) ? ' with ' . implode(', ', $createdRoles) . ' account' . (count($createdRoles) === 1 ? '' : 's') . '.' : '.'),
+                'message' => $requiresOwnerApproval
+                    ? "Branch '{$name}' created and awaiting Main Branch Finance invoice and budget confirmation."
+                    : "Branch '{$name}' created.",
                 'branch_id' => $branch->id,
             ], 201);
 
         } catch (\Exception $e) {
             DB::rollBack();
+            foreach ($storedAttachmentPaths as $path) {
+                Storage::disk('local')->delete($path);
+            }
             Log::error('storeBranch error: ' . $e->getMessage());
             return response()->json([
                 'ok' => false,
@@ -1509,6 +1406,7 @@ class SuperAdminController extends Controller
         }
 
         $branches = Branch::where('approval_status', 'pending_owner')
+            ->whereNull('approved_by')
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -1522,8 +1420,8 @@ class SuperAdminController extends Controller
                 'code' => $branch->code,
                 'name' => $branch->name,
                 'address' => $branch->address,
-                'budget' => isset($branch->budget) ? (int) $branch->budget : 0,
-                'initial_budget' => isset($branch->initial_budget) ? (int) $branch->initial_budget : (int) ($branch->budget ?? 0),
+                'budget' => round((float) ($branch->budget ?? 0), 2),
+                'initial_budget' => round((float) ($branch->initial_budget ?? $branch->budget ?? 0), 2),
                 'latitude' => $branch->latitude,
                 'longitude' => $branch->longitude,
                 'square_meters' => $branch->square_meters,
@@ -1531,7 +1429,9 @@ class SuperAdminController extends Controller
                 'permit_bills' => $branch->permit_bills ?? [],
                 'construction_costs' => $branch->construction_costs ?? [],
                 'equipment_costs' => $branch->equipment_costs ?? [],
-                'total_investment' => (float) ($branch->total_investment ?? 0),
+                'cost_attachments' => $this->costAttachmentsForResponse($branch),
+                'total_investment' => $branch->total_investment === null ? null : (float) $branch->total_investment,
+                'finance_confirmed_at' => $branch->finance_confirmed_at,
                 'created_at' => $branch->created_at,
                 'requested_by' => $requester ? [
                     'id' => $requester->id,
@@ -1565,36 +1465,38 @@ class SuperAdminController extends Controller
         if (! $branch) {
             return response()->json(['ok' => false, 'message' => 'Branch not found'], 404);
         }
-        if (($branch->approval_status ?? 'approved') !== 'pending_owner') {
-            return response()->json(['ok' => false, 'message' => 'Branch is not pending approval'], 409);
+        if ($branch->approval_status !== 'pending_owner') {
+            return response()->json(['ok' => false, 'message' => 'Branch must be confirmed by Main Branch Finance before Owner approval.'], 409);
+        }
+        if ($branch->approved_by) {
+            return response()->json(['ok' => false, 'message' => 'Owner approval has already been recorded.'], 409);
+        }
+        if (! $branch->finance_confirmed_by || ! $branch->finance_confirmed_at || (int) ($branch->budget ?? 0) < 1) {
+            return response()->json(['ok' => false, 'message' => 'Main Branch Finance must confirm the invoice and assign a budget before Owner approval.'], 409);
         }
 
         DB::beginTransaction();
         try {
-            $mainBranch = Branch::where('is_main_branch', 1)->lockForUpdate()->first();
-            if (! $mainBranch) {
-                DB::rollBack();
-                return response()->json(['ok' => false, 'message' => 'Main branch not found for budget allocation.'], 422);
-            }
-
-            $allocation = (int) ($branch->budget ?? 0);
-            $mainBudget = (int) ($mainBranch->budget ?? 0);
-            if ($mainBudget < $allocation) {
-                DB::rollBack();
-                return response()->json(['ok' => false, 'message' => 'Insufficient main branch budget for this allocation.'], 422);
-            }
-
-            $mainBranch->budget = $mainBudget - $allocation;
-            $mainBranch->save();
-
-            $branch->approval_status = 'approved';
             $branch->approved_by = $user->id;
             $branch->approved_at = now();
             $branch->rejected_at = null;
-            $branch->is_active = 1;
+            $branch->is_active = 0;
             $branch->save();
 
-            User::where('branch_id', $branch->id)->update(['is_active' => 1]);
+            $activationError = $this->activateBranchAfterApprovals($branch);
+            if ($activationError !== null) {
+                DB::rollBack();
+                return response()->json(['ok' => false, 'message' => $activationError], 422);
+            }
+
+            PositionOpenRequest::where('branch_id', $branch->id)
+                ->where('status', 'Pending')
+                ->where('notes', 'like', 'Automatically broadcast during branch creation%')
+                ->update([
+                    'status' => 'Approved',
+                    'approved_by_user_id' => $user->id,
+                    'approved_at' => now(),
+                ]);
 
             DB::commit();
             return response()->json(['ok' => true, 'message' => 'Branch approved and activated.']);
@@ -1603,6 +1505,40 @@ class SuperAdminController extends Controller
             Log::error('approveBranchRequest error: ' . $e->getMessage());
             return response()->json(['ok' => false, 'message' => 'Failed to approve branch'], 500);
         }
+    }
+
+    private function activateBranchAfterApprovals(Branch $branch): ?string
+    {
+        if (! $branch->approved_by || ! $branch->finance_confirmed_by || ! $branch->finance_confirmed_at) {
+            return 'Both Owner and Main Branch Finance approvals are required before branch activation.';
+        }
+
+        $allocation = (int) ($branch->budget ?? 0);
+        if ($allocation < 1) {
+            return 'Main Branch Finance must assign a budget before branch activation.';
+        }
+        $invoiceTotal = round((float) ($branch->total_investment ?? 0), 2);
+        $totalDeduction = round($allocation + $invoiceTotal, 2);
+
+        $mainBranch = Branch::where('is_main_branch', 1)->lockForUpdate()->first();
+        if (! $mainBranch) {
+            return 'Main branch not found for budget allocation.';
+        }
+
+        $mainBudget = (float) ($mainBranch->budget ?? 0);
+        if ($mainBudget < $totalDeduction) {
+            return 'Insufficient Main Branch budget for the branch budget and invoice total.';
+        }
+
+        $mainBranch->budget = round($mainBudget - $totalDeduction, 2);
+        $mainBranch->save();
+
+        $branch->approval_status = 'approved';
+        $branch->is_active = true;
+        $branch->save();
+        User::where('branch_id', $branch->id)->update(['is_active' => true]);
+
+        return null;
     }
 
     /**
@@ -1625,8 +1561,8 @@ class SuperAdminController extends Controller
         if (! $branch) {
             return response()->json(['ok' => false, 'message' => 'Branch not found'], 404);
         }
-        if (($branch->approval_status ?? 'approved') !== 'pending_owner') {
-            return response()->json(['ok' => false, 'message' => 'Branch is not pending approval'], 409);
+        if ($branch->approval_status !== 'pending_owner') {
+            return response()->json(['ok' => false, 'message' => 'Branch must be confirmed by Main Branch Finance before Owner review.'], 409);
         }
 
         $validated = $request->validate([
@@ -1682,19 +1618,30 @@ class SuperAdminController extends Controller
         $branches = Branch::where('approval_status', 'pending_finance')
             ->orderBy('created_at', 'desc')
             ->get();
+        $mainBranch = Branch::where('is_main_branch', 1)->first();
+        $reservedBudget = (float) Branch::where('approval_status', 'pending_owner')
+            ->whereNotNull('finance_confirmed_at')
+            ->sum('budget');
+        $reservedInvoiceTotal = (float) Branch::where('approval_status', 'pending_owner')
+            ->whereNotNull('finance_confirmed_at')
+            ->sum('total_investment');
+        $availableMainBranchBudget = $mainBranch
+            ? max(0, round((float) ($mainBranch->budget ?? 0) - $reservedBudget - $reservedInvoiceTotal, 2))
+            : 0;
 
         $requesterIds = $branches->pluck('requested_by')->filter()->unique()->values();
         $requesters = User::whereIn('id', $requesterIds)->get()->keyBy('id');
 
-        $result = $branches->map(function ($branch) use ($requesters) {
+        $result = $branches->map(function ($branch) use ($requesters, $availableMainBranchBudget) {
             $requester = $branch->requested_by ? ($requesters[$branch->requested_by] ?? null) : null;
+            $totalInvestment = $branch->total_investment === null ? null : (float) $branch->total_investment;
             return [
                 'id' => $branch->id,
                 'code' => $branch->code,
                 'name' => $branch->name,
                 'address' => $branch->address,
-                'budget' => isset($branch->budget) ? (int) $branch->budget : 0,
-                'initial_budget' => isset($branch->initial_budget) ? (int) $branch->initial_budget : (int) ($branch->budget ?? 0),
+                'budget' => round((float) ($branch->budget ?? 0), 2),
+                'initial_budget' => round((float) ($branch->initial_budget ?? $branch->budget ?? 0), 2),
                 'latitude' => $branch->latitude,
                 'longitude' => $branch->longitude,
                 'square_meters' => $branch->square_meters,
@@ -1702,7 +1649,10 @@ class SuperAdminController extends Controller
                 'permit_bills' => $branch->permit_bills ?? [],
                 'construction_costs' => $branch->construction_costs ?? [],
                 'equipment_costs' => $branch->equipment_costs ?? [],
-                'total_investment' => (float) ($branch->total_investment ?? 0),
+                'cost_attachments' => $this->costAttachmentsForResponse($branch),
+                'total_investment' => $totalInvestment,
+                'available_main_branch_budget' => $availableMainBranchBudget,
+                'max_assignable_budget' => max(0, (int) floor(round($availableMainBranchBudget - ($totalInvestment ?? 0), 2))),
                 'created_at' => $branch->created_at,
                 'requested_by' => $requester ? [
                     'id' => $requester->id,
@@ -1745,15 +1695,73 @@ class SuperAdminController extends Controller
             return response()->json(['ok' => false, 'message' => 'Branch is not pending finance confirmation'], 409);
         }
 
+        $validated = $request->validate([
+            'budget' => ['required', 'integer', 'min:1'],
+        ]);
+        $budget = (int) $validated['budget'];
+
         DB::beginTransaction();
         try {
-            $branch->approval_status = 'pending_owner';
+            $mainBranch = Branch::where('is_main_branch', 1)->lockForUpdate()->first();
+            if (! $mainBranch) {
+                DB::rollBack();
+                return response()->json(['ok' => false, 'message' => 'Main branch not found for budget allocation.'], 422);
+            }
+
+            $branch = Branch::whereKey($id)->lockForUpdate()->first();
+            if (! $branch || ($branch->approval_status ?? 'approved') !== 'pending_finance') {
+                DB::rollBack();
+                return response()->json(['ok' => false, 'message' => 'Branch is no longer pending finance confirmation.'], 409);
+            }
+
+            $reservedBudget = (float) Branch::where('approval_status', 'pending_owner')
+                ->whereNotNull('finance_confirmed_at')
+                ->sum('budget');
+            $reservedInvoiceTotal = (float) Branch::where('approval_status', 'pending_owner')
+                ->whereNotNull('finance_confirmed_at')
+                ->sum('total_investment');
+            $availableBudget = max(0, round((float) ($mainBranch->budget ?? 0) - $reservedBudget - $reservedInvoiceTotal, 2));
+            $invoiceTotal = round((float) ($branch->total_investment ?? 0), 2);
+            $maxAssignableBudget = max(0, (int) floor(round($availableBudget - $invoiceTotal, 2)));
+            if ($budget > $maxAssignableBudget) {
+                DB::rollBack();
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'The branch budget and invoice total cannot exceed the available Main Branch budget.',
+                    'errors' => [
+                        'budget' => ["The maximum branch budget after the invoice is {$maxAssignableBudget} PHP."],
+                    ],
+                    'available_main_branch_budget' => $availableBudget,
+                    'max_assignable_budget' => $maxAssignableBudget,
+                ], 422);
+            }
+
+            $branch->is_active = 0;
+            $branch->budget = $budget;
+            $branch->initial_budget = $budget;
             $branch->finance_confirmed_by = $user->id;
             $branch->finance_confirmed_at = now();
+            if ($branch->approved_by) {
+                $activationError = $this->activateBranchAfterApprovals($branch);
+                if ($activationError !== null) {
+                    DB::rollBack();
+                    return response()->json(['ok' => false, 'message' => $activationError], 422);
+                }
+            } else {
+                $branch->approval_status = 'pending_owner';
+            }
             $branch->save();
+            if (! $branch->is_active) {
+                User::where('branch_id', $branch->id)->update(['is_active' => 0]);
+            }
 
             DB::commit();
-            return response()->json(['ok' => true, 'message' => 'Budget confirmed. Awaiting owner approval.']);
+            return response()->json([
+                'ok' => true,
+                'message' => $branch->is_active
+                    ? 'Invoice and budget confirmed. Owner approval was already recorded, so the branch is now active.'
+                    : 'Budget confirmed. Awaiting owner approval.',
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('approveFinanceBranchRequest error: ' . $e->getMessage());

@@ -21,7 +21,7 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-DUJQO370.js",
+    "file": "assets/app-qEKKx82q.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -66,7 +66,7 @@
       "resources/js/components/VerifyEmailPage.vue"
     ],
     "css": [
-      "assets/app-Bw7zXNG6.css"
+      "assets/app-BLntRZox.css"
     ],
     "assets": [
       "assets/chikinlogo-BQ_X04-u.png",
@@ -115,7 +115,7 @@
     "src": "resources/js/assets/yangyeom.png"
   },
   "resources/js/components/Cashier.vue": {
-    "file": "assets/Cashier-hL5XMV3Q.js",
+    "file": "assets/Cashier-B3Hnes6Z.js",
     "name": "Cashier",
     "src": "resources/js/components/Cashier.vue",
     "isDynamicEntry": true,
@@ -127,7 +127,7 @@
     ]
   },
   "resources/js/components/CashierCustomerDisplay.vue": {
-    "file": "assets/CashierCustomerDisplay-DGbIsqji.js",
+    "file": "assets/CashierCustomerDisplay-Cs_7CW3b.js",
     "name": "CashierCustomerDisplay",
     "src": "resources/js/components/CashierCustomerDisplay.vue",
     "isDynamicEntry": true,
@@ -142,7 +142,7 @@
     ]
   },
   "resources/js/components/ChangePasswordPage.vue": {
-    "file": "assets/ChangePasswordPage-BcIX9mFB.js",
+    "file": "assets/ChangePasswordPage-BkwEzdBJ.js",
     "name": "ChangePasswordPage",
     "src": "resources/js/components/ChangePasswordPage.vue",
     "isDynamicEntry": true,
@@ -154,7 +154,7 @@
     ]
   },
   "resources/js/components/CustomPanel.vue": {
-    "file": "assets/CustomPanel-Dncxrc9z.js",
+    "file": "assets/CustomPanel-BoQHUIzD.js",
     "name": "CustomPanel",
     "src": "resources/js/components/CustomPanel.vue",
     "isDynamicEntry": true,
@@ -170,7 +170,7 @@
     ]
   },
   "resources/js/components/HRStaffManagement.vue": {
-    "file": "assets/HRStaffManagement-YWrlBEr3.js",
+    "file": "assets/HRStaffManagement-DRDu6TsD.js",
     "name": "HRStaffManagement",
     "src": "resources/js/components/HRStaffManagement.vue",
     "isDynamicEntry": true,
@@ -182,7 +182,7 @@
     ]
   },
   "resources/js/components/KitchenStaffPanel.vue": {
-    "file": "assets/KitchenStaffPanel-AnSPVdul.js",
+    "file": "assets/KitchenStaffPanel-C7VMKxgj.js",
     "name": "KitchenStaffPanel",
     "src": "resources/js/components/KitchenStaffPanel.vue",
     "isDynamicEntry": true,
@@ -194,7 +194,7 @@
     ]
   },
   "resources/js/components/MainBranchAdminPanel.vue": {
-    "file": "assets/MainBranchAdminPanel-B2_uofm_.js",
+    "file": "assets/MainBranchAdminPanel-Dw260n8o.js",
     "name": "MainBranchAdminPanel",
     "src": "resources/js/components/MainBranchAdminPanel.vue",
     "isDynamicEntry": true,
@@ -204,14 +204,14 @@
       "resources/js/components/OwnerAddBranches.vue"
     ],
     "css": [
-      "assets/MainBranchAdminPanel-FMfM_Z-A.css"
+      "assets/MainBranchAdminPanel-SLT1VzKz.css"
     ],
     "assets": [
       "assets/chikinlogo-BQ_X04-u.png"
     ]
   },
   "resources/js/components/MainBranchCRMPanel.vue": {
-    "file": "assets/MainBranchCRMPanel-D5zLRmvu.js",
+    "file": "assets/MainBranchCRMPanel-PaijTybT.js",
     "name": "MainBranchCRMPanel",
     "src": "resources/js/components/MainBranchCRMPanel.vue",
     "isDynamicEntry": true,
@@ -223,7 +223,7 @@
     ]
   },
   "resources/js/components/MainBranchFinancePanel.vue": {
-    "file": "assets/MainBranchFinancePanel-BfXkNPCW.js",
+    "file": "assets/MainBranchFinancePanel-SXTP0T7G.js",
     "name": "MainBranchFinancePanel",
     "src": "resources/js/components/MainBranchFinancePanel.vue",
     "isDynamicEntry": true,
@@ -235,7 +235,7 @@
     ]
   },
   "resources/js/components/MainBranchHrPanel.vue": {
-    "file": "assets/MainBranchHrPanel-Bo_Gg_BU.js",
+    "file": "assets/MainBranchHrPanel-BJGTh4gW.js",
     "name": "MainBranchHrPanel",
     "src": "resources/js/components/MainBranchHrPanel.vue",
     "isDynamicEntry": true,
@@ -243,14 +243,14 @@
       "resources/js/app.js"
     ],
     "css": [
-      "assets/MainBranchHrPanel-Bk5Yi_w-.css"
+      "assets/MainBranchHrPanel-E_NgsFPy.css"
     ],
     "assets": [
       "assets/chikinlogo-BQ_X04-u.png"
     ]
   },
   "resources/js/components/MainBranchLogisticsPanel.vue": {
-    "file": "assets/MainBranchLogisticsPanel-UunWBw4x.js",
+    "file": "assets/MainBranchLogisticsPanel-BYe5vNky.js",
     "name": "MainBranchLogisticsPanel",
     "src": "resources/js/components/MainBranchLogisticsPanel.vue",
     "isDynamicEntry": true,
@@ -265,7 +265,7 @@
     ]
   },
   "resources/js/components/OwnerAddBranches.vue": {
-    "file": "assets/OwnerAddBranches-CPYmHNyD.js",
+    "file": "assets/OwnerAddBranches-31Oad-8K.js",
     "name": "OwnerAddBranches",
     "src": "resources/js/components/OwnerAddBranches.vue",
     "isDynamicEntry": true,
@@ -273,11 +273,11 @@
       "resources/js/app.js"
     ],
     "css": [
-      "assets/OwnerAddBranches-DhmhTA66.css"
+      "assets/OwnerAddBranches-DRVwOIrq.css"
     ]
   },
   "resources/js/components/OwnerBranchConfirmations.vue": {
-    "file": "assets/OwnerBranchConfirmations-DhevrZe9.js",
+    "file": "assets/OwnerBranchConfirmations-3ZMt2rMu.js",
     "name": "OwnerBranchConfirmations",
     "src": "resources/js/components/OwnerBranchConfirmations.vue",
     "isDynamicEntry": true,
@@ -285,11 +285,11 @@
       "resources/js/app.js"
     ],
     "css": [
-      "assets/OwnerBranchConfirmations-C_Zx4yLK.css"
+      "assets/OwnerBranchConfirmations-Bmlfzre2.css"
     ]
   },
   "resources/js/components/OwnerDishApprovalPanel.vue": {
-    "file": "assets/OwnerDishApprovalPanel-CijjNYyd.js",
+    "file": "assets/OwnerDishApprovalPanel-BE9ZmWJ_.js",
     "name": "OwnerDishApprovalPanel",
     "src": "resources/js/components/OwnerDishApprovalPanel.vue",
     "isDynamicEntry": true,
@@ -301,7 +301,7 @@
     ]
   },
   "resources/js/components/OwnerPanel.vue": {
-    "file": "assets/OwnerPanel-CMS09g35.js",
+    "file": "assets/OwnerPanel-DCCbSQQT.js",
     "name": "OwnerPanel",
     "src": "resources/js/components/OwnerPanel.vue",
     "isDynamicEntry": true,
@@ -316,7 +316,7 @@
     ]
   },
   "resources/js/components/OwnerPriceMarkupPanel.vue": {
-    "file": "assets/OwnerPriceMarkupPanel-C5-hP8f-.js",
+    "file": "assets/OwnerPriceMarkupPanel-8FoBwB0v.js",
     "name": "OwnerPriceMarkupPanel",
     "src": "resources/js/components/OwnerPriceMarkupPanel.vue",
     "isDynamicEntry": true,
@@ -328,7 +328,7 @@
     ]
   },
   "resources/js/components/ResetPassword.vue": {
-    "file": "assets/ResetPassword-P79exrf8.js",
+    "file": "assets/ResetPassword-DGXu9uxL.js",
     "name": "ResetPassword",
     "src": "resources/js/components/ResetPassword.vue",
     "isDynamicEntry": true,
@@ -340,7 +340,7 @@
     ]
   },
   "resources/js/components/StaffFinancePanel.vue": {
-    "file": "assets/StaffFinancePanel-BsHAPu2Q.js",
+    "file": "assets/StaffFinancePanel-DyVOxS6I.js",
     "name": "StaffFinancePanel",
     "src": "resources/js/components/StaffFinancePanel.vue",
     "isDynamicEntry": true,
@@ -352,7 +352,7 @@
     ]
   },
   "resources/js/components/SuperAdminFinance.vue": {
-    "file": "assets/SuperAdminFinance-DPSLImPl.js",
+    "file": "assets/SuperAdminFinance-CfxoS_53.js",
     "name": "SuperAdminFinance",
     "src": "resources/js/components/SuperAdminFinance.vue",
     "isDynamicEntry": true,
@@ -364,7 +364,7 @@
     ]
   },
   "resources/js/components/SuperAdminKitchenStaff.vue": {
-    "file": "assets/SuperAdminKitchenStaff-u_A_ljSc.js",
+    "file": "assets/SuperAdminKitchenStaff-CFST0Wd_.js",
     "name": "SuperAdminKitchenStaff",
     "src": "resources/js/components/SuperAdminKitchenStaff.vue",
     "isDynamicEntry": true,
@@ -376,7 +376,7 @@
     ]
   },
   "resources/js/components/SuperAdminLogisticsPanel.vue": {
-    "file": "assets/SuperAdminLogisticsPanel-lw3IXZ90.js",
+    "file": "assets/SuperAdminLogisticsPanel-vcNditdd.js",
     "name": "SuperAdminLogisticsPanel",
     "src": "resources/js/components/SuperAdminLogisticsPanel.vue",
     "isDynamicEntry": true,
@@ -388,7 +388,7 @@
     ]
   },
   "resources/js/components/SuperAdminProcurement.vue": {
-    "file": "assets/SuperAdminProcurement-B8W0QJrN.js",
+    "file": "assets/SuperAdminProcurement-4mB_D_v8.js",
     "name": "SuperAdminProcurement",
     "src": "resources/js/components/SuperAdminProcurement.vue",
     "isDynamicEntry": true,
@@ -400,7 +400,7 @@
     ]
   },
   "resources/js/components/SuperAdminStaffManagement.vue": {
-    "file": "assets/SuperAdminStaffManagement-BTmf6czK.js",
+    "file": "assets/SuperAdminStaffManagement-AkEkcywB.js",
     "name": "SuperAdminStaffManagement",
     "src": "resources/js/components/SuperAdminStaffManagement.vue",
     "isDynamicEntry": true,
@@ -412,7 +412,7 @@
     ]
   },
   "resources/js/components/SuperAdminSupplier.vue": {
-    "file": "assets/SuperAdminSupplier-DCZjjSq_.js",
+    "file": "assets/SuperAdminSupplier-CD5SGLld.js",
     "name": "SuperAdminSupplier",
     "src": "resources/js/components/SuperAdminSupplier.vue",
     "isDynamicEntry": true,
@@ -424,7 +424,7 @@
     ]
   },
   "resources/js/components/Unauthorized.vue": {
-    "file": "assets/Unauthorized-DecQPXKs.js",
+    "file": "assets/Unauthorized-CYYz-ZZx.js",
     "name": "Unauthorized",
     "src": "resources/js/components/Unauthorized.vue",
     "isDynamicEntry": true,
@@ -436,7 +436,7 @@
     ]
   },
   "resources/js/components/VerifyEmailPage.vue": {
-    "file": "assets/VerifyEmailPage-BN5G-b5S.js",
+    "file": "assets/VerifyEmailPage-g9BxqA5f.js",
     "name": "VerifyEmailPage",
     "src": "resources/js/components/VerifyEmailPage.vue",
     "isDynamicEntry": true,
@@ -448,7 +448,7 @@
     ]
   },
   "resources/js/components/inventory/InventoryStaffPanel.vue": {
-    "file": "assets/InventoryStaffPanel-CVMj2ED9.js",
+    "file": "assets/InventoryStaffPanel-BsHuvIL0.js",
     "name": "InventoryStaffPanel",
     "src": "resources/js/components/inventory/InventoryStaffPanel.vue",
     "isDynamicEntry": true,

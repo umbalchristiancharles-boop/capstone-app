@@ -36,6 +36,9 @@
           <button type="button" class="main-branch-hr-sidebar-link" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="hrSidebarItemStyle('requests')" :class="{ 'main-branch-hr-sidebar-link--active': activeHrSection === 'requests' }" :aria-current="activeHrSection === 'requests' ? 'page' : undefined" @mouseenter="hoveredHrSection = 'requests'" @mouseleave="hoveredHrSection = ''" @click="showHrSection('requests')">
             <span :style="hrSidebarIconStyle('requests')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 32 32" fill="none"><path d="M11 8.5h7l4 4v11H11z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" /><path d="M18 8.5v4h4M16 15.5v5M13.5 18h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Position Requests</span>
           </button>
+          <button type="button" class="main-branch-hr-sidebar-link" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="hrSidebarItemStyle('newBranchPositions')" :class="{ 'main-branch-hr-sidebar-link--active': activeHrSection === 'newBranchPositions' }" :aria-current="activeHrSection === 'newBranchPositions' ? 'page' : undefined" @mouseenter="hoveredHrSection = 'newBranchPositions'" @mouseleave="hoveredHrSection = ''" @click="openNewBranchPositions">
+            <span :style="hrSidebarIconStyle('newBranchPositions')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 32 32" fill="none"><path d="M6.5 11h19v14h-19zM10 11V7.5h12V11M11 16h10M11 20h6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">New Branch Open Position</span><span v-if="branchesAwaitingOpenPositions.length" class="main-branch-hr-sidebar-count">{{ branchesAwaitingOpenPositions.length }}</span>
+          </button>
           <button type="button" class="main-branch-hr-sidebar-link" style="display: grid !important; grid-template-columns: 1.8rem minmax(0, 1fr); align-items: center; column-gap: 0.45rem; text-align: left !important;" :style="hrSidebarItemStyle('accounts')" :class="{ 'main-branch-hr-sidebar-link--active': activeHrSection === 'accounts' }" :aria-current="activeHrSection === 'accounts' ? 'page' : undefined" @mouseenter="hoveredHrSection = 'accounts'" @mouseleave="hoveredHrSection = ''" @click="showHrSection('accounts')">
             <span :style="hrSidebarIconStyle('accounts')" aria-hidden="true"><svg style="display: block; width: 18px; height: 18px;" viewBox="0 0 32 32" fill="none"><circle cx="13" cy="13" r="3" stroke="currentColor" stroke-width="1.7" /><path d="M7.5 23c.7-3 2.5-4.5 5.5-4.5s4.8 1.5 5.5 4.5M20 11a3 3 0 0 1 0 5.9M21 19c1.9.4 3.1 1.7 3.5 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg></span><span style="min-width: 0; overflow-wrap: normal; word-break: normal;">Branch Accounts</span>
           </button>
@@ -131,6 +134,106 @@
             </div>
           </section>
           </template>
+
+          <div v-if="activeHrSection === 'newBranchPositions'" id="hr-new-branch-open-positions" class="new-branch-open-positions">
+            <div class="section-header">
+              <div>
+                <h3>New Branch Open Position</h3>
+                <p class="muted">Choose an approved branch, then select the roles and number of openings to publish.</p>
+              </div>
+              <button class="pill-btn" @click="loadBranchesAwaitingOpenPositions" :disabled="loadingBranchesAwaitingOpenPositions">
+                {{ loadingBranchesAwaitingOpenPositions ? 'Loading...' : 'Refresh' }}
+              </button>
+            </div>
+
+            <div v-if="branchOpenPositionsError" class="branch-open-position-error">{{ branchOpenPositionsError }}</div>
+            <div v-if="loadingBranchesAwaitingOpenPositions" class="loading-box">Loading approved branches...</div>
+            <div v-else-if="branchesAwaitingOpenPositions.length === 0" class="empty-box">No approved branches are waiting for open positions.</div>
+
+            <div v-else class="new-branch-open-positions__layout">
+              <div class="new-branch-open-positions__branches">
+                <button
+                  v-for="branch in branchesAwaitingOpenPositions"
+                  :key="branch.id"
+                  type="button"
+                  class="new-branch-open-positions__branch"
+                  :class="{ 'new-branch-open-positions__branch--selected': selectedBranchForOpenPositions?.id === branch.id }"
+                  @click="selectBranchForOpenPositions(branch)"
+                >
+                  <strong>{{ branch.name }}</strong>
+                  <span>{{ branch.code || 'No branch code' }}</span>
+                  <small>Confirmed {{ formatDate(branch.approved_at) }}</small>
+                </button>
+              </div>
+
+              <div v-if="selectedBranchForOpenPositions" class="new-branch-open-positions__form">
+                <div class="new-branch-open-positions__form-heading">
+                  <div>
+                    <h4>{{ selectedBranchForOpenPositions.name }}</h4>
+                    <p>Select roles and set the number of open positions for each role.</p>
+                  </div>
+                </div>
+
+                <div v-if="loadingBranchPositionCatalog" class="loading-box">Loading available roles...</div>
+                <div v-else-if="branchPositionCatalog.length === 0" class="empty-box">There are no active positions available.</div>
+                <div v-else class="new-branch-open-positions__roles">
+                  <div v-for="position in branchPositionCatalog" :key="position.id" class="new-branch-open-positions__role">
+                    <input
+                      :checked="branchPositionSelection[position.id].selected"
+                      type="checkbox"
+                      @change="togglePositionSelection(position, $event.target.checked)"
+                    />
+                    <span class="new-branch-open-positions__role-name">
+                      <strong>{{ position.name }}</strong>
+                      <small>{{ position.department || 'General' }}</small>
+                    </span>
+                    <span v-if="!position.is_custom" class="new-branch-open-positions__quantity">
+                      <span>Open positions</span>
+                      <input v-model.number="branchPositionSelection[position.id].quantity" type="number" min="1" max="500" :disabled="!branchPositionSelection[position.id].selected" />
+                    </span>
+                    <div v-if="position.is_custom && branchPositionSelection[position.id].selected" class="new-branch-open-positions__custom-accounts">
+                      <article
+                        v-for="(customAccount, accountIndex) in branchPositionSelection[position.id].customAccounts"
+                        :key="customAccount.id"
+                        class="new-branch-open-positions__custom-account"
+                      >
+                        <div class="new-branch-open-positions__custom-account-heading">
+                          <strong>Custom Account {{ accountIndex + 1 }}</strong>
+                          <button
+                            v-if="branchPositionSelection[position.id].customAccounts.length > 1"
+                            type="button"
+                            class="new-branch-open-positions__remove-custom"
+                            @click="removeCustomAccount(position.id, customAccount.id)"
+                          >Remove</button>
+                        </div>
+                        <label class="new-branch-open-positions__quantity">
+                          <span>Open positions</span>
+                          <input v-model.number="customAccount.quantity" type="number" min="1" max="500" />
+                        </label>
+                        <div class="new-branch-open-positions__custom-modules">
+                          <strong>Custom account access</strong>
+                          <label v-for="module in branchPositionPermissionModules" :key="module.key">
+                            <input v-model="customAccount.modules" type="checkbox" :value="module.key" />
+                            {{ module.label }}
+                          </label>
+                        </div>
+                      </article>
+                      <button type="button" class="new-branch-open-positions__add-custom" @click="addCustomAccount(position.id)">
+                        + Add another custom account
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="new-branch-open-positions__actions">
+                  <span>Published openings become visible on the public Open Positions page.</span>
+                  <button type="button" class="pill-btn" :disabled="savingBranchOpenPositions || loadingBranchPositionCatalog" @click="publishBranchOpenPositions">
+                    {{ savingBranchOpenPositions ? 'Publishing...' : 'Publish Open Positions' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <div v-if="activeHrSection === 'requests'" id="hr-position-requests" class="position-requests-section">
             <div class="section-header">
@@ -616,6 +719,37 @@ const errorMessage = ref('')
 const positionRequests = ref([])
 const loadingPositionRequests = ref(false)
 const processingRequestId = ref(null)
+const branchesAwaitingOpenPositions = ref([])
+const loadingBranchesAwaitingOpenPositions = ref(false)
+const branchOpenPositionsError = ref('')
+const selectedBranchForOpenPositions = ref(null)
+const branchPositionCatalog = ref([])
+const loadingBranchPositionCatalog = ref(false)
+const branchPositionSelection = ref({})
+const savingBranchOpenPositions = ref(false)
+const branchPositionPermissionModules = [
+  { key: 'budget-request-approvals', label: 'Budget Request Approvals' },
+  { key: 'current-price-markup', label: 'Current Price Markup' },
+  { key: 'receipt-approval', label: 'Receipt Approval' },
+  { key: 'financial-overview', label: 'Financial Overview' },
+  { key: 'recent-transactions', label: 'Recent Transactions' },
+  { key: 'manual-procurement', label: 'Manual Procurement' },
+  { key: 'procurement-requests', label: 'Procurement Requests' },
+  { key: 'add-supplier', label: 'Add Supplier' },
+  { key: 'supplier-products', label: 'Supplier Products' },
+  { key: 'stock-confirmation-history', label: 'Stock Confirmation History' },
+  { key: 'product-barcodes', label: 'Product Barcodes' },
+  { key: 'pending-stock', label: 'Pending Stock' },
+  { key: 'request-new-product', label: 'Request New Product' },
+  { key: 'supplier-product-confirmations', label: 'Supplier Product Confirmations' },
+  { key: 'inventory-monitor', label: 'Inventory Monitor' },
+  { key: 'product-disposal', label: 'Product Disposal' },
+  { key: 'landing-page-product-images', label: 'Landing Page Product Images' },
+  { key: 'staff-activity', label: 'Staff Activity' },
+  { key: 'automatic-clock-out', label: 'Automatic Clock-Out' },
+  { key: 'staff-management', label: 'Staff Management' },
+]
+let nextCustomAccountId = 1
 const showRejectModal = ref(false)
 const rejectingRequest = ref(null)
 const rejectReason = ref('')
@@ -684,6 +818,18 @@ const hrTutorialSteps = [
       'Pending Requests shows position requests awaiting review. Branches, Total Accounts, and Active Accounts summarize workforce coverage.',
       'Job Applications are listed directly on the overview. Use the sidebar to switch between HR Overview, Position Requests, and Branch Accounts.',
       'Refresh Requests reloads the position request data. The message and notification controls remain available in the topbar.',
+    ],
+  },
+  {
+    icon: '＋',
+    title: 'New branch open positions',
+    description: 'Publish openings for a branch after its owner confirms the branch request.',
+    section: 'newBranchPositions',
+    actionLabel: 'Open New Branch Open Position',
+    items: [
+      'Select an approved branch waiting for openings, choose one or more roles, and set each quantity.',
+      'Choose access modules when adding a Custom Account opening.',
+      'Published openings appear on the public Open Positions page.',
     ],
   },
   {
@@ -766,7 +912,11 @@ function closeHrTutorial(restoreFocus = true) {
 
 function openHrTutorialSection(section) {
   closeHrTutorial(false)
-  showHrSection(section)
+  if (section === 'newBranchPositions') {
+    openNewBranchPositions()
+  } else {
+    showHrSection(section)
+  }
 }
 
 const positionRequestsPendingCount = computed(() => {
@@ -1122,6 +1272,163 @@ async function loadPositionRequests() {
     positionRequests.value = []
   } finally {
     loadingPositionRequests.value = false
+  }
+}
+
+async function openNewBranchPositions() {
+  showHrSection('newBranchPositions')
+  selectedBranchForOpenPositions.value = null
+  await loadBranchesAwaitingOpenPositions()
+  if (branchPositionCatalog.value.length === 0) {
+    await loadBranchPositionCatalog()
+  }
+}
+
+async function loadBranchesAwaitingOpenPositions() {
+  loadingBranchesAwaitingOpenPositions.value = true
+  branchOpenPositionsError.value = ''
+  try {
+    const res = await axios.get('/api/hr/positions/branches/awaiting-open-positions', { withCredentials: true })
+    if (!res.data?.ok) {
+      throw new Error(res.data?.message || 'Failed to load approved branches.')
+    }
+
+    branchesAwaitingOpenPositions.value = Array.isArray(res.data.branches) ? res.data.branches : []
+    if (selectedBranchForOpenPositions.value) {
+      selectedBranchForOpenPositions.value = branchesAwaitingOpenPositions.value.find(
+        branch => branch.id === selectedBranchForOpenPositions.value.id
+      ) || null
+    }
+  } catch (err) {
+    branchOpenPositionsError.value = err.response?.data?.message || err.message || 'Failed to load approved branches.'
+    branchesAwaitingOpenPositions.value = []
+  } finally {
+    loadingBranchesAwaitingOpenPositions.value = false
+  }
+}
+
+async function loadBranchPositionCatalog() {
+  loadingBranchPositionCatalog.value = true
+  branchOpenPositionsError.value = ''
+  try {
+    const res = await axios.get('/api/hr/positions', { withCredentials: true })
+    if (!res.data?.ok) {
+      throw new Error(res.data?.message || 'Failed to load available positions.')
+    }
+
+    branchPositionCatalog.value = Array.isArray(res.data.positions) ? res.data.positions : []
+    resetBranchPositionSelection()
+  } catch (err) {
+    branchOpenPositionsError.value = err.response?.data?.message || err.message || 'Failed to load available positions.'
+    branchPositionCatalog.value = []
+  } finally {
+    loadingBranchPositionCatalog.value = false
+  }
+}
+
+function resetBranchPositionSelection() {
+  nextCustomAccountId = 1
+  branchPositionSelection.value = Object.fromEntries(
+    branchPositionCatalog.value.map(position => [position.id, {
+      selected: false,
+      quantity: 1,
+      customAccounts: [],
+    }])
+  )
+}
+
+function createCustomAccountSelection() {
+  return {
+    id: nextCustomAccountId++,
+    quantity: 1,
+    modules: [],
+  }
+}
+
+function togglePositionSelection(position, selected) {
+  const selection = branchPositionSelection.value[position.id]
+  selection.selected = selected
+  if (position.is_custom) {
+    selection.customAccounts = selected ? [createCustomAccountSelection()] : []
+  }
+}
+
+function addCustomAccount(positionId) {
+  branchPositionSelection.value[positionId].customAccounts.push(createCustomAccountSelection())
+}
+
+function removeCustomAccount(positionId, customAccountId) {
+  const selection = branchPositionSelection.value[positionId]
+  selection.customAccounts = selection.customAccounts.filter(account => account.id !== customAccountId)
+  if (selection.customAccounts.length === 0) {
+    selection.selected = false
+  }
+}
+
+function selectBranchForOpenPositions(branch) {
+  selectedBranchForOpenPositions.value = branch
+  resetBranchPositionSelection()
+  branchOpenPositionsError.value = ''
+}
+
+async function publishBranchOpenPositions() {
+  const branch = selectedBranchForOpenPositions.value
+  if (!branch || savingBranchOpenPositions.value) return
+
+  const positions = branchPositionCatalog.value
+    .filter(position => branchPositionSelection.value[position.id]?.selected)
+    .flatMap(position => {
+      const selection = branchPositionSelection.value[position.id]
+      if (position.is_custom) {
+        return selection.customAccounts.map(customAccount => ({
+          position_id: position.id,
+          quantity: Number(customAccount.quantity),
+          account_type: 'custom',
+          account_config: { modules: customAccount.modules },
+        }))
+      }
+
+      return [{
+        position_id: position.id,
+        quantity: Number(selection.quantity),
+        account_type: 'standard',
+        account_config: null,
+      }]
+    })
+
+  if (positions.length === 0) {
+    branchOpenPositionsError.value = 'Select at least one position to publish.'
+    return
+  }
+  if (positions.some(position => !Number.isInteger(position.quantity) || position.quantity < 1 || position.quantity > 500)) {
+    branchOpenPositionsError.value = 'Each position quantity must be a whole number between 1 and 500.'
+    return
+  }
+  if (positions.some(position => position.account_type === 'custom' && position.account_config.modules.length === 0)) {
+    branchOpenPositionsError.value = 'Select at least one access module for each custom account.'
+    return
+  }
+
+  savingBranchOpenPositions.value = true
+  branchOpenPositionsError.value = ''
+  try {
+    await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
+    const res = await axios.post(
+      `/api/hr/positions/branches/${branch.id}/open-positions`,
+      { positions },
+      { withCredentials: true }
+    )
+    if (!res.data?.ok) {
+      throw new Error(res.data?.message || 'Failed to publish open positions.')
+    }
+
+    await swalAlert(res.data.message || `Open positions published for ${branch.name}.`, 'success')
+    selectedBranchForOpenPositions.value = null
+    await Promise.all([loadBranchesAwaitingOpenPositions(), loadPositionRequests()])
+  } catch (err) {
+    branchOpenPositionsError.value = err.response?.data?.message || err.message || 'Failed to publish open positions.'
+  } finally {
+    savingBranchOpenPositions.value = false
   }
 }
 
@@ -1883,6 +2190,16 @@ window.addEventListener('click', () => {
     width: 100%;
     margin-left: 0;
   }
+
+  .new-branch-open-positions__layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .new-branch-open-positions__role,
+  .new-branch-open-positions__actions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 .main-branch-hr-sidebar-nav {
@@ -1912,6 +2229,19 @@ window.addEventListener('click', () => {
   border-color: rgba(148, 163, 184, 0.3);
   color: #111827;
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
+.main-branch-hr-sidebar-count {
+  display: inline-grid;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.25rem;
+  place-items: center;
+  border-radius: 999px;
+  background: #f97316;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
 }
 
 .main-branch-hr-sidebar-actions {
@@ -2025,6 +2355,198 @@ window.addEventListener('click', () => {
   flex-direction: column;
   gap: 8px;
   margin-top: 10px;
+}
+
+.new-branch-open-positions {
+  padding: 18px;
+  border: 1px solid #f1e5d8;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(66, 33, 11, 0.05);
+}
+
+.new-branch-open-positions__layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.6fr);
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.new-branch-open-positions__branches,
+.new-branch-open-positions__roles {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.new-branch-open-positions__branch {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  color: #29384a;
+  text-align: left;
+  cursor: pointer;
+}
+
+.new-branch-open-positions__branch--selected {
+  border-color: #f97316;
+  background: #fff7ed;
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.12);
+}
+
+.new-branch-open-positions__branch span,
+.new-branch-open-positions__branch small,
+.new-branch-open-positions__form-heading p {
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.new-branch-open-positions__form {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fafbfc;
+}
+
+.new-branch-open-positions__form-heading {
+  margin-bottom: 12px;
+}
+
+.new-branch-open-positions__form-heading h4 {
+  margin: 0 0 4px;
+  color: #29384a;
+}
+
+.new-branch-open-positions__form-heading p {
+  margin: 0;
+}
+
+.new-branch-open-positions__role {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #fff;
+}
+
+.new-branch-open-positions__role > input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #f97316;
+}
+
+.new-branch-open-positions__role-name {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  color: #29384a;
+}
+
+.new-branch-open-positions__role-name small {
+  color: #64748b;
+}
+
+.new-branch-open-positions__quantity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #475569;
+  font-size: 0.78rem;
+}
+
+.new-branch-open-positions__quantity input {
+  width: 72px;
+  padding: 7px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+}
+
+.new-branch-open-positions__custom-modules {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+  gap: 7px 12px;
+  padding: 10px 0 2px 28px;
+  color: #475569;
+  font-size: 0.76rem;
+}
+
+.new-branch-open-positions__custom-modules strong {
+  grid-column: 1 / -1;
+  color: #29384a;
+}
+
+.new-branch-open-positions__custom-modules label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.new-branch-open-positions__custom-accounts {
+  display: flex;
+  flex: 1 0 100%;
+  flex-direction: column;
+  gap: 10px;
+  padding: 8px 0 2px 28px;
+}
+
+.new-branch-open-positions__custom-account {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #fff;
+}
+
+.new-branch-open-positions__custom-account-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #29384a;
+}
+
+.new-branch-open-positions__remove-custom,
+.new-branch-open-positions__add-custom {
+  width: fit-content;
+  padding: 6px 10px;
+  border: 1px solid #fed7aa;
+  border-radius: 7px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.new-branch-open-positions__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.branch-open-position-error {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 0.85rem;
 }
 
 .request-card {

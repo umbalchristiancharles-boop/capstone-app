@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 22, 2026 at 08:17 AM
+-- Generation Time: Oct 23, 2026 at 10:32 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -128,13 +128,14 @@ CREATE TABLE `branches` (
   `approved_at` timestamp NULL DEFAULT NULL,
   `rejected_at` timestamp NULL DEFAULT NULL,
   `rejection_reason` text DEFAULT NULL,
-  `budget` bigint(20) NOT NULL DEFAULT 100000,
+  `budget` bigint(20) DEFAULT NULL,
   `initial_budget` bigint(20) DEFAULT NULL,
   `square_meters` decimal(10,2) DEFAULT NULL COMMENT 'Store area in square meters',
   `geofencing_radius` decimal(10,2) DEFAULT NULL COMMENT 'Geofencing radius in meters (auto-calculated from square_meters)',
   `permit_bills` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'Array of permit types and their costs' CHECK (json_valid(`permit_bills`)),
   `construction_costs` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'Detailed construction cost breakdown' CHECK (json_valid(`construction_costs`)),
   `equipment_costs` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'Array of equipment with types, quantities, and costs' CHECK (json_valid(`equipment_costs`)),
+  `cost_attachments` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`cost_attachments`)),
   `total_investment` decimal(15,2) DEFAULT NULL COMMENT 'Total initial investment including permits, construction, and equipment',
   `default_password` varchar(255) DEFAULT NULL COMMENT 'Current default password for branch staff accounts',
   `default_password_updated_at` timestamp NULL DEFAULT NULL COMMENT 'Last time the default password was updated',
@@ -147,11 +148,10 @@ CREATE TABLE `branches` (
 -- Dumping data for table `branches`
 --
 
-INSERT INTO `branches` (`id`, `code`, `name`, `address`, `latitude`, `longitude`, `is_active`, `is_main_branch`, `approval_status`, `requested_by`, `finance_confirmed_by`, `finance_confirmed_at`, `approved_by`, `approved_at`, `rejected_at`, `rejection_reason`, `budget`, `initial_budget`, `square_meters`, `geofencing_radius`, `permit_bills`, `construction_costs`, `equipment_costs`, `total_investment`, `default_password`, `default_password_updated_at`, `created_at`, `updated_at`, `deactivation_reason`) VALUES
-(31, 'BR743957', 'Dasma Branch', 'Dasma', NULL, NULL, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 26487, 28139, NULL, NULL, NULL, NULL, NULL, NULL, 'BDP202610217FC93F', '2026-10-21 07:41:59', '2026-03-22 02:19:21', '2026-10-22 06:16:26', NULL),
-(32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 580000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'BDP202610216F943E', '2026-10-21 07:41:59', '2026-03-24 22:56:11', '2026-10-21 07:41:59', NULL),
-(65, 'BR666062', 'Pala Pala Branch', 'Pinned location: 14.327638, 120.940509', 14.32763800, 120.94050900, 0, 0, 'rejected', 159, 161, '2026-10-20 08:29:39', 31, NULL, '2026-10-21 06:29:39', 'Missing or invalid supporting documents', 100000, 100000, 50.00, 3.99, '[{\"type\":\"asd\",\"amount\":10000}]', '[{\"category\":\"asd\",\"amount\":10000}]', '[{\"name\":\"asd\",\"type\":\"asd\",\"quantity\":8,\"unit_cost\":10000}]', 100000.00, 'BDP2026102027B8E1', '2026-10-20 08:02:43', '2026-10-20 08:02:43', '2026-10-21 06:29:39', NULL),
-(66, 'BR403742', 'Tanza Branch', 'Pinned location', 14.31131505, 120.83690678, 0, 0, 'rejected', 159, NULL, NULL, NULL, NULL, '2026-10-20 10:21:20', 'Incomplete or inaccurate branch information', 100000, 100000, 50.00, 3.99, '[{\"type\":\"asd\",\"amount\":10000}]', '[{\"category\":\"asd\",\"amount\":10000}]', '[{\"name\":\"asd\",\"type\":\"asd\",\"quantity\":1,\"unit_cost\":10000}]', 30000.00, 'BDP20261020BCD3BC', '2026-10-20 10:17:21', '2026-10-20 10:17:21', '2026-10-20 10:21:20', NULL);
+INSERT INTO `branches` (`id`, `code`, `name`, `address`, `latitude`, `longitude`, `is_active`, `is_main_branch`, `approval_status`, `requested_by`, `finance_confirmed_by`, `finance_confirmed_at`, `approved_by`, `approved_at`, `rejected_at`, `rejection_reason`, `budget`, `initial_budget`, `square_meters`, `geofencing_radius`, `permit_bills`, `construction_costs`, `equipment_costs`, `cost_attachments`, `total_investment`, `default_password`, `default_password_updated_at`, `created_at`, `updated_at`, `deactivation_reason`) VALUES
+(31, 'BR743957', 'Dasma Branch', 'Dasma', NULL, NULL, 1, 0, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 26487, 28139, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'BDP2026102317D00D', '2026-10-23 04:36:16', '2026-03-22 02:19:21', '2026-10-23 04:36:16', NULL),
+(32, 'MAIN', 'Main Branch', 'HQ', NULL, NULL, 1, 1, 'approved', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 870000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'BDP20261023F36508', '2026-10-23 04:36:16', '2026-03-24 22:56:11', '2026-10-23 08:31:55', NULL),
+(69, 'BR095449', 'Pala Pala Branch', 'Pinned location', 14.33000000, 120.94000000, 1, 0, 'approved', 159, 161, '2026-10-23 08:31:08', 31, '2026-10-23 08:31:55', NULL, NULL, 100000, 100000, 90.00, 5.35, NULL, NULL, NULL, '{\"permit_bills\":[{\"name\":\"resume_cv (2).docx\",\"amount\":10000,\"path\":\"branch-cost-attachments\\/AfgwCeYS9BJQnj26p7QbysTO9kVS7tRvOzeBF9Tu.docx\",\"mime\":\"application\\/vnd.openxmlformats-officedocument.wordprocessingml.document\",\"size\":14153}],\"construction_costs\":[{\"name\":\"CHIKINTAYO-Updated.docx\",\"amount\":10000,\"path\":\"branch-cost-attachments\\/GPXDnhhaWYBZMB4A9E30nbgW4syjkpEVd1EH9ets.docx\",\"mime\":\"application\\/vnd.openxmlformats-officedocument.wordprocessingml.document\",\"size\":2185299}],\"equipment_costs\":[{\"name\":\"CHIKINTAYO-Updated.docx\",\"amount\":10000,\"path\":\"branch-cost-attachments\\/VSQuW8fuk6qA0ZxBYfpeHifCZUZFnRtnKZSh6qMR.docx\",\"mime\":\"application\\/vnd.openxmlformats-officedocument.wordprocessingml.document\",\"size\":2185299}]}', 30000.00, 'BDP202610230AFEBD', '2026-10-23 08:28:54', '2026-10-23 08:28:53', '2026-10-23 08:31:55', NULL);
 
 -- --------------------------------------------------------
 
@@ -871,7 +871,9 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (182, '2026_10_12_000001_add_deactivation_reason_to_branches_table', 107),
 (183, '2026_10_17_000001_cascade_branch_deletion_for_procurement_requests', 108),
 (184, '2026_10_17_000002_backfill_initial_budget_for_branches', 109),
-(185, '2026_10_20_000001_add_rejection_reason_to_branches_table', 110);
+(185, '2026_10_20_000001_add_rejection_reason_to_branches_table', 110),
+(186, '2026_10_23_000001_add_cost_attachments_to_branches_table', 111),
+(187, '2026_10_23_000002_make_branch_budget_nullable', 112);
 
 -- --------------------------------------------------------
 
@@ -2158,7 +2160,12 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (3685, 'App\\Models\\User', 31, 'auth-token', '91d9e2427b64a3c1ee925ef8ffa51925f0517e5cb0f70804a2d8c815c46c74d7', '[\"*\"]', NULL, NULL, '2026-10-20 08:47:45', '2026-10-20 08:47:45'),
 (3692, 'App\\Models\\User', 31, 'auth-token', '0cdda2b85201c166dff7d9d0704e153636a214e82049d395bc699d4d4a85adf3', '[\"*\"]', NULL, NULL, '2026-10-21 06:28:43', '2026-10-21 06:28:43'),
 (3695, 'App\\Models\\User', 31, 'auth-token', '16fb048ef796de20371849407d3a89030e7fb1ba002d512592584e896d9c5411', '[\"*\"]', NULL, NULL, '2026-10-21 07:41:45', '2026-10-21 07:41:45'),
-(3698, 'App\\Models\\User', 147, 'auth-token', 'e663c7a7499ffd997aef65252a27faa0354f2197d63c0ea880c32736efa4af8a', '[\"*\"]', NULL, NULL, '2026-10-21 09:17:35', '2026-10-21 09:17:35');
+(3698, 'App\\Models\\User', 147, 'auth-token', 'e663c7a7499ffd997aef65252a27faa0354f2197d63c0ea880c32736efa4af8a', '[\"*\"]', NULL, NULL, '2026-10-21 09:17:35', '2026-10-21 09:17:35'),
+(3717, 'App\\Models\\User', 147, 'auth-token', 'fdfd4b59b741c1da13691be7e2fcca4fff5d02fa7b2db3b61fe3660b5d007668', '[\"*\"]', NULL, NULL, '2026-10-23 05:38:58', '2026-10-23 05:38:58'),
+(3719, 'App\\Models\\User', 31, 'auth-token', '9af0f09befa17688fbd551ff2d4c2d958c1db3a6e48c008593bd844c16b545ee', '[\"*\"]', NULL, NULL, '2026-10-23 05:53:30', '2026-10-23 05:53:30'),
+(3725, 'App\\Models\\User', 147, 'auth-token', 'fdeb7e796144833eede63428b68d055feb51e2cc00258d42441fd0c8b0aa07f5', '[\"*\"]', NULL, NULL, '2026-10-23 07:40:46', '2026-10-23 07:40:46'),
+(3728, 'App\\Models\\User', 31, 'auth-token', '779473c148bf4c65498a0e3968cb065805ded3ba4aae9c584b47b3549c0826b0', '[\"*\"]', NULL, NULL, '2026-10-23 08:18:15', '2026-10-23 08:18:15'),
+(3732, 'App\\Models\\User', 31, 'auth-token', 'e35a1fea4e065aa7f1c0f6f640b7662f2c9d57823735089ed5ca34ef5050163a', '[\"*\"]', NULL, NULL, '2026-10-23 08:31:38', '2026-10-23 08:31:38');
 
 -- --------------------------------------------------------
 
@@ -2230,15 +2237,6 @@ CREATE TABLE `position_applications` (
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Dumping data for table `position_applications`
---
-
-INSERT INTO `position_applications` (`id`, `position_open_request_id`, `position_id`, `branch_id`, `department`, `job_title`, `applicant_full_name`, `applicant_email`, `applicant_phone`, `applicant_address`, `cover_letter`, `years_of_experience`, `education`, `available_start_date`, `linkedin_url`, `portfolio_url`, `privacy_consent`, `website`, `resume_path`, `supporting_documents_paths`, `status`, `interview_date`, `interview_time`, `interview_notes`, `created_at`, `updated_at`) VALUES
-(26, 63, 13, 64, NULL, 'Custom Account', 'asdf', 'dehifoc846@betshubs.com', '09151818857', 'Pinned location: 14.330000, 120.940000', 'asd', 2, 'Master\'s Degree', '2026-10-17', NULL, NULL, 1, NULL, 'position-applications/63/68f26cf8-3dcc-4753-a7fc-93acb2a7995c/resume_cv.docx', '[\"position-applications\\/63\\/68f26cf8-3dcc-4753-a7fc-93acb2a7995c\\/supporting\\/supporting_1.docx\"]', 'Passed - Ready for Hiring', '2026-10-17', '16:24:00', NULL, '2026-10-17 07:30:42', '2026-10-17 07:39:14'),
-(27, 64, 13, 31, NULL, 'Custom Account', 'asdf', 'wirade3201@betshubs.com', '09156816854', 'Pinned location: 14.330000, 120.940000', 'asd', 2, 'Vocational / Technical', '2026-10-22', NULL, NULL, 1, NULL, 'position-applications/64/2d822865-ca06-4947-a46a-d73ed2fe6af6/resume_cv.docx', '[\"position-applications\\/64\\/2d822865-ca06-4947-a46a-d73ed2fe6af6\\/supporting\\/supporting_1.docx\"]', 'Passed - Ready for Hiring', '2026-10-17', '16:27:00', NULL, '2026-10-17 08:07:02', '2026-10-17 08:28:05'),
-(28, 65, 11, 65, 'ADMIN', 'Admin', 'asd', 'ferowo1802@backyr.com', '09156818812', 'Pinned location: 14.330000, 120.940000', 'asd', 23, 'Associate Degree', '2026-10-29', 'http://localhost:8000/#careers', 'http://localhost:8000/#careers', 1, NULL, 'position-applications/65/2cdc6d23-4c8e-40a2-b864-620a42ad7340/resume_cv.docx', '[\"position-applications\\/65\\/2cdc6d23-4c8e-40a2-b864-620a42ad7340\\/supporting\\/supporting_1.docx\"]', 'Submitted', NULL, NULL, NULL, '2026-10-21 07:22:24', '2026-10-21 07:22:24');
-
 -- --------------------------------------------------------
 
 --
@@ -2261,18 +2259,6 @@ CREATE TABLE `position_open_requests` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `position_open_requests`
---
-
-INSERT INTO `position_open_requests` (`id`, `position_id`, `requested_by_user_id`, `branch_id`, `quantity`, `notes`, `account_type`, `account_config`, `status`, `approved_by_user_id`, `approved_at`, `rejection_reason`, `created_at`, `updated_at`) VALUES
-(61, 11, 159, 64, 1, 'Automatically broadcast during branch creation for Pala Pala Branch.', 'standard', NULL, 'Approved', 159, '2026-10-17 06:48:35', NULL, '2026-10-17 06:48:35', '2026-10-17 06:48:35'),
-(62, 5, 159, 64, 3, 'Automatically broadcast during branch creation for Pala Pala Branch.', 'standard', NULL, 'Approved', 159, '2026-10-17 06:48:35', NULL, '2026-10-17 06:48:35', '2026-10-17 06:48:35'),
-(63, 13, 159, 64, 0, 'Automatically broadcast during branch creation for Pala Pala Branch.', 'custom', '{\"username\":\"custom_br980971_1\",\"full_name\":\"Custom Account 1 - Pala Pala Branch\",\"modules\":[\"budget-request-approvals\",\"current-price-markup\",\"receipt-approval\",\"financial-overview\",\"recent-transactions\",\"manual-procurement\",\"procurement-requests\",\"add-supplier\",\"supplier-products\",\"stock-confirmation-history\",\"product-barcodes\",\"pending-stock\",\"request-new-product\",\"supplier-product-confirmations\",\"inventory-monitor\",\"product-disposal\",\"landing-page-product-images\",\"staff-activity\",\"automatic-clock-out\",\"staff-management\"],\"functions\":[]}', 'Approved', 159, '2026-10-17 06:48:35', NULL, '2026-10-17 06:48:35', '2026-10-17 07:39:14'),
-(64, 13, 148, 31, 0, NULL, 'custom', '{\"modules\":[\"budget-request-approvals\",\"current-price-markup\",\"receipt-approval\",\"financial-overview\",\"recent-transactions\",\"manual-procurement\",\"procurement-requests\",\"add-supplier\",\"supplier-products\",\"stock-confirmation-history\",\"product-barcodes\",\"pending-stock\",\"request-new-product\",\"supplier-product-confirmations\",\"inventory-monitor\",\"product-disposal\",\"landing-page-product-images\",\"staff-activity\",\"automatic-clock-out\",\"staff-management\"],\"functions\":[]}', 'Approved', 160, '2026-10-17 07:59:42', NULL, '2026-10-17 07:57:31', '2026-10-17 08:28:05'),
-(65, 11, 159, 65, 1, 'Automatically broadcast during branch creation for Pala Pala Branch.', 'standard', NULL, 'Approved', 159, '2026-10-20 08:02:43', NULL, '2026-10-20 08:02:43', '2026-10-20 08:02:43'),
-(66, 11, 159, 66, 1, 'Automatically broadcast during branch creation for Tanza Branch.', 'standard', NULL, 'Approved', 159, '2026-10-20 10:17:21', NULL, '2026-10-20 10:17:21', '2026-10-20 10:17:21');
 
 -- --------------------------------------------------------
 
@@ -2609,9 +2595,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('D9kmW60Rv8Tq5f9icQNA4gt33ADKxuFQbuIIBhKn', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoiN3JEZktFSjRvNlA4aVhCWENQTXBSSmNtU3E2Zkw4S053VERpcXBhOSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1792649214),
-('Q7Spr7afm7PGkwf7aT2lh4xiwl3Z4N7KqBq5THLW', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiYUpjUE5yNGN3dVBDNTVpdHJYQ29Uc2FRR3RYYXBFeTBrUHA3REljWSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1792649207),
-('Vl9VZby5thp2BXllQuIos4HqLzJJIrJ1Wory0Cgc', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoicnQyZk16YnY3TEY4WXdQbkx0dk9GMWFGZlRPYjRFdGh4WW1CQXFyayI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fX0=', 1792649830);
+('Jfhh1my0ASYdt6ZTgECKD1NcrfjxOA9gqVrC7n4i', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiMHFaVERyN3E5UHdISHllaHFyazEzSEY5VEdaR3VEb05MM3FtNVpwdCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzM6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hZG1pbi1sb2dpbiI7czo1OiJyb3V0ZSI7czoxNjoiYWRtaW4ubG9naW4ucGFnZSI7fX0=', 1792744343),
+('OU0tsUqu5hMcASIa4se1MHAuhuiCVlGyouyIh77L', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoiQ3l3MmdPT3VGNjhjNnRBakxIUGh3S2VzTlhKT01EbFNuSGJlVmhGTyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1792744042);
 
 -- --------------------------------------------------------
 
@@ -2795,10 +2780,10 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`id`, `email`, `username`, `full_name`, `name`, `password`, `email_verified_at`, `role`, `department`, `permissions`, `branch_id`, `remember_token`, `created_at`, `updated_at`, `deleted_at`, `must_change_password`, `requires_setup`, `is_active`, `address`, `latitude`, `longitude`, `avatar_url`, `phone_number`, `required_setup_type`, `last_login_at`) VALUES
 (28, 'superadmin@example.com', 'superadmin', 'Super Administrators', NULL, '$2y$12$f67akYY/xm/H9KJoqytmXeblCxSgZ786slMmHkmqzlMozGUn3Ew7G', '2026-03-05 15:03:55', 'SUPER_ADMIN', NULL, NULL, NULL, NULL, '2026-03-05 15:03:55', '2026-10-17 17:05:15', NULL, 0, 1, 1, NULL, NULL, NULL, '/storage/avatars/avatar_28_1775232518.jpg', NULL, NULL, '2026-10-17 17:05:15'),
-(31, 'fowal15977@pmdeal.com', 'Parks', 'Mr.parks', NULL, '$2y$12$/jjxezfu4JAW55dvduVkVu7hpmk5CBXg2GWKtlT17A8jEMfJFpY8y', NULL, 'OWNER', NULL, NULL, NULL, NULL, '2026-03-07 04:30:58', '2026-10-21 07:41:45', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, 'admin', NULL, '2026-10-21 07:41:45'),
-(147, 'biteyag645@onbap.com', 'admin_br743957', 'Admin - Dasma Branch', NULL, '$2y$12$8RJHYsL5dHsXJc9.XiEUSuHL8F2DAPRGug1ED5uYU6tZylZwpcjGa', '2026-03-22 11:35:00', 'ADMIN', NULL, NULL, 31, NULL, '2026-03-22 10:19:22', '2026-10-21 09:17:35', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-21 09:17:35'),
+(31, 'fowal15977@pmdeal.com', 'Parks', 'Mr.parks', NULL, '$2y$12$/jjxezfu4JAW55dvduVkVu7hpmk5CBXg2GWKtlT17A8jEMfJFpY8y', NULL, 'OWNER', NULL, NULL, NULL, NULL, '2026-03-07 04:30:58', '2026-10-23 08:31:38', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, 'admin', NULL, '2026-10-23 08:31:38'),
+(147, 'biteyag645@onbap.com', 'admin_br743957', 'Admin - Dasma Branch', NULL, '$2y$12$8RJHYsL5dHsXJc9.XiEUSuHL8F2DAPRGug1ED5uYU6tZylZwpcjGa', '2026-03-22 11:35:00', 'ADMIN', NULL, NULL, 31, NULL, '2026-03-22 10:19:22', '2026-10-23 07:40:46', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-23 07:40:46'),
 (148, 'yawilog234@lxbeta.com', 'hr_br743957', 'HR Manager - Dasma Branch', NULL, '$2y$12$1AUNIAaO6IsU.NgPHyVqfuZmrI7EbeUTnHrku.w9douNkI7STbjfW', '2026-03-22 10:21:24', 'MANAGER', 'HR', NULL, 31, NULL, '2026-03-22 10:19:22', '2026-10-17 15:40:20', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-17 15:40:20'),
-(149, 'jiveda9771@lxbeta.com', 'finance_br743957', 'Finance Manager - Dasma Branch', NULL, '$2y$12$9tGgivqfWOXFzZjHh./TNeQnKFXsrvyMHitvfpjtnRH9ctUwYKA5S', '2026-03-22 10:27:01', 'MANAGER', 'FINANCE', NULL, 31, NULL, '2026-03-22 10:19:22', '2026-10-21 09:26:59', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-21 09:26:59'),
+(149, 'jiveda9771@lxbeta.com', 'finance_br743957', 'Finance Manager - Dasma Branch', NULL, '$2y$12$9tGgivqfWOXFzZjHh./TNeQnKFXsrvyMHitvfpjtnRH9ctUwYKA5S', '2026-03-22 10:27:01', 'MANAGER', 'FINANCE', NULL, 31, NULL, '2026-03-22 10:19:22', '2026-10-23 07:19:14', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-23 07:19:14'),
 (150, 'yenater279@onbap.com', 'procurement_br743957', 'Procurement Manager - Dasma Branch', NULL, '$2y$12$kF..QIb.DvV18ylucsDIHuPPnLwxXpZe4R5/VcwiI5CCZ2XpkCYx.', '2026-03-22 10:33:29', 'MANAGER', 'PROCUREMENT', NULL, 31, NULL, '2026-03-22 10:19:22', '2026-10-21 09:40:03', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-21 09:40:03'),
 (151, 'rogogaj619@onbap.com', 'logistics_br743957', 'Logistics Manager - Dasma Branch', NULL, '$2y$12$OGJ.SPNyGXorcgKCa/EAaOmnaeqm4sLmZtx6dpGJiijay1uXA6LXq', '2026-03-22 11:37:41', 'MANAGER', 'LOGISTICS', NULL, 31, NULL, '2026-03-22 10:19:22', '2026-10-21 09:30:45', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-21 09:30:45'),
 (152, 'xidaya9674@bncinema.com', 'Umberto', 'Umberto Batumbakal', NULL, '$2y$12$eym3kh1XoBRy0Ibjr3qrR.fLvvYUL9bimjdYe.f867drHAYjMURWa', NULL, 'SUPPLIER', NULL, '{\"modules\":[],\"functions\":[\"inventory.products\"]}', 31, NULL, '2026-03-22 10:37:58', '2026-10-21 09:25:53', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, '', NULL, '2026-10-21 09:25:53'),
@@ -2806,9 +2791,9 @@ INSERT INTO `users` (`id`, `email`, `username`, `full_name`, `name`, `password`,
 (154, 'lalaher611@lxbeta.com', 'vince', 'Vince Hannibal Bido', NULL, '$2y$12$.9o2LKOIrQQWcrtHTKCtKOxdGGgLVs41Xr.eaY9OqHDe/iNtJwnUi', '2026-03-22 10:55:12', 'STAFF', 'INVENTORY', NULL, 31, NULL, '2026-03-22 10:50:09', '2026-10-22 06:06:47', NULL, 0, 1, 1, '213', NULL, NULL, NULL, '09156818811', NULL, '2026-10-22 06:06:47'),
 (157, 'sevof40551@pmdeal.com', 'charles', 'christian Umbal', NULL, '$2y$12$puxmFYNzX6Yg0Olks0Sa5OWMIPeX6g3H1.RoyJMMkK80b6jdRTe62', '2026-03-23 05:10:23', 'STAFF', 'KITCHEN', NULL, 31, NULL, '2026-03-23 05:07:32', '2026-10-17 16:32:23', NULL, 0, 1, 1, '123', NULL, NULL, NULL, '09156818831', NULL, '2026-10-17 16:32:23'),
 (158, 'xiralih141@lxbeta.com', 'John', 'John Stalone', NULL, '$2y$12$LOUp7zlefTxO05AmE6OCAuQtq3vFSVkgFjMUSa2LAyD57UwtF85uC', '2026-03-24 08:58:36', 'SUPPLIER', NULL, NULL, 31, NULL, '2026-03-24 08:57:40', '2026-10-21 09:14:51', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, '', NULL, '2026-10-21 09:14:51'),
-(159, 'xecof21486@fun4k.com', 'admin_main_branch', 'Admin Main Branch', NULL, '$2y$12$0mEgYuYslnBkJs79fi7H0OjiH3uTrkDbe2Kvas21ltIJ9BExNMm0C', '2026-03-25 07:07:57', 'ADMIN', NULL, NULL, 32, NULL, '2026-03-25 06:56:11', '2026-10-20 10:41:18', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-20 10:41:18'),
-(160, 'radalol730@fun4k.com', 'hr_main_branch', 'HR Main Branch', NULL, '$2y$12$7XE7ggeRv7J3xUcTOgf6qOvZEPs4A8ppDdHk8zb3VxzTggE3EUI2i', '2026-03-25 07:17:25', 'MANAGER', 'HR', NULL, 32, NULL, '2026-03-25 06:56:12', '2026-10-21 09:50:32', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-21 09:50:32'),
-(161, 'tavej98512@fabaos.com', 'finance_main_branch', 'Finance Main Branch', NULL, '$2y$12$Hb8m1H0Iau3u0jFJ0Spr5uqsg2Fl0kk.2QbHUAKQ.iMtZ9zKuBpra', '2026-03-25 07:20:21', 'MANAGER', 'FINANCE', NULL, 32, NULL, '2026-03-25 06:56:12', '2026-10-20 10:17:46', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-20 10:17:46'),
+(159, 'xecof21486@fun4k.com', 'admin_main_branch', 'Admin Main Branch', NULL, '$2y$12$0mEgYuYslnBkJs79fi7H0OjiH3uTrkDbe2Kvas21ltIJ9BExNMm0C', '2026-03-25 07:07:57', 'ADMIN', NULL, NULL, 32, NULL, '2026-03-25 06:56:11', '2026-10-23 08:28:09', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-23 08:28:09'),
+(160, 'radalol730@fun4k.com', 'hr_main_branch', 'HR Main Branch', NULL, '$2y$12$7XE7ggeRv7J3xUcTOgf6qOvZEPs4A8ppDdHk8zb3VxzTggE3EUI2i', '2026-03-25 07:17:25', 'MANAGER', 'HR', NULL, 32, NULL, '2026-03-25 06:56:12', '2026-10-23 05:54:58', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-23 05:54:58'),
+(161, 'tavej98512@fabaos.com', 'finance_main_branch', 'Finance Main Branch', NULL, '$2y$12$Hb8m1H0Iau3u0jFJ0Spr5uqsg2Fl0kk.2QbHUAKQ.iMtZ9zKuBpra', '2026-03-25 07:20:21', 'MANAGER', 'FINANCE', NULL, 32, NULL, '2026-03-25 06:56:12', '2026-10-23 08:32:03', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-23 08:32:03'),
 (162, 'lefet30141@fun4k.com', 'logistics_main_branch', 'Logistics Main Branch', NULL, '$2y$12$5jgXzzPw90ASb/4TuQnmreNk6jVKcPGX6ELJy6C9yfDFNv67u2j6u', '2026-03-25 07:22:05', 'MANAGER', 'LOGISTICS', NULL, 32, NULL, '2026-03-25 06:56:12', '2026-10-14 04:38:48', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-10-14 04:38:48'),
 (214, NULL, 'admin_br216033', 'Admin - test', NULL, '$2y$12$Cm6def5Kq4NElULrwrZ8Gezo.kS/sUkMFhFgmbeXjxCMqIZH8yO2y', NULL, 'ADMIN', NULL, NULL, 46, NULL, '2026-04-05 19:44:55', '2026-04-05 19:47:48', NULL, 1, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (215, NULL, 'custom_br216033', 'Custom Account - test', NULL, '$2y$12$BF3h6L52Cu0s6InQ/qYRROAH2WwjwLFUZhcOtnYcdyOonE..4lhGm', NULL, 'CUSTOM', NULL, '{\"modules\":[\"admin\",\"finance\",\"logistics\",\"inventory\",\"procurement\",\"kitchen\",\"cashier\",\"hr\"],\"functions\":[]}', 46, NULL, '2026-04-05 19:44:55', '2026-04-05 19:48:39', NULL, 0, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
@@ -3275,7 +3260,7 @@ ALTER TABLE `attendance_settings`
 -- AUTO_INCREMENT for table `branches`
 --
 ALTER TABLE `branches`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=67;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=70;
 
 --
 -- AUTO_INCREMENT for table `budget_requests`
@@ -3365,7 +3350,7 @@ ALTER TABLE `messages`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=186;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=188;
 
 --
 -- AUTO_INCREMENT for table `orders`
@@ -3395,7 +3380,7 @@ ALTER TABLE `payrolls`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3714;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3734;
 
 --
 -- AUTO_INCREMENT for table `positions`
@@ -3413,7 +3398,7 @@ ALTER TABLE `position_applications`
 -- AUTO_INCREMENT for table `position_open_requests`
 --
 ALTER TABLE `position_open_requests`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=67;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=80;
 
 --
 -- AUTO_INCREMENT for table `price_audits`

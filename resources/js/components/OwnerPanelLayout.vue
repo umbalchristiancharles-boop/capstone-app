@@ -1069,7 +1069,6 @@ const moduleNotificationDefinitions = [
   { key: 'cashier', label: 'Cashier orders', tone: 'warning' },
   { key: 'hr', label: 'HR', tone: 'info' },
   { key: 'branchPendingOwner', label: 'Branch approvals', tone: 'warning' },
-  { key: 'branchPendingFinance', label: 'Finance branch approvals', tone: 'warning' },
   { key: 'priceMarkupPending', label: 'Price markup approvals', tone: 'warning' },
   { key: 'ownerProductRequests', label: 'Product requests', tone: 'warning' },
 ]
@@ -1080,7 +1079,7 @@ const currentPanelModuleKeys = computed(() => {
     return ['kitchen', 'ownerProductRequests', 'branchPendingOwner', 'priceMarkupPending']
   }
   if (title.includes('price markup')) return ['priceMarkupPending']
-  if (title.includes('branch confirmation')) return ['branchPendingOwner', 'branchPendingFinance']
+  if (title.includes('branch confirmation')) return ['branchPendingOwner']
   if (title.includes('main branch administration')) return ['admin', 'logistics', 'supplier', 'branchPendingOwner']
   if (title.includes('logistics')) return ['logistics']
   if (title.includes('procurement')) return ['procurement']

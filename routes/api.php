@@ -152,6 +152,7 @@ Route::middleware('web')->group(function () {
     Route::get('/main-branch/finance/branch-requests', [\App\Http\Controllers\Api\SuperAdminController::class, 'pendingFinanceBranchRequests'])->middleware(['auth']);
     Route::post('/main-branch/finance/branch-requests/{id}/approve', [\App\Http\Controllers\Api\SuperAdminController::class, 'approveFinanceBranchRequest'])->middleware(['auth']);
     Route::post('/main-branch/finance/branch-requests/{id}/reject', [\App\Http\Controllers\Api\SuperAdminController::class, 'rejectFinanceBranchRequest'])->middleware(['auth']);
+    Route::get('/superadmin/branches/{id}/cost-attachments/{category}/{index}', [\App\Http\Controllers\Api\SuperAdminController::class, 'downloadBranchCostAttachment'])->middleware(['auth']);
 
     // ==========================================
     // SUPERADMIN FINANCE MODULE
@@ -228,6 +229,8 @@ Route::middleware('web')->group(function () {
     // HR Positions (Open positions request)
         Route::get('/positions', [\App\Http\Controllers\Api\HrPositionRequestController::class, 'positions']);
         Route::post('/positions/requests', [\App\Http\Controllers\Api\HrPositionRequestController::class, 'store']);
+        Route::get('/positions/branches/awaiting-open-positions', [\App\Http\Controllers\Api\HrPositionRequestController::class, 'branchesAwaitingOpenPositions']);
+        Route::post('/positions/branches/{branchId}/open-positions', [\App\Http\Controllers\Api\HrPositionRequestController::class, 'createBranchOpenPositions']);
 
         // HR: View applications for the HR's branch
         Route::get('/positions/applications', [\App\Http\Controllers\Api\PositionApplicationController::class, 'listForHrBranch']);
@@ -603,6 +606,7 @@ Route::prefix('manager')->middleware('auth:sanctum,web')->group(function () {
         Route::get('/provinces', [LocationController::class, 'provinces']);
         Route::get('/cities', [LocationController::class, 'cities']);
         Route::get('/barangays', [LocationController::class, 'barangays']);
+        Route::get('/reverse-geocode', [LocationController::class, 'reverseGeocode']);
     });
 
     // ==========================================

@@ -7,7 +7,9 @@ use App\Models\PositionOpenRequest;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 class BranchOpenPositionBroadcastTest extends TestCase
@@ -37,13 +39,14 @@ class BranchOpenPositionBroadcastTest extends TestCase
             $table->timestamp('approved_at')->nullable();
             $table->timestamp('rejected_at')->nullable();
             $table->text('rejection_reason')->nullable();
-            $table->integer('budget')->nullable();
+            $table->decimal('budget', 15, 2)->nullable();
             $table->integer('initial_budget')->nullable();
             $table->string('default_password')->nullable();
             $table->timestamp('default_password_updated_at')->nullable();
             $table->json('permit_bills')->nullable();
             $table->json('construction_costs')->nullable();
             $table->json('equipment_costs')->nullable();
+            $table->json('cost_attachments')->nullable();
             $table->decimal('total_investment', 12, 2)->nullable();
             $table->timestamps();
         });
@@ -81,6 +84,8 @@ class BranchOpenPositionBroadcastTest extends TestCase
             $table->unsignedBigInteger('requested_by_user_id');
             $table->integer('quantity')->default(1);
             $table->text('notes')->nullable();
+            $table->string('account_type')->default('standard');
+            $table->json('account_config')->nullable();
             $table->enum('status', ['Pending', 'Approved', 'Rejected'])->default('Pending');
             $table->unsignedBigInteger('approved_by_user_id')->nullable();
             $table->timestamp('approved_at')->nullable();
@@ -117,7 +122,7 @@ class BranchOpenPositionBroadcastTest extends TestCase
         });
     }
 
-    public function test_branch_creation_broadcasts_open_positions_instead_of_creating_accounts_immediately(): void
+    public function test_branch_creation_leaves_open_positions_to_hr_instead_of_broadcasting_them(): void
     {
         $owner = User::create([
             'username' => 'owner_test',
@@ -136,25 +141,148 @@ class BranchOpenPositionBroadcastTest extends TestCase
             'name' => 'Harbor Branch',
             'address' => 'Harbor St',
             'budget' => 100000,
-            'accounts' => [
-                'admin' => true,
-                'hr' => true,
-                'finance' => true,
-                'procurement' => true,
-                'logistics' => true,
-            ],
         ]);
 
         $response->assertStatus(201)
             ->assertJsonPath('ok', true);
 
         $this->assertDatabaseCount('branches', 1);
-        $this->assertDatabaseCount('position_open_requests', 5);
+        $this->assertDatabaseCount('position_open_requests', 0);
         $this->assertSame(0, User::where('branch_id', 1)->count());
-        $this->assertSame('Approved', PositionOpenRequest::first()->status);
     }
 
-    public function test_branch_creation_keeps_budget_and_initial_budget_in_sync_with_total_investment(): void
+    public function test_main_branch_admin_branch_creation_does_not_create_open_positions(): void
+    {
+        $mainBranch = Branch::create([
+            'code' => 'HQ',
+            'name' => 'Main Branch',
+            'is_main_branch' => true,
+            'is_active' => true,
+            'approval_status' => 'approved',
+            'budget' => 300000,
+        ]);
+
+        $admin = User::create([
+            'username' => 'main_admin',
+            'email' => 'main-admin@example.com',
+            'password' => 'Password123!',
+            'full_name' => 'Main Admin',
+            'role' => 'ADMIN',
+            'branch_id' => $mainBranch->id,
+            'is_active' => true,
+            'must_change_password' => false,
+        ]);
+
+        $owner = User::create([
+            'username' => 'owner_approval',
+            'email' => 'owner-approval@example.com',
+            'password' => 'Password123!',
+            'full_name' => 'Owner Approval',
+            'role' => 'OWNER',
+            'is_active' => true,
+            'must_change_password' => false,
+        ]);
+
+        $mainHr = User::create([
+            'username' => 'main_hr_approval',
+            'email' => 'main-hr-approval@example.com',
+            'password' => 'Password123!',
+            'full_name' => 'Main HR',
+            'role' => 'MANAGER',
+            'department' => 'HR',
+            'branch_id' => $mainBranch->id,
+            'is_active' => true,
+            'must_change_password' => false,
+        ]);
+
+        $this->actingAs($admin)
+            ->postJson('/api/superadmin/branches', [
+                'code' => 'OW01',
+                'name' => 'Owner Approval Branch',
+                'budget' => 100000,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('ok', true)
+            ->assertJsonPath('message', "Branch 'Owner Approval Branch' created and awaiting Main Branch Finance invoice and budget confirmation.");
+
+        $branch = Branch::where('code', 'OW01')->firstOrFail();
+        $this->assertSame('pending_finance', $branch->approval_status);
+        $this->assertFalse((bool) $branch->is_active);
+        $this->assertSame(0, PositionOpenRequest::where('branch_id', $branch->id)->count());
+
+        $this->actingAs($owner)
+            ->postJson("/api/owner/branch-requests/{$branch->id}/approve")
+            ->assertStatus(409)
+            ->assertJsonPath('message', 'Branch must be confirmed by Main Branch Finance before Owner approval.');
+        $this->assertNull($branch->fresh()->approved_by);
+        $this->assertSame('pending_finance', $branch->fresh()->approval_status);
+        $this->assertFalse((bool) $branch->fresh()->is_active);
+        $this->getJson('/api/owner/branch-requests')
+            ->assertOk()
+            ->assertJsonCount(0, 'branches');
+
+        $financeUser = User::create([
+            'username' => 'main_finance_approval',
+            'email' => 'main-finance-approval@example.com',
+            'password' => 'Password123!',
+            'full_name' => 'Main Finance',
+            'role' => 'MANAGER',
+            'department' => 'FINANCE',
+            'branch_id' => $mainBranch->id,
+            'is_active' => true,
+            'must_change_password' => false,
+        ]);
+
+        $this->actingAs($financeUser)
+            ->getJson('/api/main-branch/finance/branch-requests')
+            ->assertOk()
+            ->assertJsonPath('branches.0.id', $branch->id);
+
+        $this->postJson("/api/main-branch/finance/branch-requests/{$branch->id}/approve", ['budget' => 100000])
+            ->assertOk()
+            ->assertJsonPath('ok', true);
+        $this->assertSame('pending_owner', $branch->fresh()->approval_status);
+        $this->assertSame(100000, (int) $branch->fresh()->budget);
+        $this->assertSame(100000, (int) $branch->fresh()->initial_budget);
+        $this->assertFalse((bool) $branch->fresh()->is_active);
+        $this->assertSame(300000, (int) $mainBranch->fresh()->budget);
+
+        $this->actingAs($owner)
+            ->getJson('/api/owner/branch-requests')
+            ->assertOk()
+            ->assertJsonPath('branches.0.id', $branch->id);
+        $this->postJson("/api/owner/branch-requests/{$branch->id}/approve")
+            ->assertOk()
+            ->assertJsonPath('ok', true);
+        $this->assertSame($owner->id, $branch->fresh()->approved_by);
+        $this->assertSame('approved', $branch->fresh()->approval_status);
+        $this->assertTrue((bool) $branch->fresh()->is_active);
+        $this->assertSame(200000, (int) $mainBranch->fresh()->budget);
+
+        $this->actingAs($mainHr)
+            ->getJson('/api/hr/positions/requests/pending')
+            ->assertOk()
+            ->assertJsonCount(0, 'requests');
+        $this->getJson('/api/public/positions/approved')
+            ->assertOk()
+            ->assertJsonCount(0, 'approved_positions');
+
+        $this->postJson("/api/owner/branch-requests/{$branch->id}/approve")
+            ->assertStatus(409);
+
+        $this->assertSame('approved', $branch->fresh()->approval_status);
+        $this->assertTrue((bool) $branch->fresh()->is_active);
+
+        $this->actingAs($mainHr)
+            ->getJson('/api/hr/positions/requests/pending')
+            ->assertOk()
+            ->assertJsonCount(0, 'requests');
+        $this->getJson('/api/public/positions/approved')
+            ->assertOk()
+            ->assertJsonCount(0, 'approved_positions');
+    }
+
+    public function test_branch_creation_does_not_save_budget_values_or_unattached_costs(): void
     {
         $owner = User::create([
             'username' => 'budget_owner',
@@ -172,10 +300,6 @@ class BranchOpenPositionBroadcastTest extends TestCase
             'code' => 'BI01',
             'name' => 'Budget Branch',
             'budget' => 250000,
-            'permit_bills' => [['type' => 'Business Permit', 'amount' => 10000]],
-            'construction_costs' => [['category' => 'Materials', 'amount' => 50000]],
-            'equipment_costs' => [['name' => 'Freezer', 'type' => 'Kitchen', 'quantity' => 2, 'unit_cost' => 20000]],
-            'total_investment' => 1,
             'accounts' => [],
         ]);
 
@@ -183,36 +307,69 @@ class BranchOpenPositionBroadcastTest extends TestCase
 
         $this->assertDatabaseHas('branches', [
             'code' => 'BI01',
-            'budget' => 250000,
-            'initial_budget' => 250000,
-            'total_investment' => 100000,
+            'budget' => null,
+            'initial_budget' => null,
+            'total_investment' => null,
         ]);
     }
 
-    public function test_branch_creation_rejects_investment_above_initial_budget(): void
+    public function test_branch_creation_stores_multiple_cost_attachments_per_section(): void
     {
+        Storage::fake('local');
+
         $owner = User::create([
-            'username' => 'limited_owner',
-            'email' => 'limited-owner@example.com',
+            'username' => 'attachment_owner',
+            'email' => 'attachment-owner@example.com',
             'password' => 'Password123!',
-            'full_name' => 'Limited Owner',
+            'full_name' => 'Attachment Owner',
             'role' => 'OWNER',
             'is_active' => true,
             'must_change_password' => false,
         ]);
 
-        $this->actingAs($owner);
-
-        $response = $this->postJson('/api/superadmin/branches', [
-            'code' => 'BI02',
-            'name' => 'Over Budget Branch',
-            'budget' => 100000,
-            'construction_costs' => [['category' => 'Materials', 'amount' => 125000]],
+        $response = $this->actingAs($owner)->post('/api/superadmin/branches', [
+            'code' => 'AT01',
+            'name' => 'Attachment Branch',
+            'budget' => 250000,
+            'accounts' => [],
+            'cost_attachments' => [
+                'permit_bills' => [
+                    UploadedFile::fake()->create('business-permit.pdf', 50, 'application/pdf'),
+                    UploadedFile::fake()->create('permit-receipt.pdf', 50, 'application/pdf'),
+                ],
+                'construction_costs' => [
+                    UploadedFile::fake()->create('construction-invoice.pdf', 50, 'application/pdf'),
+                    UploadedFile::fake()->create('construction-receipt.pdf', 50, 'application/pdf'),
+                ],
+                'equipment_costs' => [
+                    UploadedFile::fake()->create('equipment-invoice.pdf', 50, 'application/pdf'),
+                    UploadedFile::fake()->create('equipment-receipt.pdf', 50, 'application/pdf'),
+                ],
+            ],
+            'cost_attachment_amounts' => [
+                'permit_bills' => [2500, 500],
+                'construction_costs' => [30000, 5000],
+                'equipment_costs' => [12000, 800],
+            ],
         ]);
 
-        $response->assertStatus(422)
-            ->assertJsonPath('message', 'Initial budget must cover the total initial investment.');
-        $this->assertDatabaseMissing('branches', ['code' => 'BI02']);
+        $response->assertStatus(201)->assertJsonPath('ok', true);
+
+        $branch = Branch::where('code', 'AT01')->firstOrFail();
+        foreach (['permit_bills', 'construction_costs', 'equipment_costs'] as $category) {
+            $this->assertCount(2, $branch->cost_attachments[$category]);
+            foreach ($branch->cost_attachments[$category] as $attachment) {
+                Storage::disk('local')->assertExists($attachment['path']);
+                $this->assertArrayHasKey('amount', $attachment);
+            }
+        }
+        $this->assertEquals(2500, $branch->cost_attachments['permit_bills'][0]['amount']);
+        $this->assertEquals(500, $branch->cost_attachments['permit_bills'][1]['amount']);
+        $this->assertSame(50800.0, (float) $branch->total_investment);
+
+        $this->actingAs($owner)
+            ->get("/api/superadmin/branches/{$branch->id}/cost-attachments/permit_bills/0")
+            ->assertOk();
     }
 
     public function test_pending_finance_branch_requests_include_initial_budget(): void
@@ -373,7 +530,102 @@ class BranchOpenPositionBroadcastTest extends TestCase
             ->assertJsonPath('applications.0.branch_name', $branchA->name);
     }
 
-    public function test_branch_budget_is_deducted_from_main_branch_only_after_owner_approval(): void
+    public function test_main_branch_hr_can_publish_multiple_custom_accounts_for_a_confirmed_branch(): void
+    {
+        $mainBranch = Branch::create([
+            'code' => 'HQ',
+            'name' => 'Main Branch',
+            'is_main_branch' => true,
+            'is_active' => true,
+            'approval_status' => 'approved',
+            'budget' => 100000,
+        ]);
+
+        $branch = Branch::create([
+            'code' => 'NBR1',
+            'name' => 'Newly Confirmed Branch',
+            'is_active' => true,
+            'is_main_branch' => false,
+            'approval_status' => 'approved',
+            'approved_at' => now(),
+            'budget' => 100000,
+        ]);
+
+        $hr = User::create([
+            'username' => 'main_hr_openings',
+            'email' => 'main-hr-openings@example.com',
+            'password' => 'Password123!',
+            'full_name' => 'Main Branch HR',
+            'role' => 'MANAGER',
+            'department' => 'HR',
+            'branch_id' => $mainBranch->id,
+            'is_active' => true,
+            'must_change_password' => false,
+        ]);
+
+        $position = \App\Models\Position::create([
+            'name' => 'Custom Account',
+            'department' => 'CUSTOM',
+            'description' => 'Custom account with assigned module access',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($hr)
+            ->getJson('/api/hr/positions/branches/awaiting-open-positions')
+            ->assertOk()
+            ->assertJsonCount(1, 'branches')
+            ->assertJsonPath('branches.0.id', $branch->id);
+
+        $this->postJson("/api/hr/positions/branches/{$branch->id}/open-positions", [
+            'positions' => [
+                [
+                    'position_id' => $position->id,
+                    'quantity' => 2,
+                    'account_type' => 'custom',
+                    'account_config' => ['modules' => ['staff-management']],
+                ],
+                [
+                    'position_id' => $position->id,
+                    'quantity' => 1,
+                    'account_type' => 'custom',
+                    'account_config' => ['modules' => ['financial-overview', 'recent-transactions']],
+                ],
+            ],
+        ])
+            ->assertCreated()
+            ->assertJsonPath('ok', true);
+
+        $openRequests = PositionOpenRequest::where('branch_id', $branch->id)->orderBy('id')->get();
+        $this->assertCount(2, $openRequests);
+        $this->assertSame([2, 1], $openRequests->pluck('quantity')->all());
+        $this->assertSame('Approved', $openRequests[0]->status);
+        $this->assertSame($hr->id, $openRequests[0]->approved_by_user_id);
+        $this->assertSame('custom', $openRequests[0]->account_type);
+        $this->assertSame(['staff-management'], $openRequests[0]->account_config['modules']);
+        $this->assertSame(['financial-overview', 'recent-transactions'], $openRequests[1]->account_config['modules']);
+
+        $this->getJson('/api/hr/positions/branches/awaiting-open-positions')
+            ->assertOk()
+            ->assertJsonCount(0, 'branches');
+
+        $branchHr = User::create([
+            'username' => 'branch_hr_openings',
+            'email' => 'branch-hr-openings@example.com',
+            'password' => 'Password123!',
+            'full_name' => 'Branch HR',
+            'role' => 'HR',
+            'department' => 'HR',
+            'branch_id' => $branch->id,
+            'is_active' => true,
+            'must_change_password' => false,
+        ]);
+
+        $this->actingAs($branchHr)
+            ->getJson('/api/hr/positions/branches/awaiting-open-positions')
+            ->assertForbidden();
+    }
+
+    public function test_branch_budget_and_invoice_total_are_deducted_after_owner_approval(): void
     {
         $mainBranch = Branch::create([
             'code' => 'HQ',
@@ -411,22 +663,35 @@ class BranchOpenPositionBroadcastTest extends TestCase
             'is_active' => false,
             'approval_status' => 'pending_finance',
             'budget' => 100000,
+            'total_investment' => 120000.50,
         ]);
 
         $this->actingAs($financeUser)
             ->postJson("/api/main-branch/finance/branch-requests/{$branch->id}/approve")
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['budget']);
+
+        $this->postJson("/api/main-branch/finance/branch-requests/{$branch->id}/approve", ['budget' => 180000])
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'The branch budget and invoice total cannot exceed the available Main Branch budget.')
+            ->assertJsonPath('available_main_branch_budget', 300000)
+            ->assertJsonPath('max_assignable_budget', 179879);
+
+        $this->postJson("/api/main-branch/finance/branch-requests/{$branch->id}/approve", ['budget' => 100000])
             ->assertOk()
             ->assertJsonPath('ok', true);
 
         $this->assertSame(300000, (int) $mainBranch->fresh()->budget);
         $this->assertSame('pending_owner', $branch->fresh()->approval_status);
+        $this->assertSame(100000, (int) $branch->fresh()->budget);
+        $this->assertSame(100000, (int) $branch->fresh()->initial_budget);
 
         $this->actingAs($owner)
             ->postJson("/api/owner/branch-requests/{$branch->id}/approve")
             ->assertOk()
             ->assertJsonPath('ok', true);
 
-        $this->assertSame(200000, (int) $mainBranch->fresh()->budget);
+        $this->assertEquals(79999.5, (float) $mainBranch->fresh()->budget);
         $this->assertSame('approved', $branch->fresh()->approval_status);
         $this->assertTrue((bool) $branch->fresh()->is_active);
     }
@@ -511,6 +776,8 @@ class BranchOpenPositionBroadcastTest extends TestCase
             'is_active' => false,
             'approval_status' => 'pending_owner',
             'budget' => 100000,
+            'finance_confirmed_by' => $owner->id,
+            'finance_confirmed_at' => now(),
         ]);
 
         $this->actingAs($owner)

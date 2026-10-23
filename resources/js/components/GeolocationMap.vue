@@ -48,6 +48,7 @@
     <!-- Info Message -->
     <div v-show="!isMapLoading" class="info-message">
       📌 Click map to pin location
+      <span v-if="geocodeError" class="geocode-error">{{ geocodeError }}</span>
     </div>
   </div>
 </template>
@@ -194,7 +195,9 @@ const selectedLocation = ref({
 })
 const isLocating = ref(false)
 const isMapLoading = ref(true)
+const geocodeError = ref('')
 let tileLayer = null
+let reverseGeocodeRequest = 0
 
 // Search / forward geocoding state
 const searchQuery = ref('')
@@ -289,20 +292,26 @@ function updateMarker(lat, lng) {
 
 // Reverse geocode coordinates to address
 async function reverseGeocode(lat, lng) {
+  const requestId = ++reverseGeocodeRequest
+  geocodeError.value = ''
+
   try {
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+      `/api/locations/reverse-geocode?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`,
       {
-        headers: { 'Accept-Language': 'en' }
+        headers: { 'Accept': 'application/json' },
+        credentials: 'same-origin'
       }
     )
-    
-    if (!response.ok) throw new Error('Geocoding failed')
-    
+
+    if (!response.ok) throw new Error('Address lookup is temporarily unavailable.')
+
     const data = await response.json()
+    if (requestId !== reverseGeocodeRequest) return ''
+
     const address = data.address || {}
     
-    console.log('Nominatim response address:', address)
+    console.log('Reverse geocoding response address:', address)
     
     // Extract address components - For Philippines:
     // - "province" field in Nominatim = Region (e.g., "Metro Manila", "Cebu")
@@ -333,8 +342,6 @@ async function reverseGeocode(lat, lng) {
     
     const province = address.province || '' // Usually empty for PH
     
-    console.log('Extracted components:', { region, province, city, barangay })
-    
     // Build formatted address string
     const addressString = [barangay, city, region].filter(Boolean).join(', ')
       || data.name
@@ -361,9 +368,17 @@ async function reverseGeocode(lat, lng) {
       }
     })
     return addressString.trim()
-  } catch (error) {
-    console.warn('Could not reverse geocode:', error)
-    // Still emit location even if geocoding fails - with empty addressComponents
+  } catch {
+    if (requestId !== reverseGeocodeRequest) return ''
+
+    selectedLocation.value.address = ''
+    selectedLocation.value.addressComponents = {
+      region: '',
+      province: '',
+      city: '',
+      barangay: ''
+    }
+    geocodeError.value = 'Address lookup is unavailable. Pinned coordinates can still be saved.'
     emit('update:location', { 
       lat: parseFloat(lat.toFixed(8)), 
       lng: parseFloat(lng.toFixed(8)),
@@ -552,7 +567,7 @@ async function saveLocation() {
     return
   }
 
-  if (!selectedLocation.value.address || selectedLocation.value.address === 'Fetching...') {
+  if ((!selectedLocation.value.address || selectedLocation.value.address === 'Fetching...') && !geocodeError.value) {
     await reverseGeocode(selectedLocation.value.lat, selectedLocation.value.lng)
   }
 
@@ -796,6 +811,12 @@ onMounted(() => {
   color: #1e40af;
   font-size: 0.875rem;
   line-height: 1.4;
+}
+
+.geocode-error {
+  display: block;
+  margin-top: 0.35rem;
+  color: #92400e;
 }
 
 @media (max-width: 768px) {

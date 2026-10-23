@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use Illuminate\Http\Request;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 
 class LocationController extends Controller
@@ -146,6 +149,62 @@ class LocationController extends Controller
             return [
                 'error' => 'Could not load location data: ' . $e->getMessage()
             ];
+        }
+    }
+
+    public function reverseGeocode(Request $request)
+    {
+        $coordinates = $request->validate([
+            'lat' => ['required', 'numeric', 'between:-90,90'],
+            'lng' => ['required', 'numeric', 'between:-180,180'],
+        ]);
+
+        try {
+            $response = Http::acceptJson()
+                ->timeout(8)
+                ->get('https://api.bigdatacloud.net/data/reverse-geocode-client', [
+                    'latitude' => $coordinates['lat'],
+                    'longitude' => $coordinates['lng'],
+                    'localityLanguage' => 'en',
+                ]);
+
+            if (! $response->successful()) {
+                Log::warning('Reverse geocoding provider returned an unsuccessful response.', [
+                    'status' => $response->status(),
+                ]);
+
+                return response()->json(['message' => 'Address lookup is temporarily unavailable.'], 502);
+            }
+
+            $result = $response->json();
+            if (! is_array($result)) {
+                Log::warning('Reverse geocoding provider returned an invalid response.');
+
+                return response()->json(['message' => 'Address lookup is temporarily unavailable.'], 502);
+            }
+
+            $administrativeAreas = data_get($result, 'localityInfo.administrative', []);
+            $province = collect($administrativeAreas)
+                ->first(fn ($area) => ($area['adminLevel'] ?? null) === 4)['name'] ?? '';
+            $city = $result['city'] ?? $result['locality'] ?? '';
+            $region = $result['principalSubdivision'] ?? '';
+            $addressParts = array_filter([$city, $province, $region, $result['countryName'] ?? '']);
+
+            return response()->json([
+                'name' => $city,
+                'display_name' => implode(', ', $addressParts),
+                'address' => [
+                    'province' => $province,
+                    'state' => $region,
+                    'city' => $city,
+                    'town' => $result['locality'] ?? '',
+                    'barangay' => '',
+                ],
+            ]);
+        } catch (ConnectionException) {
+            Log::warning('Reverse geocoding provider could not be reached.');
+
+            return response()->json(['message' => 'Address lookup is temporarily unavailable.'], 503);
         }
     }
 

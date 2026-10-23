@@ -170,7 +170,8 @@ class ManagerFinanceController extends Controller
         $requestedBranchId = $request->query('branch_id');
         $userRole = strtoupper($user->role ?? '');
         $userBranch = $user->branch;
-        $isMainBranchUser = $userBranch && strtoupper($userBranch->name ?? '') === 'MAIN BRANCH';
+        $isMainBranchUser = $userBranch
+            && (($userBranch->is_main_branch ?? false) || strtoupper($userBranch->name ?? '') === 'MAIN BRANCH');
         $branchId = $user->branch_id;
         
         // Main Branch user defaults to viewing ALL branches (no filter)
@@ -265,7 +266,8 @@ class ManagerFinanceController extends Controller
             'netProfit' => $netProfit,
             'range' => $range,
             'branch_id' => $branchId,
-            'viewingAllBranches' => !$branchId
+            'viewingAllBranches' => !$branchId,
+            'mainBranchBudget' => $isMainBranchUser ? (float) ($userBranch->budget ?? 0) : null,
         ]);
     }
 

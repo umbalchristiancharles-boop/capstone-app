@@ -61,12 +61,6 @@
               </div>
 
               <div class="form-group">
-                <label class="form-label">Initial Budget (PHP)</label>
-                <input v-model.number="branchForm.budget" type="number" min="100000" max="1000000" step="1000" class="form-input" />
-                <small class="budget-helper">Min 100,000 - Max 1,000,000. Must cover the total initial investment.</small>
-              </div>
-
-              <div class="form-group">
                 <label class="form-label">Store Area (Square Meters)</label>
                 <input v-model.number="branchForm.square_meters" type="number" min="1" step="0.01" class="form-input" placeholder="e.g. 50" @input="calculateGeofencingRadius" />
                 <small class="budget-helper">Enter the store area in square meters</small>
@@ -78,170 +72,68 @@
                 <small class="budget-helper">Auto-calculated based on store area</small>
               </div>
 
-              <!-- Permit Bills Section -->
+              <div class="form-group full-span">
+                <h3 class="cost-section-heading">Initial Cost Details</h3>
+                <p class="budget-helper">Attach the supporting invoice or receipt and enter its amount. The total investment is calculated from these attachments.</p>
+              </div>
+
               <div class="form-group full-span">
                 <label class="form-label">Permit Bills</label>
                 <div class="cost-items-container">
-                  <div v-for="(permit, index) in branchForm.permit_bills" :key="index" class="cost-item-row">
-                    <input v-model="permit.type" class="form-input" placeholder="Permit type (e.g., Business Permit)" style="flex: 2;" />
-                    <input v-model.number="permit.amount" type="number" class="form-input" placeholder="Amount (PHP)" style="flex: 1;" min="0" />
-                    <button type="button" @click="removePermit(index)" class="btn-remove-item" :disabled="branchForm.permit_bills.length === 1">&times;</button>
+                  <input type="file" class="form-input" accept=".pdf,image/*,.doc,.docx,.xls,.xlsx" multiple :disabled="branchForm.cost_attachments.permit_bills.length >= maxCostAttachmentCount" @change="selectCostAttachments('permit_bills', $event)" />
+                  <small class="budget-helper">{{ branchForm.cost_attachments.permit_bills.length }}/{{ maxCostAttachmentCount }} files selected</small>
+                  <div v-for="(attachment, index) in branchForm.cost_attachments.permit_bills" :key="`${attachment.file.name}-${index}`" class="cost-attachment-item">
+                    <span>{{ attachment.file.name }}</span>
+                    <label class="cost-attachment-amount">
+                      <span>Amount (PHP) *</span>
+                      <input v-model.number="attachment.amount" type="number" min="0" :max="maxAttachmentAmount(attachment)" step="0.01" class="form-input" placeholder="Enter amount" required @input="limitAttachmentAmount(attachment, $event)" />
+                    </label>
+                    <button type="button" @click="removeCostAttachment('permit_bills', index)" class="btn-remove-item" :aria-label="`Remove ${attachment.file.name}`">&times;</button>
                   </div>
-                  <button type="button" @click="addPermit" class="btn-add-item">+ Add Permit</button>
                 </div>
               </div>
 
-              <!-- Construction Costs Section -->
               <div class="form-group full-span">
                 <label class="form-label">Construction Costs</label>
                 <div class="cost-items-container">
-                  <div v-for="(cost, index) in branchForm.construction_costs" :key="index" class="cost-item-row">
-                    <input v-model="cost.category" class="form-input" placeholder="Category (e.g., Materials, Labor)" style="flex: 2;" />
-                    <input v-model.number="cost.amount" type="number" class="form-input" placeholder="Amount (PHP)" style="flex: 1;" min="0" />
-                    <button type="button" @click="removeConstructionCost(index)" class="btn-remove-item" :disabled="branchForm.construction_costs.length === 1">&times;</button>
+                  <input type="file" class="form-input" accept=".pdf,image/*,.doc,.docx,.xls,.xlsx" multiple :disabled="branchForm.cost_attachments.construction_costs.length >= maxCostAttachmentCount" @change="selectCostAttachments('construction_costs', $event)" />
+                  <small class="budget-helper">{{ branchForm.cost_attachments.construction_costs.length }}/{{ maxCostAttachmentCount }} files selected</small>
+                  <div v-for="(attachment, index) in branchForm.cost_attachments.construction_costs" :key="`${attachment.file.name}-${index}`" class="cost-attachment-item">
+                    <span>{{ attachment.file.name }}</span>
+                    <label class="cost-attachment-amount">
+                      <span>Amount (PHP) *</span>
+                      <input v-model.number="attachment.amount" type="number" min="0" :max="maxAttachmentAmount(attachment)" step="0.01" class="form-input" placeholder="Enter amount" required @input="limitAttachmentAmount(attachment, $event)" />
+                    </label>
+                    <button type="button" @click="removeCostAttachment('construction_costs', index)" class="btn-remove-item" :aria-label="`Remove ${attachment.file.name}`">&times;</button>
                   </div>
-                  <button type="button" @click="addConstructionCost" class="btn-add-item">+ Add Construction Cost</button>
                 </div>
               </div>
 
-              <!-- Equipment Costs Section -->
               <div class="form-group full-span">
                 <label class="form-label">Equipment Costs</label>
                 <div class="cost-items-container">
-                  <div v-for="(equip, index) in branchForm.equipment_costs" :key="index" class="cost-item-row equipment-row">
-                    <input v-model="equip.name" class="form-input" placeholder="Equipment name" style="flex: 2;" />
-                    <input v-model="equip.type" class="form-input" placeholder="Type/Category" style="flex: 1.5;" />
-                    <input v-model.number="equip.quantity" type="number" class="form-input" placeholder="Qty" style="flex: 0.8;" min="1" />
-                    <input v-model.number="equip.unit_cost" type="number" class="form-input" placeholder="Unit Cost" style="flex: 1;" min="0" />
-                    <button type="button" @click="removeEquipment(index)" class="btn-remove-item" :disabled="branchForm.equipment_costs.length === 1">&times;</button>
-                  </div>
-                  <button type="button" @click="addEquipment" class="btn-add-item">+ Add Equipment</button>
-                </div>
-              </div>
-
-              <!-- Total Investment Display -->
-              <div class="form-group full-span" v-if="calculatedTotalInvestment > 0">
-                <div class="total-investment-display">
-                  <strong>Total Initial Investment: </strong>
-                  <span class="total-amount">{{ formatCurrency(calculatedTotalInvestment) }}</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="default-accounts-info">
-              <h3>Branch Open Positions</h3>
-              <p class="info-sub">Select which roles to broadcast as open jobs for this branch. Applicants will create the account after the hiring process is completed.</p>
-              <div class="default-account-list">
-                <div
-                  v-for="account in accountOptions"
-                  :key="account.key"
-                  class="default-account-item"
-                >
-                  <input
-                    :id="`account-${account.key}`"
-                    v-model="branchForm.selectedAccounts[account.key]"
-                    type="checkbox"
-                    class="account-checkbox"
-                    :disabled="account.key === 'admin'"
-                  />
-                  <div class="account-details">
-                    <label :for="`account-${account.key}`" class="account-checkbox-label">
-                      {{ account.label }}
-                      <span v-if="account.key === 'admin'" class="checkbox-helper">(required)</span>
+                  <input type="file" class="form-input" accept=".pdf,image/*,.doc,.docx,.xls,.xlsx" multiple :disabled="branchForm.cost_attachments.equipment_costs.length >= maxCostAttachmentCount" @change="selectCostAttachments('equipment_costs', $event)" />
+                  <small class="budget-helper">{{ branchForm.cost_attachments.equipment_costs.length }}/{{ maxCostAttachmentCount }} files selected</small>
+                  <div v-for="(attachment, index) in branchForm.cost_attachments.equipment_costs" :key="`${attachment.file.name}-${index}`" class="cost-attachment-item">
+                    <span>{{ attachment.file.name }}</span>
+                    <label class="cost-attachment-amount">
+                      <span>Amount (PHP) *</span>
+                      <input v-model.number="attachment.amount" type="number" min="0" :max="maxAttachmentAmount(attachment)" step="0.01" class="form-input" placeholder="Enter amount" required @input="limitAttachmentAmount(attachment, $event)" />
                     </label>
-                    <div class="account-info">
-                      <span class="account-role-badge" :class="account.badgeClass">{{ account.badgeText }}</span>
-                      <label class="account-quantity">
-                        <span>Open positions:</span>
-                        <input
-                          v-model.number="branchForm.accountQuantities[account.key]"
-                          type="number"
-                          min="1"
-                          step="1"
-                          class="form-input account-quantity-input"
-                          :disabled="!branchForm.selectedAccounts[account.key]"
-                        />
-                      </label>
-                      <span class="account-username">
-                        Username:
-                        <strong>{{ account.prefix }}_{{ codeSlugPreview }}</strong>
-                      </span>
-                      <span class="account-password">
-                        Password:
-                        <strong>{{ showPassword ? defaultPassword : maskedPassword }}</strong>
-                        <button
-                          type="button"
-                          class="btn btn-secondary password-toggle-btn"
-                          @click="toggleShowPassword"
-                        >
-                          {{ showPassword ? 'Hide' : 'Show' }}
-                        </button>
-                      </span>
-                    </div>
+                    <button type="button" @click="removeCostAttachment('equipment_costs', index)" class="btn-remove-item" :aria-label="`Remove ${attachment.file.name}`">&times;</button>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div class="custom-account-card">
-              <div class="custom-account-header">
-                <div>
-                  <h3>Custom Position Account (role: CUSTOM)</h3>
-                  <p class="info-sub">Select which panels the hired applicant can access. The CUSTOM account is created after the application is passed.</p>
+              <div class="form-group full-span">
+                <div class="total-investment-display">
+                  Total Initial Investment:
+                  <span class="total-amount">{{ formatCurrency(totalInitialInvestment) }}</span>
                 </div>
-                <label class="toggle">
-                  <input
-                    type="checkbox"
-                    :checked="branchForm.customAccounts.length > 0"
-                    @change="toggleCustomAccounts"
-                  />
-                  <span>Create custom account</span>
-                </label>
               </div>
 
-              <div v-if="branchForm.customAccounts.length > 0" class="custom-account-body">
-                <div v-for="(customAccount, accountIndex) in branchForm.customAccounts" :key="accountIndex" class="custom-account-config">
-                  <div class="custom-account-config-header">
-                    <h4>Custom Account {{ accountIndex + 1 }}</h4>
-                    <button
-                      v-if="branchForm.customAccounts.length > 1"
-                      type="button"
-                      class="btn btn-secondary"
-                      @click="removeCustomAccount(accountIndex)"
-                    >
-                      Remove
-                    </button>
-                  </div>
-
-                  <div class="form-grid compact">
-                    <div class="form-group">
-                      <label class="form-label">Username</label>
-                      <input v-model="customAccount.username" class="form-input" :placeholder="`custom_${codeSlugPreview}_${accountIndex + 1}`" />
-                    </div>
-                    <div class="form-group">
-                      <label class="form-label">Full Name</label>
-                      <input v-model="customAccount.fullName" class="form-input" :placeholder="`Custom Account ${accountIndex + 1} - ${branchForm.name || branchForm.code}`" />
-                    </div>
-                    <div class="form-group">
-                      <label class="form-label">Credentials</label>
-                      <span class="form-helper">Generated and emailed after the applicant is hired.</span>
-                    </div>
-                  </div>
-
-                  <div class="permission-grid">
-                    <div v-for="module in permissionTemplates" :key="module.key" class="permission-card">
-                    <div class="permission-card-header">
-                      <label style="display:flex;align-items:center;gap:8px">
-                        <input type="checkbox" v-model="customAccount.permissions.modules[module.key]" />
-                        <span style="font-weight:700; text-transform:capitalize">{{ module.label }}</span>
-                      </label>
-                    </div>
-                  </div>
-                  </div>
-                </div>
-                <button type="button" class="btn btn-secondary add-custom-account-btn" @click="addCustomAccount">
-                  + Add another custom account
-                </button>
+              <div class="form-group full-span">
+                <small class="budget-helper">Upload supporting documents (PDF, images, Word, or Excel; up to 10 files per section, 10 MB each).</small>
               </div>
             </div>
 
@@ -349,7 +241,7 @@
                   <span v-else class="text-muted">—</span>
                 </td>
                 <td>
-                  <span v-if="branch.approval_status === 'pending'" class="badge badge-pending">
+                  <span v-if="['pending', 'pending_owner', 'pending_finance'].includes(branch.approval_status)" class="badge badge-pending">
                     Pending Owner Approval
                   </span>
                   <span v-else-if="branch.approval_status === 'rejected'" class="badge badge-rejected">
@@ -377,7 +269,7 @@
                     </svg>
                     {{ branch.is_active ? 'Deactivate' : 'Reactivate' }}
                   </button>
-                    <span v-else class="btn-status btn-protected" :title="branch.is_main_branch ? 'Main branch is protected' : (branch.approval_status === 'approved' ? 'Not available' : 'Branch requires finance and owner approval')">
+                    <span v-else class="btn-status btn-protected" :title="branch.is_main_branch ? 'Main branch is protected' : (branch.approval_status === 'approved' ? 'Not available' : 'Branch requires owner approval')">
                       {{ branch.is_main_branch ? 'Protected' : (branch.approval_status === 'approved' ? '—' : 'Approval Required') }}
                   </span>
                 </td>
@@ -442,65 +334,6 @@ function handleBack() {
 const loading = ref(false)
 const errorMessage = ref('')
 const branches = ref([])
-const defaultPassword = ref('Chikintayo_123')
-
-const accountOptions = [
-  { key: 'admin', label: 'Admin Account', badgeText: 'ADMIN', badgeClass: 'admin-badge', prefix: 'admin' },
-  { key: 'hr', label: 'HR Manager Account', badgeText: 'HR MANAGER', badgeClass: 'hr-badge', prefix: 'hr' },
-  { key: 'finance', label: 'Finance Manager Account', badgeText: 'FINANCE MANAGER', badgeClass: 'finance-badge', prefix: 'finance' },
-  { key: 'procurement', label: 'Procurement Manager Account', badgeText: 'PROCUREMENT MANAGER', badgeClass: 'procurement-badge', prefix: 'procurement' },
-  { key: 'logistics', label: 'Logistics Manager Account', badgeText: 'LOGISTICS MANAGER', badgeClass: 'logistics-badge', prefix: 'logistics' },
-]
-
-// Keep custom-account choices aligned with the features available in CustomPanel.
-const permissionTemplates = [
-  { key: 'budget-request-approvals', label: 'Budget Request Approvals', functions: [] },
-  { key: 'current-price-markup', label: 'Current Price Markup', functions: [] },
-  { key: 'receipt-approval', label: 'Receipt Approval', functions: [] },
-  { key: 'financial-overview', label: 'Financial Overview', functions: [] },
-  { key: 'recent-transactions', label: 'Recent Transactions', functions: [] },
-  { key: 'manual-procurement', label: 'Manual Procurement', functions: [] },
-  { key: 'procurement-requests', label: 'Procurement Requests', functions: [] },
-  { key: 'add-supplier', label: 'Add Supplier', functions: [] },
-  { key: 'supplier-products', label: 'Supplier Products', functions: [] },
-  { key: 'stock-confirmation-history', label: 'Stock Confirmation History', functions: [] },
-  { key: 'product-barcodes', label: 'Product Barcodes', functions: [] },
-  { key: 'pending-stock', label: 'Pending Stock', functions: [] },
-  { key: 'request-new-product', label: 'Request New Product', functions: [] },
-  { key: 'supplier-product-confirmations', label: 'Supplier Product Confirmations', functions: [] },
-  { key: 'inventory-monitor', label: 'Inventory Monitor', functions: [] },
-  { key: 'product-disposal', label: 'Product Disposal List', functions: [] },
-  { key: 'landing-page-product-images', label: 'Landing Page Product Images', functions: [] },
-  { key: 'staff-activity', label: 'Staff Activity', functions: [] },
-  { key: 'automatic-clock-out', label: 'Automatic Clock-Out', functions: [] },
-  { key: 'staff-management', label: 'Staff Management', functions: [] },
-]
-
-function buildPermissionState() {
-  const modules = {}
-  const functions = {}
-  permissionTemplates.forEach(mod => {
-    modules[mod.key] = false
-    mod.functions.forEach(fn => { functions[fn.key] = false })
-  })
-  return { modules, functions }
-}
-
-const defaultAccountSelection = () => ({
-  admin: true,
-  hr: true,
-  finance: true,
-  procurement: true,
-  logistics: true,
-})
-
-const defaultAccountQuantities = () => ({
-  admin: 1,
-  hr: 1,
-  finance: 1,
-  procurement: 1,
-  logistics: 1,
-})
 
 const getInitialBranchForm = () => ({
   code: '',
@@ -512,60 +345,14 @@ const getInitialBranchForm = () => ({
   barangay: '',
   latitude: null,
   longitude: null,
-  budget: 100000,
   square_meters: null,
   geofencing_radius: null,
-  permit_bills: [
-    { type: '', amount: 0 }
-  ],
-  construction_costs: [
-    { category: '', amount: 0 }
-  ],
-  equipment_costs: [
-    { name: '', type: '', quantity: 1, unit_cost: 0 }
-  ],
-  selectedAccounts: defaultAccountSelection(),
-  accountQuantities: defaultAccountQuantities(),
-  customAccounts: [],
+  cost_attachments: {
+    permit_bills: [],
+    construction_costs: [],
+    equipment_costs: [],
+  },
 })
-
-function createCustomAccount() {
-  return {
-    username: '',
-    fullName: '',
-    password: '',
-    permissions: buildPermissionState(),
-  }
-}
-
-function addCustomAccount() {
-  branchForm.value.customAccounts.push(createCustomAccount())
-}
-
-function removeCustomAccount(index) {
-  branchForm.value.customAccounts.splice(index, 1)
-}
-
-function toggleCustomAccounts(event) {
-  if (event.target.checked) {
-    if (branchForm.value.customAccounts.length === 0) addCustomAccount()
-    return
-  }
-
-  branchForm.value.customAccounts = []
-}
-
-// Show/hide password toggle for default password preview
-const showPassword = ref(false)
-const maskedPassword = computed(() => {
-  try {
-    return '*'.repeat(Math.max(6, (defaultPassword.value || '').length))
-  } catch (e) { return '******' }
-})
-
-function toggleShowPassword() {
-  showPassword.value = !showPassword.value
-}
 
 function calculateGeofencingRadius() {
   const squareMeters = branchForm.value.square_meters
@@ -579,66 +366,78 @@ function calculateGeofencingRadius() {
   }
 }
 
-// Cost management functions
-function addPermit() {
-  branchForm.value.permit_bills.push({ type: '', amount: 0 })
-}
-
-function removePermit(index) {
-  if (branchForm.value.permit_bills.length > 1) {
-    branchForm.value.permit_bills.splice(index, 1)
-  }
-}
-
-function addConstructionCost() {
-  branchForm.value.construction_costs.push({ category: '', amount: 0 })
-}
-
-function removeConstructionCost(index) {
-  if (branchForm.value.construction_costs.length > 1) {
-    branchForm.value.construction_costs.splice(index, 1)
-  }
-}
-
-function addEquipment() {
-  branchForm.value.equipment_costs.push({ name: '', type: '', quantity: 1, unit_cost: 0 })
-}
-
-function removeEquipment(index) {
-  if (branchForm.value.equipment_costs.length > 1) {
-    branchForm.value.equipment_costs.splice(index, 1)
-  }
-}
-
-// Calculate total investment
-const calculatedTotalInvestment = computed(() => {
-  let total = 0
-  
-  // Sum permit bills
-  if (branchForm.value.permit_bills) {
-    branchForm.value.permit_bills.forEach(permit => {
-      total += Number(permit.amount) || 0
-    })
-  }
-  
-  // Sum construction costs
-  if (branchForm.value.construction_costs) {
-    branchForm.value.construction_costs.forEach(cost => {
-      total += Number(cost.amount) || 0
-    })
-  }
-  
-  // Sum equipment costs (quantity * unit_cost)
-  if (branchForm.value.equipment_costs) {
-    branchForm.value.equipment_costs.forEach(equip => {
-      const qty = Number(equip.quantity) || 0
-      const unitCost = Number(equip.unit_cost) || 0
-      total += qty * unitCost
-    })
-  }
-  
-  return total
+const costAttachmentCategories = ['permit_bills', 'construction_costs', 'equipment_costs']
+const maxCostAttachmentCount = 10
+const maxCostAttachmentSize = 10 * 1024 * 1024
+const maxInvestmentAmount = 9999999999999.99
+const totalInitialInvestment = computed(() => {
+  return costAttachmentCategories.reduce((total, category) => (
+    total + branchForm.value.cost_attachments[category].reduce(
+      (categoryTotal, attachment) => categoryTotal + (Number(attachment.amount) || 0),
+      0
+    )
+  ), 0)
 })
+
+function maxAttachmentAmount(currentAttachment) {
+  const otherAttachmentsTotal = costAttachmentCategories.reduce((total, category) => (
+    total + branchForm.value.cost_attachments[category].reduce(
+      (categoryTotal, attachment) => categoryTotal + (
+        attachment === currentAttachment ? 0 : Number(attachment.amount) || 0
+      ),
+      0
+    )
+  ), 0)
+
+  return Math.max(0, maxInvestmentAmount - otherAttachmentsTotal)
+}
+
+function limitAttachmentAmount(attachment, event) {
+  const amount = event.target.valueAsNumber
+  attachment.amount = Number.isFinite(amount)
+    ? Math.min(Math.max(amount, 0), maxAttachmentAmount(attachment))
+    : null
+}
+
+function selectCostAttachments(category, event) {
+  const selectedFiles = Array.from(event.target.files || [])
+  event.target.value = ''
+
+  if (selectedFiles.some(file => file.size > maxCostAttachmentSize)) {
+    formError.value = 'Each supporting document must be 10 MB or smaller.'
+    return
+  }
+
+  const attachments = branchForm.value.cost_attachments[category]
+  if (attachments.length + selectedFiles.length > maxCostAttachmentCount) {
+    formError.value = 'You can attach up to 10 files in each supporting-document section.'
+    return
+  }
+
+  formError.value = ''
+  attachments.push(...selectedFiles.map(file => ({ file, amount: null })))
+}
+
+function removeCostAttachment(category, index) {
+  branchForm.value.cost_attachments[category].splice(index, 1)
+}
+
+function appendFormData(formData, key, value) {
+  if (value === null || value === undefined) return
+  if (value instanceof File) {
+    formData.append(key, value)
+    return
+  }
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => appendFormData(formData, `${key}[${index}]`, item))
+    return
+  }
+  if (typeof value === 'object') {
+    Object.entries(value).forEach(([childKey, childValue]) => appendFormData(formData, `${key}[${childKey}]`, childValue))
+    return
+  }
+  formData.append(key, String(value))
+}
 
 // Add Branch Form
 const showAddBranchForm = ref(false)
@@ -646,7 +445,6 @@ const isSubmitting = ref(false)
 const formError = ref('')
 const formSuccess = ref('')
 const branchForm = ref(getInitialBranchForm())
-const codeSlugPreview = computed(() => branchForm.value.code ? branchForm.value.code.toLowerCase() : 'branchcode')
 const savedAddress = ref('')
 const addressSaved = ref(false)
 
@@ -797,25 +595,6 @@ async function loadBranches() {
   }
 }
 
-async function loadDefaultPassword() {
-  // Only owners or admins are allowed to fetch this value from the server.
-  try {
-    const u = JSON.parse(localStorage.getItem('user') || 'null')
-    const role = (u && u.role) ? String(u.role).toLowerCase() : ''
-    if (!['owner', 'admin'].includes(role)) {
-      // Skip fetching for other roles (e.g. superadmin) to avoid 403 responses
-      return
-    }
-
-    const res = await axios.get('/api/admin/config/default-password', { withCredentials: true })
-    if (res.data && res.data.success && res.data.default_password) {
-      defaultPassword.value = res.data.default_password
-    }
-  } catch (e) {
-    // keep fallback
-  }
-}
-
 function refreshBranches() {
   loadBranches()
 }
@@ -841,7 +620,6 @@ function openAddBranchForm() {
   // Prefill suggested code based on current name (if any) or timestamp
   branchForm.value = getInitialBranchForm()
   branchForm.value.code = suggestBranchCode(branchForm.value.name)
-  branchForm.value.budget = 100000
   formError.value = ''
   formSuccess.value = ''
   savedAddress.value = ''
@@ -971,6 +749,19 @@ async function submitBranch() {
     return
   }
 
+  const hasMissingAttachmentAmount = costAttachmentCategories.some(category => (
+    branchForm.value.cost_attachments[category].some(attachment => (
+      attachment.amount === null ||
+      attachment.amount === '' ||
+      !Number.isFinite(Number(attachment.amount)) ||
+      Number(attachment.amount) < 0
+    ))
+  ))
+  if (hasMissingAttachmentAmount) {
+    formError.value = 'Enter an amount for every attached file.'
+    return
+  }
+
   // Auto-fill branch name with location + Chikintayo if left blank
   if (!branchForm.value.name.trim()) {
     if (savedAddress.value) {
@@ -983,39 +774,11 @@ async function submitBranch() {
     }
   }
 
-  const budgetValue = Number(branchForm.value.budget)
-  if (!Number.isFinite(budgetValue) || budgetValue < 100000 || budgetValue > 1000000) {
-    formError.value = 'Initial budget must be between 100,000 and 1,000,000.'
-    return
-  }
-
-  if (calculatedTotalInvestment.value > budgetValue) {
-    formError.value = 'Initial budget must cover the total initial investment.'
-    return
-  }
-
   isSubmitting.value = true
   try {
     await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
 
-    const customAccountsPayload = branchForm.value.customAccounts
-      .map((customAccount, accountIndex) => {
-        const selectedModules = permissionTemplates
-          .filter(m => customAccount.permissions.modules[m.key])
-          .map(m => m.key)
-
-        if (selectedModules.length === 0) return null
-
-        return {
-          username: (customAccount.username || '').trim() || `custom_${codeSlugPreview.value}_${accountIndex + 1}`,
-          full_name: (customAccount.fullName || '').trim() || `Custom Account ${accountIndex + 1} - ${branchForm.value.name || branchForm.value.code}`,
-          modules: selectedModules,
-          functions: [],
-        }
-      })
-      .filter(Boolean)
-
-     const res = await axios.post('/api/superadmin/branches', {
+     const payload = {
        code: branchForm.value.code.trim(),
        name: branchForm.value.name.trim(),
        address: branchForm.value.address || savedAddress.value || '',
@@ -1025,20 +788,21 @@ async function submitBranch() {
        barangay: branchForm.value.barangay || '',
        latitude: branchForm.value.latitude || null,
        longitude: branchForm.value.longitude || null,
-       budget: Number(branchForm.value.budget) || 100000,
        square_meters: branchForm.value.square_meters || null,
        geofencing_radius: branchForm.value.geofencing_radius || null,
-       permit_bills: branchForm.value.permit_bills.filter(p => p.type && p.amount > 0),
-       construction_costs: branchForm.value.construction_costs.filter(c => c.category && c.amount > 0),
-       equipment_costs: branchForm.value.equipment_costs.filter(e => e.name && e.unit_cost > 0),
-       total_investment: calculatedTotalInvestment.value,
-       accounts: branchForm.value.selectedAccounts,
-       account_quantities: branchForm.value.accountQuantities,
-       custom_accounts: customAccountsPayload,
-     }, { withCredentials: true })
+     }
+     const formData = new FormData()
+     Object.entries(payload).forEach(([key, value]) => appendFormData(formData, key, value))
+     costAttachmentCategories.forEach(category => {
+       branchForm.value.cost_attachments[category].forEach((attachment, index) => {
+         formData.append(`cost_attachments[${category}][]`, attachment.file)
+         formData.append(`cost_attachment_amounts[${category}][${index}]`, String(attachment.amount ?? ''))
+       })
+     })
+     const res = await axios.post('/api/superadmin/branches', formData, { withCredentials: true })
 
     if (res.data && res.data.ok) {
-      formSuccess.value = res.data.message || 'Branch created successfully and the selected roles were broadcast as open positions.'
+      formSuccess.value = res.data.message || 'Branch created successfully.'
       await loadBranches()
       setTimeout(() => {
         closeAddBranch()
@@ -1069,7 +833,7 @@ function enforceLightMode() {
 
 onMounted(async () => {
   enforceLightMode()
-  await Promise.all([loadBranches(), loadDefaultPassword()])
+  await loadBranches()
 })
 
 function formatCurrency(amount) {
@@ -1168,39 +932,6 @@ function formatCurrency(amount) {
 .form-input:focus { outline: none; border-color: #ff7e5f; box-shadow: 0 0 0 3px rgba(255,126,95,0.1); }
 textarea.form-input { resize: vertical; }
 .budget-helper { color: #6b7280; font-size: 0.78rem; margin-top: 6px; }
-
-.default-accounts-info { padding: 1.5rem 2rem; border-top: 1px solid #e5e7eb; background: #fafbfc; }
-.default-accounts-info h3 { margin: 0 0 0.25rem 0; font-size: 1rem; color: #374151; }
-.info-sub { margin: 0 0 1rem 0; color: #6b7280; font-size: 0.85rem; }
-.default-account-list { display: flex; flex-direction: column; gap: 0.75rem; }
-.default-account-item { display: flex; align-items: flex-start; gap: 1rem; padding: 0.75rem 1rem; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; }
-.account-role-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-.admin-badge { background: #dbeafe; color: #1d4ed8; }
-.hr-badge { background: #dcfce7; color: #166534; }
-.finance-badge { background: #fef3c7; color: #b45309; }
-.logistics-badge { background: #e0e7ff; color: #4338ca; }
-.procurement-badge { background: #fff7ed; color: #92400e; }
-.account-details { display: flex; flex-direction: column; gap: 6px; font-size: 0.85rem; color: #4b5563; }
-.account-checkbox { width: 18px; height: 18px; margin-top: 4px; accent-color: #ff8c42; cursor: pointer; }
-.account-checkbox-label { font-weight: 700; color: #374151; cursor: pointer; }
-.checkbox-helper { margin-left: 6px; font-weight: 600; color: #6b7280; font-size: 0.8rem; }
-.account-info { display: flex; flex-direction: column; gap: 6px; }
-.account-quantity { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: #4b5563; }
-.account-quantity-input { width: 76px; padding: 4px 8px; }
-.account-username, .account-password { display: inline-flex; align-items: center; gap: 6px; }
-.password-toggle-btn { margin-left: 8px; padding: 4px 8px; font-size: 0.78rem; }
-
-.custom-account-card { margin: 0 0 1.5rem 0; padding: 1.25rem 2rem; border-top: 1px solid #e5e7eb; background: #fffefb; }
-.custom-account-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
-.toggle { display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; color: #374151; }
-.custom-account-body { margin-top: 1rem; display: flex; flex-direction: column; gap: 1rem; }
-.form-grid.compact { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; padding: 0; }
-.permission-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem; }
-.permission-card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 0.75rem; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
-.permission-card-header { margin-bottom: 0.5rem; font-weight: 700; color: #111827; }
-.module-label { margin-left: 0.4rem; }
-.permission-functions { display: flex; flex-direction: column; gap: 0.4rem; }
-.function-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: #374151; }
 
 .error-message { margin: 0 2rem 1rem; padding: 0.75rem 1rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; color: #dc2626; font-size: 0.9rem; }
 .success-message { margin: 0 2rem 1rem; padding: 0.75rem 1rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; color: #16a34a; font-size: 0.9rem; }
@@ -1597,14 +1328,48 @@ textarea.form-input { resize: vertical; }
   gap: 0.75rem;
 }
 
+.cost-attachment-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.cost-attachment-amount {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 190px;
+}
+
+.cost-attachment-amount .form-input {
+  max-width: 130px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  color: #374151;
+  overflow-wrap: anywhere;
+}
+
 .cost-item-row {
   display: flex;
   gap: 0.5rem;
   align-items: center;
 }
 
+.cost-item-row .form-input {
+  min-width: 0;
+  flex: 1;
+}
+
 .cost-item-row.equipment-row {
   flex-wrap: wrap;
+}
+
+.cost-section-heading {
+  margin: 0 0 0.25rem;
+  color: #29384a;
+  font-size: 1rem;
 }
 
 .btn-remove-item {
@@ -1652,6 +1417,10 @@ textarea.form-input { resize: vertical; }
 }
 
 .total-investment-display {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.5rem;
   background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%);
   border: 2px solid #ffc107;
   padding: 1rem 1.5rem;
@@ -1661,10 +1430,12 @@ textarea.form-input { resize: vertical; }
 }
 
 .total-amount {
+  min-width: 0;
   font-size: 1.3rem;
   font-weight: 700;
   color: #856404;
-  margin-left: 0.5rem;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .staff-management-page.main-branch-theme:not(.from-superadmin) {
@@ -1937,54 +1708,6 @@ textarea.form-input { resize: vertical; }
   gap: 8px;
 }
 
-.staff-management-page.main-branch-theme:not(.from-superadmin) .default-accounts-info,
-.staff-management-page.main-branch-theme:not(.from-superadmin) .custom-account-card {
-  margin: 0;
-  padding: 18px 22px;
-  border-top: 1px solid #edf0f3;
-  background: #fafbfc;
-}
-
-.staff-management-page.main-branch-theme:not(.from-superadmin) .default-accounts-info h3,
-.staff-management-page.main-branch-theme:not(.from-superadmin) .custom-account-header h3 {
-  color: #1f2937;
-  font-size: 15px;
-}
-
-.staff-management-page.main-branch-theme:not(.from-superadmin) .info-sub {
-  margin-bottom: 12px;
-  color: #64748b;
-  line-height: 1.5;
-}
-
-.staff-management-page.main-branch-theme:not(.from-superadmin) .default-account-list {
-  gap: 8px;
-}
-
-.staff-management-page.main-branch-theme:not(.from-superadmin) .default-account-item {
-  gap: 12px;
-  padding: 11px 12px;
-  border-color: #e5e7eb;
-  border-radius: 9px;
-}
-
-.staff-management-page.main-branch-theme:not(.from-superadmin) .account-details {
-  min-width: 0;
-  font-size: 12px;
-}
-
-.staff-management-page.main-branch-theme:not(.from-superadmin) .custom-account-body {
-  gap: 12px;
-}
-
-.staff-management-page.main-branch-theme:not(.from-superadmin) .permission-grid {
-  gap: 8px;
-}
-
-.staff-management-page.main-branch-theme:not(.from-superadmin) .permission-card {
-  border-radius: 9px;
-}
-
 .staff-management-page.main-branch-theme:not(.from-superadmin) .error-message,
 .staff-management-page.main-branch-theme:not(.from-superadmin) .success-message {
   margin: 0 22px 14px;
@@ -2045,11 +1768,6 @@ textarea.form-input { resize: vertical; }
 
   .staff-management-page.main-branch-theme:not(.from-superadmin) .form-group.full-span {
     grid-column: auto;
-  }
-
-  .staff-management-page.main-branch-theme:not(.from-superadmin) .default-accounts-info,
-  .staff-management-page.main-branch-theme:not(.from-superadmin) .custom-account-card {
-    padding: 16px 15px;
   }
 
   .staff-management-page.main-branch-theme:not(.from-superadmin) .cost-item-row,
